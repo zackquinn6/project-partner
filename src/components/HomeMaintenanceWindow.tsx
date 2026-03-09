@@ -646,7 +646,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
         <div className="px-4 md:px-6 py-2 md:py-4 border-b flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <Wrench className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" aria-hidden />
-            <h2 className="text-base font-bold md:hidden">Home maintenance</h2>
+            <h2 className="text-base font-bold md:hidden">Home Maintenance</h2>
             <h2 className="hidden md:block text-xl font-bold">Home Maintenance Tracker</h2>
             <TooltipProvider delayDuration={400}>
               <Popover>
@@ -675,7 +675,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             onClick={() => onOpenChange(false)} 
             className="ml-4 flex-shrink-0"
           >
-            Close
+            {isMobile ? 'Back to Workspace' : 'Close'}
           </Button>
         </div>
         

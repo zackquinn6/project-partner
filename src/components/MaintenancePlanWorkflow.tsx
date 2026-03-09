@@ -1226,30 +1226,103 @@ export function MaintenancePlanWorkflow({
                     </Popover>
                   </div>
                   {planEntries.length > 0 ? (
-                    <div className="max-h-[320px] overflow-y-auto space-y-2 p-4 pr-6">
-                      {planEntries.map((entry, index) => (
-                        <Card key={index} className="border-primary/15 hover:border-primary/30 transition-colors">
-                          <CardContent className="py-3 px-4 flex items-center justify-between gap-2">
-                            <span className="text-sm truncate flex-1 min-w-0">
-                              {entry.type === 'template' ? entry.title : entry.title}
-                              {entry.type === 'custom' && (
-                                <span className="text-muted-foreground ml-1">
-                                  (custom · {CUSTOM_TASK_FREQUENCIES.find((f) => f.days === entry.frequency_days)?.label ?? `${entry.frequency_days} days`})
+                    <div className="max-h-[320px] overflow-y-auto space-y-3 p-4 pr-6">
+                      {(() => {
+                        const buckets: Record<'high' | 'medium' | 'low', { entry: PlanEntry; index: number }[]> = {
+                          high: [],
+                          medium: [],
+                          low: [],
+                        };
+                        const getEntryCriticality = (entry: PlanEntry): number => {
+                          if (entry.type === 'template') {
+                            return entry.template.criticality ?? 2;
+                          }
+                          return 2;
+                        };
+                        const getEntryCategoryLabel = (entry: PlanEntry): string => {
+                          if (entry.type === 'template') {
+                            return CATEGORY_LABELS[entry.template.category] ?? entry.template.category;
+                          }
+                          return 'General (custom)';
+                        };
+                        planEntries.forEach((entry, index) => {
+                          const crit = getEntryCriticality(entry);
+                          const bucketKey: 'high' | 'medium' | 'low' =
+                            crit >= 3 ? 'high' : crit <= 1 ? 'low' : 'medium';
+                          buckets[bucketKey].push({ entry, index });
+                        });
+                        (['high', 'medium', 'low'] as const).forEach((key) => {
+                          buckets[key].sort((a, b) => {
+                            const critA = getEntryCriticality(a.entry);
+                            const critB = getEntryCriticality(b.entry);
+                            if (critB !== critA) return critB - critA;
+                            const catA = getEntryCategoryLabel(a.entry);
+                            const catB = getEntryCategoryLabel(b.entry);
+                            if (catA !== catB) return catA.localeCompare(catB);
+                            return a.entry.title.localeCompare(b.entry.title);
+                          });
+                        });
+                        const orderedBuckets: { key: 'high' | 'medium' | 'low'; label: string }[] = [
+                          { key: 'high', label: 'High criticality' },
+                          { key: 'medium', label: 'Medium criticality' },
+                          { key: 'low', label: 'Low criticality' },
+                        ];
+                        return orderedBuckets.map(({ key, label }) => {
+                          const items = buckets[key];
+                          if (items.length === 0) return null;
+                          return (
+                            <div key={key} className="space-y-2">
+                              <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                                {label}
+                                <span className="text-[11px] font-normal text-muted-foreground/80">
+                                  ({items.length} task{items.length === 1 ? '' : 's'})
                                 </span>
-                              )}
-                            </span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 shrink-0"
-                              onClick={() => removePlanEntry(index)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      ))}
+                              </h3>
+                              {items.map(({ entry, index }) => {
+                                const categoryLabel = getEntryCategoryLabel(entry);
+                                const crit = getEntryCriticality(entry);
+                                const critLabel = crit >= 3 ? 'High' : crit <= 1 ? 'Low' : 'Medium';
+                                const frequencyLabel =
+                                  entry.type === 'template'
+                                    ? `Every ${entry.template.frequency_days} days`
+                                    : CUSTOM_TASK_FREQUENCIES.find((f) => f.days === (entry as PlanCustomItem).frequency_days)
+                                        ?.label ?? `${(entry as PlanCustomItem).frequency_days} days`;
+                                return (
+                                  <Card key={`${key}-${index}`} className="border-primary/15 hover:border-primary/30 transition-colors">
+                                    <CardContent className="py-3 px-4 flex items-center justify-between gap-2">
+                                      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 flex-1 min-w-0">
+                                        <span className="text-sm truncate flex-1 min-w-0">
+                                          {entry.title}
+                                          {entry.type === 'custom' && (
+                                            <span className="text-muted-foreground ml-1">
+                                              (custom · {frequencyLabel})
+                                            </span>
+                                          )}
+                                        </span>
+                                        <div className="text-[11px] text-muted-foreground shrink-0 sm:text-right">
+                                          <div className="truncate">{categoryLabel}</div>
+                                          <div className="truncate">
+                                            {critLabel} · {frequencyLabel}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 shrink-0"
+                                        onClick={() => removePlanEntry(index)}
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })}
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">No tasks in your plan. Go back to add templates or custom tasks.</p>

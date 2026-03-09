@@ -240,19 +240,34 @@ export function AddMaintenanceTaskDialog({
       );
     return matchCategory && matchCriticality && matchSearch;
   });
-  const sortedTemplates = [...filteredTemplates].sort((a, b) => {
-    if (a.category !== b.category) return a.category.localeCompare(b.category);
-    const ca = a.criticality ?? 2;
-    const cb = b.criticality ?? 2;
-    if (cb !== ca) return cb - ca;
-    return (a.title || '').localeCompare(b.title || '');
+
+  const criticalityBuckets: {
+    high: MaintenanceTemplate[];
+    medium: MaintenanceTemplate[];
+    low: MaintenanceTemplate[];
+  } = { high: [], medium: [], low: [] };
+
+  filteredTemplates.forEach((t) => {
+    const crit = t.criticality ?? 2;
+    if (crit >= 3) {
+      criticalityBuckets.high.push(t);
+    } else if (crit <= 1) {
+      criticalityBuckets.low.push(t);
+    } else {
+      criticalityBuckets.medium.push(t);
+    }
   });
-  const groupedTemplates = sortedTemplates.reduce((acc, template) => {
-    if (!acc[template.category]) acc[template.category] = [];
-    acc[template.category].push(template);
-    return acc;
-  }, {} as Record<string, MaintenanceTemplate[]>);
-  const sortedCategoryKeys = Object.keys(groupedTemplates).sort((a, b) => a.localeCompare(b));
+
+  const sortTemplatesForBucket = (items: MaintenanceTemplate[]) =>
+    [...items].sort((a, b) => {
+      const ca = a.criticality ?? 2;
+      const cb = b.criticality ?? 2;
+      if (cb !== ca) return cb - ca;
+      const aCat = categoryLabels[a.category] ?? a.category;
+      const bCat = categoryLabels[b.category] ?? b.category;
+      if (aCat !== bCat) return aCat.localeCompare(bCat);
+      return (a.title || '').localeCompare(b.title || '');
+    });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -335,49 +350,57 @@ export function AddMaintenanceTaskDialog({
               </Select>
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto space-y-4">
-              {sortedCategoryKeys.map((category) => {
-                const categoryTemplates = groupedTemplates[category];
+              {(['high', 'medium', 'low'] as const).map((bucketKey) => {
+                const bucketTemplates = sortTemplatesForBucket(criticalityBuckets[bucketKey]);
+                if (bucketTemplates.length === 0) return null;
+                const bucketLabel =
+                  bucketKey === 'high'
+                    ? 'High criticality'
+                    : bucketKey === 'medium'
+                      ? 'Medium criticality'
+                      : 'Low criticality';
                 return (
-                <div key={category}>
-                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    {categoryLabels[category] || category}
-                    <Badge variant="outline">{categoryTemplates.length}</Badge>
-                  </h3>
-                  <div className="grid gap-3">
-                    {categoryTemplates.map(template => (
-                      <Card key={template.id} className="hover:shadow-md transition-shadow">
-                        <CardHeader className="pb-2">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <CardTitle className="text-base">{template.title}</CardTitle>
-                              <div className="text-sm text-muted-foreground">
-                                Every {template.frequency_days} days
+                  <div key={bucketKey}>
+                    <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                      {bucketLabel}
+                      <Badge variant="outline">{bucketTemplates.length}</Badge>
+                    </h3>
+                    <div className="grid gap-3">
+                      {bucketTemplates.map((template) => (
+                        <Card key={template.id} className="hover:shadow-md transition-shadow">
+                          <CardHeader className="pb-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <CardTitle className="text-base truncate">{template.title}</CardTitle>
+                                <div className="text-xs text-muted-foreground">
+                                  {(categoryLabels[template.category] || template.category) &&
+                                    `${categoryLabels[template.category] || template.category} · Every ${template.frequency_days} days`}
+                                </div>
                               </div>
+                              <Button 
+                                onClick={() => handleAddFromTemplate(template)}
+                                disabled={loading}
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 shrink-0"
+                                title="Add to plan"
+                              >
+                                <Plus className="h-4 w-4 text-blue-600" />
+                              </Button>
                             </div>
-                            <Button 
-                              onClick={() => handleAddFromTemplate(template)}
-                              disabled={loading}
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 shrink-0"
-                              title="Add to plan"
-                            >
-                              <Plus className="h-4 w-4 text-blue-600" />
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        {(template.summary ?? template.description) && (
-                          <CardContent className="pt-0">
-                            <p className="text-sm text-muted-foreground">{template.summary ?? template.description}</p>
-                          </CardContent>
-                        )}
-                      </Card>
-                    ))}
+                          </CardHeader>
+                          {(template.summary ?? template.description) && (
+                            <CardContent className="pt-0">
+                              <p className="text-sm text-muted-foreground">{template.summary ?? template.description}</p>
+                            </CardContent>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
+                );
               })}
-              
+
               {templates.length === 0 && (
                 <div className="text-center py-10 rounded-lg border border-dashed bg-muted/30">
                   <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted text-muted-foreground mb-4">
@@ -402,6 +425,16 @@ export function AddMaintenanceTaskDialog({
                   <p className="text-muted-foreground text-sm">No templates match the current filters. Try a different category or criticality.</p>
                 </div>
               )}
+            </div>
+            <div className="flex justify-end gap-2 pt-3 pb-2 border-t mt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="min-h-[36px]"
+              >
+                Close
+              </Button>
             </div>
           </TabsContent>
 
