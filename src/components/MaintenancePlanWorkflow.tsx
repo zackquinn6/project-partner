@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, ClipboardList, Loader2, Trash2, Plus, Shield, ShieldCheck, Home, HelpCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ClipboardList, Loader2, Trash2, Plus, Shield, ShieldCheck, Home, HelpCircle, X } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -652,17 +652,29 @@ export function MaintenancePlanWorkflow({
         }`}
       >
         <DialogHeader className="px-4 md:px-8 pt-4 md:pt-6 pb-2 md:pb-3 border-b bg-gradient-to-r from-primary/5 to-primary/10">
-          <DialogTitle className="flex flex-col gap-0.5 text-primary">
-            <span className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 md:h-7 md:w-7 shrink-0" />
-              <span className="text-base md:text-3xl font-semibold">Generate Maintenance Plan</span>
-            </span>
-            {homeName ? (
-              <span className="text-xs md:text-sm font-medium text-muted-foreground mt-0.5">
-                {homeName}
+          <div className="flex items-start justify-between gap-3">
+            <DialogTitle className="flex flex-col gap-0.5 text-primary">
+              <span className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 md:h-7 md:w-7 shrink-0" />
+                <span className="text-base md:text-3xl font-semibold">Generate Maintenance Plan</span>
               </span>
-            ) : null}
-          </DialogTitle>
+              {homeName ? (
+                <span className="text-sm md:text-2xl font-semibold text-muted-foreground mt-0.5">
+                  {homeName}
+                </span>
+              ) : null}
+            </DialogTitle>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="hidden md:inline-flex text-muted-foreground hover:text-foreground"
+              aria-label="Close"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
           {!loadingDetails && (
             <div className="flex items-center gap-3 mt-2">
               <Progress value={((step + 1) / totalSteps) * 100} className="h-2 flex-1" />
