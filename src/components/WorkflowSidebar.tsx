@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench } from "lucide-react";
+import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { WorkflowThemeSelector } from './WorkflowThemeSelector';
@@ -478,17 +479,17 @@ export function WorkflowSidebar({
                   </div>
 
                   {/* Project Tools Section - min-w-0 so flex children can shrink and are not clipped */}
-                    <div className="space-y-2 min-w-0">
+                    <div className="space-y-1.5 min-w-0">
                     <div className="text-xs font-semibold text-muted-foreground">Project Tools</div>
                     {/* Row 1: View Schedule */}
                     <Button
                       variant="default"
                       size="sm"
                       onClick={onViewScheduleClick}
-                      className="h-8 px-3 text-xs w-full min-w-0"
+                      className="h-7 px-2 text-[11px] w-full min-w-0"
                       style={{ backgroundColor: 'rgba(99, 102, 241, 0.40)', color: 'black' }}
                     >
-                      <Calendar className="h-3.5 w-3.5 mr-2 shrink-0" style={{ color: 'black' }} />
+                      <Calendar className="h-3 w-3 mr-1.5 shrink-0" style={{ color: 'black' }} />
                       <span className="truncate">View Schedule</span>
                     </Button>
                     {/* Row 2: Key Characteristics, Re-Plan */}
@@ -497,10 +498,10 @@ export function WorkflowSidebar({
                         variant="default"
                         size="sm"
                         onClick={onKeysToSuccessClick}
-                        className="h-auto py-1.5 px-2 text-[10px] flex-1 min-w-0 flex-col gap-1"
+                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
                         style={{ backgroundColor: 'rgba(168, 85, 247, 0.40)', color: 'black' }}
                       >
-                        <Key className="h-3.5 w-3.5 shrink-0" style={{ color: 'black' }} />
+                        <Key className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
                         <span className="truncate">Key Characteristics</span>
                       </Button>
                       {isKickoffComplete && (
@@ -508,10 +509,10 @@ export function WorkflowSidebar({
                           variant="default"
                           size="sm"
                           onClick={onUnplannedWorkClick}
-                          className="h-auto py-1.5 px-2 text-[10px] flex-1 min-w-0 flex-col gap-1"
+                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
                           style={{ backgroundColor: 'rgba(236, 72, 153, 0.40)', color: 'black' }}
                         >
-                          <Layers className="h-3.5 w-3.5 shrink-0" style={{ color: 'black' }} />
+                          <Layers className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
                           <span className="truncate">Re-Plan</span>
                         </Button>
                       )}
@@ -522,34 +523,45 @@ export function WorkflowSidebar({
                         variant="default"
                         size="sm"
                         onClick={onNotesClick}
-                        className="h-auto py-1.5 px-2 text-[10px] flex-1 min-w-0 flex-col gap-1"
+                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
                         style={{ backgroundColor: 'rgba(34, 197, 94, 0.40)', color: 'black' }}
                       >
-                        <FileText className="h-3.5 w-3.5 shrink-0" style={{ color: 'black' }} />
+                        <FileText className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
                         <span className="truncate">Notes</span>
                       </Button>
                       <Button
                         variant="default"
                         size="sm"
                         onClick={onPhotosClick}
-                        className="h-auto py-1.5 px-2 text-[10px] flex-1 min-w-0 flex-col gap-1"
+                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
                         style={{ backgroundColor: 'rgba(251, 146, 60, 0.40)', color: 'black' }}
                       >
-                        <Image className="h-3.5 w-3.5 shrink-0" style={{ color: 'black' }} />
+                        <Image className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
                         <span className="truncate">Photos</span>
                       </Button>
                     </div>
-                    {/* Row 4: Experts, Tool Rentals (visibility from admin toggles) */}
+                    {/* Progress views */}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={onProgressViewsClick ?? (() => {})}
+                      className="h-7 px-2 text-[11px] w-full min-w-0"
+                      style={{ backgroundColor: 'rgba(20, 184, 166, 0.40)', color: 'black' }}
+                    >
+                      <BarChart3 className="h-3 w-3 mr-2 shrink-0" style={{ color: 'black' }} />
+                      <span className="truncate">Progress</span>
+                    </Button>
+                    {/* Row 4: Experts, Tool Rentals (visibility from admin toggles) - keep at bottom */}
                     <div className="flex items-center gap-1.5 min-w-0">
                       {expertSupportEnabled && (
                         <Button
                           variant="default"
                           size="sm"
                           onClick={onHelpClick}
-                          className="h-auto py-1.5 px-2 text-[10px] flex-1 min-w-0 flex-col gap-1"
+                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
                           style={{ backgroundColor: 'rgba(59, 130, 246, 0.40)', color: 'black' }}
                         >
-                          <MessageCircle className="h-3.5 w-3.5 shrink-0" style={{ color: 'black' }} />
+                          <MessageCircle className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
                           <span className="truncate">Experts</span>
                         </Button>
                       )}
@@ -558,25 +570,14 @@ export function WorkflowSidebar({
                           variant="default"
                           size="sm"
                           onClick={onToolRentalsClick}
-                          className="h-auto py-1.5 px-2 text-[10px] flex-1 min-w-0 flex-col gap-1"
+                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
                           style={{ backgroundColor: 'rgba(245, 158, 11, 0.40)', color: 'black' }}
                         >
-                          <Wrench className="h-3.5 w-3.5 shrink-0" style={{ color: 'black' }} />
+                          <Wrench className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
                           <span className="truncate">Tool Rentals</span>
                         </Button>
                       )}
                     </div>
-                    {/* Progress views - keep below row 4 */}
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={onProgressViewsClick ?? (() => {})}
-                      className="h-8 px-3 text-xs w-full min-w-0"
-                      style={{ backgroundColor: 'rgba(20, 184, 166, 0.40)', color: 'black' }}
-                    >
-                      <BarChart3 className="h-3 w-3 mr-2 shrink-0" style={{ color: 'black' }} />
-                      <span className="truncate">Progress</span>
-                    </Button>
                   </div>
 
                   {/* Separator */}
@@ -894,18 +895,49 @@ export function WorkflowSidebar({
                   <TooltipProvider delayDuration={100}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setShowTutorial(true)}
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                          data-tutorial="help-button"
-                        >
-                          <HelpCircle className="h-4 w-4" />
-                        </Button>
+                        <span className="inline-flex">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                data-tutorial="help-button"
+                              >
+                                <HelpCircle className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56 z-[9999]">
+                              <DropdownMenuItem onClick={() => setShowTutorial(true)}>
+                                <Info className="h-4 w-4 mr-2" />
+                                Workflow Tutorial
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-feedback-dialog'))}>
+                                <MessageCircle className="h-4 w-4 mr-2" />
+                                Send Feedback
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-roadmap-window'))}>
+                                <TrendingUp className="h-4 w-4 mr-2" />
+                                App Roadmap
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-documentation-window'))}>
+                                <BookOpen className="h-4 w-4 mr-2" />
+                                Documentation
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-policies-window'))}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                Policies
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-expert-help'))}>
+                                <MessageCircle className="h-4 w-4 mr-2" />
+                                Expert Help
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </span>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="text-xs">Workflow Tutorial</p>
+                        <p className="text-xs">Help & resources</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
