@@ -19,6 +19,113 @@ import { AdminGuideWindow } from './AdminGuideWindow';
 import { BetaModeToggle } from './BetaModeToggle';
 import { PartnerAppToggles } from './PartnerAppToggles';
 import { AppManager } from './AppManager';
+import { Card as SettingCard, CardHeader as SettingCardHeader, CardTitle as SettingCardTitle, CardDescription as SettingCardDescription, CardContent as SettingCardContent } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label as SettingLabel } from '@/components/ui/label';
+
+type DefaultLandingMode = 'projects' | 'workspace';
+
+const DefaultLandingSetting: React.FC = () => {
+  const [mode, setMode] = useState<DefaultLandingMode>('projects');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('app_settings')
+          .select('setting_value')
+          .eq('setting_key', 'default_landing_view')
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error loading default landing view setting:', error);
+          return;
+        }
+
+        const value = (data?.setting_value as { mode?: DefaultLandingMode } | null)?.mode;
+        if (value === 'projects' || value === 'workspace') {
+          setMode(value);
+        }
+      } catch (err) {
+        console.error('Unexpected error loading default landing view setting:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  const handleChange = async (value: DefaultLandingMode) => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('app_settings')
+        .upsert(
+          {
+            setting_key: 'default_landing_view',
+            setting_value: { mode: value },
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: 'setting_key' }
+        );
+
+      if (error) throw error;
+
+      setMode(value);
+      toast.success(
+        value === 'projects'
+          ? 'Default landing set to Project Catalog'
+          : 'Default landing set to Workspace home'
+      );
+    } catch (err) {
+      console.error('Error updating default landing view setting:', err);
+      toast.error('Failed to update default landing view');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <SettingCard>
+      <SettingCardHeader>
+        <SettingCardTitle>Default landing view</SettingCardTitle>
+        <SettingCardDescription>
+          Choose where users land after signing in when there is no specific project context.
+        </SettingCardDescription>
+      </SettingCardHeader>
+      <SettingCardContent>
+        <RadioGroup
+          value={mode}
+          onValueChange={(val) => handleChange(val as DefaultLandingMode)}
+          className="flex flex-col gap-3 md:flex-row md:gap-6"
+          disabled={loading || saving}
+        >
+          <div className="flex items-start space-x-2">
+            <RadioGroupItem value="projects" id="landing-projects" />
+            <SettingLabel htmlFor="landing-projects" className="space-y-1 cursor-pointer">
+              <div className="font-medium">Project Catalog</div>
+              <p className="text-sm text-muted-foreground">
+                Open the project catalog by default so users can pick a project template.
+              </p>
+            </SettingLabel>
+          </div>
+          <div className="flex items-start space-x-2">
+            <RadioGroupItem value="workspace" id="landing-workspace" />
+            <SettingLabel htmlFor="landing-workspace" className="space-y-1 cursor-pointer">
+              <div className="font-medium">Workspace home</div>
+              <p className="text-sm text-muted-foreground">
+                Open the main workspace home screen instead of the project catalog.
+              </p>
+            </SettingLabel>
+          </div>
+        </RadioGroup>
+      </SettingCardContent>
+    </SettingCard>
+  );
+};
 export const AdminView: React.FC = () => {
   const [enhancedProjectManagementOpen, setEnhancedProjectManagementOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
@@ -198,6 +305,9 @@ export const AdminView: React.FC = () => {
 
         {/* Partner apps & Expert support toggles */}
         <PartnerAppToggles />
+
+        {/* Default landing view setting */}
+        <DefaultLandingSetting />
 
         <Dialog open={enhancedProjectManagementOpen} onOpenChange={setEnhancedProjectManagementOpen}>
           <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">

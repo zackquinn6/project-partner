@@ -40,6 +40,8 @@ export default function Auth() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
+  const [defaultLanding, setDefaultLanding] = useState<'projects' | 'workspace'>('projects');
+  const [landingLoaded, setLandingLoaded] = useState(false);
   const {
     user,
     signIn,
@@ -85,18 +87,52 @@ export default function Auth() {
     setIsSignUp(mode === 'signup');
   }, [location.search]);
 
+  // Load default landing view setting
+  useEffect(() => {
+    const loadLanding = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('app_settings')
+          .select('setting_value')
+          .eq('setting_key', 'default_landing_view')
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error loading default landing view setting:', error);
+        } else {
+          const value = (data?.setting_value as { mode?: 'projects' | 'workspace' } | null)?.mode;
+          if (value === 'projects' || value === 'workspace') {
+            setDefaultLanding(value);
+          }
+        }
+      } catch (err) {
+        console.error('Unexpected error loading default landing view setting:', err);
+      } finally {
+        setLandingLoaded(true);
+      }
+    };
+
+    loadLanding();
+  }, []);
+
   // When user is present, save any pending onboarding then redirect
   useEffect(() => {
-    if (!user || loading) return;
+    if (!user || loading || !landingLoaded) return;
     flushPendingOnboarding(user.email ?? '', user.id).then(() => {
       const returnPath = searchParams.get('return');
       if (returnPath === 'projects') {
         navigate('/projects');
-      } else {
-        navigate('/projects');
+        return;
       }
+
+      if (defaultLanding === 'workspace') {
+        navigate('/');
+        return;
+      }
+
+      navigate('/projects');
     });
-  }, [user, loading, navigate, searchParams, flushPendingOnboarding]);
+  }, [user, loading, landingLoaded, defaultLanding, navigate, searchParams, flushPendingOnboarding]);
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
