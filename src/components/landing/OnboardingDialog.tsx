@@ -41,7 +41,7 @@ export const PM_FOCUS_OPTIONS: {
   {
     value: 'quality',
     title: 'Highest quality work',
-    description: 'Getting the highest quality work',
+    description: 'Focusing on precision of work',
     icon: Award,
   },
   {
@@ -52,7 +52,7 @@ export const PM_FOCUS_OPTIONS: {
   },
   {
     value: 'all_three',
-    title: 'Optimize all 3',
+    title: 'Balanced',
     description: 'Balance cost, quality, and schedule together',
     icon: Target,
   },
