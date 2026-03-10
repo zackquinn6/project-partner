@@ -20,7 +20,6 @@ interface Tool {
   id: string;
   item: string; // Mapped from database 'name' column
   description: string | null;
-  example_models: string | null;
   photo_url: string | null;
   created_at: string;
   updated_at: string;
@@ -35,7 +34,6 @@ type ToolRow = {
   id: string;
   name: string; // Database column name
   description: string | null;
-  example_models: string | null;
   photo_url: string | null;
   created_at: string;
   updated_at: string;
@@ -62,7 +60,7 @@ export function ToolsLibrary() {
       // Cast entire query to bypass TypeScript type checking for column names
       const query = supabase
         .from('tools' as any)
-        .select('id, name, description, example_models, photo_url, created_at, updated_at') as any;
+        .select('id, name, description, photo_url, created_at, updated_at') as any;
       
       const { data, error } = await query.order('name', { ascending: true }); // Database column is 'name', not 'item'
       
@@ -73,7 +71,6 @@ export function ToolsLibrary() {
         id: row.id,
         item: row.name, // Map 'name' to 'item' for UI
         description: row.description,
-        example_models: row.example_models,
         photo_url: row.photo_url,
         created_at: row.created_at,
         updated_at: row.updated_at

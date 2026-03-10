@@ -21,7 +21,6 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
   const [formData, setFormData] = useState({
     name: item?.name || '',
     description: item?.description || '',
-    example_models: item?.example_models || '', // for tools
     unit: item?.unit || '', // for materials
     alternates: item?.alternates || '', // JSON string of alternates
   });
@@ -99,9 +98,6 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
         description: formData.description.trim() || null,
         photo_url: finalPhotoUrl || null,
         alternates: formData.alternates || null,
-        ...(type === 'tools' && { 
-          example_models: formData.example_models.trim() || null 
-        }),
         ...(type === 'materials' && { 
           unit: formData.unit.trim() || null 
         }),
@@ -176,18 +172,6 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
               rows={3}
             />
           </div>
-
-          {type === 'tools' && (
-            <div>
-              <Label htmlFor="example_models">Variants</Label>
-              <Input
-                id="example_models"
-                value={formData.example_models}
-                onChange={(e) => setFormData({ ...formData, example_models: e.target.value })}
-                placeholder="e.g., DeWalt DCD771C2, Ryobi P1813"
-              />
-            </div>
-          )}
 
           {type === 'materials' && (
             <div>

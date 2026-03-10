@@ -17,7 +17,6 @@ interface Tool {
   id: string;
   name: string;
   description?: string;
-  example_models?: string;
   photo_url?: string;
   item?: string;
 }
@@ -27,7 +26,6 @@ interface UserOwnedTool {
   name: string;
   description?: string;
   custom_description?: string;
-  example_models?: string;
   photo_url?: string;
   quantity: number;
   model_name?: string;
@@ -479,9 +477,6 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
                       {tool.description && (
                         <p className="text-sm text-muted-foreground mb-2">{tool.description}</p>
                       )}
-                      {tool.example_models && (
-                        <p className="text-xs text-muted-foreground">Examples: {tool.example_models}</p>
-                      )}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {tool.photo_url && (
@@ -727,9 +722,6 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
                   </div>
                   {tool.description && (
                     <p className="text-sm text-muted-foreground mb-2">{tool.description}</p>
-                  )}
-                  {tool.example_models && (
-                    <p className="text-xs text-muted-foreground">Examples: {tool.example_models}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">

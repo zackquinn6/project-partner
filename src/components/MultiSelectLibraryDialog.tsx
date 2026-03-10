@@ -411,9 +411,6 @@ export function MultiSelectLibraryDialog({
                               {item.description && (
                                 <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
                               )}
-                              {type === 'tools' && item.example_models && (
-                                <p className="text-xs text-muted-foreground">Models: {item.example_models}</p>
-                              )}
                               {type === 'materials' && item.unit_size && (
                                 <p className="text-xs text-muted-foreground">Unit: {item.unit_size}</p>
                               )}

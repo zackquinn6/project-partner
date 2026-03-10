@@ -33,7 +33,6 @@ export interface LibraryTool {
   id: string;
   name: string;
   description: string | null;
-  example_models: string | null;
   photo_url: string | null;
   alternates: string | null;
   category: string | null;

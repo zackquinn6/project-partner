@@ -17,7 +17,6 @@ interface Tool {
   id: string;
   name: string;
   description?: string;
-  example_models?: string;
   photo_url?: string;
   item?: string;
 }
@@ -27,7 +26,6 @@ interface UserOwnedTool {
   name: string;
   description?: string;
   custom_description?: string;
-  example_models?: string;
   photo_url?: string;
   quantity: number;
   model_name?: string;

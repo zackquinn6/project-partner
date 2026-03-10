@@ -18,7 +18,6 @@ interface BulkUploadProps {
 interface ParsedItem {
   name: string;
   description?: string;
-  example_models?: string;
   unit?: string;
   errors?: string[];
 }
@@ -31,10 +30,10 @@ export function BulkUpload({ type, open, onOpenChange, onSuccess }: BulkUploadPr
   const [showPreview, setShowPreview] = useState(false);
 
   const sampleCSV = type === 'tools' 
-    ? `item,description,example_models
-Hammer,Basic claw hammer for general use,Stanley 16oz
-Drill,Cordless drill for holes and screws,DeWalt 20V MAX
-Saw,Hand saw for cutting wood,Irwin Universal`
+    ? `item,description
+Hammer,Basic claw hammer for general use
+Drill,Cordless drill for holes and screws
+Saw,Hand saw for cutting wood`
     : `item,description,unit_size
 Paint,Interior wall paint,1 gallon
 Screws,Wood screws for construction,Box of 100
@@ -47,7 +46,7 @@ Sandpaper,Fine grit sandpaper,Pack of 10 sheets`;
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
     const requiredHeaders = ['item'];
     const optionalHeaders = type === 'tools' 
-      ? ['description', 'example_models']
+      ? ['description']
       : ['description', 'unit_size'];
 
     // Validate headers
@@ -117,10 +116,7 @@ Sandpaper,Fine grit sandpaper,Pack of 10 sheets`;
         .insert(validItems.map(item => ({
           name: item.name,
           description: item.description || null,
-          ...(type === 'tools' 
-            ? { example_models: item.example_models || null }
-            : { unit: item.unit || null }
-          )
+          ...(type === 'materials' && { unit: item.unit || null })
         })));
 
       if (error) throw error;
@@ -207,7 +203,7 @@ Sandpaper,Fine grit sandpaper,Pack of 10 sheets`;
               <div>
                 <strong>Optional Columns:</strong> {' '}
                 {type === 'tools' 
-                  ? 'description, example_models'
+                  ? 'description'
                   : 'description, unit_size'
                 }
               </div>
@@ -239,9 +235,6 @@ Sandpaper,Fine grit sandpaper,Pack of 10 sheets`;
                       <div className="font-medium">{item.name}</div>
                       {item.description && (
                         <div className="text-sm text-muted-foreground">{item.description}</div>
-                      )}
-                      {type === 'tools' && item.example_models && (
-                        <div className="text-xs text-muted-foreground">Models: {item.example_models}</div>
                       )}
                       {type === 'materials' && item.unit && (
                         <div className="text-xs text-muted-foreground">Unit: {item.unit}</div>

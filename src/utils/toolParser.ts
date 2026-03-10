@@ -157,10 +157,7 @@ export async function importToolsToDatabase(
         .from('tools')
         .insert({
           name: tool.name,
-          description: tool.description,
-          example_models: tool.variations.length > 0 
-            ? tool.variations.slice(0, 3).map(v => `${v.brand} ${v.model}`).join(', ')
-            : undefined
+          description: tool.description
         } as any)
         .select()
         .single();

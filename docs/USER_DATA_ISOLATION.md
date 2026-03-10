@@ -109,7 +109,6 @@ Project Partner is designed to ensure each user has their own isolated data. Thi
 - ✅ `user_photo_url` - User's custom photo
 - ✅ `quantity`, `model_name`
 - ✅ `custom_description` - User's personal notes
-- ✅ `example_models`
 
 ### 5. Materials Library
 **Table:** `profiles`

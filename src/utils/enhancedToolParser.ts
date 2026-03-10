@@ -433,8 +433,7 @@ export async function importEnhancedToolsToDatabase(
           .from('tools')
           .insert({
             name: tool.coreToolName,
-            description: `${tool.category} - ${tool.name}`,
-            example_models: tool.variants.map(v => v.models.map(m => m.modelName).join(', ')).join('; ')
+            description: `${tool.category} - ${tool.name}`
           } as any)
           .select('id')
           .single();
