@@ -158,6 +158,7 @@ export default function Home({
             }} variant="outline" className="w-full h-10 text-sm font-medium border-primary bg-slate-600 hover:bg-slate-500 text-slate-50">
                       <BookOpen className="w-4 h-4 mr-2" />
                       Explore New Projects
+                      <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0">Beta</Badge>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="max-w-xs text-center">
@@ -177,7 +178,10 @@ export default function Home({
                     <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myProjects} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                       <Folder className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                     </div>
-                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Project Dashboard</span>
+                    <span className="text-xs font-medium text-black text-center leading-tight px-1 flex items-center justify-center gap-1">
+                      Project Dashboard
+                      <Badge variant="secondary" className="text-[9px] px-1 py-0">Beta</Badge>
+                    </span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs text-center">

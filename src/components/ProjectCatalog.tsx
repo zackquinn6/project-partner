@@ -882,10 +882,11 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             </div>
 
         <div className="text-center mb-8">
-          <h1 className="text-4xl lg:text-5xl font-bold mb-4">
+          <h1 className="text-4xl lg:text-5xl font-bold mb-4 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
             <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">
               Project Catalog
             </span>
+            <Badge variant="secondary" className="text-sm shrink-0">Beta</Badge>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Select a project to get started</p>
         </div>

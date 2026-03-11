@@ -269,6 +269,7 @@ export function MobileOptimizedHome() {
           >
             <BookOpen className="w-4 h-4 mr-2" />
             Explore New Projects
+            <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0">Beta</Badge>
           </Button>
         </div>
 
@@ -288,7 +289,10 @@ export function MobileOptimizedHome() {
                     <div className={`w-12 h-12 ${action.color} rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform`}>
                       <Icon className="h-6 w-6 text-white" />
                     </div>
-                    <h3 className="font-semibold text-xs text-card-foreground mb-1">{action.title}</h3>
+                    <h3 className="font-semibold text-xs text-card-foreground mb-1 flex items-center gap-1.5">
+                      {action.title}
+                      {(action.id === 'my-projects') && <Badge variant="secondary" className="text-[9px] px-1 py-0">Beta</Badge>}
+                    </h3>
                     <p className="text-[10px] text-muted-foreground leading-tight">{action.subtitle}</p>
                   </CardContent>
                 </Card>

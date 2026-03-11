@@ -129,7 +129,10 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
         <CardHeader>
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-xl">Project Dashboard</CardTitle>
+              <CardTitle className="text-xl flex items-center gap-2">
+                Project Dashboard
+                <Badge variant="secondary" className="text-xs">Beta</Badge>
+              </CardTitle>
               <CardDescription className="text-sm">
                 View and manage your project portfolio
               </CardDescription>

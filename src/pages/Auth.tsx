@@ -20,7 +20,7 @@ async function saveOnboardingToProfile(
   userId: string,
   name: string,
   diyLevel: string,
-  pmFocus?: 'schedule' | 'quality' | 'savings' | null
+  pmFocus?: 'schedule' | 'quality' | 'savings' | 'all_three' | null
 ): Promise<void> {
   const row: Record<string, unknown> = {
     user_id: userId,
@@ -71,7 +71,7 @@ export default function Auth() {
         email: string;
         name: string;
         diyLevel: string;
-        pmFocus?: 'schedule' | 'quality' | 'savings' | null;
+        pmFocus?: 'schedule' | 'quality' | 'savings' | 'all_three' | null;
       };
       if (pending.email !== userEmail.toLowerCase()) return;
       await saveOnboardingToProfile(userId, pending.name, pending.diyLevel, pending.pmFocus ?? null);
@@ -173,11 +173,26 @@ export default function Auth() {
       }
     } else {
       // Create user session on successful login
+      const { data: { user: signedInUser } } = await supabase.auth.getUser();
       try {
-        await supabase.from('user_sessions').insert({
-          user_id: (await supabase.auth.getUser()).data.user?.id,
-          user_agent: navigator.userAgent
-        });
+        if (signedInUser) {
+          await supabase.from('user_sessions').insert({
+            user_id: signedInUser.id,
+            user_agent: navigator.userAgent
+          });
+          // If they came from get-started with onboarding in state, persist to profile
+          const onboarding = (location.state as {
+            onboarding?: { name: string; diyLevel: string; pmFocus?: 'schedule' | 'quality' | 'savings' | 'all_three' | null };
+          })?.onboarding;
+          if (onboarding?.name?.trim() && onboarding?.diyLevel) {
+            await saveOnboardingToProfile(
+              signedInUser.id,
+              onboarding.name.trim(),
+              onboarding.diyLevel,
+              onboarding.pmFocus ?? null
+            );
+          }
+        }
       } catch (sessionError) {
         console.error('Failed to create session log:', sessionError);
       }
@@ -218,7 +233,7 @@ export default function Auth() {
     trackFormSubmission('signup');
     
     const onboarding = (location.state as {
-      onboarding?: { name: string; diyLevel: string; pmFocus?: 'schedule' | 'quality' | 'savings' | null };
+      onboarding?: { name: string; diyLevel: string; pmFocus?: 'schedule' | 'quality' | 'savings' | 'all_three' | null };
     })?.onboarding;
     const dataToTransfer = guestData.projectRuns.length > 0 ? guestData : undefined;
 
