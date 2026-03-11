@@ -180,21 +180,21 @@ export const MembershipAgreementDialog: React.FC<MembershipAgreementDialogProps>
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="text-2xl">Service Terms Agreement</DialogTitle>
           <DialogDescription>
             Please review and sign the service terms before subscribing
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="h-[50vh] pr-4">
+        <ScrollArea className="h-[50vh] min-h-[200px] pr-4 shrink-0">
           <div className="prose prose-sm dark:prose-invert max-w-none">
             <pre className="whitespace-pre-wrap font-sans text-sm">{agreementText}</pre>
           </div>
         </ScrollArea>
 
-        <div className="space-y-4 pt-4 border-t">
+        <div className="space-y-4 pt-4 border-t shrink-0">
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"

@@ -204,23 +204,23 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
-        className="max-w-2xl max-h-[90vh] flex flex-col"
+        className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
             Usage Agreement
           </DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground shrink-0">
           You must read and accept the usage agreement below before using the app.
         </p>
-        <ScrollArea className="flex-1 border rounded-md p-4 min-h-[240px] max-h-[40vh]">
+        <ScrollArea className="h-[50vh] min-h-[240px] border rounded-md p-4 shrink-0">
           <pre className="whitespace-pre-wrap font-sans text-sm text-foreground">{policyText}</pre>
         </ScrollArea>
-        <div className="space-y-4 pt-2">
+        <div className="space-y-4 pt-2 shrink-0">
           <div className="flex items-center gap-3">
             <Checkbox
               id="liability-agree"

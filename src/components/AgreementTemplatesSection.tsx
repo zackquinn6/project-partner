@@ -204,8 +204,8 @@ export function AgreementTemplatesSection() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader className="shrink-0">
             <DialogTitle>
               {dialogType ? TYPE_LABELS[dialogType] : 'Agreement'}
               {dialogMode === 'edit' && ' — Edit'}
@@ -213,10 +213,10 @@ export function AgreementTemplatesSection() {
           </DialogHeader>
           {dialogMode === 'view' ? (
             <>
-              <ScrollArea className="flex-1 border rounded-md p-4 min-h-[300px] max-h-[60vh]">
+              <ScrollArea className="h-[60vh] min-h-[300px] border rounded-md p-4 shrink-0">
                 <pre className="whitespace-pre-wrap font-sans text-sm text-foreground">{displayBody}</pre>
               </ScrollArea>
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-2 shrink-0">
                 <Button variant="outline" onClick={() => dialogType && openEdit(dialogType)}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
@@ -232,7 +232,7 @@ export function AgreementTemplatesSection() {
                 className="min-h-[300px] font-mono text-sm"
                 placeholder="Agreement body..."
               />
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-2 shrink-0">
                 <Button variant="outline" onClick={() => setDialogMode('view')} disabled={saving}>
                   Cancel
                 </Button>
