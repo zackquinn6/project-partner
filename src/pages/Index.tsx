@@ -399,7 +399,7 @@ const Index = () => {
     return <Home onViewChange={() => {}} />;
   }
 
-  // Block app until general usage agreement is accepted (after redirect post-signup)
+  // Block app until usage agreement is accepted (after redirect post-signup)
   if (liabilityLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">

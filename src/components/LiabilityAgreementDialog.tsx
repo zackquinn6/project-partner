@@ -14,9 +14,9 @@ const APP_LOGO_URL = '/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png'
 const POLICY_VERSION = '1.0';
 
 const PLACEHOLDER_LIABILITY_POLICY = `
-GENERAL USAGE (Placeholder)
+USAGE AGREEMENT (Placeholder)
 
-This is placeholder content for the Project Partner General Usage agreement. It will be replaced with the full legal text.
+This is placeholder content for the Project Partner Usage Agreement. It will be replaced with the full legal text.
 
 1. Scope
 Use of the Project Partner app and services is subject to this usage agreement.
