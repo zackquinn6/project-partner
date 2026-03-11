@@ -18,9 +18,9 @@ We do not share your home information with any other businesses. Your data is sa
 `.trim();
 
 const PLACEHOLDER_LIABILITY = `
-Liability Policy (Placeholder)
+General Usage (Placeholder)
 
-This is placeholder content for the Project Partner Liability Policy. It will be replaced with the full legal text.
+This is placeholder content for the Project Partner General Usage agreement. It will be replaced with the full legal text.
 
 - Scope of services
 - No guarantee of results
@@ -54,7 +54,7 @@ export function PoliciesWindow({ open, onOpenChange }: PoliciesWindowProps) {
             </TabsTrigger>
             <TabsTrigger value="liability" className="gap-2">
               <FileText className="h-4 w-4" />
-              Liability Policy
+              General Usage
             </TabsTrigger>
           </TabsList>
           <TabsContent value="privacy" className="flex-1 min-h-0 mt-3">

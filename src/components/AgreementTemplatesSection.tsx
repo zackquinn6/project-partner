@@ -22,7 +22,7 @@ interface TemplateVersion {
 }
 
 const TYPE_LABELS: Record<AgreementType, string> = {
-  liability: 'General Liability',
+  liability: 'General Usage',
   membership: 'Membership Agreement',
 };
 
@@ -133,7 +133,7 @@ export function AgreementTemplatesSection() {
             Agreement templates
           </CardTitle>
           <CardDescription>
-            View or edit the current liability and membership agreement templates. Each save creates a new version; history is kept.
+            View or edit the current general usage and membership agreement templates. Each save creates a new version; history is kept.
           </CardDescription>
         </CardHeader>
         <CardContent>
