@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -21,15 +20,17 @@ interface UserRole {
 }
 interface UserProfile {
   user_id: string;
+  email: string | null;
   full_name: string | null;
   nickname: string | null;
+  display_name?: string | null;
 }
 export const UserRoleManager: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
-  const [newUserEmail, setNewUserEmail] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [newUserRole, setNewUserRole] = useState('user');
   const [loading, setLoading] = useState(true);
   const loadUserRoles = async () => {
@@ -54,7 +55,7 @@ export const UserRoleManager: React.FC = () => {
       const {
         data: profilesData,
         error: profilesError
-      } = await supabase.from('profiles').select('user_id, full_name, nickname');
+      } = await supabase.from('profiles').select('user_id, email, full_name, nickname, display_name');
       if (profilesError) {
         console.error('❌ Error loading profiles:', profilesError);
         throw profilesError;
@@ -94,9 +95,7 @@ export const UserRoleManager: React.FC = () => {
       const {
         data,
         error
-      } = await supabase.from('profiles').select('user_id, full_name, nickname').order('created_at', {
-        ascending: false
-      });
+      } = await supabase.from('profiles').select('user_id, email, full_name, nickname, display_name').order('user_id');
       if (error) throw error;
       setAllUsers(data || []);
     } catch (error) {
@@ -112,53 +111,18 @@ export const UserRoleManager: React.FC = () => {
     loadData();
   }, []);
   const addUserRole = async () => {
-    console.log('🔧 addUserRole called', { newUserEmail, newUserRole, user });
-    
-    if (!user) {
-      console.log('❌ No user authenticated');
-      return;
-    }
+    if (!user) return;
 
-    // Basic validation
-    if (!newUserEmail || !newUserRole) {
-      console.log('❌ Missing fields', { newUserEmail, newUserRole });
+    if (!selectedUserId || !newUserRole) {
       toast({
-        title: "Please fill all fields",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(newUserEmail)) {
-      toast({
-        title: "Invalid email format",
+        title: "Please select a user and role",
         variant: "destructive"
       });
       return;
     }
 
     try {
-      console.log('🔍 Searching for user in allUsers:', allUsers.length, 'users');
-      console.log('📋 Available users:', allUsers.map(u => u.email));
-      
-      // Find user by email
-      const targetUser = allUsers.find(u => u.email.toLowerCase() === newUserEmail.toLowerCase());
-      console.log('🔍 Target user found:', targetUser);
-      
-      if (!targetUser) {
-        console.log('❌ User not found');
-        toast({
-          title: "User not found",
-          description: `The user "${newUserEmail}" hasn't signed up yet. Ask them to create an account first.`,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Check if role already exists
-      const existingRole = userRoles.find(ur => ur.user_id === targetUser.user_id && ur.role === newUserRole);
+      const existingRole = userRoles.find(ur => ur.user_id === selectedUserId && ur.role === newUserRole);
       if (existingRole) {
         toast({
           title: "Role already exists",
@@ -168,32 +132,45 @@ export const UserRoleManager: React.FC = () => {
         return;
       }
 
-      console.log('📝 Inserting role:', { user_id: targetUser.user_id, role: newUserRole });
-      
-      const { error, data } = await supabase.from('user_roles').insert({
-        user_id: targetUser.user_id,
+      const { error } = await supabase.from('user_roles').insert({
+        user_id: selectedUserId,
         role: newUserRole
       }).select();
-      
-      console.log('✅ Insert result:', { error, data });
-      
-      if (error) {
-        console.error('❌ Supabase error:', error);
-        throw error;
-      }
+
+      if (error) throw error;
 
       toast({
         title: "Success",
         description: `Role ${newUserRole} added successfully`
       });
 
-      setNewUserEmail('');
+      setSelectedUserId('');
       setNewUserRole('user');
       await loadUserRoles();
     } catch (error: any) {
       console.error('Error adding user role:', error);
       toast({
         title: "Error adding role",
+        description: error.message || "Please try again later.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateUserRole = async (roleId: string, newRole: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase.from('user_roles').update({ role: newRole }).eq('id', roleId);
+      if (error) throw error;
+      await loadUserRoles();
+      toast({
+        title: "Success",
+        description: "Role updated"
+      });
+    } catch (error: any) {
+      console.error('Error updating role:', error);
+      toast({
+        title: "Error updating role",
         description: error.message || "Please try again later.",
         variant: "destructive"
       });
@@ -242,19 +219,25 @@ export const UserRoleManager: React.FC = () => {
             User Role Management
           </CardTitle>
           <CardDescription>
-            Manage user roles and permissions. Users must sign up before roles can be assigned.
-            {allUsers.length > 0 && (
-              <div className="mt-2 text-sm">
-                Available users: {allUsers.map(u => u.email).join(', ')}
-              </div>
-            )}
+            Manage user roles and permissions. Select a user and role to add, or change role in the table.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4 items-end">
-            <div className="flex-1">
-              <label className="text-sm font-medium">User Email</label>
-              <Input value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="user@example.com" type="email" />
+            <div className="flex-1 min-w-0">
+              <label className="text-sm font-medium">User</label>
+              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allUsers.map(u => (
+                    <SelectItem key={u.user_id} value={u.user_id}>
+                      {u.email || u.display_name || u.full_name || u.nickname || u.user_id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="w-48">
               <label className="text-sm font-medium">Role</label>
@@ -269,13 +252,11 @@ export const UserRoleManager: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Button 
+            <Button
               type="button"
-              onClick={() => {
-                console.log('🔘 Button clicked!');
-                addUserRole();
-              }} 
+              onClick={addUserRole}
               className="flex items-center gap-2"
+              disabled={!selectedUserId}
             >
               <Plus className="w-4 h-4" />
               Add Role
@@ -298,9 +279,28 @@ export const UserRoleManager: React.FC = () => {
                       {userRole.profiles?.full_name || userRole.profiles?.nickname || 'Unknown User'}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getRoleBadgeVariant(userRole.role)}>
-                        {userRole.role}
-                      </Badge>
+                      <Select
+                        value={userRole.role}
+                        onValueChange={(v) => {
+                          if (userRole.id) {
+                            updateUserRole(userRole.id, v);
+                          } else {
+                            supabase.from('user_roles').insert({ user_id: userRole.user_id, role: v }).then(({ error }) => {
+                              if (error) toast({ title: "Error adding role", description: error.message, variant: "destructive" });
+                              else loadUserRoles();
+                            });
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-[140px] h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="project_owner">Project Owner</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell>
                       {userRole.id ? new Date(userRole.created_at).toLocaleDateString() : '—'}
