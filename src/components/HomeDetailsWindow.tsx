@@ -95,6 +95,7 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
   const [uploading, setUploading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [fullScreenPhoto, setFullScreenPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && home && user) {
@@ -368,9 +369,14 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
       <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
         <DialogHeader className="px-4 md:px-6 py-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg md:text-xl font-bold">
-              {home.name}{home.is_primary ? ' (Primary)' : ''}
-            </DialogTitle>
+            <div>
+              <DialogTitle className="text-lg md:text-xl font-bold">
+                Manage Home
+              </DialogTitle>
+              <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+                {home.name}{home.is_primary ? ' (Primary)' : ''}
+              </p>
+            </div>
             <Button 
               variant="outline" 
               size="sm" 
@@ -542,7 +548,8 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
                         <img
                           src={photo}
                           alt={`Home photo ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg"
+                          className="w-full h-32 object-cover rounded-lg cursor-zoom-in"
+                          onClick={() => setFullScreenPhoto(photo)}
                         />
                         <Button
                           variant="destructive"
@@ -744,6 +751,54 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
                                   Mitigation: {mitigation.mitigation_notes}
                                 </p>
                               )}
+                              <div className="mt-3 pt-3 border-t border-border/60 space-y-2">
+                                <p className="text-xs font-semibold text-muted-foreground">
+                                  Your current risk status
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={!isMitigated ? "default" : "outline"}
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => handleRiskMitigation(risk.id, false, mitigation?.mitigation_notes)}
+                                  >
+                                    Still a risk
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={isMitigated ? "default" : "outline"}
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => handleRiskMitigation(risk.id, true, mitigation?.mitigation_notes)}
+                                  >
+                                    Mitigated / none
+                                  </Button>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-[11px] text-muted-foreground">
+                                    Mitigation actions
+                                  </p>
+                                  <Textarea
+                                    defaultValue={mitigation?.mitigation_notes || ''}
+                                    rows={2}
+                                    className="text-sm"
+                                    placeholder='e.g. "Removed all asbestos from home in 2024"'
+                                    onBlur={(e) => {
+                                      const value = e.target.value.trim();
+                                      const nextNotes = value === '' ? undefined : value;
+                                      handleRiskMitigation(
+                                        risk.id,
+                                        mitigation?.is_mitigated ?? isMitigated,
+                                        nextNotes
+                                      );
+                                    }}
+                                  />
+                                  <p className="text-[11px] text-muted-foreground">
+                                    Use your own words to describe the current status of this risk for your home.
+                                  </p>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </CardContent>
@@ -766,6 +821,17 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
           </Card>
         </TabsContent>
       </Tabs>
+      </DialogContent>
+    </Dialog>
+    <Dialog open={!!fullScreenPhoto} onOpenChange={(open) => !open && setFullScreenPhoto(null)}>
+      <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 flex items-center justify-center">
+        {fullScreenPhoto && (
+          <img
+            src={fullScreenPhoto}
+            alt="Home photo full screen"
+            className="max-w-full max-h-[80vh] object-contain"
+          />
+        )}
       </DialogContent>
     </Dialog>
     </>

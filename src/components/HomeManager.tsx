@@ -61,7 +61,6 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
     notes: '',
     is_primary: false
   });
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [selectedHomeForDetails, setSelectedHomeForDetails] = useState<Home | null>(null);
   const [showHomeDetails, setShowHomeDetails] = useState(false);
@@ -107,37 +106,9 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
       setLoading(false);
     }
   };
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setSelectedFiles(Array.from(e.target.files));
-    }
-  };
-  const uploadPhotos = async (homeId: string): Promise<string[]> => {
-    if (selectedFiles.length === 0 || !user) return [];
-    setUploading(true);
-    const uploadedUrls: string[] = [];
-    try {
-      for (const file of selectedFiles) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}/${homeId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const {
-          error: uploadError
-        } = await supabase.storage.from('home-photos').upload(fileName, file);
-        if (uploadError) throw uploadError;
-        const {
-          data: {
-            publicUrl
-          }
-        } = supabase.storage.from('home-photos').getPublicUrl(fileName);
-        uploadedUrls.push(publicUrl);
-      }
-    } catch (error) {
-      console.error('Error uploading photos:', error);
-      toast.error('Failed to upload some photos');
-    } finally {
-      setUploading(false);
-    }
-    return uploadedUrls;
+  const uploadPhotos = async (_homeId: string): Promise<string[]> => {
+    // Photo uploads are managed from the home details screen.
+    return [];
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,26 +154,6 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
         await supabase.from('home_details').insert({ ...detailsPayload, home_id: homeId });
       }
 
-      // Upload photos if any
-      let photoUrls: string[] = [];
-      if (selectedFiles.length > 0 && homeId) {
-        photoUrls = await uploadPhotos(homeId);
-
-        // Update home with photo URLs
-        if (photoUrls.length > 0) {
-          const existingPhotos = (editingHome as any)?.photos || [];
-          const allPhotos = [...existingPhotos, ...photoUrls];
-          const {
-            error: updateError
-          } = await supabase.from('homes').update({
-            photos: allPhotos
-          } as any).eq('id', homeId);
-          if (updateError) {
-            console.error('Error updating photos:', updateError);
-          }
-        }
-      }
-
       // If this is being set as primary, update other homes
       if (formData.is_primary) {
         await supabase.from('homes').update({
@@ -212,7 +163,6 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
       toast.success(editingHome ? 'Home updated successfully' : 'Home added successfully');
       setShowForm(false);
       setEditingHome(null);
-      setSelectedFiles([]);
       setFormData({
         name: '',
         city: '',
@@ -244,7 +194,6 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
       notes: home.notes || '',
       is_primary: home.is_primary
     });
-    setSelectedFiles([]);
     setShowForm(true);
   };
   const handleDelete = async (homeId: string) => {
@@ -541,29 +490,12 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
                 />
               </div>
 
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="photos">Home Photos</Label>
-                <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-4">
-                  <input id="photos" type="file" multiple accept="image/*" onChange={handleFileSelect} className="hidden" />
-                  <Button type="button" variant="outline" onClick={() => document.getElementById('photos')?.click()} className="w-full">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Choose Photos ({selectedFiles.length} selected)
-                  </Button>
-                  {selectedFiles.length > 0 && <div className="mt-2 text-sm text-muted-foreground">
-                      {selectedFiles.map((file, index) => <div key={index} className="flex items-center gap-2">
-                          <Image className="w-4 h-4" />
-                          {file.name}
-                        </div>)}
-                    </div>}
-                </div>
-              </div>
             </div>
 
             <div className="flex gap-2 justify-end mt-6">
               <Button type="button" variant="outline" onClick={() => {
             setShowForm(false);
             setEditingHome(null);
-            setSelectedFiles([]);
           }}>
                 Cancel
               </Button>
