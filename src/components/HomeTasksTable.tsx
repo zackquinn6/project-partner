@@ -286,20 +286,20 @@ export function HomeTasksTable({
 
   return <div className="space-y-3 flex flex-col h-full">
       {/* Desktop filters and controls */}
-      <div className="hidden md:flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between pt-3">
-        <div className="flex flex-wrap gap-2 flex-1 items-center">
-          {onAddTask && (
-            <Button
-              onClick={onAddTask}
-              size="sm"
-              variant="outline"
-              className="h-8 min-h-8 py-1.5 px-2.5 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-blue-600 md:bg-blue-600 md:text-white md:hover:bg-blue-700 md:hover:border-blue-700 rounded-md flex items-center justify-center gap-1.5"
-              title="Add Task"
-            >
-              <Plus className="h-4 w-4 shrink-0 text-blue-600 md:text-primary" strokeWidth={2.5} aria-hidden />
-              <span className="hidden sm:inline">Add Task</span>
-            </Button>
-          )}
+      <div className="hidden md:flex flex-row gap-4 items-center pt-3">
+        {onAddTask && (
+          <Button
+            onClick={onAddTask}
+            size="sm"
+            variant="outline"
+            className="h-8 min-h-8 py-1.5 px-2.5 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-blue-600 md:bg-blue-600 md:text-white md:hover:bg-blue-700 md:hover:border-blue-700 rounded-md flex items-center justify-center gap-1.5"
+            title="Add Task"
+          >
+            <Plus className="h-4 w-4 shrink-0 text-blue-600 md:text-primary" strokeWidth={2.5} aria-hidden />
+            <span className="hidden sm:inline">Add Task</span>
+          </Button>
+        )}
+        <div className="flex flex-wrap gap-2 flex-1 items-center min-w-0">
           <Input placeholder="Search tasks..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="max-w-xs text-xs h-8" />
           <Select value={filterPriority} onValueChange={setFilterPriority}>
             <SelectTrigger className="w-20 sm:w-28 text-xs h-8">
@@ -330,12 +330,12 @@ export function HomeTasksTable({
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-1 mr-3">
+          <div className="flex items-center gap-2 ml-auto border border-input rounded-lg px-3 py-1.5 bg-background">
             <Checkbox 
               id="show-completed" 
               checked={showCompleted}
               onCheckedChange={(checked) => setShowCompleted(checked as boolean)}
-              className="h-3 w-3"
+              className="h-5 w-5 rounded-full border-2"
             />
             <label htmlFor="show-completed" className="text-sm cursor-pointer whitespace-nowrap">
               Show completed

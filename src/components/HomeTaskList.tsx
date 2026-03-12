@@ -627,7 +627,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                             {completedTasks.length}
                           </span>
                         </div>
-                        <div className="hidden md:grid gap-3" style={{ gridTemplateColumns: '0.81fr 0.81fr 1.38fr' }}>
+                        <div className="hidden md:grid gap-3 items-stretch" style={{ gridTemplateColumns: '0.2fr 0.2fr 2.6fr' }}>
                           <Card className="min-w-0 border-border/60 shadow-sm">
                             <CardContent className="p-2 py-1.5">
                               <div className="flex items-baseline justify-between gap-2">
@@ -644,10 +644,10 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                               </div>
                             </CardContent>
                           </Card>
-                          <div className="min-w-0">
-                            <Accordion type="single" collapsible>
-                              <AccordionItem value="other-metrics" className="border rounded-lg bg-background/80 shadow-sm">
-                                <AccordionTrigger className="px-2 py-1 min-h-0 text-xs hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                          <div className="min-w-0 flex">
+                            <Accordion type="single" collapsible className="w-full flex flex-col flex-1 min-h-0">
+                              <AccordionItem value="other-metrics" className="border rounded-lg bg-background/80 shadow-sm flex-1 flex flex-col min-h-0">
+                                <AccordionTrigger className="flex-1 min-h-[2.75rem] px-2 py-1 text-xs hover:no-underline [&[data-state=open]>svg]:rotate-180 flex items-center">
                                   View metrics
                                 </AccordionTrigger>
                                 <AccordionContent className="px-4 pb-4">
