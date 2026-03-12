@@ -75,7 +75,6 @@ export function HomeTaskProjectLink({
       .in("publish_status", ["published", "beta-testing"])
       .neq("name", "Manual Project Template")
       .neq("id", "00000000-0000-0000-0000-000000000001")
-      .or("is_standard.eq.false,is_standard.is.null")
       .order("name");
     
     if (!error && data) {
@@ -155,7 +154,7 @@ export function HomeTaskProjectLink({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-5xl max-h-[90vh] min-h-[60vh] overflow-hidden flex flex-col w-[95vw]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Link2 className="h-4 w-4" />
