@@ -969,23 +969,32 @@ export function UnifiedProjectManagement({
     try {
       console.log('🔄 Starting reset revisions for project:', selectedProject.id, selectedProject.name);
       
-      // Get all revisions for this project family
-      const parentId = selectedProject.parent_project_id || selectedProject.id;
-      console.log('🔍 Looking for revisions with parent_id:', parentId);
+      // Prefer using in-memory projectRevisions when available, since UI is already based on it
+      let allRevisions: Project[] | null = null;
       
-      // Query all revisions that match parent or are the parent itself
-      const { data: allRevisions, error: fetchError } = await supabase
-        .from('projects')
-        .select('*')
-        .or(`parent_project_id.eq.${parentId},id.eq.${parentId}`)
-        .order('revision_number', { ascending: false });
+      if (projectRevisions && projectRevisions.length > 0) {
+        console.log('📦 Using in-memory projectRevisions for reset:', projectRevisions.length);
+        allRevisions = projectRevisions;
+      } else {
+        // Fallback: query all revisions for this project family from the database
+        const parentId = selectedProject.parent_project_id || selectedProject.id;
+        console.log('🔍 Looking for revisions with parent_id (db fallback):', parentId);
+        
+        const { data, error: fetchError } = await supabase
+          .from('projects')
+          .select('*')
+          .or(`parent_project_id.eq.${parentId},id.eq.${parentId}`)
+          .order('revision_number', { ascending: false });
 
-      if (fetchError) {
-        console.error('❌ Error fetching revisions:', fetchError);
-        throw fetchError;
+        if (fetchError) {
+          console.error('❌ Error fetching revisions:', fetchError);
+          throw fetchError;
+        }
+
+        allRevisions = (data || []) as Project[];
       }
 
-      console.log('📋 Found revisions:', allRevisions?.length || 0, allRevisions);
+      console.log('📋 Found revisions to reset:', allRevisions?.length || 0, allRevisions);
 
       if (!allRevisions || allRevisions.length === 0) {
         toast.dismiss(loadingToast);
@@ -1243,7 +1252,6 @@ export function UnifiedProjectManagement({
         revision_number: 1,
         parent_project_id: null,
         publish_status: 'draft',
-        is_current_version: true,
         revision_notes: null,
         // Removed fields that don't exist in projects table:
         // published_at, beta_released_at, archived_at, created_from_revision, release_notes
@@ -2602,6 +2610,9 @@ export function UnifiedProjectManagement({
               <AlertTriangle className="w-5 h-5 text-destructive" />
               Reset Revisions
             </DialogTitle>
+            <DialogDescription>
+              This will collapse this project&apos;s revision history down to a single draft version while preserving the latest content.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
