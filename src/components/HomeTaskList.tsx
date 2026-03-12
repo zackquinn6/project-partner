@@ -46,6 +46,14 @@ interface Home {
   name: string;
 }
 
+/** Format decimal hours as "h:mm" for duration display (no seconds). */
+function decimalHoursToHhMm(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return "";
+  const h = Math.floor(value);
+  const m = Math.round((value - h) * 60);
+  return `${h}:${m.toString().padStart(2, "0")}`;
+}
+
 export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { user } = useAuth();
   const { canAccessPaidFeatures } = useMembership();
@@ -185,9 +193,10 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
     let estimatedHoursValue: number | null = null;
     if (!hasSubtasks && formData.estimated_hours.trim().length > 0) {
-      const [hh, mm] = formData.estimated_hours.split(':');
-      const hours = Number(hh ?? '0');
-      const minutes = Number(mm ?? '0');
+      const trimmed = formData.estimated_hours.trim();
+      const [hh, mm = "0"] = trimmed.split(':');
+      const hours = Number(hh ?? "0");
+      const minutes = Number(mm ?? "0");
       if (!Number.isNaN(hours) && !Number.isNaN(minutes)) {
         estimatedHoursValue = hours + minutes / 60;
       }
@@ -349,7 +358,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       notes: task.notes || "",
       due_date: task.due_date || "",
       task_type: task.task_type === 'general' || task.task_type === 'pre_sale' ? 'diy' : task.task_type as 'diy' | 'contractor',
-      estimated_hours: task.estimated_hours == null ? "" : String(task.estimated_hours),
+      estimated_hours: task.estimated_hours == null ? "" : decimalHoursToHhMm(task.estimated_hours),
     });
     
     // Fetch existing subtasks
@@ -499,9 +508,9 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
           <div className="flex-1 overflow-hidden flex flex-col">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <div className="flex-shrink-0 px-2 md:px-4 pt-1 pb-1.5 md:pt-2.5 md:pb-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="flex-shrink-0 px-2 md:px-4 pt-0.5 pb-1 md:pt-1.5 md:pb-1.5 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="overflow-hidden">
-                  <TabsList className={`w-full inline-flex ${canAccessPaidFeatures ? 'h-8 md:h-9' : 'h-8 md:h-9'} p-0.5 md:p-0.5 gap-0.5 md:gap-1 bg-muted/50 rounded-full`}>
+                  <TabsList className={`w-full inline-flex ${canAccessPaidFeatures ? 'h-8 md:h-9' : 'h-8 md:h-9'} p-0.5 gap-0.5 md:gap-1 bg-muted/50 rounded-full`}>
                     <TabsTrigger value="tasks" className="text-[11px] md:text-xs px-2 md:px-3 py-1.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0 truncate">
                       Tasks
                     </TabsTrigger>
@@ -594,20 +603,20 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                             {completedTasks.length}
                           </span>
                         </div>
-                        <div className="hidden md:grid gap-3" style={{ gridTemplateColumns: '0.9fr 0.9fr 1.2fr' }}>
+                        <div className="hidden md:grid gap-3" style={{ gridTemplateColumns: '0.81fr 0.81fr 1.38fr' }}>
                           <Card className="min-w-0 border-border/60 shadow-sm">
-                            <CardContent className="p-4">
+                            <CardContent className="p-2 py-1.5">
                               <div className="flex items-baseline justify-between gap-2">
                                 <span className="text-xs text-muted-foreground">Total open</span>
-                                <span className="text-2xl font-bold leading-tight">{openTasks.length}</span>
+                                <span className="text-xl font-bold leading-tight">{openTasks.length}</span>
                               </div>
                             </CardContent>
                           </Card>
                           <Card className="min-w-0 border-border/60 shadow-sm">
-                            <CardContent className="p-4">
+                            <CardContent className="p-2 py-1.5">
                               <div className="flex items-baseline justify-between gap-2">
                                 <span className="text-xs text-muted-foreground">Total Completed</span>
-                                <span className="text-2xl font-bold leading-tight">{completedTasks.length}</span>
+                                <span className="text-xl font-bold leading-tight">{completedTasks.length}</span>
                               </div>
                             </CardContent>
                           </Card>
@@ -768,18 +777,19 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                           </div>
 
                           <div>
-                            <label className="text-xs font-medium mb-1 block">Estimated time (hh:mm)</label>
+                            <label className="text-xs font-medium mb-1 block">Estimated duration (hours:minutes)</label>
                             {subtasks.length > 0 ? (
                               <div className="text-xs text-muted-foreground h-8 flex items-center">
                                 N/A (using sub-task hours)
                               </div>
                             ) : (
                               <Input
-                                type="time"
-                                step={900}
+                                type="text"
+                                placeholder="0:00"
                                 value={formData.estimated_hours}
                                 onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
                                 className="text-xs h-8"
+                                aria-label="Duration in hours and minutes, e.g. 1:30"
                               />
                             )}
                           </div>
