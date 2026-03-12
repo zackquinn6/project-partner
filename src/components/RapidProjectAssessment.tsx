@@ -619,37 +619,41 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
                             value={item.item}
                             onChange={(e) => updateLineItem(item.id, 'item', e.target.value)}
                             placeholder="Material name"
-                            className="text-xs border-0 p-1 h-7"
+                            className="text-xs border-0 p-1 h-7 min-w-0"
+                            autoComplete="off"
                           />
                         </TableCell>
                         <TableCell>
                           <Input
                             type="number"
-                            value={item.lowCost}
-                            onChange={(e) => updateLineItem(item.id, 'lowCost', parseFloat(e.target.value) || 0)}
-                            className="text-xs border-0 p-1 h-7"
-                            min="0"
-                            step="0.01"
+                            value={item.lowCost === 0 ? '' : item.lowCost}
+                            onChange={(e) => updateLineItem(item.id, 'lowCost', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+                            placeholder="0"
+                            className="text-xs border-0 p-1 h-7 min-w-0"
+                            min={0}
+                            step={0.01}
                           />
                         </TableCell>
                         <TableCell>
                           <Input
                             type="number"
-                            value={item.highCost}
-                            onChange={(e) => updateLineItem(item.id, 'highCost', parseFloat(e.target.value) || 0)}
-                            className="text-xs border-0 p-1 h-7"
-                            min="0"
-                            step="0.01"
+                            value={item.highCost === 0 ? '' : item.highCost}
+                            onChange={(e) => updateLineItem(item.id, 'highCost', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+                            placeholder="0"
+                            className="text-xs border-0 p-1 h-7 min-w-0"
+                            min={0}
+                            step={0.01}
                           />
                         </TableCell>
                         <TableCell>
                           <Input
                             type="number"
-                            value={item.units}
-                            onChange={(e) => updateLineItem(item.id, 'units', parseFloat(e.target.value) || 1)}
-                            className="text-xs border-0 p-1 h-7"
-                            min="0.1"
-                            step="0.1"
+                            value={item.units === 0 ? '' : item.units}
+                            onChange={(e) => updateLineItem(item.id, 'units', e.target.value === '' ? 1 : parseFloat(e.target.value) || 1)}
+                            placeholder="1"
+                            className="text-xs border-0 p-1 h-7 min-w-0"
+                            min={0.1}
+                            step={0.1}
                           />
                         </TableCell>
                         <TableCell className="text-xs font-mono">
@@ -715,37 +719,41 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
                             value={item.item}
                             onChange={(e) => updateLineItem(item.id, 'item', e.target.value)}
                             placeholder="Labor description"
-                            className="text-xs border-0 p-1 h-7"
+                            className="text-xs border-0 p-1 h-7 min-w-0"
+                            autoComplete="off"
                           />
                         </TableCell>
                         <TableCell>
                           <Input
                             type="number"
-                            value={item.lowCost}
-                            onChange={(e) => updateLineItem(item.id, 'lowCost', parseFloat(e.target.value) || 0)}
-                            className="text-xs border-0 p-1 h-7"
-                            min="0"
-                            step="0.01"
+                            value={item.lowCost === 0 ? '' : item.lowCost}
+                            onChange={(e) => updateLineItem(item.id, 'lowCost', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+                            placeholder="0"
+                            className="text-xs border-0 p-1 h-7 min-w-0"
+                            min={0}
+                            step={0.01}
                           />
                         </TableCell>
                         <TableCell>
                           <Input
                             type="number"
-                            value={item.highCost}
-                            onChange={(e) => updateLineItem(item.id, 'highCost', parseFloat(e.target.value) || 0)}
-                            className="text-xs border-0 p-1 h-7"
-                            min="0"
-                            step="0.01"
+                            value={item.highCost === 0 ? '' : item.highCost}
+                            onChange={(e) => updateLineItem(item.id, 'highCost', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+                            placeholder="0"
+                            className="text-xs border-0 p-1 h-7 min-w-0"
+                            min={0}
+                            step={0.01}
                           />
                         </TableCell>
                         <TableCell>
                           <Input
                             type="number"
-                            value={item.units}
-                            onChange={(e) => updateLineItem(item.id, 'units', parseFloat(e.target.value) || 1)}
-                            className="text-xs border-0 p-1 h-7"
-                            min="0.1"
-                            step="0.1"
+                            value={item.units === 0 ? '' : item.units}
+                            onChange={(e) => updateLineItem(item.id, 'units', e.target.value === '' ? 1 : parseFloat(e.target.value) || 1)}
+                            placeholder="1"
+                            className="text-xs border-0 p-1 h-7 min-w-0"
+                            min={0.1}
+                            step={0.1}
                           />
                         </TableCell>
                         <TableCell className="text-xs font-mono">

@@ -247,10 +247,11 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
           }
         }
 
-        // Delete existing materials and insert new ones
-        await supabase.from('task_shopping_list').delete().eq('task_id', editingTask.id);
+        // Delete existing materials and insert new ones (skip if task_shopping_list table missing)
+        const { error: deleteMaterialsError } = await supabase.from('task_shopping_list').delete().eq('task_id', editingTask.id);
+        if (deleteMaterialsError && deleteMaterialsError.code !== 'PGRST205') throw deleteMaterialsError;
         
-        if (materials.length > 0) {
+        if (materials.length > 0 && deleteMaterialsError?.code !== 'PGRST205') {
           const materialsToInsert = materials.filter(m => m.material_name.trim()).map(m => ({
             task_id: editingTask.id,
             user_id: user.id,
@@ -294,7 +295,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
           }
         }
 
-        // Insert materials if any
+        // Insert materials if any (skip if task_shopping_list table missing)
         if (materials.length > 0 && newTask) {
           const materialsToInsert = materials.filter(m => m.material_name.trim()).map(m => ({
             task_id: newTask.id,
@@ -307,7 +308,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
             const { error: materialError } = await supabase
               .from('task_shopping_list')
               .insert(materialsToInsert);
-            if (materialError) throw materialError;
+            if (materialError && materialError.code !== 'PGRST205') throw materialError;
           }
         }
 
