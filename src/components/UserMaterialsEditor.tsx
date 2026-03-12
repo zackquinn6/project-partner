@@ -100,36 +100,15 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
     
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('owned_materials')
+        .from('user_materials')
+        .select('id, material_id, name, description, unit, unit_size, brand, purchase_location, quantity, user_photo_url')
         .eq('user_id', user.id)
-        .single();
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      const rawMaterials = (data?.owned_materials as unknown as UserOwnedMaterial[]) || [];
-      
-      // Fetch unit_size from materials table for owned materials
-      if (rawMaterials.length > 0) {
-        const materialIds = rawMaterials.map(m => m.id);
-        const { data: materialsData } = await supabase
-          .from('materials')
-          .select('id, unit_size')
-          .in('id', materialIds);
-        
-        // Merge unit_size into user materials
-        const enrichedMaterials = rawMaterials.map(userMaterial => {
-          const materialInfo = materialsData?.find(m => m.id === userMaterial.id);
-          return {
-            ...userMaterial,
-            unit_size: materialInfo?.unit_size || userMaterial.unit_size
-          };
-        });
-        
-        setUserMaterials(enrichedMaterials);
-      } else {
-        setUserMaterials(rawMaterials);
-      }
+      const rawMaterials = (data as UserOwnedMaterial[]) || [];
+      setUserMaterials(rawMaterials);
     } catch (error) {
       console.error('Error fetching user materials:', error);
     }
@@ -173,14 +152,36 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
   };
 
   const addMaterial = (material: Material) => {
-    const newUserMaterial: UserOwnedMaterial = {
-      ...material,
-      quantity: 1,
-      brand: '',
-      user_photo_url: '',
-      purchase_location: ''
+    if (!user) return;
+
+    const insertMaterial = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_materials')
+          .insert({
+            user_id: user.id,
+            material_id: material.id,
+            name: material.name,
+            description: material.description,
+            unit: material.unit,
+            unit_size: material.unit_size,
+            brand: '',
+            purchase_location: '',
+            quantity: 1
+          })
+          .select('id, material_id, name, description, unit, unit_size, brand, purchase_location, quantity, user_photo_url')
+          .single();
+
+        if (error) throw error;
+
+        const newUserMaterial = data as UserOwnedMaterial;
+        setUserMaterials([...userMaterials, newUserMaterial]);
+      } catch (error) {
+        console.error('Error inserting user material:', error);
+      }
     };
-    setUserMaterials([...userMaterials, newUserMaterial]);
+
+    void insertMaterial();
   };
 
   const removeMaterial = (materialId: string) => {
@@ -194,14 +195,27 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
     );
     setUserMaterials(updatedMaterials);
     
-    // Trigger immediate save
+    // Trigger immediate save to user_materials
     if (user) {
+      const updated = updatedMaterials.find(m => m.id === materialId);
+      if (!updated) return;
+
       supabase
-        .from('profiles')
-        .update({ owned_materials: updatedMaterials as any })
+        .from('user_materials')
+        .update({
+          name: updated.name,
+          description: updated.description,
+          unit: updated.unit,
+          unit_size: updated.unit_size,
+          brand: updated.brand,
+          purchase_location: updated.purchase_location,
+          quantity: updated.quantity,
+          user_photo_url: updated.user_photo_url
+        })
+        .eq('id', materialId)
         .eq('user_id', user.id)
         .then(({ error }) => {
-          if (error) console.error('Auto-save failed:', error);
+          if (error) console.error('Auto-save failed (user_materials):', error);
         });
     }
   };
@@ -239,36 +253,13 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
   };
 
   const autoSaveMaterials = useCallback(async () => {
-    if (!user || userMaterials.length === 0) return;
-    
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ owned_materials: userMaterials as any })
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error auto-saving materials:', error);
-    }
+    // Per-change updates go directly to user_materials; no bulk auto-save needed
+    return;
   }, [user, userMaterials]);
 
   const saveMaterials = async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ owned_materials: userMaterials as any })
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error saving materials:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    // Kept for UI compatibility; changes already saved directly to user_materials
+    return;
   };
 
   if (showAddMaterials) {

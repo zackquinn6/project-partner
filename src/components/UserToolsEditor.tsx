@@ -22,15 +22,14 @@ interface Tool {
 }
 
 interface UserOwnedTool {
-  id: string;
+  id: string;           // user_tools row id
+  tool_id: string;      // core tools.id
   name: string;
   description?: string;
   custom_description?: string;
-  photo_url?: string;
   quantity: number;
   model_name?: string;
   user_photo_url?: string;
-  item?: string;
 }
 
 interface UserToolsEditorProps {
@@ -121,23 +120,23 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
     if (!user) return;
     
     try {
-      console.log('🔧 UserToolsEditor - Fetching tools for user:', {
+      console.log('🔧 UserToolsEditor - Fetching tools for user (user_tools):', {
         userId: user.id,
         userEmail: user.email
       });
       
       const { data, error } = await supabase
-        .from('profiles')
-        .select('owned_tools')
+        .from('user_tools')
+        .select('id, tool_id, name, description, model_name, quantity, user_photo_url')
         .eq('user_id', user.id)
-        .single();
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      const tools = (data?.owned_tools as unknown as UserOwnedTool[]) || [];
-      console.log('✅ UserToolsEditor - Fetched tools:', {
+      const tools = (data as UserOwnedTool[]) || [];
+      console.log('✅ UserToolsEditor - Fetched tools from user_tools:', {
         count: tools.length,
-        toolNames: tools.slice(0, 5).map(t => t.name || t.item)
+        toolNames: tools.slice(0, 5).map(t => t.name)
       });
       
       setUserTools(tools);
@@ -290,38 +289,39 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
   };
 
   const addToolAsync = async (tool: Tool) => {
-    const newUserTool: UserOwnedTool = {
-      ...tool,
-      quantity: 1,
-      model_name: '',
-      user_photo_url: ''
-    };
-    const updatedTools = [...userTools, newUserTool];
-    setUserTools(updatedTools);
-    
-    // Save to database immediately in background
-    if (user) {
-      try {
-        console.log('💾 UserToolsEditor - Saving tool to database:', {
-          userId: user.id,
-          toolName: tool.name || tool.item,
-          totalTools: updatedTools.length
-        });
-        
-        const { error } = await supabase
-          .from('profiles')
-          .update({ owned_tools: updatedTools as any })
-          .eq('user_id', user.id);
-        
-        if (error) {
-          console.error('❌ Failed to save tool:', error);
-        } else {
-          console.log('✅ Tool saved successfully for user:', user.id);
-          window.dispatchEvent(new CustomEvent('tools-library-updated'));
-        }
-      } catch (error) {
-        console.error('❌ Error saving tool:', error);
+    if (!user) return;
+
+    try {
+      console.log('💾 UserToolsEditor - Inserting tool into user_tools:', {
+        userId: user.id,
+        toolId: tool.id,
+        toolName: tool.name || tool.item
+      });
+
+      const { data, error } = await supabase
+        .from('user_tools')
+        .insert({
+          user_id: user.id,
+          tool_id: tool.id,
+          name: tool.name || tool.item || '',
+          description: tool.description,
+          model_name: '',
+          quantity: 1
+        })
+        .select('id, tool_id, name, description, model_name, quantity, user_photo_url')
+        .single();
+
+      if (error) {
+        console.error('❌ Failed to save tool to user_tools:', error);
+        return;
       }
+
+      const newUserTool = data as UserOwnedTool;
+      const updatedTools = [...userTools, newUserTool];
+      setUserTools(updatedTools);
+      window.dispatchEvent(new CustomEvent('tools-library-updated'));
+    } catch (error) {
+      console.error('❌ Error saving tool to user_tools:', error);
     }
   };
 
