@@ -92,9 +92,9 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
       }));
       setVariations(processedVariations);
 
-      // Fetch tool models for these variations
+      // Fetch tool models for these variations (only when not in selection mode)
       const variationIds = processedVariations.map(v => v.id);
-      if (variationIds.length > 0) {
+      if (variationIds.length > 0 && !onVariationSelect) {
         const { data: modelsData, error: modelsError } = await supabase
           .from('tools')
           .select('*')
