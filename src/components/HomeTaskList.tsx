@@ -457,15 +457,15 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         }}
       >
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-          <DialogHeader className="px-2 md:px-4 py-2 md:py-2.5 border-b flex-shrink-0 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900/95 text-slate-50">
+          <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2.5 border-b flex-shrink-0 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900/95 text-slate-50">
             <div className="flex items-center justify-between gap-2">
-              <DialogTitle className="text-sm md:text-base font-semibold tracking-tight flex items-center gap-2">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 border border-amber-400/40 text-amber-300">
-                  <List className="h-3.5 w-3.5" />
+              <DialogTitle className="text-xs md:text-base font-semibold tracking-tight flex items-center gap-1.5 md:gap-2">
+                <span className="inline-flex h-6 w-6 md:h-7 md:w-7 items-center justify-center rounded-lg bg-amber-500/10 border border-amber-400/40 text-amber-300">
+                  <List className="h-3 w-3 md:h-3.5 md:w-3.5" />
                 </span>
                 <div className="flex flex-col items-start leading-tight">
                   <span>Task Manager</span>
-                  <span className="text-[10px] md:text-[11px] font-normal text-slate-300/80">
+                  <span className="hidden md:block text-[11px] font-normal text-slate-300/80">
                     Plan, track, and estimate all your work in one place.
                   </span>
                 </div>
@@ -477,11 +477,11 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 px-2 text-[10px] md:text-[11px] border-slate-600 bg-slate-900/40 hover:bg-slate-800/80 text-slate-100"
+                        className="h-6 md:h-7 px-1.5 md:px-2 text-[10px] md:text-[11px] border-slate-600 bg-slate-900/40 hover:bg-slate-800/80 text-slate-100"
                         onClick={() => setShowHomeManager(true)}
                       >
-                        <HomeIcon className="h-3 w-3 mr-1" />
-                        Homes
+                        <HomeIcon className="h-3 w-3 md:mr-1" />
+                        <span className="hidden md:inline">Homes</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-xs text-xs">
@@ -490,7 +490,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                   </Tooltip>
                 </TooltipProvider>
                 <Select value={selectedHomeId || ""} onValueChange={setSelectedHomeId}>
-                  <SelectTrigger className="w-[110px] md:w-[170px] text-[10px] md:text-xs h-7 bg-slate-900/60 border-slate-700 text-slate-100">
+                  <SelectTrigger className="w-[121px] md:w-[170px] text-[10px] md:text-xs h-6 md:h-7 bg-slate-900/60 border-slate-700 text-slate-100">
                     <SelectValue placeholder="Select home" />
                   </SelectTrigger>
                   <SelectContent>
@@ -506,7 +506,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                   variant="ghost"
                   size="sm"
                   onClick={() => onOpenChange(false)}
-                  className="h-7 px-2 text-[9px] md:text-xs text-slate-200 hover:bg-slate-800/80"
+                  className="h-6 md:h-7 px-1.5 md:px-2 text-[9px] md:text-xs text-slate-200 hover:bg-slate-800/80"
                 >
                   Close
                 </Button>
@@ -516,7 +516,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
           <div className="flex-1 overflow-hidden flex flex-col">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <div className="flex-shrink-0 px-2 md:px-4 pt-2 pb-2.5 md:pt-2.5 md:pb-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="flex-shrink-0 px-2 md:px-4 pt-1 pb-1.5 md:pt-2.5 md:pb-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="overflow-hidden">
                   <TabsList className={`w-full inline-flex ${canAccessPaidFeatures ? 'h-8 md:h-9' : 'h-8 md:h-9'} p-0.5 md:p-0.5 gap-0.5 md:gap-1 bg-muted/50 rounded-full`}>
                     <TabsTrigger value="tasks" className="text-[11px] md:text-xs px-2 md:px-3 py-1.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0 truncate">
@@ -534,8 +534,8 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                 </div>
               </div>
 
-              <div className="flex-1 overflow-auto px-2 md:px-4 pb-2 min-h-0 bg-gradient-to-b from-background to-muted/30">
-                <TabsContent value="tasks" className="mt-0 space-y-2 md:space-y-3 h-full">
+              <div className="flex-1 overflow-auto px-2 md:px-4 pt-1 md:pt-0 pb-2 min-h-0 bg-gradient-to-b from-background to-muted/30">
+                <TabsContent value="tasks" className="mt-0 space-y-1 md:space-y-3 h-full">
                   {/* Project Dashboard metrics (Task Manager) */}
                   {(() => {
                     const now = new Date();
@@ -600,21 +600,31 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
                     return (
                       <div className="space-y-3">
-                        {/* Key metrics row */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          <Card className="md:col-span-1 border-border/60 shadow-sm">
+                        {/* Key metrics: mobile = single row with open + complete; desktop = cards */}
+                        <div className="flex md:hidden items-center gap-3 text-[11px]">
+                          <span className="flex items-center gap-1.5 font-medium text-emerald-700 dark:text-emerald-400">
+                            <span className="text-muted-foreground font-normal">Open</span>
+                            {openTasks.length}
+                          </span>
+                          <span className="flex items-center gap-1.5 font-medium text-slate-600 dark:text-slate-400">
+                            <span className="text-muted-foreground font-normal">Done</span>
+                            {completedTasks.length}
+                          </span>
+                        </div>
+                        <div className="hidden md:grid grid-cols-3 gap-3">
+                          <Card className="col-span-1 border-border/60 shadow-sm">
                             <CardContent className="p-4">
                               <div className="text-xs text-muted-foreground">Total open</div>
                               <div className="text-3xl font-bold leading-tight">{openTasks.length}</div>
                             </CardContent>
                           </Card>
-                          <Card className="md:col-span-1 border-border/60 shadow-sm">
+                          <Card className="col-span-1 border-border/60 shadow-sm">
                             <CardContent className="p-4">
                               <div className="text-xs text-muted-foreground">Total complete (all time)</div>
                               <div className="text-3xl font-bold leading-tight">{completedTasks.length}</div>
                             </CardContent>
                           </Card>
-                          <div className="md:col-span-1">
+                          <div className="col-span-1">
                             <Accordion type="single" collapsible>
                               <AccordionItem value="other-metrics" className="border rounded-lg bg-background/80 shadow-sm">
                                 <AccordionTrigger className="px-4 py-3 text-sm">

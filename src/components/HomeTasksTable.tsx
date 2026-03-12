@@ -66,6 +66,23 @@ export function HomeTasksTable({
   const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>({});
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showCompleted, setShowCompleted] = useState(false);
+  const [swipedTaskId, setSwipedTaskId] = useState<string | null>(null);
+  const [touchStartX, setTouchStartX] = useState(0);
+  const [touchEndX, setTouchEndX] = useState(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEndX(0);
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+  const handleTouchEnd = (taskId: string) => {
+    if (!touchStartX || !touchEndX) return;
+    const delta = touchStartX - touchEndX;
+    if (delta > 50) setSwipedTaskId(taskId);
+    else if (delta < -30) setSwipedTaskId(null);
+  };
 
   useEffect(() => {
     fetchProjectStatuses();
@@ -394,38 +411,48 @@ export function HomeTasksTable({
             <TableHeader className="sticky top-0 bg-slate-900 text-slate-50 z-10">
               <TableRow>
                 {!isMobile && <TableHead className="w-8 text-xs"></TableHead>}
-                <TableHead className="min-w-[281px] md:w-[281px] text-xs">
+                <TableHead className="min-w-[200px] md:min-w-[281px] md:w-[281px] text-xs">
                   <Button variant="ghost" size="sm" onClick={() => handleSort('title')} className="h-6 px-2 text-xs font-medium">
                     Task <SortIcon field="title" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[180px] text-xs">Notes</TableHead>
+                {!isMobile && <TableHead className="w-[180px] text-xs">Notes</TableHead>}
                 <TableHead className="w-24 md:w-20 text-xs">
                   <Button variant="ghost" size="sm" onClick={() => handleSort('priority')} className="h-6 px-2 text-xs font-medium">
                     Priority <SortIcon field="priority" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-24 md:w-20 text-xs">
-                  <Button variant="ghost" size="sm" onClick={() => handleSort('diy_level')} className="h-6 px-2 text-xs font-medium">
-                    DIY Level <SortIcon field="diy_level" />
-                  </Button>
-                </TableHead>
+                {!isMobile && (
+                  <TableHead className="w-24 md:w-20 text-xs">
+                    <Button variant="ghost" size="sm" onClick={() => handleSort('diy_level')} className="h-6 px-2 text-xs font-medium">
+                      DIY Level <SortIcon field="diy_level" />
+                    </Button>
+                  </TableHead>
+                )}
                 <TableHead className="w-32 md:w-24 text-xs">
                   <Button variant="ghost" size="sm" onClick={() => handleSort('due_date')} className="h-6 px-2 text-xs font-medium">
                     Due Date <SortIcon field="due_date" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-[150px] text-xs text-right">Actions</TableHead>
+                {!isMobile && <TableHead className="w-[150px] text-xs text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredAndSortedTasks.length === 0 ? <TableRow>
-                  <TableCell colSpan={isMobile ? 6 : 7} className="text-center py-8 text-xs text-muted-foreground">
+                  <TableCell colSpan={isMobile ? 3 : 7} className="text-center py-8 text-xs text-muted-foreground">
                     No tasks found. Add your first task to get started!
                   </TableCell>
                 </TableRow> : filteredAndSortedTasks.map(task => (
                   <>
-                    <TableRow key={task.id} className={task.status === 'closed' ? 'opacity-60' : ''}>
+                    <TableRow
+                      key={task.id}
+                      className={task.status === 'closed' ? 'opacity-60' : ''}
+                      {...(isMobile ? {
+                        onTouchStart: handleTouchStart,
+                        onTouchMove: handleTouchMove,
+                        onTouchEnd: () => handleTouchEnd(task.id),
+                      } : {})}
+                    >
                       {!isMobile && (
                         <TableCell className="w-8">
                           <button
@@ -438,13 +465,18 @@ export function HomeTasksTable({
                         </TableCell>
                       )}
                      <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span 
                           className={`text-xs font-medium cursor-pointer ${task.status === 'closed' ? 'line-through text-muted-foreground' : ''}`}
                           onClick={() => handleToggleTaskComplete(task.id, task.status)}
                         >
                           {task.status === 'closed' ? '✓ ' : ''}{task.title}
                         </span>
+                        {isMobile && (
+                          <Badge variant={getDiyLevelColor(task.diy_level)} className="text-[10px] px-1.5 py-0 shrink-0">
+                            {task.diy_level === 'beginner' ? 'new' : task.diy_level === 'intermediate' ? 'mid' : task.diy_level === 'advanced' ? 'adv' : 'pro'}
+                          </Badge>
+                        )}
                         {subtasks[task.id]?.length > 0 && (
                           <Button
                             variant="ghost"
@@ -461,70 +493,92 @@ export function HomeTasksTable({
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-xs truncate max-w-[180px]" title={task.notes || ''}>
-                      {task.notes || '-'}
-                    </TableCell>
+                    {!isMobile && (
+                      <TableCell className="text-xs truncate max-w-[180px]" title={task.notes || ''}>
+                        {task.notes || '-'}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Badge variant={getPriorityColor(task.priority)} className="text-[10px] px-1.5 py-0">
                         {task.priority === 'medium' ? 'med' : task.priority}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={getDiyLevelColor(task.diy_level)} className="text-[10px] px-1.5 py-0">
-                        {task.diy_level === 'beginner' ? 'new' : 
-                         task.diy_level === 'intermediate' ? 'mid' : 
-                         task.diy_level === 'advanced' ? 'adv' : 'pro'}
-                      </Badge>
-                    </TableCell>
+                    {!isMobile && (
+                      <TableCell>
+                        <Badge variant={getDiyLevelColor(task.diy_level)} className="text-[10px] px-1.5 py-0">
+                          {task.diy_level === 'beginner' ? 'new' : 
+                           task.diy_level === 'intermediate' ? 'mid' : 
+                           task.diy_level === 'advanced' ? 'adv' : 'pro'}
+                        </Badge>
+                      </TableCell>
+                    )}
                     <TableCell className="text-xs">
                       {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-1 justify-end">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => onRapidCosting(task)} 
-                          className="h-7 px-2"
-                          title="Cost Assessment"
-                        >
-                          <span className="text-xs">$</span>
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => onLinkProject(task)} 
-                          className="h-7 px-2"
-                          title={task.project_run_id ? "Linked to project" : "Link to project"}
-                        >
-                          <Link2 className="h-3 w-3" />
-                        </Button>
-                        {task.project_run_id && (
+                    {!isMobile && (
+                      <TableCell className="text-right">
+                        <div className="flex gap-1 justify-end">
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            onClick={() => {
-                              onProjectNavigate?.();
-                              navigate('/', { state: { view: 'user', projectRunId: task.project_run_id } });
-                            }} 
+                            onClick={() => onRapidCosting(task)} 
                             className="h-7 px-2"
-                            title="Open linked project"
+                            title="Cost Assessment"
                           >
-                            <ExternalLink className="h-3 w-3" />
+                            <span className="text-xs">$</span>
                           </Button>
-                        )}
-                        <Button variant="ghost" size="sm" onClick={() => onEdit(task)} className="h-7 px-2">
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => onDelete(task.id)} className="h-7 px-2 text-destructive">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => onLinkProject(task)} 
+                            className="h-7 px-2"
+                            title={task.project_run_id ? "Linked to project" : "Link to project"}
+                          >
+                            <Link2 className="h-3 w-3" />
+                          </Button>
+                          {task.project_run_id && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => {
+                                onProjectNavigate?.();
+                                navigate('/', { state: { view: 'user', projectRunId: task.project_run_id } });
+                              }} 
+                              className="h-7 px-2"
+                              title="Open linked project"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="sm" onClick={() => onEdit(task)} className="h-7 px-2">
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => onDelete(task.id)} className="h-7 px-2 text-destructive">
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
+                  {isMobile && swipedTaskId === task.id && (
+                    <TableRow key={`${task.id}-swipe-actions`} className="bg-muted/50">
+                      <TableCell colSpan={3} className="py-2">
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => { onEdit(task); setSwipedTaskId(null); }}>
+                            <Pencil className="h-3.5 w-3.5 mr-1" />
+                            Edit
+                          </Button>
+                          <Button variant="outline" size="sm" className="h-8 text-xs text-destructive border-destructive/50 hover:bg-destructive/10" onClick={() => { onDelete(task.id); setSwipedTaskId(null); }}>
+                            <Trash2 className="h-3.5 w-3.5 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
                    {expandedRows.has(task.id) && subtasks[task.id]?.length > 0 && (
                     <TableRow key={`${task.id}-subtasks`}>
-                      <TableCell colSpan={isMobile ? 6 : 7} className="bg-muted/30 p-3 md:p-4 border-l-4 border-l-primary/20">
+                      <TableCell colSpan={isMobile ? 3 : 7} className="bg-muted/30 p-3 md:p-4 border-l-4 border-l-primary/20">
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <div className="text-sm font-semibold text-primary">Subtasks</div>
