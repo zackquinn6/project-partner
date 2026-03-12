@@ -240,18 +240,31 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     const filteredFromDb = user 
       ? projects.filter(project => {
           const publishStatus = project.publishStatus || (project as any).publish_status;
-          const visibility = (project as any).visibility_status as 'default' | 'coming-soon' | 'hidden' | undefined || 'default';
+          const visibility =
+            (project as any).visibilityStatus ??
+            (project as any).visibility_status ??
+            'default';
 
           const isComingSoon = visibility === 'coming-soon';
           const isHidden = visibility === 'hidden';
           const isPublishVisible = publishStatus === 'published' || publishStatus === 'beta-testing';
+
+          // Visibility always wins: hidden never shows, even in admin mode
           const isValidStatus = (
             !isHidden &&
             (isComingSoon || isPublishVisible || isAdminMode)
           );
+
           const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
-          // Hide standard foundation using is_standard field instead of hardcoded ID
-          const isNotStandardFoundation = !(project as any).is_standard && project.id !== '00000000-0000-0000-0000-000000000001';
+
+          // Extra safety: treat Standard Project Foundation as standard by flag OR by name/ID
+          const isStandardByFlag = !!(project as any).is_standard;
+          const isStandardById = project.id === '00000000-0000-0000-0000-000000000001';
+          const isStandardByName =
+            typeof (project as any).name === 'string' &&
+            (project as any).name.trim().toLowerCase() === 'standard project foundation';
+
+          const isNotStandardFoundation = !(isStandardByFlag || isStandardById || isStandardByName);
           
           // Include if: visible (not hidden) AND (published/beta OR coming-soon OR admin mode) AND not manual template AND not standard foundation
           const shouldInclude = isValidStatus && isNotManualTemplate && isNotStandardFoundation;
@@ -260,7 +273,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             console.log('🚫 Filtered out project:', {
               name: project.name,
               publishStatus,
+              visibility,
               isAdminMode,
+              isHidden,
               isNotManualTemplate,
               isNotStandardFoundation,
               is_standard: (project as any).is_standard
@@ -270,10 +285,23 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           return shouldInclude;
         })
       : publicProjects.filter(project => {
+          const visibility =
+            (project as any).visibilityStatus ??
+            (project as any).visibility_status ??
+            'default';
+
+          const isHidden = visibility === 'hidden';
           const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
-          // Hide standard foundation using is_standard field instead of hardcoded ID
-          const isNotStandardFoundation = !(project as any).is_standard && project.id !== '00000000-0000-0000-0000-000000000001';
-          return isNotManualTemplate && isNotStandardFoundation;
+
+          const isStandardByFlag = !!(project as any).is_standard;
+          const isStandardById = project.id === '00000000-0000-0000-0000-000000000001';
+          const isStandardByName =
+            typeof (project as any).name === 'string' &&
+            (project as any).name.trim().toLowerCase() === 'standard project foundation';
+
+          const isNotStandardFoundation = !(isStandardByFlag || isStandardById || isStandardByName);
+
+          return !isHidden && isNotManualTemplate && isNotStandardFoundation;
         });
 
     let finalProjects = filteredFromDb;

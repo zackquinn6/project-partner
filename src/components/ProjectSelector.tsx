@@ -219,12 +219,33 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
               <SelectContent>
                 {projects
                   .filter(project => {
+                    const visibility =
+                      (project as any).visibilityStatus ??
+                      (project as any).visibility_status ??
+                      'default';
+                    const isHidden = visibility === 'hidden';
+
+                    // Visibility overrides publish status: hidden projects never show in selector
+                    if (isHidden) {
+                      console.log('ProjectSelector filter: hiding hidden project', project.name);
+                      return false;
+                    }
+
                     const shouldInclude = isAdminMode ? true : (project.publishStatus === 'published' || project.publishStatus === 'beta-testing');
                     const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000'; // Hide manual log template
-                    // Hide standard foundation using is_standard field instead of hardcoded ID
-                    const isNotStandardProject = !(project as any).is_standard && project.id !== '00000000-0000-0000-0000-000000000001';
-                    console.log('Project filter:', project.name, 'publishStatus:', project.publishStatus, 'is_standard:', (project as any).is_standard, 'include:', shouldInclude && isNotManualTemplate && isNotStandardProject);
-                    return shouldInclude && isNotManualTemplate && isNotStandardProject;
+
+                    // Extra safety: hide Standard Project Foundation by flag, id, or name
+                    const isStandardByFlag = !!(project as any).is_standard;
+                    const isStandardById = project.id === '00000000-0000-0000-0000-000000000001';
+                    const isStandardByName =
+                      typeof (project as any).name === 'string' &&
+                      (project as any).name.trim().toLowerCase() === 'standard project foundation';
+
+                    const isNotStandardProject = !(isStandardByFlag || isStandardById || isStandardByName);
+
+                    const include = shouldInclude && isNotManualTemplate && isNotStandardProject;
+                    console.log('Project filter:', project.name, 'publishStatus:', project.publishStatus, 'visibility:', visibility, 'is_standard:', (project as any).is_standard, 'include:', include);
+                    return include;
                   })
                   .map((project) => (
                     <SelectItem key={project.id} value={project.id}>
