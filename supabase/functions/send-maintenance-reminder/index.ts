@@ -102,27 +102,48 @@ const handler = async (req: Request): Promise<Response> => {
     let htmlContent = "";
 
     if (validatedData.type === 'test') {
-      subject = "Test - Home Maintenance Reminder";
+      subject = "Test Maintenance Reminder";
       htmlContent = `
-        <h2>Test Maintenance Reminder</h2>
-        <p>Hello ${escapeHtml(validatedData.userName)},</p>
-        
-        <p>This is a test email to confirm your maintenance notification settings are working correctly.</p>
-        
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3>✅ Email notifications are set up and working!</h3>
-          <p>You will receive reminders for:</p>
-          <ul>
-            <li>Tasks due in the upcoming month</li>
-            <li>Tasks due in the upcoming week</li>
-            <li>Tasks due today</li>
-          </ul>
+        <div style="max-width: 640px; margin: 0 auto; padding: 24px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111827; background-color: #000000;">
+          <div style="text-align: left; margin-bottom: 24px;">
+            <img 
+              src="https://ff4d4ef6-43cd-4980-95c7-b7dcb84d3bbf.lovableproject.com/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png" 
+              alt="Project Partner" 
+              style="max-width: 220px; height: auto;"
+            />
+          </div>
+          <div style="background-color: #111827; border-radius: 12px; padding: 24px 20px; border: 1px solid #4B5563;">
+            <h2 style="margin: 0 0 16px; font-size: 22px; line-height: 1.3; color: #F97316;">
+              Test Maintenance Reminder
+            </h2>
+            <p style="margin: 0 0 12px; font-size: 15px; line-height: 1.6; color: #F9FAFB;">
+              Hey ${escapeHtml(validatedData.userName)},
+            </p>
+            <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6; color: #E5E7EB;">
+              Just checking in to make sure your maintenance reminders are alive, well, and officially landing in your inbox.
+            </p>
+            <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6; color: #FBBF24;">
+              ✨ Good news — your email notifications are working perfectly.
+            </p>
+            <p style="margin: 0 0 8px; font-size: 15px; line-height: 1.6; color: #E5E7EB;">
+              You’ll now get heads‑ups for:
+            </p>
+            <ul style="margin: 0 0 16px 18px; padding: 0; color: #F9FAFB; font-size: 14px; line-height: 1.6;">
+              <li>Tasks coming up this month</li>
+              <li>Tasks sneaking up this week</li>
+              <li>Tasks that need love today</li>
+            </ul>
+            <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.6; color: #D1D5DB;">
+              Think of it as your home’s way of saying “thanks for keeping me in shape.”
+            </p>
+            <p style="margin: 0 0 20px; font-size: 15px; line-height: 1.6; color: #E5E7EB;">
+              You’re all set.
+            </p>
+            <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #9CA3AF;">
+              — The Project Partner Team
+            </p>
+          </div>
         </div>
-        
-        <p>Keep your home in great condition!</p>
-        
-        <p>Best regards,<br>
-        <strong>Project Partner Team</strong></p>
       `;
     } else {
       const taskCount = validatedData.tasks?.length || 0;
