@@ -58,12 +58,22 @@ const handler = async (req: Request): Promise<Response> => {
       .maybeSingle();
 
     if (settingsError) throw settingsError;
-    const allowedEmail = (settings?.email_address ?? '').trim().toLowerCase();
-    if (!allowedEmail) throw new Error('No notification email is saved for this account');
-
     const requestedEmail = validatedData.email.trim().toLowerCase();
-    if (requestedEmail !== allowedEmail) {
-      throw new Error('Email mismatch with saved notification settings');
+    const allowedEmail = (settings?.email_address ?? '').trim().toLowerCase();
+    const authEmail = (user.email ?? '').trim().toLowerCase();
+
+    if (allowedEmail) {
+      if (requestedEmail !== allowedEmail) {
+        throw new Error('Email mismatch with saved notification settings');
+      }
+    } else {
+      // Fall back to auth email when no explicit notification email is stored
+      if (!authEmail) {
+        throw new Error('No notification email is saved for this account');
+      }
+      if (requestedEmail !== authEmail) {
+        throw new Error('Email mismatch with saved notification settings');
+      }
     }
 
     console.log("[MaintenanceReminder] Step 1: Validated request", {
