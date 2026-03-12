@@ -11,6 +11,7 @@ import { Plus, Home as HomeIcon, X, GripVertical, List, ListOrdered, ShoppingCar
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { HomeManager } from "./HomeManager";
 import { HomeTasksTable } from "./HomeTasksTable";
 import { HomeTaskPeople } from "./HomeTaskPeople";
@@ -33,8 +34,10 @@ interface HomeTask {
   home_id: string | null;
   task_type: 'general' | 'pre_sale' | 'diy' | 'contractor';
   project_run_id: string | null;
+  estimated_hours?: number | null;
   ordered: boolean;
   created_at: string;
+  updated_at?: string | null;
 }
 
 interface Home {
@@ -79,6 +82,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
     notes: string;
     due_date: string;
     task_type: 'diy' | 'contractor';
+    estimated_hours: string;
   }>({
     title: "",
     priority: "medium",
@@ -87,7 +91,35 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
     notes: "",
     due_date: "",
     task_type: "diy",
+    estimated_hours: "",
   });
+
+  const [subtasksByTaskId, setSubtasksByTaskId] = useState<Record<string, Array<{ task_id: string; estimated_hours: number | null; completed: boolean }>>>({});
+
+  useEffect(() => {
+    const fetchSubtasksForDashboard = async () => {
+      if (!user || tasks.length === 0) {
+        setSubtasksByTaskId({});
+        return;
+      }
+      const taskIds = tasks.map(t => t.id);
+      const { data, error } = await supabase
+        .from('home_task_subtasks')
+        .select('task_id, estimated_hours, completed')
+        .in('task_id', taskIds);
+      if (error) {
+        console.error('Error loading subtasks for dashboard:', error);
+        return;
+      }
+      const map: Record<string, Array<{ task_id: string; estimated_hours: number | null; completed: boolean }>> = {};
+      (data || []).forEach((st: any) => {
+        if (!map[st.task_id]) map[st.task_id] = [];
+        map[st.task_id].push(st);
+      });
+      setSubtasksByTaskId(map);
+    };
+    fetchSubtasksForDashboard();
+  }, [user, tasks]);
 
   useEffect(() => {
     if (open && user) {
@@ -147,8 +179,19 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       return;
     }
 
+    const hasSubtasks = subtasks.filter(st => st.title.trim()).length > 0;
+    const estimatedHoursValue = formData.estimated_hours.trim().length > 0
+      ? Number(formData.estimated_hours)
+      : null;
+
     const taskData = {
-      ...formData,
+      title: formData.title,
+      priority: formData.priority,
+      status: formData.status,
+      diy_level: formData.diy_level,
+      notes: formData.notes,
+      task_type: formData.task_type,
+      estimated_hours: hasSubtasks ? null : estimatedHoursValue,
       user_id: user.id,
       home_id: selectedHomeId,
       due_date: formData.due_date || null,
@@ -280,6 +323,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       notes: "",
       due_date: "",
       task_type: "diy",
+      estimated_hours: "",
     });
     setSubtasks([]);
     setMaterials([]);
@@ -297,6 +341,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       notes: task.notes || "",
       due_date: task.due_date || "",
       task_type: task.task_type === 'general' || task.task_type === 'pre_sale' ? 'diy' : task.task_type as 'diy' | 'contractor',
+      estimated_hours: task.estimated_hours == null ? "" : String(task.estimated_hours),
     });
     
     // Fetch existing subtasks
@@ -458,6 +503,190 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
               <div className="flex-1 overflow-auto px-2 md:px-4 pb-2 min-h-0">
                 <TabsContent value="tasks" className="mt-0 space-y-2 md:space-y-3 h-full">
+                  {/* Project Dashboard metrics (Task Manager) */}
+                  {(() => {
+                    const now = new Date();
+                    const openTasks = tasks.filter(t => t.status !== 'closed');
+                    const completedTasks = tasks.filter(t => t.status === 'closed');
+
+                    const openByLevel = openTasks.reduce((acc, t) => {
+                      acc[t.diy_level] = (acc[t.diy_level] ?? 0) + 1;
+                      return acc;
+                    }, {} as Record<string, number>);
+                    const openByPriority = openTasks.reduce((acc, t) => {
+                      acc[t.priority] = (acc[t.priority] ?? 0) + 1;
+                      return acc;
+                    }, {} as Record<string, number>);
+
+                    const overdueTasks = openTasks.filter(t => {
+                      if (!t.due_date) return false;
+                      const due = new Date(t.due_date);
+                      return !Number.isNaN(due.getTime()) && due < now;
+                    }).length;
+
+                    const activeProjects = openTasks.filter(t => t.project_run_id != null).length;
+
+                    const completedWithDate = completedTasks
+                      .map(t => {
+                        const ts = t.updated_at ?? null;
+                        if (!ts) return null;
+                        const d = new Date(ts);
+                        if (Number.isNaN(d.getTime())) return null;
+                        return d;
+                      })
+                      .filter((d): d is Date => d != null);
+
+                    const daysAgo = (n: number) => new Date(now.getTime() - n * 24 * 60 * 60 * 1000);
+                    const completedLast7 = completedWithDate.filter(d => d >= daysAgo(7)).length;
+                    const completedLast30 = completedWithDate.filter(d => d >= daysAgo(30)).length;
+
+                    // Remaining hours:
+                    // - If a task has subtasks, sum incomplete subtask hours (only where estimated_hours is not null)
+                    // - Else use task.estimated_hours when present
+                    let remainingHours = 0;
+                    let missingHoursCount = 0;
+                    openTasks.forEach(t => {
+                      const subtasksForTask = subtasksByTaskId[t.id] || [];
+                      if (subtasksForTask.length > 0) {
+                        subtasksForTask.forEach(st => {
+                          if (st.completed) return;
+                          if (st.estimated_hours == null) {
+                            missingHoursCount += 1;
+                            return;
+                          }
+                          remainingHours += Number(st.estimated_hours);
+                        });
+                        return;
+                      }
+                      if (t.estimated_hours == null) {
+                        missingHoursCount += 1;
+                        return;
+                      }
+                      remainingHours += Number(t.estimated_hours);
+                    });
+
+                    return (
+                      <div className="space-y-3">
+                        {/* Key metrics row */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <Card className="md:col-span-1">
+                            <CardContent className="p-4">
+                              <div className="text-xs text-muted-foreground">Total open</div>
+                              <div className="text-3xl font-bold leading-tight">{openTasks.length}</div>
+                            </CardContent>
+                          </Card>
+                          <Card className="md:col-span-1">
+                            <CardContent className="p-4">
+                              <div className="text-xs text-muted-foreground">Total complete (all time)</div>
+                              <div className="text-3xl font-bold leading-tight">{completedTasks.length}</div>
+                            </CardContent>
+                          </Card>
+                          <div className="md:col-span-1">
+                            <Accordion type="single" collapsible>
+                              <AccordionItem value="other-metrics" className="border rounded-lg">
+                                <AccordionTrigger className="px-4 py-3 text-sm">
+                                  View other metrics
+                                </AccordionTrigger>
+                                <AccordionContent className="px-4 pb-4">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <Card>
+                                      <CardContent className="p-4">
+                                        <div className="text-xs text-muted-foreground">Completed tasks</div>
+                                        <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                                          <div>
+                                            <div className="text-lg font-semibold">{completedLast7}</div>
+                                            <div className="text-[11px] text-muted-foreground">Last 7d</div>
+                                          </div>
+                                          <div>
+                                            <div className="text-lg font-semibold">{completedLast30}</div>
+                                            <div className="text-[11px] text-muted-foreground">Last 30d</div>
+                                          </div>
+                                          <div>
+                                            <div className="text-lg font-semibold">{completedTasks.length}</div>
+                                            <div className="text-[11px] text-muted-foreground">All time</div>
+                                          </div>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+
+                                    <Card>
+                                      <CardContent className="p-4">
+                                        <div className="text-xs text-muted-foreground">Overdue tasks</div>
+                                        <div className="text-2xl font-bold mt-1">{overdueTasks}</div>
+                                      </CardContent>
+                                    </Card>
+
+                                    <Card>
+                                      <CardContent className="p-4">
+                                        <div className="text-xs text-muted-foreground">Open tasks by priority</div>
+                                        <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                                          <div>
+                                            <div className="text-lg font-semibold">{openByPriority.high ?? 0}</div>
+                                            <div className="text-[11px] text-muted-foreground">High</div>
+                                          </div>
+                                          <div>
+                                            <div className="text-lg font-semibold">{openByPriority.medium ?? 0}</div>
+                                            <div className="text-[11px] text-muted-foreground">Med</div>
+                                          </div>
+                                          <div>
+                                            <div className="text-lg font-semibold">{openByPriority.low ?? 0}</div>
+                                            <div className="text-[11px] text-muted-foreground">Low</div>
+                                          </div>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+
+                                    <Card>
+                                      <CardContent className="p-4">
+                                        <div className="text-xs text-muted-foreground">Open tasks by level</div>
+                                        <div className="mt-2 grid grid-cols-4 gap-2 text-center">
+                                          <div>
+                                            <div className="text-lg font-semibold">{openByLevel.beginner ?? 0}</div>
+                                            <div className="text-[11px] text-muted-foreground">Beg</div>
+                                          </div>
+                                          <div>
+                                            <div className="text-lg font-semibold">{openByLevel.intermediate ?? 0}</div>
+                                            <div className="text-[11px] text-muted-foreground">Int</div>
+                                          </div>
+                                          <div>
+                                            <div className="text-lg font-semibold">{openByLevel.advanced ?? 0}</div>
+                                            <div className="text-[11px] text-muted-foreground">Adv</div>
+                                          </div>
+                                          <div>
+                                            <div className="text-lg font-semibold">{openByLevel.pro ?? 0}</div>
+                                            <div className="text-[11px] text-muted-foreground">Pro</div>
+                                          </div>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+
+                                    <Card>
+                                      <CardContent className="p-4">
+                                        <div className="text-xs text-muted-foreground">Active projects</div>
+                                        <div className="text-2xl font-bold mt-1">{activeProjects}</div>
+                                        <div className="text-[11px] text-muted-foreground mt-1">Tasks linked to a project</div>
+                                      </CardContent>
+                                    </Card>
+
+                                    <Card>
+                                      <CardContent className="p-4">
+                                        <div className="text-xs text-muted-foreground">Estimated hours remaining</div>
+                                        <div className="text-2xl font-bold mt-1">{remainingHours.toFixed(1)}h</div>
+                                        {missingHoursCount > 0 && (
+                                          <div className="text-[11px] text-muted-foreground mt-1">+ {missingHoursCount} item(s) without hours</div>
+                                        )}
+                                      </CardContent>
+                                    </Card>
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            </Accordion>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {showAddTask && (
                     <Card>
                       <CardContent className="pt-4 space-y-3">
@@ -504,6 +733,25 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                             onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                             className="text-xs h-8"
                           />
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-medium mb-1 block">Estimated hours</label>
+                          {subtasks.length > 0 ? (
+                            <div className="text-xs text-muted-foreground h-8 flex items-center">
+                              N/A (using sub-task hours)
+                            </div>
+                          ) : (
+                            <Input
+                              type="number"
+                              min="0.25"
+                              step="0.25"
+                              value={formData.estimated_hours}
+                              onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
+                              placeholder="e.g. 2"
+                              className="text-xs h-8"
+                            />
+                          )}
                         </div>
                         
                         <Textarea
