@@ -802,16 +802,37 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                         Beta Testing
                       </div>
                     </SelectItem>
-                    <SelectItem value="coming-soon">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        Coming Soon
-                      </div>
-                    </SelectItem>
                     <SelectItem value="published">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
                         Published
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Visibility</label>
+                <Select
+                  value={currentProject.visibilityStatus || 'default'}
+                  onValueChange={(value) =>
+                    updateProjectData({ ...currentProject, visibilityStatus: value as any })
+                  }
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select visibility" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                        Default (use publish status)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="hidden">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+                        Hidden from Catalog
                       </div>
                     </SelectItem>
                   </SelectContent>

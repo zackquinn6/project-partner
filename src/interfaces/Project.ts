@@ -1,7 +1,7 @@
 /**
  * Schema documentation (Supabase):
  *
- * - projects / project_templates_live: template projects (id, name, description, phases JSONB, scaling_unit, revision_number, etc.)
+ * - projects: template projects (id, name, description, phases JSONB, scaling_unit, revision_number, etc.)
  * - project_runs: user runs (see ProjectRun in ProjectRun.ts)
  * - project_phases, project_operations, project_steps: normalized structure for templates
  * - library_tools, library_materials: tool/material library
@@ -217,7 +217,8 @@ export interface Project {
   createdAt: Date;
   updatedAt: Date;
   // Note: status, startDate, planEndDate, endDate only apply to ProjectRun, not templates
-  publishStatus?: 'draft' | 'published' | 'beta-testing' | 'archived' | 'coming-soon';
+  publishStatus?: 'draft' | 'published' | 'beta-testing' | 'archived';
+  visibilityStatus?: 'default' | 'coming-soon' | 'hidden';
   category: string[];
   effortLevel?: 'Low' | 'Medium' | 'High';
   skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced' | 'Professional'; // Project overall skill level (4 options)

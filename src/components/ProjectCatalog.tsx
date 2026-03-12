@@ -174,19 +174,22 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   useEffect(() => {
     if (!user && !isAdminMode) {
       const fetchPublicProjects = async () => {
-        console.log('🔍 Fetching public projects...');
-        const { data, error } = await supabase
-          .from('project_templates_live')
-          .select('*')
-          .order('updated_at', { ascending: false });
-        
-        console.log('📦 Public projects fetch result:', { dataCount: data?.length || 0, error });
-        
-        if (data && !error) {
-          setPublicProjects(data);
-        } else if (error) {
-          console.error('❌ Error fetching public projects:', error);
-        }
+      console.log('🔍 Fetching public projects...');
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .in('publish_status', ['published', 'beta-testing'])
+        .neq('id', '00000000-0000-0000-0000-000000000000')
+        .neq('id', '00000000-0000-0000-0000-000000000001')
+        .order('updated_at', { ascending: false });
+      
+      console.log('📦 Public projects fetch result:', { dataCount: data?.length || 0, error });
+      
+      if (data && !error) {
+        setPublicProjects(data);
+      } else if (error) {
+        console.error('❌ Error fetching public projects:', error);
+      }
       };
       
       fetchPublicProjects();
@@ -237,18 +240,20 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     const filteredFromDb = user 
       ? projects.filter(project => {
           const publishStatus = project.publishStatus || (project as any).publish_status;
-          
+          const visibility = (project as any).visibility_status as 'default' | 'coming-soon' | 'hidden' | undefined || 'default';
+
+          const isComingSoon = visibility === 'coming-soon';
+          const isHidden = visibility === 'hidden';
+          const isPublishVisible = publishStatus === 'published' || publishStatus === 'beta-testing';
           const isValidStatus = (
-            publishStatus === 'published' || 
-            publishStatus === 'beta-testing' ||
-            publishStatus === 'coming-soon' ||
-            isAdminMode
+            !isHidden &&
+            (isComingSoon || isPublishVisible || isAdminMode)
           );
           const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
           // Hide standard foundation using is_standard field instead of hardcoded ID
           const isNotStandardFoundation = !(project as any).is_standard && project.id !== '00000000-0000-0000-0000-000000000001';
           
-          // Include if: (published/beta/coming-soon OR admin mode) AND not manual template AND not standard foundation
+          // Include if: visible (not hidden) AND (published/beta OR coming-soon OR admin mode) AND not manual template AND not standard foundation
           const shouldInclude = isValidStatus && isNotManualTemplate && isNotStandardFoundation;
           
           if (!shouldInclude) {
@@ -276,8 +281,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       count: filteredFromDb.length,
       projects: filteredFromDb.map(p => ({ 
         name: p.name, 
-        publishStatus: p.publishStatus || (p as any).publish_status,
-        isCurrentVersion: (p as any).is_current_version 
+        publishStatus: p.publishStatus || (p as any).publish_status
       }))
     });
     
@@ -427,8 +431,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         return;
       }
 
-      const publishStatus = project.publishStatus || (project as any).publish_status;
-      if (publishStatus === 'coming-soon') {
+      const visibility = (project as any).visibility_status as 'default' | 'coming-soon' | 'hidden' | undefined || 'default';
+      if (visibility === 'coming-soon') {
         setComingSoonProject(project);
         return;
       }
@@ -1353,7 +1357,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                               BETA
                             </Badge>
                           )}
-                          {project.publishStatus === 'coming-soon' && (
+                          {(project as any).visibility_status === 'coming-soon' && (
                             <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-[10px] px-1 py-0 flex-shrink-0">
                               Coming Soon
                             </Badge>
@@ -1465,7 +1469,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                             BETA
                           </Badge>
                         )}
-                        {project.publishStatus === 'coming-soon' && (
+                        {(project as any).visibility_status === 'coming-soon' && (
                           <Badge variant="secondary" className="bg-blue-500/20 text-blue-200 border-blue-300/30 backdrop-blur-sm text-[10px] px-1.5 py-0">
                             Coming Soon
                           </Badge>
@@ -1478,8 +1482,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                                 ? 'bg-green-500/20 text-green-300'
                                 : project.publishStatus === 'beta-testing'
                                 ? 'bg-orange-500/20 text-orange-300'
-                                : project.publishStatus === 'coming-soon'
-                                ? 'bg-blue-500/20 text-blue-300'
                                 : 'bg-yellow-500/20 text-yellow-300'
                             } backdrop-blur-sm text-[10px] px-1.5 py-0`}
                           >

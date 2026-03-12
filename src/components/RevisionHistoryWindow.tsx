@@ -25,7 +25,7 @@ interface ProjectRevision {
   createdFromRevision: number;
   createdAt: Date;
   updatedAt: Date;
-  publishStatus: 'draft' | 'published' | 'beta-testing' | 'archived' | 'coming-soon';
+  publishStatus: 'draft' | 'published' | 'beta-testing' | 'archived';
   author?: string;
   changesSummary?: string;
 }
@@ -117,8 +117,6 @@ export const RevisionHistoryWindow: React.FC<RevisionHistoryWindowProps> = ({
       case 'published':
         return 'default';
       case 'beta-testing':
-        return 'secondary';
-      case 'coming-soon':
         return 'secondary';
       case 'draft':
         return 'outline';

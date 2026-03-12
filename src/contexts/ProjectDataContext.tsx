@@ -131,7 +131,8 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
           planEndDate: project.plan_end_date ? new Date(project.plan_end_date) : new Date(),
           endDate: project.end_date ? new Date(project.end_date) : undefined,
           status: 'not-started' as const, // Projects don't have status - only project_runs do
-          publishStatus: project.publish_status as 'draft' | 'published' | 'beta-testing' | 'archived' | 'coming-soon',
+          publishStatus: project.publish_status as 'draft' | 'published' | 'beta-testing' | 'archived',
+          visibilityStatus: (project as any).visibility_status as 'default' | 'coming-soon' | 'hidden' | undefined,
           category: normalizeCategories(project.category),
           difficulty: project.difficulty,
           effortLevel: project.effort_level as Project['effortLevel'],
@@ -244,9 +245,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
   }, []);
 
   // Fetch projects data
-  // Fetch only latest published revisions from project_templates_live view
-  // This ensures the catalog shows and opens the latest revision, not the parent project
-  // The view automatically filters to show only published/beta-testing projects with latest revisions
+  // Projects table stores all template revisions; frontend applies visibility and publish filters.
   const {
     data: projects,
     loading: projectsLoading,
@@ -254,7 +253,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     refetch: refetchProjects,
     mutate: updateProjectsCache
   } = useDataFetch<Project>({
-    table: 'project_templates_live',
+    table: 'projects',
     select: '*',
     orderBy: { column: 'updated_at', ascending: false },
     transform: transformProjects,
@@ -267,7 +266,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     if (!projectsLoading && projects.length === 0 && !projectsError) {
       console.log('⚠️ ProjectDataContext: No projects loaded, trying direct query...');
       supabase
-        .from('project_templates_live')
+        .from('projects')
         .select('id, name, publish_status, revision_number')
         .limit(5)
         .then(({ data, error }) => {

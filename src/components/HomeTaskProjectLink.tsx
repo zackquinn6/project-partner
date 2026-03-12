@@ -69,8 +69,8 @@ export function HomeTaskProjectLink({
 
   const fetchProjectTemplates = async () => {
     const { data, error } = await supabase
-      .from("project_templates_live")
-      .select("id, name, description, category, difficulty_level, estimated_time, is_standard")
+      .from("projects")
+      .select("id, name, description, category, difficulty_level:skill_level, estimated_time, is_standard, visibility_status, publish_status")
       .in("publish_status", ["published", "beta-testing"])
       .neq("name", "Manual Project Template")
       .neq("id", "00000000-0000-0000-0000-000000000001")

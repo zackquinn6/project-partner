@@ -32,7 +32,7 @@ interface Project {
   id: string;
   name: string;
   description: string;
-  publish_status: 'draft' | 'beta-testing' | 'published' | 'archived' | 'coming-soon';
+  publish_status: 'draft' | 'beta-testing' | 'published' | 'archived';
   revision_number: number;
   parent_project_id: string | null;
   created_at: string;
@@ -58,6 +58,7 @@ interface Project {
   phases?: any; // JSON field for phases
   images?: string[]; // Array of image URLs
   cover_image?: string | null; // URL of cover image
+  visibility_status?: 'default' | 'coming-soon' | 'hidden';
 }
 interface UnifiedProjectManagementProps {
   onEditWorkflow?: () => void;
@@ -1673,22 +1674,24 @@ export function UnifiedProjectManagement({
                                   current.revision_number > latest.revision_number ? current : latest
                                 , projectRevisions[0]);
                                 
+                                const visibility = (latestRevision as any).visibility_status as 'default' | 'coming-soon' | 'hidden' | undefined;
                                 let statusText: string;
-                                switch (latestRevision.publish_status) {
-                                  case 'published':
-                                    statusText = 'Production';
-                                    break;
-                                  case 'beta-testing':
-                                    statusText = 'Beta';
-                                    break;
-                                  case 'draft':
-                                    statusText = 'Draft';
-                                    break;
-                                  case 'coming-soon':
-                                    statusText = 'Coming Soon';
-                                    break;
-                                  default:
-                                    statusText = 'Archived';
+                                if (visibility === 'coming-soon') {
+                                  statusText = 'Coming Soon';
+                                } else {
+                                  switch (latestRevision.publish_status) {
+                                    case 'published':
+                                      statusText = 'Production';
+                                      break;
+                                    case 'beta-testing':
+                                      statusText = 'Beta';
+                                      break;
+                                    case 'draft':
+                                      statusText = 'Draft';
+                                      break;
+                                    default:
+                                      statusText = 'Archived';
+                                  }
                                 }
                                 
                                 return `Revision ${latestRevision.revision_number} - ${statusText}`;
@@ -2341,7 +2344,8 @@ export function UnifiedProjectManagement({
                                   description: revision.description || '',
                                   createdAt: new Date(revision.created_at),
                                   updatedAt: new Date(revision.updated_at),
-                                  publishStatus: revision.publish_status as 'draft' | 'published' | 'beta-testing' | 'archived' | 'coming-soon',
+                                  publishStatus: revision.publish_status as 'draft' | 'published' | 'beta-testing' | 'archived',
+                                  visibilityStatus: (revision as any).visibility_status as 'default' | 'coming-soon' | 'hidden' | undefined,
                                   phases: parsedPhases,
                                   category: Array.isArray(revision.category) ? revision.category : (revision.category ? [revision.category] : [])
                                 });
