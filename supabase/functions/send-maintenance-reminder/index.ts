@@ -59,44 +59,36 @@ const handler = async (req: Request): Promise<Response> => {
     }
     const validatedData = parseResult.data;
 
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const supabaseClient = createClient(supabaseUrl, supabaseKey, {
+      global: {
+        headers: { Authorization: req.headers.get('Authorization') ?? '' },
+      },
+    });
+
+    const { data: settings, error: settingsError } = await supabaseClient
+      .from('maintenance_notification_settings')
+      .select('email_address')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (settingsError) throw settingsError;
+
     const requestedEmail = validatedData.email.trim().toLowerCase();
+    const allowedEmail = (settings?.email_address ?? '').trim().toLowerCase();
     const authEmail = (user.email ?? '').trim().toLowerCase();
 
-    // For test emails, allow auth email even if settings table is missing or fails
-    if (validatedData.type === 'test' && requestedEmail === authEmail) {
-      // Allow without checking maintenance_notification_settings
-    } else {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-      const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-      const supabaseClient = createClient(supabaseUrl, supabaseKey, {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization') ?? '' },
-        },
-      });
-
-      const { data: settings, error: settingsError } = await supabaseClient
-        .from('maintenance_notification_settings')
-        .select('email_address')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (settingsError) {
-        console.error("[MaintenanceReminder] settings fetch error:", settingsError);
-        throw new Error('Could not load notification settings');
+    if (allowedEmail) {
+      if (requestedEmail !== allowedEmail) {
+        throw new Error('Email mismatch with saved notification settings');
       }
-      const allowedEmail = (settings?.email_address ?? '').trim().toLowerCase();
-
-      if (allowedEmail) {
-        if (requestedEmail !== allowedEmail) {
-          throw new Error('Email mismatch with saved notification settings');
-        }
-      } else {
-        if (!authEmail) {
-          throw new Error('No notification email is saved for this account');
-        }
-        if (requestedEmail !== authEmail) {
-          throw new Error('Email mismatch with saved notification settings');
-        }
+    } else {
+      if (!authEmail) {
+        throw new Error('No notification email is saved for this account');
+      }
+      if (requestedEmail !== authEmail) {
+        throw new Error('Email mismatch with saved notification settings');
       }
     }
 
@@ -192,18 +184,8 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (emailResponse.error) {
-      const resendMsg = (emailResponse.error as { message?: string }).message ?? '';
       console.error("Resend API error:", emailResponse.error);
-      // Sandbox only allows sending to the Resend account email
-      if (/sandbox|only send to|recipient|verify your domain/i.test(resendMsg)) {
-        return new Response(
-          JSON.stringify({
-            error: "In sandbox mode, test emails can only be sent to the Resend account email. Add and verify your domain in Resend to send to any address.",
-          }),
-          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-      throw new Error(resendMsg || "Email service failed to send");
+      throw new Error((emailResponse.error as { message?: string }).message || "Email service failed to send");
     }
 
     console.log("[MaintenanceReminder] Step 4: Email sent successfully", {
@@ -228,15 +210,10 @@ const handler = async (req: Request): Promise<Response> => {
     const statusCode =
       msg.includes('authorization') || msg.includes('token') || msg.includes('Authentication') ? 401
       : msg.includes('Email mismatch') || msg.includes('notification email') ? 403
-      : msg.includes('Service configuration') || msg.includes('configuration') ? 503
-      : msg.includes('Could not load notification settings') ? 503
       : 500;
     const message =
       statusCode === 401 ? 'Authentication required'
       : statusCode === 403 ? msg
-      : statusCode === 503 ? (msg.includes('notification settings')
-          ? 'Notification settings are temporarily unavailable. Please try again later.'
-          : 'Email service is not configured. Please try again later.')
       : 'Failed to send reminder';
 
     return new Response(
