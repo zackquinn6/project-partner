@@ -116,6 +116,17 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
           }
         }
         
+        // Normalize image fields so catalog always has a reliable cover image:
+        // - Prefer explicit cover_image when present
+        // - Otherwise, if images[] exists, use its first entry as cover_image
+        // - Preserve legacy single-image column if present
+        const normalizedImages = Array.isArray(project.images)
+          ? project.images
+          : (project.images ? [project.images] : []);
+        const coverImage =
+          project.cover_image ??
+          (normalizedImages.length > 0 ? normalizedImages[0] : null);
+
         return {
           id: project.id,
           name: project.name,
@@ -123,8 +134,8 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
           projectChallenges: project.project_challenges,
           projectType: project.project_type?.toLowerCase() === 'secondary' ? 'Secondary' : 'Primary',
           image: project.image,
-          images: project.images,
-          cover_image: project.cover_image,
+          images: normalizedImages,
+          cover_image: coverImage,
           createdAt: project.created_at ? new Date(project.created_at) : new Date(),
           updatedAt: project.updated_at ? new Date(project.updated_at) : new Date(),
           startDate: project.start_date ? new Date(project.start_date) : new Date(),
