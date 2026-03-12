@@ -60,14 +60,12 @@ export default function Home({
     maintenanceDueSoon: 0
   });
 
-  // Project stats from context; open tasks and maintenance due soon from API
+  // Project stats from context; lifecycle completion stays on project runs
   useEffect(() => {
     if (projectRuns) {
-      const active = projectRuns.filter(run => run.status !== 'cancelled' && (run.progress || 0) < 100).length;
       const completed = projectRuns.filter(run => run.status !== 'cancelled' && (run.progress || 0) >= 100).length;
       setStats(prev => ({
         ...prev,
-        activeProjects: active,
         completedProjects: completed
       }));
     }
@@ -83,11 +81,30 @@ export default function Home({
     const todayIso = today.toISOString().slice(0, 10);
 
     (async () => {
-      const { count: openCount } = await supabase
+      const { data: homeTasks, error: homeTasksError } = await supabase
         .from('home_tasks')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .neq('status', 'closed');
+        .select('id, status, project_run_id')
+        .eq('user_id', user.id);
+
+      if (homeTasksError) {
+        console.error('Error loading home_tasks for dashboard stats', homeTasksError);
+      }
+
+      let openTasksCount = 0;
+      let activeProjectsFromTasks = 0;
+
+      if (homeTasks && Array.isArray(homeTasks)) {
+        const openTasks = homeTasks.filter((t: any) => t.status !== 'closed');
+        openTasksCount = openTasks.length;
+        const projectIds = new Set<string>();
+        openTasks.forEach((t: any) => {
+          if (t.project_run_id) {
+            projectIds.add(t.project_run_id);
+          }
+        });
+        activeProjectsFromTasks = projectIds.size;
+      }
+
       const { count: maintCount } = await supabase
         .from('user_maintenance_tasks')
         .select('id', { count: 'exact', head: true })
@@ -97,7 +114,8 @@ export default function Home({
         .lte('next_due', soonEndIso);
       setStats(prev => ({
         ...prev,
-        openTasks: openCount ?? 0,
+        openTasks: openTasksCount,
+        activeProjects: activeProjectsFromTasks,
         maintenanceDueSoon: maintCount ?? 0
       }));
     })();
@@ -163,28 +181,72 @@ export default function Home({
             </p>
             
             {/* Your work at a glance */}
-            <div className="border-t border-border pt-3 pb-4 mb-4">
-              <h3 className="text-sm font-medium text-muted-foreground mb-3 text-center">Your work at a glance</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-2xl mx-auto">
-                <div className="text-center p-3 rounded-lg bg-muted/50">
-                  <div className="text-xl md:text-2xl font-bold text-foreground">{stats.activeProjects ?? 0}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">Active projects</div>
+            <div className="border-t border-border/60 pt-4 pb-5 mb-6">
+              <h3 className="text-xs tracking-wide font-semibold text-muted-foreground mb-3 text-center uppercase">
+                Your work at a glance
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-3xl mx-auto">
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-slate-900/80 via-slate-900 to-slate-900/90 p-3 md:p-4 shadow-sm">
+                  <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-amber-500/30 to-transparent pointer-events-none" />
+                  <div className="relative flex flex-col items-start gap-1">
+                    <span className="text-[11px] uppercase tracking-wide text-amber-300/80">
+                      Active projects
+                    </span>
+                    <span className="text-2xl md:text-3xl font-semibold text-amber-50">
+                      {stats.activeProjects ?? 0}
+                    </span>
+                    <span className="text-[11px] text-amber-100/70">
+                      Tasks currently linked to projects
+                    </span>
+                  </div>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-muted/50">
-                  <div className="text-xl md:text-2xl font-bold text-foreground">{stats.openTasks ?? 0}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">Open tasks</div>
+
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-emerald-900/80 via-emerald-900 to-emerald-900/90 p-3 md:p-4 shadow-sm">
+                  <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-emerald-500/30 to-transparent pointer-events-none" />
+                  <div className="relative flex flex-col items-start gap-1">
+                    <span className="text-[11px] uppercase tracking-wide text-emerald-200/80">
+                      Open tasks
+                    </span>
+                    <span className="text-2xl md:text-3xl font-semibold text-emerald-50">
+                      {stats.openTasks ?? 0}
+                    </span>
+                    <span className="text-[11px] text-emerald-100/70">
+                      All tasks in Task Manager not completed
+                    </span>
+                  </div>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-muted/50">
-                  <div className="text-xl md:text-2xl font-bold text-foreground">{stats.maintenanceDueSoon ?? 0}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">Maintenance due soon</div>
+
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-sky-900/80 via-sky-900 to-sky-900/90 p-3 md:p-4 shadow-sm">
+                  <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-sky-500/30 to-transparent pointer-events-none" />
+                  <div className="relative flex flex-col items-start gap-1">
+                    <span className="text-[11px] uppercase tracking-wide text-sky-200/80">
+                      Maintenance due soon
+                    </span>
+                    <span className="text-2xl md:text-3xl font-semibold text-sky-50">
+                      {stats.maintenanceDueSoon ?? 0}
+                    </span>
+                    <span className="text-[11px] text-sky-100/70">
+                      Active maintenance tasks due in the next 30 days
+                    </span>
+                  </div>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-muted/50">
-                  <div className="text-xl md:text-2xl font-bold text-foreground">{stats.completedProjects ?? 0}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">Lifetime projects completed</div>
+
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-violet-900/80 via-violet-900 to-violet-900/90 p-3 md:p-4 shadow-sm">
+                  <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-violet-500/30 to-transparent pointer-events-none" />
+                  <div className="relative flex flex-col items-start gap-1">
+                    <span className="text-[11px] uppercase tracking-wide text-violet-200/80">
+                      Lifetime projects completed
+                    </span>
+                    <span className="text-2xl md:text-3xl font-semibold text-violet-50">
+                      {stats.completedProjects ?? 0}
+                    </span>
+                    <span className="text-[11px] text-violet-100/70">
+                      Finished project runs in your workshop
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="border-b border-border pb-1 mb-6"></div>
             
             {/* Core Apps Grid */}
             <TooltipProvider delayDuration={300}>

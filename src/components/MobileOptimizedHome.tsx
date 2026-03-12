@@ -47,10 +47,10 @@ export function MobileOptimizedHome() {
   
   const [userNickname, setUserNickname] = useState<string>('');
 
+  // Project completion from project runs; task-based stats from API
   useEffect(() => {
-    const active = projectRuns.filter(run => (run.progress || 0) < 100).length;
     const completed = projectRuns.filter(run => (run.progress || 0) >= 100).length;
-    setStats(prev => ({ ...prev, activeProjects: active, completedProjects: completed }));
+    setStats(prev => ({ ...prev, completedProjects: completed }));
   }, [projectRuns]);
 
   useEffect(() => {
@@ -62,11 +62,30 @@ export function MobileOptimizedHome() {
     const soonEndIso = soonEnd.toISOString().slice(0, 10);
     const todayIso = today.toISOString().slice(0, 10);
     (async () => {
-      const { count: openCount } = await supabase
+      const { data: homeTasks, error: homeTasksError } = await supabase
         .from('home_tasks')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .neq('status', 'closed');
+        .select('id, status, project_run_id')
+        .eq('user_id', user.id);
+
+      if (homeTasksError) {
+        console.error('Error loading home_tasks for mobile dashboard stats', homeTasksError);
+      }
+
+      let openTasksCount = 0;
+      let activeProjectsFromTasks = 0;
+
+      if (homeTasks && Array.isArray(homeTasks)) {
+        const openTasks = homeTasks.filter((t: any) => t.status !== 'closed');
+        openTasksCount = openTasks.length;
+        const projectIds = new Set<string>();
+        openTasks.forEach((t: any) => {
+          if (t.project_run_id) {
+            projectIds.add(t.project_run_id);
+          }
+        });
+        activeProjectsFromTasks = projectIds.size;
+      }
+
       const { count: maintCount } = await supabase
         .from('user_maintenance_tasks')
         .select('id', { count: 'exact', head: true })
@@ -74,9 +93,11 @@ export function MobileOptimizedHome() {
         .eq('is_active', true)
         .gte('next_due', todayIso)
         .lte('next_due', soonEndIso);
+
       setStats(prev => ({
         ...prev,
-        openTasks: openCount ?? 0,
+        openTasks: openTasksCount,
+        activeProjects: activeProjectsFromTasks,
         maintenanceDueSoon: maintCount ?? 0
       }));
     })();
@@ -263,32 +284,39 @@ export function MobileOptimizedHome() {
           </Card>
         )}
 
-        {/* Your work at a glance */}
+        {/* Your work at a glance (mobile: focus on tasks + maintenance) */}
         <div>
-          <h2 className="text-sm font-medium text-muted-foreground mb-3 text-center">Your work at a glance</h2>
+          <h2 className="text-xs tracking-wide font-semibold text-muted-foreground mb-3 text-center uppercase">
+            Your work at a glance
+          </h2>
           <div className="grid grid-cols-2 gap-3">
-            <Card className="gradient-card">
-              <CardContent className="p-3 text-center">
-                <p className="text-lg font-bold text-card-foreground">{stats.activeProjects ?? 0}</p>
-                <p className="text-xs text-muted-foreground">Active projects</p>
+            <Card className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-emerald-900/80 via-emerald-900 to-emerald-900/90 shadow-sm">
+              <div className="absolute inset-x-0 -top-6 h-10 bg-gradient-to-b from-emerald-500/30 to-transparent pointer-events-none" />
+              <CardContent className="relative p-3 text-left space-y-1">
+                <p className="text-[11px] uppercase tracking-wide text-emerald-200/80">
+                  Open tasks
+                </p>
+                <p className="text-xl font-semibold text-emerald-50">
+                  {stats.openTasks ?? 0}
+                </p>
+                <p className="text-[11px] text-emerald-100/70">
+                  All tasks in Task Manager not completed
+                </p>
               </CardContent>
             </Card>
-            <Card className="gradient-card">
-              <CardContent className="p-3 text-center">
-                <p className="text-lg font-bold text-card-foreground">{stats.openTasks ?? 0}</p>
-                <p className="text-xs text-muted-foreground">Open tasks</p>
-              </CardContent>
-            </Card>
-            <Card className="gradient-card">
-              <CardContent className="p-3 text-center">
-                <p className="text-lg font-bold text-card-foreground">{stats.maintenanceDueSoon ?? 0}</p>
-                <p className="text-xs text-muted-foreground">Maintenance due soon</p>
-              </CardContent>
-            </Card>
-            <Card className="gradient-card">
-              <CardContent className="p-3 text-center">
-                <p className="text-lg font-bold text-card-foreground">{stats.completedProjects ?? 0}</p>
-                <p className="text-xs text-muted-foreground">Lifetime projects completed</p>
+
+            <Card className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-sky-900/80 via-sky-900 to-sky-900/90 shadow-sm">
+              <div className="absolute inset-x-0 -top-6 h-10 bg-gradient-to-b from-sky-500/30 to-transparent pointer-events-none" />
+              <CardContent className="relative p-3 text-left space-y-1">
+                <p className="text-[11px] uppercase tracking-wide text-sky-200/80">
+                  Maintenance due soon
+                </p>
+                <p className="text-xl font-semibold text-sky-50">
+                  {stats.maintenanceDueSoon ?? 0}
+                </p>
+                <p className="text-[11px] text-sky-100/70">
+                  Active maintenance tasks due in the next 30 days
+                </p>
               </CardContent>
             </Card>
           </div>
