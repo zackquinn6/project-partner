@@ -128,7 +128,16 @@ export function MaintenanceNotifications({
 
   const testEmailNotification = async () => {
     console.warn(`${DEBUG_PREFIX} 1. Click received — starting send test flow`);
-    const testEmail = user?.email ?? emailAddress.trim();
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "Please sign in to send a test email.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const testEmail = emailAddress.trim();
     console.log(`${DEBUG_PREFIX} 2. Resolved email`, {
       testEmail: testEmail || '(empty)',
       userEmail: user?.email ?? '(no user email)',
@@ -138,16 +147,17 @@ export function MaintenanceNotifications({
       console.warn(`${DEBUG_PREFIX} 2b. Abort — no email address available`);
       toast({
         title: "Error",
-        description: "No email address available. Please ensure you're logged in.",
+        description: "Enter an email address (then Save Settings) before sending a test.",
         variant: "destructive"
       });
       return;
     }
-    if (user?.email && emailAddress.trim() && emailAddress.trim() !== user.email) {
-      console.warn(`${DEBUG_PREFIX} 2c. Abort — test email must use account email`, { userEmail: user.email, input: emailAddress.trim() });
+
+    const userName = (user.email ?? '').split('@')[0]?.trim();
+    if (!userName) {
       toast({
         title: "Error",
-        description: "Test email is sent to your account email. Change the address above only after saving; test uses your logged-in email.",
+        description: "Could not determine your name for the email.",
         variant: "destructive"
       });
       return;
@@ -155,7 +165,7 @@ export function MaintenanceNotifications({
     const payload = {
       type: 'test' as const,
       email: testEmail,
-      userName: user?.email?.split('@')[0] || 'User',
+      userName,
     };
     console.log(`${DEBUG_PREFIX} 3. Invoking edge function send-maintenance-reminder`, { payload });
     setSendingTest(true);
@@ -256,7 +266,7 @@ export function MaintenanceNotifications({
                     console.warn('[MaintenanceAlerts] Send Test Email button clicked');
                     testEmailNotification();
                   }}
-                  disabled={sendingTest || (!(emailAddress?.trim()) && !(user?.email))}
+                  disabled={sendingTest || !user || !emailAddress?.trim()}
                 >
                   {sendingTest ? "Sending…" : "Send Test Email"}
                 </Button>

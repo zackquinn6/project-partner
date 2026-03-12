@@ -41,9 +41,28 @@ const handler = async (req: Request): Promise<Response> => {
     const body = await req.json();
     const validatedData = requestSchema.parse(body);
     
-    // Verify the email matches the authenticated user
-    if (validatedData.email !== user.email) {
-      throw new Error('Email mismatch with authenticated user');
+    // Verify the email matches the user's saved notification email (not necessarily auth email)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const supabaseClient = createClient(supabaseUrl, supabaseKey, {
+      global: {
+        headers: { Authorization: req.headers.get('Authorization') ?? '' },
+      },
+    });
+
+    const { data: settings, error: settingsError } = await supabaseClient
+      .from('maintenance_notification_settings')
+      .select('email_address')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (settingsError) throw settingsError;
+    const allowedEmail = (settings?.email_address ?? '').trim().toLowerCase();
+    if (!allowedEmail) throw new Error('No notification email is saved for this account');
+
+    const requestedEmail = validatedData.email.trim().toLowerCase();
+    if (requestedEmail !== allowedEmail) {
+      throw new Error('Email mismatch with saved notification settings');
     }
 
     console.log("[MaintenanceReminder] Step 1: Validated request", {
@@ -163,7 +182,7 @@ const handler = async (req: Request): Promise<Response> => {
     const msg = err.message;
     const statusCode =
       msg.includes('authorization') || msg.includes('token') || msg.includes('Authentication') ? 401
-      : msg.includes('Email mismatch') ? 403
+      : msg.includes('Email mismatch') || msg.includes('notification email') ? 403
       : 500;
     const message =
       statusCode === 401 ? 'Authentication required'
