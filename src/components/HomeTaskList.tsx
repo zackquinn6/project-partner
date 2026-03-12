@@ -199,7 +199,6 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       diy_level: formData.diy_level,
       notes: formData.notes,
       task_type: formData.task_type,
-      estimated_hours: hasSubtasks ? null : estimatedHoursValue,
       user_id: user.id,
       home_id: selectedHomeId,
       due_date: formData.due_date || null,

@@ -443,7 +443,7 @@ export function HomeTasksTable({
                     No tasks found. Add your first task to get started!
                   </TableCell>
                 </TableRow> : filteredAndSortedTasks.map(task => (
-                  <>
+                  <React.Fragment key={task.id}>
                     <TableRow
                       key={task.id}
                       className={task.status === 'closed' ? 'opacity-60' : ''}
