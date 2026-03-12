@@ -143,9 +143,14 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
       }));
 
       setSavedProjects(projects);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error loading projects:', error);
-      toast({ title: "Error", description: "Failed to load saved projects", variant: "destructive" });
+      const code = error && typeof error === 'object' && 'code' in error ? (error as { code: string }).code : null;
+      if (code !== 'PGRST205') {
+        toast({ title: "Error", description: "Failed to load saved projects", variant: "destructive" });
+      } else {
+        setSavedProjects([]);
+      }
     } finally {
       setIsLoading(false);
     }
