@@ -210,8 +210,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       projects: projects.map(p => ({ 
         id: p.id, 
         name: p.name, 
-        publishStatus: p.publishStatus,
-        isCurrentVersion: (p as any).is_current_version 
+        publishStatus: p.publishStatus
       })),
       publicProjects: publicProjects.map(p => ({
         id: p.id,
@@ -238,9 +237,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     const filteredFromDb = user 
       ? projects.filter(project => {
           const publishStatus = project.publishStatus || (project as any).publish_status;
-          // Projects are already filtered to is_current_version = true in ProjectDataContext
-          // This ensures catalog shows and opens latest revision (workflow from latest, info from parent)
-          const isCurrentVersion = (project as any).is_current_version !== false; // Should already be true from query
           
           const isValidStatus = (
             publishStatus === 'published' || 
@@ -252,9 +248,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           // Hide standard foundation using is_standard field instead of hardcoded ID
           const isNotStandardFoundation = !(project as any).is_standard && project.id !== '00000000-0000-0000-0000-000000000001';
           
-          // Include if: (published/beta OR admin mode) AND not manual template AND not standard foundation AND is current version
-          // Note: is_current_version filter is now applied at query level to ensure latest revisions
-          const shouldInclude = isValidStatus && isNotManualTemplate && isNotStandardFoundation && isCurrentVersion;
+          // Include if: (published/beta/coming-soon OR admin mode) AND not manual template AND not standard foundation
+          const shouldInclude = isValidStatus && isNotManualTemplate && isNotStandardFoundation;
           
           if (!shouldInclude) {
             console.log('🚫 Filtered out project:', {

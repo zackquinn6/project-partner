@@ -78,7 +78,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Kitchen Cabinet Installation'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -101,7 +100,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Interior Door Replacement (prehung or slab)'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -124,7 +122,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Baseboard + Trim Installation'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -147,7 +144,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Framing & Building a Non‑Load‑Bearing Wall'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -170,7 +166,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Closet System Build‑Out (shelves, rods, organizers)'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -193,7 +188,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Deck Board Replacement or Deck Resurfacing'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -216,7 +210,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Interior Stair Refacing (treads, risers, railings)'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -239,7 +232,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Interior Painting (walls, ceilings, trim)'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -262,7 +254,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Tile Flooring Installation'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -286,7 +277,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Tile Backsplash Installation'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -309,7 +299,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Laminate or Engineered Flooring Installation'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -332,7 +321,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Drywall Repair + Finishing (patch, tape, mud, sand)'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -355,7 +343,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Wallpaper Installation or Removal'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -378,7 +365,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Shiplap or Accent Wall Installation'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -401,7 +387,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Vanity Replacement (sink, faucet, drain)'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -424,7 +409,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Toilet Replacement'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -448,7 +432,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Shower Fixture Upgrade (valve trim, showerhead, handle)'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -471,7 +454,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Garbage Disposal Installation'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -494,7 +476,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Kitchen Sink Replacement (undermount or drop‑in)'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -517,7 +498,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Window Trim Replacement (interior casing + stool)'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -540,7 +520,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Exterior Door Weatherproofing (sill pan, flashing, seals)'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -563,7 +542,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Storm Door Installation'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -586,7 +564,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Outlet/Switch Replacement'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -609,7 +586,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Light Fixture Replacement (ceiling, wall, vanity)'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN
@@ -632,7 +608,6 @@ BEGIN
   SELECT id INTO v_project_id
   FROM projects
   WHERE name = 'Ceiling Fan Installation (with or without existing box upgrade)'
-    AND is_current_version = true
   LIMIT 1;
 
   IF v_project_id IS NOT NULL THEN

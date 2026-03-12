@@ -268,7 +268,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
       console.log('⚠️ ProjectDataContext: No projects loaded, trying direct query...');
       supabase
         .from('project_templates_live')
-        .select('id, name, publish_status, is_current_version, revision_number')
+        .select('id, name, publish_status, revision_number')
         .limit(5)
         .then(({ data, error }) => {
           console.log('🔍 Direct query to project_templates_live view:', {
@@ -281,7 +281,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
           if (data?.length === 0) {
             supabase
               .from('projects')
-              .select('id, name, publish_status, is_current_version, revision_number')
+              .select('id, name, publish_status, revision_number')
               .in('publish_status', ['published', 'beta-testing'])
               .limit(5)
               .then(({ data: projectsData, error: projectsError }) => {

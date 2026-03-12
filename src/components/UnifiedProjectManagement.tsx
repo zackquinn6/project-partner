@@ -41,7 +41,6 @@ interface Project {
   beta_released_at: string | null;
   archived_at: string | null;
   revision_notes: string | null;
-  is_current_version: boolean;
   category: string[] | null;
   effort_level: string | null;
   skill_level: string | null;
@@ -989,8 +988,10 @@ export function UnifiedProjectManagement({
         return;
       }
 
-      // Find the latest revision (current version or highest revision number)
-      const latestRevision = allRevisions.find(r => r.is_current_version) || allRevisions[0];
+      // Find the latest revision by highest revision_number
+      const latestRevision = allRevisions.reduce((latest, current) =>
+        current.revision_number > latest.revision_number ? current : latest
+      , allRevisions[0]);
       if (!latestRevision) {
         toast.dismiss(loadingToast);
         toast.error("Could not find latest revision");
@@ -1668,7 +1669,9 @@ export function UnifiedProjectManagement({
                             <div className="p-2 text-sm">
                               {(() => {
                                 if (!projectRevisions || projectRevisions.length === 0) return 'No revisions';
-                                const latestRevision = projectRevisions.find(r => r.is_current_version) || projectRevisions[0];
+                                const latestRevision = projectRevisions.reduce((latest, current) =>
+                                  current.revision_number > latest.revision_number ? current : latest
+                                , projectRevisions[0]);
                                 
                                 let statusText: string;
                                 switch (latestRevision.publish_status) {
@@ -2269,7 +2272,10 @@ export function UnifiedProjectManagement({
                                     <div className="flex-1">
                                       <div className="flex items-center gap-3 mb-2">
                                         <h4 className="font-medium">Revision {revision.revision_number}</h4>
-                                        {getStatusBadge(revision.publish_status, revision.is_current_version)}
+                                        {getStatusBadge(
+                                          revision.publish_status,
+                                          revision.revision_number === Math.max(...projectRevisions.map(r => r.revision_number))
+                                        )}
                                       </div>
                                       
                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground mb-3">
