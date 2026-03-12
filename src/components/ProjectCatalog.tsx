@@ -260,7 +260,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             console.log('🚫 Filtered out project:', {
               name: project.name,
               publishStatus,
-              isCurrentVersion,
               isAdminMode,
               isNotManualTemplate,
               isNotStandardFoundation,
