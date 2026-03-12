@@ -276,18 +276,30 @@ export function HomeTasksTable({
         return 'default';
     }
   };
-  const diyLevels: Array<{ id: string; label: string }> = [
+  const diyLevels: Array<{ id: string; label: string; labelDesktop?: string }> = [
     { id: 'all', label: 'All' },
-    { id: 'beginner', label: 'Beg' },
-    { id: 'intermediate', label: 'Int' },
-    { id: 'advanced', label: 'Adv' },
-    { id: 'pro', label: 'Pro' },
+    { id: 'beginner', label: 'Beg', labelDesktop: 'Beginner' },
+    { id: 'intermediate', label: 'Int', labelDesktop: 'Intermediate' },
+    { id: 'advanced', label: 'Adv', labelDesktop: 'Advanced' },
+    { id: 'pro', label: 'Pro', labelDesktop: 'Professional' },
   ];
 
   return <div className="space-y-3 flex flex-col h-full">
       {/* Desktop filters and controls */}
       <div className="hidden md:flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between pt-3">
         <div className="flex flex-wrap gap-2 flex-1 items-center">
+          {onAddTask && (
+            <Button
+              onClick={onAddTask}
+              size="sm"
+              variant="outline"
+              className="h-8 min-h-8 py-1.5 px-2.5 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-blue-600 md:bg-blue-600 md:text-white md:hover:bg-blue-700 md:hover:border-blue-700 rounded-md flex items-center justify-center gap-1.5"
+              title="Add Task"
+            >
+              <Plus className="h-4 w-4 shrink-0 text-blue-600 md:text-primary" strokeWidth={2.5} aria-hidden />
+              <span className="hidden sm:inline">Add Task</span>
+            </Button>
+          )}
           <Input placeholder="Search tasks..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="max-w-xs text-xs h-8" />
           <Select value={filterPriority} onValueChange={setFilterPriority}>
             <SelectTrigger className="w-20 sm:w-28 text-xs h-8">
@@ -314,7 +326,7 @@ export function HomeTasksTable({
                     : 'bg-muted text-muted-foreground border-transparent hover:bg-muted/80'
                 }`}
               >
-                {level.label}
+                {level.labelDesktop ?? level.label}
               </button>
             ))}
           </div>
@@ -325,21 +337,10 @@ export function HomeTasksTable({
               onCheckedChange={(checked) => setShowCompleted(checked as boolean)}
               className="h-3 w-3"
             />
-            <label htmlFor="show-completed" className="text-[10px] sm:text-xs cursor-pointer whitespace-nowrap">
+            <label htmlFor="show-completed" className="text-sm cursor-pointer whitespace-nowrap">
               Show completed
             </label>
           </div>
-          {onAddTask && (
-            <Button
-              onClick={onAddTask}
-              size="sm"
-              className="h-8 px-3 flex-shrink-0 bg-slate-900 hover:bg-slate-800 text-slate-50 border border-slate-800"
-              title="Add Task"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              <span className="hidden sm:inline">Add Task</span>
-            </Button>
-          )}
         </div>
       </div>
 

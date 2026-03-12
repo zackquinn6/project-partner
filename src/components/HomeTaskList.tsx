@@ -457,52 +457,41 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         }}
       >
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-          <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2.5 border-b flex-shrink-0 bg-background text-foreground">
-            <div className="flex items-center justify-between gap-2">
-              <DialogTitle className="text-xs md:text-base font-semibold tracking-tight flex items-center gap-1.5 md:gap-2">
-                <span className="inline-flex h-6 w-6 md:h-7 md:w-7 items-center justify-center rounded-lg bg-amber-500/10 border border-amber-400/40 text-amber-300">
-                  <List className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                </span>
-                <div className="flex flex-col items-start leading-tight">
-                  <span>Task Manager</span>
-                  <span className="hidden md:block text-[11px] font-normal text-slate-300/80">
-                    Plan, track, and estimate all your work in one place.
-                  </span>
-                </div>
-              </DialogTitle>
-              <div className="flex gap-1.5 items-center">
-                <Button
-                  variant={isMobile ? "ghost" : "outline"}
-                  size="sm"
-                  className={`h-6 md:h-7 px-1.5 md:px-2 text-[10px] md:text-[11px] bg-slate-900/40 hover:bg-slate-800/80 text-slate-100 ${isMobile ? "border-0 outline-none" : "border-slate-600"}`}
-                  onClick={() => setShowHomeManager(true)}
-                >
-                  <HomeIcon className="h-3 w-3 md:mr-1" />
-                  <span className="hidden md:inline">Homes</span>
-                </Button>
-                <Select value={selectedHomeId || ""} onValueChange={setSelectedHomeId}>
-                  <SelectTrigger className="w-[133px] md:w-[187px] text-[10px] md:text-xs h-6 md:h-7 bg-slate-900/60 border-0 outline-none text-slate-100 [&>svg]:opacity-70">
-                    <SelectValue placeholder="Select home" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Homes</SelectItem>
-                    {homes.map((home) => (
-                      <SelectItem key={home.id} value={home.id}>
-                        {home.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onOpenChange(false)}
-                  className="h-6 md:h-7 px-1.5 md:px-2 text-[9px] md:text-xs text-slate-200 hover:bg-slate-800/80"
-                >
-                  Close
-                </Button>
-              </div>
+          <DialogHeader className="px-4 md:px-6 py-2 md:py-4 border-b flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <List className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" aria-hidden />
+              <DialogTitle className="text-base font-bold md:text-xl">Task Manager</DialogTitle>
+              <Button
+                variant={isMobile ? "ghost" : "outline"}
+                size="sm"
+                className={`h-6 md:h-7 px-1.5 md:px-2 text-[10px] md:text-[11px] shrink-0 ${isMobile ? "border-0 outline-none bg-slate-900/40 hover:bg-slate-800/80 text-slate-100" : "border-input bg-background hover:bg-muted"}`}
+                onClick={() => setShowHomeManager(true)}
+              >
+                <HomeIcon className="h-3 w-3 md:mr-1" />
+                <span className="hidden md:inline">Homes</span>
+              </Button>
+              <Select value={selectedHomeId || ""} onValueChange={setSelectedHomeId}>
+                <SelectTrigger className="w-[133px] md:w-[187px] text-[10px] md:text-xs h-6 md:h-7 shrink-0">
+                  <SelectValue placeholder="Select home" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Homes</SelectItem>
+                  {homes.map((home) => (
+                    <SelectItem key={home.id} value={home.id}>
+                      {home.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              className="ml-4 flex-shrink-0"
+            >
+              {isMobile ? 'Back to Workspace' : 'Close'}
+            </Button>
           </DialogHeader>
 
           <div className="flex-1 overflow-hidden flex flex-col">
@@ -605,21 +594,25 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                         <div className="hidden md:grid grid-cols-3 gap-3">
                           <Card className="col-span-1 border-border/60 shadow-sm">
                             <CardContent className="p-4">
-                              <div className="text-xs text-muted-foreground">Total open</div>
-                              <div className="text-3xl font-bold leading-tight">{openTasks.length}</div>
+                              <div className="flex items-baseline justify-between gap-2">
+                                <span className="text-xs text-muted-foreground">Total open</span>
+                                <span className="text-2xl font-bold leading-tight">{openTasks.length}</span>
+                              </div>
                             </CardContent>
                           </Card>
                           <Card className="col-span-1 border-border/60 shadow-sm">
                             <CardContent className="p-4">
-                              <div className="text-xs text-muted-foreground">Total complete (all time)</div>
-                              <div className="text-3xl font-bold leading-tight">{completedTasks.length}</div>
+                              <div className="flex items-baseline justify-between gap-2">
+                                <span className="text-xs text-muted-foreground">Total Completed</span>
+                                <span className="text-2xl font-bold leading-tight">{completedTasks.length}</span>
+                              </div>
                             </CardContent>
                           </Card>
                           <div className="col-span-1">
                             <Accordion type="single" collapsible>
                               <AccordionItem value="other-metrics" className="border rounded-lg bg-background/80 shadow-sm">
-                                <AccordionTrigger className="px-4 py-3 text-sm">
-                                  View other metrics
+                                <AccordionTrigger className="px-2 py-1 min-h-0 text-xs hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                                  View metrics
                                 </AccordionTrigger>
                                 <AccordionContent className="px-4 pb-4">
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
