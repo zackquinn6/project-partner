@@ -759,8 +759,8 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                           className="text-xs h-8"
                         />
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="max-w-[180px]">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          <div className="min-w-0">
                             <label className="text-xs font-medium mb-1 block">Priority</label>
                             <Select value={formData.priority} onValueChange={(val) => setFormData({ ...formData, priority: val as any })}>
                               <SelectTrigger className="text-xs h-8">
@@ -773,7 +773,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="max-w-[180px]">
+                          <div className="min-w-0">
                             <label className="text-xs font-medium mb-1 block">DIY Level</label>
                             <Select value={formData.diy_level} onValueChange={(val) => setFormData({ ...formData, diy_level: val as any })}>
                               <SelectTrigger className="text-xs h-8">
@@ -787,10 +787,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                               </SelectContent>
                             </Select>
                           </div>
-                        </div>
-
-                        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2 max-w-[380px]">
-                          <div>
+                          <div className="min-w-0">
                             <label className="text-xs font-medium mb-1 block">Due Date</label>
                             <Input
                               type="date"
@@ -799,9 +796,8 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                               className="text-xs h-8"
                             />
                           </div>
-
-                          <div>
-                            <label className="text-xs font-medium mb-1 block">Estimated duration (hours:minutes)</label>
+                          <div className="min-w-0">
+                            <label className="text-xs font-medium mb-1 block">Estimated duration</label>
                             {subtasks.length > 0 ? (
                               <div className="text-xs text-muted-foreground h-8 flex items-center">
                                 N/A (using sub-task hours)
@@ -833,10 +829,12 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                             <div className="flex gap-2">
                               <Button 
                                 type="button"
-                                variant="outline" 
+                                variant={subtasksOrdered ? "default" : "outline"}
                                 size="sm" 
                                 onClick={() => setSubtasksOrdered(!subtasksOrdered)} 
                                 className="h-7 text-xs"
+                                aria-pressed={subtasksOrdered}
+                                title={subtasksOrdered ? "Subtasks are ordered (toggle to unordered)" : "Subtasks are unordered (toggle to ordered)"}
                               >
                                 {subtasksOrdered ? <ListOrdered className="h-3 w-3 mr-1" /> : <List className="h-3 w-3 mr-1" />}
                                 {subtasksOrdered ? 'Ordered' : 'Unordered'}
