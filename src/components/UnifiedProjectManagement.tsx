@@ -255,6 +255,11 @@ export function UnifiedProjectManagement({
         project_challenges: null
       };
 
+      // Include visibility_status when edited; otherwise preserve existing or let default stand
+      if ((editedProject as any).visibility_status !== undefined) {
+        updateData.visibility_status = (editedProject as any).visibility_status;
+      }
+
       // Include images and cover_image - ALWAYS preserve existing values if not explicitly changed
       // ProjectImageManager updates these directly, but we should preserve them on save
       // Always include images (even if empty array) to preserve what's in the database
@@ -1697,6 +1702,44 @@ export function UnifiedProjectManagement({
                                 return `Revision ${latestRevision.revision_number} - ${statusText}`;
                               })()}
                             </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label className="text-sm">Visibility</Label>
+                            {editingProject ? (
+                              <Select
+                                value={
+                                  (editedProject as any).visibility_status ||
+                                  (selectedProject as any).visibility_status ||
+                                  'default'
+                                }
+                                onValueChange={(value) =>
+                                  setEditedProject((prev) => ({
+                                    ...prev,
+                                    visibility_status: value as 'default' | 'coming-soon' | 'hidden',
+                                  }))
+                                }
+                              >
+                                <SelectTrigger className="text-sm">
+                                  <SelectValue placeholder="Select visibility" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="default">Default (use publish status)</SelectItem>
+                                  <SelectItem value="coming-soon">Coming Soon (catalog teaser)</SelectItem>
+                                  <SelectItem value="hidden">Hidden from Catalog</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <div className="p-2 bg-muted rounded text-sm">
+                                {(() => {
+                                  const v =
+                                    (selectedProject as any).visibility_status || 'default';
+                                  if (v === 'coming-soon') return 'Coming Soon (catalog teaser)';
+                                  if (v === 'hidden') return 'Hidden from Catalog';
+                                  return 'Default (uses publish status)';
+                                })()}
+                              </div>
+                            )}
                           </div>
 
                           <div className="space-y-1">
