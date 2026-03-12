@@ -272,7 +272,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         .select('id, name, publish_status, revision_number')
         .limit(5)
         .then(({ data, error }) => {
-          console.log('🔍 Direct query to project_templates_live view:', {
+          console.log('🔍 Direct query to projects table:', {
             dataCount: data?.length || 0,
             error,
             sample: data?.[0]

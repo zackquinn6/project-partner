@@ -222,15 +222,15 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       }))
     });
     
-    // Also try a direct query to see if data exists
+    // Also try a direct query to projects table to see if data exists
     if (projects.length === 0 && user) {
-      console.log('⚠️ No projects from context, trying direct query...');
+      console.log('⚠️ No projects from context, trying direct projects query...');
       supabase
-        .from('project_templates_live')
-        .select('id, name, publish_status, is_current_version, revision_number')
+        .from('projects')
+        .select('id, name, publish_status, revision_number')
         .limit(10)
         .then(({ data, error }) => {
-          console.log('🔍 Direct query result:', { dataCount: data?.length || 0, error, sample: data?.[0] });
+          console.log('🔍 Direct projects query result:', { dataCount: data?.length || 0, error, sample: data?.[0] });
         });
     }
   }, [projects, publicProjects, user, isAdminMode]);

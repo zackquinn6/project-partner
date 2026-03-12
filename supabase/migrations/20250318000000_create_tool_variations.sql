@@ -54,7 +54,6 @@ INSERT INTO public.tool_variations (
   weight_lbs,
   estimated_rental_lifespan_days,
   warning_flags,
-  quick_add,
   created_at,
   updated_at
 )
@@ -72,7 +71,6 @@ SELECT
   vi.weight_lbs,
   vi.estimated_rental_lifespan_days,
   vi.warning_flags,
-  vi.quick_add,
   vi.created_at,
   vi.updated_at
 FROM public.variation_instances vi
