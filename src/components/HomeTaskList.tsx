@@ -135,7 +135,6 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
   useEffect(() => {
     if (open && user) {
-      setSelectedHomeId(null);
       fetchHomes();
       fetchTasks();
     }
@@ -157,6 +156,9 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
     
     if (!error && data) {
       setHomes(data);
+      if (data.length > 0) {
+        setSelectedHomeId(data[0].id);
+      }
     }
   };
 
@@ -532,7 +534,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
           <div className="flex-1 overflow-hidden flex flex-col">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <div className="flex-shrink-0 px-2 md:px-4 pt-0.5 pb-1 md:pt-1.5 md:pb-1.5 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="flex-shrink-0 px-2 md:px-4 pt-0 pb-1 md:pb-1.5 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="overflow-hidden">
                   <TabsList className={`w-full inline-flex ${canAccessPaidFeatures ? 'h-8 md:h-9' : 'h-8 md:h-9'} p-0.5 gap-0.5 md:gap-1 bg-muted/50 rounded-full`}>
                     <TabsTrigger value="tasks" className="text-[11px] md:text-xs px-2 md:px-3 py-1.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0 truncate">
@@ -640,7 +642,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                             <CardContent className="p-2 py-1.5">
                               <div className="flex items-center justify-between gap-2">
                                 <span className="text-xs text-muted-foreground">Total Completed</span>
-                                <span className="text-xl font-bold leading-tight pr-2">{completedTasks.length}</span>
+                                <span className="text-xl font-bold leading-tight pr-4">{completedTasks.length}</span>
                               </div>
                             </CardContent>
                           </Card>
