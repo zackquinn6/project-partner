@@ -272,20 +272,14 @@ export default function Home({
               </div>
             </div>
             
-            {/* Core Apps Grid */}
-            <div className="max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-2 px-2 text-left md:text-center">
-              <h3 className="text-sm font-semibold text-foreground">Start Here</h3>
-            </div>
+            {/* Start Here */}
+            <h3 className="text-sm font-semibold text-foreground mb-3 max-w-xl mx-auto px-2">Start Here</h3>
             <TooltipProvider delayDuration={300}>
             <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-6 px-2">
-              {/* Project Catalog - Reduced Prominence */}
-              <div className="col-span-3 mb-2">
+              <div className="col-span-3 mb-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button onClick={() => {
-              console.log('📱 Navigating to project catalog');
-              navigate('/projects');
-            }} variant="outline" className="w-full h-10 text-sm font-medium border-primary bg-slate-600 hover:bg-slate-500 text-slate-50">
+                    <Button onClick={() => { console.log('Navigating to project catalog'); navigate('/projects'); }} variant="outline" className="w-full h-10 text-sm font-medium border-primary bg-slate-600 hover:bg-slate-500 text-slate-50">
                       <BookOpen className="w-4 h-4 mr-2" />
                       Explore New Projects
                       <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0">Beta</Badge>
@@ -296,31 +290,22 @@ export default function Home({
                   </TooltipContent>
                 </Tooltip>
               </div>
-              
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex flex-col items-center group cursor-pointer" onClick={() => {
-            setCurrentProjectRun(null);
-            window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'));
-            navigate('/', { state: { view: 'user' }, replace: true });
-            onViewChange('user');
-          }}>
+                  <div className="flex flex-col items-center group cursor-pointer" onClick={() => { setCurrentProjectRun(null); window.dispatchEvent(new CustomEvent('force-project-dashboard-listing')); navigate('/', { state: { view: 'user' }, replace: true }); onViewChange('user'); }}>
                     <div className="relative">
                       <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myProjects} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                         <Folder className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                       </div>
                       <span className="absolute -top-0.5 -right-0.5 rounded-full border-2 border-background bg-amber-500 px-1.5 py-0 text-[9px] font-semibold text-white shadow-sm" aria-hidden>Beta</span>
                     </div>
-                    <span className="text-xs font-medium text-black text-center leading-tight px-1">
-                      Project Dashboard
-                    </span>
+                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Project Dashboard</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs text-center">
                   <p>A view of active projects.</p>
                 </TooltipContent>
               </Tooltip>
-              
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}>
@@ -334,7 +319,6 @@ export default function Home({
                   <p>Track ongoing maintenance tasks for homes.</p>
                 </TooltipContent>
               </Tooltip>
-              
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}>
@@ -348,21 +332,25 @@ export default function Home({
                   <p>A lightweight home improvement task tracker, with ability to link to projects. Best for managing a portfolio of projects, like renovations.</p>
                 </TooltipContent>
               </Tooltip>
-              
+            </div>
+            </TooltipProvider>
+
+            {/* Browse Tools */}
+            <h3 className="text-sm font-semibold text-foreground mb-3 max-w-xl mx-auto px-2">Browse Tools</h3>
+            <TooltipProvider delayDuration={300}>
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-6 px-2">
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>
                 <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myProfile} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                   <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <span className="text-xs font-medium text-black text-center leading-tight px-1">My Profile</span>
               </div>
-              
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-manager'))}>
                 <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myHomes} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                   <MapPin className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
                 <span className="text-xs font-medium text-black text-center leading-tight px-1">My Homes</span>
               </div>
-              
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))}>
                 <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.toolLibrary} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                   <Wrench className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
@@ -371,10 +359,6 @@ export default function Home({
               </div>
             </div>
             </TooltipProvider>
-
-            <div className="max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-4 px-2 text-left md:text-center">
-              <h3 className="text-sm font-semibold text-foreground">Browse Tools</h3>
-            </div>
 
             {/* Labs - Experimental Features - Collapsed by default */}
             <div className="mb-6">
