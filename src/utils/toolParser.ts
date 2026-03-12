@@ -197,15 +197,15 @@ export async function importToolsToDatabase(
               continue;
             }
 
-            // Create tool model entry
-            await supabase
-              .from('tool_models')
-              .insert({
-                variation_instance_id: variationData.id,
-                model_name: `${variation.brand} ${variation.model}`,
-                manufacturer: variation.brand,
-                model_number: variation.model
-              });
+      // Create tool model entry
+      await supabase
+        .from('tools')
+        .insert({
+          variation_instance_id: variationData.id,
+          model_name: `${variation.brand} ${variation.model}`,
+          manufacturer: variation.brand,
+          model_number: variation.model
+        });
 
             // Create attributes and values as needed
             await createAttributesAndValues(coreToolId, variation.attributes);

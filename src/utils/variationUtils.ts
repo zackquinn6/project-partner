@@ -55,7 +55,7 @@ export const clearAllTools = async (): Promise<boolean> => {
 
     // Get all tool model IDs
     const { data: toolModels } = await supabase
-      .from('tool_models')
+      .from('tools')
       .select('id');
 
     const modelIds = toolModels?.map(m => m.id) || [];
@@ -71,7 +71,7 @@ export const clearAllTools = async (): Promise<boolean> => {
 
     console.log('Deleting tool models...');
     await supabase
-      .from('tool_models')
+      .from('tools')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000');
 

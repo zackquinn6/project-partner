@@ -464,7 +464,7 @@ export async function importEnhancedToolsToDatabase(
         // Create models for this variant
         for (const model of variant.models) {
           const { error: modelError } = await supabase
-            .from('tool_models')
+            .from('tools')
             .insert({
               variation_instance_id: variationInstance.id,
               model_name: model.modelName,

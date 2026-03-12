@@ -109,7 +109,7 @@ export function EnhancedToolImporter({ open, onOpenChange, onSuccess }: Enhanced
             try {
               // Get the model ID from database first
               const { data: dbModel } = await supabase
-                .from('tool_models')
+                .from('tools')
                 .select('id')
                 .eq('model_name', model.modelName)
                 .eq('manufacturer', model.manufacturer || '')

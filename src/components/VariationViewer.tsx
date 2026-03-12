@@ -96,7 +96,7 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
       const variationIds = processedVariations.map(v => v.id);
       if (variationIds.length > 0) {
         const { data: modelsData, error: modelsError } = await supabase
-          .from('tool_models')
+          .from('tools')
           .select('*')
           .in('variation_instance_id', variationIds);
 

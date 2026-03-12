@@ -32,9 +32,9 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
 
       if (variationsError) throw variationsError;
 
-      // Fetch all tool models
+      // Fetch all tool models (now stored in tools table)
       const { data: models, error: modelsError } = await supabase
-        .from('tool_models')
+        .from('tools')
         .select('*')
         .order('model_name');
 

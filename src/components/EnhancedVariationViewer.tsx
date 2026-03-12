@@ -115,7 +115,7 @@ export function EnhancedVariationViewer({
       if (variationsData?.length > 0) {
         const variationIds = variationsData.map(v => v.id);
         const { data: modelsData, error: modelsError } = await supabase
-          .from('tool_models')
+          .from('tools')
           .select('*')
           .in('variation_instance_id', variationIds);
 
@@ -254,7 +254,7 @@ export function EnhancedVariationViewer({
   const addNewModel = async (variationId: string, modelData: Partial<ToolModel>) => {
     try {
       const { error } = await supabase
-        .from('tool_models')
+        .from('tools')
         .insert({
           variation_instance_id: variationId,
           model_name: modelData.model_name || '',
@@ -277,7 +277,7 @@ export function EnhancedVariationViewer({
   const deleteModel = async (modelId: string) => {
     try {
       const { error } = await supabase
-        .from('tool_models')
+        .from('tools')
         .delete()
         .eq('id', modelId);
 

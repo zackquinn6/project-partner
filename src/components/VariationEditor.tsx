@@ -88,7 +88,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
     try {
       // Fetch models
       const { data: modelsData, error: modelsError } = await supabase
-        .from('tool_models')
+        .from('tools')
         .select('*')
         .eq('variation_instance_id', variation.id);
 
@@ -181,7 +181,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
 
     try {
       const { data, error } = await supabase
-        .from('tool_models')
+        .from('tools')
         .insert({
           variation_instance_id: variation.id,
           model_name: newModel.model_name,
@@ -206,7 +206,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
   const deleteModel = async (modelId: string) => {
     try {
       const { error } = await supabase
-        .from('tool_models')
+        .from('tools')
         .delete()
         .eq('id', modelId);
 

@@ -283,7 +283,7 @@ serve(async (req) => {
             .from('variation_instances')
             .select(`
               id, name, attributes, estimated_weight_lbs, estimated_rental_lifespan_days,
-              tool_models(id, model_name, manufacturer)
+              tools(id, model_name, manufacturer)
             `)
             .eq('id', variationId)
             .single();
@@ -295,7 +295,7 @@ serve(async (req) => {
 
           // Use variation name for search term
           const toolSearchTerm = variation.name;
-          console.log(`Processing variation: ${toolSearchTerm} (has ${variation.tool_models?.length || 0} models)`);
+          console.log(`Processing variation: ${toolSearchTerm} (has ${variation.tools?.length || 0} models)`);
 
           // Only estimate if not already present
           let needsWeightEstimate = !variation.estimated_weight_lbs;
@@ -320,9 +320,9 @@ serve(async (req) => {
           }
 
           // Process pricing for tool models if they exist
-          if (variation.tool_models?.length > 0) {
-            console.log(`Processing pricing for ${variation.tool_models.length} models`);
-            const toolModel = variation.tool_models[0];
+          if (variation.tools?.length > 0) {
+            console.log(`Processing pricing for ${variation.tools.length} models`);
+            const toolModel = variation.tools[0];
             
             // Scrape pricing from all retailers
             const retailerPromises = RETAILERS.slice(0, 3).map(retailer => // Limit to first 3 retailers for efficiency
@@ -386,7 +386,7 @@ serve(async (req) => {
 
     // Get the model details
     const { data: model, error: modelError } = await supabase
-      .from('tool_models')
+      .from('tools')
       .select('*, variation_instances(*)')
       .eq('id', currentModelId)
       .single();
