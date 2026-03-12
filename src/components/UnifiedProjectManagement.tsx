@@ -32,7 +32,7 @@ interface Project {
   id: string;
   name: string;
   description: string;
-  publish_status: 'draft' | 'beta-testing' | 'published' | 'archived';
+  publish_status: 'draft' | 'beta-testing' | 'published' | 'archived' | 'coming-soon';
   revision_number: number;
   parent_project_id: string | null;
   created_at: string;
@@ -1667,11 +1667,29 @@ export function UnifiedProjectManagement({
                             <Label className="text-sm">Status</Label>
                             <div className="p-2 text-sm">
                               {(() => {
-                            if (!projectRevisions || projectRevisions.length === 0) return 'No revisions';
-                            const latestRevision = projectRevisions.find(r => r.is_current_version) || projectRevisions[0];
-                            const statusText = latestRevision.publish_status === 'published' ? 'Production' : latestRevision.publish_status === 'beta-testing' ? 'Beta' : latestRevision.publish_status === 'draft' ? 'Draft' : 'Archived';
-                            return `Revision ${latestRevision.revision_number} - ${statusText}`;
-                          })()}
+                                if (!projectRevisions || projectRevisions.length === 0) return 'No revisions';
+                                const latestRevision = projectRevisions.find(r => r.is_current_version) || projectRevisions[0];
+                                
+                                let statusText: string;
+                                switch (latestRevision.publish_status) {
+                                  case 'published':
+                                    statusText = 'Production';
+                                    break;
+                                  case 'beta-testing':
+                                    statusText = 'Beta';
+                                    break;
+                                  case 'draft':
+                                    statusText = 'Draft';
+                                    break;
+                                  case 'coming-soon':
+                                    statusText = 'Coming Soon';
+                                    break;
+                                  default:
+                                    statusText = 'Archived';
+                                }
+                                
+                                return `Revision ${latestRevision.revision_number} - ${statusText}`;
+                              })()}
                             </div>
                           </div>
 
@@ -2317,7 +2335,7 @@ export function UnifiedProjectManagement({
                                   description: revision.description || '',
                                   createdAt: new Date(revision.created_at),
                                   updatedAt: new Date(revision.updated_at),
-                                  publishStatus: revision.publish_status as 'draft' | 'published' | 'beta-testing',
+                                  publishStatus: revision.publish_status as 'draft' | 'published' | 'beta-testing' | 'archived' | 'coming-soon',
                                   phases: parsedPhases,
                                   category: Array.isArray(revision.category) ? revision.category : (revision.category ? [revision.category] : [])
                                 });

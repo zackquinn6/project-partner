@@ -104,13 +104,11 @@ const handler = async (req: Request): Promise<Response> => {
     if (validatedData.type === 'test') {
       subject = "Test Maintenance Reminder";
       htmlContent = `
-        <div style="max-width: 640px; margin: 0 auto; padding: 24px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111827; background-color: #000000;">
+        <div style="max-width: 640px; margin: 0 auto; padding: 24px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #F9FAFB; background-color: #000000;">
           <div style="text-align: left; margin-bottom: 24px;">
-            <img 
-              src="https://ff4d4ef6-43cd-4980-95c7-b7dcb84d3bbf.lovableproject.com/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png" 
-              alt="Project Partner" 
-              style="max-width: 220px; height: auto;"
-            />
+            <span style="display: inline-block; font-size: 28px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #F97316;">
+              Project Partner
+            </span>
           </div>
           <div style="background-color: #111827; border-radius: 12px; padding: 24px 20px; border: 1px solid #4B5563;">
             <h2 style="margin: 0 0 16px; font-size: 22px; line-height: 1.3; color: #F97316;">

@@ -802,6 +802,12 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                         Beta Testing
                       </div>
                     </SelectItem>
+                    <SelectItem value="coming-soon">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                        Coming Soon
+                      </div>
+                    </SelectItem>
                     <SelectItem value="published">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
