@@ -335,6 +335,11 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       finalProjects = Array.from(byFamily.values());
     }
 
+    // Always sort alphabetically by project name for stable catalog ordering
+    finalProjects = [...finalProjects].sort((a, b) => 
+      (a.name || '').localeCompare(b.name || '')
+    );
+
     console.log('✅ publishedProjects:', {
       count: finalProjects.length,
       projects: finalProjects.map(p => ({
@@ -1560,25 +1565,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       </div>
                     </div>
                     
-                    {/* Button - Fixed at bottom */}
-                    <div className="flex-shrink-0 px-4 pb-3 pt-2 bg-card border-t border-border" style={{ marginTop: 'auto' }}>
-                      <Button 
-                        size="sm" 
-                        className="w-full text-xs h-7" 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          console.log('🔘 DESKTOP BUTTON CLICK - Project:', project.name);
-                          try {
-                            handleSelectProject(project);
-                          } catch (error) {
-                            console.error('❌ Error in button handleSelectProject:', error);
-                          }
-                        }}
-                      >
-                        {isAdminMode ? 'Edit Template' : 'Start Project'}
-                      </Button>
-                    </div>
+                    {/* Button removed: cards themselves handle project selection */}
                   </div>
                 </div>
               );
