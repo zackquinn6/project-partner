@@ -182,14 +182,20 @@ export function MaintenanceNotifications({
         data,
       });
       if (error) {
-        let errMsg = (error as { message?: string }).message ?? 'Failed to send test email';
-        const errAny = error as { context?: unknown; details?: string };
-        if (errAny?.details && typeof errAny.details === 'string') {
-          try {
-            const parsed = JSON.parse(errAny.details) as { error?: string };
-            if (parsed?.error) errMsg = parsed.error;
-          } catch {
-            if (errAny.details.length < 200) errMsg = errAny.details;
+        let errMsg = 'Failed to send test email';
+        // Prefer message from response body (edge function returns { error: "..." })
+        if (data && typeof data === 'object' && 'error' in data && typeof (data as { error?: unknown }).error === 'string') {
+          errMsg = (data as { error: string }).error;
+        } else {
+          errMsg = (error as { message?: string }).message ?? errMsg;
+          const errAny = error as { details?: string };
+          if (errAny?.details && typeof errAny.details === 'string') {
+            try {
+              const parsed = JSON.parse(errAny.details) as { error?: string };
+              if (parsed?.error) errMsg = parsed.error;
+            } catch {
+              if (errAny.details.length < 200) errMsg = errAny.details;
+            }
           }
         }
         console.error(`${DEBUG_PREFIX} 5. Throwing after parsing error`, { errMsg });
