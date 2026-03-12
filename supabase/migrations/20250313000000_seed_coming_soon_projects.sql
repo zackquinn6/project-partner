@@ -40,7 +40,18 @@ $$;
 DO $$
 DECLARE
   v_project_id UUID;
+  v_owner_id UUID;
 BEGIN
+  -- Reuse an existing project owner so seeded templates have a valid user_id.
+  SELECT user_id
+  INTO v_owner_id
+  FROM projects
+  WHERE user_id IS NOT NULL
+  LIMIT 1;
+
+  IF v_owner_id IS NULL THEN
+    RAISE EXCEPTION 'No existing projects with non-null user_id found. Seed a project first, then re-run this migration.';
+  END IF;
   -- Kitchen Cabinet Installation
   SELECT id INTO v_project_id
   FROM projects
@@ -53,13 +64,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Kitchen Cabinet Installation',
       'Plan, hang, and level new kitchen cabinets for a pro-quality finish.',
       ARRAY['Kitchen','Interior Carpentry'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -75,13 +87,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Interior Door Replacement (prehung or slab)',
       'Replace interior doors with new prehung units or slabs and tune fitment.',
       ARRAY['Doors & Windows','Interior Carpentry'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -97,13 +110,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Baseboard + Trim Installation',
       'Install baseboard and trim with tight joints and clean transitions.',
       ARRAY['Interior Carpentry'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -119,13 +133,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Framing & Building a Non‑Load‑Bearing Wall',
       'Lay out, frame, and stand a non-structural interior wall.',
       ARRAY['Interior Carpentry','Walls & Drywall'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -141,13 +156,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Closet System Build‑Out (shelves, rods, organizers)',
       'Design and install a custom closet layout with shelves, rods, and organizers.',
       ARRAY['Storage & Organization','Interior Carpentry'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -163,13 +179,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Deck Board Replacement or Deck Resurfacing',
       'Remove tired decking, repair framing as needed, and install new deck boards.',
       ARRAY['Decks & Patios','Exterior Carpentry'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -185,13 +202,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Interior Stair Refacing (treads, risers, railings)',
       'Upgrade interior stairs with new treads, risers, and railings.',
       ARRAY['Interior Carpentry'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -207,13 +225,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Interior Painting (walls, ceilings, trim)',
       'Prep, prime, and paint interior walls, ceilings, and trim.',
       ARRAY['Painting & Finishing','Interior'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -230,13 +249,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Tile Flooring Installation',
       'Install durable tile flooring over a properly prepared substrate.',
       ARRAY['Flooring','Tile'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -252,13 +272,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Tile Backsplash Installation',
       'Add a kitchen or bath backsplash with clean edges and aligned patterns.',
       ARRAY['Tile','Kitchen'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -274,13 +295,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Laminate or Engineered Flooring Installation',
       'Install laminate or engineered flooring with clean transitions and expansion gaps.',
       ARRAY['Flooring'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -296,13 +318,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Drywall Repair + Finishing (patch, tape, mud, sand)',
       'Repair drywall and finish seams to a paint-ready surface.',
       ARRAY['Walls & Drywall'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -318,13 +341,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Wallpaper Installation or Removal',
       'Strip old wallpaper cleanly or hang new paper with tight seams.',
       ARRAY['Painting & Finishing','Decor'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -340,13 +364,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Shiplap or Accent Wall Installation',
       'Create a feature wall with shiplap or accent paneling.',
       ARRAY['Interior Carpentry','Walls & Drywall'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -362,13 +387,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Vanity Replacement (sink, faucet, drain)',
       'Swap a bathroom vanity, sink, and faucet while managing plumbing in tight spaces.',
       ARRAY['Bathroom','Plumbing'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -385,13 +411,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Toilet Replacement',
       'Remove and replace a toilet with a new seal and leak-free connections.',
       ARRAY['Bathroom','Plumbing'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -407,13 +434,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Shower Fixture Upgrade (valve trim, showerhead, handle)',
       'Upgrade shower trim and fixtures while respecting existing valves and tile.',
       ARRAY['Bathroom','Plumbing'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -429,13 +457,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Garbage Disposal Installation',
       'Install or replace a kitchen garbage disposal with proper mounting and plumbing.',
       ARRAY['Kitchen','Plumbing'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -451,13 +480,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Kitchen Sink Replacement (undermount or drop‑in)',
       'Replace a kitchen sink and reconnect plumbing with solid support and clean sealant.',
       ARRAY['Kitchen','Plumbing'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -473,13 +503,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Window Trim Replacement (interior casing + stool)',
       'Replace interior window casing and stool for a cleaner, better-sealed opening.',
       ARRAY['Doors & Windows','Interior Carpentry'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -495,13 +526,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Exterior Door Weatherproofing (sill pan, flashing, seals)',
       'Upgrade an exterior door’s water and air defenses with sill pans, flashing, and seals.',
       ARRAY['Doors & Windows','Insulation & Weatherproofing'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -517,13 +549,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Storm Door Installation',
       'Install a new storm door that closes smoothly and seals well with the entry door.',
       ARRAY['Doors & Windows','Exterior Carpentry'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -539,13 +572,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Outlet/Switch Replacement',
       'Replace outlets, GFCI protection, and switches (including dimmers and smart switches) safely.',
       ARRAY['Electrical'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -561,13 +595,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Light Fixture Replacement (ceiling, wall, vanity)',
       'Swap light fixtures and support them properly with clean finishes at ceilings and walls.',
       ARRAY['Lighting & Electrical'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
@@ -583,13 +618,14 @@ BEGIN
     SET publish_status = 'coming-soon'
     WHERE id = v_project_id;
   ELSE
-    INSERT INTO projects (name, description, category, publish_status, is_current_version)
+    INSERT INTO projects (name, description, category, publish_status, is_current_version, user_id)
     VALUES (
       'Ceiling Fan Installation (with or without existing box upgrade)',
       'Install or upgrade a ceiling fan with fan-rated support and balanced blades.',
       ARRAY['Lighting & Electrical'],
       'coming-soon',
-      true
+      true,
+      v_owner_id
     );
   END IF;
 
