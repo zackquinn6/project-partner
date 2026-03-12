@@ -1013,7 +1013,6 @@ export async function importGeneratedProject(
                 type: o.type || 'none',
               })) : []),
               apps: [],
-              display_order: stepIndex,
               time_estimate_low: timeEstimateLow,
               time_estimate_medium: timeEstimateMedium,
               time_estimate_high: timeEstimateHigh,
@@ -1226,7 +1225,6 @@ export async function importGeneratedProject(
               tools: [],
               outputs: [],
               apps: [],
-              display_order: 0,
             })
             .select('id')
             .single();
@@ -1289,7 +1287,6 @@ export async function importGeneratedProject(
               tools: [],
               outputs: [],
               apps: [],
-              display_order: 0,
             })
             .select('id')
             .single();

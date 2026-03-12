@@ -273,12 +273,12 @@ Prime|Finish|Post-install inspection|Inspect grout and tile|Check for cracks in 
                 tools: [],
                 outputs: parseOutputs(step.outputs),
                 apps: [],
-                display_order: stepOrder++
               });
             
             if (stepError) {
               addLog(`      ❌ Error creating step ${step.step}: ${stepError.message}`);
             } else {
+              stepOrder++;
               addLog(`      ✅ ${step.step} (${step.outputs.length} outputs)`);
             }
           }
