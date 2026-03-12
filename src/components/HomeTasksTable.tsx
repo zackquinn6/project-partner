@@ -628,7 +628,7 @@ export function HomeTasksTable({
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </TableBody>
           </Table>
