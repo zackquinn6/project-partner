@@ -630,17 +630,17 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                         <div className="hidden md:grid gap-3 items-stretch" style={{ gridTemplateColumns: '0.2fr 0.2fr 2.6fr' }}>
                           <Card className="min-w-0 border-border/60 shadow-sm">
                             <CardContent className="p-2 py-1.5">
-                              <div className="flex items-baseline justify-between gap-2">
+                              <div className="flex items-center justify-between gap-2">
                                 <span className="text-xs text-muted-foreground">Total open</span>
-                                <span className="text-xl font-bold leading-tight">{openTasks.length}</span>
+                                <span className="text-xl font-bold leading-tight pr-2">{openTasks.length}</span>
                               </div>
                             </CardContent>
                           </Card>
                           <Card className="min-w-0 border-border/60 shadow-sm">
                             <CardContent className="p-2 py-1.5">
-                              <div className="flex items-baseline justify-between gap-2">
+                              <div className="flex items-center justify-between gap-2">
                                 <span className="text-xs text-muted-foreground">Total Completed</span>
-                                <span className="text-xl font-bold leading-tight">{completedTasks.length}</span>
+                                <span className="text-xl font-bold leading-tight pr-2">{completedTasks.length}</span>
                               </div>
                             </CardContent>
                           </Card>
@@ -705,19 +705,19 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                                         <div className="mt-2 grid grid-cols-4 gap-2 text-center">
                                           <div>
                                             <div className="text-lg font-semibold">{openByLevel.beginner ?? 0}</div>
-                                            <div className="text-[11px] text-muted-foreground">Beg</div>
+                                            <div className="text-[11px] text-muted-foreground">Beginner</div>
                                           </div>
                                           <div>
                                             <div className="text-lg font-semibold">{openByLevel.intermediate ?? 0}</div>
-                                            <div className="text-[11px] text-muted-foreground">Int</div>
+                                            <div className="text-[11px] text-muted-foreground">Intermediate</div>
                                           </div>
                                           <div>
                                             <div className="text-lg font-semibold">{openByLevel.advanced ?? 0}</div>
-                                            <div className="text-[11px] text-muted-foreground">Adv</div>
+                                            <div className="text-[11px] text-muted-foreground">Advanced</div>
                                           </div>
                                           <div>
                                             <div className="text-lg font-semibold">{openByLevel.pro ?? 0}</div>
-                                            <div className="text-[11px] text-muted-foreground">Pro</div>
+                                            <div className="text-[11px] text-muted-foreground">Professional</div>
                                           </div>
                                         </div>
                                       </CardContent>
