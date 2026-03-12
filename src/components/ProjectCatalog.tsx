@@ -56,6 +56,560 @@ const FILTER_DESCRIPTIONS = {
   projectType: "Primary projects can stand on their own (e.g., install tile flooring). Secondary projects usually support a main effort (e.g., demo flooring or install baseboard)."
 } as const;
 
+const COMING_SOON_PROJECTS: Project[] = [
+  {
+    id: 'coming-soon-kitchen-cabinet-installation',
+    name: 'Kitchen Cabinet Installation',
+    description: 'Plan, hang, and level new kitchen cabinets for a pro-quality finish, including layout, shimming, and fastening to studs.',
+    projectChallenges: 'Precision leveling across walls that are rarely straight, managing heavy cabinet boxes safely, and keeping reveals consistent.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Kitchen', 'Interior Carpentry'],
+    effortLevel: 'High',
+    skillLevel: 'Advanced',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Primary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-interior-door-replacement',
+    name: 'Interior Door Replacement (prehung or slab)',
+    description: 'Swap interior doors with new prehung units or slabs, tune fitment, and get clean operation with modern hardware.',
+    projectChallenges: 'Aligning doors in slightly out-of-square frames, chiseling hinges cleanly, and dialing in gap and latch alignment.',
+    projectChallenges: 'Aligning doors in slightly out-of-square frames, chiseling hinges cleanly, and dialing in gap and latch alignment.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Doors & Windows', 'Interior Carpentry'],
+    effortLevel: 'Medium',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Primary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-baseboard-trim-installation',
+    name: 'Baseboard + Trim Installation',
+    description: 'Install baseboard, casing, and simple trim profiles with tight joints and smooth transitions room to room.',
+    projectChallenges: 'Cutting clean miters and copes, dealing with wavy walls and out-of-level floors, and managing lots of repetitive cuts.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Interior Carpentry'],
+    effortLevel: 'Medium',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Secondary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-non-load-bearing-wall-framing',
+    name: 'Framing & Building a Non‑Load‑Bearing Wall',
+    description: 'Lay out, frame, and stand a non-structural wall including plates, studs, and openings for doors or closets.',
+    projectChallenges: 'Keeping walls plumb and straight, tying into existing framing cleanly, and planning rough openings and utilities.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Interior Carpentry', 'Walls & Drywall'],
+    effortLevel: 'High',
+    skillLevel: 'Advanced',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Primary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-closet-system-build-out',
+    name: 'Closet System Build‑Out (shelves, rods, organizers)',
+    description: 'Design and install a custom closet layout with shelves, rods, and organizers that actually fit your space and stuff.',
+    projectChallenges: 'Anchoring securely into studs or drywall, laying out heights that work in real life, and dealing with uneven walls.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Storage & Organization', 'Interior Carpentry'],
+    effortLevel: 'Medium',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Primary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-deck-board-replacement',
+    name: 'Deck Board Replacement or Deck Resurfacing',
+    description: 'Remove tired decking, repair framing as needed, and install new deck boards with safe spacing and clean layout.',
+    projectChallenges: 'Working over heights, evaluating hidden rot, and keeping consistent spacing and fastener lines across the whole deck.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Decks & Patios', 'Exterior Carpentry'],
+    effortLevel: 'High',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Primary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-interior-stair-refacing',
+    name: 'Interior Stair Refacing (treads, risers, railings)',
+    description: 'Upgrade interior stairs with new treads, risers, and railings while keeping things safe, code-conscious, and squeak-free.',
+    projectChallenges: 'Template work on odd-shaped treads, keeping nosings consistent, and maintaining handrail and baluster spacing.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Interior Carpentry'],
+    effortLevel: 'High',
+    skillLevel: 'Advanced',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Primary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-interior-painting',
+    name: 'Interior Painting (walls, ceilings, trim)',
+    description: 'Prep, prime, and paint walls, ceilings, and trim so the room looks sharp up close and holds up to real life.',
+    projectChallenges: 'Surface prep and patching, clean cutting at ceilings and trim, and managing dust, drips, and drying times.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Painting & Finishing', 'Interior'],
+    effortLevel: 'Medium',
+    skillLevel: 'Beginner',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Primary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-tile-flooring-installation',
+    name: 'Tile Flooring Installation',
+    description: 'Install durable tile flooring over a properly prepared substrate with straight lines, clean cuts, and lasting grout joints.',
+    projectChallenges: 'Subfloor prep and leveling, setting layout to avoid slivers, and managing thinset, lippage, and grout cleanup.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Flooring', 'Tile'],
+    effortLevel: 'High',
+    skillLevel: 'Advanced',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Primary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-tile-backsplash-installation',
+    name: 'Tile Backsplash Installation',
+    description: 'Add a kitchen or bath backsplash with clean edges, aligned patterns, and neat grout around outlets and fixtures.',
+    projectChallenges: 'Cutting around outlets and corners, handling mosaic sheets, and keeping lines straight over wavy walls.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Tile', 'Kitchen'],
+    effortLevel: 'Medium',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Secondary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-laminate-engineered-flooring',
+    name: 'Laminate or Engineered Flooring Installation',
+    description: 'Float or click together laminate or engineered planks with good expansion gaps, straight rows, and clean transitions.',
+    projectChallenges: 'Managing expansion spacing, staggering joints, undercutting jambs, and dealing with out-of-square rooms.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Flooring'],
+    effortLevel: 'Medium',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Primary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-drywall-repair-finishing',
+    name: 'Drywall Repair + Finishing (patch, tape, mud, sand)',
+    description: 'Repair holes, cracks, and seams in drywall, then tape, mud, and sand to get a paint-ready surface that disappears.',
+    projectChallenges: 'Feathering joints wide enough, controlling dust, and matching existing texture under real room lighting.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Walls & Drywall'],
+    effortLevel: 'Medium',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Secondary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-wallpaper-installation-removal',
+    name: 'Wallpaper Installation or Removal',
+    description: 'Strip tired wallpaper cleanly or hang new paper with tight seams, aligned patterns, and minimal bubbles.',
+    projectChallenges: 'Avoiding wall damage during removal, managing paste and booking times, and aligning patterns around corners.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Painting & Finishing', 'Decor'],
+    effortLevel: 'Medium',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Primary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-shiplap-accent-wall',
+    name: 'Shiplap or Accent Wall Installation',
+    description: 'Create a feature wall with shiplap or accent paneling that sits flat, lines up, and works with outlets and trim.',
+    projectChallenges: 'Finding studs, handling long boards, keeping reveals even, and trimming around windows, outlets, and corners.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Interior Carpentry', 'Walls & Drywall'],
+    effortLevel: 'Medium',
+    skillLevel: 'Beginner',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Secondary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-vanity-replacement',
+    name: 'Vanity Replacement (sink, faucet, drain)',
+    description: 'Swap a bathroom vanity, sink, and faucet while handling supply lines, drains, and tight working clearances.',
+    projectChallenges: 'Working in cramped spaces, dealing with old shutoffs and drains, and setting the new vanity level and secure.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Bathroom', 'Plumbing'],
+    effortLevel: 'Medium',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Primary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-toilet-replacement',
+    name: 'Toilet Replacement',
+    description: 'Remove and replace a toilet with a new wax (or waxless) seal, solid setting, and leak-free connections.',
+    projectChallenges: 'Avoiding damage to finished floors, handling wax seals cleanly, and stopping tiny leaks at supply and base.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Bathroom', 'Plumbing'],
+    effortLevel: 'Medium',
+    skillLevel: 'Beginner',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Secondary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-shower-fixture-upgrade',
+    name: 'Shower Fixture Upgrade (valve trim, showerhead, handle)',
+    description: 'Upgrade shower trim and fixtures safely while respecting the existing valve, tile, and waterproofing.',
+    projectChallenges: 'Matching trim to existing valves, working around finished tile, and avoiding hidden leaks inside the wall.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Bathroom', 'Plumbing'],
+    effortLevel: 'Medium',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Secondary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-garbage-disposal-installation',
+    name: 'Garbage Disposal Installation',
+    description: 'Install or replace a kitchen garbage disposal with proper mounting, wiring, and leak-free drain connections.',
+    projectChallenges: 'Working under a crowded sink, wiring safely in tight quarters, and sealing every drain joint so it stays dry.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Kitchen', 'Plumbing'],
+    effortLevel: 'Medium',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Secondary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-kitchen-sink-replacement',
+    name: 'Kitchen Sink Replacement (undermount or drop‑in)',
+    description: 'Replace a kitchen sink and reconnect plumbing with solid support, clean sealant lines, and no leaks.',
+    projectChallenges: 'Supporting undermount sinks, cutting or modifying countertops or cabinets, and resetting drains and supply lines.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Kitchen', 'Plumbing'],
+    effortLevel: 'High',
+    skillLevel: 'Advanced',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Primary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-window-trim-replacement',
+    name: 'Window Trim Replacement (interior casing + stool)',
+    description: 'Replace interior window casing and stool for a cleaner look that still seals and sheds water properly.',
+    projectChallenges: 'Dealing with out-of-square openings, cutting precise returns, and tying into existing sills, jambs, and walls.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Doors & Windows', 'Interior Carpentry'],
+    effortLevel: 'Medium',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Secondary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-exterior-door-weatherproofing',
+    name: 'Exterior Door Weatherproofing (sill pan, flashing, seals)',
+    description: 'Upgrade an exterior door’s water and air defenses with sill pans, flashing, and fresh seals.',
+    projectChallenges: 'Working at thresholds without damaging finishes, integrating flashing with existing siding, and dialing in tight weatherstripping.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Doors & Windows', 'Insulation & Weatherproofing'],
+    effortLevel: 'Medium',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Secondary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-storm-door-installation',
+    name: 'Storm Door Installation',
+    description: 'Install a new storm door that closes smoothly, seals well, and works with your existing entry door.',
+    projectChallenges: 'Shimming out-of-square openings, trimming Z-bars and sweeps, and aligning closers so the door doesn’t slam or drag.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Doors & Windows', 'Exterior Carpentry'],
+    effortLevel: 'Medium',
+    skillLevel: 'Beginner',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Secondary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-outlet-switch-replacement',
+    name: 'Outlet/Switch Replacement',
+    description: 'Replace standard outlets, GFCI protection, and switches (including dimmers and smart switches) safely and neatly.',
+    projectChallenges: 'Verifying power is off, wiring to code, fitting multiple devices in tight boxes, and labeling circuits clearly.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Electrical'],
+    effortLevel: 'Low',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Secondary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-light-fixture-replacement',
+    name: 'Light Fixture Replacement (ceiling, wall, vanity)',
+    description: 'Swap light fixtures cleanly, support them properly, and get clean finishes at ceilings, walls, and mirrors.',
+    projectChallenges: 'Working off ladders, fitting canopies to old boxes, and managing junction box fill and grounding.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Lighting & Electrical'],
+    effortLevel: 'Low',
+    skillLevel: 'Beginner',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Secondary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  },
+  {
+    id: 'coming-soon-ceiling-fan-installation',
+    name: 'Ceiling Fan Installation (with or without existing box upgrade)',
+    description: 'Install or upgrade a ceiling fan with proper support, balanced blades, and safe wiring for long-term use.',
+    projectChallenges: 'Upgrading to fan-rated boxes, working overhead from ladders, and balancing fans to avoid wobble and noise.',
+    image: undefined,
+    images: [],
+    cover_image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    publishStatus: 'coming-soon',
+    category: ['Lighting & Electrical'],
+    effortLevel: 'Medium',
+    skillLevel: 'Intermediate',
+    estimatedTime: '',
+    estimatedTotalTime: undefined,
+    typicalProjectSize: undefined,
+    projectType: 'Primary',
+    estimatedTimePerUnit: undefined,
+    scalingUnit: undefined,
+    phases: []
+  }
+];
+
 const FilterMenuHeader: React.FC<{ label: string; description: string }> = ({ label, description }) => (
   <div className="px-2 py-1 text-xs font-medium text-muted-foreground flex items-center justify-between">
     <span>{label}</span>
@@ -108,6 +662,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const [homes, setHomes] = useState<any[]>([]);
   const [showHomeManager, setShowHomeManager] = useState(false);
   const [taskManagerOpen, setTaskManagerOpen] = useState(false);
+  const [comingSoonProject, setComingSoonProject] = useState<Project | null>(null);
   const [projectSetupForm, setProjectSetupForm] = useState({
     customProjectName: '',
     projectLeader: '',
@@ -234,7 +789,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
   // Filter projects to show published and beta projects or all projects in admin mode
   const publishedProjects = useMemo(() => {
-    const filtered = user 
+    const filteredFromDb = user 
       ? projects.filter(project => {
           const publishStatus = project.publishStatus || (project as any).publish_status;
           // Projects are already filtered to is_current_version = true in ProjectDataContext
@@ -274,17 +829,22 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           const isNotStandardFoundation = !(project as any).is_standard && project.id !== '00000000-0000-0000-0000-000000000001';
           return isNotManualTemplate && isNotStandardFoundation;
         });
+
+    const combined = [
+      ...filteredFromDb,
+      ...COMING_SOON_PROJECTS
+    ];
     
     console.log('✅ publishedProjects:', {
-      count: filtered.length,
-      projects: filtered.map(p => ({ 
+      count: combined.length,
+      projects: combined.map(p => ({ 
         name: p.name, 
         publishStatus: p.publishStatus || (p as any).publish_status,
         isCurrentVersion: (p as any).is_current_version 
       }))
     });
     
-    return filtered;
+    return combined;
   }, [projects, user, isAdminMode, publicProjects]);
 
   // Get unique filter options
@@ -427,6 +987,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       
       if (!project) {
         console.error('❌ No project provided to handleSelectProject');
+        return;
+      }
+
+      const publishStatus = project.publishStatus || (project as any).publish_status;
+      if (publishStatus === 'coming-soon') {
+        setComingSoonProject(project);
         return;
       }
       
@@ -1350,6 +1916,11 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                               BETA
                             </Badge>
                           )}
+                          {project.publishStatus === 'coming-soon' && (
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-[10px] px-1 py-0 flex-shrink-0">
+                              Coming Soon
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1457,8 +2028,24 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                             BETA
                           </Badge>
                         )}
+                        {project.publishStatus === 'coming-soon' && (
+                          <Badge variant="secondary" className="bg-blue-500/20 text-blue-200 border-blue-300/30 backdrop-blur-sm text-[10px] px-1.5 py-0">
+                            Coming Soon
+                          </Badge>
+                        )}
                         {isAdminMode && (
-                          <Badge variant="secondary" className={`${project.publishStatus === 'published' ? 'bg-green-500/20 text-green-300' : project.publishStatus === 'beta-testing' ? 'bg-orange-500/20 text-orange-300' : 'bg-yellow-500/20 text-yellow-300'} backdrop-blur-sm text-[10px] px-1.5 py-0`}>
+                          <Badge
+                            variant="secondary"
+                            className={`${
+                              project.publishStatus === 'published'
+                                ? 'bg-green-500/20 text-green-300'
+                                : project.publishStatus === 'beta-testing'
+                                ? 'bg-orange-500/20 text-orange-300'
+                                : project.publishStatus === 'coming-soon'
+                                ? 'bg-blue-500/20 text-blue-300'
+                                : 'bg-yellow-500/20 text-yellow-300'
+                            } backdrop-blur-sm text-[10px] px-1.5 py-0`}
+                          >
                             {project.publishStatus}
                           </Badge>
                         )}
@@ -1577,6 +2164,50 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               </div>
             </DialogContent>
           </Dialog>}
+
+        {/* Coming Soon dialog - blocks starting unreleased projects */}
+        {!isAdminMode && comingSoonProject && (
+          <Dialog open={!!comingSoonProject} onOpenChange={(open) => !open && setComingSoonProject(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{comingSoonProject.name}</DialogTitle>
+                <DialogDescription>
+                  This project is not ready for workflows yet. It&apos;s scheduled to launch in June 2026.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 text-sm">
+                {comingSoonProject.description && (
+                  <p>{comingSoonProject.description}</p>
+                )}
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  {comingSoonProject.skillLevel && (
+                    <Badge variant="outline">
+                      Skill: {comingSoonProject.skillLevel}
+                    </Badge>
+                  )}
+                  {comingSoonProject.effortLevel && (
+                    <Badge variant="outline">
+                      Effort: {comingSoonProject.effortLevel}
+                    </Badge>
+                  )}
+                  {Array.isArray(comingSoonProject.category) && comingSoonProject.category.length > 0 && (
+                    <Badge variant="outline">
+                      Category: {comingSoonProject.category.join(', ')}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  You can browse other projects in the catalog today. When this one launches, it will be fully wired with phases, steps, and materials.
+                </p>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={() => setComingSoonProject(null)}>
+                  Got it
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* DIY Survey Dialog - Only show in user mode */}
         {!isAdminMode && (
