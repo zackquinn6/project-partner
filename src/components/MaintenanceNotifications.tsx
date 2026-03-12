@@ -112,7 +112,8 @@ export function MaintenanceNotifications({
         title: "Settings Saved",
         description: "Your notification preferences have been updated.",
       });
-      onSaved?.();
+      // Defer close so the dialog state update runs after toast and focus handling
+      setTimeout(() => onSaved?.(), 0);
     } catch (error) {
       console.error('Error saving notification settings:', error);
       toast({
