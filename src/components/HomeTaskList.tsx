@@ -449,18 +449,21 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         }}
       >
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-          <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0">
+          <DialogHeader className="px-2 md:px-4 py-2 md:py-3 border-b flex-shrink-0 bg-gradient-to-r from-slate-50 to-amber-50 dark:from-slate-950 dark:to-amber-950/40">
             <div className="flex items-center justify-between gap-2">
-              <DialogTitle className="text-lg md:text-xl font-bold">Task Manager</DialogTitle>
+              <DialogTitle className="text-lg md:text-xl font-bold">
+                <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">
+                  Task Manager
+                </span>
+              </DialogTitle>
               <div className="flex gap-1.5 items-center">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowHomeManager(true)}
-                  className="h-7 text-[10px] md:text-xs px-2"
+                  className="h-7 w-7 md:w-auto text-[10px] md:text-xs px-0 md:px-2"
                 >
                   <HomeIcon className="h-3 w-3 md:mr-1" />
-                  <span className="hidden md:inline">Homes</span>
                 </Button>
                 <Select value={selectedHomeId || ""} onValueChange={setSelectedHomeId}>
                   <SelectTrigger className="w-[100px] md:w-[160px] text-[10px] md:text-xs h-7">
@@ -501,7 +504,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                 </div>
               </div>
 
-              <div className="flex-1 overflow-auto px-2 md:px-4 pb-2 min-h-0">
+              <div className="flex-1 overflow-auto px-2 md:px-4 pb-2 min-h-0 bg-gradient-to-b from-background to-muted/30">
                 <TabsContent value="tasks" className="mt-0 space-y-2 md:space-y-3 h-full">
                   {/* Project Dashboard metrics (Task Manager) */}
                   {(() => {
@@ -569,13 +572,13 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                       <div className="space-y-3">
                         {/* Key metrics row */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          <Card className="md:col-span-1">
+                          <Card className="md:col-span-1 border-border/60 shadow-sm">
                             <CardContent className="p-4">
                               <div className="text-xs text-muted-foreground">Total open</div>
                               <div className="text-3xl font-bold leading-tight">{openTasks.length}</div>
                             </CardContent>
                           </Card>
-                          <Card className="md:col-span-1">
+                          <Card className="md:col-span-1 border-border/60 shadow-sm">
                             <CardContent className="p-4">
                               <div className="text-xs text-muted-foreground">Total complete (all time)</div>
                               <div className="text-3xl font-bold leading-tight">{completedTasks.length}</div>
@@ -583,13 +586,13 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                           </Card>
                           <div className="md:col-span-1">
                             <Accordion type="single" collapsible>
-                              <AccordionItem value="other-metrics" className="border rounded-lg">
+                              <AccordionItem value="other-metrics" className="border rounded-lg bg-background/80 shadow-sm">
                                 <AccordionTrigger className="px-4 py-3 text-sm">
                                   View other metrics
                                 </AccordionTrigger>
                                 <AccordionContent className="px-4 pb-4">
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <Card>
+                                    <Card className="border-border/60 shadow-sm">
                                       <CardContent className="p-4">
                                         <div className="text-xs text-muted-foreground">Completed tasks</div>
                                         <div className="mt-2 grid grid-cols-3 gap-2 text-center">
@@ -609,14 +612,14 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                                       </CardContent>
                                     </Card>
 
-                                    <Card>
+                                    <Card className="border-border/60 shadow-sm">
                                       <CardContent className="p-4">
                                         <div className="text-xs text-muted-foreground">Overdue tasks</div>
                                         <div className="text-2xl font-bold mt-1">{overdueTasks}</div>
                                       </CardContent>
                                     </Card>
 
-                                    <Card>
+                                    <Card className="border-border/60 shadow-sm">
                                       <CardContent className="p-4">
                                         <div className="text-xs text-muted-foreground">Open tasks by priority</div>
                                         <div className="mt-2 grid grid-cols-3 gap-2 text-center">
@@ -636,7 +639,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                                       </CardContent>
                                     </Card>
 
-                                    <Card>
+                                    <Card className="border-border/60 shadow-sm">
                                       <CardContent className="p-4">
                                         <div className="text-xs text-muted-foreground">Open tasks by level</div>
                                         <div className="mt-2 grid grid-cols-4 gap-2 text-center">
@@ -660,7 +663,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                                       </CardContent>
                                     </Card>
 
-                                    <Card>
+                                    <Card className="border-border/60 shadow-sm">
                                       <CardContent className="p-4">
                                         <div className="text-xs text-muted-foreground">Active projects</div>
                                         <div className="text-2xl font-bold mt-1">{activeProjects}</div>
@@ -668,7 +671,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                                       </CardContent>
                                     </Card>
 
-                                    <Card>
+                                    <Card className="border-border/60 shadow-sm">
                                       <CardContent className="p-4">
                                         <div className="text-xs text-muted-foreground">Estimated hours remaining</div>
                                         <div className="text-2xl font-bold mt-1">{remainingHours.toFixed(1)}h</div>
