@@ -262,9 +262,9 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
     setAddingToolId(tool.id);
     
     try {
-      // Always check if this tool has variations first
+      // Always check if this tool has variations first (from unified tool_variations table)
       const { data: variations, error } = await supabase
-        .from('variation_instances')
+        .from('tool_variations')
         .select('id')
         .eq('core_item_id', tool.id)
         .eq('item_type', 'tools')
