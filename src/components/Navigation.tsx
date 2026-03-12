@@ -304,9 +304,21 @@ export default function Navigation({
           {/* Beta release label - centered, visually appealing */}
           {isBetaMode && (
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-gradient-to-r from-amber-500/90 to-orange-500/90 text-white shadow-md ring-1 ring-white/20 whitespace-nowrap">
-                Welcome to the Project Partner Beta Release
-              </span>
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-gradient-to-r from-amber-500/90 to-orange-500/90 text-white shadow-md ring-1 ring-white/20 whitespace-nowrap cursor-help pointer-events-auto">
+                      Welcome to the Project Partner Beta Release
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-xs text-left">
+                    <p>
+                      This project is designed to make DIY home improvement more successful. We&apos;d gladly appreciate feedback — use
+                      <span className="font-semibold"> Send Feedback</span> from the <span className="font-semibold">?</span> dropdown menu in the upper right corner.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           )}
           
