@@ -76,11 +76,11 @@ export function ToolsLibrary() {
         updated_at: row.updated_at
       }));
       
-      // Fetch variations for each tool
+      // Fetch variations for each tool from unified tool_variations
       const toolsWithVariations = await Promise.all(
         toolsData.map(async (tool) => {
           const { data: variations } = await supabase
-            .from('variation_instances')
+            .from('tool_variations')
             .select('id, name')
             .eq('core_item_id', tool.id)
             .eq('item_type', 'tools');

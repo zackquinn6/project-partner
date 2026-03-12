@@ -442,11 +442,12 @@ export async function importEnhancedToolsToDatabase(
         coreToolId = newCoreTool.id;
       }
       
-      // Create variants
+      // Create variants in unified tool_variations
       for (const variant of tool.variants) {
         const { data: variationInstance, error: variantError } = await supabase
-          .from('variation_instances')
+          .from('tool_variations')
           .insert({
+            id: crypto.randomUUID(),
             core_item_id: coreToolId,
             item_type: 'tools',
             name: variant.name,

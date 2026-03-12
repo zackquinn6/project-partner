@@ -177,10 +177,11 @@ export async function importToolsToDatabase(
       if (tool.variations.length > 0) {
         for (const variation of tool.variations) {
           try {
-            // Create variation instance
+            // Create variation instance in unified tool_variations table
             const { data: variationData, error: variationError } = await supabase
-              .from('variation_instances')
+              .from('tool_variations')
               .insert({
+                id: crypto.randomUUID(),
                 core_item_id: coreToolId,
                 item_type: 'tools',
                 name: `${variation.brand} ${variation.model} ${tool.name}`,
@@ -207,7 +208,7 @@ export async function importToolsToDatabase(
           model_number: variation.model
         });
 
-            // Create attributes and values as needed
+            // Create attributes and values as needed in attribute_definitions JSON
             await createAttributesAndValues(coreToolId, variation.attributes);
 
           } catch (variationError) {
@@ -233,40 +234,53 @@ async function createAttributesAndValues(coreItemId: string, attributes: Record<
     if (!attrValue) continue;
 
     try {
-      // Create or get attribute
-      const { data: attrData, error: attrError } = await supabase
-        .from('variation_attributes')
-        .upsert({
-          name: attrKey,
-          display_name: attrKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-          attribute_type: 'text'
-        }, {
-          onConflict: 'name',
-          ignoreDuplicates: false
-        })
-        .select()
-        .single();
+      // Update attribute_definitions JSON for all variations of this core item
+      const { data: variations, error } = await supabase
+        .from('tool_variations')
+        .select('id, attribute_definitions')
+        .eq('core_item_id', coreItemId)
+        .eq('item_type', 'tools');
 
-      if (attrError) {
-        console.error('Attribute error:', attrError);
+      if (error) {
+        console.error('Attribute error:', error);
         continue;
       }
 
-      // Create attribute value
-      const valueKey = attrValue.toLowerCase().replace(/[^a-z0-9]/g, '_');
-      
-      await supabase
-        .from('variation_attribute_values')
-        .upsert({
-          attribute_id: attrData.id,
-          value: valueKey,
-          display_value: attrValue,
-          core_item_id: coreItemId,
-          sort_order: 0
-        }, {
-          onConflict: 'attribute_id,value,core_item_id',
-          ignoreDuplicates: true
-        });
+      for (const variation of variations || []) {
+        const defs = (variation.attribute_definitions || []) as any[];
+        let attr = defs.find((a: any) => a.name === attrKey);
+
+        if (!attr) {
+          attr = {
+            id: crypto.randomUUID(),
+            name: attrKey,
+            display_name: attrKey.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+            attribute_type: 'text',
+            values: []
+          };
+          defs.push(attr);
+        }
+
+        const valueKey = attrValue.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        const existingValue = (attr.values || []).find((v: any) => v.value === valueKey);
+
+        if (!existingValue) {
+          const values = attr.values || [];
+          values.push({
+            id: crypto.randomUUID(),
+            value: valueKey,
+            display_value: attrValue,
+            sort_order: values.length,
+            core_item_id: coreItemId
+          });
+          attr.values = values;
+        }
+
+        await supabase
+          .from('tool_variations')
+          .update({ attribute_definitions: defs })
+          .eq('id', variation.id);
+      }
 
     } catch (error) {
       console.error('Error creating attribute/value:', error);

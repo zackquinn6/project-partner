@@ -95,8 +95,8 @@ export function VariationSelector({
     try {
       // First get all variation instances for this item to see what attributes actually exist
       const { data: variationsData, error: variationsError } = await supabase
-        .from('variation_instances')
-        .select('attributes')
+        .from('tool_variations')
+        .select('attributes, attribute_definitions')
         .eq('core_item_id', coreItemId)
         .eq('item_type', itemType);
 
@@ -113,34 +113,29 @@ export function VariationSelector({
       });
 
       // Only fetch attributes that actually exist for this item
-      const { data: attributesData, error } = await supabase
-        .from('variation_attributes')
-        .select(`
-          *,
-          variation_attribute_values (*)
-        `)
-        .in('name', Array.from(existingAttributeKeys))
-        .order('display_name');
+      // Attribute definitions now live on tool_variations.attribute_definitions.
+      // Use attribute_definitions from the first variation as the source.
+      const defs = (variationsData?.[0]?.attribute_definitions || []) as any[];
 
-      if (error) throw error;
-
-      const formattedAttributes: VariationAttribute[] = (attributesData || []).map(attr => ({
-        id: attr.id,
-        name: attr.name,
-        display_name: attr.display_name,
-        values: (attr.variation_attribute_values || [])
-          .filter((v: any) => {
-            // Only show values that exist in variations for this specific item
-            return (variationsData || []).some(variation => 
-              variation.attributes && variation.attributes[attr.name] === v.value
-            );
-          })
-          .map((v: any) => ({
-            id: v.id,
-            value: v.value,
-            display_value: v.display_value
-          }))
-      }));
+      const formattedAttributes: VariationAttribute[] = defs
+        .filter((attr: any) => existingAttributeKeys.has(attr.name))
+        .map((attr: any) => ({
+          id: attr.id,
+          name: attr.name,
+          display_name: attr.display_name,
+          values: (attr.values || [])
+            .filter((v: any) => {
+              // Only show values that exist in variations for this specific item
+              return (variationsData || []).some(variation => 
+                variation.attributes && variation.attributes[attr.name] === v.value
+              );
+            })
+            .map((v: any) => ({
+              id: v.id,
+              value: v.value,
+              display_value: v.display_value
+            }))
+        }));
 
       setAttributes(formattedAttributes);
     } catch (error) {
@@ -151,7 +146,7 @@ export function VariationSelector({
   const fetchVariations = async () => {
     try {
       const { data, error } = await supabase
-        .from('variation_instances')
+        .from('tool_variations')
         .select('*')
         .eq('core_item_id', coreItemId)
         .eq('item_type', itemType);

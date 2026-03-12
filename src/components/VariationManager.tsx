@@ -118,58 +118,33 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
 
   const fetchAttributes = async () => {
     try {
-      // First, get all attributes that have values for this core item
-      const { data: attributeValues, error: valuesError } = await supabase
-        .from('variation_attribute_values')
-        .select(`
-          attribute_id,
-          variation_attributes!inner (
-            id,
-            name,
-            display_name,
-            attribute_type
-          )
-        `)
-        .eq('core_item_id', coreItemId);
+      // Attribute definitions are now stored on tool_variations.attribute_definitions.
+      // Use the first variation for this core item as the source of definitions.
+      const { data: variationWithDefs, error } = await supabase
+        .from('tool_variations')
+        .select('attribute_definitions')
+        .eq('core_item_id', coreItemId)
+        .eq('item_type', itemType)
+        .limit(1)
+        .maybeSingle();
 
-      if (valuesError) throw valuesError;
+      if (error) throw error;
 
-      // Get unique attributes
-      const uniqueAttributeIds = [...new Set(attributeValues?.map(v => v.attribute_id))];
-      
-      if (uniqueAttributeIds.length === 0) {
-        setAttributes([]);
-        return;
-      }
-
-      // Now get full attribute data with all their values for this core item
-      const { data: fullAttributesData, error: fullError } = await supabase
-        .from('variation_attributes')
-        .select(`
-          *,
-          variation_attribute_values (*)
-        `)
-        .in('id', uniqueAttributeIds)
-        .order('display_name');
-
-      if (fullError) throw fullError;
-
-      const formattedAttributes: VariationAttribute[] = (fullAttributesData || []).map(attr => {
-        const allValues = (attr.variation_attribute_values || [])
-          .filter((v: any) => v.core_item_id === coreItemId)
-          .sort((a: any, b: any) => a.sort_order - b.sort_order);
-        
-        // If only placeholder values exist, show empty array but keep the attribute
-        const nonPlaceholderValues = allValues.filter((v: any) => v.value !== '_placeholder_');
-        
-        return {
-          id: attr.id,
-          name: attr.name,
-          display_name: attr.display_name,
-          attribute_type: attr.attribute_type,
-          values: nonPlaceholderValues.length > 0 ? nonPlaceholderValues : []
-        };
-      });
+      const defs = (variationWithDefs?.attribute_definitions || []) as any[];
+      const formattedAttributes: VariationAttribute[] = defs.map((attr: any) => ({
+        id: attr.id,
+        name: attr.name,
+        display_name: attr.display_name,
+        attribute_type: attr.attribute_type,
+        values: (attr.values || []).map((v: any) => ({
+          id: v.id,
+          attribute_id: attr.id,
+          value: v.value,
+          display_value: v.display_value,
+          sort_order: v.sort_order,
+          core_item_id: v.core_item_id
+        }))
+      }));
 
       setAttributes(formattedAttributes);
     } catch (error) {
@@ -181,7 +156,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
   const fetchVariations = async () => {
     try {
       const { data, error } = await supabase
-        .from('variation_instances')
+        .from('tool_variations')
         .select('*')
         .eq('core_item_id', coreItemId)
         .eq('item_type', itemType);
@@ -229,73 +204,35 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
         });
       }
 
-      // Create or get attributes and associate them with the tool
-      for (const attrData of attributesToCreate) {
-        // First, try to insert the attribute (will be ignored if exists)
-        const { data: insertedAttr, error: insertError } = await supabase
-          .from('variation_attributes')
-          .insert(attrData)
-          .select()
-          .single();
+      // Update attribute_definitions JSON on all variations for this core item
+      const { data: existingVariations, error: variationsError } = await supabase
+        .from('tool_variations')
+        .select('id, attribute_definitions')
+        .eq('core_item_id', coreItemId)
+        .eq('item_type', itemType);
 
-        let attributeId = insertedAttr?.id;
+      if (variationsError) throw variationsError;
 
-        // If attribute already exists, get its ID
-        if (insertError && insertError.code === '23505') {
-          const { data: existingAttr, error: selectError } = await supabase
-            .from('variation_attributes')
-            .select('id')
-            .eq('name', attrData.name)
-            .single();
+      for (const variation of existingVariations || []) {
+        const defs = (variation.attribute_definitions || []) as any[];
 
-          if (selectError) throw selectError;
-          attributeId = existingAttr.id;
-        } else if (insertError) {
-          throw insertError;
-        }
-
-        // Now create values for this attribute
-        if (attrData.name === 'power_source') {
-          // For power source, create default Battery and Electric values
-          const defaultValues = [
-            { value: 'battery', display_value: 'Battery', sort_order: 1 },
-            { value: 'electric', display_value: 'Electric', sort_order: 2 }
-          ];
-
-          for (const defaultValue of defaultValues) {
-            const { error: valueError } = await supabase
-              .from('variation_attribute_values')
-              .insert({
-                attribute_id: attributeId,
-                value: defaultValue.value,
-                display_value: defaultValue.display_value,
-                sort_order: defaultValue.sort_order,
-                core_item_id: coreItemId
-              });
-
-            // Ignore if value already exists
-            if (valueError && valueError.code !== '23505') {
-              throw valueError;
-            }
-          }
-        } else {
-          // For other attributes, create a placeholder value
-          const { error: valueError } = await supabase
-            .from('variation_attribute_values')
-            .insert({
-              attribute_id: attributeId,
-              value: '_placeholder_',
-              display_value: 'No values yet',
-              sort_order: 999,
-              core_item_id: coreItemId
-            })
-            .select();
-
-          // Ignore if placeholder already exists
-          if (valueError && valueError.code !== '23505') {
-            throw valueError;
+        for (const attrData of attributesToCreate) {
+          const existingAttr = defs.find((a: any) => a.name === attrData.name);
+          if (!existingAttr) {
+            defs.push({
+              id: crypto.randomUUID(),
+              name: attrData.name,
+              display_name: attrData.display_name,
+              attribute_type: attrData.attribute_type,
+              values: []
+            });
           }
         }
+
+        await supabase
+          .from('tool_variations')
+          .update({ attribute_definitions: defs })
+          .eq('id', variation.id);
       }
 
       setNewAttributeName('');
@@ -319,44 +256,40 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('variation_attribute_values')
-        .insert({
-          attribute_id: selectedAttributeId,
-          value: newValueText.toLowerCase().replace(/\s+/g, '_'),
-          display_value: newValueText,
-          sort_order: 0,
-          core_item_id: coreItemId
-        });
+      // Add new value into attribute_definitions for all variations for this core item
+      const { data: existingVariations, error } = await supabase
+        .from('tool_variations')
+        .select('id, attribute_definitions')
+        .eq('core_item_id', coreItemId)
+        .eq('item_type', itemType);
 
-      if (error) {
-        if (error.code === '23505') {
-          toast.error('This attribute value already exists for this item');
-          return;
+      if (error) throw error;
+
+      for (const variation of existingVariations || []) {
+        const defs = (variation.attribute_definitions || []) as any[];
+        const attrIndex = defs.findIndex((a: any) => a.id === selectedAttributeId);
+        if (attrIndex === -1) continue;
+
+        const attr = defs[attrIndex];
+        const values = attr.values || [];
+
+        // Avoid duplicates
+        if (!values.some((v: any) => v.value === newValueText.toLowerCase().replace(/\s+/g, '_'))) {
+          values.push({
+            id: crypto.randomUUID(),
+            value: newValueText.toLowerCase().replace(/\s+/g, '_'),
+            display_value: newValueText,
+            sort_order: values.length,
+            core_item_id: coreItemId
+          });
         }
-        throw error;
-      }
 
-      // Check if this is a power source attribute and auto-create default values
-      const selectedAttribute = attributes.find(attr => attr.id === selectedAttributeId);
-      if (selectedAttribute?.name === 'power_source' && selectedAttribute.values.length === 0) {
-        // Auto-create Battery and Electric values for power source
-        const defaultValues = [
-          { value: 'battery', display_value: 'Battery', sort_order: 1 },
-          { value: 'electric', display_value: 'Electric', sort_order: 2 }
-        ];
+        defs[attrIndex] = { ...attr, values };
 
-        for (const defaultValue of defaultValues) {
-          await supabase
-            .from('variation_attribute_values')
-            .insert({
-              attribute_id: selectedAttributeId,
-              value: defaultValue.value,
-              display_value: defaultValue.display_value,
-              sort_order: defaultValue.sort_order,
-              core_item_id: coreItemId
-            });
-        }
+        await supabase
+          .from('tool_variations')
+          .update({ attribute_definitions: defs })
+          .eq('id', variation.id);
       }
       
       setNewValueText('');

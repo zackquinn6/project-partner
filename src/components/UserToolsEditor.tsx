@@ -158,7 +158,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
       try {
         for (const tool of availableTools) {
           const { data: variations } = await supabase
-            .from('variation_instances')
+            .from('tool_variations')
             .select('*')
             .eq('core_item_id', tool.id)
             .eq('item_type', 'tools');

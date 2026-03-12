@@ -97,9 +97,9 @@ export function EnhancedVariationViewer({
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch variations
+      // Fetch variations from unified tool_variations
       const { data: variationsData, error: variationsError } = await supabase
-        .from('variation_instances')
+        .from('tool_variations')
         .select('*')
         .eq('core_item_id', coreItemId)
         .eq('item_type', itemType);
@@ -210,7 +210,7 @@ export function EnhancedVariationViewer({
   const updateVariationWarningFlags = async (variationId: string, flags: string[]) => {
     try {
       const { error } = await supabase
-        .from('variation_instances')
+        .from('tool_variations')
         .update({ warning_flags: flags })
         .eq('id', variationId);
 
@@ -234,7 +234,7 @@ export function EnhancedVariationViewer({
   ) => {
     try {
       const { error } = await supabase
-        .from('variation_instances')
+        .from('tool_variations')
         .update({ [field]: value })
         .eq('id', variationId);
 
@@ -299,7 +299,7 @@ export function EnhancedVariationViewer({
       const updatedAttributes = { ...variation.attributes, [key]: value };
       
       const { error } = await supabase
-        .from('variation_instances')
+        .from('tool_variations')
         .update({ attributes: updatedAttributes })
         .eq('id', variationId);
 

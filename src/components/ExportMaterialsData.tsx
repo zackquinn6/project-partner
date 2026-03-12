@@ -23,24 +23,14 @@ export function ExportMaterialsData({ className = "" }: ExportMaterialsDataProps
 
       if (materialsError) throw materialsError;
 
-      // Fetch all material variations with their attributes
+      // Fetch all material variations with their attributes (from unified tool_variations)
       const { data: variations, error: variationsError } = await supabase
-        .from('variation_instances')
+        .from('tool_variations')
         .select('*')
         .eq('item_type', 'materials')
         .order('name');
 
       if (variationsError) throw variationsError;
-
-      // Fetch attributes for display names
-      const { data: attributes, error: attributesError } = await supabase
-        .from('variation_attributes')
-        .select(`
-          *,
-          variation_attribute_values(*)
-        `);
-
-      if (attributesError) throw attributesError;
 
       // Create workbook
       const workbook = XLSX.utils.book_new();
@@ -63,11 +53,12 @@ export function ExportMaterialsData({ className = "" }: ExportMaterialsDataProps
         const material = materials?.find(m => m.id === variation.core_item_id);
         const attributeStrings: string[] = [];
         
-        // Convert attributes object to readable format
+        // Convert attributes object to readable format using attribute_definitions stored on the variation
         if (variation.attributes && typeof variation.attributes === 'object') {
+          const attributeDefinitions = (variation.attribute_definitions || []) as any[];
           Object.entries(variation.attributes).forEach(([attrName, valueKey]) => {
-            const attribute = attributes?.find(a => a.name === attrName);
-            const value = attribute?.variation_attribute_values?.find((v: any) => v.value === valueKey);
+            const attribute = attributeDefinitions.find((a: any) => a.name === attrName);
+            const value = attribute?.values?.find((v: any) => v.value === valueKey);
             const displayName = attribute?.display_name || attrName;
             const displayValue = value?.display_value || valueKey;
             attributeStrings.push(`${displayName}: ${displayValue}`);

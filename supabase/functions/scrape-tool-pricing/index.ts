@@ -280,7 +280,7 @@ serve(async (req) => {
         try {
           // Get variation and its optional models (LEFT JOIN instead of INNER)
           const { data: variation, error: variationError } = await supabase
-            .from('variation_instances')
+            .from('tool_variations')
             .select(`
               id, name, attributes, estimated_weight_lbs, estimated_rental_lifespan_days,
               tools(id, model_name, manufacturer)
@@ -313,7 +313,7 @@ serve(async (req) => {
 
           if (Object.keys(updateData).length > 0) {
             await supabase
-              .from('variation_instances')
+              .from('tool_variations')
               .update(updateData)
               .eq('id', variationId);
             console.log(`Updated variation ${variationId} with estimates:`, updateData);
@@ -385,9 +385,9 @@ serve(async (req) => {
     console.log(`Starting price scraping for model: ${currentModelId}, search: ${searchTerm}`);
 
     // Get the model details
-    const { data: model, error: modelError } = await supabase
+      const { data: model, error: modelError } = await supabase
       .from('tools')
-      .select('*, variation_instances(*)')
+      .select('*, tool_variations(*)')
       .eq('id', currentModelId)
       .single();
 
@@ -459,7 +459,7 @@ serve(async (req) => {
         if (lifespanEstimate) updateData.estimated_rental_lifespan_days = lifespanEstimate;
 
         await supabase
-          .from('variation_instances')
+          .from('tool_variations')
           .update(updateData)
           .eq('id', model.variation_instance_id);
       }

@@ -150,7 +150,7 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
     // Always check if this material has variations first
     try {
       const { data: variations, error } = await supabase
-        .from('variation_instances')
+        .from('tool_variations')
         .select('id')
         .eq('core_item_id', material.id)
         .eq('item_type', 'materials')

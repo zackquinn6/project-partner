@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 export const clearAllToolVariations = async (): Promise<boolean> => {
   try {
     const { error } = await supabase
-      .from('variation_instances')
+      .from('tool_variations')
       .delete()
       .eq('item_type', 'tools');
 
@@ -25,7 +25,7 @@ export const clearAllToolVariations = async (): Promise<boolean> => {
 export const clearAllMaterialVariations = async (): Promise<boolean> => {
   try {
     const { error } = await supabase
-      .from('variation_instances')
+      .from('tool_variations')
       .delete()
       .eq('item_type', 'materials');
 
@@ -47,7 +47,7 @@ export const clearAllTools = async (): Promise<boolean> => {
   try {
     // Get all variation instance IDs for tools first
     const { data: toolVariations } = await supabase
-      .from('variation_instances')
+      .from('tool_variations')
       .select('id')
       .eq('item_type', 'tools');
 
@@ -85,7 +85,7 @@ export const clearAllTools = async (): Promise<boolean> => {
 
     console.log('Deleting tool variations...');
     await supabase
-      .from('variation_instances')
+      .from('tool_variations')
       .delete()
       .eq('item_type', 'tools');
 
@@ -114,7 +114,7 @@ export const clearAllMaterials = async (): Promise<boolean> => {
   try {
     // Get all variation instance IDs for materials first
     const { data: materialVariations } = await supabase
-      .from('variation_instances')
+      .from('tool_variations')
       .select('id')
       .eq('item_type', 'materials');
 
@@ -131,7 +131,7 @@ export const clearAllMaterials = async (): Promise<boolean> => {
 
     console.log('Deleting material variations...');
     await supabase
-      .from('variation_instances')
+      .from('tool_variations')
       .delete()
       .eq('item_type', 'materials');
 

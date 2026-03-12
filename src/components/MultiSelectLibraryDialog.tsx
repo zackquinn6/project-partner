@@ -142,7 +142,7 @@ export function MultiSelectLibraryDialog({
       // PERFORMANCE: Fetch all variations in one query instead of one per item
       const itemIds = itemsList.map(i => i.id);
       const { data: allVariations, error } = await supabase
-        .from('variation_instances')
+        .from('tool_variations')
         .select('*')
         .in('core_item_id', itemIds)
         .eq('item_type', type);

@@ -104,9 +104,9 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     if (open && currentStep === 4) {
       const fetchQuickAddTools = async () => {
         try {
-          // Fetch variation instances marked as quick_add for tools
+          // Fetch variation instances marked as quick_add for tools (from unified tool_variations)
           const { data: variations, error } = await supabase
-            .from('variation_instances')
+            .from('tool_variations')
             .select('id, name, core_item_id')
             .eq('item_type', 'tools')
             .eq('quick_add', true)
@@ -482,9 +482,9 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           for (const [variationId, isChecked] of Object.entries(quickAddTools)) {
             if (!isChecked) continue;
             
-            // Fetch the variation instance
+            // Fetch the variation instance from unified tool_variations
             const { data: variation, error: variationError } = await supabase
-              .from('variation_instances')
+              .from('tool_variations')
               .select('id, name, description, photo_url, sku, core_item_id')
               .eq('id', variationId)
               .eq('item_type', 'tools')

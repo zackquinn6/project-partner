@@ -142,7 +142,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
       });
 
       const { error } = await supabase
-        .from('variation_instances')
+        .from('tool_variations')
         .update({
           name: editedVariation.name.trim(),
           description: editedVariation.description || null,

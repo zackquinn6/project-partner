@@ -3,16 +3,26 @@
 
 BEGIN;
 
--- 1) Rename tool_models to tools (preserves existing columns and relationships)
 DO $$
 BEGIN
+  -- If tool_models exists and tools does not, rename.
+  -- If both exist, we assume tool_models is legacy/empty and drop it.
   IF EXISTS (
     SELECT 1
     FROM information_schema.tables
     WHERE table_schema = 'public'
       AND table_name = 'tool_models'
   ) THEN
-    ALTER TABLE public.tool_models RENAME TO tools;
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name = 'tools'
+    ) THEN
+      ALTER TABLE public.tool_models RENAME TO tools;
+    ELSE
+      DROP TABLE public.tool_models CASCADE;
+    END IF;
   END IF;
 END;
 $$;

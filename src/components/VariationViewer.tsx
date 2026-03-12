@@ -76,9 +76,9 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
     
     setLoading(true);
     try {
-      // Fetch variations
+      // Fetch variations from unified tool_variations
       const { data: variationsData, error: variationsError } = await supabase
-        .from('variation_instances')
+        .from('tool_variations')
         .select('*')
         .eq('core_item_id', coreItemId)
         .eq('item_type', itemType);
@@ -126,22 +126,29 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
     if (!coreItemId) return;
     
     try {
-      const { data: attributesData, error } = await supabase
-        .from('variation_attributes')
-        .select(`
-          *,
-          variation_attribute_values!inner (*)
-        `)
-        .eq('variation_attribute_values.core_item_id', coreItemId)
-        .order('display_name');
+      // Attribute definitions now live on tool_variations.attribute_definitions.
+      // Use the first variation for this core item as the source of definitions.
+      const { data: variationWithDefs, error } = await supabase
+        .from('tool_variations')
+        .select('attribute_definitions')
+        .eq('core_item_id', coreItemId)
+        .eq('item_type', itemType)
+        .limit(1)
+        .maybeSingle();
 
       if (error) throw error;
 
-      const formattedAttributes: VariationAttribute[] = attributesData.map(attr => ({
+      const defs = (variationWithDefs?.attribute_definitions || []) as any[];
+      const formattedAttributes: VariationAttribute[] = defs.map((attr: any) => ({
         id: attr.id,
         name: attr.name,
         display_name: attr.display_name,
-        values: attr.variation_attribute_values || []
+        values: (attr.values || []).map((v: any) => ({
+          id: v.id,
+          attribute_id: attr.id,
+          value: v.value,
+          display_value: v.display_value
+        }))
       }));
 
       setAttributes(formattedAttributes);
