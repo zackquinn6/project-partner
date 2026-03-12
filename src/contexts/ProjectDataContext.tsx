@@ -142,7 +142,9 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
           typicalProjectSize: project.typical_project_size,
           estimatedTimePerUnit: project.estimated_time_per_unit,
           scalingUnit: project.scaling_unit as Project['scalingUnit'],
-          phases: Array.isArray(phases) ? phases : []
+          phases: Array.isArray(phases) ? phases : [],
+          revisionNumber: project.revision_number ?? undefined,
+          parentProjectId: project.parent_project_id ?? undefined,
         };
       } catch (e) {
         console.error('❌ transformProjects: Error transforming project:', project?.name, project?.id, e);

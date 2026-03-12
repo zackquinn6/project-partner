@@ -277,15 +277,46 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           return isNotManualTemplate && isNotStandardFoundation;
         });
 
+    let finalProjects = filteredFromDb;
+
+    // For non-admins, collapse revisions so only the latest published/beta (or coming-soon teaser)
+    // per project family is shown in the catalog.
+    if (!isAdminMode) {
+      const byFamily = new Map<string, any>();
+      for (const project of filteredFromDb) {
+        const rootId =
+          (project as any).parent_project_id ||
+          (project as any).parentProjectId ||
+          project.id;
+        const revisionNumber =
+          (project as any).revision_number ??
+          (project as any).revisionNumber ??
+          0;
+        const existing = byFamily.get(rootId);
+        if (!existing) {
+          byFamily.set(rootId, project);
+        } else {
+          const existingRev =
+            (existing as any).revision_number ??
+            (existing as any).revisionNumber ??
+            0;
+          if (revisionNumber > existingRev) {
+            byFamily.set(rootId, project);
+          }
+        }
+      }
+      finalProjects = Array.from(byFamily.values());
+    }
+
     console.log('✅ publishedProjects:', {
-      count: filteredFromDb.length,
-      projects: filteredFromDb.map(p => ({ 
-        name: p.name, 
-        publishStatus: p.publishStatus || (p as any).publish_status
-      }))
+      count: finalProjects.length,
+      projects: finalProjects.map(p => ({
+        name: p.name,
+        publishStatus: p.publishStatus || (p as any).publish_status,
+      })),
     });
     
-    return filteredFromDb;
+    return finalProjects;
   }, [projects, user, isAdminMode, publicProjects]);
 
   // Get unique filter options
@@ -470,6 +501,18 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       if (!user) {
         console.log('❌ No user found - redirecting to auth');
         navigate('/auth?return=projects');
+        return;
+      }
+
+      // Extra guard: only allow starting published or beta projects from catalog
+      const effectivePublishStatus = project.publishStatus || (project as any).publish_status;
+      if (effectivePublishStatus !== 'published' && effectivePublishStatus !== 'beta-testing') {
+        console.warn('Blocked attempt to start non-published/beta project from catalog:', {
+          name: project.name,
+          publishStatus: effectivePublishStatus,
+          visibility,
+        });
+        alert('This project is not yet released. Please choose a published or beta project from the catalog.');
         return;
       }
 
