@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Home as HomeIcon, X, GripVertical, List, ListOrdered, ShoppingCart, Users, Link2 } from "lucide-react";
+import { Plus, Home as HomeIcon, X, GripVertical, List, ListOrdered, ShoppingCart, Users, Link2, HelpCircle } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +22,8 @@ import { RapidProjectAssessment } from "./RapidProjectAssessment";
 import { ResponsiveDialog } from "./ResponsiveDialog";
 import { ShoppingListManager } from "./ShoppingListManager";
 import { useIsMobile } from "@/hooks/useResponsive";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface HomeTask {
   id: string;
@@ -470,6 +472,28 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
             <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
               <List className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" aria-hidden />
               <DialogTitle className="text-base font-bold md:text-xl truncate">Task Manager</DialogTitle>
+              <TooltipProvider delayDuration={400}>
+                <Popover>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <PopoverTrigger asChild>
+                        <button type="button" tabIndex={-1} className="text-muted-foreground hover:text-foreground p-0.5 rounded shrink-0" aria-label="About Task Manager">
+                          <HelpCircle className="h-4 w-4" />
+                        </button>
+                      </PopoverTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs">
+                      <p>About Task Manager</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <PopoverContent side="bottom" className="max-w-sm" align="start">
+                    <p className="font-medium mb-1">About Task Manager</p>
+                    <p className="text-sm text-muted-foreground">
+                      Task Manager includes both projects and tasks. Complex projects should be linked to allow for detailed project management. All tasks can have tracking of sub-tasks, materials shopping list, and budgeting.
+                    </p>
+                  </PopoverContent>
+                </Popover>
+              </TooltipProvider>
             </div>
             <div className="flex flex-row flex-nowrap items-center gap-2 min-w-0 flex-shrink-0 ml-auto">
               <Button
