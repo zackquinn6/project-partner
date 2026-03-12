@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, Lock, HelpCircle, BookOpen, MessageCircle, Headphones, Crown, FileText } from "lucide-react";
 import { useProject } from '@/contexts/ProjectContext';
@@ -335,7 +334,6 @@ export default function Navigation({
                     }}>
                       <FolderOpen className="h-4 w-4 mr-2" />
                       Project Dashboard
-                      <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">Beta</Badge>
                       <ChevronDown className="h-4 w-4 ml-2" />
                     </Button>
                   </DropdownMenuTrigger>

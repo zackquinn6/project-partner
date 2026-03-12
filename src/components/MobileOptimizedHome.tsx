@@ -286,12 +286,19 @@ export function MobileOptimizedHome() {
                   onClick={action.action}
                 >
                   <CardContent className="p-4 min-h-[110px]">
-                    <div className={`w-12 h-12 ${action.color} rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform`}>
-                      <Icon className="h-6 w-6 text-white" />
+                    <div className="relative w-12 h-12 mb-3">
+                      <div className={`w-12 h-12 ${action.color} rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform`}>
+                        <Icon className="h-6 w-6 text-white" />
+                      </div>
+                      {action.id === 'my-projects' && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5" aria-hidden>
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500 opacity-75" />
+                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full border-2 border-card bg-amber-500" />
+                        </span>
+                      )}
                     </div>
-                    <h3 className="font-semibold text-xs text-card-foreground mb-1 flex items-center gap-1.5">
+                    <h3 className="font-semibold text-xs text-card-foreground mb-1">
                       {action.title}
-                      {(action.id === 'my-projects') && <Badge variant="secondary" className="text-[9px] px-1 py-0">Beta</Badge>}
                     </h3>
                     <p className="text-[10px] text-muted-foreground leading-tight">{action.subtitle}</p>
                   </CardContent>
