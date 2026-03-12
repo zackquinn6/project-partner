@@ -186,9 +186,9 @@ export default function Home({
                 Your work at a glance
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-3xl mx-auto">
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-slate-900/80 via-slate-900 to-slate-900/90 px-3 py-2.5 md:px-3.5 md:py-3 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-slate-900/80 via-slate-900 to-slate-900/90 px-2.5 py-2 md:px-3 md:py-2.5 shadow-sm min-h-[84px]">
                   <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-amber-500/30 to-transparent pointer-events-none" />
-                  <div className="relative flex flex-col items-center gap-1.5 text-center">
+                  <div className="relative flex flex-col items-center gap-1 text-center">
                     <TooltipProvider delayDuration={200}>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -207,9 +207,9 @@ export default function Home({
                   </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-emerald-900/80 via-emerald-900 to-emerald-900/90 px-3 py-2.5 md:px-3.5 md:py-3 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-emerald-900/80 via-emerald-900 to-emerald-900/90 px-2.5 py-2 md:px-3 md:py-2.5 shadow-sm min-h-[84px]">
                   <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-emerald-500/30 to-transparent pointer-events-none" />
-                  <div className="relative flex flex-col items-center gap-1.5 text-center">
+                  <div className="relative flex flex-col items-center gap-1 text-center">
                     <TooltipProvider delayDuration={200}>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -228,9 +228,9 @@ export default function Home({
                   </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-sky-900/80 via-sky-900 to-sky-900/90 px-3 py-2.5 md:px-3.5 md:py-3 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-sky-900/80 via-sky-900 to-sky-900/90 px-2.5 py-2 md:px-3 md:py-2.5 shadow-sm min-h-[84px]">
                   <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-sky-500/30 to-transparent pointer-events-none" />
-                  <div className="relative flex flex-col items-center gap-1.5 text-center">
+                  <div className="relative flex flex-col items-center gap-1 text-center">
                     <TooltipProvider delayDuration={200}>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -249,14 +249,14 @@ export default function Home({
                   </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-violet-900/80 via-violet-900 to-violet-900/90 px-3 py-2.5 md:px-3.5 md:py-3 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-violet-900/80 via-violet-900 to-violet-900/90 px-2.5 py-2 md:px-3 md:py-2.5 shadow-sm min-h-[84px]">
                   <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-violet-500/30 to-transparent pointer-events-none" />
-                  <div className="relative flex flex-col items-center gap-1.5 text-center">
+                  <div className="relative flex flex-col items-center gap-1 text-center">
                     <TooltipProvider delayDuration={200}>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span className="text-[11px] uppercase tracking-wide text-violet-200/80 cursor-default">
-                            Lifetime projects completed
+                            Projects completed
                           </span>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="max-w-xs text-[11px]">

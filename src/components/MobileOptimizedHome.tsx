@@ -299,7 +299,7 @@ export function MobileOptimizedHome() {
                 <p className="text-xl font-semibold text-emerald-50">
                   {stats.openTasks ?? 0}
                 </p>
-                <p className="text-[11px] text-emerald-100/70">
+                <p className="hidden sm:block text-[11px] text-emerald-100/70">
                   All tasks in Task Manager not completed
                 </p>
               </CardContent>
@@ -314,7 +314,7 @@ export function MobileOptimizedHome() {
                 <p className="text-xl font-semibold text-sky-50">
                   {stats.maintenanceDueSoon ?? 0}
                 </p>
-                <p className="text-[11px] text-sky-100/70">
+                <p className="hidden sm:block text-[11px] text-sky-100/70">
                   Active maintenance tasks due in the next 30 days
                 </p>
               </CardContent>
