@@ -21,6 +21,7 @@ import { HomeTaskProjectLink } from "./HomeTaskProjectLink";
 import { RapidProjectAssessment } from "./RapidProjectAssessment";
 import { ResponsiveDialog } from "./ResponsiveDialog";
 import { ShoppingListManager } from "./ShoppingListManager";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface HomeTask {
   id: string;
@@ -180,9 +181,16 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
     }
 
     const hasSubtasks = subtasks.filter(st => st.title.trim()).length > 0;
-    const estimatedHoursValue = formData.estimated_hours.trim().length > 0
-      ? Number(formData.estimated_hours)
-      : null;
+
+    let estimatedHoursValue: number | null = null;
+    if (!hasSubtasks && formData.estimated_hours.trim().length > 0) {
+      const [hh, mm] = formData.estimated_hours.split(':');
+      const hours = Number(hh ?? '0');
+      const minutes = Number(mm ?? '0');
+      if (!Number.isNaN(hours) && !Number.isNaN(minutes)) {
+        estimatedHoursValue = hours + minutes / 60;
+      }
+    }
 
     const taskData = {
       title: formData.title,
@@ -449,24 +457,40 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         }}
       >
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-          <DialogHeader className="px-2 md:px-4 py-2 md:py-3 border-b flex-shrink-0 bg-gradient-to-r from-slate-50 to-amber-50 dark:from-slate-950 dark:to-amber-950/40">
+          <DialogHeader className="px-2 md:px-4 py-2 md:py-2.5 border-b flex-shrink-0 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900/95 text-slate-50">
             <div className="flex items-center justify-between gap-2">
-              <DialogTitle className="text-lg md:text-xl font-bold">
-                <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">
-                  Task Manager
+              <DialogTitle className="text-sm md:text-base font-semibold tracking-tight flex items-center gap-2">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 border border-amber-400/40 text-amber-300">
+                  <List className="h-3.5 w-3.5" />
                 </span>
+                <div className="flex flex-col items-start leading-tight">
+                  <span>Task Manager</span>
+                  <span className="text-[10px] md:text-[11px] font-normal text-slate-300/80">
+                    Plan, track, and estimate all your work in one place.
+                  </span>
+                </div>
               </DialogTitle>
               <div className="flex gap-1.5 items-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowHomeManager(true)}
-                  className="h-7 w-7 md:w-auto text-[10px] md:text-xs px-0 md:px-2"
-                >
-                  <HomeIcon className="h-3 w-3 md:mr-1" />
-                </Button>
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-[10px] md:text-[11px] border-slate-600 bg-slate-900/40 hover:bg-slate-800/80 text-slate-100"
+                        onClick={() => setShowHomeManager(true)}
+                      >
+                        <HomeIcon className="h-3 w-3 mr-1" />
+                        Homes
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs text-xs">
+                      <p>Switch between homes to focus your task list on a specific property.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <Select value={selectedHomeId || ""} onValueChange={setSelectedHomeId}>
-                  <SelectTrigger className="w-[100px] md:w-[160px] text-[10px] md:text-xs h-7">
+                  <SelectTrigger className="w-[110px] md:w-[170px] text-[10px] md:text-xs h-7 bg-slate-900/60 border-slate-700 text-slate-100">
                     <SelectValue placeholder="Select home" />
                   </SelectTrigger>
                   <SelectContent>
@@ -482,7 +506,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                   variant="ghost"
                   size="sm"
                   onClick={() => onOpenChange(false)}
-                  className="h-7 px-2 text-[9px] md:text-xs"
+                  className="h-7 px-2 text-[9px] md:text-xs text-slate-200 hover:bg-slate-800/80"
                 >
                   Close
                 </Button>
@@ -492,13 +516,19 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
           <div className="flex-1 overflow-hidden flex flex-col">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <div className="flex-shrink-0 px-2 md:px-4 pt-3 pb-4 md:pb-5 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="mb-0 overflow-hidden">
-                  <TabsList className={`w-full inline-flex ${canAccessPaidFeatures ? 'h-9 md:h-10' : 'h-9 md:h-10'} p-0.5 md:p-1 gap-0.5 md:gap-1 bg-muted/50 rounded-lg`}>
-                    <TabsTrigger value="tasks" className="text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md flex-1 min-w-0 truncate">Tasks</TabsTrigger>
-                    <TabsTrigger value="shopping" className="text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md flex-1 min-w-0 truncate">Shopping</TabsTrigger>
+              <div className="flex-shrink-0 px-2 md:px-4 pt-2 pb-2.5 md:pt-2.5 md:pb-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className="overflow-hidden">
+                  <TabsList className={`w-full inline-flex ${canAccessPaidFeatures ? 'h-8 md:h-9' : 'h-8 md:h-9'} p-0.5 md:p-0.5 gap-0.5 md:gap-1 bg-muted/50 rounded-full`}>
+                    <TabsTrigger value="tasks" className="text-[11px] md:text-xs px-2 md:px-3 py-1.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0 truncate">
+                      Tasks
+                    </TabsTrigger>
+                    <TabsTrigger value="shopping" className="text-[11px] md:text-xs px-2 md:px-3 py-1.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0 truncate">
+                      Shopping
+                    </TabsTrigger>
                     {canAccessPaidFeatures && (
-                      <TabsTrigger value="schedule" className="text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md flex-1 min-w-0 truncate">Schedule</TabsTrigger>
+                      <TabsTrigger value="schedule" className="text-[11px] md:text-xs px-2 md:px-3 py-1.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0 truncate">
+                        Schedule
+                      </TabsTrigger>
                     )}
                   </TabsList>
                 </div>
@@ -692,7 +722,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
                   {showAddTask && (
                     <Card>
-                      <CardContent className="pt-4 space-y-3">
+                      <CardContent className="pt-3 pb-3 space-y-3">
                         <Input
                           placeholder="Task title *"
                           value={formData.title}
@@ -700,7 +730,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                           className="text-xs h-8"
                         />
                         <div className="grid grid-cols-2 gap-2">
-                          <div>
+                          <div className="max-w-[180px]">
                             <label className="text-xs font-medium mb-1 block">Priority</label>
                             <Select value={formData.priority} onValueChange={(val) => setFormData({ ...formData, priority: val as any })}>
                               <SelectTrigger className="text-xs h-8">
@@ -713,48 +743,49 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                               </SelectContent>
                             </Select>
                           </div>
-          <div>
-            <label className="text-xs font-medium mb-1 block">DIY Level</label>
-            <Select value={formData.diy_level} onValueChange={(val) => setFormData({ ...formData, diy_level: val as any })}>
-              <SelectTrigger className="text-xs h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="beginner">Beginner</SelectItem>
-                <SelectItem value="intermediate">Intermediate</SelectItem>
-                <SelectItem value="advanced">Advanced</SelectItem>
-                <SelectItem value="pro">Professional</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-                        <div>
-                          <label className="text-xs font-medium mb-1 block">Due Date</label>
-                          <Input
-                            type="date"
-                            value={formData.due_date}
-                            onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                            className="text-xs h-8"
-                          />
+                          <div className="max-w-[180px]">
+                            <label className="text-xs font-medium mb-1 block">DIY Level</label>
+                            <Select value={formData.diy_level} onValueChange={(val) => setFormData({ ...formData, diy_level: val as any })}>
+                              <SelectTrigger className="text-xs h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="beginner">Beginner</SelectItem>
+                                <SelectItem value="intermediate">Intermediate</SelectItem>
+                                <SelectItem value="advanced">Advanced</SelectItem>
+                                <SelectItem value="pro">Professional</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
 
-                        <div>
-                          <label className="text-xs font-medium mb-1 block">Estimated hours</label>
-                          {subtasks.length > 0 ? (
-                            <div className="text-xs text-muted-foreground h-8 flex items-center">
-                              N/A (using sub-task hours)
-                            </div>
-                          ) : (
+                        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2 max-w-[380px]">
+                          <div>
+                            <label className="text-xs font-medium mb-1 block">Due Date</label>
                             <Input
-                              type="number"
-                              min="0.25"
-                              step="0.25"
-                              value={formData.estimated_hours}
-                              onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
-                              placeholder="e.g. 2"
+                              type="date"
+                              value={formData.due_date}
+                              onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                               className="text-xs h-8"
                             />
-                          )}
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-medium mb-1 block">Estimated time (hh:mm)</label>
+                            {subtasks.length > 0 ? (
+                              <div className="text-xs text-muted-foreground h-8 flex items-center">
+                                N/A (using sub-task hours)
+                              </div>
+                            ) : (
+                              <Input
+                                type="time"
+                                step={900}
+                                value={formData.estimated_hours}
+                                onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
+                                className="text-xs h-8"
+                              />
+                            )}
+                          </div>
                         </div>
                         
                         <Textarea

@@ -259,38 +259,48 @@ export function HomeTasksTable({
         return 'default';
     }
   };
+  const diyLevels: Array<{ id: string; label: string }> = [
+    { id: 'all', label: 'All' },
+    { id: 'beginner', label: 'Beg' },
+    { id: 'intermediate', label: 'Int' },
+    { id: 'advanced', label: 'Adv' },
+    { id: 'pro', label: 'Pro' },
+  ];
+
   return <div className="space-y-3 flex flex-col h-full">
       {/* Desktop filters and controls */}
-      <div className="hidden md:flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between pt-4">
+      <div className="hidden md:flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between pt-3">
         <div className="flex flex-wrap gap-2 flex-1 items-center">
           <Input placeholder="Search tasks..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="max-w-xs text-xs h-8" />
           <Select value={filterPriority} onValueChange={setFilterPriority}>
-            <SelectTrigger className="w-20 sm:w-32 text-xs h-8">
+            <SelectTrigger className="w-20 sm:w-28 text-xs h-8">
               <SelectValue>
-                {filterPriority === 'all' ? 'All Priority' : filterPriority.charAt(0).toUpperCase() + filterPriority.slice(1)}
+                {filterPriority === 'all' ? 'Priority' : filterPriority === 'high' ? 'High' : filterPriority === 'medium' ? 'Med' : 'Low'}
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-background border shadow-lg z-[100]">
-              <SelectItem value="all">All Priority</SelectItem>
+              <SelectItem value="all">All Priorities</SelectItem>
               <SelectItem value="high">High</SelectItem>
               <SelectItem value="medium">Medium</SelectItem>
               <SelectItem value="low">Low</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={filterDiyLevel} onValueChange={setFilterDiyLevel}>
-            <SelectTrigger className="w-20 sm:w-32 text-xs h-8">
-              <SelectValue>
-                {filterDiyLevel === 'all' ? 'All Levels' : filterDiyLevel.charAt(0).toUpperCase() + filterDiyLevel.slice(1)}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent className="bg-background border shadow-lg z-[100]">
-              <SelectItem value="all">All Levels</SelectItem>
-              <SelectItem value="beginner">Beginner</SelectItem>
-              <SelectItem value="intermediate">Intermediate</SelectItem>
-              <SelectItem value="advanced">Advanced</SelectItem>
-              <SelectItem value="pro">Professional</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-1">
+            {diyLevels.map(level => (
+              <button
+                key={level.id}
+                type="button"
+                onClick={() => setFilterDiyLevel(level.id)}
+                className={`px-2 h-8 rounded-full text-[11px] border transition-colors ${
+                  filterDiyLevel === level.id
+                    ? 'bg-slate-900 text-slate-50 border-slate-900'
+                    : 'bg-muted text-muted-foreground border-transparent hover:bg-muted/80'
+                }`}
+              >
+                {level.label}
+              </button>
+            ))}
+          </div>
           <div className="flex items-center gap-1 mr-3">
             <Checkbox 
               id="show-completed" 
@@ -303,16 +313,21 @@ export function HomeTasksTable({
             </label>
           </div>
           {onAddTask && (
-            <Button onClick={onAddTask} size="sm" className="h-8 w-8 p-0 sm:w-auto sm:px-3 flex-shrink-0" title="Add Task">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline ml-1">Add Task</span>
+            <Button
+              onClick={onAddTask}
+              size="sm"
+              className="h-8 px-3 flex-shrink-0 bg-slate-900 hover:bg-slate-800 text-slate-50 border border-slate-800"
+              title="Add Task"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Add Task</span>
             </Button>
           )}
         </div>
       </div>
 
       {/* Mobile filters and controls */}
-      <div className="flex md:hidden flex-col gap-2 mb-3 pt-4">
+      <div className="flex md:hidden flex-col gap-2 mb-3 pt-3">
         <Input
           placeholder="Search tasks..."
           value={searchTerm}
@@ -376,7 +391,7 @@ export function HomeTasksTable({
       <div className="border rounded-lg overflow-hidden flex-1">
         <div className="overflow-auto h-full">
           <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
+            <TableHeader className="sticky top-0 bg-slate-900 text-slate-50 z-10">
               <TableRow>
                 {!isMobile && <TableHead className="w-8 text-xs"></TableHead>}
                 <TableHead className="min-w-[281px] md:w-[281px] text-xs">
