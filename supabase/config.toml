@@ -195,6 +195,11 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Custom confirm signup email (Project Partner branded)
+[auth.email.template.confirmation]
+subject = "Confirm your signup – Project Partner"
+content_path = "./templates/confirmation.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

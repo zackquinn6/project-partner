@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -1106,7 +1106,10 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogPortal>
           <DialogOverlay className="z-[100]" />
-          <DialogContent className="w-full h-screen max-w-full max-h-full md:w-[90vw] md:max-w-4xl md:h-[85vh] md:rounded-lg flex flex-col z-[101]">
+          <DialogContent className="w-full h-screen max-w-full max-h-full md:w-[90vw] md:max-w-4xl md:h-[85vh] md:rounded-lg flex flex-col z-[101]" aria-describedby="diy-survey-description">
+            <DialogDescription id="diy-survey-description" className="sr-only">
+              {mode === 'verify' ? "Update your DIY profile and preferences" : (mode === 'personality' ? 'DIY builder personality quiz' : "Set up your profile for project recommendations")}
+            </DialogDescription>
             <DialogHeader className="text-center space-y-2 md:space-y-4 flex-shrink-0 px-4 pt-4">
             <div className="flex items-center justify-center space-x-2">
               <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-primary" />
