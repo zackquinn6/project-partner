@@ -344,7 +344,7 @@ export function HomeTasksTable({
       </div>
 
       {/* Mobile filters and controls */}
-      <div className="flex md:hidden flex-col gap-2 mb-3 pt-3">
+      <div className="flex md:hidden flex-col gap-2 mb-2 pt-1">
         <Input
           placeholder="Search tasks..."
           value={searchTerm}

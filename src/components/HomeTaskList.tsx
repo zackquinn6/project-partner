@@ -534,8 +534,8 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                 </div>
               </div>
 
-              <div className="flex-1 overflow-auto px-2 md:px-4 pt-1 md:pt-0 pb-2 min-h-0 bg-gradient-to-b from-background to-muted/30">
-                <TabsContent value="tasks" className="mt-0 space-y-1 md:space-y-3 h-full">
+              <div className="flex-1 overflow-auto px-2 md:px-4 pt-0.5 md:pt-0 pb-2 min-h-0 bg-gradient-to-b from-background to-muted/30">
+                <TabsContent value="tasks" className="mt-0 space-y-0.5 md:space-y-3 h-full">
                   {/* Project Dashboard metrics (Task Manager) */}
                   {(() => {
                     const now = new Date();
