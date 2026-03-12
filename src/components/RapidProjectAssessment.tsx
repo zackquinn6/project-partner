@@ -529,11 +529,12 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
                   }}
                   disabled={isLoading} 
                   size="sm"
-                  className="p-1 h-8 w-8"
+                  className="p-1 h-8 w-8 md:h-8 md:w-auto md:px-3 md:py-2"
                   type="button"
                   title="Save Budget"
                 >
-                  <Save className="w-4 h-4" />
+                  <Save className="w-4 h-4 md:mr-1.5" />
+                  <span className="hidden md:inline">Save Budget</span>
                 </Button>
               </div>
             </div>
