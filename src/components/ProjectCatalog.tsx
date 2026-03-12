@@ -1305,25 +1305,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             >
               Show all Projects
             </Button>
-            {/* Task Manager helper - for multi-trade renovation projects */}
-            <div className="max-w-2xl w-full">
-              <Card className="border-dashed bg-background/40">
-                <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-xs sm:text-sm text-muted-foreground text-left">
-                    For multi-trade renovation projects, use Task Manager to organize multiple individual projects.
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="self-start sm:self-auto text-xs"
-                    onClick={() => setTaskManagerOpen(true)}
-                  >
-                    Open Task Manager
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
           </div>
         )}
 
