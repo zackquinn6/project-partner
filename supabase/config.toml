@@ -198,7 +198,7 @@ otp_expiry = 3600
 # Custom confirm signup email (Project Partner branded)
 [auth.email.template.confirmation]
 subject = "Confirm your signup – Project Partner"
-content_path = "./templates/confirmation.html"
+content_path = "./supabase/templates/confirmation.html"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
