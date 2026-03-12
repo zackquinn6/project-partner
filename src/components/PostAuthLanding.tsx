@@ -213,7 +213,7 @@ export const PostAuthLanding = () => {
             
             {/* My Work Section */}
             <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4 text-center">Start Here</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4 text-center md:hidden">Start Here</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6 justify-items-center">
                 {myWorkActions.map((action, index) => (
                   <div key={index} className="flex flex-col items-center cursor-pointer group min-h-[88px]" onClick={action.action}>
@@ -230,7 +230,7 @@ export const PostAuthLanding = () => {
             <div className="grid md:grid-cols-2 gap-6">
               {/* Explore Section */}
               <div>
-                <h3 className="text-lg font-semibold text-foreground mb-4 text-center">Browse & Learn</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4 text-center md:hidden">Browse & Learn</h3>
                 <div className="grid grid-cols-3 gap-4 sm:gap-6 justify-items-center">
                   {exploreActions.map((action, index) => (
                     <div key={index} className="flex flex-col items-center cursor-pointer group min-h-[88px]" onClick={action.action}>

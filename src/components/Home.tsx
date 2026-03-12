@@ -273,7 +273,7 @@ export default function Home({
             </div>
             
             {/* Start Here */}
-            <h3 className="text-sm font-semibold text-foreground mb-3 max-w-xl mx-auto px-2">Start Here</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3 max-w-xl mx-auto px-2 md:hidden">Start Here</h3>
             <TooltipProvider delayDuration={300}>
             <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-6 px-2">
               <div className="col-span-3 mb-1">
@@ -336,7 +336,7 @@ export default function Home({
             </TooltipProvider>
 
             {/* Browse Tools */}
-            <h3 className="text-sm font-semibold text-foreground mb-3 max-w-xl mx-auto px-2">Browse Tools</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3 max-w-xl mx-auto px-2 md:hidden">Browse Tools</h3>
             <TooltipProvider delayDuration={300}>
             <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-6 px-2">
               <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>

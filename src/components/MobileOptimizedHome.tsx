@@ -302,7 +302,7 @@ export function MobileOptimizedHome() {
 
         {/* Start Here: Explore New Projects + Task Manager + Home Maintenance */}
         <div>
-          <h2 className="text-lg font-semibold text-foreground mb-3">Start Here</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-3 md:hidden">Start Here</h2>
           <Button
             onClick={() => {
               console.log('📱 Mobile: Navigating to project catalog');
@@ -343,7 +343,7 @@ export function MobileOptimizedHome() {
 
         {/* All Apps */}
         <div>
-          <h2 className="text-lg font-semibold text-foreground mb-3">Browse Tools</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-3 md:hidden">Browse Tools</h2>
           <div className="grid grid-cols-3 gap-2">
             {utilityApps.map((app) => {
               const Icon = app.icon;
