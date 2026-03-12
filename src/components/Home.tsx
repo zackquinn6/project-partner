@@ -181,67 +181,91 @@ export default function Home({
             </p>
             
             {/* Your work at a glance */}
-            <div className="border-t border-border/60 pt-4 pb-5 mb-6">
+            <div className="border-t border-border/60 pt-4 pb-4 mb-5">
               <h3 className="text-xs tracking-wide font-semibold text-muted-foreground mb-3 text-center uppercase">
                 Your work at a glance
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-3xl mx-auto">
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-slate-900/80 via-slate-900 to-slate-900/90 p-3 md:p-4 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-slate-900/80 via-slate-900 to-slate-900/90 px-3 py-2.5 md:px-3.5 md:py-3 shadow-sm">
                   <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-amber-500/30 to-transparent pointer-events-none" />
-                  <div className="relative flex flex-col items-start gap-1">
-                    <span className="text-[11px] uppercase tracking-wide text-amber-300/80">
-                      Active projects
-                    </span>
-                    <span className="text-2xl md:text-3xl font-semibold text-amber-50">
+                  <div className="relative flex flex-col items-center gap-1.5 text-center">
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-[11px] uppercase tracking-wide text-amber-300/80 cursor-default">
+                            Active projects
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs text-[11px]">
+                          <p>Unique projects that currently have at least one open task linked to them.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <span className="text-2xl md:text-[1.7rem] font-semibold leading-none text-amber-50">
                       {stats.activeProjects ?? 0}
                     </span>
-                    <span className="text-[11px] text-amber-100/70">
-                      Tasks currently linked to projects
-                    </span>
                   </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-emerald-900/80 via-emerald-900 to-emerald-900/90 p-3 md:p-4 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-emerald-900/80 via-emerald-900 to-emerald-900/90 px-3 py-2.5 md:px-3.5 md:py-3 shadow-sm">
                   <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-emerald-500/30 to-transparent pointer-events-none" />
-                  <div className="relative flex flex-col items-start gap-1">
-                    <span className="text-[11px] uppercase tracking-wide text-emerald-200/80">
-                      Open tasks
-                    </span>
-                    <span className="text-2xl md:text-3xl font-semibold text-emerald-50">
+                  <div className="relative flex flex-col items-center gap-1.5 text-center">
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-[11px] uppercase tracking-wide text-emerald-200/80 cursor-default">
+                            Open tasks
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs text-[11px]">
+                          <p>All tasks in Task Manager that are not marked complete.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <span className="text-2xl md:text-[1.7rem] font-semibold leading-none text-emerald-50">
                       {stats.openTasks ?? 0}
                     </span>
-                    <span className="text-[11px] text-emerald-100/70">
-                      All tasks in Task Manager not completed
-                    </span>
                   </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-sky-900/80 via-sky-900 to-sky-900/90 p-3 md:p-4 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-sky-900/80 via-sky-900 to-sky-900/90 px-3 py-2.5 md:px-3.5 md:py-3 shadow-sm">
                   <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-sky-500/30 to-transparent pointer-events-none" />
-                  <div className="relative flex flex-col items-start gap-1">
-                    <span className="text-[11px] uppercase tracking-wide text-sky-200/80">
-                      Maintenance due soon
-                    </span>
-                    <span className="text-2xl md:text-3xl font-semibold text-sky-50">
+                  <div className="relative flex flex-col items-center gap-1.5 text-center">
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-[11px] uppercase tracking-wide text-sky-200/80 cursor-default">
+                            Maintenance due soon
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs text-[11px]">
+                          <p>Active home maintenance tasks with a due date in the next 30 days.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <span className="text-2xl md:text-[1.7rem] font-semibold leading-none text-sky-50">
                       {stats.maintenanceDueSoon ?? 0}
                     </span>
-                    <span className="text-[11px] text-sky-100/70">
-                      Active maintenance tasks due in the next 30 days
-                    </span>
                   </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-violet-900/80 via-violet-900 to-violet-900/90 p-3 md:p-4 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-violet-900/80 via-violet-900 to-violet-900/90 px-3 py-2.5 md:px-3.5 md:py-3 shadow-sm">
                   <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-violet-500/30 to-transparent pointer-events-none" />
-                  <div className="relative flex flex-col items-start gap-1">
-                    <span className="text-[11px] uppercase tracking-wide text-violet-200/80">
-                      Lifetime projects completed
-                    </span>
-                    <span className="text-2xl md:text-3xl font-semibold text-violet-50">
+                  <div className="relative flex flex-col items-center gap-1.5 text-center">
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-[11px] uppercase tracking-wide text-violet-200/80 cursor-default">
+                            Lifetime projects completed
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs text-[11px]">
+                          <p>Project runs in your workshop that are finished (100% complete).</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <span className="text-2xl md:text-[1.7rem] font-semibold leading-none text-violet-50">
                       {stats.completedProjects ?? 0}
-                    </span>
-                    <span className="text-[11px] text-violet-100/70">
-                      Finished project runs in your workshop
                     </span>
                   </div>
                 </div>
