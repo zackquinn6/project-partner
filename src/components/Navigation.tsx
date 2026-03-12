@@ -301,11 +301,11 @@ export default function Navigation({
   return <>
       <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-16 items-center px-4 relative">
-          {/* Beta label - centered */}
+          {/* Beta release label - centered, visually appealing */}
           {isBetaMode && (
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-              <span className="px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 rounded whitespace-nowrap">
-                Project Partner - Beta
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-gradient-to-r from-amber-500/90 to-orange-500/90 text-white shadow-md ring-1 ring-white/20 whitespace-nowrap">
+                Welcome to the Project Partner Beta Release
               </span>
             </div>
           )}

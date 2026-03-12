@@ -291,10 +291,7 @@ export function MobileOptimizedHome() {
                         <Icon className="h-6 w-6 text-white" />
                       </div>
                       {action.id === 'my-projects' && (
-                        <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5" aria-hidden>
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500 opacity-75" />
-                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full border-2 border-card bg-amber-500" />
-                        </span>
+                        <span className="absolute -top-0.5 -right-0.5 rounded-full border-2 border-card bg-amber-500 px-1 py-0 text-[8px] font-semibold text-white shadow-sm" aria-hidden>Beta</span>
                       )}
                     </div>
                     <h3 className="font-semibold text-xs text-card-foreground mb-1">
