@@ -21,7 +21,6 @@ import { HomeTaskProjectLink } from "./HomeTaskProjectLink";
 import { RapidProjectAssessment } from "./RapidProjectAssessment";
 import { ResponsiveDialog } from "./ResponsiveDialog";
 import { ShoppingListManager } from "./ShoppingListManager";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/useResponsive";
 
 interface HomeTask {
@@ -458,7 +457,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         }}
       >
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-          <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2.5 border-b flex-shrink-0 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900/95 text-slate-50">
+          <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2.5 border-b flex-shrink-0 bg-background text-foreground">
             <div className="flex items-center justify-between gap-2">
               <DialogTitle className="text-xs md:text-base font-semibold tracking-tight flex items-center gap-1.5 md:gap-2">
                 <span className="inline-flex h-6 w-6 md:h-7 md:w-7 items-center justify-center rounded-lg bg-amber-500/10 border border-amber-400/40 text-amber-300">
@@ -472,36 +471,15 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                 </div>
               </DialogTitle>
               <div className="flex gap-1.5 items-center">
-                {isMobile ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 md:h-7 px-1.5 md:px-2 text-[10px] md:text-[11px] border-0 outline-none bg-slate-900/40 hover:bg-slate-800/80 text-slate-100"
-                    onClick={() => setShowHomeManager(true)}
-                  >
-                    <HomeIcon className="h-3 w-3 md:mr-1" />
-                    <span className="hidden md:inline">Homes</span>
-                  </Button>
-                ) : (
-                  <TooltipProvider delayDuration={200}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-6 md:h-7 px-1.5 md:px-2 text-[10px] md:text-[11px] border-slate-600 bg-slate-900/40 hover:bg-slate-800/80 text-slate-100"
-                          onClick={() => setShowHomeManager(true)}
-                        >
-                          <HomeIcon className="h-3 w-3 md:mr-1" />
-                          <span className="hidden md:inline">Homes</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="max-w-xs text-xs">
-                        <p>Switch between homes to focus your task list on a specific property.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
+                <Button
+                  variant={isMobile ? "ghost" : "outline"}
+                  size="sm"
+                  className={`h-6 md:h-7 px-1.5 md:px-2 text-[10px] md:text-[11px] bg-slate-900/40 hover:bg-slate-800/80 text-slate-100 ${isMobile ? "border-0 outline-none" : "border-slate-600"}`}
+                  onClick={() => setShowHomeManager(true)}
+                >
+                  <HomeIcon className="h-3 w-3 md:mr-1" />
+                  <span className="hidden md:inline">Homes</span>
+                </Button>
                 <Select value={selectedHomeId || ""} onValueChange={setSelectedHomeId}>
                   <SelectTrigger className="w-[133px] md:w-[187px] text-[10px] md:text-xs h-6 md:h-7 bg-slate-900/60 border-0 outline-none text-slate-100 [&>svg]:opacity-70">
                     <SelectValue placeholder="Select home" />

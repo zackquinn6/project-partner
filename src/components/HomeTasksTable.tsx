@@ -408,7 +408,7 @@ export function HomeTasksTable({
       <div className="border rounded-lg overflow-hidden flex-1">
         <div className="overflow-auto h-full">
           <Table>
-            <TableHeader className="sticky top-0 bg-slate-900 text-slate-50 z-10">
+            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10">
               <TableRow>
                 {!isMobile && <TableHead className="w-8 text-xs"></TableHead>}
                 <TableHead className="min-w-[200px] md:min-w-[281px] md:w-[281px] text-xs">
