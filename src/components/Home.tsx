@@ -273,6 +273,9 @@ export default function Home({
             </div>
             
             {/* Core Apps Grid */}
+            <div className="max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-2 px-2 text-left md:text-center">
+              <h3 className="text-sm font-semibold text-foreground">Start Here</h3>
+            </div>
             <TooltipProvider delayDuration={300}>
             <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-6 px-2">
               {/* Project Catalog - Reduced Prominence */}
@@ -368,6 +371,10 @@ export default function Home({
               </div>
             </div>
             </TooltipProvider>
+
+            <div className="max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-4 px-2 text-left md:text-center">
+              <h3 className="text-sm font-semibold text-foreground">Browse Tools</h3>
+            </div>
 
             {/* Labs - Experimental Features - Collapsed by default */}
             <div className="mb-6">

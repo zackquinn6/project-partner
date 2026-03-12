@@ -120,13 +120,12 @@ export function MobileOptimizedHome() {
     fetchNickname();
   }, [user]);
 
-  // Semantic color system for apps
+  // Semantic color system for primary apps (mobile "Start Here")
   const quickActions = [
     {
       id: 'my-projects',
       icon: Folder,
       title: 'Project Dashboard',
-      subtitle: 'Continue or start new',
       color: 'bg-blue-600', // Projects: Blue
       action: () => {
         console.log('🔄 MobileOptimizedHome: My Projects clicked');
@@ -137,7 +136,6 @@ export function MobileOptimizedHome() {
       id: 'home-task-list',
       icon: ListChecks,
       title: 'Task Manager',
-      subtitle: 'Manage tasks',
       color: 'bg-green-500', // Home: Green
       action: () => window.dispatchEvent(new CustomEvent('show-home-task-list'))
     },
@@ -145,17 +143,8 @@ export function MobileOptimizedHome() {
       id: 'home-maintenance',
       icon: HomeIcon,
       title: 'Home Maintenance',
-      subtitle: 'Schedule & track',
       color: 'bg-green-600', // Home: Green
       action: () => window.dispatchEvent(new CustomEvent('show-home-maintenance'))
-    },
-    {
-      id: 'expert-help',
-      icon: HelpCircle,
-      title: 'Expert Help',
-      subtitle: 'Get assistance',
-      color: 'bg-purple-600', // Help: Purple
-      action: () => window.dispatchEvent(new CustomEvent('show-expert-help'))
     }
   ];
 
@@ -323,47 +312,39 @@ export function MobileOptimizedHome() {
         </div>
 
 
-        {/* Project Catalog - Reduced Prominence */}
-        <div className="mb-4">
-          <Button 
-            onClick={() => {
-              console.log('📱 Mobile: Navigating to project catalog');
-              navigate('/projects');
-            }}
-            variant="outline"
-            className="w-full h-10 text-sm font-medium border-primary text-primary hover:bg-primary/10"
-          >
-            <BookOpen className="w-4 h-4 mr-2" />
-            Explore New Projects
-            <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0">Beta</Badge>
-          </Button>
-        </div>
-
         {/* Quick Actions */}
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-3">Start Here</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="mb-3">
+            <Button 
+              onClick={() => {
+                console.log('📱 Mobile: Navigating to project catalog');
+                navigate('/projects');
+              }}
+              variant="outline"
+              className="w-full h-10 text-sm font-medium border-primary text-primary hover:bg-primary/10"
+            >
+              <BookOpen className="w-4 h-4 mr-2" />
+              Explore New Projects
+              <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0">Beta</Badge>
+            </Button>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
             {quickActions.map((action) => {
               const Icon = action.icon;
               return (
                 <Card 
                   key={action.id}
-                  className="gradient-card cursor-pointer hover:shadow-md transition-smooth shadow-sm rounded-xl"
+                  className="gradient-card cursor-pointer hover:shadow-md transition-smooth shadow-sm rounded-xl min-h-[100px]"
                   onClick={action.action}
                 >
-                  <CardContent className="p-4 min-h-[110px]">
-                    <div className="relative w-12 h-12 mb-3">
-                      <div className={`w-12 h-12 ${action.color} rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform`}>
-                        <Icon className="h-6 w-6 text-white" />
-                      </div>
-                      {action.id === 'my-projects' && (
-                        <span className="absolute -top-0.5 -right-0.5 rounded-full border-2 border-card bg-amber-500 px-1 py-0 text-[8px] font-semibold text-white shadow-sm" aria-hidden>Beta</span>
-                      )}
+                  <CardContent className="p-3 text-center flex flex-col items-center justify-center h-full">
+                    <div className={`w-10 h-10 ${action.color} rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition-transform`}>
+                      <Icon className="h-5 w-5 text-white" />
                     </div>
-                    <h3 className="font-semibold text-xs text-card-foreground mb-1">
+                    <p className="text-xs font-medium text-card-foreground leading-tight">
                       {action.title}
-                    </h3>
-                    <p className="text-[10px] text-muted-foreground leading-tight">{action.subtitle}</p>
+                    </p>
                   </CardContent>
                 </Card>
               );
