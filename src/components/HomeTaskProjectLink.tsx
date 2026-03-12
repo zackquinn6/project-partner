@@ -31,6 +31,9 @@ interface ProjectTemplate {
   category: string[] | null;
   difficulty_level: string | null;
   estimated_time: string | null;
+  visibility_status?: 'default' | 'coming-soon' | 'hidden';
+  publish_status?: 'draft' | 'beta-testing' | 'published' | 'archived';
+  is_standard?: boolean;
 }
 
 export function HomeTaskProjectLink({ 
@@ -77,7 +80,32 @@ export function HomeTaskProjectLink({
       .order("name");
     
     if (!error && data) {
-      setProjectTemplates(data as ProjectTemplate[]);
+      // Visibility rules:
+      // - hidden: never show, regardless of publish_status
+      // - coming-soon: do not show as a selectable template for tasks, even if published
+      // - default: respect publish_status filters above
+      const filtered = (data as any[]).filter((project) => {
+        const visibility = (project.visibility_status ??
+          (project as any).visibilityStatus ??
+          'default') as 'default' | 'coming-soon' | 'hidden';
+
+        const isHidden = visibility === 'hidden';
+        const isComingSoon = visibility === 'coming-soon';
+
+        // Always hide hidden projects and coming-soon projects from this template list
+        if (isHidden || isComingSoon) {
+          return false;
+        }
+
+        // Also hide any standard foundation templates defensively
+        if ((project as any).is_standard) {
+          return false;
+        }
+
+        return true;
+      });
+
+      setProjectTemplates(filtered as ProjectTemplate[]);
     }
   };
 
