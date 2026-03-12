@@ -457,12 +457,12 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         }}
       >
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-          <DialogHeader className="px-4 md:px-6 py-2 md:py-4 border-b flex items-center justify-between flex-shrink-0 min-h-0">
-            <div className="flex items-center gap-2 min-w-0">
+          <DialogHeader className="px-4 md:px-6 py-2 md:py-4 border-b flex flex-row flex-nowrap items-center justify-between gap-2 flex-shrink-0 min-h-0 space-y-0 w-full">
+            <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
               <List className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" aria-hidden />
               <DialogTitle className="text-base font-bold md:text-xl truncate">Task Manager</DialogTitle>
             </div>
-            <div className="flex items-center gap-2 min-w-0 shrink-0">
+            <div className="flex flex-row flex-nowrap items-center gap-2 min-w-0 flex-shrink-0 ml-auto">
               <Button
                 variant={isMobile ? "ghost" : "outline"}
                 size="sm"
@@ -594,8 +594,8 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                             {completedTasks.length}
                           </span>
                         </div>
-                        <div className="hidden md:grid grid-cols-3 gap-3">
-                          <Card className="col-span-1 border-border/60 shadow-sm">
+                        <div className="hidden md:grid gap-3" style={{ gridTemplateColumns: '0.9fr 0.9fr 1.2fr' }}>
+                          <Card className="min-w-0 border-border/60 shadow-sm">
                             <CardContent className="p-4">
                               <div className="flex items-baseline justify-between gap-2">
                                 <span className="text-xs text-muted-foreground">Total open</span>
@@ -603,7 +603,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                               </div>
                             </CardContent>
                           </Card>
-                          <Card className="col-span-1 border-border/60 shadow-sm">
+                          <Card className="min-w-0 border-border/60 shadow-sm">
                             <CardContent className="p-4">
                               <div className="flex items-baseline justify-between gap-2">
                                 <span className="text-xs text-muted-foreground">Total Completed</span>
@@ -611,7 +611,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                               </div>
                             </CardContent>
                           </Card>
-                          <div className="col-span-1">
+                          <div className="min-w-0">
                             <Accordion type="single" collapsible>
                               <AccordionItem value="other-metrics" className="border rounded-lg bg-background/80 shadow-sm">
                                 <AccordionTrigger className="px-2 py-1 min-h-0 text-xs hover:no-underline [&[data-state=open]>svg]:rotate-180">

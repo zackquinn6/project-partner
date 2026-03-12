@@ -411,7 +411,7 @@ export function HomeTasksTable({
           <Table>
             <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10">
               <TableRow className="border-sky-500/50">
-                {!isMobile && <TableHead className="w-8 text-xs text-white"></TableHead>}
+                {!isMobile && <TableHead className="w-14 text-xs text-white"></TableHead>}
                 <TableHead className="min-w-[200px] md:min-w-[281px] md:w-[281px] text-xs text-white">
                   <Button variant="ghost" size="sm" onClick={() => handleSort('title')} className="h-6 px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
                     Task <SortIcon field="title" />
@@ -455,14 +455,16 @@ export function HomeTasksTable({
                       } : {})}
                     >
                       {!isMobile && (
-                        <TableCell className="w-8">
-                          <button
+                        <TableCell className="w-14 p-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleToggleTaskComplete(task.id, task.status)}
-                            className="text-xs font-medium hover:opacity-70 transition-opacity touch-target min-h-[44px] min-w-[44px] flex items-center justify-center -m-2"
+                            className="h-12 w-12 min-h-12 min-w-12 p-0 text-lg font-medium rounded-md border-2 hover:bg-primary/10"
                             title={task.status === 'closed' ? 'Mark as open' : 'Mark as complete'}
                           >
                             {task.status === 'closed' ? '✓' : '○'}
-                          </button>
+                          </Button>
                         </TableCell>
                       )}
                      <TableCell>
