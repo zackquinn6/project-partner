@@ -457,21 +457,24 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         }}
       >
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-          <DialogHeader className="px-4 md:px-6 py-2 md:py-4 border-b flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-2 min-w-0">
+          <DialogHeader className="px-4 md:px-6 py-2 md:py-4 border-b flex items-center justify-between gap-4 flex-shrink-0">
+            <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
               <List className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" aria-hidden />
-              <DialogTitle className="text-base font-bold md:text-xl">Task Manager</DialogTitle>
+              <DialogTitle className="text-base font-bold md:text-xl truncate">Task Manager</DialogTitle>
+            </div>
+            <div className="flex items-center gap-2 min-w-0 flex-shrink-0 ml-auto">
               <Button
                 variant={isMobile ? "ghost" : "outline"}
                 size="sm"
-                className={`h-6 md:h-7 px-1.5 md:px-2 text-[10px] md:text-[11px] shrink-0 ${isMobile ? "border-0 outline-none bg-slate-900/40 hover:bg-slate-800/80 text-slate-100" : "border-input bg-background hover:bg-muted"}`}
+                className={`h-8 w-8 md:h-9 md:w-9 p-0 shrink-0 ${isMobile ? "border-0 outline-none bg-slate-900/40 hover:bg-slate-800/80 text-slate-100" : "border-input bg-background hover:bg-muted"}`}
                 onClick={() => setShowHomeManager(true)}
+                title="Homes"
+                aria-label="Homes"
               >
-                <HomeIcon className="h-3 w-3 md:mr-1" />
-                <span className="hidden md:inline">Homes</span>
+                <HomeIcon className="h-4 w-4" />
               </Button>
               <Select value={selectedHomeId || ""} onValueChange={setSelectedHomeId}>
-                <SelectTrigger className="w-[133px] md:w-[187px] text-[10px] md:text-xs h-6 md:h-7 shrink-0">
+                <SelectTrigger className="w-[133px] md:w-[187px] text-[10px] md:text-xs h-8 md:h-9 shrink-0">
                   <SelectValue placeholder="Select home" />
                 </SelectTrigger>
                 <SelectContent>
@@ -483,15 +486,15 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="shrink-0"
+              >
+                {isMobile ? 'Back to Workspace' : 'Close'}
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="ml-4 flex-shrink-0"
-            >
-              {isMobile ? 'Back to Workspace' : 'Close'}
-            </Button>
           </DialogHeader>
 
           <div className="flex-1 overflow-hidden flex flex-col">
