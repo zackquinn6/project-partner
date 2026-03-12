@@ -22,6 +22,7 @@ import { RapidProjectAssessment } from "./RapidProjectAssessment";
 import { ResponsiveDialog } from "./ResponsiveDialog";
 import { ShoppingListManager } from "./ShoppingListManager";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/useResponsive";
 
 interface HomeTask {
   id: string;
@@ -49,6 +50,7 @@ interface Home {
 export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { user } = useAuth();
   const { canAccessPaidFeatures } = useMembership();
+  const isMobile = useIsMobile();
   const [tasks, setTasks] = useState<HomeTask[]>([]);
   const [homes, setHomes] = useState<Home[]>([]);
   const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
@@ -470,26 +472,38 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                 </div>
               </DialogTitle>
               <div className="flex gap-1.5 items-center">
-                <TooltipProvider delayDuration={200}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-6 md:h-7 px-1.5 md:px-2 text-[10px] md:text-[11px] border-slate-600 bg-slate-900/40 hover:bg-slate-800/80 text-slate-100"
-                        onClick={() => setShowHomeManager(true)}
-                      >
-                        <HomeIcon className="h-3 w-3 md:mr-1" />
-                        <span className="hidden md:inline">Homes</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs text-xs">
-                      <p>Switch between homes to focus your task list on a specific property.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                {isMobile ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 md:h-7 px-1.5 md:px-2 text-[10px] md:text-[11px] border-0 outline-none bg-slate-900/40 hover:bg-slate-800/80 text-slate-100"
+                    onClick={() => setShowHomeManager(true)}
+                  >
+                    <HomeIcon className="h-3 w-3 md:mr-1" />
+                    <span className="hidden md:inline">Homes</span>
+                  </Button>
+                ) : (
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 md:h-7 px-1.5 md:px-2 text-[10px] md:text-[11px] border-slate-600 bg-slate-900/40 hover:bg-slate-800/80 text-slate-100"
+                          onClick={() => setShowHomeManager(true)}
+                        >
+                          <HomeIcon className="h-3 w-3 md:mr-1" />
+                          <span className="hidden md:inline">Homes</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-xs text-xs">
+                        <p>Switch between homes to focus your task list on a specific property.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
                 <Select value={selectedHomeId || ""} onValueChange={setSelectedHomeId}>
-                  <SelectTrigger className="w-[121px] md:w-[170px] text-[10px] md:text-xs h-6 md:h-7 bg-slate-900/60 border-slate-700 text-slate-100">
+                  <SelectTrigger className="w-[133px] md:w-[187px] text-[10px] md:text-xs h-6 md:h-7 bg-slate-900/60 border-0 outline-none text-slate-100 [&>svg]:opacity-70">
                     <SelectValue placeholder="Select home" />
                   </SelectTrigger>
                   <SelectContent>
