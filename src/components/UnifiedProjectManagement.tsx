@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -2610,9 +2610,9 @@ export function UnifiedProjectManagement({
               <AlertTriangle className="w-5 h-5 text-destructive" />
               Reset Revisions
             </DialogTitle>
-            <DialogDescription>
+            <p className="text-sm text-muted-foreground">
               This will collapse this project&apos;s revision history down to a single draft version while preserving the latest content.
-            </DialogDescription>
+            </p>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
