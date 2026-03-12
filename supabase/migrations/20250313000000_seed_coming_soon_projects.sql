@@ -4,7 +4,29 @@
 
 BEGIN;
 
--- 1) Ensure the publish_status enum (or constraint) accepts 'coming-soon'.
+-- 1) Ensure the publish_status CHECK constraint accepts 'coming-soon'.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.constraint_column_usage c
+    JOIN information_schema.table_constraints tc
+      ON c.constraint_name = tc.constraint_name
+     AND c.constraint_schema = tc.constraint_schema
+    WHERE c.table_name = 'projects'
+      AND c.column_name = 'publish_status'
+      AND tc.constraint_type = 'CHECK'
+      AND c.constraint_name = 'projects_publish_status_check'
+  ) THEN
+    ALTER TABLE projects DROP CONSTRAINT projects_publish_status_check;
+    ALTER TABLE projects
+      ADD CONSTRAINT projects_publish_status_check
+      CHECK (publish_status IN ('draft','beta-testing','published','archived','coming-soon'));
+  END IF;
+END;
+$$;
+
+-- 2) Ensure the publish_status enum (if used) accepts 'coming-soon'.
 -- If publish_status is a plain TEXT/VARCHAR column, this section is harmless.
 DO $$
 BEGIN
@@ -33,7 +55,7 @@ EXCEPTION
 END;
 $$;
 
--- 2) Helper: upsert a "coming soon" template by name.
+-- 3) Helper: upsert a "coming soon" template by name.
 --    If a template with this name exists, just set publish_status to 'coming-soon'
 --    and keep all its existing architecture (phases, links, metadata).
 --    If it does not exist, insert a bare template row with minimal metadata.
