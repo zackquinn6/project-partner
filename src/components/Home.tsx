@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useAuth } from '@/contexts/AuthContext';
 import { useProject } from '@/contexts/ProjectContext';
+import { supabase } from '@/integrations/supabase/client';
 import { PricingWindow } from '@/components/PricingWindow';
 import DIYStyleQuiz from '@/components/DIYStyleQuiz';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
@@ -54,21 +55,53 @@ export default function Home({
   const [isKCExplainerOpen, setIsKCExplainerOpen] = useState(false);
   const [stats, setStats] = useState({
     activeProjects: 0,
-    completedProjects: 0
+    completedProjects: 0,
+    openTasks: 0,
+    maintenanceDueSoon: 0
   });
 
-  // Calculate stats from context data instead of fetching separately
-  // CRITICAL FIX: Filter out cancelled projects from stats
+  // Project stats from context; open tasks and maintenance due soon from API
   useEffect(() => {
     if (projectRuns) {
       const active = projectRuns.filter(run => run.status !== 'cancelled' && (run.progress || 0) < 100).length;
       const completed = projectRuns.filter(run => run.status !== 'cancelled' && (run.progress || 0) >= 100).length;
-      setStats({
+      setStats(prev => ({
+        ...prev,
         activeProjects: active,
         completedProjects: completed
-      });
+      }));
     }
   }, [projectRuns]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const soonEnd = new Date(today);
+    soonEnd.setDate(soonEnd.getDate() + 30);
+    const soonEndIso = soonEnd.toISOString().slice(0, 10);
+    const todayIso = today.toISOString().slice(0, 10);
+
+    (async () => {
+      const { count: openCount } = await supabase
+        .from('home_tasks')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .neq('status', 'closed');
+      const { count: maintCount } = await supabase
+        .from('user_maintenance_tasks')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .gte('next_due', todayIso)
+        .lte('next_due', soonEndIso);
+      setStats(prev => ({
+        ...prev,
+        openTasks: openCount ?? 0,
+        maintenanceDueSoon: maintCount ?? 0
+      }));
+    })();
+  }, [user?.id]);
 
   // Semantic color system for app icons
   const appColors = {
@@ -129,17 +162,25 @@ export default function Home({
               Continue where you left off, or start something new
             </p>
             
-            {/* At a Glance Stats */}
-            <div className="border-t border-border pt-1 mb-1">
-              <h3 className="text-sm font-medium text-muted-foreground mb-3 text-center">At a Glance</h3>
-              <div className="grid grid-cols-2 gap-6 max-w-md mx-auto">
-                <div className="text-center">
-                  <div className="text-base font-bold text-foreground">{stats.activeProjects || 0}</div>
-                  <div className="text-xs text-muted-foreground">active projects</div>
+            {/* Your work at a glance */}
+            <div className="border-t border-border pt-3 pb-4 mb-4">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3 text-center">Your work at a glance</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-2xl mx-auto">
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <div className="text-xl md:text-2xl font-bold text-foreground">{stats.activeProjects ?? 0}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Active projects</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-base font-bold text-foreground">{stats.completedProjects || 0}</div>
-                  <div className="text-xs text-muted-foreground">completed projects</div>
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <div className="text-xl md:text-2xl font-bold text-foreground">{stats.openTasks ?? 0}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Open tasks</div>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <div className="text-xl md:text-2xl font-bold text-foreground">{stats.maintenanceDueSoon ?? 0}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Maintenance due soon</div>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <div className="text-xl md:text-2xl font-bold text-foreground">{stats.completedProjects ?? 0}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Lifetime projects completed</div>
                 </div>
               </div>
             </div>

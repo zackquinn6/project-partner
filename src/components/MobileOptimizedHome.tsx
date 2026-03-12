@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/accordion";
 import { useAuth } from '@/contexts/AuthContext';
 import { useProject } from '@/contexts/ProjectContext';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Home as HomeIcon, 
   Folder, 
@@ -39,21 +40,47 @@ export function MobileOptimizedHome() {
   
   const [stats, setStats] = useState({
     activeProjects: 0,
-    completedProjects: 0
+    completedProjects: 0,
+    openTasks: 0,
+    maintenanceDueSoon: 0
   });
   
   const [userNickname, setUserNickname] = useState<string>('');
 
-  // Calculate stats and fetch user nickname
   useEffect(() => {
     const active = projectRuns.filter(run => (run.progress || 0) < 100).length;
     const completed = projectRuns.filter(run => (run.progress || 0) >= 100).length;
-    
-    setStats({
-      activeProjects: active,
-      completedProjects: completed
-    });
+    setStats(prev => ({ ...prev, activeProjects: active, completedProjects: completed }));
   }, [projectRuns]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const soonEnd = new Date(today);
+    soonEnd.setDate(soonEnd.getDate() + 30);
+    const soonEndIso = soonEnd.toISOString().slice(0, 10);
+    const todayIso = today.toISOString().slice(0, 10);
+    (async () => {
+      const { count: openCount } = await supabase
+        .from('home_tasks')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .neq('status', 'closed');
+      const { count: maintCount } = await supabase
+        .from('user_maintenance_tasks')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .gte('next_due', todayIso)
+        .lte('next_due', soonEndIso);
+      setStats(prev => ({
+        ...prev,
+        openTasks: openCount ?? 0,
+        maintenanceDueSoon: maintCount ?? 0
+      }));
+    })();
+  }, [user?.id]);
 
   // Fetch user nickname
   useEffect(() => {
@@ -236,21 +263,32 @@ export function MobileOptimizedHome() {
           </Card>
         )}
 
-        {/* At a Glance Stats */}
+        {/* Your work at a glance */}
         <div>
-          <h2 className="text-sm font-medium text-muted-foreground mb-3 text-center">At a Glance</h2>
+          <h2 className="text-sm font-medium text-muted-foreground mb-3 text-center">Your work at a glance</h2>
           <div className="grid grid-cols-2 gap-3">
             <Card className="gradient-card">
-              <CardContent className="p-2 text-center">
-                <p className="text-lg font-bold text-card-foreground">{stats.activeProjects}</p>
-                <p className="text-xs text-muted-foreground">Active</p>
+              <CardContent className="p-3 text-center">
+                <p className="text-lg font-bold text-card-foreground">{stats.activeProjects ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Active projects</p>
               </CardContent>
             </Card>
-            
             <Card className="gradient-card">
-              <CardContent className="p-2 text-center">
-                <p className="text-lg font-bold text-card-foreground">{stats.completedProjects}</p>
-                <p className="text-xs text-muted-foreground">Completed</p>
+              <CardContent className="p-3 text-center">
+                <p className="text-lg font-bold text-card-foreground">{stats.openTasks ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Open tasks</p>
+              </CardContent>
+            </Card>
+            <Card className="gradient-card">
+              <CardContent className="p-3 text-center">
+                <p className="text-lg font-bold text-card-foreground">{stats.maintenanceDueSoon ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Maintenance due soon</p>
+              </CardContent>
+            </Card>
+            <Card className="gradient-card">
+              <CardContent className="p-3 text-center">
+                <p className="text-lg font-bold text-card-foreground">{stats.completedProjects ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Lifetime projects completed</p>
               </CardContent>
             </Card>
           </div>
