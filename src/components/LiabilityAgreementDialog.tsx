@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -34,6 +33,8 @@ Where applicable law requires licensed professionals (e.g. electrical, plumbing)
 By accepting this policy you agree to the terms above and confirm you have read and understood them.
 `.trim();
 
+const SCROLL_THRESHOLD_PX = 24;
+
 interface LiabilityAgreementDialogProps {
   open: boolean;
   onAccepted: () => void;
@@ -45,10 +46,16 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
   const [fullName, setFullName] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [policyText, setPolicyText] = useState(PLACEHOLDER_LIABILITY_POLICY);
+  const [policyText, setPolicyText] = useState('');
+  const [templateLoading, setTemplateLoading] = useState(true);
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
+    setHasScrolledToBottom(false);
+    setAgreed(false);
+    setTemplateLoading(true);
     const load = async () => {
       const { data } = await supabase
         .from('agreement_templates')
@@ -59,9 +66,27 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
         .maybeSingle();
       if (data?.body) setPolicyText(data.body);
       else setPolicyText(PLACEHOLDER_LIABILITY_POLICY);
+      setTemplateLoading(false);
     };
     load();
   }, [open]);
+
+  const checkScrolledToBottom = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    if (scrollHeight <= clientHeight) {
+      setHasScrolledToBottom(true);
+      return;
+    }
+    const atBottom = scrollTop + clientHeight >= scrollHeight - SCROLL_THRESHOLD_PX;
+    setHasScrolledToBottom(atBottom);
+  }, []);
+
+  useEffect(() => {
+    if (!open || templateLoading) return;
+    checkScrolledToBottom();
+  }, [open, templateLoading, policyText, checkScrolledToBottom]);
 
   useEffect(() => {
     if (!open || !user) return;
@@ -217,23 +242,43 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
         <p className="text-sm text-muted-foreground shrink-0">
           You must read and accept the usage agreement below before using the app.
         </p>
-        <ScrollArea className="h-[50vh] min-h-[240px] border rounded-md p-4 shrink-0">
-          <pre className="whitespace-pre-wrap font-sans text-sm text-foreground">{policyText}</pre>
-        </ScrollArea>
+        <div
+          ref={scrollContainerRef}
+          onScroll={checkScrolledToBottom}
+          className="h-[50vh] min-h-[240px] border rounded-md p-4 overflow-y-auto shrink-0"
+        >
+          {templateLoading ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+              Loading agreement…
+            </div>
+          ) : (
+            <pre className="whitespace-pre-wrap font-sans text-sm text-foreground">{policyText}</pre>
+          )}
+        </div>
+        {!hasScrolledToBottom && !templateLoading && (
+          <p className="text-xs text-muted-foreground shrink-0">
+            Scroll to the bottom of the agreement to continue.
+          </p>
+        )}
         <div className="space-y-4 pt-2 shrink-0">
           <div className="flex items-center gap-3">
             <Checkbox
               id="liability-agree"
               checked={agreed}
               onCheckedChange={(c) => setAgreed(!!c)}
+              disabled={!hasScrolledToBottom}
             />
-            <Label htmlFor="liability-agree" className="cursor-pointer text-sm font-normal">
+            <Label
+              htmlFor="liability-agree"
+              className={`text-sm font-normal ${hasScrolledToBottom ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'}`}
+            >
               I have read and agree to the Usage Agreement above.
             </Label>
           </div>
           <Button
             onClick={handleAccept}
-            disabled={!agreed || submitting}
+            disabled={!hasScrolledToBottom || !agreed || submitting}
             className="w-full sm:w-auto"
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
