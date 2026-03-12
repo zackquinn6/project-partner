@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, ClipboardList, Loader2, Trash2, Plus, Shield, ShieldCheck, Home, HelpCircle, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ClipboardList, Loader2, Trash2, Plus, Shield, ShieldCheck, Home, HelpCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -109,6 +109,7 @@ const APPLIANCES_SYSTEMS_OPTIONS = [
   'Dishwasher',
   'Garbage disposal',
   'Garage door & opener',
+  'Pool',
 ] as const;
 
 function zipToClimateRegion(zip: string): string {
@@ -234,7 +235,7 @@ export function MaintenancePlanWorkflow({
         id="doNotSave"
         checked={doNotSaveHomeInfo}
         onCheckedChange={(c) => setDoNotSaveHomeInfo(!!c)}
-        className="h-2 w-2 shrink-0 [&_svg]:h-2 [&_svg]:w-2"
+        className="h-5 w-5 shrink-0 [&_svg]:h-5 [&_svg]:w-5"
       />
       <Label htmlFor="doNotSave" className="text-xs font-normal cursor-pointer leading-tight">
         Do NOT save my home information. Only use it temporarily to build my plan.
@@ -505,6 +506,7 @@ export function MaintenancePlanWorkflow({
         }
 
         // Filter templates that depend on specific systems so we only include them when the user has that system.
+        const hasCentralAir = heatingCooling.includes('Central air conditioning');
         const hasDryer = appliancesSystems.some((a) => a === 'Dryer (gas/electric)');
         const hasDishwasher = appliancesSystems.some((a) => a === 'Dishwasher');
         const hasGarbageDisposal = appliancesSystems.some((a) => a === 'Garbage disposal');
@@ -512,7 +514,14 @@ export function MaintenancePlanWorkflow({
         const hasSepticSystem = appliancesSystems.some((a) => a === 'Septic system');
         const hasFireplaceOrChimney = appliancesSystems.some((a) => a === 'Fireplace/chimney');
         const hasGarageDoor = appliancesSystems.some((a) => a === 'Garage door & opener');
+        const hasPool = appliancesSystems.some((a) => a === 'Pool');
 
+        if (!hasCentralAir) {
+          selected = selected.filter(
+            (t: MaintenanceTemplate) =>
+              !(t.category === 'hvac' && t.title.toLowerCase().includes('filter'))
+          );
+        }
         if (!hasDryer) {
           const DRYER_TITLES = new Set<string>(['Clean dryer vent', 'Inspect dryer exhaust duct']);
           selected = selected.filter((t: MaintenanceTemplate) => !DRYER_TITLES.has(t.title));
@@ -541,6 +550,11 @@ export function MaintenancePlanWorkflow({
         if (!hasGarageDoor) {
           const GARAGE_TITLES = new Set<string>(['Test garage door auto reverse', 'Lubricate garage door openers']);
           selected = selected.filter((t: MaintenanceTemplate) => !GARAGE_TITLES.has(t.title));
+        }
+        if (!hasPool) {
+          selected = selected.filter(
+            (t: MaintenanceTemplate) => !t.title.toLowerCase().includes('pool')
+          );
         }
 
         const entries: PlanEntry[] = [
@@ -721,12 +735,11 @@ export function MaintenancePlanWorkflow({
             <Button
               type="button"
               variant="ghost"
-              size="icon"
+              size="sm"
               className="hidden md:inline-flex text-muted-foreground hover:text-foreground"
-              aria-label="Close"
               onClick={() => onOpenChange(false)}
             >
-              <X className="h-4 w-4" />
+              Close
             </Button>
           </div>
           {!loadingDetails && (
