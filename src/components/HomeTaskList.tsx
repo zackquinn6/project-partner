@@ -457,12 +457,12 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         }}
       >
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-          <DialogHeader className="px-4 md:px-6 py-2 md:py-4 border-b flex items-center justify-between gap-4 flex-shrink-0">
-            <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
+          <DialogHeader className="px-4 md:px-6 py-2 md:py-4 border-b flex items-center justify-between flex-shrink-0 min-h-0">
+            <div className="flex items-center gap-2 min-w-0">
               <List className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" aria-hidden />
               <DialogTitle className="text-base font-bold md:text-xl truncate">Task Manager</DialogTitle>
             </div>
-            <div className="flex items-center gap-2 min-w-0 flex-shrink-0 ml-auto">
+            <div className="flex items-center gap-2 min-w-0 shrink-0">
               <Button
                 variant={isMobile ? "ghost" : "outline"}
                 size="sm"

@@ -410,32 +410,32 @@ export function HomeTasksTable({
         <div className="overflow-auto h-full">
           <Table>
             <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10">
-              <TableRow>
-                {!isMobile && <TableHead className="w-8 text-xs"></TableHead>}
-                <TableHead className="min-w-[200px] md:min-w-[281px] md:w-[281px] text-xs">
-                  <Button variant="ghost" size="sm" onClick={() => handleSort('title')} className="h-6 px-2 text-xs font-medium">
+              <TableRow className="border-sky-500/50">
+                {!isMobile && <TableHead className="w-8 text-xs text-white"></TableHead>}
+                <TableHead className="min-w-[200px] md:min-w-[281px] md:w-[281px] text-xs text-white">
+                  <Button variant="ghost" size="sm" onClick={() => handleSort('title')} className="h-6 px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
                     Task <SortIcon field="title" />
                   </Button>
                 </TableHead>
-                {!isMobile && <TableHead className="w-[180px] text-xs">Notes</TableHead>}
-                <TableHead className="w-24 md:w-20 text-xs">
-                  <Button variant="ghost" size="sm" onClick={() => handleSort('priority')} className="h-6 px-2 text-xs font-medium">
+                {!isMobile && <TableHead className="w-[180px] text-xs text-white">Notes</TableHead>}
+                <TableHead className="w-24 md:w-20 text-xs text-white">
+                  <Button variant="ghost" size="sm" onClick={() => handleSort('priority')} className="h-6 px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
                     Priority <SortIcon field="priority" />
                   </Button>
                 </TableHead>
                 {!isMobile && (
-                  <TableHead className="w-24 md:w-20 text-xs">
-                    <Button variant="ghost" size="sm" onClick={() => handleSort('diy_level')} className="h-6 px-2 text-xs font-medium">
+                  <TableHead className="w-24 md:w-20 text-xs text-white">
+                    <Button variant="ghost" size="sm" onClick={() => handleSort('diy_level')} className="h-6 px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
                       DIY Level <SortIcon field="diy_level" />
                     </Button>
                   </TableHead>
                 )}
-                <TableHead className="w-32 md:w-24 text-xs">
-                  <Button variant="ghost" size="sm" onClick={() => handleSort('due_date')} className="h-6 px-2 text-xs font-medium">
+                <TableHead className="w-32 md:w-24 text-xs text-white">
+                  <Button variant="ghost" size="sm" onClick={() => handleSort('due_date')} className="h-6 px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
                     Due Date <SortIcon field="due_date" />
                   </Button>
                 </TableHead>
-                {!isMobile && <TableHead className="w-[150px] text-xs text-right">Actions</TableHead>}
+                {!isMobile && <TableHead className="w-[150px] text-xs text-right text-white">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
