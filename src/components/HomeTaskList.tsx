@@ -135,6 +135,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
   useEffect(() => {
     if (open && user) {
+      setSelectedHomeId(null);
       fetchHomes();
       fetchTasks();
     }
@@ -156,9 +157,6 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
     
     if (!error && data) {
       setHomes(data);
-      if (data.length > 0 && !selectedHomeId) {
-        setSelectedHomeId(data[0].id);
-      }
     }
   };
 
