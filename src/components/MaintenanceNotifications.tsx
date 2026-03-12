@@ -5,7 +5,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Mail, MessageSquare, Bell, AlertCircle, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -228,11 +227,11 @@ export function MaintenanceNotifications({
       variant: "destructive"
     });
   };
-  return <div className="space-y-4 md:space-y-6 text-sm md:text-base">
+  return <div className="space-y-4 md:space-y-6 text-xs md:text-sm">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="flex items-center gap-2 text-base md:text-lg font-semibold">
+        <h3 className="flex items-center gap-2 text-sm md:text-base font-semibold leading-snug md:leading-snug">
           <Bell className="h-4 w-4 md:h-5 md:w-5 text-amber-500 shrink-0" />
-          Notification Settings
+          Maintenance only works when it’s acted on. Turn on reminders so tasks surface naturally in the places you already check every day.
         </h3>
         <Button onClick={saveNotificationSettings} disabled={saving || loadingSettings} size="sm" className="shrink-0">
           {saving ? "Saving..." : loadingSettings ? "Loading..." : "Save Settings"}
@@ -241,74 +240,105 @@ export function MaintenanceNotifications({
         
         {/* Email and SMS Settings - Responsive Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-          
           {/* Email Settings */}
-          <div className="space-y-3 md:space-y-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox id="email-enabled" checked={emailEnabled} onCheckedChange={checked => setEmailEnabled(checked === true)} className="sm:h-5 sm:w-5 h-3 w-3 shrink-0" />
-              <Label htmlFor="email-enabled" className="flex items-center gap-1.5 text-xs md:text-sm">
-                <Mail className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
-                Enable Email Notifications
-              </Label>
-              <Badge variant="secondary" className="text-[10px] md:text-xs">Available</Badge>
-            </div>
-            
-            {emailEnabled && <div className="ml-5 md:ml-6 space-y-2 md:space-y-3">
-                <div className="max-w-xs">
-                  <Label htmlFor="email-address" className="text-xs md:text-sm">Email Address</Label>
-                  <Input id="email-address" type="email" value={emailAddress} onChange={e => setEmailAddress(e.target.value)} placeholder="Enter your email" className="text-xs md:text-sm h-8 md:h-9" />
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs h-8 md:h-9"
-                  onClick={() => {
-                    console.warn('[MaintenanceAlerts] Send Test Email button clicked');
-                    testEmailNotification();
-                  }}
-                  disabled={sendingTest || !user || !emailAddress?.trim()}
-                >
-                  {sendingTest ? "Sending…" : "Send Test Email"}
-                </Button>
-                <p className="text-[11px] md:text-xs text-muted-foreground">We'll send a test to your email so you can confirm it works.</p>
-              </div>}
-          </div>
+          <div className="lg:col-span-1">
+            <div className="space-y-3 md:space-y-4 rounded-md border border-dotted border-muted-foreground/40 bg-muted/10 p-3 md:p-4 h-full">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="email-enabled"
+                  checked={emailEnabled}
+                  onCheckedChange={checked => setEmailEnabled(checked === true)}
+                  className="sm:h-5 sm:w-5 h-3 w-3 shrink-0"
+                />
+                <Label htmlFor="email-enabled" className="flex items-center gap-1.5 text-xs md:text-sm">
+                  <Mail className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
+                  Enable Email Notifications
+                </Label>
+                <Badge variant="secondary" className="text-[10px] md:text-xs">
+                  Available
+                </Badge>
+              </div>
 
-          {/* Divider - Visible on desktop only */}
-          <div className="hidden lg:flex justify-center">
-            <Separator orientation="vertical" className="h-full" />
-          </div>
-          
-          {/* Mobile divider */}
-          <div className="lg:hidden">
-            <Separator />
+              {emailEnabled && (
+                <div className="ml-5 md:ml-6 space-y-2 md:space-y-3">
+                  <div className="max-w-xs">
+                    <Label htmlFor="email-address" className="text-xs md:text-sm">
+                      Email Address
+                    </Label>
+                    <Input
+                      id="email-address"
+                      type="email"
+                      value={emailAddress}
+                      onChange={e => setEmailAddress(e.target.value)}
+                      placeholder="Enter your email"
+                      className="text-xs md:text-sm h-8 md:h-9"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-8 md:h-9"
+                    onClick={() => {
+                      console.warn('[MaintenanceAlerts] Send Test Email button clicked');
+                      testEmailNotification();
+                    }}
+                    disabled={sendingTest || !user || !emailAddress?.trim()}
+                  >
+                    {sendingTest ? "Sending…" : "Send Test Email"}
+                  </Button>
+                  <p className="text-[11px] md:text-xs text-muted-foreground">
+                    We'll send a test to your email so you can confirm it works.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* SMS Settings */}
-          <div className="space-y-3 md:space-y-4 lg:col-start-2 lg:row-start-1">
-            <div className="flex items-center space-x-2">
-              <Checkbox id="sms-enabled" checked={smsEnabled} onCheckedChange={checked => {
-                if (checked) {
-                  showSMSNotAvailable();
-                } else {
-                  setSmsEnabled(false);
-                }
-              }} className="sm:h-5 sm:w-5 h-3 w-3 shrink-0" disabled />
-              <Label htmlFor="sms-enabled" className="flex items-center gap-1.5 text-xs md:text-sm text-muted-foreground">
-                <MessageSquare className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
-                Enable SMS Notifications
-              </Label>
-              <Badge variant="outline" className="text-[10px] md:text-xs">Coming Soon</Badge>
-            </div>
-            
-            <div className="ml-5 md:ml-6 space-y-2 md:space-y-3">
-              <div className="max-w-xs">
-                <Label htmlFor="phone-number" className="text-xs md:text-sm text-muted-foreground">Phone Number</Label>
-                <Input id="phone-number" type="tel" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="Enter your phone number" disabled className="text-xs md:text-sm h-8 md:h-9" />
+          <div className="lg:col-span-1">
+            <div className="space-y-3 md:space-y-4 rounded-md border border-dotted border-muted-foreground/40 bg-muted/10 p-3 md:p-4 h-full">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="sms-enabled"
+                  checked={smsEnabled}
+                  onCheckedChange={checked => {
+                    if (checked) {
+                      showSMSNotAvailable();
+                    } else {
+                      setSmsEnabled(false);
+                    }
+                  }}
+                  className="sm:h-5 sm:w-5 h-3 w-3 shrink-0"
+                  disabled
+                />
+                <Label htmlFor="sms-enabled" className="flex items-center gap-1.5 text-xs md:text-sm text-muted-foreground">
+                  <MessageSquare className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
+                  Enable SMS Notifications
+                </Label>
+                <Badge variant="outline" className="text-[10px] md:text-xs">
+                  Coming Soon
+                </Badge>
               </div>
-              <Button variant="outline" size="sm" className="text-xs h-8 md:h-9" disabled>
-                Send Test SMS
-              </Button>
+
+              <div className="ml-5 md:ml-6 space-y-2 md:space-y-3">
+                <div className="max-w-xs">
+                  <Label htmlFor="phone-number" className="text-xs md:text-sm text-muted-foreground">
+                    Phone Number
+                  </Label>
+                  <Input
+                    id="phone-number"
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={e => setPhoneNumber(e.target.value)}
+                    placeholder="Enter your phone number"
+                    disabled
+                    className="text-xs md:text-sm h-8 md:h-9"
+                  />
+                </div>
+                <Button variant="outline" size="sm" className="text-xs h-8 md:h-9" disabled>
+                  Send Test SMS
+                </Button>
+              </div>
             </div>
           </div>
         </div>
