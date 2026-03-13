@@ -237,4 +237,6 @@ export interface Project {
   createdFromRevision?: number;
   // Standard Project Foundation marker
   isStandardTemplate?: boolean;
+  // Popular project: shown in catalog carousel
+  isPopular?: boolean;
 }

@@ -33,6 +33,7 @@ import { HomeManager } from '@/components/HomeManager';
 import { HomeTaskList } from '@/components/HomeTaskList';
 import { BetaProjectWarning } from '@/components/BetaProjectWarning';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 interface ProjectTemplate {
   id: string;
   name: string;
@@ -373,6 +374,11 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     ['Low', 'Medium', 'High'],
     []
   );
+
+  // Popular projects for carousel (published and marked is_popular)
+  const popularProjects = useMemo(() => {
+    return publishedProjects.filter(project => (project as Project).isPopular === true);
+  }, [publishedProjects]);
 
   // Filtered projects based on search and filters
   const filteredProjects = useMemo(() => {
@@ -1328,6 +1334,67 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             </div>
           )}
         </div>
+
+        {/* Popular projects carousel - under search/filters, above Show all Projects */}
+        {popularProjects.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-4">Popular projects</h2>
+            <Carousel
+              opts={{ align: 'start', loop: false }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {popularProjects.map((project) => {
+                  const projectCategories = Array.isArray(project.category) ? project.category : (project.category ? [project.category] : []);
+                  const IconComponent = getIconForCategory(projectCategories[0] || '');
+                  const imageUrl = (project as any).cover_image || project.image || (project as any).images?.[0];
+                  return (
+                    <CarouselItem key={project.id} className="pl-2 md:pl-4 basis-[140px] sm:basis-[160px] md:basis-[180px]">
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSelectProject(project);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleSelectProject(project);
+                          }
+                        }}
+                        className="group rounded-lg border bg-card overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        style={{ aspectRatio: '4/3' }}
+                      >
+                        <div className="relative w-full h-full min-h-0">
+                          {imageUrl ? (
+                            <img
+                              src={imageUrl}
+                              alt={project.name}
+                              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center">
+                              <IconComponent className="w-8 h-8 text-white/90" />
+                            </div>
+                          )}
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
+                            <h3 className="text-xs font-semibold text-white line-clamp-2 leading-tight">
+                              {project.name}
+                            </h3>
+                          </div>
+                        </div>
+                      </div>
+                    </CarouselItem>
+                  );
+                })}
+              </CarouselContent>
+              <CarouselPrevious className="-left-2 md:-left-4 top-1/2 -translate-y-1/2" />
+              <CarouselNext className="-right-2 md:-right-4 top-1/2 -translate-y-1/2" />
+            </Carousel>
+          </div>
+        )}
 
         {/* Show All Projects Button - Only show when grid is hidden */}
         {!shouldShowGrid && (
