@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, Lock, HelpCircle, BookOpen, MessageCircle, Headphones, Crown, FileText } from "lucide-react";
+import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, Lock, HelpCircle, BookOpen, MessageCircle, Headphones, Crown, FileText, UserPlus } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useProject } from '@/contexts/ProjectContext';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -458,6 +459,12 @@ export default function Navigation({
                 <DropdownMenuItem onClick={() => setIsPoliciesOpen(true)}>
                   <FileText className="h-4 w-4 mr-2" />
                   Policies
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/apply-project-owner" className="flex items-center cursor-pointer">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Apply to be a Project Owner
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

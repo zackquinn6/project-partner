@@ -208,7 +208,6 @@ export const AdminView: React.FC = () => {
             </CardContent>
           </Card>
 
-          {!isProjectOwnerOnly && (
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setAnalyticsOpen(true)}>
             <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -225,7 +224,6 @@ export const AdminView: React.FC = () => {
               </Button>
             </CardContent>
           </Card>
-          )}
 
           {!isProjectOwnerOnly && (
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setUsersSecurityOpen(true)}>

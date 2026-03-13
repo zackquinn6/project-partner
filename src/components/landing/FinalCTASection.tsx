@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Shield, CheckCircle } from 'lucide-react';
@@ -66,6 +66,10 @@ export const FinalCTASection = () => {
             <span className="text-sm">Money-Back Guarantee</span>
           </div>
         </div>
+
+        <p className="mt-6 text-xs opacity-60">
+          <Link to="/apply-project-owner" className="underline hover:opacity-100">Apply to be a Project Owner</Link>
+        </p>
       </div>
     </section>
   );
