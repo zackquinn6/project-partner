@@ -46,7 +46,7 @@ export const ProjectOwnerInvitationDialog: React.FC<ProjectOwnerInvitationDialog
 
       // Check if user already exists
       const { data: profileData } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('user_id')
         .eq('email', email.toLowerCase())
         .single();

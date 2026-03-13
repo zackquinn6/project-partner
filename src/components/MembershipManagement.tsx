@@ -35,7 +35,7 @@ export const MembershipManagement: React.FC = () => {
       if (!user) return;
       
       const { data } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('signed_agreement')
         .eq('user_id', user.id)
         .single();

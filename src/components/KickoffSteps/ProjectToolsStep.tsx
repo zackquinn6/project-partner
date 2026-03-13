@@ -77,7 +77,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     let cancelled = false;
     (async () => {
       const { data } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('project_focus')
         .eq('user_id', user.id)
         .maybeSingle();

@@ -105,7 +105,7 @@ export function MobileOptimizedHome() {
       if (!user) return;
       const { supabase } = await import('@/integrations/supabase/client');
       const { data } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('nickname')
         .eq('user_id', user.id)
         .single();

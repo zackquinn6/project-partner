@@ -65,7 +65,7 @@ export default function ProfileManager({
       const {
         data: profileData,
         error: profileError
-      } = await supabase.from('profiles').select(`
+      } = await supabase.from('user_profiles').select(`
           skill_level, 
           physical_capability, 
           home_ownership, 

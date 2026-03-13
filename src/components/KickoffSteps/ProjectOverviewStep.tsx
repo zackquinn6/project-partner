@@ -58,7 +58,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       const {
         data,
         error
-      } = await supabase.from('profiles').select('skill_level, physical_capability').eq('user_id', user?.id).maybeSingle();
+      } = await supabase.from('user_profiles').select('skill_level, physical_capability').eq('user_id', user?.id).maybeSingle();
       if (error) {
         console.error('Error loading user profile:', error);
         return;

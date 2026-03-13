@@ -55,7 +55,7 @@ export const UserRoleManager: React.FC = () => {
       const {
         data: profilesData,
         error: profilesError
-      } = await supabase.from('profiles').select('user_id, email, full_name, nickname, display_name');
+      } = await supabase.from('user_profiles').select('user_id, email, full_name, nickname, display_name');
       if (profilesError) {
         console.error('❌ Error loading profiles:', profilesError);
         throw profilesError;
@@ -95,7 +95,7 @@ export const UserRoleManager: React.FC = () => {
       const {
         data,
         error
-      } = await supabase.from('profiles').select('user_id, email, full_name, nickname, display_name').order('user_id');
+      } = await supabase.from('user_profiles').select('user_id, email, full_name, nickname, display_name').order('user_id');
       if (error) throw error;
       setAllUsers(data || []);
     } catch (error) {

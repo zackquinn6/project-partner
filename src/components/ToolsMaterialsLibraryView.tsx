@@ -97,7 +97,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
     
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('owned_tools, owned_materials')
         .eq('user_id', user.id)
         .single();
@@ -224,7 +224,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
     // Immediately save to database
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .update({ 
           owned_tools: updatedTools as any,
           owned_materials: updatedMaterials as any
@@ -273,7 +273,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
     // Immediately save to database
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .update({ 
           owned_tools: updatedTools as any,
           owned_materials: updatedMaterials as any
@@ -310,7 +310,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
     setIsLoading(true);
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .update({ 
           owned_tools: userTools as any,
           owned_materials: userMaterials as any

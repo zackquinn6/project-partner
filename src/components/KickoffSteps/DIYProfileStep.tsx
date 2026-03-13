@@ -60,7 +60,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
     try {
       // First fetch profile data
       const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select(`
           skill_level, 
           avoid_projects, 

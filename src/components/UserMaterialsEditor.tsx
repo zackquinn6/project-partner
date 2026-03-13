@@ -275,7 +275,7 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
               if (user && userMaterials.length > 0) {
                 try {
                   const { error } = await supabase
-                    .from('profiles')
+                    .from('user_profiles')
                     .update({ owned_materials: userMaterials as any })
                     .eq('user_id', user.id);
                   
@@ -475,7 +475,7 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
             // Save to database immediately
             if (user) {
               supabase
-                .from('profiles')
+                .from('user_profiles')
                 .update({ owned_materials: updatedMaterials as any })
                 .eq('user_id', user.id)
                 .then(({ error }) => {

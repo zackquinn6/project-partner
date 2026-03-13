@@ -92,7 +92,7 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
     if (!open || !user) return;
     const loadName = async () => {
       const { data } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('full_name, nickname')
         .eq('user_id', user.id)
         .maybeSingle();

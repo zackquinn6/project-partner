@@ -89,7 +89,7 @@ export const PostAuthLanding = () => {
         const {
           data: profile,
           error: profileError
-        } = await supabase.from('profiles').select('nickname').eq('user_id', user.id).single();
+        } = await supabase.from('user_profiles').select('nickname').eq('user_id', user.id).single();
         if (profileError && profileError.code !== 'PGRST116') {
           console.error('Error fetching profile:', profileError);
         } else if (profile?.nickname) {

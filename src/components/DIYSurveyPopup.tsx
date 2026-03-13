@@ -420,7 +420,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
         if (user && personalityProfile) {
           // User is signed in - save to database
           const { error } = await supabase
-            .from('profiles')
+            .from('user_profiles')
             .upsert({
               user_id: user.id,
               personality_profile: personalityProfile,
@@ -528,7 +528,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
         if (user) {
           // User is signed in - save to database
           const { error } = await supabase
-            .from('profiles')
+            .from('user_profiles')
             .upsert({
               user_id: user.id,
               full_name: answers.fullName,

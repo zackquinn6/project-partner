@@ -116,7 +116,7 @@ export function MultiSelectLibraryDialog({
     try {
       const columnName = type === 'tools' ? 'owned_tools' : 'owned_materials';
       const { data, error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select(columnName)
         .eq('user_id', user.id)
         .single();

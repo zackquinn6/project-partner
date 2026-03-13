@@ -128,7 +128,7 @@ export const MembershipAgreementDialog: React.FC<MembershipAgreementDialogProps>
       // Fetch user's profile to pre-fill name
       const fetchProfile = async () => {
         const { data } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('display_name')
           .eq('user_id', user.id)
           .single();
@@ -158,7 +158,7 @@ export const MembershipAgreementDialog: React.FC<MembershipAgreementDialogProps>
       };
 
       const { error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .update({
           signed_agreement: agreement as any,
           agreement_signed_at: new Date().toISOString()

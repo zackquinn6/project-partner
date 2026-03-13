@@ -682,7 +682,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     // Check user profile to determine next step
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('survey_completed_at')
         .eq('user_id', user.id)
         .maybeSingle();

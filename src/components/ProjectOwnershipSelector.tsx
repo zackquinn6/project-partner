@@ -71,7 +71,7 @@ export const ProjectOwnershipSelector: React.FC<ProjectOwnershipSelectorProps> =
 
         // Get profiles for these users
         const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('user_id, email, display_name')
           .in('user_id', userIds);
 
@@ -91,7 +91,7 @@ export const ProjectOwnershipSelector: React.FC<ProjectOwnershipSelectorProps> =
         if (ownersData && ownersData.length > 0) {
           const ownerUserIds = ownersData.map(o => o.user_id);
           const { data: ownerProfiles } = await supabase
-            .from('profiles')
+            .from('user_profiles')
             .select('user_id, email, display_name')
             .in('user_id', ownerUserIds);
 
@@ -144,7 +144,7 @@ export const ProjectOwnershipSelector: React.FC<ProjectOwnershipSelectorProps> =
       if (ownersData && ownersData.length > 0) {
         const ownerUserIds = ownersData.map(o => o.user_id);
         const { data: ownerProfiles } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('user_id, email, display_name')
           .in('user_id', ownerUserIds);
 

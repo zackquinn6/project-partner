@@ -30,7 +30,7 @@ async function saveOnboardingToProfile(
     updated_at: new Date().toISOString(),
   };
   if (pmFocus) row.project_focus = pmFocus;
-  const { error } = await supabase.from('profiles').upsert(row, { onConflict: 'user_id' });
+  const { error } = await supabase.from('user_profiles').upsert(row, { onConflict: 'user_id' });
   if (error) {
     console.error('Failed to save onboarding to profile:', error);
   }

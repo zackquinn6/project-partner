@@ -166,7 +166,7 @@ export function OrderingWindow({
           const {
             data,
             error
-          } = await supabase.from('profiles').select('owned_tools').eq('user_id', user.id).single();
+          } = await supabase.from('user_profiles').select('owned_tools').eq('user_id', user.id).single();
           if (!error && data) {
             setUserProfile(data);
           }

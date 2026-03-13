@@ -339,7 +339,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
     // Trigger immediate save
     if (user) {
       supabase
-        .from('profiles')
+        .from('user_profiles')
         .update({ owned_tools: updatedTools as any })
         .eq('user_id', user.id)
         .then(({ error }) => {
@@ -385,7 +385,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
     
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .update({ owned_tools: userTools as any })
         .eq('user_id', user.id);
       
@@ -401,7 +401,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
     setIsLoading(true);
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .update({ owned_tools: userTools as any })
         .eq('user_id', user.id);
       
@@ -427,7 +427,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
               if (user && userTools.length > 0) {
                 try {
                   const { error } = await supabase
-                    .from('profiles')
+                    .from('user_profiles')
                     .update({ owned_tools: userTools as any })
                     .eq('user_id', user.id);
                   
@@ -552,7 +552,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
                 // Save to database immediately
                 if (user) {
                   supabase
-                    .from('profiles')
+                    .from('user_profiles')
                     .update({ owned_tools: updatedTools as any })
                     .eq('user_id', user.id)
                     .then(({ error }) => {
@@ -669,7 +669,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
               if (user && userTools.length > 0) {
                 try {
                   const { error } = await supabase
-                    .from('profiles')
+                    .from('user_profiles')
                     .update({ owned_tools: userTools as any })
                     .eq('user_id', user.id);
                   
