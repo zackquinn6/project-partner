@@ -33,15 +33,15 @@ export function AchievementNotificationCenter() {
     if (user) {
       fetchNotifications();
       
-      // Set up real-time subscription
+      // Set up real-time subscription on user_achievements (unlock rows)
       const channel = supabase
-        .channel('achievement_notifications')
+        .channel('user_achievements')
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
-            table: 'achievement_notifications',
+            table: 'user_achievements',
             filter: `user_id=eq.${user.id}`,
           },
           () => {
@@ -61,16 +61,24 @@ export function AchievementNotificationCenter() {
 
     try {
       const { data, error } = await supabase
-        .from('achievement_notifications')
-        .select('*')
+        .from('user_achievements')
+        .select('id, achievement_id, is_read, created_at, achievement:achievements(name, description, icon)')
         .eq('user_id', user.id)
+        .eq('type', 'unlock')
         .order('created_at', { ascending: false })
         .limit(10);
 
       if (error) throw error;
 
-      setNotifications(data || []);
-      setUnreadCount(data?.filter((n) => !n.is_read).length || 0);
+      const list = (data || []).map((row: { id: string; achievement_id: string; is_read: boolean; created_at: string; achievement: { name: string; description: string; icon: string } | null }) => ({
+        id: row.id,
+        achievement_id: row.achievement_id,
+        is_read: row.is_read,
+        created_at: row.created_at,
+        achievement: row.achievement ?? null
+      }));
+      setNotifications(list);
+      setUnreadCount(list.filter((n) => !n.is_read).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -81,7 +89,7 @@ export function AchievementNotificationCenter() {
   const markAsRead = async (notificationId: string) => {
     try {
       const { error } = await supabase
-        .from('achievement_notifications')
+        .from('user_achievements')
         .update({ is_read: true })
         .eq('id', notificationId);
 
@@ -98,9 +106,10 @@ export function AchievementNotificationCenter() {
 
     try {
       const { error } = await supabase
-        .from('achievement_notifications')
+        .from('user_achievements')
         .update({ is_read: true })
         .eq('user_id', user.id)
+        .eq('type', 'unlock')
         .eq('is_read', false);
 
       if (error) throw error;

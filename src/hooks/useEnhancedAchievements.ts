@@ -80,11 +80,12 @@ export function useEnhancedAchievements(userId?: string) {
 
       if (unlockedError) throw unlockedError;
 
-      // Fetch XP history
+      // Fetch XP history (type='xp' rows in user_achievements)
       const { data: history, error: historyError } = await supabase
-        .from('user_xp_history')
-        .select('*')
+        .from('user_achievements')
+        .select('id, xp_amount, reason, phase_name, created_at')
         .eq('user_id', userId)
+        .eq('type', 'xp')
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -92,10 +93,16 @@ export function useEnhancedAchievements(userId?: string) {
 
       setAchievements(allAchievements || []);
       setUserAchievements(unlocked || []);
-      setXpHistory(history || []);
+      setXpHistory((history || []).map((r: { id: string; xp_amount: number; reason: string; phase_name?: string; created_at: string }) => ({
+        id: r.id,
+        xp_amount: r.xp_amount,
+        reason: r.reason,
+        phase_name: r.phase_name,
+        created_at: r.created_at
+      })));
 
-      // Calculate total XP
-      const xp = (unlocked || []).reduce((sum, ua) => sum + (ua.xp_earned || 0), 0);
+      // Calculate total XP from unlock rows (xp_amount on user_achievements)
+      const xp = (unlocked || []).reduce((sum, ua) => sum + (Number((ua as any).xp_amount) || 0), 0);
       setTotalXP(xp);
       setLevel(calculateLevel(xp));
 
@@ -144,15 +151,17 @@ export function useEnhancedAchievements(userId?: string) {
     if (!userId) return;
 
     try {
-      // Insert XP history
+      const now = new Date().toISOString();
       const { error: xpError } = await supabase
-        .from('user_xp_history')
+        .from('user_achievements')
         .insert({
           user_id: userId,
-          project_run_id: projectRunId,
-          phase_name: phaseName,
+          type: 'xp',
+          project_run_id: projectRunId ?? null,
+          phase_name: phaseName ?? null,
           xp_amount: xpAmount,
-          reason: reason
+          reason,
+          earned_at: now
         });
 
       if (xpError) throw xpError;
@@ -222,24 +231,22 @@ export function useEnhancedAchievements(userId?: string) {
           earnedXP = calculateXPForProject(projectData);
         }
 
-        // Unlock if criteria met
+        // Unlock if criteria met (one row in user_achievements with type='unlock', is_read=false for notification)
         if (shouldUnlock) {
+          const now = new Date().toISOString();
           const { error: insertError } = await supabase
             .from('user_achievements')
             .insert({
               user_id: userId,
               achievement_id: achievement.id,
-              xp_earned: earnedXP
+              type: 'unlock',
+              xp_amount: earnedXP,
+              project_run_id: projectData?.id ?? null,
+              is_read: false,
+              earned_at: now
             });
 
           if (!insertError) {
-            // Create notification
-            await supabase.from('achievement_notifications').insert({
-              user_id: userId,
-              achievement_id: achievement.id,
-              project_run_id: projectData?.id
-            });
-
             newlyUnlocked.push(achievement);
 
             // Award XP
