@@ -2234,6 +2234,22 @@ export function UnifiedProjectManagement({
                           {/* Image Management Section */}
                           <div className="space-y-3">
                             <Label className="text-sm font-semibold">Project Images</Label>
+                            {/* Cover preview at same size/shape as project catalog card */}
+                            {(() => {
+                              const coverUrl = selectedProject.cover_image || selectedProject.images?.[0];
+                              return coverUrl ? (
+                                <div className="space-y-1">
+                                  <span className="text-xs text-muted-foreground">Cover (as shown in catalog)</span>
+                                  <div className="w-full h-40 overflow-hidden rounded-lg border bg-muted">
+                                    <img
+                                      src={coverUrl}
+                                      alt="Cover"
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                </div>
+                              ) : null;
+                            })()}
                             {editingProject ? <ProjectImageManager projectId={selectedProject.id} onImageUpdated={async () => {
                         // Refresh project data
                         await fetchProjects();
@@ -2267,8 +2283,8 @@ export function UnifiedProjectManagement({
                                       {selectedProject.images.length} image{selectedProject.images.length !== 1 ? 's' : ''} uploaded
                                     </div>
                                     <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                                      {selectedProject.images.map((img: string, idx: number) => <div key={idx} className="relative border rounded-lg overflow-hidden">
-                                          <img src={img} alt={`Project image ${idx + 1}`} className="w-full h-24 object-cover" />
+                                      {selectedProject.images.map((img: string, idx: number) => <div key={idx} className="relative border rounded-lg overflow-hidden aspect-[2/1]">
+                                          <img src={img} alt={`Project image ${idx + 1}`} className="w-full h-full object-cover" />
                                           {selectedProject.cover_image === img && <Badge className="absolute top-1 left-1 bg-primary text-xs">
                                               Cover
                                             </Badge>}
