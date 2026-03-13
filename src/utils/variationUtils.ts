@@ -53,22 +53,7 @@ export const clearAllTools = async (): Promise<boolean> => {
 
     const variationIds = toolVariations?.map(v => v.id) || [];
 
-    // Get all tool model IDs
-    const { data: toolModels } = await supabase
-      .from('tools')
-      .select('id');
-
-    const modelIds = toolModels?.map(m => m.id) || [];
-
-    // Delete in correct order to respect foreign key constraints
-    console.log('Deleting pricing data...');
-    if (modelIds.length > 0) {
-      await supabase
-        .from('pricing_data')
-        .delete()
-        .in('model_id', modelIds);
-    }
-
+    // Delete in correct order to respect foreign key constraints (pricing lives on tool_variations.pricing)
     console.log('Deleting tool models...');
     await supabase
       .from('tools')

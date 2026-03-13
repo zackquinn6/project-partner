@@ -86,7 +86,6 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
 
   const fetchModelsAndPricing = async () => {
     try {
-      // Fetch models
       const { data: modelsData, error: modelsError } = await supabase
         .from('tools')
         .select('*')
@@ -95,17 +94,15 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
       if (modelsError) throw modelsError;
       setModels(modelsData || []);
 
-      // Fetch pricing for models
-      if (modelsData && modelsData.length > 0) {
-        const modelIds = modelsData.map(m => m.id);
-        const { data: pricingData, error: pricingError } = await supabase
-          .from('pricing_data')
-          .select('*')
-          .in('model_id', modelIds);
+      const { data: varData, error: varError } = await supabase
+        .from('tool_variations')
+        .select('pricing')
+        .eq('id', variation.id)
+        .single();
 
-        if (pricingError) throw pricingError;
-        setPricing(pricingData || []);
-      }
+      if (varError) throw varError;
+      const list = (varData?.pricing as PricingData[] | null) || [];
+      setPricing(Array.isArray(list) ? list : []);
     } catch (error) {
       console.error('Error fetching models and pricing:', error);
       toast.error('Failed to load variation data');
@@ -228,22 +225,25 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
     }
 
     try {
-      const { data, error } = await supabase
-        .from('pricing_data')
-        .insert({
-          model_id: newPricing.model_id,
-          retailer: newPricing.retailer,
-          price: newPricing.price,
-          currency: newPricing.currency || 'USD',
-          availability_status: newPricing.availability_status,
-          product_url: newPricing.product_url
-        })
-        .select()
-        .single();
+      const newEntry: PricingData = {
+        id: crypto.randomUUID(),
+        model_id: newPricing.model_id,
+        retailer: newPricing.retailer,
+        price: newPricing.price ?? undefined,
+        currency: newPricing.currency || 'USD',
+        availability_status: newPricing.availability_status,
+        product_url: newPricing.product_url
+      };
+      const nextPricing = [...pricing, newEntry];
+
+      const { error } = await supabase
+        .from('tool_variations')
+        .update({ pricing: nextPricing, updated_at: new Date().toISOString() })
+        .eq('id', variation.id);
 
       if (error) throw error;
 
-      setPricing([...pricing, data]);
+      setPricing(nextPricing);
       setNewPricing({});
       toast.success('Pricing data added successfully');
     } catch (error) {
@@ -254,14 +254,15 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
 
   const deletePricing = async (pricingId: string) => {
     try {
+      const nextPricing = pricing.filter(p => p.id !== pricingId);
       const { error } = await supabase
-        .from('pricing_data')
-        .delete()
-        .eq('id', pricingId);
+        .from('tool_variations')
+        .update({ pricing: nextPricing, updated_at: new Date().toISOString() })
+        .eq('id', variation.id);
 
       if (error) throw error;
 
-      setPricing(pricing.filter(p => p.id !== pricingId));
+      setPricing(nextPricing);
       toast.success('Pricing data deleted successfully');
     } catch (error) {
       console.error('Error deleting pricing:', error);

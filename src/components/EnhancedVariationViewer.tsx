@@ -131,26 +131,16 @@ export function EnhancedVariationViewer({
         });
         setModels(modelsByVariation);
 
-        // Fetch pricing data
-        if (modelsData?.length > 0) {
-          const modelIds = modelsData.map(m => m.id);
-          const { data: pricingDataResult, error: pricingError } = await supabase
-            .from('pricing_data')
-            .select('*')
-            .in('model_id', modelIds);
-
-          if (pricingError) throw pricingError;
-
-          // Group pricing by model
-          const pricingByModel: Record<string, PricingData[]> = {};
-          pricingDataResult?.forEach(pricing => {
-            if (!pricingByModel[pricing.model_id]) {
-              pricingByModel[pricing.model_id] = [];
-            }
-            pricingByModel[pricing.model_id].push(pricing);
+        // Pricing lives on tool_variations.pricing (JSONB array per variation)
+        const pricingByModel: Record<string, PricingData[]> = {};
+        (variationsData || []).forEach(v => {
+          const list = (v.pricing as PricingData[] | null) || [];
+          list.forEach((p: PricingData) => {
+            if (!pricingByModel[p.model_id]) pricingByModel[p.model_id] = [];
+            pricingByModel[p.model_id].push(p);
           });
-          setPricingData(pricingByModel);
-        }
+        });
+        setPricingData(pricingByModel);
       }
 
       // Fetch warning flags

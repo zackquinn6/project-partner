@@ -339,18 +339,27 @@ serve(async (req) => {
                 const pricingResult = result.value[0];
                 
                 if (pricingResult.price > 0) {
+                  const { data: varRow } = await supabase
+                    .from('tool_variations')
+                    .select('pricing')
+                    .eq('id', variationId)
+                    .single();
+                  const pricing = (varRow?.pricing || []) as any[];
+                  const without = pricing.filter((p: any) => !(p.model_id === toolModel.id && p.retailer === retailer.name));
+                  const updated = [...without, {
+                    id: crypto.randomUUID(),
+                    model_id: toolModel.id,
+                    retailer: retailer.name,
+                    price: pricingResult.price,
+                    currency: 'USD',
+                    availability_status: pricingResult.availability,
+                    product_url: pricingResult.productUrl,
+                    last_scraped_at: new Date().toISOString()
+                  }];
                   await supabase
-                    .from('pricing_data')
-                    .upsert({
-                      model_id: toolModel.id,
-                      retailer: retailer.name,
-                      price: pricingResult.price,
-                      availability_status: pricingResult.availability,
-                      product_url: pricingResult.productUrl,
-                      last_scraped_at: new Date().toISOString()
-                    }, { 
-                      onConflict: 'model_id,retailer'
-                    });
+                    .from('tool_variations')
+                    .update({ pricing: updated })
+                    .eq('id', variationId);
                   console.log(`Saved pricing for ${toolModel.model_name}: $${pricingResult.price} from ${retailer.name}`);
                 }
               }
@@ -414,24 +423,31 @@ serve(async (req) => {
       const result = retailerResults[i];
 
       if (result.status === 'fulfilled' && result.value.length > 0) {
-        // Take the first valid result from each retailer
         const pricingResult = result.value[0];
-        
         if (pricingResult.price > 0) {
-          const { error: insertError } = await supabase
-            .from('pricing_data')
-            .upsert({
-              model_id: modelId,
-              retailer: retailer.name,
-              price: pricingResult.price,
-              availability_status: pricingResult.availability,
-              product_url: pricingResult.productUrl,
-              last_scraped_at: new Date().toISOString()
-            }, { 
-              onConflict: 'model_id,retailer'
-            });
-
-          if (!insertError) {
+          const variationId = model.variation_instance_id;
+          const { data: varRow } = await supabase
+            .from('tool_variations')
+            .select('pricing')
+            .eq('id', variationId)
+            .single();
+          const pricing = (varRow?.pricing || []) as any[];
+          const without = pricing.filter((p: any) => !(p.model_id === modelId && p.retailer === retailer.name));
+          const updated = [...without, {
+            id: crypto.randomUUID(),
+            model_id: modelId,
+            retailer: retailer.name,
+            price: pricingResult.price,
+            currency: 'USD',
+            availability_status: pricingResult.availability,
+            product_url: pricingResult.productUrl,
+            last_scraped_at: new Date().toISOString()
+          }];
+          const { error: updateError } = await supabase
+            .from('tool_variations')
+            .update({ pricing: updated })
+            .eq('id', variationId);
+          if (!updateError) {
             results.pricingData.push({
               retailer: retailer.name,
               price: pricingResult.price,

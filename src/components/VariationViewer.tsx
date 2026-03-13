@@ -103,17 +103,9 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
         if (modelsError) throw modelsError;
         setModels(modelsData || []);
 
-        // Fetch pricing data for models
-        const modelIds = (modelsData || []).map(m => m.id);
-        if (modelIds.length > 0) {
-          const { data: pricingData, error: pricingError } = await supabase
-            .from('pricing_data')
-            .select('*')
-            .in('model_id', modelIds);
-
-          if (pricingError) throw pricingError;
-          setPricing(pricingData || []);
-        }
+        // Pricing is on tool_variations.pricing (JSONB array)
+        const flatPricing = (variationsData || []).flatMap(v => (v.pricing as any[] | null) || []);
+        setPricing(flatPricing);
       }
     } catch (error) {
       console.error('Error fetching data:', error);

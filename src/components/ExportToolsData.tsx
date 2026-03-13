@@ -40,13 +40,8 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
 
       if (modelsError) throw modelsError;
 
-      // Fetch pricing data
-      const { data: pricing, error: pricingError } = await supabase
-        .from('pricing_data')
-        .select('*')
-        .order('retailer');
-
-      if (pricingError) throw pricingError;
+      // Pricing is stored on tool_variations.pricing (JSONB array per variation)
+      const pricing = (variations || []).flatMap(v => (v.pricing as any[] | null) || []);
 
       // Attribute definitions are now stored per-variation in tool_variations.attribute_definitions
 
@@ -138,24 +133,21 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
       const modelsSheet = XLSX.utils.json_to_sheet(modelsData);
       XLSX.utils.book_append_sheet(workbook, modelsSheet, 'Models');
 
-      // Pricing sheet
-      const pricingData = (pricing || []).map(price => {
-        const model = models?.find(m => m.id === price.model_id);
-        const variation = variations?.find(v => v.id === model?.variation_instance_id);
-        const tool = tools?.find(t => t.id === variation?.core_item_id);
-        
+      // Pricing sheet (pricing entries include model_id; variations already loaded)
+      const pricingData = (pricing || []).map((price: any) => {
+        const model = models?.find((m: any) => m.id === price.model_id);
+        const variation = variations?.find((v: any) => v.id === model?.variation_instance_id);
+        const tool = tools?.find((t: any) => t.id === variation?.core_item_id);
         return {
           'Tool Name': tool?.name || '',
           'Variation Name': variation?.name || '',
           'Model Name': model?.model_name || '',
           'Retailer': price.retailer,
-          'Price': price.price || '',
-          'Currency': price.currency,
-          'Availability Status': price.availability_status || '',
-          'Product URL': price.product_url || '',
-          'Last Scraped': price.last_scraped_at ? new Date(price.last_scraped_at).toLocaleDateString() : '',
-          'Created At': new Date(price.created_at).toLocaleDateString(),
-          'Updated At': new Date(price.updated_at).toLocaleDateString()
+          'Price': price.price ?? '',
+          'Currency': price.currency ?? '',
+          'Availability Status': price.availability_status ?? '',
+          'Product URL': price.product_url ?? '',
+          'Last Scraped': price.last_scraped_at ? new Date(price.last_scraped_at).toLocaleDateString() : ''
         };
       });
 
