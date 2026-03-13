@@ -375,9 +375,11 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     []
   );
 
-  // Popular projects for carousel (published and marked is_popular)
+  // Popular projects for carousel (published and marked is_popular); show only when grid is collapsed
   const popularProjects = useMemo(() => {
-    return publishedProjects.filter(project => (project as Project).isPopular === true);
+    return publishedProjects.filter(
+      project => (project as Project).isPopular === true || (project as any).is_popular === true
+    );
   }, [publishedProjects]);
 
   // Filtered projects based on search and filters
@@ -1335,8 +1337,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           )}
         </div>
 
-        {/* Popular projects carousel - under search/filters, above Show all Projects */}
-        {popularProjects.length > 0 && (
+        {/* Popular projects carousel - under search/filters, above Show all Projects; hidden when "Show all projects" is expanded */}
+        {!shouldShowGrid && popularProjects.length > 0 && (
           <div className="mb-8">
             <h2 className="text-lg font-semibold mb-4">Popular projects</h2>
             <Carousel
