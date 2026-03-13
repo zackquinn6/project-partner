@@ -59,6 +59,7 @@ interface Project {
   images?: string[]; // Array of image URLs
   cover_image?: string | null; // URL of cover image
   visibility_status?: 'default' | 'coming-soon' | 'hidden';
+  release_date?: string | null;
 }
 interface UnifiedProjectManagementProps {
   onEditWorkflow?: () => void;
@@ -258,6 +259,9 @@ export function UnifiedProjectManagement({
       // Include visibility_status when edited; otherwise preserve existing or let default stand
       if ((editedProject as any).visibility_status !== undefined) {
         updateData.visibility_status = (editedProject as any).visibility_status;
+      }
+      if ((editedProject as any).release_date !== undefined) {
+        updateData.release_date = (editedProject as any).release_date || null;
       }
 
       // Include images and cover_image - ALWAYS preserve existing values if not explicitly changed
@@ -1751,6 +1755,31 @@ export function UnifiedProjectManagement({
                               </div>
                             )}
                           </div>
+
+                          {((editingProject ? (editedProject as any).visibility_status : (selectedProject as any).visibility_status) === 'coming-soon') && (
+                            <div className="space-y-1">
+                              <Label className="text-sm">Release date</Label>
+                              {editingProject ? (
+                                <Input
+                                  type="date"
+                                  className="text-sm"
+                                  value={(editedProject as any).release_date ?? (selectedProject as any).release_date ?? ''}
+                                  onChange={(e) =>
+                                    setEditedProject((prev) => ({
+                                      ...prev,
+                                      release_date: e.target.value || null,
+                                    }))
+                                  }
+                                />
+                              ) : (
+                                <div className="p-2 bg-muted rounded text-sm">
+                                  {(selectedProject as any).release_date
+                                    ? new Date((selectedProject as any).release_date).toLocaleDateString()
+                                    : 'Not set'}
+                                </div>
+                              )}
+                            </div>
+                          )}
 
                           <div className="space-y-1">
                             <Label className="text-sm">Categories</Label>
