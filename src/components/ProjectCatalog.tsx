@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Project } from '@/interfaces/Project';
+import { Project, Phase, WorkflowStep } from '@/interfaces/Project';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -746,7 +746,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       // Ensure template has phases - rebuild from database if needed
       let templatePhases = projectTemplate.phases || [];
       
-      // If phases are missing or empty, try to rebuild from database (project_phases + template_operations)
+      // If phases are missing or empty, try to rebuild from database (project_phases + phase_operations + operation_steps)
       if (!templatePhases || !Array.isArray(templatePhases) || templatePhases.length === 0) {
         console.log('⚠️ Template phases missing or empty, rebuilding from database...');
         try {
@@ -779,12 +779,108 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               console.log('✅ Rebuilt phases from database:', { phaseCount: templatePhases.length });
               // Persist to project row so catalog/context have phases on next load
               await supabase.from('projects').update({ phases: templatePhases }).eq('id', projectTemplate.id);
-            } else {
-              console.warn('⚠️ Rebuild returned no phases (project_phases may be empty for this project).');
             }
           }
         } catch (rebuildErr) {
           console.error('❌ Error rebuilding phases:', rebuildErr);
+        }
+
+        // Fallback: if RPC returned no phases, assemble from project_phases → phase_operations → operation_steps
+        if (!templatePhases || templatePhases.length === 0) {
+          const { data: phasesRows } = await supabase
+            .from('project_phases')
+            .select('id, name, description, display_order, is_standard')
+            .eq('project_id', projectTemplate.id)
+            .order('display_order', { ascending: true });
+
+          if (phasesRows && phasesRows.length > 0) {
+            const phaseIds = phasesRows.map((p) => p.id);
+            const { data: opsRows } = await supabase
+              .from('phase_operations')
+              .select('id, phase_id, operation_name, operation_description, display_order')
+              .in('phase_id', phaseIds)
+              .order('display_order', { ascending: true });
+
+            const opsByPhase = new Map<string, typeof opsRows>();
+            if (opsRows) {
+              for (const op of opsRows) {
+                const list = opsByPhase.get(op.phase_id) ?? [];
+                list.push(op);
+                opsByPhase.set(op.phase_id, list);
+              }
+            }
+
+            const opIds = (opsRows ?? []).map((o) => o.id);
+            const { data: stepsRows } = opIds.length > 0
+              ? await supabase
+                  .from('operation_steps')
+                  .select('id, operation_id, step_title, description, content, content_sections, materials, tools, outputs, display_order')
+                  .in('operation_id', opIds)
+                  .order('display_order', { ascending: true })
+              : { data: [] as any[] };
+
+            const stepsByOp = new Map<string, typeof stepsRows>();
+            if (stepsRows) {
+              for (const s of stepsRows) {
+                const list = stepsByOp.get(s.operation_id) ?? [];
+                list.push(s);
+                stepsByOp.set(s.operation_id, list);
+              }
+            }
+
+            const parseJson = (v: unknown): any[] => {
+              if (v == null) return [];
+              if (Array.isArray(v)) return v;
+              if (typeof v === 'string') {
+                try {
+                  const parsed = JSON.parse(v);
+                  return Array.isArray(parsed) ? parsed : [];
+                } catch {
+                  return [];
+                }
+              }
+              return [];
+            };
+
+            templatePhases = phasesRows.map((phase): Phase => {
+              const ops = opsByPhase.get(phase.id) ?? [];
+              const operations = ops.map((op) => {
+                const steps = stepsByOp.get(op.id) ?? [];
+                const workflowSteps: WorkflowStep[] = steps.map((st) => ({
+                  id: st.id,
+                  step: st.step_title,
+                  description: st.description ?? '',
+                  contentType: ((st.content_type as 'text' | 'video' | 'image' | 'document' | 'multi') ?? 'text') as WorkflowStep['contentType'],
+                  content: st.content ?? '',
+                  materials: parseJson(st.materials) as WorkflowStep['materials'],
+                  tools: parseJson(st.tools) as WorkflowStep['tools'],
+                  outputs: parseJson(st.outputs) as WorkflowStep['outputs'],
+                  contentSections: (Array.isArray(st.content_sections) ? st.content_sections : parseJson(st.content_sections)) as WorkflowStep['contentSections'],
+                  isStandard: undefined,
+                  allowContentEdit: st.allow_content_edit ?? undefined
+                }));
+                return {
+                  id: op.id,
+                  name: op.operation_name,
+                  description: op.operation_description ?? '',
+                  steps: workflowSteps,
+                  isStandard: undefined
+                };
+              });
+              return {
+                id: phase.id,
+                name: phase.name,
+                description: phase.description ?? '',
+                operations,
+                isStandard: phase.is_standard ?? undefined
+              };
+            });
+
+            if (templatePhases.length > 0) {
+              console.log('✅ Assembled phases from project_phases + phase_operations + operation_steps:', { phaseCount: templatePhases.length });
+              await supabase.from('projects').update({ phases: templatePhases }).eq('id', projectTemplate.id);
+            }
+          }
         }
       }
 
@@ -792,7 +888,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       if (!templatePhases || !Array.isArray(templatePhases) || templatePhases.length === 0) {
         throw new Error(
           `Template "${projectTemplate.name}" has no phases. ` +
-          'Ensure the project has phases in the database (project_phases and template_operations) or add phases in admin.'
+          'Ensure the project has phases in the database (project_phases, phase_operations, and operation_steps) or add phases in admin.'
         );
       }
       
