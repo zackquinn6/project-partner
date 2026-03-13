@@ -56,44 +56,26 @@ export async function autoRegenerateSchedule(
     const targetDate = projectRun.planEndDate ? new Date(projectRun.planEndDate) : addDays(new Date(), 30);
     const dropDeadDate = addDays(targetDate, 7); // Default buffer
     
-    // Load spaces with priority and sizing
+    // Load spaces with priority and sizing_by_unit
     const { data: spacesData, error: spacesError } = await supabase
       .from('project_run_spaces')
-      .select('id, space_name, priority, scale_value, scale_unit')
+      .select('id, space_name, priority, scale_value, scale_unit, sizing_by_unit')
       .eq('project_run_id', projectRun.id)
       .order('priority', { ascending: true, nullsLast: true });
-    
+
     if (spacesError) {
       console.error('Error loading spaces for auto-schedule:', spacesError);
       return false;
     }
-    
-    // Load sizing values
-    const spaceIds = (spacesData || []).map(s => s.id);
-    const { data: sizingData } = await supabase
-      .from('project_run_space_sizing')
-      .select('space_id, scaling_unit, size_value')
-      .in('space_id', spaceIds);
-    
-    // Build sizing map
-    const sizingMap = new Map<string, Record<string, number>>();
-    (sizingData || []).forEach(sizing => {
-      if (!sizingMap.has(sizing.space_id)) {
-        sizingMap.set(sizing.space_id, {});
-      }
-      sizingMap.get(sizing.space_id)![sizing.scaling_unit] = sizing.size_value;
-    });
-    
-    const spaces = (spacesData || []).map(space => {
-      const relationalSizing = sizingMap.get(space.id) || {};
-      if (Object.keys(relationalSizing).length === 0 && space.scale_value && space.scale_unit) {
-        relationalSizing[space.scale_unit] = space.scale_value;
-      }
+
+    const spaces = (spacesData || []).map((space: { id: string; space_name: string; priority?: number; scale_value?: number; scale_unit?: string; sizing_by_unit?: Record<string, number> | null }) => {
+      const relationalSizing = (space.sizing_by_unit && typeof space.sizing_by_unit === 'object') ? space.sizing_by_unit as Record<string, number> : {};
+      const sizingValues = Object.keys(relationalSizing).length > 0 ? relationalSizing : (space.scale_value != null && space.scale_unit ? { [space.scale_unit]: space.scale_value } : {});
       return {
         id: space.id,
         space_name: space.space_name,
         priority: space.priority,
-        sizingValues: relationalSizing
+        sizingValues
       };
     });
     

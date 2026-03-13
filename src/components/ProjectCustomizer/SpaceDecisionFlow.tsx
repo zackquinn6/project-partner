@@ -71,16 +71,16 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
     return Array.from(uniquePhases.values());
   }, [projectRun.phases]);
 
-  // Load sizing data for all spaces
+  // Load sizing data for all spaces from project_run_spaces.sizing_by_unit
   useEffect(() => {
     const loadSizingData = async () => {
       if (spaces.length === 0) return;
-      
+
       const spaceIds = spaces.map(s => s.id);
       const { data, error } = await supabase
-        .from('project_run_space_sizing')
-        .select('space_id, scaling_unit, size_value')
-        .in('space_id', spaceIds);
+        .from('project_run_spaces')
+        .select('id, sizing_by_unit')
+        .in('id', spaceIds);
 
       if (error) {
         console.error('Error loading sizing data:', error);
@@ -88,11 +88,9 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
       }
 
       const sizingMap = new Map<string, Record<string, number>>();
-      (data || []).forEach(sizing => {
-        if (!sizingMap.has(sizing.space_id)) {
-          sizingMap.set(sizing.space_id, {});
-        }
-        sizingMap.get(sizing.space_id)![sizing.scaling_unit] = sizing.size_value;
+      (data || []).forEach((row: { id: string; sizing_by_unit?: Record<string, number> | null }) => {
+        const byUnit = row.sizing_by_unit && typeof row.sizing_by_unit === 'object' ? row.sizing_by_unit : {};
+        sizingMap.set(row.id, byUnit as Record<string, number>);
       });
 
       setSpaceSizingData(sizingMap);

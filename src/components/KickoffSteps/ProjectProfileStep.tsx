@@ -329,12 +329,21 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           });
           console.log('📝 Note: Space tables MUST be saved FIRST, then project_runs (for database trigger)');
           
-          // Update Room 1 space with sizing
+          // Update Room 1 space with sizing (scale_value, scale_unit, sizing_by_unit)
+          const { data: room1Row } = await supabase
+            .from('project_run_spaces')
+            .select('sizing_by_unit')
+            .eq('id', room1SpaceId)
+            .single();
+          const current = (room1Row?.sizing_by_unit as Record<string, number>) || {};
+          const sizingByUnit = { ...current, [projectScaleUnit]: parsedSizing };
+
           const { error: spaceUpdateError } = await supabase
             .from('project_run_spaces')
-            .update({ 
+            .update({
               scale_value: parsedSizing,
               scale_unit: projectScaleUnit,
+              sizing_by_unit: sizingByUnit,
               updated_at: new Date().toISOString()
             })
             .eq('id', room1SpaceId);
@@ -343,26 +352,8 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             console.error('❌ Error updating Room 1 sizing:', spaceUpdateError);
             throw spaceUpdateError;
           }
-          
+
           console.log('✅ Sizing saved to project_run_spaces');
-          
-          // Also save to project_run_space_sizing table
-          const { error: sizingError } = await supabase
-            .from('project_run_space_sizing')
-            .upsert({
-              space_id: room1SpaceId,
-              scaling_unit: projectScaleUnit,
-              size_value: parsedSizing
-            }, {
-              onConflict: 'space_id,scaling_unit'
-            });
-          
-          if (sizingError) {
-            console.error('❌ Error saving to project_run_space_sizing:', sizingError);
-            throw sizingError;
-          }
-          
-          console.log('✅ Sizing saved to project_run_space_sizing');
         }
       }
       
@@ -416,7 +407,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           initial_timeline: verificationData.initial_timeline,
           initial_sizing: verificationData.initial_sizing
         });
-        console.log('📝 Note: initial_sizing is ALSO stored in project_run_spaces/project_run_space_sizing (dual storage)');
+        console.log('📝 Note: initial_sizing is also stored in project_run_spaces (scale_value / sizing_by_unit)');
         
         // Check for mismatches
         if (verificationData.initial_budget !== finalBudgetValue) {
