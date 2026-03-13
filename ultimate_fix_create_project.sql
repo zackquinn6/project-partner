@@ -82,21 +82,19 @@ BEGIN
   -- Convert single category text to array (category column is text[])
   category_array := ARRAY[COALESCE(p_category, 'general')];
   
-  -- Create project
+  -- Create project (schema WITHOUT is_current_version column)
   INSERT INTO public.projects (
     name,
     description,
     category,
     publish_status,
-    created_by,
-    is_current_version
+    created_by
   ) VALUES (
     p_project_name,
     p_project_description,
     category_array,
     'draft',
-    p_created_by,
-    true
+    p_created_by
   ) RETURNING id INTO new_project_id;
 
   -- Copy phases from standard project
@@ -188,6 +186,9 @@ BEGIN
   RETURN new_project_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- First drop any existing version so we can safely change the return type / body
+DROP FUNCTION IF EXISTS public.rebuild_phases_json_from_project_phases(UUID);
 
 -- ============================================
 -- STEP 5: Ensure rebuild_phases_json_from_project_phases uses explicit columns

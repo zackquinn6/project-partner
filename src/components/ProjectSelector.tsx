@@ -224,10 +224,16 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                       (project as any).visibility_status ??
                       'default';
                     const isHidden = visibility === 'hidden';
+                    const isComingSoon = visibility === 'coming-soon';
 
-                    // Visibility overrides publish status: hidden projects never show in selector
+                    // Visibility overrides publish status:
+                    // - hidden: never show in selector
+                    // - coming-soon: hide for non-admin users even if published
                     if (isHidden) {
                       console.log('ProjectSelector filter: hiding hidden project', project.name);
+                      return false;
+                    }
+                    if (!isAdminMode && isComingSoon) {
                       return false;
                     }
 
@@ -247,20 +253,33 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                     console.log('Project filter:', project.name, 'publishStatus:', project.publishStatus, 'visibility:', visibility, 'is_standard:', (project as any).is_standard, 'include:', include);
                     return include;
                   })
-                  .map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                      {isAdminMode && (
-                        <Badge 
-                          variant="outline" 
-                          className="ml-2"
-                        >
-                          {project.publishStatus}
-                        </Badge>
-                      )}
-                    </SelectItem>
-                  ))
-                }
+                  .map((project) => {
+                    const visibility =
+                      (project as any).visibilityStatus ??
+                      (project as any).visibility_status ??
+                      'default';
+
+                    const statusLabel =
+                      visibility === 'hidden'
+                        ? 'Hidden'
+                        : visibility === 'coming-soon'
+                          ? 'Coming Soon'
+                          : project.publishStatus;
+
+                    return (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                        {isAdminMode && (
+                          <Badge
+                            variant="outline"
+                            className="ml-2"
+                          >
+                            {statusLabel}
+                          </Badge>
+                        )}
+                      </SelectItem>
+                    );
+                  })}
               </SelectContent>
             </Select>
           </div>

@@ -1689,7 +1689,9 @@ export function UnifiedProjectManagement({
                                 
                                 const visibility = (latestRevision as any).visibility_status as 'default' | 'coming-soon' | 'hidden' | undefined;
                                 let statusText: string;
-                                if (visibility === 'coming-soon') {
+                                if (visibility === 'hidden') {
+                                  statusText = 'Hidden';
+                                } else if (visibility === 'coming-soon') {
                                   statusText = 'Coming Soon';
                                 } else {
                                   switch (latestRevision.publish_status) {
@@ -2487,17 +2489,10 @@ export function UnifiedProjectManagement({
                 const parentProject = projectRevisions.find(p => p.id === selectedRevision.parent_project_id);
                 if (parentProject) {
                   projectForValidation = parentProject;
-                  console.log('✅ Using parent project for dialog validation:', parentProject.id);
-                } else {
+                } else if (selectedProject && (selectedProject.id === selectedRevision.parent_project_id || !selectedProject.parent_project_id)) {
                   // Parent not in list, use selectedProject (which should be the parent)
-                  if (selectedProject && (selectedProject.id === selectedRevision.parent_project_id || !selectedProject.parent_project_id)) {
-                    projectForValidation = selectedProject;
-                    console.log('✅ Using selectedProject (parent) for dialog validation:', selectedProject.id);
-                  }
+                  projectForValidation = selectedProject;
                 }
-              } else {
-                // This is the parent project itself
-                console.log('✅ Using revision as parent project for dialog validation:', selectedRevision.id);
               }
               const validation = validateProjectForProduction(projectForValidation);
               if (!validation.isValid) {
