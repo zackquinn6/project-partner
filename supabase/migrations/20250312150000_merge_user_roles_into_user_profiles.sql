@@ -46,19 +46,11 @@ BEGIN
   END IF;
 END $$;
 
--- 5. Drop all overloads of is_admin() (no policies depend on them now)
+-- 5. Drop existing is_admin() (and any policies or objects depending on old signatures)
+-- We use CASCADE here because we immediately recreate is_admin() and all admin policies below.
 DO $$
-DECLARE
-  r record;
 BEGIN
-  FOR r IN
-    SELECT pg_get_function_identity_arguments(p.oid) AS args
-    FROM pg_proc p
-    JOIN pg_namespace n ON p.pronamespace = n.oid
-    WHERE n.nspname = 'public' AND p.proname = 'is_admin'
-  LOOP
-    EXECUTE format('DROP FUNCTION IF EXISTS public.is_admin(%s)', r.args);
-  END LOOP;
+  EXECUTE 'DROP FUNCTION IF EXISTS public.is_admin() CASCADE';
 END $$;
 
 -- 6. Create single is_admin() using user_profiles.roles
