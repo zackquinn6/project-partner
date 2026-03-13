@@ -219,6 +219,7 @@ export interface Project {
   // Note: status, startDate, planEndDate, endDate only apply to ProjectRun, not templates
   publishStatus?: 'draft' | 'published' | 'beta-testing' | 'archived';
   visibilityStatus?: 'default' | 'coming-soon' | 'hidden';
+  release_date?: string | null; // Date (YYYY-MM-DD) when coming-soon project launches
   category: string[];
   effortLevel?: 'Low' | 'Medium' | 'High';
   skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced' | 'Professional'; // Project overall skill level (4 options)

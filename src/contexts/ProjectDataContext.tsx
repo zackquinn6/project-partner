@@ -144,6 +144,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
           status: 'not-started' as const, // Projects don't have status - only project_runs do
           publishStatus: project.publish_status as 'draft' | 'published' | 'beta-testing' | 'archived',
           visibilityStatus: (project as any).visibility_status as 'default' | 'coming-soon' | 'hidden' | undefined,
+          release_date: project.release_date ?? undefined,
           category: normalizeCategories(project.category),
           difficulty: project.difficulty,
           effortLevel: project.effort_level as Project['effortLevel'],

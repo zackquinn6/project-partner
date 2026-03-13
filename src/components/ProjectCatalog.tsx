@@ -1397,16 +1397,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               const IconComponent = getIconForCategory(projectCategories[0] || '');
               const imageUrl = (project as any).cover_image || project.image || (project as any).images?.[0];
               
-              // Debug image data
-              if (project.name === 'Tile Flooring' || project.name === 'Toilet Replacement') {
-                console.log('🖼️ Image data for', project.name, {
-                  cover_image: (project as any).cover_image,
-                  image: project.image,
-                  images: (project as any).images,
-                  imageUrl
-                });
-              }
-              
               return (
                 <div key={project.id}>
                   {/* Mobile: Row layout - Reduced size by 50% */}
@@ -1679,42 +1669,37 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             </DialogContent>
           </Dialog>}
 
-        {/* Coming Soon dialog - blocks starting unreleased projects */}
+        {/* Coming Soon dialog - unified for all coming-soon projects */}
         {!isAdminMode && comingSoonProject && (
           <Dialog open={!!comingSoonProject} onOpenChange={(open) => !open && setComingSoonProject(null)}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>{comingSoonProject.name}</DialogTitle>
-                <DialogDescription>
-                  This project is not ready for workflows yet. It&apos;s scheduled to launch in June 2026.
-                </DialogDescription>
+                <DialogTitle className="text-xl font-semibold tracking-tight">Coming Soon</DialogTitle>
               </DialogHeader>
-              <div className="space-y-3 text-sm">
-                {comingSoonProject.description && (
-                  <p>{comingSoonProject.description}</p>
-                )}
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  {comingSoonProject.skillLevel && (
-                    <Badge variant="outline">
-                      Skill: {comingSoonProject.skillLevel}
-                    </Badge>
-                  )}
-                  {comingSoonProject.effortLevel && (
-                    <Badge variant="outline">
-                      Effort: {comingSoonProject.effortLevel}
-                    </Badge>
-                  )}
-                  {Array.isArray(comingSoonProject.category) && comingSoonProject.category.length > 0 && (
-                    <Badge variant="outline">
-                      Category: {comingSoonProject.category.join(', ')}
-                    </Badge>
+              <div className="space-y-4 pt-2">
+                <div>
+                  <h3 className="font-medium text-foreground">{comingSoonProject.name}</h3>
+                  {comingSoonProject.description && (
+                    <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+                      {comingSoonProject.description}
+                    </p>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  You can browse other projects in the catalog today. When this one launches, it will be fully wired with phases, steps, and materials.
-                </p>
+                {comingSoonProject.release_date && (
+                  <p className="text-sm flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
+                    <span className="text-muted-foreground">Release date:</span>
+                    <span className="font-medium text-foreground">
+                      {new Date(comingSoonProject.release_date).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </p>
+                )}
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-2">
                 <Button onClick={() => setComingSoonProject(null)}>
                   Got it
                 </Button>
