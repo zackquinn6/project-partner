@@ -711,6 +711,22 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       return;
     }
 
+    // Hard block starting "coming-soon" templates in user mode
+    if (!isAdminMode) {
+      const visibility =
+        (projectTemplate as any).visibility_status ??
+        (projectTemplate as any).visibilityStatus ??
+        'default';
+      if (visibility === 'coming-soon') {
+        setComingSoonProject(projectTemplate);
+        console.warn('Blocked attempt to start coming-soon template in proceedToNewProject:', {
+          name: projectTemplate.name,
+          visibility,
+        });
+        return;
+      }
+    }
+
     console.log('🎯 proceedToNewProject: Starting new project creation for:', projectTemplate.name);
     
     // Set flag to prevent double-clicks during creation
@@ -730,7 +746,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       // Ensure template has phases - rebuild from database if needed
       let templatePhases = projectTemplate.phases || [];
       
-      // If phases are missing or empty, try to rebuild from database
+      // If phases are missing or empty, try to rebuild from database (project_phases + template_operations)
       if (!templatePhases || !Array.isArray(templatePhases) || templatePhases.length === 0) {
         console.log('⚠️ Template phases missing or empty, rebuilding from database...');
         try {
@@ -738,24 +754,46 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             'rebuild_phases_json_from_project_phases',
             { p_project_id: projectTemplate.id }
           );
-          
-          if (!rebuildError && rebuiltPhases) {
-            templatePhases = Array.isArray(rebuiltPhases) ? rebuiltPhases : 
-                            (typeof rebuiltPhases === 'string' ? JSON.parse(rebuiltPhases) : []);
-            console.log('✅ Rebuilt phases from database:', { phaseCount: templatePhases.length });
+
+          if (rebuildError) {
+            console.error('❌ Rebuild phases RPC error:', rebuildError);
           } else {
-            console.error('❌ Failed to rebuild phases:', rebuildError);
-            // Continue with empty phases - the project run creation will validate
+            // Normalize: RPC returns JSONB (parsed array, or null if empty/unsupported)
+            let normalized: any[] = [];
+            if (rebuiltPhases != null) {
+              if (Array.isArray(rebuiltPhases)) {
+                normalized = rebuiltPhases;
+              } else if (typeof rebuiltPhases === 'string') {
+                try {
+                  normalized = JSON.parse(rebuiltPhases);
+                  if (!Array.isArray(normalized)) normalized = [];
+                } catch {
+                  normalized = [];
+                }
+              } else if (typeof rebuiltPhases === 'object' && Array.isArray((rebuiltPhases as any).phases)) {
+                normalized = (rebuiltPhases as any).phases;
+              }
+            }
+            templatePhases = normalized;
+            if (templatePhases.length > 0) {
+              console.log('✅ Rebuilt phases from database:', { phaseCount: templatePhases.length });
+              // Persist to project row so catalog/context have phases on next load
+              await supabase.from('projects').update({ phases: templatePhases }).eq('id', projectTemplate.id);
+            } else {
+              console.warn('⚠️ Rebuild returned no phases (project_phases may be empty for this project).');
+            }
           }
         } catch (rebuildErr) {
           console.error('❌ Error rebuilding phases:', rebuildErr);
-          // Continue with empty phases
         }
       }
-      
+
       // Validate: Template must have phases before creating project run
       if (!templatePhases || !Array.isArray(templatePhases) || templatePhases.length === 0) {
-        throw new Error(`Template "${projectTemplate.name}" has no phases. Please ensure the template has phases before starting a project.`);
+        throw new Error(
+          `Template "${projectTemplate.name}" has no phases. ` +
+          'Ensure the project has phases in the database (project_phases and template_operations) or add phases in admin.'
+        );
       }
       
       // Create a new project RUN based on the template without setup info
