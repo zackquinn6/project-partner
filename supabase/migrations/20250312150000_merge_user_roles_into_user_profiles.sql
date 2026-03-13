@@ -30,27 +30,21 @@ SET roles = array_append(roles, 'user')
 WHERE NOT ('user' = ANY(roles));
 
 -- 4. Drop all RLS policies that depend on user_roles or on is_admin(uuid) (must run before dropping functions or table)
-DROP POLICY IF EXISTS "Admins can read all roles" ON user_roles;
-DROP POLICY IF EXISTS "Admins can insert roles" ON user_roles;
-DROP POLICY IF EXISTS "Admins can delete roles" ON user_roles;
-DROP POLICY IF EXISTS "Admins can modify app settings" ON app_settings;
-DROP POLICY IF EXISTS "Admins can view audit logs" ON role_audit_log;
-DROP POLICY IF EXISTS "Admins can view security events" ON security_events;
-DROP POLICY IF EXISTS "Admins can insert roadmap items" ON feature_roadmap;
-DROP POLICY IF EXISTS "Admins can update roadmap items" ON feature_roadmap;
-DROP POLICY IF EXISTS "Admins can delete roadmap items" ON feature_roadmap;
-DROP POLICY IF EXISTS "Admins can update feature requests" ON feature_requests;
-DROP POLICY IF EXISTS "Admins can delete feature requests" ON feature_requests;
-DROP POLICY IF EXISTS "Admins can update feedback" ON feedback;
-DROP POLICY IF EXISTS "Admins can delete feedback" ON feedback;
-DROP POLICY IF EXISTS "Admins can modify home risks" ON home_risks;
-DROP POLICY IF EXISTS "Admins can modify standard project phases" ON project_phases;
-DROP POLICY IF EXISTS "Admins can modify standard phase operations" ON phase_operations;
-DROP POLICY IF EXISTS "Admins can modify standard operation steps" ON operation_steps;
-DROP POLICY IF EXISTS "Admins can manage template risks" ON project_template_risks;
-DROP POLICY IF EXISTS "Allow admins to manage app overrides" ON app_overrides;
-DROP POLICY IF EXISTS "Admins can manage template risk mitigation actions" ON project_template_risk_mitigation_actions;
-DROP POLICY IF EXISTS "Admins can modify tools" ON tools;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'user_roles'
+  ) THEN
+    DROP POLICY IF EXISTS "Admins can read all roles" ON user_roles;
+    DROP POLICY IF EXISTS "Admins can insert roles" ON user_roles;
+    DROP POLICY IF EXISTS "Admins can delete roles" ON user_roles;
+    -- Drop the old user_roles table when present
+    DROP TABLE IF EXISTS user_roles;
+  END IF;
+END $$;
 
 -- 5. Drop all overloads of is_admin() (no policies depend on them now)
 DO $$
@@ -81,10 +75,7 @@ AS $$
   );
 $$;
 
--- 7. Drop the user_roles table
-DROP TABLE IF EXISTS user_roles;
-
--- 8. Recreate admin policies using is_admin() (now backed by user_profiles.roles; no policies on user_roles—table is dropped)
+-- 7. Recreate admin policies using is_admin() (now backed by user_profiles.roles; user_roles is no longer used)
 CREATE POLICY "Admins can modify app settings" ON app_settings FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 CREATE POLICY "Admins can view audit logs" ON role_audit_log FOR SELECT TO authenticated USING (is_admin());
 CREATE POLICY "Admins can view security events" ON security_events FOR SELECT TO authenticated USING (is_admin());
