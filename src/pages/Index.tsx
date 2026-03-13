@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 import { useProject } from '@/contexts/ProjectContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useProjectOwner } from '@/hooks/useProjectOwner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import Navigation from "@/components/Navigation";
 import Home from "@/components/Home";
@@ -43,6 +44,8 @@ const Index = () => {
   const { user } = useAuth();
   const { accepted: liabilityAccepted, loading: liabilityLoading, refetch: refetchLiability } = useLiabilityAcceptance();
   const { isAdmin } = useUserRole();
+  const { hasProjectOwnerRole } = useProjectOwner();
+  const showAdminPanel = isAdmin || hasProjectOwnerRole;
   const { setCurrentProject, setCurrentProjectRun, currentProject, currentProjectRun, projects, projectRuns } = useProject();
   const navigate = useNavigate();
   const location = useLocation();
@@ -386,10 +389,10 @@ const Index = () => {
   };
 
   const handleAdminAccess = () => {
-    if (isAdmin) {
+    if (showAdminPanel) {
       setCurrentView('admin');
     } else {
-      toast.error('Access denied. Admin role required.');
+      toast.error('Access denied. Admin or Project Owner role required.');
     }
   };
 

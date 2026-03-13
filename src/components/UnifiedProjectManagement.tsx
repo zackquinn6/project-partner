@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProject } from '@/contexts/ProjectContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
 import { useButtonTracker } from '@/hooks/useButtonTracker';
-import { ProjectOwnershipSelector } from '@/components/ProjectOwnershipSelector';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useProjectOwner } from '@/hooks/useProjectOwner';
 import { ProjectImageManager } from '@/components/ProjectImageManager';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
 import { PFMEAManagement } from '@/components/PFMEAManagement';
@@ -68,6 +70,9 @@ export function UnifiedProjectManagement({
   onEditWorkflow
 }: UnifiedProjectManagementProps = {}) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isAdmin } = useUserRole();
+  const { hasProjectOwnerRole } = useProjectOwner();
   const {
     setCurrentProject
   } = useProject();
@@ -154,15 +159,7 @@ export function UnifiedProjectManagement({
       </Tooltip>
     </TooltipProvider>
   );
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-  useEffect(() => {
-    if (selectedProject) {
-      fetchProjectRevisions();
-    }
-  }, [selectedProject]);
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
       setLoading(true);
       const {
@@ -172,23 +169,60 @@ export function UnifiedProjectManagement({
         ascending: false
       });
       if (error) throw error;
-      
+
       // Map diy_length_challenges to project_challenges for consistency
-      // This handles the case where the migration hasn't been applied yet
       const mappedData = (data || []).map((project: any) => ({
         ...project,
         project_challenges: project.project_challenges ?? project.diy_length_challenges ?? null,
         project_type: project.project_type || 'primary'
-      }));
-      
-      setProjects(mappedData as Project[]);
+      })) as Project[];
+
+      // If project owner (non-admin), restrict to projects they are assigned to
+      if (user && hasProjectOwnerRole && !isAdmin) {
+        const { data: ownerRows, error: ownerError } = await supabase
+          .from('project_owners')
+          .select('project_id')
+          .eq('user_id', user.id);
+        if (ownerError) {
+          toast.error('Failed to load your project assignments');
+          setProjects([]);
+          return;
+        }
+        const ownedProjectIds = new Set((ownerRows ?? []).map((r: { project_id: string }) => r.project_id));
+        if (ownedProjectIds.size === 0) {
+          setProjects([]);
+          return;
+        }
+        // Resolve to parent project ids (project_owners may reference parent or revision)
+        const { data: projectRows } = await supabase
+          .from('projects')
+          .select('id, parent_project_id')
+          .in('id', Array.from(ownedProjectIds));
+        const parentIds = new Set(
+          (projectRows ?? []).map((p: { id: string; parent_project_id: string | null }) =>
+            p.parent_project_id ?? p.id
+          )
+        );
+        setProjects(mappedData.filter((p) => parentIds.has(p.id)));
+      } else {
+        setProjects(mappedData);
+      }
     } catch (error) {
       console.error('Error fetching projects:', error);
       toast.error("Failed to load projects");
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, hasProjectOwnerRole, isAdmin]);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+  useEffect(() => {
+    if (selectedProject) {
+      fetchProjectRevisions();
+    }
+  }, [selectedProject]);
   const fetchProjectRevisions = async () => {
     if (!selectedProject) return;
     try {
@@ -2224,12 +2258,6 @@ export function UnifiedProjectManagement({
                              );
                            })()}
                          </div>
-
-                         {/* Project Ownership Section */}
-                         <Separator className="my-4" />
-                         <ProjectOwnershipSelector projectId={selectedProject.id} onOwnersChange={() => {
-                      // Optionally refresh project data
-                    }} disabled={editingProject} />
 
                           {/* Image Management Section */}
                           <div className="space-y-3">

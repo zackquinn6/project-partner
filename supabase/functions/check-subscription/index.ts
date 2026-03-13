@@ -76,6 +76,20 @@ serve(async (req) => {
       });
     }
 
+    // Project owners get free platform access (no membership payment required)
+    if (roles.includes('project_owner')) {
+      logStep("User is project owner, granting free access");
+      return new Response(JSON.stringify({ 
+        subscribed: true, 
+        isAdmin: false,
+        isProjectOwner: true,
+        subscriptionEnd: null 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     

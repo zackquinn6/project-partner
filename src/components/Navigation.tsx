@@ -6,6 +6,7 @@ import { useProject } from '@/contexts/ProjectContext';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useProjectOwner } from '@/hooks/useProjectOwner';
 import { useMembership } from '@/contexts/MembershipContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useBetaMode } from '@/hooks/useBetaMode';
@@ -69,6 +70,8 @@ export default function Navigation({
   } = projectData;
   const { signOut, signingOut } = useAuth();
   const { isAdmin } = useUserRole();
+  const { hasProjectOwnerRole } = useProjectOwner();
+  const showAdminPanel = isAdmin || hasProjectOwnerRole;
   const { canAccessPaidFeatures } = useMembership();
   const { isBetaMode } = useBetaMode();
   const isMobile = useIsMobile();
@@ -419,10 +422,12 @@ export default function Navigation({
                   <Lock className="h-4 w-4 mr-2" />
                   Privacy Settings
                 </DropdownMenuItem>
-                {isAdmin && <DropdownMenuItem onClick={onAdminAccess}>
+                {showAdminPanel && (
+                  <DropdownMenuItem onClick={onAdminAccess}>
                     <Shield className="h-4 w-4 mr-2" />
                     Admin Panel
-                  </DropdownMenuItem>}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={handleSignOut} disabled={signingOut}>
                   <LogOut className="h-4 w-4 mr-2" />
                   {signingOut ? 'Signing Out...' : 'Sign Out'}

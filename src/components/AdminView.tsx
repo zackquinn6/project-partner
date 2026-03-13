@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useProjectOwner } from '@/hooks/useProjectOwner';
 import { UnifiedProjectManagement } from '@/components/UnifiedProjectManagement';
 import { ProjectAnalyticsWindow } from '@/components/ProjectAnalyticsWindow';
 import { UsersSecurityWindow } from '@/components/UsersSecurityWindow';
@@ -127,6 +129,10 @@ const DefaultLandingSetting: React.FC = () => {
   );
 };
 export const AdminView: React.FC = () => {
+  const { isAdmin } = useUserRole();
+  const { hasProjectOwnerRole } = useProjectOwner();
+  const isProjectOwnerOnly = hasProjectOwnerRole && !isAdmin;
+
   const [enhancedProjectManagementOpen, setEnhancedProjectManagementOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [usersSecurityOpen, setUsersSecurityOpen] = useState(false);
@@ -140,6 +146,12 @@ export const AdminView: React.FC = () => {
   const [actionCenterOpen, setActionCenterOpen] = useState(false);
   const [appManagerOpen, setAppManagerOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'admin' | 'structure-manager'>('admin');
+
+  useEffect(() => {
+    if (isProjectOwnerOnly) {
+      setEnhancedProjectManagementOpen(true);
+    }
+  }, [isProjectOwnerOnly]);
 
   if (currentView === 'structure-manager') {
     return <StructureManager onBack={() => setCurrentView('admin')} />;
@@ -160,6 +172,7 @@ export const AdminView: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {!isProjectOwnerOnly && (
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setActionCenterOpen(true)}>
             <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -176,6 +189,7 @@ export const AdminView: React.FC = () => {
                </Button>
             </CardContent>
           </Card>
+          )}
 
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setEnhancedProjectManagementOpen(true)}>
             <CardHeader className="text-center flex-1">
@@ -194,6 +208,7 @@ export const AdminView: React.FC = () => {
             </CardContent>
           </Card>
 
+          {!isProjectOwnerOnly && (
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setAnalyticsOpen(true)}>
             <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -210,7 +225,9 @@ export const AdminView: React.FC = () => {
               </Button>
             </CardContent>
           </Card>
+          )}
 
+          {!isProjectOwnerOnly && (
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setUsersSecurityOpen(true)}>
             <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -227,7 +244,9 @@ export const AdminView: React.FC = () => {
               </Button>
             </CardContent>
           </Card>
+          )}
 
+          {!isProjectOwnerOnly && (
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setToolsMaterialsOpen(true)}>
             <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -244,8 +263,9 @@ export const AdminView: React.FC = () => {
               </Button>
             </CardContent>
           </Card>
+          )}
 
-
+          {!isProjectOwnerOnly && (
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setHomeRiskManagerOpen(true)}>
             <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -262,8 +282,9 @@ export const AdminView: React.FC = () => {
               </Button>
             </CardContent>
           </Card>
+          )}
 
-
+          {!isProjectOwnerOnly && (
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setRoadmapManagerOpen(true)}>
             <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -280,7 +301,9 @@ export const AdminView: React.FC = () => {
               </Button>
             </CardContent>
           </Card>
+          )}
 
+          {!isProjectOwnerOnly && (
           <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setAppManagerOpen(true)}>
             <CardHeader className="text-center flex-1">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -297,17 +320,22 @@ export const AdminView: React.FC = () => {
               </Button>
             </CardContent>
           </Card>
+          )}
 
         </div>
 
-        {/* Beta Mode Toggle */}
-        <BetaModeToggle />
+        {!isProjectOwnerOnly && (
+          <>
+            {/* Beta Mode Toggle */}
+            <BetaModeToggle />
 
-        {/* Partner apps & Expert support toggles */}
-        <PartnerAppToggles />
+            {/* Partner apps & Expert support toggles */}
+            <PartnerAppToggles />
 
-        {/* Default landing view setting */}
-        <DefaultLandingSetting />
+            {/* Default landing view setting */}
+            <DefaultLandingSetting />
+          </>
+        )}
 
         <Dialog open={enhancedProjectManagementOpen} onOpenChange={setEnhancedProjectManagementOpen}>
           <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
