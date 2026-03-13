@@ -494,7 +494,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         return;
       }
 
-      const visibility = (project as any).visibility_status as 'default' | 'coming-soon' | 'hidden' | undefined || 'default';
+      const visibility = ((project as any).visibility_status ?? (project as any).visibilityStatus ?? 'default') as 'default' | 'coming-soon' | 'hidden';
       if (visibility === 'coming-soon') {
         setComingSoonProject(project);
         return;
@@ -536,7 +536,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         return;
       }
 
-      // Extra guard: only allow starting published or beta projects from catalog
+      // Extra guard: only allow starting published or beta projects from catalog (coming-soon already handled above)
       const effectivePublishStatus = project.publishStatus || (project as any).publish_status;
       if (effectivePublishStatus !== 'published' && effectivePublishStatus !== 'beta-testing') {
         console.warn('Blocked attempt to start non-published/beta project from catalog:', {
@@ -544,7 +544,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           publishStatus: effectivePublishStatus,
           visibility,
         });
-        alert('This project is not yet released. Please choose a published or beta project from the catalog.');
+        setComingSoonProject(project);
         return;
       }
 
@@ -1685,19 +1685,19 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     </p>
                   )}
                 </div>
-                {comingSoonProject.release_date && (
-                  <p className="text-sm flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
-                    <span className="text-muted-foreground">Release date:</span>
-                    <span className="font-medium text-foreground">
-                      {new Date(comingSoonProject.release_date).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </span>
-                  </p>
-                )}
+                <p className="text-sm flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
+                  <span className="text-muted-foreground">Release date:</span>
+                  <span className="font-medium text-foreground">
+                    {comingSoonProject.release_date
+                      ? new Date(comingSoonProject.release_date).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })
+                      : 'TBD'}
+                  </span>
+                </p>
               </div>
               <div className="flex justify-end pt-2">
                 <Button onClick={() => setComingSoonProject(null)}>
