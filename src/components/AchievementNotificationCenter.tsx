@@ -16,11 +16,11 @@ interface Notification {
   achievement_id: string;
   is_read: boolean;
   created_at: string;
-  achievement: {
+  achievement?: {
     name: string;
     description: string;
     icon: string;
-  };
+  } | null;
 }
 
 export function AchievementNotificationCenter() {
@@ -62,7 +62,7 @@ export function AchievementNotificationCenter() {
     try {
       const { data, error } = await supabase
         .from('achievement_notifications')
-        .select('*, achievement:achievements(*)')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -165,15 +165,15 @@ export function AchievementNotificationCenter() {
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-primary/10">
                       <span className="text-2xl">
-                        {notification.achievement.icon === 'Trophy' ? '🏆' : '⭐'}
+                        {notification.achievement?.icon === 'Trophy' ? '🏆' : '⭐'}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm">
-                        {notification.achievement.name}
+                        {notification.achievement?.name ?? 'Achievement'}
                       </p>
                       <p className="text-xs text-muted-foreground line-clamp-2">
-                        {notification.achievement.description}
+                        {notification.achievement?.description ?? ''}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {new Date(notification.created_at).toLocaleDateString()}

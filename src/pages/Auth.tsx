@@ -176,10 +176,13 @@ export default function Auth() {
       const { data: { user: signedInUser } } = await supabase.auth.getUser();
       try {
         if (signedInUser) {
-          await supabase.from('user_sessions').insert({
+          const { error: sessionErr } = await supabase.from('user_sessions').insert({
             user_id: signedInUser.id,
             user_agent: navigator.userAgent
           });
+          if (sessionErr && sessionErr.code !== 'PGRST204' && sessionErr.code !== '42P01') {
+            console.error('Failed to create session log:', sessionErr);
+          }
           // If they came from get-started with onboarding in state, persist to profile
           const onboarding = (location.state as {
             onboarding?: { name: string; diyLevel: string; pmFocus?: 'schedule' | 'quality' | 'savings' | 'all_three' | null };

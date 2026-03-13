@@ -159,12 +159,10 @@ export class SecurityMaintenance {
           .from('failed_login_attempts')
           .select('id', { count: 'exact' })
           .gte('attempted_at', twentyFourHoursAgo.toISOString()),
-        
         supabase
           .from('user_sessions')
           .select('id', { count: 'exact' })
           .eq('is_active', true),
-        
         supabase
           .from('role_audit_log')
           .select('id', { count: 'exact' })
@@ -172,9 +170,9 @@ export class SecurityMaintenance {
       ]);
 
       return {
-        recentFailedLogins: failedLogins.count || 0,
-        activeSessions: activeSessions.count || 0,
-        recentAuditActions: auditActions.count || 0
+        recentFailedLogins: failedLogins.error ? 0 : (failedLogins.count ?? 0),
+        activeSessions: activeSessions.error ? 0 : (activeSessions.count ?? 0),
+        recentAuditActions: auditActions.error ? 0 : (auditActions.count ?? 0)
       };
     } catch (error) {
       console.error('Failed to get security metrics:', error);

@@ -32,10 +32,16 @@ export const logSecurityEvent = async (eventData: SecurityEventData): Promise<vo
     });
 
     if (error) {
-      console.error('Failed to log security event:', error);
+      if (error.code !== 'PGRST202') {
+        console.error('Failed to log security event:', error);
+      }
     }
   } catch (error) {
-    console.error('Error logging security event:', error);
+    // RPC may not exist (PGRST202); avoid noisy console in that case
+    const err = error as { code?: string };
+    if (err?.code !== 'PGRST202') {
+      console.error('Error logging security event:', error);
+    }
   }
 };
 
