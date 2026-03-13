@@ -7,10 +7,9 @@ import { supabase } from '@/integrations/supabase/client';
 interface UsageAgreementRow {
   id: string;
   user_id: string;
-  full_name: string;
   agreed_at: string;
-  policy_version: string | null;
   created_at: string;
+  profile_full_name: string | null;
 }
 
 export const UsageAgreementsList: React.FC = () => {
@@ -22,11 +21,18 @@ export const UsageAgreementsList: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('liability_agreements')
-        .select('id, user_id, full_name, agreed_at, policy_version, created_at')
+        .select('id, user_id, agreed_at, created_at, user_profiles!inner(full_name)')
         .order('agreed_at', { ascending: false });
 
       if (error) throw error;
-      setList(data ?? []);
+      const rows = (data ?? []).map((row: any) => ({
+        id: row.id as string,
+        user_id: row.user_id as string,
+        agreed_at: row.agreed_at as string,
+        created_at: row.created_at as string,
+        profile_full_name: row.user_profiles?.full_name ?? null,
+      })) as UsageAgreementRow[];
+      setList(rows);
     } catch (e) {
       console.error('Error fetching usage agreements:', e);
       setList([]);
@@ -65,7 +71,9 @@ export const UsageAgreementsList: React.FC = () => {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-muted-foreground" />
-                    <CardTitle className="text-base">{row.full_name}</CardTitle>
+                    <CardTitle className="text-base">
+                      {row.profile_full_name || 'Name not set'}
+                    </CardTitle>
                   </div>
                   <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 shrink-0">
                     Accepted
@@ -80,9 +88,9 @@ export const UsageAgreementsList: React.FC = () => {
                   <Calendar className="w-3.5 h-3.5" />
                   {new Date(row.agreed_at).toLocaleString()}
                 </span>
-                {row.policy_version && (
-                  <span>Version: {row.policy_version}</span>
-                )}
+                <span className="text-xs text-muted-foreground">
+                  Recorded: {new Date(row.created_at).toLocaleString()}
+                </span>
               </CardContent>
             </Card>
           ))}

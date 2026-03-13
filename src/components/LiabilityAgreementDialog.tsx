@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -10,7 +11,6 @@ import { Loader2, Shield } from 'lucide-react';
 import jsPDF from 'jspdf';
 
 const APP_LOGO_URL = '/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png';
-const POLICY_VERSION = '1.0';
 
 const PLACEHOLDER_LIABILITY_POLICY = `
 USAGE AGREEMENT (Placeholder)
@@ -48,6 +48,7 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
   const [submitting, setSubmitting] = useState(false);
   const [policyText, setPolicyText] = useState('');
   const [templateLoading, setTemplateLoading] = useState(true);
+  const [policyTemplateDate, setPolicyTemplateDate] = useState<string | null>(null);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -59,13 +60,27 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
     const load = async () => {
       const { data } = await supabase
         .from('agreement_templates')
-        .select('body')
+        .select('body, created_at')
         .eq('type', 'liability')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (data?.body) setPolicyText(data.body);
-      else setPolicyText(PLACEHOLDER_LIABILITY_POLICY);
+      if (data?.body) {
+        setPolicyText(data.body);
+        if (data.created_at) {
+          try {
+            const d = new Date(data.created_at);
+            setPolicyTemplateDate(
+              d.toLocaleDateString(undefined, { dateStyle: 'long' })
+            );
+          } catch {
+            setPolicyTemplateDate(null);
+          }
+        }
+      } else {
+        setPolicyText(PLACEHOLDER_LIABILITY_POLICY);
+        setPolicyTemplateDate(null);
+      }
       setTemplateLoading(false);
     };
     load();
@@ -179,18 +194,36 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
     const dateStr = new Date().toLocaleDateString(undefined, { dateStyle: 'long' });
     pdf.text(`I, ${displayName}, have read and agree to the Usage Agreement above.`, margin, y);
     y += 6;
-    pdf.text(`Date: ${dateStr}`, margin, y);
+    pdf.text(`Date signed: ${dateStr}`, margin, y);
     y += 6;
-    pdf.text(`Policy version: ${POLICY_VERSION}`, margin, y);
+    if (policyTemplateDate) {
+      pdf.text(`Policy date: ${policyTemplateDate}`, margin, y);
+      y += 6;
+    }
 
     return pdf.output('blob');
   };
 
   const handleAccept = async () => {
     if (!user || !agreed) return;
-    const displayName = fullName.trim() || user.email || 'User';
+    const trimmedName = fullName.trim();
+    if (!trimmedName) {
+      toast({
+        title: 'Full name required',
+        description: 'Please enter your full legal name before accepting.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const displayName = trimmedName || user.email || 'User';
     setSubmitting(true);
     try {
+      // Ensure profile full_name is stored before generating the PDF
+      await supabase
+        .from('user_profiles')
+        .update({ full_name: trimmedName })
+        .eq('user_id', user.id);
+
       const blob = await generatePdfBlob(displayName);
       const path = `${user.id}/liability-${Date.now()}.pdf`;
       let pdfPath: string | null = path;
@@ -204,10 +237,7 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
 
       const { error: insertError } = await supabase.from('liability_agreements').insert({
         user_id: user.id,
-        full_name: displayName,
         agreed_at: new Date().toISOString(),
-        policy_version: POLICY_VERSION,
-        policy_text_snapshot: policyText,
         pdf_storage_path: pdfPath,
       });
       if (insertError) throw insertError;
@@ -262,19 +292,33 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
           </p>
         )}
         <div className="space-y-4 pt-2 shrink-0">
-          <div className="flex items-center gap-3">
-            <Checkbox
-              id="liability-agree"
-              checked={agreed}
-              onCheckedChange={(c) => setAgreed(!!c)}
-              disabled={!hasScrolledToBottom}
-            />
-            <Label
-              htmlFor="liability-agree"
-              className={`text-sm font-normal ${hasScrolledToBottom ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'}`}
-            >
-              I have read and agree to the Usage Agreement above.
-            </Label>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="liability-agree"
+                checked={agreed}
+                onCheckedChange={(c) => setAgreed(!!c)}
+                disabled={!hasScrolledToBottom}
+              />
+              <Label
+                htmlFor="liability-agree"
+                className={`text-sm font-normal ${hasScrolledToBottom ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'}`}
+              >
+                I have read and agree to the Usage Agreement above.
+              </Label>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="liability-full-name" className="text-sm">
+                Full name (as it will appear on the agreement)
+              </Label>
+              <Input
+                id="liability-full-name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Full legal name"
+                autoComplete="name"
+              />
+            </div>
           </div>
           <Button
             onClick={handleAccept}
