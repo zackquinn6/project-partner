@@ -218,7 +218,7 @@ export default function Home({
                           </span>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="max-w-xs text-[11px]">
-                          <p>All tasks in Task Manager that are not marked complete.</p>
+                          <p>All tasks in Project & Task Manager that are not marked complete.</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -325,7 +325,7 @@ export default function Home({
                     <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.homeTaskList} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                       <ListChecks className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                     </div>
-                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Task Manager</span>
+                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Project & Task Manager</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs text-center">

@@ -461,7 +461,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       <Dialog 
         open={open} 
         onOpenChange={(isOpen) => {
-          // Prevent closing Task Manager if Rapid Costing is open
+          // Prevent closing Project & Task Manager if Rapid Costing is open
           if (!isOpen && showRapidCosting) {
             return; // Don't close if child dialog is open
           }
@@ -469,29 +469,29 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         }}
       >
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-          <DialogDescription className="sr-only">Task Manager for tasks, projects, sub-tasks, shopping list, and budgeting.</DialogDescription>
+          <DialogDescription className="sr-only">Project & Task Manager for tasks, projects, sub-tasks, shopping list, and budgeting.</DialogDescription>
           <DialogHeader className="px-4 md:px-6 py-2 md:py-4 border-b flex flex-row flex-nowrap items-center justify-between gap-2 flex-shrink-0 min-h-0 space-y-0 w-full">
             <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
               <List className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" aria-hidden />
-              <DialogTitle className="text-base font-bold md:text-xl truncate">Task Manager</DialogTitle>
+              <DialogTitle className="text-base font-bold md:text-xl truncate">Project & Task Manager</DialogTitle>
               <TooltipProvider delayDuration={400}>
                 <Popover>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <PopoverTrigger asChild>
-                        <button type="button" tabIndex={-1} className="text-muted-foreground hover:text-foreground p-0.5 rounded shrink-0" aria-label="About Task Manager">
+                        <button type="button" tabIndex={-1} className="text-muted-foreground hover:text-foreground p-0.5 rounded shrink-0" aria-label="About Project & Task Manager">
                           <HelpCircle className="h-4 w-4" />
                         </button>
                       </PopoverTrigger>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-xs">
-                      <p>About Task Manager</p>
+                      <p>About Project & Task Manager</p>
                     </TooltipContent>
                   </Tooltip>
                   <PopoverContent side="bottom" className="max-w-sm" align="start">
-                    <p className="font-medium mb-1">About Task Manager</p>
+                    <p className="font-medium mb-1">About Project & Task Manager</p>
                     <p className="text-sm text-muted-foreground">
-                      Task Manager includes both projects and tasks. Complex projects should be linked to allow for detailed project management. All tasks can have tracking of sub-tasks, materials shopping list, and budgeting.
+                      Project & Task Manager includes both projects and tasks. Complex projects should be linked to allow for detailed project management. All tasks can have tracking of sub-tasks, materials shopping list, and budgeting.
                     </p>
                   </PopoverContent>
                 </Popover>
@@ -554,7 +554,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
               <div className="flex-1 overflow-auto px-2 md:px-4 pt-0.5 md:pt-0 pb-2 min-h-0 bg-gradient-to-b from-background to-muted/30">
                 <TabsContent value="tasks" className="mt-0 space-y-0.5 md:space-y-3 h-full">
-                  {/* Project Dashboard metrics (Task Manager) */}
+                  {/* Project Dashboard metrics (Project & Task Manager) */}
                   {(() => {
                     const now = new Date();
                     const openTasks = tasks.filter(t => t.status !== 'closed');
@@ -1091,7 +1091,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         <ResponsiveDialog
           open={showRapidCosting}
           onOpenChange={(isOpen) => {
-            // Only close the Rapid Costing dialog, prevent propagation to Task Manager
+            // Only close the Rapid Costing dialog, prevent propagation to Project & Task Manager
             if (!isOpen) {
               setShowRapidCosting(false);
             }

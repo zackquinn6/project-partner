@@ -200,7 +200,7 @@ export const MembershipManagement: React.FC = () => {
               <Badge variant="default">Included</Badge>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span>Task Manager</span>
+              <span>Project & Task Manager</span>
               <Badge variant="default">Included</Badge>
             </div>
             <div className="flex items-center justify-between text-sm">

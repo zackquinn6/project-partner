@@ -40,7 +40,7 @@ export const PricingSection: React.FC = () => {
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span>Task Manager</span>
+                  <span>Project & Task Manager</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />

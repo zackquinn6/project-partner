@@ -24,7 +24,7 @@ interface AppManagerProps {
 // Workspace apps that aren't in the native apps registry
 const WORKSPACE_APPS: Record<string, Omit<AppReference, 'id'>> = {
   'task-manager': {
-    appName: 'Task Manager',
+    appName: 'Project & Task Manager',
     appType: 'native',
     icon: 'ListChecks',
     description: 'Create, organize, and track tasks across your home',

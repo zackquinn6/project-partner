@@ -88,7 +88,7 @@ const coreFeatures = [
   {
     id: 'task-manager',
     icon: ListChecks,
-    name: 'Task Manager',
+    name: 'Project & Task Manager',
     category: 'core',
     description: 'Create, organize, and track tasks across your home with powerful scheduling and assignment features.',
     keyFeatures: [
@@ -591,7 +591,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                             <p className="mb-2 text-sm">Choose and customize your first DIY project:</p>
                             <ul className="space-y-1 text-sm">
                               <li>• Browse the Project Catalog for beginner-friendly options</li>
-                              <li>• Use Task Manager to create tasks and cost assessments</li>
+                              <li>• Use Project & Task Manager to create tasks and cost assessments</li>
                               <li>• Complete the project kickoff workflow with customizations</li>
                               <li>• Review your tool needs and plan purchases if necessary</li>
                             </ul>

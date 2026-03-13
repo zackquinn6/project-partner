@@ -1410,6 +1410,20 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           </div>
         )}
 
+        {/* Slim CTA: To run multiple projects, use Project & Task Manager - only when grid is visible */}
+        {shouldShowGrid && !isAdminMode && (
+          <div className="flex items-center justify-center gap-1.5 py-2 px-3 mb-2 rounded-md bg-muted/40 border border-border/50">
+            <span className="text-xs text-muted-foreground">To run multiple projects, use</span>
+            <button
+              type="button"
+              onClick={() => setTaskManagerOpen(true)}
+              className="text-xs font-medium text-primary hover:underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+            >
+              Project & Task Manager
+            </button>
+          </div>
+        )}
+
         {/* Results Summary - Only show when grid is visible */}
         {shouldShowGrid && (
           <div className="mb-4 flex items-center justify-between">
@@ -1812,7 +1826,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
            />
          )}
 
-        {/* Task Manager (opened from Project Catalog) */}
+        {/* Project & Task Manager (opened from Project Catalog) */}
         {!isAdminMode && (
           <HomeTaskList open={taskManagerOpen} onOpenChange={setTaskManagerOpen} />
         )}

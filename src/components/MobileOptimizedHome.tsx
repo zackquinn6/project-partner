@@ -116,12 +116,12 @@ export function MobileOptimizedHome() {
     fetchNickname();
   }, [user]);
 
-  // Semantic color system for apps (mobile: Task Manager + Home Maintenance only; no Project Dashboard or Expert Help)
+  // Semantic color system for apps (mobile: Project & Task Manager + Home Maintenance only; no Project Dashboard or Expert Help)
   const quickActions = [
     {
       id: 'home-task-list',
       icon: ListChecks,
-      title: 'Task Manager',
+      title: 'Project & Task Manager',
       subtitle: 'Manage tasks',
       color: 'bg-green-500', // Home: Green
       action: () => window.dispatchEvent(new CustomEvent('show-home-task-list'))
@@ -277,7 +277,7 @@ export function MobileOptimizedHome() {
                   {stats.openTasks ?? 0}
                 </p>
                 <p className="hidden sm:block text-[11px] text-emerald-100/70">
-                  All tasks in Task Manager not completed
+                  All tasks in Project & Task Manager not completed
                 </p>
               </CardContent>
             </Card>
@@ -300,7 +300,7 @@ export function MobileOptimizedHome() {
         </div>
 
 
-        {/* Start Here: Explore New Projects + Task Manager + Home Maintenance */}
+        {/* Start Here: Explore New Projects + Project & Task Manager + Home Maintenance */}
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-3 md:hidden">Start Here</h2>
           <Button

@@ -125,7 +125,7 @@ export const PostAuthLanding = () => {
     textColor: "text-white"
   }, {
     icon: ListChecks,
-    title: "Task Manager",
+    title: "Project & Task Manager",
     action: () => setShowHomeTaskList(true),
     color: "bg-green-500", // Home: Green
     textColor: "text-white"
