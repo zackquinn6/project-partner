@@ -23,6 +23,7 @@ import { PoliciesWindow } from './PoliciesWindow';
 import { ToolsMaterialsWindow } from './ToolsMaterialsWindow';
 import { ExpertHelpWindow } from './ExpertHelpWindow';
 import { AchievementNotificationCenter } from './AchievementNotificationCenter';
+import { NotificationDropdown } from './NotificationDropdown';
 import { supabase } from '@/integrations/supabase/client';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 interface NavigationProps {
@@ -402,6 +403,9 @@ export default function Navigation({
             
             {/* Achievement Notification Center */}
             <AchievementNotificationCenter />
+
+            {/* Notifications (project owner alerts) */}
+            <NotificationDropdown />
             
             {/* Settings Dropdown - Always visible */}
             <DropdownMenu>
