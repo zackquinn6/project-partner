@@ -360,7 +360,7 @@ export const UserRoleManager: React.FC = () => {
                 <TableRow>
                   <TableHead>User</TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead>Assigned projects</TableHead>
+                  <TableHead>Projects owned</TableHead>
                   <TableHead>Added</TableHead>
                   <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
