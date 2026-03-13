@@ -109,16 +109,21 @@ export const ProjectOwnerTermsDialog: React.FC<ProjectOwnerTermsDialogProps> = (
 
       if (invitationError) throw invitationError;
 
-      // Add project_owner role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: user.id,
-          role: 'project_owner'
-        });
+      // Add project_owner to user_profiles.roles
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('roles')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (roleError && roleError.code !== '23505') { // Ignore duplicate key error
-        throw roleError;
+      const roles = Array.isArray(profile?.roles) ? profile.roles : ['user'];
+      if (!roles.includes('project_owner')) {
+        const { error: roleError } = await supabase
+          .from('user_profiles')
+          .update({ roles: [...roles, 'project_owner'] })
+          .eq('user_id', user.id);
+
+        if (roleError) throw roleError;
       }
 
       toast({

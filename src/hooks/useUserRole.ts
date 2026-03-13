@@ -36,17 +36,17 @@ export const useUserRole = () => {
 
       try {
         const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
+          .from('user_profiles')
+          .select('roles')
           .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .single();
+          .maybeSingle();
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows found"
+        if (error) {
           console.error('Error checking user role:', error);
         }
 
-        setIsAdmin(!!data);
+        const roles = data?.roles ?? [];
+        setIsAdmin(Array.isArray(roles) && roles.includes('admin'));
       } catch (error) {
         console.error('Error checking user role:', error);
         setIsAdmin(false);

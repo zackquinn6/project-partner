@@ -8,12 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2, Plus, Shield, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-interface UserRole {
-  id: string;
+interface UserRoleRow {
   user_id: string;
   role: string;
-  created_at: string;
-  profiles?: {
+  profiles: {
     full_name: string | null;
     nickname: string | null;
   } | null;
@@ -24,11 +22,12 @@ interface UserProfile {
   full_name: string | null;
   nickname: string | null;
   display_name?: string | null;
+  roles: string[];
 }
 export const UserRoleManager: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [userRoles, setUserRoles] = useState<UserRole[]>([]);
+  const [userRoles, setUserRoles] = useState<UserRoleRow[]>([]);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [newUserRole, setNewUserRole] = useState('user');
@@ -36,26 +35,10 @@ export const UserRoleManager: React.FC = () => {
   const loadUserRoles = async () => {
     try {
       console.log('📥 Loading user roles...');
-      // First get user roles
-      const {
-        data: rolesData,
-        error: rolesError
-      } = await supabase.from('user_roles').select('*').order('created_at', {
-        ascending: false
-      });
-      
-      if (rolesError) {
-        console.error('❌ Error loading roles:', rolesError);
-        throw rolesError;
-      }
-
-      console.log('✅ Loaded roles:', rolesData?.length || 0);
-
-      // Then get profiles separately and match them
       const {
         data: profilesData,
         error: profilesError
-      } = await supabase.from('user_profiles').select('user_id, email, full_name, nickname, display_name');
+      } = await supabase.from('user_profiles').select('user_id, email, full_name, nickname, display_name, roles');
       if (profilesError) {
         console.error('❌ Error loading profiles:', profilesError);
         throw profilesError;
@@ -63,24 +46,28 @@ export const UserRoleManager: React.FC = () => {
 
       console.log('✅ Loaded profiles:', profilesData?.length || 0);
 
-      // Build list: every profile appears at least once (with role from user_roles or default "user")
-      const rolesWithProfiles = (rolesData || []).map(role => ({
-        ...role,
-        profiles: profilesData?.find(profile => profile.user_id === role.user_id) || null
-      }));
-      const userIdsWithRoles = new Set((rolesData || []).map((r: { user_id: string }) => r.user_id));
-      const profilesWithoutRole = (profilesData || []).filter(p => !userIdsWithRoles.has(p.user_id));
-      const defaultUserRows: UserRole[] = profilesWithoutRole.map(profile => ({
-        id: '',
-        user_id: profile.user_id,
-        role: 'user',
-        created_at: new Date().toISOString(),
-        profiles: profile
-      }));
-      const userRolesWithProfiles = [...rolesWithProfiles, ...defaultUserRows];
+      const rolesList: UserRoleRow[] = [];
+      for (const p of profilesData || []) {
+        const roles = Array.isArray(p.roles) ? p.roles : ['user'];
+        for (const role of roles) {
+          rolesList.push({
+            user_id: p.user_id,
+            role,
+            profiles: { full_name: p.full_name, nickname: p.nickname }
+          });
+        }
+      }
 
-      console.log('✅ Combined user roles with profiles:', userRolesWithProfiles.length);
-      setUserRoles(userRolesWithProfiles);
+      console.log('✅ Combined user roles with profiles:', rolesList.length);
+      setUserRoles(rolesList);
+      setAllUsers((profilesData || []).map(p => ({
+        user_id: p.user_id,
+        email: p.email ?? null,
+        full_name: p.full_name ?? null,
+        nickname: p.nickname ?? null,
+        display_name: p.display_name ?? null,
+        roles: Array.isArray(p.roles) ? p.roles : ['user']
+      })));
     } catch (error: any) {
       console.error('❌ Error loading user roles:', error);
       toast({
@@ -90,22 +77,10 @@ export const UserRoleManager: React.FC = () => {
       });
     }
   };
-  const loadAllUsers = async () => {
-    try {
-      const {
-        data,
-        error
-      } = await supabase.from('user_profiles').select('user_id, email, full_name, nickname, display_name').order('user_id');
-      if (error) throw error;
-      setAllUsers(data || []);
-    } catch (error) {
-      console.error('Error loading users:', error);
-    }
-  };
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([loadUserRoles(), loadAllUsers()]);
+      await loadUserRoles();
       setLoading(false);
     };
     loadData();
@@ -122,8 +97,9 @@ export const UserRoleManager: React.FC = () => {
     }
 
     try {
-      const existingRole = userRoles.find(ur => ur.user_id === selectedUserId && ur.role === newUserRole);
-      if (existingRole) {
+      const profile = allUsers.find(p => p.user_id === selectedUserId);
+      const currentRoles = profile?.roles ?? [];
+      if (currentRoles.includes(newUserRole)) {
         toast({
           title: "Role already exists",
           description: "This user already has this role.",
@@ -132,10 +108,11 @@ export const UserRoleManager: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase.from('user_roles').insert({
-        user_id: selectedUserId,
-        role: newUserRole
-      }).select();
+      const newRoles = [...currentRoles, newUserRole];
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ roles: newRoles })
+        .eq('user_id', selectedUserId);
 
       if (error) throw error;
 
@@ -157,10 +134,16 @@ export const UserRoleManager: React.FC = () => {
     }
   };
 
-  const updateUserRole = async (roleId: string, newRole: string) => {
+  const updateUserRole = async (userId: string, oldRole: string, newRole: string) => {
     if (!user) return;
     try {
-      const { error } = await supabase.from('user_roles').update({ role: newRole }).eq('id', roleId);
+      const profile = allUsers.find(p => p.user_id === userId);
+      const currentRoles = (profile?.roles ?? []).filter(r => r !== oldRole);
+      if (!currentRoles.includes(newRole)) currentRoles.push(newRole);
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ roles: currentRoles })
+        .eq('user_id', userId);
       if (error) throw error;
       await loadUserRoles();
       toast({
@@ -176,15 +159,20 @@ export const UserRoleManager: React.FC = () => {
       });
     }
   };
-  const removeUserRole = async (roleId: string, userEmail: string, role: string) => {
+  const removeUserRole = async (userId: string, role: string) => {
     if (!user) return;
 
     try {
-      const { error } = await supabase.from('user_roles').delete().eq('id', roleId);
+      const profile = allUsers.find(p => p.user_id === userId);
+      let newRoles = (profile?.roles ?? []).filter(r => r !== role);
+      if (newRoles.length === 0) newRoles = ['user'];
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ roles: newRoles })
+        .eq('user_id', userId);
       if (error) throw error;
 
       await loadUserRoles();
-      
       toast({
         title: "Success",
         description: "Role removed successfully"
@@ -273,7 +261,7 @@ export const UserRoleManager: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {userRoles.map(userRole => <TableRow key={userRole.id || `profile-${userRole.user_id}`}>
+                {userRoles.map(userRole => <TableRow key={`${userRole.user_id}-${userRole.role}`}>
                     <TableCell className="flex items-center gap-2">
                       <User className="w-4 h-4" />
                       {userRole.profiles?.full_name || userRole.profiles?.nickname || 'Unknown User'}
@@ -282,13 +270,8 @@ export const UserRoleManager: React.FC = () => {
                       <Select
                         value={userRole.role}
                         onValueChange={(v) => {
-                          if (userRole.id) {
-                            updateUserRole(userRole.id, v);
-                          } else {
-                            supabase.from('user_roles').insert({ user_id: userRole.user_id, role: v }).then(({ error }) => {
-                              if (error) toast({ title: "Error adding role", description: error.message, variant: "destructive" });
-                              else loadUserRoles();
-                            });
+                          if (v !== userRole.role) {
+                            updateUserRole(userRole.user_id, userRole.role, v);
                           }
                         }}
                       >
@@ -302,12 +285,10 @@ export const UserRoleManager: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </TableCell>
+                    <TableCell>—</TableCell>
                     <TableCell>
-                      {userRole.id ? new Date(userRole.created_at).toLocaleDateString() : '—'}
-                    </TableCell>
-                    <TableCell>
-                      {userRole.id ? (
-                        <Button size="sm" variant="ghost" onClick={() => removeUserRole(userRole.id, userRole.profiles?.full_name || userRole.profiles?.nickname || 'Unknown', userRole.role)} className="text-destructive hover:text-destructive">
+                      {userRole.role !== 'user' ? (
+                        <Button size="sm" variant="ghost" onClick={() => removeUserRole(userRole.user_id, userRole.role)} className="text-destructive hover:text-destructive">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       ) : (

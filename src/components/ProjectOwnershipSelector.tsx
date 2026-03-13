@@ -53,27 +53,10 @@ export const ProjectOwnershipSelector: React.FC<ProjectOwnershipSelectorProps> =
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Get all users with project_owner role
-        const { data: roleData, error: roleError } = await supabase
-          .from('user_roles')
-          .select('user_id')
-          .eq('role', 'project_owner');
-
-        if (roleError) throw roleError;
-
-        if (!roleData || roleData.length === 0) {
-          setAvailableOwners([]);
-          setLoading(false);
-          return;
-        }
-
-        const userIds = roleData.map(r => r.user_id);
-
-        // Get profiles for these users
         const { data: profileData, error: profileError } = await supabase
           .from('user_profiles')
           .select('user_id, email, display_name')
-          .in('user_id', userIds);
+          .contains('roles', ['project_owner']);
 
         if (profileError) throw profileError;
 

@@ -56,15 +56,15 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Check if user is admin
-    const { data: adminRole } = await supabaseClient
-      .from('user_roles')
-      .select('role')
+    // Check if user is admin (roles on user_profiles)
+    const { data: profileData } = await supabaseClient
+      .from('user_profiles')
+      .select('roles')
       .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .single();
+      .maybeSingle();
 
-    if (adminRole) {
+    const roles = Array.isArray(profileData?.roles) ? profileData.roles : [];
+    if (roles.includes('admin')) {
       logStep("User is admin, no subscription needed");
       return new Response(JSON.stringify({ 
         subscribed: true, 
@@ -91,17 +91,16 @@ serve(async (req) => {
 
       const inTrial = trialData && new Date(trialData.trial_end_date) > new Date();
       
-      // Update role to non_member if trial expired
+      // Update roles to include non_member and remove member if trial expired
       if (!inTrial) {
-        await supabaseClient
-          .from('user_roles')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('role', 'member');
-        
-        await supabaseClient
-          .from('user_roles')
-          .upsert({ user_id: user.id, role: 'non_member' }, { onConflict: 'user_id,role' });
+        const current = Array.isArray(profileData?.roles) ? profileData.roles : [];
+        const next = [...current.filter((r: string) => r !== 'member'), 'non_member'];
+        if (JSON.stringify(next.sort()) !== JSON.stringify([...current].sort())) {
+          await supabaseClient
+            .from('user_profiles')
+            .update({ roles: next })
+            .eq('user_id', user.id);
+        }
       }
 
       return new Response(JSON.stringify({ 
@@ -146,31 +145,27 @@ serve(async (req) => {
           cancel_at_period_end: subscription.cancel_at_period_end || false,
         }, { onConflict: 'stripe_subscription_id' });
 
-      // Update user role to member
-      await supabaseClient
-        .from('user_roles')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('role', 'non_member');
-
-      await supabaseClient
-        .from('user_roles')
-        .upsert({ user_id: user.id, role: 'member' }, { onConflict: 'user_id,role' });
-
+      // Update user_profiles.roles: add member, remove non_member
+      const current = Array.isArray(profileData?.roles) ? profileData.roles : [];
+      const next = [...current.filter((r: string) => r !== 'non_member'), 'member'];
+      if (JSON.stringify([...next].sort()) !== JSON.stringify([...current].sort())) {
+        await supabaseClient
+          .from('user_profiles')
+          .update({ roles: next })
+          .eq('user_id', user.id);
+      }
       logStep("Updated user role to member");
     } else {
       logStep("No active subscription found");
       
-      // Update role to non_member
-      await supabaseClient
-        .from('user_roles')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('role', 'member');
-
-      await supabaseClient
-        .from('user_roles')
-        .upsert({ user_id: user.id, role: 'non_member' }, { onConflict: 'user_id,role' });
+      const current = Array.isArray(profileData?.roles) ? profileData.roles : [];
+      const next = [...current.filter((r: string) => r !== 'member'), 'non_member'];
+      if (JSON.stringify([...next].sort()) !== JSON.stringify([...current].sort())) {
+        await supabaseClient
+          .from('user_profiles')
+          .update({ roles: next })
+          .eq('user_id', user.id);
+      }
     }
 
     return new Response(JSON.stringify({

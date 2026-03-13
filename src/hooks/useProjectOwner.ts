@@ -28,19 +28,19 @@ export const useProjectOwner = (projectId?: string) => {
       }
 
       try {
-        // Check if user has project_owner role
-        const { data: roleData, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
+        // Check if user has project_owner role (from user_profiles.roles)
+        const { data: profileData, error: roleError } = await supabase
+          .from('user_profiles')
+          .select('roles')
           .eq('user_id', user.id)
-          .eq('role', 'project_owner')
-          .single();
+          .maybeSingle();
 
-        if (roleError && roleError.code !== 'PGRST116') {
+        if (roleError) {
           console.error('Error checking project owner role:', roleError);
         }
 
-        const hasRole = !!roleData;
+        const roles = profileData?.roles ?? [];
+        const hasRole = Array.isArray(roles) && roles.includes('project_owner');
         setHasProjectOwnerRole(hasRole);
 
         // If a specific project ID is provided, check ownership

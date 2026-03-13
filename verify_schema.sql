@@ -40,7 +40,7 @@ FROM pg_tables
 WHERE schemaname = 'public'
   AND tablename IN (
     'projects', 'project_runs', 'project_phases', 'homes', 
-    'user_roles', 'achievements', 'materials', 'tools',
+    'achievements', 'materials', 'tools',
     'user_contractors', 'feedback'
   );
 
