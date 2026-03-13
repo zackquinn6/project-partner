@@ -998,13 +998,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               </Button>
             </div>
 
-        <div className="text-center mb-8">
-          <h1 className="text-4xl lg:text-5xl font-bold mb-4 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
-            <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">
+        <div className="text-center mb-8 pt-1 pb-3">
+          <h1 className="text-4xl lg:text-5xl font-bold mb-4 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 leading-[1.35]">
+            <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent inline-block pb-1 pt-0.5">
               Project Catalog
             </span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Select a project to get started</p>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-normal">Select a project to get started</p>
         </div>
 
         {/* Mobile Close Button */}
