@@ -19,6 +19,7 @@ interface Tool {
   description?: string;
   photo_url?: string;
   item?: string;
+  specialty_scale?: number;
 }
 
 interface UserOwnedTool {
@@ -257,6 +258,13 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
       });
   }, [availableTools, searchTerm, toolVariations, userTools, variationsChecked]);
 
+  const { commonTools, otherTools } = useMemo(() => {
+    const scale = (t: Tool) => t.specialty_scale ?? 2;
+    const common = filteredTools.filter((t) => scale(t) === 1);
+    const other = filteredTools.filter((t) => scale(t) !== 1);
+    return { commonTools: common, otherTools: other };
+  }, [filteredTools]);
+
   const handleAddTool = async (tool: Tool) => {
     // Set loading state for this specific tool
     setAddingToolId(tool.id);
@@ -467,48 +475,100 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
           </div>
 
           <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-            {filteredTools.map((tool) => (
-              <Card key={tool.id} className="p-4">
-                <div className="flex justify-between items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-medium truncate">{tool.item}</h4>
-                      </div>
-                      {tool.description && (
-                        <p className="text-sm text-muted-foreground mb-2">{tool.description}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {tool.photo_url && (
-                        <img 
-                          src={tool.photo_url} 
-                          alt={tool.item}
-                          className="w-12 h-12 object-cover rounded"
-                        />
-                      )}
-                      <Button
-                        size="sm"
-                        onClick={() => handleAddTool(tool)}
-                        className="flex-shrink-0"
-                        disabled={addingToolId === tool.id}
-                      >
-                        {addingToolId === tool.id ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                            Adding...
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="w-4 h-4 mr-1" />
-                            Add
-                          </>
+            {commonTools.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-muted-foreground">Common tools</Label>
+                {commonTools.map((tool) => (
+                  <Card key={tool.id} className="p-4">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-medium truncate">{tool.item}</h4>
+                        </div>
+                        {tool.description && (
+                          <p className="text-sm text-muted-foreground mb-2">{tool.description}</p>
                         )}
-                      </Button>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {tool.photo_url && (
+                          <img
+                            src={tool.photo_url}
+                            alt={tool.item}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                        )}
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddTool(tool)}
+                          className="flex-shrink-0"
+                          disabled={addingToolId === tool.id}
+                        >
+                          {addingToolId === tool.id ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                              Adding...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-4 h-4 mr-1" />
+                              Add
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
-                </div>
-              </Card>
-            ))}
-            
+                  </Card>
+                ))}
+              </div>
+            )}
+            {otherTools.length > 0 && (
+              <div className="space-y-2">
+                {commonTools.length > 0 && (
+                  <Label className="text-sm font-semibold text-muted-foreground">All tools</Label>
+                )}
+                {otherTools.map((tool) => (
+                  <Card key={tool.id} className="p-4">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-medium truncate">{tool.item}</h4>
+                        </div>
+                        {tool.description && (
+                          <p className="text-sm text-muted-foreground mb-2">{tool.description}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {tool.photo_url && (
+                          <img
+                            src={tool.photo_url}
+                            alt={tool.item}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                        )}
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddTool(tool)}
+                          className="flex-shrink-0"
+                          disabled={addingToolId === tool.id}
+                        >
+                          {addingToolId === tool.id ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                              Adding...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-4 h-4 mr-1" />
+                              Add
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
             {filteredTools.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 {searchTerm ? "No tools found matching your search" : "All available tools have been added to your library"}
@@ -713,38 +773,94 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
       </div>
 
       <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-        {filteredTools.map((tool) => (
-          <Card key={tool.id} className="p-4">
-            <div className="flex justify-between items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h4 className="font-medium truncate">{tool.item}</h4>
+        {commonTools.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-muted-foreground">Common tools</Label>
+            {commonTools.map((tool) => (
+              <Card key={tool.id} className="p-4">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-medium truncate">{tool.item}</h4>
+                    </div>
+                    {tool.description && (
+                      <p className="text-sm text-muted-foreground mb-2">{tool.description}</p>
+                    )}
                   </div>
-                  {tool.description && (
-                    <p className="text-sm text-muted-foreground mb-2">{tool.description}</p>
-                  )}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {tool.photo_url && (
+                      <img
+                        src={tool.photo_url}
+                        alt={tool.item}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => handleAddTool(tool)}
+                      className="flex-shrink-0"
+                      disabled={addingToolId === tool.id}
+                    >
+                      {addingToolId === tool.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {tool.photo_url && (
-                    <img 
-                      src={tool.photo_url} 
-                      alt={tool.item}
-                      className="w-12 h-12 object-cover rounded"
-                    />
-                  )}
-                  <Button
-                    size="sm"
-                    onClick={() => handleAddTool(tool)}
-                    className="flex-shrink-0"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add
-                  </Button>
+              </Card>
+            ))}
+          </div>
+        )}
+        {otherTools.length > 0 && (
+          <div className="space-y-2">
+            {commonTools.length > 0 && (
+              <Label className="text-sm font-semibold text-muted-foreground">All tools</Label>
+            )}
+            {otherTools.map((tool) => (
+              <Card key={tool.id} className="p-4">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-medium truncate">{tool.item}</h4>
+                    </div>
+                    {tool.description && (
+                      <p className="text-sm text-muted-foreground mb-2">{tool.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {tool.photo_url && (
+                      <img
+                        src={tool.photo_url}
+                        alt={tool.item}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => handleAddTool(tool)}
+                      className="flex-shrink-0"
+                      disabled={addingToolId === tool.id}
+                    >
+                      {addingToolId === tool.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-            </div>
-          </Card>
-        ))}
-        
+              </Card>
+            ))}
+          </div>
+        )}
         {filteredTools.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             {searchTerm ? "No tools found matching your search" : "All available tools have been added to your library"}
