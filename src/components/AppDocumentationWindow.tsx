@@ -327,10 +327,14 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
 
           <div className="flex-1 overflow-hidden">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <TabsList className="grid grid-cols-3 w-full bg-muted/50 border-b border-border rounded-none flex-shrink-0">
+              <TabsList className="grid grid-cols-4 w-full bg-muted/50 border-b border-border rounded-none flex-shrink-0">
                 <TabsTrigger value="overview" className="flex items-center gap-2 text-sm">
                   <Star className="w-4 h-4" />
                   <span className="hidden sm:inline">App</span> Overview
+                </TabsTrigger>
+                <TabsTrigger value="how-it-works" className="flex items-center gap-2 text-sm">
+                  <BookOpen className="w-4 h-4" />
+                  <span className="hidden sm:inline">How It</span> Works
                 </TabsTrigger>
                 <TabsTrigger value="features" className="flex items-center gap-2 text-sm">
                   <Target className="w-4 h-4" />
@@ -409,6 +413,75 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                               <span><strong>Human Support:</strong> Expert help when you need it most</span>
                             </li>
                           </ul>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                <TabsContent value="how-it-works" className="h-full p-0 m-0">
+                  <ScrollArea className="h-full">
+                    <div className="p-4 md:p-6 space-y-6">
+                      <div className="text-center space-y-3">
+                        <h2 className="text-2xl font-bold">General How It Works</h2>
+                        <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+                          This app is an engineered system designed to improve DIY outcomes and experiences. Here’s how we think about guidance, outputs, time, and who builds it.
+                        </p>
+                      </div>
+
+                      <Card className="border-l-4 border-l-primary">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Target className="w-5 h-5 text-primary" />
+                            Step outputs matter most
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <p className="text-sm text-muted-foreground">
+                            We tell you how to get there, but we focus on making the experience valuable—not constraining you. Each step is built around what you need to achieve, so you can adapt the process to your situation without losing the goal.
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-l-4 border-l-primary">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <ListChecks className="w-5 h-5 text-primary" />
+                            Outputs, and why the process matters
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <p className="text-sm text-muted-foreground">
+                            Every step includes <strong>outputs</strong>—what should be achieved—and why those outputs matter. At the same time, the process matters: we explain why we recommend doing things a certain way, so you understand the reasoning and can follow it with confidence.
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-l-4 border-l-primary">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Clock className="w-5 h-5 text-primary" />
+                            Where time estimates come from
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <p className="text-sm text-muted-foreground">
+                            Time estimates come from a mix of <strong>AI analysis</strong> and input from <strong>project owners</strong>—people who contribute and maintain project templates. They’re meant as a guide to help you plan; your own pace may vary based on skill level and conditions.
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-l-4 border-l-primary">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Users className="w-5 h-5 text-primary" />
+                            How project owners work
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <p className="text-sm text-muted-foreground">
+                            Project templates are built through <strong>distributed, shared ownership</strong>. Project owners contribute and refine workflows so the platform captures best practices from many people. That way you get proven steps and outputs that reflect real-world experience, not a single rigid playbook.
+                          </p>
                         </CardContent>
                       </Card>
                     </div>
