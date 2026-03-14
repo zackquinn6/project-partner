@@ -10,13 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from '@/components/ui/command';
+import { Input } from '@/components/ui/input';
 import { Shield, User, FolderOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -57,6 +51,7 @@ export const UserRoleManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [ownerProjectIds, setOwnerProjectIds] = useState<Record<string, string[]>>({});
   const [savingOwnerProjects, setSavingOwnerProjects] = useState<Record<string, boolean>>({});
+  const [projectSearch, setProjectSearch] = useState<Record<string, string>>({});
 
   const loadUsers = async () => {
     try {
@@ -251,25 +246,45 @@ export const UserRoleManager: React.FC = () => {
                                   : 'Select projects'}
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-[280px] p-0" align="start">
-                              <Command>
-                                <CommandInput placeholder="Search projects..." />
-                                <CommandEmpty>No projects found.</CommandEmpty>
-                                <CommandGroup>
-                                  {parentProjects.map((proj) => {
-                                    const selected = (ownerProjectIds[profile.user_id] ?? []).includes(proj.id);
-                                    return (
-                                      <CommandItem
-                                        key={proj.id}
-                                        onSelect={() => toggleOwnerProject(profile.user_id, proj.id, !selected)}
-                                      >
-                                        <Checkbox checked={selected} className="mr-2" />
-                                        <span className="truncate">{proj.name}</span>
-                                      </CommandItem>
-                                    );
-                                  })}
-                                </CommandGroup>
-                              </Command>
+                            <PopoverContent className="w-[320px] p-0" align="start">
+                              <div className="max-h-[320px] flex flex-col">
+                                <div className="p-2 border-b">
+                                  <Input
+                                    type="search"
+                                    placeholder="Search projects..."
+                                    className="h-9"
+                                    value={projectSearch[profile.user_id] ?? ''}
+                                    onChange={(e) => setProjectSearch((prev) => ({ ...prev, [profile.user_id]: e.target.value }))}
+                                  />
+                                </div>
+                                <div className="overflow-y-auto overscroll-contain min-h-0 p-1">
+                                  {parentProjects
+                                    .filter((proj) => {
+                                      const q = (projectSearch[profile.user_id] ?? '').trim().toLowerCase();
+                                      return !q || proj.name.toLowerCase().includes(q);
+                                    })
+                                    .map((proj) => {
+                                      const selected = (ownerProjectIds[profile.user_id] ?? []).includes(proj.id);
+                                      return (
+                                        <button
+                                          key={proj.id}
+                                          type="button"
+                                          className="flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none"
+                                          onClick={() => toggleOwnerProject(profile.user_id, proj.id, !selected)}
+                                        >
+                                          <Checkbox checked={selected} className="pointer-events-none shrink-0" />
+                                          <span className="truncate">{proj.name}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  {parentProjects.filter((proj) => {
+                                    const q = (projectSearch[profile.user_id] ?? '').trim().toLowerCase();
+                                    return !q || proj.name.toLowerCase().includes(q);
+                                  }).length === 0 && (
+                                    <div className="py-6 text-center text-sm text-muted-foreground">No projects found.</div>
+                                  )}
+                                </div>
+                              </div>
                             </PopoverContent>
                           </Popover>
                         ) : (
