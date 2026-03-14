@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Shield, User, FolderOpen } from 'lucide-react';
@@ -54,6 +55,7 @@ export const UserRoleManager: React.FC = () => {
   const [savingOwnerProjects, setSavingOwnerProjects] = useState<Record<string, boolean>>({});
   const [projectSearch, setProjectSearch] = useState<Record<string, string>>({});
   const [projectsDialogOpenForUserId, setProjectsDialogOpenForUserId] = useState<string | null>(null);
+  const [draftOwnerProjectIds, setDraftOwnerProjectIds] = useState<Record<string, string[]>>({});
 
   const loadUsers = async () => {
     try {
@@ -145,7 +147,7 @@ export const UserRoleManager: React.FC = () => {
     }
   };
 
-  const saveOwnerProjects = async (userId: string, projectIds: string[], previousIds: string[]) => {
+  const saveOwnerProjects = async (userId: string, projectIds: string[]) => {
     if (!user) return;
     setSavingOwnerProjects(prev => ({ ...prev, [userId]: true }));
     try {
@@ -164,9 +166,9 @@ export const UserRoleManager: React.FC = () => {
           })));
         if (insError) throw insError;
       }
+      setOwnerProjectIds(prev => ({ ...prev, [userId]: projectIds }));
       toast({ title: "Saved", description: "Assigned projects updated" });
     } catch (error: any) {
-      setOwnerProjectIds(prev => ({ ...prev, [userId]: previousIds }));
       toast({
         title: "Error updating assigned projects",
         description: error.message || "Please try again.",
@@ -177,13 +179,24 @@ export const UserRoleManager: React.FC = () => {
     }
   };
 
-  const toggleOwnerProject = (userId: string, projectId: string, selected: boolean) => {
-    const current = ownerProjectIds[userId] ?? [];
+  const openProjectsDialog = (userId: string) => {
+    setDraftOwnerProjectIds(prev => ({ ...prev, [userId]: ownerProjectIds[userId] ?? [] }));
+    setProjectsDialogOpenForUserId(userId);
+  };
+
+  const toggleDraftOwnerProject = (userId: string, projectId: string, selected: boolean) => {
+    const current = draftOwnerProjectIds[userId] ?? ownerProjectIds[userId] ?? [];
     const next = selected
       ? [...current, projectId]
       : current.filter(id => id !== projectId);
-    setOwnerProjectIds(prev => ({ ...prev, [userId]: next }));
-    saveOwnerProjects(userId, next, current);
+    setDraftOwnerProjectIds(prev => ({ ...prev, [userId]: next }));
+  };
+
+  const handleSaveOwnerProjects = async () => {
+    if (!projectsDialogOpenForUserId) return;
+    const projectIds = draftOwnerProjectIds[projectsDialogOpenForUserId] ?? ownerProjectIds[projectsDialogOpenForUserId] ?? [];
+    await saveOwnerProjects(projectsDialogOpenForUserId, projectIds);
+    setProjectsDialogOpenForUserId(null);
   };
   if (loading) {
     return <div className="flex justify-center p-8">Loading users...</div>;
@@ -242,7 +255,7 @@ export const UserRoleManager: React.FC = () => {
                         {role === 'project_owner' ? (
                           <Dialog
                             open={projectsDialogOpenForUserId === profile.user_id}
-                            onOpenChange={(open) => setProjectsDialogOpenForUserId(open ? profile.user_id : null)}
+                            onOpenChange={(open) => open ? openProjectsDialog(profile.user_id) : setProjectsDialogOpenForUserId(null)}
                           >
                             <DialogTrigger asChild>
                               <Button variant="outline" size="sm" className="w-full justify-start gap-2 min-w-[140px]" disabled={savingOwnerProjects[profile.user_id]}>
@@ -275,7 +288,8 @@ export const UserRoleManager: React.FC = () => {
                                     return !q || proj.name.toLowerCase().includes(q);
                                   })
                                   .map((proj) => {
-                                    const selected = (ownerProjectIds[profile.user_id] ?? []).includes(proj.id);
+                                    const draftIds = draftOwnerProjectIds[profile.user_id] ?? ownerProjectIds[profile.user_id] ?? [];
+                                    const selected = draftIds.includes(proj.id);
                                     const id = `project-${profile.user_id}-${proj.id}`;
                                     return (
                                       <label
@@ -287,7 +301,7 @@ export const UserRoleManager: React.FC = () => {
                                           type="checkbox"
                                           id={id}
                                           checked={selected}
-                                          onChange={() => toggleOwnerProject(profile.user_id, proj.id, !selected)}
+                                          onChange={() => toggleDraftOwnerProject(profile.user_id, proj.id, !selected)}
                                           className="h-4 w-4 shrink-0 rounded border-2 border-primary/50"
                                         />
                                         <span className="truncate">{proj.name}</span>
@@ -301,6 +315,17 @@ export const UserRoleManager: React.FC = () => {
                                   <div className="py-6 text-center text-sm text-muted-foreground">No projects found.</div>
                                 )}
                               </div>
+                              <DialogFooter className="px-4 py-3 border-t flex-shrink-0">
+                                <Button variant="outline" onClick={() => setProjectsDialogOpenForUserId(null)}>
+                                  Cancel
+                                </Button>
+                                <Button
+                                  onClick={handleSaveOwnerProjects}
+                                  disabled={savingOwnerProjects[profile.user_id]}
+                                >
+                                  {savingOwnerProjects[profile.user_id] ? 'Saving…' : 'Save'}
+                                </Button>
+                              </DialogFooter>
                             </DialogContent>
                           </Dialog>
                         ) : (
