@@ -246,9 +246,13 @@ export const UserRoleManager: React.FC = () => {
                                   : 'Select projects'}
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-[320px] p-0" align="start">
-                              <div className="max-h-[320px] flex flex-col">
-                                <div className="p-2 border-b">
+                            <PopoverContent
+                              className="w-[320px] p-0 z-[100]"
+                              align="start"
+                              onOpenAutoFocus={(e) => e.preventDefault()}
+                            >
+                              <div className="flex flex-col" style={{ maxHeight: 'min(70vh, 400px)' }}>
+                                <div className="flex-shrink-0 p-2 border-b">
                                   <Input
                                     type="search"
                                     placeholder="Search projects..."
@@ -257,7 +261,11 @@ export const UserRoleManager: React.FC = () => {
                                     onChange={(e) => setProjectSearch((prev) => ({ ...prev, [profile.user_id]: e.target.value }))}
                                   />
                                 </div>
-                                <div className="overflow-y-auto overscroll-contain min-h-0 p-1">
+                                <div
+                                  className="flex-1 overflow-y-auto overflow-x-hidden p-1 min-h-0"
+                                  style={{ maxHeight: 280, WebkitOverflowScrolling: 'touch' }}
+                                  role="listbox"
+                                >
                                   {parentProjects
                                     .filter((proj) => {
                                       const q = (projectSearch[profile.user_id] ?? '').trim().toLowerCase();
@@ -266,15 +274,19 @@ export const UserRoleManager: React.FC = () => {
                                     .map((proj) => {
                                       const selected = (ownerProjectIds[profile.user_id] ?? []).includes(proj.id);
                                       return (
-                                        <button
+                                        <div
                                           key={proj.id}
-                                          type="button"
-                                          className="flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none"
-                                          onClick={() => toggleOwnerProject(profile.user_id, proj.id, !selected)}
+                                          role="option"
+                                          aria-selected={selected}
+                                          className="flex items-center gap-2 rounded-sm px-2 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground select-none"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleOwnerProject(profile.user_id, proj.id, !selected);
+                                          }}
                                         >
                                           <Checkbox checked={selected} className="pointer-events-none shrink-0" />
                                           <span className="truncate">{proj.name}</span>
-                                        </button>
+                                        </div>
                                       );
                                     })}
                                   {parentProjects.filter((proj) => {
