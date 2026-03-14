@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Popover,
@@ -18,75 +17,60 @@ import {
   CommandInput,
   CommandItem,
 } from '@/components/ui/command';
-import { Trash2, Plus, Shield, User, FolderOpen } from 'lucide-react';
+import { Shield, User, FolderOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-interface UserRoleRow {
-  user_id: string;
-  role: string;
-  profiles: {
-    full_name: string | null;
-    nickname: string | null;
-    display_name: string | null;
-    email: string | null;
-  } | null;
-}
-interface UserProfile {
+
+const ALLOWED_ROLES = ['user', 'project_owner', 'admin'] as const;
+
+interface UserProfileRow {
   user_id: string;
   email: string | null;
   full_name: string | null;
   nickname: string | null;
-  display_name?: string | null;
+  display_name: string | null;
   roles: string[];
 }
+
 interface ParentProject {
   id: string;
   name: string;
 }
+
+function displayName(p: UserProfileRow): string {
+  return p.email || p.display_name || p.full_name || p.nickname || p.user_id;
+}
+
+function currentRole(roles: string[]): string {
+  const r = Array.isArray(roles) ? roles : [];
+  for (const allowed of ALLOWED_ROLES) {
+    if (r.includes(allowed)) return allowed;
+  }
+  return 'user';
+}
+
 export const UserRoleManager: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [userRoles, setUserRoles] = useState<UserRoleRow[]>([]);
-  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [users, setUsers] = useState<UserProfileRow[]>([]);
   const [parentProjects, setParentProjects] = useState<ParentProject[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
-  const [newUserRole, setNewUserRole] = useState('user');
   const [loading, setLoading] = useState(true);
   const [ownerProjectIds, setOwnerProjectIds] = useState<Record<string, string[]>>({});
   const [savingOwnerProjects, setSavingOwnerProjects] = useState<Record<string, boolean>>({});
-  /** Load users and roles from user_profiles only. All role changes are persisted to user_profiles.roles. */
-  const loadUserRoles = async () => {
+
+  const loadUsers = async () => {
     try {
       setLoading(true);
-      const {
-        data: profilesData,
-        error: profilesError
-      } = await supabase.from('user_profiles').select('user_id, email, full_name, nickname, display_name, roles');
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('user_id, email, full_name, nickname, display_name, roles');
+
       if (profilesError) {
         console.error('❌ Error loading user_profiles:', profilesError);
         throw profilesError;
       }
 
-      const rolesList: UserRoleRow[] = [];
-      for (const p of profilesData || []) {
-        const roles = Array.isArray(p.roles) ? p.roles : ['user'];
-        for (const role of roles) {
-          rolesList.push({
-            user_id: p.user_id,
-            role,
-            profiles: {
-              full_name: p.full_name ?? null,
-              nickname: p.nickname ?? null,
-              display_name: p.display_name ?? null,
-              email: p.email ?? null
-            }
-          });
-        }
-      }
-
-      console.log('✅ Combined user roles with profiles:', rolesList.length);
-      setUserRoles(rolesList);
-      const users = (profilesData || []).map(p => ({
+      const rows: UserProfileRow[] = (profilesData || []).map(p => ({
         user_id: p.user_id,
         email: p.email ?? null,
         full_name: p.full_name ?? null,
@@ -94,9 +78,13 @@ export const UserRoleManager: React.FC = () => {
         display_name: p.display_name ?? null,
         roles: Array.isArray(p.roles) ? p.roles : ['user']
       }));
-      setAllUsers(users);
 
-      const projectOwnerUserIds = [...new Set(rolesList.filter(r => r.role === 'project_owner').map(r => r.user_id))];
+      rows.sort((a, b) => displayName(a).localeCompare(displayName(b), undefined, { sensitivity: 'base' }));
+      setUsers(rows);
+
+      const projectOwnerUserIds = rows
+        .filter(r => currentRole(r.roles) === 'project_owner')
+        .map(r => r.user_id);
       if (projectOwnerUserIds.length > 0) {
         const { data: ownersData } = await supabase
           .from('project_owners')
@@ -137,118 +125,32 @@ export const UserRoleManager: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    loadUserRoles();
+    loadUsers();
   }, []);
-  const addUserRole = async () => {
+
+  const changeUserRole = async (userId: string, newRole: string) => {
     if (!user) return;
-
-    if (!selectedUserId || !newUserRole) {
-      toast({
-        title: "Please select a user and role",
-        variant: "destructive"
-      });
-      return;
-    }
-
+    if (!ALLOWED_ROLES.includes(newRole as typeof ALLOWED_ROLES[number])) return;
     try {
-      const profile = allUsers.find(p => p.user_id === selectedUserId);
-      const currentRoles = profile?.roles ?? [];
-      if (currentRoles.includes(newUserRole)) {
-        toast({
-          title: "Role already exists",
-          description: "This user already has this role.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const newRoles = [...currentRoles, newUserRole];
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ roles: newRoles })
-        .eq('user_id', selectedUserId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: `Role ${newUserRole} added successfully`
-      });
-
-      setSelectedUserId('');
-      setNewUserRole('user');
-      await loadUserRoles();
-    } catch (error: any) {
-      console.error('Error adding user role:', error);
-      toast({
-        title: "Error adding role",
-        description: error.message || "Please try again later.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const updateUserRole = async (userId: string, oldRole: string, newRole: string) => {
-    if (!user) return;
-    try {
-      if (oldRole === 'project_owner') {
+      const previousRole = currentRole(users.find(u => u.user_id === userId)?.roles ?? []);
+      if (previousRole === 'project_owner' && newRole !== 'project_owner') {
         const { error: delError } = await supabase
           .from('project_owners')
           .delete()
           .eq('user_id', userId);
         if (delError) throw delError;
       }
-      const profile = allUsers.find(p => p.user_id === userId);
-      const currentRoles = (profile?.roles ?? []).filter(r => r !== oldRole);
-      if (!currentRoles.includes(newRole)) currentRoles.push(newRole);
       const { error } = await supabase
         .from('user_profiles')
-        .update({ roles: currentRoles })
+        .update({ roles: [newRole] })
         .eq('user_id', userId);
       if (error) throw error;
-      await loadUserRoles();
-      toast({
-        title: "Success",
-        description: "Role updated"
-      });
+      await loadUsers();
+      toast({ title: "Success", description: "Role updated" });
     } catch (error: any) {
-      console.error('Error updating role:', error);
+      console.error('Error changing role:', error);
       toast({
         title: "Error updating role",
-        description: error.message || "Please try again later.",
-        variant: "destructive"
-      });
-    }
-  };
-  const removeUserRole = async (userId: string, role: string) => {
-    if (!user) return;
-
-    try {
-      if (role === 'project_owner') {
-        const { error: delError } = await supabase
-          .from('project_owners')
-          .delete()
-          .eq('user_id', userId);
-        if (delError) throw delError;
-      }
-      const profile = allUsers.find(p => p.user_id === userId);
-      let newRoles = (profile?.roles ?? []).filter(r => r !== role);
-      if (newRoles.length === 0) newRoles = ['user'];
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ roles: newRoles })
-        .eq('user_id', userId);
-      if (error) throw error;
-
-      await loadUserRoles();
-      toast({
-        title: "Success",
-        description: "Role removed successfully"
-      });
-    } catch (error: any) {
-      console.error('Error removing user role:', error);
-      toast({
-        title: "Error removing role",
         description: error.message || "Please try again later.",
         variant: "destructive"
       });
@@ -294,20 +196,12 @@ export const UserRoleManager: React.FC = () => {
       : current.filter(id => id !== projectId);
     saveOwnerProjects(userId, next);
   };
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'destructive';
-      case 'project_owner':
-        return 'default';
-      default:
-        return 'outline';
-    }
-  };
   if (loading) {
-    return <div className="flex justify-center p-8">Loading user roles...</div>;
+    return <div className="flex justify-center p-8">Loading users...</div>;
   }
-  return <div className="space-y-6">
+
+  return (
+    <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -315,139 +209,93 @@ export const UserRoleManager: React.FC = () => {
             User Role Management
           </CardTitle>
           <CardDescription>
-            View and edit roles in the user_profiles table. Select a user and role to add, or change role in the table below.
+            All users are in user_profiles and default to role &quot;user&quot;. Change a user&apos;s role using the dropdown. Sorted alphabetically by name or email.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4 items-end">
-            <div className="flex-1 min-w-0">
-              <label className="text-sm font-medium">User</label>
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select user" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allUsers.map(u => (
-                    <SelectItem key={u.user_id} value={u.user_id}>
-                      {u.email || u.display_name || u.full_name || u.nickname || u.user_id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="w-48">
-              <label className="text-sm font-medium">Role</label>
-              <Select value={newUserRole} onValueChange={setNewUserRole}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="project_owner">Project Owner</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              type="button"
-              onClick={addUserRole}
-              className="flex items-center gap-2"
-              disabled={!selectedUserId}
-            >
-              <Plus className="w-4 h-4" />
-              Add Role
-            </Button>
-          </div>
-
-          {userRoles.length > 0 ? <Table>
+        <CardContent>
+          {users.length > 0 ? (
+            <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Projects owned</TableHead>
-                  <TableHead>Added</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {userRoles.map(userRole => <TableRow key={`${userRole.user_id}-${userRole.role}`}>
-                    <TableCell className="flex items-center gap-2">
-                      <User className="w-4 h-4 shrink-0" />
-                      {userRole.profiles?.full_name || userRole.profiles?.nickname || userRole.profiles?.display_name || userRole.profiles?.email || userRole.user_id}
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={userRole.role}
-                        onValueChange={(v) => {
-                          if (v !== userRole.role) {
-                            updateUserRole(userRole.user_id, userRole.role, v);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-[140px] h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="user">User</SelectItem>
-                          <SelectItem value="project_owner">Project Owner</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      {userRole.role === 'project_owner' ? (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm" className="w-full justify-start gap-2" disabled={savingOwnerProjects[userRole.user_id]}>
-                              <FolderOpen className="w-4 h-4" />
-                              {(ownerProjectIds[userRole.user_id]?.length ?? 0) > 0
-                                ? `${ownerProjectIds[userRole.user_id].length} project(s)`
-                                : 'Select projects'}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[280px] p-0" align="start">
-                            <Command>
-                              <CommandInput placeholder="Search projects..." />
-                              <CommandEmpty>No projects found.</CommandEmpty>
-                              <CommandGroup>
-                                {parentProjects.map((proj) => {
-                                  const selected = (ownerProjectIds[userRole.user_id] ?? []).includes(proj.id);
-                                  return (
-                                    <CommandItem
-                                      key={proj.id}
-                                      onSelect={() => toggleOwnerProject(userRole.user_id, proj.id, !selected)}
-                                    >
-                                      <Checkbox checked={selected} className="mr-2" />
-                                      <span className="truncate">{proj.name}</span>
-                                    </CommandItem>
-                                  );
-                                })}
-                              </CommandGroup>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                      ) : (
-                        '—'
-                      )}
-                    </TableCell>
-                    <TableCell>—</TableCell>
-                    <TableCell>
-                      {userRole.role !== 'user' ? (
-                        <Button size="sm" variant="ghost" onClick={() => removeUserRole(userRole.user_id, userRole.role)} className="text-destructive hover:text-destructive">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">Default</span>
-                      )}
-                    </TableCell>
-                  </TableRow>)}
+                {users.map((profile) => {
+                  const role = currentRole(profile.roles);
+                  return (
+                    <TableRow key={profile.user_id}>
+                      <TableCell className="flex items-center gap-2">
+                        <User className="w-4 h-4 shrink-0" />
+                        {displayName(profile)}
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={role}
+                          onValueChange={(v) => {
+                            if (v !== role) changeUserRole(profile.user_id, v);
+                          }}
+                        >
+                          <SelectTrigger className="w-[160px] h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="project_owner">Project Owner</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        {role === 'project_owner' ? (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className="w-full justify-start gap-2 min-w-[140px]" disabled={savingOwnerProjects[profile.user_id]}>
+                                <FolderOpen className="w-4 h-4 shrink-0" />
+                                {(ownerProjectIds[profile.user_id]?.length ?? 0) > 0
+                                  ? `${ownerProjectIds[profile.user_id].length} project(s)`
+                                  : 'Select projects'}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[280px] p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="Search projects..." />
+                                <CommandEmpty>No projects found.</CommandEmpty>
+                                <CommandGroup>
+                                  {parentProjects.map((proj) => {
+                                    const selected = (ownerProjectIds[profile.user_id] ?? []).includes(proj.id);
+                                    return (
+                                      <CommandItem
+                                        key={proj.id}
+                                        onSelect={() => toggleOwnerProject(profile.user_id, proj.id, !selected)}
+                                      >
+                                        <Checkbox checked={selected} className="mr-2" />
+                                        <span className="truncate">{proj.name}</span>
+                                      </CommandItem>
+                                    );
+                                  })}
+                                </CommandGroup>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
-            </Table> : <div className="text-center py-8 text-muted-foreground">
-              No user roles found. Add roles to users to get started.
-            </div>}
+            </Table>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No users found in user_profiles.
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      
-    </div>;
+    </div>
+  );
 };
