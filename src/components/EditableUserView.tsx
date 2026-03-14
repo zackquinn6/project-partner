@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Edit, Save, X, Upload, Info, ChevronDown, ChevronUp, FileText, ShoppingCart, Lock, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Edit, Save, X, Upload, Info, ChevronDown, ChevronUp, FileText, ShoppingCart, Lock, Users, BookOpen } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useProject } from '@/contexts/ProjectContext';
 import { WorkflowStep, Output } from '@/interfaces/Project';
@@ -19,6 +19,7 @@ import { ExpertHelpWindow } from './ExpertHelpWindow';
 import { PhaseCompletionPopup } from './PhaseCompletionPopup';
 import { MaterialsSelectionWindow } from './MaterialsSelectionWindow';
 import { MultiContentRenderer } from './MultiContentRenderer';
+import { ToolInstructionsPopup } from './ToolInstructionsPopup';
 import { OrderingWindow } from './OrderingWindow';
 import { SignatureCapture } from './SignatureCapture';
 import { StepCompletionTracker } from './StepCompletionTracker';
@@ -71,6 +72,7 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
   const [signatures, setSignatures] = useState<Record<string, string>>({});
   const [orderingWindowOpen, setOrderingWindowOpen] = useState(false);
   const [completionTrackerOpen, setCompletionTrackerOpen] = useState(false);
+  const [toolInstructions, setToolInstructions] = useState<{ id: string; name: string } | null>(null);
   const [stepCompletionPercentages, setStepCompletionPercentages] = useState<Record<string, number>>(
     currentProjectRun?.stepCompletionPercentages || {}
   );
@@ -890,6 +892,16 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                                     <div className="flex items-center gap-2">
                                       <div className="text-sm font-medium">{tool.name}</div>
                                       {tool.alternates && tool.alternates.length > 0 && <Badge variant="outline" className="text-xs">+{tool.alternates.length} alt</Badge>}
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 w-7 p-0 shrink-0"
+                                        title="View instructions"
+                                        onClick={() => setToolInstructions({ id: tool.id, name: tool.name })}
+                                      >
+                                        <BookOpen className="w-4 h-4" />
+                                      </Button>
                                     </div>
                                     {tool.description && <div className="text-xs text-muted-foreground mt-0.5">{tool.description}</div>}
                                   </div>
@@ -1036,6 +1048,16 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
         progress={progress}
         projectName={currentProject?.name}
       />
+
+      {/* Tool instructions popup (from workflow) */}
+      {toolInstructions && (
+        <ToolInstructionsPopup
+          open={!!toolInstructions}
+          onOpenChange={(open) => !open && setToolInstructions(null)}
+          toolId={toolInstructions.id}
+          toolName={toolInstructions.name}
+        />
+      )}
       
       {/* Expert Help Window */}
       <ExpertHelpWindow

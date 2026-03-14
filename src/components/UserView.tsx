@@ -45,6 +45,7 @@ import { PhotoGallery } from './PhotoGallery';
 import { WorkflowThemeSelector } from './WorkflowThemeSelector';
 import { ProjectCompletionPopup } from './ProjectCompletionPopup';
 import { ToolsMaterialsSection } from './ToolsMaterialsSection';
+import { ToolInstructionsPopup } from './ToolInstructionsPopup';
 import ProfileManager from './ProfileManager';
 import { DecisionRollupWindow } from './DecisionRollupWindow';
 import { KeyCharacteristicsWindow } from './KeyCharacteristicsWindow';
@@ -126,6 +127,7 @@ export default function UserView({
   const [checkedMaterials, setCheckedMaterials] = useState<Record<string, Set<string>>>({});
   const [checkedTools, setCheckedTools] = useState<Record<string, Set<string>>>({});
   const [checkedOutputs, setCheckedOutputs] = useState<Record<string, Set<string>>>({});
+  const [toolInstructions, setToolInstructions] = useState<{ id: string; name: string } | null>(null);
   
   // Project spaces state for workflow navigation
   const [projectSpaces, setProjectSpaces] = useState<WorkflowProjectSpace[]>([]);
@@ -2672,6 +2674,7 @@ export default function UserView({
           checkedTools={checkedTools}
           onToggleMaterial={toggleMaterialCheck}
           onToggleTool={toggleToolCheck}
+          onToolInstructions={(id, name) => setToolInstructions({ id, name })}
           instructionLevel={instructionLevel}
           onInstructionLevelChange={handleInstructionLevelChange}
         />
@@ -2768,6 +2771,7 @@ export default function UserView({
                   checkedTools={checkedTools[currentStep.id] || new Set()}
                   onToggleMaterial={(materialId) => toggleMaterialCheck(currentStep.id, materialId)}
                   onToggleTool={(toolId) => toggleToolCheck(currentStep.id, toolId)}
+                  onToolInstructions={(id, name) => setToolInstructions({ id, name })}
                 />
               )}
 
@@ -3392,7 +3396,16 @@ export default function UserView({
         isOpen={expertHelpOpen}
         onClose={() => setExpertHelpOpen(false)}
       />
-      
+
+      {toolInstructions && (
+        <ToolInstructionsPopup
+          open={!!toolInstructions}
+          onOpenChange={(open) => !open && setToolInstructions(null)}
+          toolId={toolInstructions.id}
+          toolName={toolInstructions.name}
+        />
+      )}
+
       {/* Unplanned Work Window */}
       <UnplannedWorkWindow
         isOpen={unplannedWorkOpen}

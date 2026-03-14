@@ -1,20 +1,31 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, X, Image } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Upload, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VariationManager } from './VariationManager';
 import { AlternatesEditor } from './AlternatesEditor';
+import { MultiContentEditor } from './MultiContentEditor';
+import type { ContentSection } from '@/interfaces/Project';
 
 interface LibraryItemFormProps {
   type: 'tools' | 'materials';
   item?: any;
   onSave: () => void;
   onCancel: () => void;
+}
+
+function parseInstructions(value: unknown): ContentSection[] {
+  if (Array.isArray(value)) return value as ContentSection[];
+  if (typeof value === 'string') {
+    try { return (JSON.parse(value || '[]') as ContentSection[]); } catch { return []; }
+  }
+  return [];
 }
 
 export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFormProps) {
@@ -24,10 +35,15 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
     unit: item?.unit || '', // for materials
     alternates: item?.alternates || '', // JSON string of alternates
   });
+  const [instructions, setInstructions] = useState<ContentSection[]>(() => parseInstructions(item?.instructions));
   const [uploading, setUploading] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(item?.photo_url || '');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setInstructions(parseInstructions(item?.instructions));
+  }, [item?.id, item?.instructions]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -98,9 +114,10 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
         description: formData.description.trim() || null,
         photo_url: finalPhotoUrl || null,
         alternates: formData.alternates || null,
-        ...(type === 'materials' && { 
-          unit: formData.unit.trim() || null 
+        ...(type === 'materials' && {
+          unit: formData.unit.trim() || null
         }),
+        ...(type === 'tools' && { instructions: instructions.length > 0 ? instructions : [] }),
       };
 
       if (item) {
@@ -255,6 +272,25 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
           </div>
         </form>
       </TabsContent>
+
+      {type === 'tools' && (
+        <TabsContent value="instructions" className="p-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tool instructions</CardTitle>
+              <CardDescription>Text, videos, photos, and links shown when users open instructions for this tool in the workflow.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MultiContentEditor sections={instructions} onChange={setInstructions} />
+            </CardContent>
+          </Card>
+          <div className="flex gap-2 pt-4">
+            <Button type="button" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={uploading}>
+              {uploading ? 'Saving...' : 'Save tool & instructions'}
+            </Button>
+          </div>
+        </TabsContent>
+      )}
 
       <TabsContent value="variations">
         {item?.id && (

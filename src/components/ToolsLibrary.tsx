@@ -23,6 +23,7 @@ interface Tool {
   photo_url: string | null;
   created_at: string;
   updated_at: string;
+  instructions?: unknown;
   variations?: Array<{
     id: string;
     name: string;
@@ -32,11 +33,12 @@ interface Tool {
 // Database row type (matches actual schema)
 type ToolRow = {
   id: string;
-  name: string; // Database column name
+  name: string;
   description: string | null;
   photo_url: string | null;
   created_at: string;
   updated_at: string;
+  instructions?: unknown;
 };
 
 type SortField = 'item' | 'description' | 'variations' | 'created_at';
@@ -60,7 +62,7 @@ export function ToolsLibrary() {
       // Cast entire query to bypass TypeScript type checking for column names
       const query = supabase
         .from('tools' as any)
-        .select('id, name, description, photo_url, created_at, updated_at') as any;
+        .select('id, name, description, photo_url, created_at, updated_at, instructions') as any;
       
       const { data, error } = await query.order('name', { ascending: true }); // Database column is 'name', not 'item'
       
@@ -69,11 +71,12 @@ export function ToolsLibrary() {
       // Map database rows to UI interface (name -> item)
       const toolsData = ((data as unknown as ToolRow[]) || []).map((row): Tool => ({
         id: row.id,
-        item: row.name, // Map 'name' to 'item' for UI
+        item: row.name,
         description: row.description,
         photo_url: row.photo_url,
         created_at: row.created_at,
-        updated_at: row.updated_at
+        updated_at: row.updated_at,
+        instructions: row.instructions
       }));
       
       // Fetch variations for each tool from unified tool_variations

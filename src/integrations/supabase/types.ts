@@ -2765,6 +2765,7 @@ export type Database = {
           estimated_rental_lifespan_days: number | null
           estimated_weight_lbs: number | null
           id: string
+          instructions: Json | null
           item_type: string
           name: string
           photo_url: string | null
@@ -2783,6 +2784,7 @@ export type Database = {
           estimated_rental_lifespan_days?: number | null
           estimated_weight_lbs?: number | null
           id: string
+          instructions?: Json | null
           item_type: string
           name: string
           photo_url?: string | null
@@ -2801,6 +2803,7 @@ export type Database = {
           estimated_rental_lifespan_days?: number | null
           estimated_weight_lbs?: number | null
           id?: string
+          instructions?: Json | null
           item_type?: string
           name?: string
           photo_url?: string | null
@@ -2819,6 +2822,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          instructions: Json | null
           name: string
           photo_url: string | null
           specialty_scale: number
@@ -2830,6 +2834,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          instructions?: Json | null
           name: string
           photo_url?: string | null
           specialty_scale?: number
@@ -2841,6 +2846,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          instructions?: Json | null
           name?: string
           photo_url?: string | null
           specialty_scale?: number

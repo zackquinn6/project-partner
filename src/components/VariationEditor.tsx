@@ -12,6 +12,8 @@ import { Plus, Trash2, Save, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { MultiContentEditor } from './MultiContentEditor';
+import type { ContentSection } from '@/interfaces/Project';
 
 interface VariationInstance {
   id: string;
@@ -27,6 +29,7 @@ interface VariationInstance {
   estimated_rental_lifespan_days?: number;
   warning_flags?: string[];
   quick_add?: boolean;
+  instructions?: unknown;
 }
 
 interface ToolModel {
@@ -72,13 +75,23 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
   const [availableWarnings, setAvailableWarnings] = useState<WarningFlag[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
+  const [instructions, setInstructions] = useState<ContentSection[]>([]);
+
+  function parseInstructions(value: unknown): ContentSection[] {
+    if (Array.isArray(value)) return value as ContentSection[];
+    if (typeof value === 'string') {
+      try { return (JSON.parse(value || '[]') as ContentSection[]); } catch { return []; }
+    }
+    return [];
+  }
 
   useEffect(() => {
     if (variation) {
       setEditedVariation({
         ...variation,
-        name: variation.name || '', // Ensure name is always a string
+        name: variation.name || '',
       });
+      setInstructions(parseInstructions(variation.instructions));
       fetchModelsAndPricing();
       fetchWarningFlags();
     }
@@ -138,20 +151,24 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
         description: editedVariation.description
       });
 
+      const updatePayload: Record<string, unknown> = {
+        name: editedVariation.name.trim(),
+        description: editedVariation.description || null,
+        sku: editedVariation.sku || null,
+        photo_url: editedVariation.photo_url || null,
+        weight_lbs: editedVariation.weight_lbs || null,
+        estimated_weight_lbs: editedVariation.estimated_weight_lbs || null,
+        estimated_rental_lifespan_days: editedVariation.estimated_rental_lifespan_days || null,
+        warning_flags: editedVariation.warning_flags || null,
+        quick_add: editedVariation.quick_add || false,
+        updated_at: new Date().toISOString(),
+      };
+      if (variation.item_type === 'tools') {
+        updatePayload.instructions = instructions;
+      }
       const { error } = await supabase
         .from('tool_variations')
-        .update({
-          name: editedVariation.name.trim(),
-          description: editedVariation.description || null,
-          sku: editedVariation.sku || null,
-          photo_url: editedVariation.photo_url || null,
-          weight_lbs: editedVariation.weight_lbs || null,
-          estimated_weight_lbs: editedVariation.estimated_weight_lbs || null,
-          estimated_rental_lifespan_days: editedVariation.estimated_rental_lifespan_days || null,
-          warning_flags: editedVariation.warning_flags || null,
-          quick_add: editedVariation.quick_add || false,
-          updated_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq('id', variation.id);
 
       if (error) {
@@ -328,8 +345,11 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className={`grid w-full ${variation.item_type === 'tools' ? 'grid-cols-5' : 'grid-cols-4'}`}>
             <TabsTrigger value="details">Details</TabsTrigger>
+            {variation.item_type === 'tools' && (
+              <TabsTrigger value="instructions">Instructions</TabsTrigger>
+            )}
             <TabsTrigger value="warnings">Warnings</TabsTrigger>
             <TabsTrigger value="models">Models</TabsTrigger>
             <TabsTrigger value="pricing">Pricing</TabsTrigger>
@@ -434,6 +454,21 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
               </div>
             </div>
           </TabsContent>
+
+          {variation.item_type === 'tools' && (
+            <TabsContent value="instructions" className="space-y-4">
+              <div>
+                <Label className="text-base font-medium">Variant instructions</Label>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Text, videos, photos, and links shown when users open instructions for this variant in the workflow.
+                </p>
+                <MultiContentEditor sections={instructions} onChange={setInstructions} />
+              </div>
+              <Button onClick={saveVariation} disabled={loading}>
+                {loading ? 'Saving...' : 'Save variation'}
+              </Button>
+            </TabsContent>
+          )}
 
           <TabsContent value="warnings" className="space-y-4">
             <div>

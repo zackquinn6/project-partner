@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Circle, Clock, Menu, Eye, EyeOff, HelpCircle, Calendar as CalendarIcon } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Circle, Clock, Menu, Eye, EyeOff, HelpCircle, Calendar as CalendarIcon, BookOpen } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -30,6 +30,7 @@ interface MobileWorkflowViewProps {
   checkedTools: Record<string, Set<string>>;
   onToggleMaterial: (stepId: string, materialId: string) => void;
   onToggleTool: (stepId: string, toolId: string) => void;
+  onToolInstructions?: (toolId: string, toolName: string) => void;
   instructionLevel?: 'beginner' | 'intermediate' | 'advanced';
   onInstructionLevelChange?: (level: 'beginner' | 'intermediate' | 'advanced') => void;
 }
@@ -51,6 +52,7 @@ export function MobileWorkflowView({
   checkedTools,
   onToggleMaterial,
   onToggleTool,
+  onToolInstructions,
   instructionLevel = 'intermediate',
   onInstructionLevelChange
 }: MobileWorkflowViewProps) {
@@ -454,17 +456,31 @@ export function MobileWorkflowView({
                               className="mt-0.5 flex-shrink-0"
                             />
                             <div className="flex-1 min-w-0">
-                              <p className={`font-medium text-xs sm:text-sm break-words ${isChecked ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}>
-                                {tool.name}
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className={`font-medium text-xs sm:text-sm break-words flex-1 min-w-0 ${isChecked ? 'line-through text-muted-foreground' : 'text-card-foreground'}`}>
+                                  {tool.name}
+                                </p>
+                                {onToolInstructions && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0 shrink-0"
+                                    title="View instructions"
+                                    onClick={() => onToolInstructions(tool.id, tool.name)}
+                                  >
+                                    <BookOpen className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
                               {tool.description && (
                                 <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 break-words">
                                   {tool.description}
                                 </p>
                               )}
-              {tool.alternates && tool.alternates.length > 0 && (
-                <Badge variant="outline" className="text-[10px] sm:text-xs mt-1">+{tool.alternates.length} alternatives</Badge>
-              )}
+                              {tool.alternates && tool.alternates.length > 0 && (
+                                <Badge variant="outline" className="text-[10px] sm:text-xs mt-1">+{tool.alternates.length} alternatives</Badge>
+                              )}
                             </div>
                           </div>
                         );

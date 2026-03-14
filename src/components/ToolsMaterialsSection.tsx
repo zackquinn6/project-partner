@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
 import { WorkflowStep, Material, Tool } from '@/interfaces/Project';
 
 interface ToolsMaterialsSectionProps {
@@ -13,6 +13,7 @@ interface ToolsMaterialsSectionProps {
   checkedTools: Set<string>;
   onToggleMaterial: (materialId: string) => void;
   onToggleTool: (toolId: string) => void;
+  onToolInstructions?: (toolId: string, toolName: string) => void;
 }
 
 export function ToolsMaterialsSection({
@@ -20,7 +21,8 @@ export function ToolsMaterialsSection({
   checkedMaterials,
   checkedTools,
   onToggleMaterial,
-  onToggleTool
+  onToggleTool,
+  onToolInstructions,
 }: ToolsMaterialsSectionProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -112,9 +114,23 @@ export function ToolsMaterialsSection({
                           onCheckedChange={() => onToggleTool(tool.id)}
                           className="mt-0.5"
                         />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium">{tool.name}</div>
-                          {tool.category && <Badge variant="outline" className="text-xs mt-1">{tool.category}</Badge>}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium">{tool.name}</div>
+                            {tool.category && <Badge variant="outline" className="text-xs">{tool.category}</Badge>}
+                            {onToolInstructions && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 shrink-0"
+                                title="View instructions"
+                                onClick={() => onToolInstructions(tool.id, tool.name)}
+                              >
+                                <BookOpen className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
                           {tool.description && <div className="text-xs text-muted-foreground mt-1">{tool.description}</div>}
                         </div>
                       </div>
