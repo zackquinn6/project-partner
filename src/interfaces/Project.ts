@@ -112,6 +112,16 @@ export interface ContentSection {
   buttonVariant?: 'default' | 'outline' | 'secondary';
 }
 
+/** Default instruction sections for new workflow steps in the editor. */
+export function getDefaultStepContentSections(): ContentSection[] {
+  const ts = Date.now();
+  return [
+    { id: `section-${ts}-1`, type: 'text', content: '', title: 'Background/Need-to-Know' },
+    { id: `section-${ts}-2`, type: 'text', content: '', title: 'Instructions' },
+    { id: `section-${ts}-3`, type: 'text', content: '', title: 'Error-Recovery' },
+  ];
+}
+
 // Decision point interface for workflow branching
 export interface DecisionPoint {
   id: string;

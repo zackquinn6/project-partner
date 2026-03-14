@@ -19,7 +19,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
-import { WorkflowStep, Material, Tool, Output, Phase, Operation } from '@/interfaces/Project';
+import { WorkflowStep, Material, Tool, Output, Phase, Operation, getDefaultStepContentSections } from '@/interfaces/Project';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -1340,7 +1340,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           step_title: 'New Step',
           description: 'Step description',
           display_order: 1,
-          content_sections: [],
+          content_sections: getDefaultStepContentSections(),
           materials: [],
           tools: [],
           outputs: [],
@@ -2395,7 +2395,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           step_title: stepName,
           description: 'Step description',
           display_order: nextStepNumber,
-          content_sections: [],
+          content_sections: getDefaultStepContentSections(),
           materials: [],
           tools: [],
           outputs: [],

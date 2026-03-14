@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
-import { WorkflowStep, Tool, Material, Output, ContentSection, Phase, Operation, Project, AppReference } from '@/interfaces/Project';
+import { WorkflowStep, Tool, Material, Output, ContentSection, Phase, Operation, Project, AppReference, getDefaultStepContentSections } from '@/interfaces/Project';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -1748,7 +1748,7 @@ export default function EditWorkflowView({
           contentSections = pendingContentChanges;
         } else if (levelSpecificContent && levelSpecificContent.length > 0) {
           contentSections = levelSpecificContent;
-        } else if (editingStep.contentSections) {
+        } else if (editingStep.contentSections && editingStep.contentSections.length > 0) {
           contentSections = editingStep.contentSections;
         } else if (editingStep.content) {
           // Migrate existing content to new format
@@ -1761,9 +1761,11 @@ export default function EditWorkflowView({
             width: 'full',
             alignment: 'left'
           }];
+        } else {
+          contentSections = getDefaultStepContentSections();
         }
       } catch (e) {
-        contentSections = [];
+        contentSections = getDefaultStepContentSections();
       }
       
       return <div className="space-y-6">
