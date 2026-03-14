@@ -27,6 +27,8 @@ interface UserRoleRow {
   profiles: {
     full_name: string | null;
     nickname: string | null;
+    display_name: string | null;
+    email: string | null;
   } | null;
 }
 interface UserProfile {
@@ -52,19 +54,18 @@ export const UserRoleManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [ownerProjectIds, setOwnerProjectIds] = useState<Record<string, string[]>>({});
   const [savingOwnerProjects, setSavingOwnerProjects] = useState<Record<string, boolean>>({});
+  /** Load users and roles from user_profiles only. All role changes are persisted to user_profiles.roles. */
   const loadUserRoles = async () => {
     try {
-      console.log('📥 Loading user roles...');
+      setLoading(true);
       const {
         data: profilesData,
         error: profilesError
       } = await supabase.from('user_profiles').select('user_id, email, full_name, nickname, display_name, roles');
       if (profilesError) {
-        console.error('❌ Error loading profiles:', profilesError);
+        console.error('❌ Error loading user_profiles:', profilesError);
         throw profilesError;
       }
-
-      console.log('✅ Loaded profiles:', profilesData?.length || 0);
 
       const rolesList: UserRoleRow[] = [];
       for (const p of profilesData || []) {
@@ -73,7 +74,12 @@ export const UserRoleManager: React.FC = () => {
           rolesList.push({
             user_id: p.user_id,
             role,
-            profiles: { full_name: p.full_name, nickname: p.nickname }
+            profiles: {
+              full_name: p.full_name ?? null,
+              nickname: p.nickname ?? null,
+              display_name: p.display_name ?? null,
+              email: p.email ?? null
+            }
           });
         }
       }
@@ -107,14 +113,17 @@ export const UserRoleManager: React.FC = () => {
         setOwnerProjectIds({});
       }
     } catch (error: any) {
-      console.error('❌ Error loading user roles:', error);
+      console.error('❌ Error loading user_profiles:', error);
       toast({
-        title: "Error loading user roles",
+        title: "Error loading user profiles",
         description: error.message || "Please try again later.",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
+
   useEffect(() => {
     const loadParentProjects = async () => {
       const { data } = await supabase
@@ -128,12 +137,7 @@ export const UserRoleManager: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await loadUserRoles();
-      setLoading(false);
-    };
-    loadData();
+    loadUserRoles();
   }, []);
   const addUserRole = async () => {
     if (!user) return;
@@ -311,7 +315,7 @@ export const UserRoleManager: React.FC = () => {
             User Role Management
           </CardTitle>
           <CardDescription>
-            Manage user roles and permissions. Select a user and role to add, or change role in the table.
+            View and edit roles in the user_profiles table. Select a user and role to add, or change role in the table below.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -368,8 +372,8 @@ export const UserRoleManager: React.FC = () => {
               <TableBody>
                 {userRoles.map(userRole => <TableRow key={`${userRole.user_id}-${userRole.role}`}>
                     <TableCell className="flex items-center gap-2">
-                      <User className="w-4 h-4" />
-                      {userRole.profiles?.full_name || userRole.profiles?.nickname || 'Unknown User'}
+                      <User className="w-4 h-4 shrink-0" />
+                      {userRole.profiles?.full_name || userRole.profiles?.nickname || userRole.profiles?.display_name || userRole.profiles?.email || userRole.user_id}
                     </TableCell>
                     <TableCell>
                       <Select
