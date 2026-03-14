@@ -62,15 +62,14 @@ export const UserRoleManager: React.FC = () => {
     try {
       setLoading(true);
       const { data: profilesData, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('user_id, email, full_name, nickname, display_name, roles');
+        .rpc('get_user_profiles_for_role_management');
 
       if (profilesError) {
-        console.error('❌ Error loading user_profiles:', profilesError);
+        console.error('❌ Error loading user profiles:', profilesError);
         throw profilesError;
       }
 
-      const rows: UserProfileRow[] = (profilesData || []).map(p => ({
+      const rows: UserProfileRow[] = (profilesData || []).map((p: { user_id: string; email: string | null; full_name: string | null; nickname: string | null; display_name: string | null; roles: string[] }) => ({
         user_id: p.user_id,
         email: p.email ?? null,
         full_name: p.full_name ?? null,
@@ -132,18 +131,10 @@ export const UserRoleManager: React.FC = () => {
     if (!user) return;
     if (!ALLOWED_ROLES.includes(newRole as typeof ALLOWED_ROLES[number])) return;
     try {
-      const previousRole = currentRole(users.find(u => u.user_id === userId)?.roles ?? []);
-      if (previousRole === 'project_owner' && newRole !== 'project_owner') {
-        const { error: delError } = await supabase
-          .from('project_owners')
-          .delete()
-          .eq('user_id', userId);
-        if (delError) throw delError;
-      }
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ roles: [newRole] })
-        .eq('user_id', userId);
+      const { error } = await supabase.rpc('set_user_role_for_management', {
+        p_user_id: userId,
+        p_new_role: newRole
+      });
       if (error) throw error;
       await loadUsers();
       toast({ title: "Success", description: "Role updated" });
@@ -218,13 +209,14 @@ export const UserRoleManager: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>
-                  <TableHead>Role</TableHead>
+                  <TableHead>Change role</TableHead>
                   <TableHead>Projects owned</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.map((profile) => {
                   const role = currentRole(profile.roles);
+                  const selectValue = ALLOWED_ROLES.includes(role as typeof ALLOWED_ROLES[number]) ? role : 'user';
                   return (
                     <TableRow key={profile.user_id}>
                       <TableCell className="flex items-center gap-2">
@@ -233,13 +225,13 @@ export const UserRoleManager: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Select
-                          value={role}
+                          value={selectValue}
                           onValueChange={(v) => {
-                            if (v !== role) changeUserRole(profile.user_id, v);
+                            if (v !== selectValue) changeUserRole(profile.user_id, v);
                           }}
                         >
-                          <SelectTrigger className="w-[160px] h-8">
-                            <SelectValue />
+                          <SelectTrigger className="w-[160px] h-8" aria-label={`Change role for ${displayName(profile)}`}>
+                            <SelectValue placeholder="Change role" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="user">User</SelectItem>
