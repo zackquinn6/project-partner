@@ -466,7 +466,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                         </CardHeader>
                         <CardContent className="space-y-2">
                           <p className="text-sm text-muted-foreground">
-                            Time estimates come from a mix of <strong>AI analysis</strong> and input from <strong>project owners</strong>—people who contribute and maintain project templates. They’re meant as a guide to help you plan; your own pace may vary based on skill level and conditions.
+                            Time estimates use <strong>online published data</strong>, <strong>user data</strong> (which improves accuracy over time), <strong>AI analysis</strong>, and input from <strong>project owners</strong>. They’re shown as <strong>ranges</strong> based on factors like skill level, available tools, and unique project conditions—so you can plan with a band that fits your situation rather than a single number.
                           </p>
                         </CardContent>
                       </Card>
