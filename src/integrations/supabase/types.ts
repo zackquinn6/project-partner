@@ -2884,6 +2884,54 @@ export type Database = {
         }
         Relationships: []
       }
+      membership_status: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          updated_at: string
+          member_status: boolean
+          membership_start_date: string | null
+          membership_end_date: string | null
+          trial_start_date: string | null
+          trial_end_date: string | null
+          trial_extended_days: number | null
+          email_sent_1day_before: boolean | null
+          email_sent_on_expiry: boolean | null
+          last_trial_notification_date: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          updated_at?: string
+          member_status?: boolean
+          membership_start_date?: string | null
+          membership_end_date?: string | null
+          trial_start_date?: string | null
+          trial_end_date?: string | null
+          trial_extended_days?: number | null
+          email_sent_1day_before?: boolean | null
+          email_sent_on_expiry?: boolean | null
+          last_trial_notification_date?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          updated_at?: string
+          member_status?: boolean
+          membership_start_date?: string | null
+          membership_end_date?: string | null
+          trial_start_date?: string | null
+          trial_end_date?: string | null
+          trial_extended_days?: number | null
+          email_sent_1day_before?: boolean | null
+          email_sent_on_expiry?: boolean | null
+          last_trial_notification_date?: string | null
+        }
+        Relationships: []
+      }
       user_achievements: {
         Row: {
           achievement_id: string

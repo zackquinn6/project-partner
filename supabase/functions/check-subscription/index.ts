@@ -95,15 +95,14 @@ serve(async (req) => {
     
     if (customers.data.length === 0) {
       logStep("No customer found, checking trial status");
-      
-      // Check trial status
-      const { data: trialData } = await supabaseClient
-        .from('trial_tracking')
-        .select('trial_end_date')
-        .eq('user_id', user.id)
-        .single();
 
-      const inTrial = trialData && new Date(trialData.trial_end_date) > new Date();
+      const { data: membershipData } = await supabaseClient
+        .from('membership_status')
+        .select('trial_end_date, last_trial_notification_date')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const inTrial = membershipData?.trial_end_date != null && new Date(membershipData.trial_end_date) > new Date();
       
       // Update roles to include non_member and remove member if trial expired
       if (!inTrial) {
@@ -120,7 +119,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         subscribed: false, 
         inTrial,
-        trialEndDate: trialData?.trial_end_date 
+        trialEndDate: membershipData?.trial_end_date ?? null,
+        lastTrialNotificationDate: membershipData?.last_trial_notification_date ?? null
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -142,7 +142,9 @@ serve(async (req) => {
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      const periodStart = new Date(subscription.current_period_start * 1000);
+      const periodEnd = new Date(subscription.current_period_end * 1000);
+      subscriptionEnd = periodEnd.toISOString();
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
 
       // Update Stripe subscription record
@@ -154,10 +156,21 @@ serve(async (req) => {
           stripe_customer_id: customerId,
           status: subscription.status,
           price_id: subscription.items.data[0].price.id,
-          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+          current_period_start: periodStart.toISOString(),
           current_period_end: subscriptionEnd,
           cancel_at_period_end: subscription.cancel_at_period_end || false,
         }, { onConflict: 'stripe_subscription_id' });
+
+      // Update membership_status: paid member, 1-year window from period start
+      await supabaseClient
+        .from('membership_status')
+        .update({
+          member_status: true,
+          membership_start_date: periodStart.toISOString().slice(0, 10),
+          membership_end_date: periodEnd.toISOString().slice(0, 10),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
 
       // Update user_profiles.roles: add member, remove non_member
       const current = Array.isArray(profileData?.roles) ? profileData.roles : [];
@@ -171,7 +184,25 @@ serve(async (req) => {
       logStep("Updated user role to member");
     } else {
       logStep("No active subscription found");
-      
+
+      const { data: membershipDataNoSub } = await supabaseClient
+        .from('membership_status')
+        .select('trial_end_date, last_trial_notification_date')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      await supabaseClient
+        .from('membership_status')
+        .update({
+          member_status: false,
+          membership_start_date: null,
+          membership_end_date: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+
+      const inTrialNoSub = membershipDataNoSub?.trial_end_date != null && new Date(membershipDataNoSub.trial_end_date) > new Date();
+
       const current = Array.isArray(profileData?.roles) ? profileData.roles : [];
       const next = [...current.filter((r: string) => r !== 'member'), 'non_member'];
       if (JSON.stringify([...next].sort()) !== JSON.stringify([...current].sort())) {
@@ -180,6 +211,18 @@ serve(async (req) => {
           .update({ roles: next })
           .eq('user_id', user.id);
       }
+
+      return new Response(JSON.stringify({
+        subscribed: false,
+        subscriptionEnd: null,
+        isAdmin: false,
+        inTrial: inTrialNoSub,
+        trialEndDate: membershipDataNoSub?.trial_end_date ?? null,
+        lastTrialNotificationDate: membershipDataNoSub?.last_trial_notification_date ?? null
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
 
     return new Response(JSON.stringify({

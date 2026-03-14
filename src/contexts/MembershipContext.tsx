@@ -34,6 +34,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState(false);
   const [inTrial, setInTrial] = useState(false);
   const [trialEndDate, setTrialEndDate] = useState<string | null>(null);
+  const [lastTrialNotificationDate, setLastTrialNotificationDate] = useState<string | null>(null);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -65,6 +66,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
       setIsAdmin(data.isAdmin || false);
       setInTrial(data.inTrial || false);
       setTrialEndDate(data.trialEndDate || null);
+      setLastTrialNotificationDate(data.lastTrialNotificationDate ?? null);
       setSubscriptionEnd(data.subscriptionEnd || null);
     } catch (error) {
       console.error('Error checking subscription:', error);
@@ -137,10 +139,31 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
   useEffect(() => {
     checkSubscription();
 
-    // Check subscription status every 5 minutes
     const interval = setInterval(checkSubscription, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [user]);
+
+  // Daily in-app trial reminder (positive); show once per day when in trial
+  useEffect(() => {
+    if (!user || !inTrial || !trialEndDate || loading) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const alreadyNotifiedToday = lastTrialNotificationDate === today;
+    if (alreadyNotifiedToday) return;
+
+    const showReminder = () => {
+      const daysLeft = Math.max(0, Math.ceil((new Date(trialEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+      toast({
+        title: "You're in your free trial",
+        description: `We hope you're finding Toolio helpful. You have ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left to explore – we're here to help you get your project done.`,
+      });
+      setLastTrialNotificationDate(today);
+      supabase.rpc('record_trial_notification_shown').then(() => {}).catch(() => {});
+    };
+
+    const t = setTimeout(showReminder, 1500);
+    return () => clearTimeout(t);
+  }, [user, inTrial, trialEndDate, loading, lastTrialNotificationDate, toast]);
 
   const canAccessPaidFeatures = isBetaMode || isSubscribed || isAdmin || inTrial;
 

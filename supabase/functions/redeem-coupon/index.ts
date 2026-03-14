@@ -64,26 +64,26 @@ serve(async (req) => {
       throw new Error("This coupon has expired");
     }
 
-    // Get current trial data
-    const { data: trialData } = await supabaseClient
-      .from('trial_tracking')
+    const { data: membershipData } = await supabaseClient
+      .from('membership_status')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (!trialData) {
+    if (!membershipData || membershipData.trial_end_date == null) {
       throw new Error("No trial found for user");
     }
 
-    // Extend trial
-    const currentEndDate = new Date(trialData.trial_end_date);
+    const currentEndDate = new Date(membershipData.trial_end_date);
+    const extendedDays = (membershipData.trial_extended_days ?? 0) + coupon.trial_extension_days;
     const newEndDate = new Date(currentEndDate.getTime() + coupon.trial_extension_days * 24 * 60 * 60 * 1000);
 
     await supabaseClient
-      .from('trial_tracking')
+      .from('membership_status')
       .update({
         trial_end_date: newEndDate.toISOString(),
-        trial_extended_days: trialData.trial_extended_days + coupon.trial_extension_days,
+        trial_extended_days: extendedDays,
+        updated_at: new Date().toISOString(),
       })
       .eq('user_id', user.id);
 
