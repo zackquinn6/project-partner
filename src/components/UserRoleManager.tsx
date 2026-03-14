@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +12,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Shield, User, FolderOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -147,7 +145,7 @@ export const UserRoleManager: React.FC = () => {
     }
   };
 
-  const saveOwnerProjects = async (userId: string, projectIds: string[]) => {
+  const saveOwnerProjects = async (userId: string, projectIds: string[], previousIds: string[]) => {
     if (!user) return;
     setSavingOwnerProjects(prev => ({ ...prev, [userId]: true }));
     try {
@@ -166,9 +164,9 @@ export const UserRoleManager: React.FC = () => {
           })));
         if (insError) throw insError;
       }
-      setOwnerProjectIds(prev => ({ ...prev, [userId]: projectIds }));
       toast({ title: "Saved", description: "Assigned projects updated" });
     } catch (error: any) {
+      setOwnerProjectIds(prev => ({ ...prev, [userId]: previousIds }));
       toast({
         title: "Error updating assigned projects",
         description: error.message || "Please try again.",
@@ -184,7 +182,8 @@ export const UserRoleManager: React.FC = () => {
     const next = selected
       ? [...current, projectId]
       : current.filter(id => id !== projectId);
-    saveOwnerProjects(userId, next);
+    setOwnerProjectIds(prev => ({ ...prev, [userId]: next }));
+    saveOwnerProjects(userId, next, current);
   };
   if (loading) {
     return <div className="flex justify-center p-8">Loading users...</div>;
@@ -277,19 +276,22 @@ export const UserRoleManager: React.FC = () => {
                                   })
                                   .map((proj) => {
                                     const selected = (ownerProjectIds[profile.user_id] ?? []).includes(proj.id);
+                                    const id = `project-${profile.user_id}-${proj.id}`;
                                     return (
-                                      <Label
+                                      <label
                                         key={proj.id}
-                                        htmlFor={`project-${profile.user_id}-${proj.id}`}
+                                        htmlFor={id}
                                         className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
                                       >
-                                        <Checkbox
-                                          id={`project-${profile.user_id}-${proj.id}`}
+                                        <input
+                                          type="checkbox"
+                                          id={id}
                                           checked={selected}
-                                          onCheckedChange={(checked) => toggleOwnerProject(profile.user_id, proj.id, checked === true)}
+                                          onChange={() => toggleOwnerProject(profile.user_id, proj.id, !selected)}
+                                          className="h-4 w-4 shrink-0 rounded border-2 border-primary/50"
                                         />
                                         <span className="truncate">{proj.name}</span>
-                                      </Label>
+                                      </label>
                                     );
                                   })}
                                 {parentProjects.filter((proj) => {
