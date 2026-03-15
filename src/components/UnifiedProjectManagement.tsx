@@ -24,7 +24,7 @@ import { ProjectImageManager } from '@/components/ProjectImageManager';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
 import { PFMEAManagement } from '@/components/PFMEAManagement';
 import { DeleteProjectDialog } from '@/components/DeleteProjectDialog';
-import { PlanningGuideWindow } from '@/components/PlanningGuideWindow';
+import { PlanningGuideWindow, type PlanningGuideTab } from '@/components/PlanningGuideWindow';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { calculateProjectTimeEstimate, formatScalingUnit } from '@/utils/projectTimeEstimation';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -140,6 +140,7 @@ export function UnifiedProjectManagement({
   });
   const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
   const [planningGuideOpen, setPlanningGuideOpen] = useState(false);
+  const [planningGuideInitialTab, setPlanningGuideInitialTab] = useState<PlanningGuideTab | null>(null);
   const [pfmeaOpen, setPfmeaOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
@@ -2602,6 +2603,19 @@ export function UnifiedProjectManagement({
             <div className="space-y-2">
               <Label htmlFor="release-notes">Release Notes *</Label>
               <Textarea id="release-notes" placeholder={`Describe what's new in this ${newStatus} release...`} value={releaseNotes} onChange={e => setReleaseNotes(e.target.value)} rows={4} />
+              <p className="text-xs text-muted-foreground">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlanningGuideInitialTab('publishing-checklist');
+                    setPlanningGuideOpen(true);
+                  }}
+                  className="text-primary hover:underline font-medium"
+                >
+                  View publishing checklist
+                </button>
+                {' '}before releasing.
+              </p>
             </div>
 
             <div className="flex justify-end gap-2">
@@ -2654,7 +2668,19 @@ export function UnifiedProjectManagement({
             <div className="space-y-2">
               <Label htmlFor="revision-notes">Revision Notes (Optional)</Label>
               <Textarea id="revision-notes" placeholder="Describe the purpose of this revision (optional - can be added later on release)..." value={revisionNotes} onChange={e => setRevisionNotes(e.target.value)} rows={3} />
-              <p className="text-xs text-muted-foreground">Revision notes are optional for draft creation. They will be required when releasing to beta or production.</p>
+              <p className="text-xs text-muted-foreground">
+                Revision notes are optional for draft creation. They will be required when releasing to beta or production.{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlanningGuideInitialTab('publishing-checklist');
+                    setPlanningGuideOpen(true);
+                  }}
+                  className="text-primary hover:underline font-medium"
+                >
+                  View publishing checklist
+                </button>
+              </p>
             </div>
 
             <div className="flex justify-end gap-2">
@@ -2975,7 +3001,14 @@ export function UnifiedProjectManagement({
         }}
       />
 
-      <PlanningGuideWindow open={planningGuideOpen} onOpenChange={setPlanningGuideOpen} />
+      <PlanningGuideWindow
+        open={planningGuideOpen}
+        onOpenChange={(open) => {
+          setPlanningGuideOpen(open);
+          if (!open) setPlanningGuideInitialTab(null);
+        }}
+        initialTab={planningGuideInitialTab ?? undefined}
+      />
 
       {/* PFMEA Dialog */}
       <Dialog open={pfmeaOpen} onOpenChange={setPfmeaOpen}>
