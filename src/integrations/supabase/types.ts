@@ -1372,6 +1372,7 @@ export type Database = {
           pdf_storage_path: string | null
           policy_text_snapshot: string | null
           policy_version: string | null
+          project_id: string | null
           user_id: string
         }
         Insert: {
@@ -1383,6 +1384,7 @@ export type Database = {
           pdf_storage_path?: string | null
           policy_text_snapshot?: string | null
           policy_version?: string | null
+          project_id?: string | null
           user_id: string
         }
         Update: {
@@ -1394,6 +1396,7 @@ export type Database = {
           pdf_storage_path?: string | null
           policy_text_snapshot?: string | null
           policy_version?: string | null
+          project_id?: string | null
           user_id?: string
         }
         Relationships: []

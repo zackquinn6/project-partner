@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
-type AgreementType = 'liability' | 'membership';
+type AgreementType = 'liability' | 'membership' | 'project_owner';
 
 interface TemplateVersion {
   id: string;
@@ -24,7 +24,21 @@ interface TemplateVersion {
 const TYPE_LABELS: Record<AgreementType, string> = {
   liability: 'Usage Agreement',
   membership: 'Membership Agreement',
+  project_owner: 'Project Owner Agreement',
 };
+
+const PLACEHOLDER_PROJECT_OWNER_AGREEMENT = `Project Owner Agreement (Placeholder)
+
+This is placeholder content for the Project Partner Project Owner Agreement. You can edit this template later.
+
+1. Role
+As a Project Owner you may be assigned to specific projects and granted access to manage those projects within the app.
+
+2. Responsibilities
+You agree to use project owner features in accordance with Project Partner policies and to keep project content accurate and appropriate.
+
+3. Acceptance
+By accepting this agreement you confirm you have read and agree to the terms above.`.trim();
 
 export function AgreementTemplatesSection() {
   const { user } = useAuth();
@@ -32,6 +46,7 @@ export function AgreementTemplatesSection() {
   const [current, setCurrent] = useState<Record<AgreementType, TemplateVersion | null>>({
     liability: null,
     membership: null,
+    project_owner: null,
   });
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -53,9 +68,16 @@ export function AgreementTemplatesSection() {
       .eq('type', 'membership')
       .order('created_at', { ascending: false })
       .limit(1);
+    const { data: projectOwnerRows } = await supabase
+      .from('agreement_templates')
+      .select('id, type, body, created_at, updated_by')
+      .eq('type', 'project_owner')
+      .order('created_at', { ascending: false })
+      .limit(1);
     const next = {
       liability: (liabilityRows && liabilityRows[0]) ? liabilityRows[0] as TemplateVersion : null,
       membership: (membershipRows && membershipRows[0]) ? membershipRows[0] as TemplateVersion : null,
+      project_owner: (projectOwnerRows && projectOwnerRows[0]) ? projectOwnerRows[0] as TemplateVersion : null,
     };
     setCurrent(next);
     return next;
@@ -73,26 +95,18 @@ export function AgreementTemplatesSection() {
 
   const openView = (type: AgreementType) => {
     const t = current[type];
-    if (t) {
-      setEditBody(t.body);
-      setDialogType(type);
-      setDialogMode('view');
-      setDialogOpen(true);
-    } else {
-      toast({ title: 'No template', description: `No ${TYPE_LABELS[type]} template found.`, variant: 'destructive' });
-    }
+    setEditBody(t?.body ?? (type === 'project_owner' ? PLACEHOLDER_PROJECT_OWNER_AGREEMENT : ''));
+    setDialogType(type);
+    setDialogMode('view');
+    setDialogOpen(true);
   };
 
   const openEdit = (type: AgreementType) => {
     const t = current[type];
-    if (t) {
-      setEditBody(t.body);
-      setDialogType(type);
-      setDialogMode('edit');
-      setDialogOpen(true);
-    } else {
-      toast({ title: 'No template', description: `No ${TYPE_LABELS[type]} template found.`, variant: 'destructive' });
-    }
+    setEditBody(t?.body ?? (type === 'project_owner' ? PLACEHOLDER_PROJECT_OWNER_AGREEMENT : ''));
+    setDialogType(type);
+    setDialogMode('edit');
+    setDialogOpen(true);
   };
 
   const handleSave = async () => {
@@ -191,6 +205,29 @@ export function AgreementTemplatesSection() {
                         Open template
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => openEdit('membership')}>
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-primary" />
+                    {TYPE_LABELS.project_owner}
+                  </TableCell>
+                  <TableCell>
+                    {current.project_owner
+                      ? format(new Date(current.project_owner.created_at), 'PPp')
+                      : '—'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openView('project_owner')}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        Open template
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => openEdit('project_owner')}>
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
                       </Button>

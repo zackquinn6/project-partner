@@ -12,7 +12,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Shield, User, FolderOpen } from 'lucide-react';
+import { Shield, User, FolderOpen, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -55,6 +55,8 @@ export const UserRoleManager: React.FC = () => {
   const [projectSearch, setProjectSearch] = useState<Record<string, string>>({});
   const [projectsDialogOpenForUserId, setProjectsDialogOpenForUserId] = useState<string | null>(null);
   const [draftOwnerProjectIds, setDraftOwnerProjectIds] = useState<Record<string, string[]>>({});
+  const [sendInviteForUserId, setSendInviteForUserId] = useState<string | null>(null);
+  const [sendInviteEmail, setSendInviteEmail] = useState('');
 
   const loadUsers = async () => {
     try {
@@ -197,12 +199,63 @@ export const UserRoleManager: React.FC = () => {
     await saveOwnerProjects(projectsDialogOpenForUserId, projectIds);
     setProjectsDialogOpenForUserId(null);
   };
+
+  const openSendInvite = (userId: string) => {
+    setSendInviteForUserId(userId);
+    setSendInviteEmail('');
+  };
+
+  const handleSendProjectOwnerAgreementEmail = () => {
+    if (!sendInviteForUserId || !sendInviteEmail.trim()) return;
+    const name = users.find(u => u.user_id === sendInviteForUserId);
+    const display = name ? displayName(name) : 'Project Owner';
+    const agreementUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/apply-project-owner`;
+    const subject = encodeURIComponent('Project Owner Agreement – Project Partner');
+    const body = encodeURIComponent(
+      `Hi,\n\nPlease review and accept the Project Owner Agreement for Project Partner.\n\nLink: ${agreementUrl}\n\nYou must accept the agreement to access project owner features.`
+    );
+    window.location.href = `mailto:${sendInviteEmail.trim()}?subject=${subject}&body=${body}`;
+    toast({ title: 'Opened email', description: 'Your email client opened. Send the message to deliver the agreement link.' });
+    setSendInviteForUserId(null);
+    setSendInviteEmail('');
+  };
   if (loading) {
     return <div className="flex justify-center p-8">Loading users...</div>;
   }
 
+  const sendInviteProfile = sendInviteForUserId ? users.find(u => u.user_id === sendInviteForUserId) : null;
+
   return (
     <div className="space-y-6">
+      <Dialog open={!!sendInviteForUserId} onOpenChange={(open) => !open && setSendInviteForUserId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Project Owner Agreement</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              {sendInviteProfile ? `Send the agreement link to ${displayName(sendInviteProfile)} via email.` : 'Enter the recipient email address.'}
+            </p>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email address</label>
+              <Input
+                type="email"
+                placeholder="owner@example.com"
+                value={sendInviteEmail}
+                onChange={(e) => setSendInviteEmail(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSendInviteForUserId(null)}>Cancel</Button>
+              <Button onClick={handleSendProjectOwnerAgreementEmail} disabled={!sendInviteEmail.trim()}>
+                <Mail className="w-4 h-4 mr-2" />
+                Open email
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -250,18 +303,19 @@ export const UserRoleManager: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         {role === 'project_owner' ? (
-                          <Dialog
-                            open={projectsDialogOpenForUserId === profile.user_id}
-                            onOpenChange={(open) => open ? openProjectsDialog(profile.user_id) : setProjectsDialogOpenForUserId(null)}
-                          >
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="w-full justify-start gap-2 min-w-[140px]" disabled={savingOwnerProjects[profile.user_id]}>
-                                <FolderOpen className="w-4 h-4 shrink-0" />
-                                {(ownerProjectIds[profile.user_id]?.length ?? 0) > 0
-                                  ? `${ownerProjectIds[profile.user_id].length} project(s)`
-                                  : 'Select projects'}
-                              </Button>
-                            </DialogTrigger>
+                          <div className="flex items-center gap-2">
+                            <Dialog
+                              open={projectsDialogOpenForUserId === profile.user_id}
+                              onOpenChange={(open) => open ? openProjectsDialog(profile.user_id) : setProjectsDialogOpenForUserId(null)}
+                            >
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="justify-start gap-2 min-w-[140px]" disabled={savingOwnerProjects[profile.user_id]}>
+                                  <FolderOpen className="w-4 h-4 shrink-0" />
+                                  {(ownerProjectIds[profile.user_id]?.length ?? 0) > 0
+                                    ? `${ownerProjectIds[profile.user_id].length} project(s)`
+                                    : 'Select projects'}
+                                </Button>
+                              </DialogTrigger>
                             <DialogContent className="max-w-md max-h-[85vh] flex flex-col gap-0 p-0">
                               <DialogHeader className="px-4 pt-4 pb-2">
                                 <DialogTitle>Assign projects for {displayName(profile)}</DialogTitle>
@@ -325,6 +379,16 @@ export const UserRoleManager: React.FC = () => {
                               </DialogFooter>
                             </DialogContent>
                           </Dialog>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="shrink-0"
+                              onClick={() => openSendInvite(profile.user_id)}
+                            >
+                              <Mail className="w-4 h-4 mr-1" />
+                              Send invite
+                            </Button>
+                          </div>
                         ) : (
                           '—'
                         )}
