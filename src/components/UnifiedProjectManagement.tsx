@@ -1623,10 +1623,12 @@ export function UnifiedProjectManagement({
                 Project Management & Revision Control
               </CardTitle>
               <div className="flex gap-2">
-                <Button onClick={handleEditStandardProject} variant="outline" className="flex items-center gap-2">
-                  <Lock className="w-4 h-4" />
-                  Edit Standard
-                </Button>
+                {isAdmin && (
+                  <Button onClick={handleEditStandardProject} variant="outline" className="flex items-center gap-2">
+                    <Lock className="w-4 h-4" />
+                    Edit Standard
+                  </Button>
+                )}
                 <Button onClick={() => setPlanningGuideOpen(true)} variant="outline" className="flex items-center gap-2">
                   <BookOpen className="w-4 h-4" />
                   Planning Guide
@@ -2269,13 +2271,13 @@ export function UnifiedProjectManagement({
                           {/* Image Management Section */}
                           <div className="space-y-3">
                             <Label className="text-sm font-semibold">Project Images</Label>
-                            {/* Cover preview at same size/shape as project catalog card */}
+                            {/* Cover preview: 50% width, 4:3 aspect to match project catalog card */}
                             {(() => {
                               const coverUrl = selectedProject.cover_image || selectedProject.images?.[0];
                               return coverUrl ? (
                                 <div className="space-y-1">
                                   <span className="text-xs text-muted-foreground">Cover (as shown in catalog)</span>
-                                  <div className="w-full h-40 overflow-hidden rounded-lg border bg-muted">
+                                  <div className="w-full max-w-[50%] aspect-[4/3] overflow-hidden rounded-lg border bg-muted">
                                     <img
                                       src={coverUrl}
                                       alt="Cover"
