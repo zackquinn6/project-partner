@@ -356,6 +356,10 @@ export const AdminView: React.FC = () => {
                   // Keep project management open, just open workflow editor
                   setEditWorkflowOpen(true);
                 }}
+                onOpenAnalytics={() => {
+                  setEnhancedProjectManagementOpen(false);
+                  setAnalyticsOpen(true);
+                }}
               />
             </div>
           </DialogContent>

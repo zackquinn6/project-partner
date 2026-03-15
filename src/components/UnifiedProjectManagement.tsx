@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown, Sparkles, Shield, Info, BookOpen } from 'lucide-react';
+import { GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown, Sparkles, Shield, Info, BookOpen, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
@@ -66,9 +66,11 @@ interface Project {
 }
 interface UnifiedProjectManagementProps {
   onEditWorkflow?: () => void;
+  onOpenAnalytics?: () => void;
 }
 export function UnifiedProjectManagement({
-  onEditWorkflow
+  onEditWorkflow,
+  onOpenAnalytics
 }: UnifiedProjectManagementProps = {}) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -1637,9 +1639,14 @@ export function UnifiedProjectManagement({
                   <Sparkles className="w-4 h-4" />
                   AI Generator
                 </Button>
-                <Button onClick={fetchProjects} variant="outline" className="flex items-center gap-2">
+                {onOpenAnalytics && (
+                  <Button onClick={onOpenAnalytics} variant="outline" className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4" />
+                    Project Analytics
+                  </Button>
+                )}
+                <Button onClick={fetchProjects} variant="outline" size="icon" title="Refresh">
                   <RefreshCw className="w-4 h-4" />
-                  Refresh
                 </Button>
               </div>
             </div>
