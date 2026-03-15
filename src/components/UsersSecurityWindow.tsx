@@ -4,7 +4,6 @@ import { AgreementTemplatesSection } from '@/components/AgreementTemplatesSectio
 import { UsageAgreementsList } from '@/components/UsageAgreementsList';
 import { SecurityMonitoringDashboard } from '@/components/SecurityMonitoringDashboard';
 import { AdminSecurityDashboard } from '@/components/AdminSecurityDashboard';
-import { ProjectOwnerInvitationsList } from '@/components/ProjectOwnerInvitationsList';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -33,19 +32,14 @@ export const UsersSecurityWindow: React.FC<UsersSecurityWindowProps> = ({ open, 
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
           <Tabs defaultValue="roles" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
               <TabsTrigger value="roles" className="text-xs md:text-sm">User Roles</TabsTrigger>
-              <TabsTrigger value="invitations" className="text-xs md:text-sm">Invitations</TabsTrigger>
               <TabsTrigger value="agreements" className="text-xs md:text-sm">Agreements</TabsTrigger>
               <TabsTrigger value="security" className="text-xs md:text-sm">Security</TabsTrigger>
             </TabsList>
             
             <TabsContent value="roles" className="mt-4">
               <UserRoleManager />
-            </TabsContent>
-
-            <TabsContent value="invitations" className="mt-4">
-              <ProjectOwnerInvitationsList />
             </TabsContent>
             
             <TabsContent value="agreements" className="mt-4 space-y-8">

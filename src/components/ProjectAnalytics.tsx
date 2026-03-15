@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,11 +10,67 @@ import { generateDemoData, calculateRealAnalytics, exportAnalyticsData, Analytic
 import { AdminPhotoAggregation } from './AdminPhotoAggregation';
 import { DateRange } from 'react-day-picker';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useProjectOwner } from '@/hooks/useProjectOwner';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const ProjectAnalytics: React.FC = () => {
   const { projects, projectRuns } = useProject();
   const { isAdmin } = useUserRole();
-  
+  const { hasProjectOwnerRole } = useProjectOwner();
+  const { user } = useAuth();
+  const [ownedParentIds, setOwnedParentIds] = useState<Set<string> | null>(null);
+  const [ownedAllProjectIds, setOwnedAllProjectIds] = useState<Set<string> | null>(null);
+
+  useEffect(() => {
+    if (!user || !hasProjectOwnerRole || isAdmin) {
+      setOwnedParentIds(null);
+      setOwnedAllProjectIds(null);
+      return;
+    }
+    (async () => {
+      const { data: ownerRows } = await supabase
+        .from('project_owners')
+        .select('project_id')
+        .eq('user_id', user.id);
+      const ids = (ownerRows ?? []).map((r: { project_id: string }) => r.project_id);
+      if (ids.length === 0) {
+        setOwnedParentIds(new Set());
+        setOwnedAllProjectIds(new Set());
+        return;
+      }
+      const { data: projectRows } = await supabase
+        .from('projects')
+        .select('id, parent_project_id')
+        .or(`id.in.(${ids.join(',')}),parent_project_id.in.(${ids.join(',')})`);
+      const parentIds = new Set<string>();
+      const allIds = new Set<string>();
+      for (const p of projectRows ?? []) {
+        const row = p as { id: string; parent_project_id: string | null };
+        allIds.add(row.id);
+        const parentId = row.parent_project_id ?? row.id;
+        parentIds.add(parentId);
+        allIds.add(parentId);
+      }
+      setOwnedParentIds(parentIds);
+      setOwnedAllProjectIds(allIds);
+    })();
+  }, [user?.id, hasProjectOwnerRole, isAdmin]);
+
+  const projectsFiltered = useMemo(() => {
+    if (!hasProjectOwnerRole || isAdmin) return projects;
+    if (ownedParentIds === null) return [];
+    if (ownedParentIds.size === 0) return [];
+    return projects.filter(p => ownedParentIds.has(p.id));
+  }, [projects, ownedParentIds, hasProjectOwnerRole, isAdmin]);
+
+  const projectRunsFiltered = useMemo(() => {
+    if (!hasProjectOwnerRole || isAdmin) return projectRuns;
+    if (ownedAllProjectIds === null) return [];
+    if (ownedAllProjectIds.size === 0) return [];
+    return projectRuns.filter(r => ownedAllProjectIds.has(r.templateId));
+  }, [projectRuns, ownedAllProjectIds, hasProjectOwnerRole, isAdmin]);
+
   // Filter states
   const [selectedProject, setSelectedProject] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -29,14 +85,14 @@ const ProjectAnalytics: React.FC = () => {
       setAnalyticsData(generateDemoData());
     } else {
       const realData = calculateRealAnalytics(
-        projectRuns,
+        projectRunsFiltered,
         selectedProject,
         selectedCategory,
         dateRange
       );
       setAnalyticsData(realData);
     }
-  }, [projectRuns, selectedProject, selectedCategory, dateRange, demoMode]);
+  }, [projectRunsFiltered, selectedProject, selectedCategory, dateRange, demoMode]);
 
   const handleExport = () => {
     if (analyticsData) {
@@ -63,7 +119,7 @@ const ProjectAnalytics: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {isAdmin && (
+      {(isAdmin || hasProjectOwnerRole) && (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="analytics" className="gap-2">
@@ -88,7 +144,7 @@ const ProjectAnalytics: React.FC = () => {
               demoMode={demoMode}
               onDemoModeToggle={() => setDemoMode(!demoMode)}
               onExport={handleExport}
-              projects={projects}
+              projects={projectsFiltered}
             />
             {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -373,9 +429,8 @@ const ProjectAnalytics: React.FC = () => {
         </Tabs>
       )}
 
-      {!isAdmin && (
+      {!isAdmin && !hasProjectOwnerRole && (
         <>
-          {/* Analytics Filters - for non-admin users */}
           <AnalyticsFilters
             selectedProject={selectedProject}
             onProjectChange={setSelectedProject}
@@ -386,9 +441,8 @@ const ProjectAnalytics: React.FC = () => {
             demoMode={demoMode}
             onDemoModeToggle={() => setDemoMode(!demoMode)}
             onExport={handleExport}
-            projects={projects}
+            projects={projectsFiltered}
           />
-          {/* Non-admin users see the standard analytics view without photo tab */}
         </>
       )}
     </div>

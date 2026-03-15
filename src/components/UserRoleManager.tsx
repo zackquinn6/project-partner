@@ -57,6 +57,9 @@ export const UserRoleManager: React.FC = () => {
   const [draftOwnerProjectIds, setDraftOwnerProjectIds] = useState<Record<string, string[]>>({});
   const [sendInviteForUserId, setSendInviteForUserId] = useState<string | null>(null);
   const [sendInviteEmail, setSendInviteEmail] = useState('');
+  const [sendInviteProjectIds, setSendInviteProjectIds] = useState<string[]>([]);
+  const [sendInviteProjectSearch, setSendInviteProjectSearch] = useState('');
+  const [sendingInvites, setSendingInvites] = useState(false);
 
   const loadUsers = async () => {
     try {
@@ -201,23 +204,74 @@ export const UserRoleManager: React.FC = () => {
   };
 
   const openSendInvite = (userId: string) => {
+    const profile = users.find(u => u.user_id === userId);
     setSendInviteForUserId(userId);
-    setSendInviteEmail('');
+    setSendInviteEmail(profile?.email?.trim() ?? '');
+    setSendInviteProjectIds([]);
+    setSendInviteProjectSearch('');
   };
 
-  const handleSendProjectOwnerAgreementEmail = () => {
-    if (!sendInviteForUserId || !sendInviteEmail.trim()) return;
-    const name = users.find(u => u.user_id === sendInviteForUserId);
-    const display = name ? displayName(name) : 'Project Owner';
-    const agreementUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/apply-project-owner`;
-    const subject = encodeURIComponent('Project Owner Agreement – Project Partner');
-    const body = encodeURIComponent(
-      `Hi,\n\nPlease review and accept the Project Owner Agreement for Project Partner.\n\nLink: ${agreementUrl}\n\nYou must accept the agreement to access project owner features.`
+  const toggleSendInviteProject = (projectId: string, selected: boolean) => {
+    setSendInviteProjectIds(prev =>
+      selected ? [...prev, projectId] : prev.filter(id => id !== projectId)
     );
-    window.location.href = `mailto:${sendInviteEmail.trim()}?subject=${subject}&body=${body}`;
-    toast({ title: 'Opened email', description: 'Your email client opened. Send the message to deliver the agreement link.' });
-    setSendInviteForUserId(null);
-    setSendInviteEmail('');
+  };
+
+  const handleSendProjectOwnerInvites = async () => {
+    if (!user || !sendInviteForUserId || !sendInviteEmail.trim() || sendInviteProjectIds.length === 0) return;
+    setSendingInvites(true);
+    try {
+      const invitedProfile = users.find(u => u.user_id === sendInviteForUserId);
+      const email = sendInviteEmail.trim().toLowerCase();
+      const invitedUserId = invitedProfile?.user_id ?? null;
+      const created: string[] = [];
+      for (const projectId of sendInviteProjectIds) {
+        const token = crypto.randomUUID();
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7);
+        const { data: row, error } = await supabase
+          .from('project_owner_invitations')
+          .insert({
+            project_id: projectId,
+            invited_email: email,
+            invited_user_id: invitedUserId,
+            invited_by: user.id,
+            invitation_token: token,
+            status: 'pending',
+            expires_at: expiresAt.toISOString(),
+            terms_version: '1.0',
+          })
+          .select('id')
+          .single();
+        if (error) {
+          if ((error as { code?: string }).code === '23505') {
+            toast({ title: 'Already invited', description: 'One or more invitations already exist for this project and email.', variant: 'destructive' });
+          } else throw error;
+          setSendingInvites(false);
+          return;
+        }
+        if (row?.id) created.push(row.id);
+      }
+      for (const invitationId of created) {
+        await supabase.functions.invoke('send-project-owner-invite', {
+          body: { invitation_id: invitationId },
+        });
+      }
+      toast({ title: 'Invitations sent', description: `Email and in-app notification sent to ${email} for ${created.length} project(s).` });
+      setSendInviteForUserId(null);
+      setSendInviteEmail('');
+      setSendInviteProjectIds([]);
+      loadUsers();
+    } catch (err: unknown) {
+      console.error('Error sending invitations:', err);
+      toast({
+        title: 'Error sending invitations',
+        description: err instanceof Error ? err.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingInvites(false);
+    }
   };
   if (loading) {
     return <div className="flex justify-center p-8">Loading users...</div>;
@@ -228,14 +282,14 @@ export const UserRoleManager: React.FC = () => {
   return (
     <div className="space-y-6">
       <Dialog open={!!sendInviteForUserId} onOpenChange={(open) => !open && setSendInviteForUserId(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Send Project Owner Agreement</DialogTitle>
+        <DialogContent className="max-w-md max-h-[85vh] flex flex-col gap-0 p-0">
+          <DialogHeader className="px-4 pt-4 pb-2">
+            <DialogTitle>Send project owner invite</DialogTitle>
             <p className="text-sm text-muted-foreground">
-              {sendInviteProfile ? `Send the agreement link to ${displayName(sendInviteProfile)} via email.` : 'Enter the recipient email address.'}
+              {sendInviteProfile ? `Invite ${displayName(sendInviteProfile)} to become a project owner. They will receive an email and in-app notification with a link to accept the agreement.` : 'Select projects and enter email.'}
             </p>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
+          <div className="space-y-3 px-4 pb-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">Email address</label>
               <Input
@@ -243,16 +297,59 @@ export const UserRoleManager: React.FC = () => {
                 placeholder="owner@example.com"
                 value={sendInviteEmail}
                 onChange={(e) => setSendInviteEmail(e.target.value)}
+                disabled={sendingInvites}
               />
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setSendInviteForUserId(null)}>Cancel</Button>
-              <Button onClick={handleSendProjectOwnerAgreementEmail} disabled={!sendInviteEmail.trim()}>
-                <Mail className="w-4 h-4 mr-2" />
-                Open email
-              </Button>
-            </DialogFooter>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Projects</label>
+              <Input
+                type="search"
+                placeholder="Search projects..."
+                className="h-9"
+                value={sendInviteProjectSearch}
+                onChange={(e) => setSendInviteProjectSearch(e.target.value)}
+                disabled={sendingInvites}
+              />
+              <div className="border rounded-md max-h-[220px] overflow-y-auto">
+                {parentProjects
+                  .filter((proj) => {
+                    const q = sendInviteProjectSearch.trim().toLowerCase();
+                    return !q || proj.name.toLowerCase().includes(q);
+                  })
+                  .map((proj) => {
+                    const selected = sendInviteProjectIds.includes(proj.id);
+                    return (
+                      <label
+                        key={proj.id}
+                        className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => toggleSendInviteProject(proj.id, !selected)}
+                          className="h-4 w-4 shrink-0 rounded border-2 border-primary/50"
+                          disabled={sendingInvites}
+                        />
+                        <span className="truncate">{proj.name}</span>
+                      </label>
+                    );
+                  })}
+                {parentProjects.filter((p) => !sendInviteProjectSearch.trim() || p.name.toLowerCase().includes(sendInviteProjectSearch.trim().toLowerCase())).length === 0 && (
+                  <div className="py-4 text-center text-sm text-muted-foreground">No projects found.</div>
+                )}
+              </div>
+            </div>
           </div>
+          <DialogFooter className="px-4 py-3 border-t flex-shrink-0">
+            <Button variant="outline" onClick={() => setSendInviteForUserId(null)} disabled={sendingInvites}>Cancel</Button>
+            <Button
+              onClick={handleSendProjectOwnerInvites}
+              disabled={sendingInvites || !sendInviteEmail.trim() || sendInviteProjectIds.length === 0}
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              {sendingInvites ? 'Sending…' : 'Send invite'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -302,8 +399,8 @@ export const UserRoleManager: React.FC = () => {
                         </select>
                       </TableCell>
                       <TableCell>
-                        {role === 'project_owner' ? (
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {role === 'project_owner' && (
                             <Dialog
                               open={projectsDialogOpenForUserId === profile.user_id}
                               onOpenChange={(open) => open ? openProjectsDialog(profile.user_id) : setProjectsDialogOpenForUserId(null)}
@@ -313,7 +410,7 @@ export const UserRoleManager: React.FC = () => {
                                   <FolderOpen className="w-4 h-4 shrink-0" />
                                   {(ownerProjectIds[profile.user_id]?.length ?? 0) > 0
                                     ? `${ownerProjectIds[profile.user_id].length} project(s)`
-                                    : 'Select projects'}
+                                    : 'Assign projects'}
                                 </Button>
                               </DialogTrigger>
                             <DialogContent className="max-w-md max-h-[85vh] flex flex-col gap-0 p-0">
@@ -379,19 +476,17 @@ export const UserRoleManager: React.FC = () => {
                               </DialogFooter>
                             </DialogContent>
                           </Dialog>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="shrink-0"
-                              onClick={() => openSendInvite(profile.user_id)}
-                            >
-                              <Mail className="w-4 h-4 mr-1" />
-                              Send invite
-                            </Button>
-                          </div>
-                        ) : (
-                          '—'
-                        )}
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0"
+                            onClick={() => openSendInvite(profile.user_id)}
+                          >
+                            <Mail className="w-4 h-4 mr-1" />
+                            Send invite
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

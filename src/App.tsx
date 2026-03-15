@@ -19,6 +19,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import ImportTileContent from "./pages/ImportTileContent";
 import ApplyProjectOwner from "./pages/ApplyProjectOwner";
+import AcceptProjectOwnerInvite from "./pages/AcceptProjectOwnerInvite";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App: React.FC = () => {
                         <Route path="/projects" element={<ProjectCatalogPage />} />
                         <Route path="/import-tile-content" element={<ImportTileContent />} />
                         <Route path="/apply-project-owner" element={<ApplyProjectOwner />} />
+                        <Route path="/accept-project-owner" element={<AcceptProjectOwnerInvite />} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
