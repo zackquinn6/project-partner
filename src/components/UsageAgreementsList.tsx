@@ -11,7 +11,7 @@ interface UsageAgreementRow {
   created_at: string;
   agreement_type: string;
   pdf_storage_path: string | null;
-  profile_full_name: string | null;
+  full_name: string;
 }
 
 export const UsageAgreementsList: React.FC = () => {
@@ -23,7 +23,7 @@ export const UsageAgreementsList: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('usage_agreements')
-        .select('id, user_id, agreed_at, created_at, agreement_type, pdf_storage_path, user_profiles!inner(full_name)')
+        .select('id, user_id, agreed_at, created_at, agreement_type, pdf_storage_path, full_name')
         .order('agreed_at', { ascending: false });
 
       if (error) throw error;
@@ -34,7 +34,7 @@ export const UsageAgreementsList: React.FC = () => {
         created_at: row.created_at as string,
         agreement_type: (row.agreement_type as string) ?? 'liability',
         pdf_storage_path: row.pdf_storage_path ?? null,
-        profile_full_name: row.user_profiles?.full_name ?? null,
+        full_name: (row.full_name as string) ?? '',
       })) as UsageAgreementRow[];
       setList(rows);
     } catch (e) {
@@ -76,7 +76,7 @@ export const UsageAgreementsList: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-muted-foreground" />
                     <CardTitle className="text-base">
-                      {row.profile_full_name || 'Name not set'}
+                      {row.full_name || 'Name not set'}
                     </CardTitle>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
