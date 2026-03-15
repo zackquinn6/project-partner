@@ -19,7 +19,7 @@ export function PlanningGuideWindow({ open, onOpenChange, initialTab }: Planning
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-[90vw] max-h-[90vh] flex flex-col p-0 gap-0 [&>button]:hidden">
+      <DialogContent className="w-[90vw] max-w-[90vw] md:max-w-[90vw] max-h-[90vh] flex flex-col p-0 gap-0 [&>button]:hidden">
         <DialogHeader className="px-4 py-3 border-b flex-shrink-0">
           <div className="flex items-center justify-between gap-2">
             <DialogTitle className="text-lg font-bold flex items-center gap-2">
