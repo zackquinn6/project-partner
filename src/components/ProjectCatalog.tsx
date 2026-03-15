@@ -751,36 +751,38 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     setIsBetaWarningOpen(false);
 
     try {
-      // Ensure template has phases - rebuild from database if needed
+      // Ensure template has phases - use compiled workflow (standard foundation + custom phases) when missing
       let templatePhases = projectTemplate.phases || [];
-      
-      // If phases are missing or empty, rebuild from database via RPC (project_phases + phase_operations + operation_steps). No fallback — if rebuild fails or returns no phases, we throw.
+
       if (!templatePhases || !Array.isArray(templatePhases) || templatePhases.length === 0) {
-        const { data: rebuiltPhases, error: rebuildError } = await supabase.rpc(
-          'rebuild_phases_json_from_project_phases',
+        // Use get_project_workflow_with_standards so we get standard phases + custom phases (same as create_project_run_snapshot).
+        // rebuild_phases_json_from_project_phases only returns custom project_phases for this project, so templates that use
+        // only standard (foundation) phases would get 0 phases and fail.
+        const { data: workflowPhases, error: workflowError } = await (supabase.rpc as any)(
+          'get_project_workflow_with_standards',
           { p_project_id: projectTemplate.id }
         );
 
-        if (rebuildError) {
+        if (workflowError) {
           throw new Error(
-            `Failed to rebuild phases for template "${projectTemplate.name}": ${rebuildError.message}. ` +
-            'Ensure the project has phases in the database (project_phases, phase_operations, and operation_steps) or add phases in admin.'
+            `Failed to load workflow for template "${projectTemplate.name}": ${workflowError.message}. ` +
+            'Ensure the project has phases (standard foundation and/or custom) or add phases in admin.'
           );
         }
 
         let normalized: any[] = [];
-        if (rebuiltPhases != null) {
-          if (Array.isArray(rebuiltPhases)) {
-            normalized = rebuiltPhases;
-          } else if (typeof rebuiltPhases === 'string') {
+        if (workflowPhases != null) {
+          if (Array.isArray(workflowPhases)) {
+            normalized = workflowPhases;
+          } else if (typeof workflowPhases === 'string') {
             try {
-              const parsed = JSON.parse(rebuiltPhases);
+              const parsed = JSON.parse(workflowPhases);
               normalized = Array.isArray(parsed) ? parsed : [];
             } catch {
               normalized = [];
             }
-          } else if (typeof rebuiltPhases === 'object' && Array.isArray((rebuiltPhases as any).phases)) {
-            normalized = (rebuiltPhases as any).phases;
+          } else if (typeof workflowPhases === 'object' && Array.isArray((workflowPhases as any).phases)) {
+            normalized = (workflowPhases as any).phases;
           }
         }
         if (normalized.length === 0) {
