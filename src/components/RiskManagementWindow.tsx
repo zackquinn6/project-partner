@@ -100,10 +100,10 @@ export function RiskManagementWindow({
           console.log('📋 RiskManagementWindow: Detected revision, using parent project ID:', templateProjectId);
         }
         
-        console.log('📊 RiskManagementWindow: Querying project_template_risks for project:', templateProjectId);
+        console.log('📊 RiskManagementWindow: Querying project_risks for project:', templateProjectId);
         // Fetch template-level risks using the template project ID
         const { data, error } = await supabase
-          .from('project_template_risks')
+          .from('project_risks')
           .select('*')
           .eq('project_id', templateProjectId)
           .order('display_order', { ascending: true });
@@ -191,7 +191,7 @@ export function RiskManagementWindow({
         // Save template risk
         if (editingRisk) {
           const { error } = await supabase
-            .from('project_template_risks')
+            .from('project_risks')
             .update({
               risk_title: formData.risk.trim(),
               risk_description: formData.notes.trim() || null,
@@ -208,7 +208,7 @@ export function RiskManagementWindow({
           toast.success('Risk updated successfully');
         } else {
           const { data: existingRisks } = await supabase
-            .from('project_template_risks')
+            .from('project_risks')
             .select('display_order')
             .eq('project_id', projectId)
             .order('display_order', { ascending: false })
@@ -219,7 +219,7 @@ export function RiskManagementWindow({
             : 0;
 
           const { error } = await supabase
-            .from('project_template_risks')
+            .from('project_risks')
             .insert({
               project_id: projectId,
               risk_title: formData.risk.trim(),
@@ -336,7 +336,7 @@ export function RiskManagementWindow({
     try {
       if (mode === 'template' && projectId) {
         const { error } = await supabase
-          .from('project_template_risks')
+          .from('project_risks')
           .delete()
           .eq('id', risk.id);
 

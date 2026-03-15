@@ -1328,7 +1328,7 @@ export async function importGeneratedProject(
       // Fetch existing risks from relational table
       const { data: existingRisks, error: fetchError } = await supabase
         .from('project_risks')
-        .select('risk, mitigation')
+        .select('risk_title, mitigation_strategy')
         .eq('project_id', projectId);
 
       if (fetchError) {
@@ -1357,8 +1357,8 @@ export async function importGeneratedProject(
         }
         
         // Check if a similar risk already exists
-        const isDuplicate = existingRisksList.some(existingRisk => {
-          const existingRiskText = (existingRisk?.risk || '').toLowerCase().trim();
+        const isDuplicate = existingRisksList.some((existingRisk: { risk_title?: string | null }) => {
+          const existingRiskText = (existingRisk?.risk_title || '').toLowerCase().trim();
           const newRiskText = (newRisk.risk || '').toLowerCase().trim();
           
           // Simple similarity check - if risk descriptions are very similar, consider it a duplicate
@@ -1384,10 +1384,10 @@ export async function importGeneratedProject(
       if (newRisks.length > 0) {
         const risksToInsert = newRisks.map(risk => ({
           project_id: projectId,
-          risk: risk.risk,
-          likelihood: (risk.likelihood || 'medium') as any,
-          impact: (risk.impact || 'medium') as any,
-          mitigation: risk.mitigation || null,
+          risk_title: risk.risk,
+          likelihood: (risk.likelihood || 'medium') as 'low' | 'medium' | 'high',
+          impact: (risk.impact || 'medium') as string,
+          mitigation_strategy: risk.mitigation || null,
           display_order: nextDisplayOrder++,
         }));
 

@@ -2100,7 +2100,7 @@ export type Database = {
             foreignKeyName: "project_run_risks_template_risk_id_fkey"
             columns: ["template_risk_id"]
             isOneToOne: false
-            referencedRelation: "project_template_risks"
+            referencedRelation: "project_risks"
             referencedColumns: ["id"]
           },
         ]
@@ -2328,45 +2328,7 @@ export type Database = {
           },
         ]
       }
-      project_template_risk_mitigation_actions: {
-        Row: {
-          action_description: string
-          cost: number | null
-          created_at: string | null
-          display_order: number | null
-          id: string
-          template_risk_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          action_description: string
-          cost?: number | null
-          created_at?: string | null
-          display_order?: number | null
-          id?: string
-          template_risk_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          action_description?: string
-          cost?: number | null
-          created_at?: string | null
-          display_order?: number | null
-          id?: string
-          template_risk_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_template_risk_mitigation_actions_template_risk_id_fkey"
-            columns: ["template_risk_id"]
-            isOneToOne: false
-            referencedRelation: "project_template_risks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_template_risks: {
+      project_risks: {
         Row: {
           benefit: string | null
           budget_impact_high: number | null
@@ -2376,6 +2338,7 @@ export type Database = {
           id: string
           impact: string | null
           likelihood: string | null
+          mitigation_actions: Json | null
           mitigation_cost: number | null
           mitigation_strategy: string | null
           project_id: string
@@ -2395,6 +2358,7 @@ export type Database = {
           id?: string
           impact?: string | null
           likelihood?: string | null
+          mitigation_actions?: Json | null
           mitigation_cost?: number | null
           mitigation_strategy?: string | null
           project_id: string
@@ -2414,6 +2378,7 @@ export type Database = {
           id?: string
           impact?: string | null
           likelihood?: string | null
+          mitigation_actions?: Json | null
           mitigation_cost?: number | null
           mitigation_strategy?: string | null
           project_id?: string
@@ -2426,7 +2391,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "project_template_risks_project_id_fkey"
+            foreignKeyName: "project_risks_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"

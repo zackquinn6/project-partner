@@ -216,7 +216,7 @@ export function AIProjectGenerator({
           // Fetch existing risks from relational table
           const { data: existingRisksData } = await supabase
             .from('project_risks')
-            .select('risk, mitigation')
+            .select('risk_title, mitigation_strategy')
             .eq('project_id', selectedExistingProject);
 
           existingContent = {
@@ -229,9 +229,9 @@ export function AIProjectGenerator({
                 })) || []
               })) || []
             })) || [],
-            risks: existingRisksData?.map(risk => ({
-              risk: risk.risk,
-              mitigation: risk.mitigation || ''
+            risks: existingRisksData?.map((risk: { risk_title?: string; mitigation_strategy?: string | null }) => ({
+              risk: risk.risk_title ?? '',
+              mitigation: risk.mitigation_strategy ?? ''
             })) || []
           };
 
