@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown, Sparkles, Shield, Info } from 'lucide-react';
+import { GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown, Sparkles, Shield, Info, BookOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
@@ -24,6 +24,7 @@ import { ProjectImageManager } from '@/components/ProjectImageManager';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
 import { PFMEAManagement } from '@/components/PFMEAManagement';
 import { DeleteProjectDialog } from '@/components/DeleteProjectDialog';
+import { PlanningGuideWindow } from '@/components/PlanningGuideWindow';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { calculateProjectTimeEstimate, formatScalingUnit } from '@/utils/projectTimeEstimation';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -138,6 +139,7 @@ export function UnifiedProjectManagement({
     project_type: 'primary'
   });
   const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
+  const [planningGuideOpen, setPlanningGuideOpen] = useState(false);
   const [pfmeaOpen, setPfmeaOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
@@ -1624,6 +1626,10 @@ export function UnifiedProjectManagement({
                   <Lock className="w-4 h-4" />
                   Edit Standard
                 </Button>
+                <Button onClick={() => setPlanningGuideOpen(true)} variant="outline" className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Planning Guide
+                </Button>
                 <Button onClick={() => setAiProjectGeneratorOpen(true)} variant="outline" className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
                   AI Generator
@@ -2968,6 +2974,8 @@ export function UnifiedProjectManagement({
           fetchProjects();
         }}
       />
+
+      <PlanningGuideWindow open={planningGuideOpen} onOpenChange={setPlanningGuideOpen} />
 
       {/* PFMEA Dialog */}
       <Dialog open={pfmeaOpen} onOpenChange={setPfmeaOpen}>
