@@ -290,7 +290,6 @@ export default function Home({
                     <Button onClick={() => { console.log('Navigating to project catalog'); navigate('/projects'); }} variant="outline" className="w-full h-10 text-sm font-medium border-primary bg-slate-600 hover:bg-slate-500 text-slate-50">
                       <BookOpen className="w-4 h-4 mr-2" />
                       Explore New Projects
-                      <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0">Beta</Badge>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="max-w-xs text-center">

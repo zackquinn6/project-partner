@@ -321,7 +321,6 @@ export function MobileOptimizedHome() {
           >
             <BookOpen className="w-4 h-4 mr-2" />
             Explore New Projects
-            <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0">Beta</Badge>
           </Button>
           <div className="grid grid-cols-2 gap-3">
             {quickActions.map((action) => {
