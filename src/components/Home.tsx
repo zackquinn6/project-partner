@@ -27,6 +27,7 @@ import { FinalCTASection } from './landing/FinalCTASection';
 import { PreSignInNavigation } from '@/components/PreSignInNavigation';
 import { TrialBanner } from '@/components/TrialBanner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { countDueSoon } from '@/utils/maintenanceProgress';
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
 }
@@ -73,12 +74,6 @@ export default function Home({
 
   useEffect(() => {
     if (!user?.id) return;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const soonEnd = new Date(today);
-    soonEnd.setDate(soonEnd.getDate() + 30);
-    const soonEndIso = soonEnd.toISOString().slice(0, 10);
-    const todayIso = today.toISOString().slice(0, 10);
 
     (async () => {
       const { data: homeTasks, error: homeTasksError } = await supabase
@@ -105,18 +100,31 @@ export default function Home({
         activeProjectsFromTasks = projectIds.size;
       }
 
-      const { count: maintCount } = await supabase
-        .from('user_maintenance_tasks')
-        .select('id', { count: 'exact', head: true })
+      // Maintenance due soon: same definition as Home Maintenance tracker (90–99% toward due)
+      let maintenanceDueSoon = 0;
+      const { data: homes } = await supabase
+        .from('homes')
+        .select('id')
         .eq('user_id', user.id)
-        .eq('is_active', true)
-        .gte('next_due', todayIso)
-        .lte('next_due', soonEndIso);
+        .order('is_primary', { ascending: false });
+      const firstHomeId = homes?.[0]?.id;
+      if (firstHomeId) {
+        const { data: maintTasks } = await supabase
+          .from('user_maintenance_tasks')
+          .select('id, last_completed, frequency_days, progress_percentage')
+          .eq('user_id', user.id)
+          .eq('home_id', firstHomeId)
+          .eq('is_active', true);
+        if (maintTasks?.length) {
+          maintenanceDueSoon = countDueSoon(maintTasks);
+        }
+      }
+
       setStats(prev => ({
         ...prev,
         openTasks: openTasksCount,
         activeProjects: activeProjectsFromTasks,
-        maintenanceDueSoon: maintCount ?? 0
+        maintenanceDueSoon,
       }));
     })();
   }, [user?.id]);
@@ -239,7 +247,7 @@ export default function Home({
                           </span>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="max-w-xs text-[11px]">
-                          <p>Active home maintenance tasks with a due date in the next 30 days.</p>
+                          <p>Tasks at 90–99% toward due. Matches the Due Soon count in Home Maintenance.</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>

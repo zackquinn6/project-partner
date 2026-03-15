@@ -25,6 +25,7 @@ import {
   BarChart2,
 } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
+import { getTaskProgress as getTaskProgressUtil } from '@/utils/maintenanceProgress';
 
 export type SystemKey = 'hvac' | 'roof' | 'plumbing' | 'appliances' | 'safety' | 'other';
 
@@ -96,14 +97,8 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const getTaskProgress = (task: MaintenanceTaskForDashboard): number => {
-    if (task.progress_percentage != null) {
-      return Math.max(0, task.progress_percentage);
-    }
-    if (!task.last_completed) return 0;
-    const daysSince = differenceInDays(today, new Date(task.last_completed));
-    return Math.max(0, (daysSince / task.frequency_days) * 100);
-  };
+  const getTaskProgress = (task: MaintenanceTaskForDashboard): number =>
+    getTaskProgressUtil(task, today);
 
   const overdue = tasks.filter(t => getTaskProgress(t) >= 100);
   const caution = tasks.filter(t => {

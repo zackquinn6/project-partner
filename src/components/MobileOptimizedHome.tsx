@@ -12,6 +12,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useProject } from '@/contexts/ProjectContext';
 import { supabase } from '@/integrations/supabase/client';
+import { countDueSoon } from '@/utils/maintenanceProgress';
 import { 
   Home as HomeIcon, 
   User, 
@@ -51,12 +52,7 @@ export function MobileOptimizedHome() {
 
   useEffect(() => {
     if (!user?.id) return;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const soonEnd = new Date(today);
-    soonEnd.setDate(soonEnd.getDate() + 30);
-    const soonEndIso = soonEnd.toISOString().slice(0, 10);
-    const todayIso = today.toISOString().slice(0, 10);
+
     (async () => {
       const { data: homeTasks, error: homeTasksError } = await supabase
         .from('home_tasks')
@@ -82,19 +78,31 @@ export function MobileOptimizedHome() {
         activeProjectsFromTasks = projectIds.size;
       }
 
-      const { count: maintCount } = await supabase
-        .from('user_maintenance_tasks')
-        .select('id', { count: 'exact', head: true })
+      // Maintenance due soon: same definition as Home Maintenance tracker (90–99% toward due)
+      let maintenanceDueSoon = 0;
+      const { data: homes } = await supabase
+        .from('homes')
+        .select('id')
         .eq('user_id', user.id)
-        .eq('is_active', true)
-        .gte('next_due', todayIso)
-        .lte('next_due', soonEndIso);
+        .order('is_primary', { ascending: false });
+      const firstHomeId = homes?.[0]?.id;
+      if (firstHomeId) {
+        const { data: maintTasks } = await supabase
+          .from('user_maintenance_tasks')
+          .select('id, last_completed, frequency_days, progress_percentage')
+          .eq('user_id', user.id)
+          .eq('home_id', firstHomeId)
+          .eq('is_active', true);
+        if (maintTasks?.length) {
+          maintenanceDueSoon = countDueSoon(maintTasks);
+        }
+      }
 
       setStats(prev => ({
         ...prev,
         openTasks: openTasksCount,
         activeProjects: activeProjectsFromTasks,
-        maintenanceDueSoon: maintCount ?? 0
+        maintenanceDueSoon,
       }));
     })();
   }, [user?.id]);
@@ -292,7 +300,7 @@ export function MobileOptimizedHome() {
                   {stats.maintenanceDueSoon ?? 0}
                 </p>
                 <p className="hidden sm:block text-[11px] text-sky-100/70">
-                  Active maintenance tasks due in the next 30 days
+                  Matches Due Soon in Home Maintenance (90–99% toward due)
                 </p>
               </CardContent>
             </Card>
