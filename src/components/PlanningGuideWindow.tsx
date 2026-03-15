@@ -19,7 +19,7 @@ export function PlanningGuideWindow({ open, onOpenChange, initialTab }: Planning
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] max-w-[90vw] md:max-w-[90vw] max-h-[90vh] flex flex-col p-0 gap-0 [&>button]:hidden">
+      <DialogContent className="w-[90vw] max-w-[90vw] md:max-w-[90vw] h-[90vh] min-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden [&>button]:hidden">
         <DialogHeader className="px-4 py-3 border-b flex-shrink-0">
           <div className="flex items-center justify-between gap-2">
             <DialogTitle className="text-lg font-bold flex items-center gap-2">
@@ -31,14 +31,14 @@ export function PlanningGuideWindow({ open, onOpenChange, initialTab }: Planning
             </Button>
           </div>
         </DialogHeader>
-        <Tabs key={open ? defaultTab : 'closed'} defaultValue={defaultTab} className="flex-1 flex flex-col min-h-0">
+        <Tabs key={open ? defaultTab : 'closed'} defaultValue={defaultTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <TabsList className="w-full justify-start flex-shrink-0 rounded-none border-b bg-muted/30 px-4 h-11">
             <TabsTrigger value="overview" className="text-xs md:text-sm">Overview & guidelines</TabsTrigger>
             <TabsTrigger value="instructions" className="text-xs md:text-sm">Instructions</TabsTrigger>
             <TabsTrigger value="publishing-checklist" className="text-xs md:text-sm">Publishing checklist</TabsTrigger>
             <TabsTrigger value="faqs" className="text-xs md:text-sm">FAQs</TabsTrigger>
           </TabsList>
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             <TabsContent value="overview" className="mt-0 px-4 py-4 pb-8 focus-visible:outline-none">
               <div className="space-y-6 text-sm max-w-3xl">
                 <section>
