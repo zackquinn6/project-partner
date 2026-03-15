@@ -1362,8 +1362,9 @@ export type Database = {
         }
         Relationships: []
       }
-      liability_agreements: {
+      usage_agreements: {
         Row: {
+          agreement_type: string
           agreed_at: string
           created_at: string
           full_name: string
@@ -1374,6 +1375,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agreement_type?: string
           agreed_at?: string
           created_at?: string
           full_name: string
@@ -1384,6 +1386,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agreement_type?: string
           agreed_at?: string
           created_at?: string
           full_name?: string

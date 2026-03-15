@@ -235,9 +235,11 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
         pdfPath = null;
       }
 
-      const { error: insertError } = await supabase.from('liability_agreements').insert({
+      const { error: insertError } = await supabase.from('usage_agreements').insert({
         user_id: user.id,
+        full_name: trimmedName,
         agreed_at: new Date().toISOString(),
+        agreement_type: 'liability',
         pdf_storage_path: pdfPath,
       });
       if (insertError) throw insertError;

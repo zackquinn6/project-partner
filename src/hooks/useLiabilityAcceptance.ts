@@ -15,15 +15,16 @@ export function useLiabilityAcceptance() {
     }
     setLoading(true);
     const { data, error } = await supabase
-      .from('liability_agreements')
+      .from('usage_agreements')
       .select('id')
       .eq('user_id', user.id)
-      .maybeSingle();
+      .eq('agreement_type', 'liability')
+      .limit(1);
     if (error) {
       console.error('Error checking liability acceptance:', error);
       setAccepted(false);
     } else {
-      setAccepted(!!data);
+      setAccepted(!!(data && data.length > 0));
     }
     setLoading(false);
   }, [user?.id]);
