@@ -60,9 +60,9 @@ export function AchievementNotificationCenter() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { data: rows, error } = await supabase
         .from('user_achievements')
-        .select('id, achievement_id, is_read, created_at, achievement:achievements(name, description, icon)')
+        .select('id, achievement_id, is_read, created_at')
         .eq('user_id', user.id)
         .eq('type', 'unlock')
         .order('created_at', { ascending: false })
@@ -70,12 +70,29 @@ export function AchievementNotificationCenter() {
 
       if (error) throw error;
 
-      const list = (data || []).map((row: { id: string; achievement_id: string; is_read: boolean; created_at: string; achievement: { name: string; description: string; icon: string } | null }) => ({
+      if (!rows?.length) {
+        setNotifications([]);
+        setUnreadCount(0);
+        setLoading(false);
+        return;
+      }
+
+      const achievementIds = [...new Set(rows.map((r: { achievement_id: string }) => r.achievement_id))];
+      const { data: achievementsData } = await supabase
+        .from('achievements')
+        .select('id, name, description, icon')
+        .in('id', achievementIds);
+
+      const achievementMap = new Map(
+        (achievementsData || []).map((a: { id: string; name: string; description: string; icon: string | null }) => [a.id, a])
+      );
+
+      const list = rows.map((row: { id: string; achievement_id: string; is_read: boolean; created_at: string }) => ({
         id: row.id,
         achievement_id: row.achievement_id,
         is_read: row.is_read,
         created_at: row.created_at,
-        achievement: row.achievement ?? null
+        achievement: achievementMap.get(row.achievement_id) ?? null
       }));
       setNotifications(list);
       setUnreadCount(list.filter((n) => !n.is_read).length);

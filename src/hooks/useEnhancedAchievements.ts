@@ -72,13 +72,23 @@ export function useEnhancedAchievements(userId?: string) {
 
       if (achievementsError) throw achievementsError;
 
-      // Fetch user's unlocked achievements
-      const { data: unlocked, error: unlockedError } = await supabase
+      // Fetch user's unlocked achievements (no embed: avoid relying on FK in schema cache)
+      const { data: unlockedRows, error: unlockedError } = await supabase
         .from('user_achievements')
-        .select('*, achievement:achievements(*)')
+        .select('*')
         .eq('user_id', userId);
 
       if (unlockedError) throw unlockedError;
+
+      const achievementIds = [...new Set((unlockedRows || []).map((r: { achievement_id: string }) => r.achievement_id))];
+      const { data: achievementsById } = achievementIds.length
+        ? await supabase.from('achievements').select('*').in('id', achievementIds)
+        : { data: [] };
+      const achievementMap = new Map((achievementsById || []).map((a: Achievement) => [a.id, a]));
+      const unlocked = (unlockedRows || []).map((ua: Record<string, unknown>) => ({
+        ...ua,
+        achievement: achievementMap.get(ua.achievement_id as string) ?? null
+      }));
 
       // Fetch XP history (type='xp' rows in user_achievements)
       const { data: history, error: historyError } = await supabase
