@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
-type AgreementType = 'liability' | 'membership' | 'project_owner';
+type AgreementType = 'liability' | 'membership' | 'project_owner' | 'privacy';
 
 interface TemplateVersion {
   id: string;
@@ -25,6 +25,7 @@ const TYPE_LABELS: Record<AgreementType, string> = {
   liability: 'Usage Agreement',
   membership: 'Membership Agreement',
   project_owner: 'Project Owner Agreement',
+  privacy: 'Privacy Policy',
 };
 
 const PLACEHOLDER_PROJECT_OWNER_AGREEMENT = `Project Owner Agreement (Placeholder)
@@ -40,6 +41,15 @@ You agree to use project owner features in accordance with Project Partner polic
 3. Acceptance
 By accepting this agreement you confirm you have read and agree to the terms above.`.trim();
 
+const PLACEHOLDER_PRIVACY_POLICY = `Privacy Policy (Placeholder)
+
+This is placeholder content for the Project Partner Privacy Policy. You can edit this template later.
+
+- What we collect
+- How we use your data
+- How we protect your data
+- Your choices`.trim();
+
 export function AgreementTemplatesSection() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -47,6 +57,7 @@ export function AgreementTemplatesSection() {
     liability: null,
     membership: null,
     project_owner: null,
+    privacy: null,
   });
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -74,10 +85,17 @@ export function AgreementTemplatesSection() {
       .eq('type', 'project_owner')
       .order('created_at', { ascending: false })
       .limit(1);
+    const { data: privacyRows } = await supabase
+      .from('agreement_templates')
+      .select('id, type, body, created_at, updated_by')
+      .eq('type', 'privacy')
+      .order('created_at', { ascending: false })
+      .limit(1);
     const next = {
       liability: (liabilityRows && liabilityRows[0]) ? liabilityRows[0] as TemplateVersion : null,
       membership: (membershipRows && membershipRows[0]) ? membershipRows[0] as TemplateVersion : null,
       project_owner: (projectOwnerRows && projectOwnerRows[0]) ? projectOwnerRows[0] as TemplateVersion : null,
+      privacy: (privacyRows && privacyRows[0]) ? privacyRows[0] as TemplateVersion : null,
     };
     setCurrent(next);
     return next;
@@ -93,9 +111,12 @@ export function AgreementTemplatesSection() {
     return () => { cancelled = true; };
   }, [fetchCurrent]);
 
+  const placeholderFor = (type: AgreementType) =>
+    type === 'project_owner' ? PLACEHOLDER_PROJECT_OWNER_AGREEMENT : type === 'privacy' ? PLACEHOLDER_PRIVACY_POLICY : '';
+
   const openView = (type: AgreementType) => {
     const t = current[type];
-    setEditBody(t?.body ?? (type === 'project_owner' ? PLACEHOLDER_PROJECT_OWNER_AGREEMENT : ''));
+    setEditBody(t?.body ?? placeholderFor(type));
     setDialogType(type);
     setDialogMode('view');
     setDialogOpen(true);
@@ -103,7 +124,7 @@ export function AgreementTemplatesSection() {
 
   const openEdit = (type: AgreementType) => {
     const t = current[type];
-    setEditBody(t?.body ?? (type === 'project_owner' ? PLACEHOLDER_PROJECT_OWNER_AGREEMENT : ''));
+    setEditBody(t?.body ?? placeholderFor(type));
     setDialogType(type);
     setDialogMode('edit');
     setDialogOpen(true);
@@ -144,10 +165,10 @@ export function AgreementTemplatesSection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Agreement templates
+            Agreement Templates & Policies
           </CardTitle>
           <CardDescription>
-            View or edit the current usage agreement and membership agreement templates. Each save creates a new version; history is kept.
+            View or edit the current usage agreement, membership agreement, project owner agreement, and privacy policy templates. Each save creates a new version; history is kept.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -228,6 +249,29 @@ export function AgreementTemplatesSection() {
                         Open template
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => openEdit('project_owner')}>
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-primary" />
+                    {TYPE_LABELS.privacy}
+                  </TableCell>
+                  <TableCell>
+                    {current.privacy
+                      ? format(new Date(current.privacy.created_at), 'PPp')
+                      : '—'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openView('privacy')}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        Open template
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => openEdit('privacy')}>
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
                       </Button>

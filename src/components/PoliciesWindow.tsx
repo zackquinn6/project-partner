@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Shield } from 'lucide-react';
+import { FileText, Shield, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const PLACEHOLDER_PRIVACY = `
 Privacy Policy (Placeholder)
@@ -36,6 +37,42 @@ interface PoliciesWindowProps {
 
 export function PoliciesWindow({ open, onOpenChange }: PoliciesWindowProps) {
   const [tab, setTab] = useState<'privacy' | 'liability'>('privacy');
+  const [privacyBody, setPrivacyBody] = useState<string | null>(null);
+  const [liabilityBody, setLiabilityBody] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const [liabilityRes, privacyRes] = await Promise.all([
+        supabase
+          .from('agreement_templates')
+          .select('body')
+          .eq('type', 'liability')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('agreement_templates')
+          .select('body')
+          .eq('type', 'privacy')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      if (!cancelled) {
+        setLiabilityBody(liabilityRes.data?.body ?? null);
+        setPrivacyBody(privacyRes.data?.body ?? null);
+        setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
+  const displayPrivacy = privacyBody ?? PLACEHOLDER_PRIVACY;
+  const displayLiability = liabilityBody ?? PLACEHOLDER_LIABILITY;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -57,16 +94,24 @@ export function PoliciesWindow({ open, onOpenChange }: PoliciesWindowProps) {
               Usage Agreement
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="privacy" className="flex-1 min-h-0 mt-3">
-            <ScrollArea className="h-[50vh] border rounded-md p-4">
-              <pre className="whitespace-pre-wrap font-sans text-sm text-foreground">{PLACEHOLDER_PRIVACY}</pre>
-            </ScrollArea>
-          </TabsContent>
-          <TabsContent value="liability" className="flex-1 min-h-0 mt-3">
-            <ScrollArea className="h-[50vh] border rounded-md p-4">
-              <pre className="whitespace-pre-wrap font-sans text-sm text-foreground">{PLACEHOLDER_LIABILITY}</pre>
-            </ScrollArea>
-          </TabsContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              <TabsContent value="privacy" className="flex-1 min-h-0 mt-3">
+                <ScrollArea className="h-[50vh] border rounded-md p-4">
+                  <pre className="whitespace-pre-wrap font-sans text-sm text-foreground">{displayPrivacy}</pre>
+                </ScrollArea>
+              </TabsContent>
+              <TabsContent value="liability" className="flex-1 min-h-0 mt-3">
+                <ScrollArea className="h-[50vh] border rounded-md p-4">
+                  <pre className="whitespace-pre-wrap font-sans text-sm text-foreground">{displayLiability}</pre>
+                </ScrollArea>
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </DialogContent>
     </Dialog>
