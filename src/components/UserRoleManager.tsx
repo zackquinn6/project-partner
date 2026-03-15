@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -235,21 +234,19 @@ export const UserRoleManager: React.FC = () => {
                         {displayName(profile)}
                       </TableCell>
                       <TableCell>
-                        <Select
+                        <select
                           value={selectValue}
-                          onValueChange={(v) => {
-                            if (v !== selectValue) changeUserRole(profile.user_id, v);
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (ALLOWED_ROLES.includes(v as typeof ALLOWED_ROLES[number])) changeUserRole(profile.user_id, v);
                           }}
+                          aria-label={`Change role for ${displayName(profile)}`}
+                          className="flex h-8 w-[160px] rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                         >
-                          <SelectTrigger className="w-[160px] h-8" aria-label={`Change role for ${displayName(profile)}`}>
-                            <SelectValue placeholder="Change role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="user">User</SelectItem>
-                            <SelectItem value="project_owner">Project Owner</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          <option value="user">User</option>
+                          <option value="project_owner">Project Owner</option>
+                          <option value="admin">Admin</option>
+                        </select>
                       </TableCell>
                       <TableCell>
                         {role === 'project_owner' ? (
