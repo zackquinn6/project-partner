@@ -4,6 +4,12 @@
 -- Apply this if starting a published project fails with "Template has no phases".
 -- Requires: projects (is_standard_template), project_phases, template_operations, template_steps.
 
+-- Drop in reverse dependency order so we can change return types or signatures if needed
+DROP FUNCTION IF EXISTS public.create_project_run_snapshot(UUID, UUID, TEXT, UUID, TIMESTAMPTZ, TIMESTAMPTZ);
+DROP FUNCTION IF EXISTS public.get_project_workflow_with_standards(UUID);
+DROP FUNCTION IF EXISTS public.rebuild_phases_json_from_project_phases(UUID);
+DROP FUNCTION IF EXISTS public.get_operation_steps_json(UUID, BOOLEAN);
+
 -- ============================================
 -- PART 1: get_project_workflow_with_standards
 -- ============================================
