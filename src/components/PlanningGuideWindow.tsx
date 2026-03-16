@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen, ListOrdered, Wrench, Clock, GraduationCap, GitBranch, FileText, Target, ClipboardCheck } from 'lucide-react';
+import { BookOpen, ListOrdered, Wrench, Clock, GraduationCap, GitBranch, FileText, Target, ClipboardCheck, Layers } from 'lucide-react';
+import { TOOLIO_PROJECT_STRUCTURE_STANDARD } from '@/utils/projectStructureStandard';
 
-export type PlanningGuideTab = 'overview' | 'instructions' | 'publishing-checklist' | 'faqs';
+export type PlanningGuideTab = 'overview' | 'structure' | 'instructions' | 'publishing-checklist' | 'faqs';
 
 interface PlanningGuideWindowProps {
   open: boolean;
@@ -32,8 +33,12 @@ export function PlanningGuideWindow({ open, onOpenChange, initialTab }: Planning
           </div>
         </DialogHeader>
         <Tabs key={open ? defaultTab : 'closed'} defaultValue={defaultTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <TabsList className="w-full justify-start flex-shrink-0 rounded-none border-b bg-muted/30 px-4 h-11">
+          <TabsList className="w-full justify-start flex-shrink-0 rounded-none border-b bg-muted/30 px-4 h-11 space-x-1">
             <TabsTrigger value="overview" className="text-xs md:text-sm">Overview & guidelines</TabsTrigger>
+            <TabsTrigger value="structure" className="text-xs md:text-sm flex items-center gap-1">
+              <Layers className="w-3 h-3" />
+              Project structure guide
+            </TabsTrigger>
             <TabsTrigger value="instructions" className="text-xs md:text-sm">Instructions</TabsTrigger>
             <TabsTrigger value="publishing-checklist" className="text-xs md:text-sm">Publishing checklist</TabsTrigger>
             <TabsTrigger value="faqs" className="text-xs md:text-sm">FAQs</TabsTrigger>
@@ -73,6 +78,175 @@ export function PlanningGuideWindow({ open, onOpenChange, initialTab }: Planning
                   <p>
                     Project Management is where you define <strong>project templates</strong>: phases, operations, and steps. Each template can have tools, materials, time estimates, and instructions. You manage project details and use <strong>Revision Control</strong> to create new versions and publish when ready.
                   </p>
+                </section>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="structure" className="mt-0 px-4 py-4 pb-8 focus-visible:outline-none">
+              <div className="space-y-6 text-sm max-w-4xl">
+                <section>
+                  <h2 className="text-base font-semibold flex items-center gap-2 mb-2">
+                    <Layers className="w-4 h-4" />
+                    TOOLIO Project structure — quick reference standard
+                  </h2>
+                  <p className="text-muted-foreground">
+                    {TOOLIO_PROJECT_STRUCTURE_STANDARD.summary}
+                  </p>
+                </section>
+
+                <section>
+                  <h2 className="text-base font-semibold mb-2">Hierarchy</h2>
+                  <div className="rounded-md border bg-muted/40 p-3">
+                    {TOOLIO_PROJECT_STRUCTURE_STANDARD.hierarchy.map(line => (
+                      <p key={line} className="font-medium">
+                        {line}
+                      </p>
+                    ))}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Phases &amp; operations = project management. Steps = instructions. Actions = micro instructions.
+                    </p>
+                  </div>
+                </section>
+
+                <section className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-sm">1. Phase</h3>
+                    <p className="text-sm">
+                      {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.phase.description}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-semibold">Purpose:</span>{' '}
+                      {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.phase.purpose}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-semibold">Contains:</span>{' '}
+                      {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.phase.contains}
+                    </p>
+                    <div>
+                      <p className="font-semibold text-sm mb-1">Rules</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Duration: {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.phase.durationMax}</li>
+                        <li>Count: Unlimited (typical: 2–5)</li>
+                        {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.phase.mustRules.map(rule => (
+                          <li key={rule}>{rule}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.phase.examples && (
+                      <div>
+                        <p className="font-semibold text-sm mb-1">Examples</p>
+                        <ul className="list-disc pl-5 space-y-1">
+                          {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.phase.examples.map(ex => (
+                            <li key={ex}>{ex}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-sm">2. Operation</h3>
+                    <p className="text-sm">
+                      {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.operation.description}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-semibold">Purpose:</span>{' '}
+                      {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.operation.purpose}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-semibold">Contains:</span>{' '}
+                      {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.operation.contains}
+                    </p>
+                    <div>
+                      <p className="font-semibold text-sm mb-1">Rules</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Duration: up to 4 hours</li>
+                        <li>Count: Max 10 operations per phase</li>
+                        {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.operation.mustRules.map(rule => (
+                          <li key={rule}>{rule}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.operation.examples && (
+                      <div>
+                        <p className="font-semibold text-sm mb-1">Examples</p>
+                        <ul className="list-disc pl-5 space-y-1">
+                          {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.operation.examples.map(ex => (
+                            <li key={ex}>{ex}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-sm">3. Step</h3>
+                    <p className="text-sm">
+                      {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.step.description}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-semibold">Purpose:</span>{' '}
+                      {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.step.purpose}
+                    </p>
+                    <p className="text-sm">
+                      <span className="font-semibold">Contains:</span>{' '}
+                      {TOOLIO_PROJECT_STRUCTURE_STANDARD.levels.step.contains}
+                    </p>
+                    <div>
+                      <p className="font-semibold text-sm mb-1">Rules</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Standard step: 5–60 minutes</li>
+                        <li>Scaled step (repetitive/surface area): up to 1 hour</li>
+                        <li>Max 10 steps per operation</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-sm">4. Actions inside each step</h3>
+                    <p className="text-sm">Every step must include:</p>
+                    <ol className="list-decimal pl-5 space-y-1">
+                      {TOOLIO_PROJECT_STRUCTURE_STANDARD.stepRequirements.map(req => (
+                        <li key={req}>{req}</li>
+                      ))}
+                    </ol>
+                    <div>
+                      <p className="font-semibold text-sm mb-1">Action examples</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Turn wrench ¼ turn</li>
+                        <li>Feather brush outward</li>
+                        <li>Press evenly</li>
+                      </ul>
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="font-semibold text-sm mb-2">5. Time standards summary</h3>
+                  <div className="overflow-x-auto rounded-md border bg-muted/40">
+                    <table className="w-full text-xs md:text-sm">
+                      <thead>
+                        <tr className="text-left text-muted-foreground border-b">
+                          <th className="py-2 pr-4">Level</th>
+                          <th className="py-2 pr-4">Typical duration</th>
+                          <th className="py-2 pr-4">Max duration</th>
+                          <th className="py-2 pr-4">Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {TOOLIO_PROJECT_STRUCTURE_STANDARD.timeStandards.map(row => (
+                          <tr key={row.level} className="border-b last:border-0">
+                            <td className="py-2 pr-4 capitalize">{row.level}</td>
+                            <td className="py-2 pr-4">{row.typicalDuration}</td>
+                            <td className="py-2 pr-4">{row.maxDuration}</td>
+                            <td className="py-2 pr-4">{row.notes}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </section>
               </div>
             </TabsContent>
