@@ -535,8 +535,8 @@ export function UnifiedProjectManagement({
     setSelectedRevision(revision);
     setNewStatus(status);
 
-    // For revision 1, automatically set "Initial Release" and bypass dialog
-    if (revision.revision_number === 1) {
+    // For revision 0, automatically set "Initial Release" and bypass dialog
+    if (revision.revision_number === 0) {
       setReleaseNotes('Initial Release');
       // Call confirmStatusChange directly without opening dialog
       await confirmStatusChangeDirect(revision, status, 'Initial Release');
@@ -732,12 +732,63 @@ export function UnifiedProjectManagement({
 
     try {
       console.log('🚀 Updating project status...');
-      const {
-        error
-      } = await supabase.from('projects').update({
+
+      // When publishing, ensure revision_number semantics:
+      // - Initial release starts at 0
+      // - Each subsequent publish increments the highest published revision_number
+      let nextRevisionNumber: number | undefined = undefined;
+
+      if (status === 'published') {
+        const parentId = revision.parent_project_id || revision.id;
+        const {
+          data: familyProjects,
+          error: familyError
+        } = await supabase
+          .from('projects')
+          .select('id, revision_number, publish_status, parent_project_id')
+          .or(`parent_project_id.eq.${parentId},id.eq.${parentId}`);
+
+        if (familyError) {
+          console.error('❌ Error loading family projects for revision numbering:', familyError);
+          throw familyError;
+        }
+
+        const publishedProjects = (familyProjects || []).filter(
+          (p: any) => p.publish_status === 'published'
+        );
+
+        if (publishedProjects.length === 0) {
+          nextRevisionNumber = 0;
+        } else {
+          const maxPublishedRevision = Math.max(
+            ...publishedProjects.map((p: any) =>
+              p.revision_number === null || p.revision_number === undefined
+                ? 0
+                : p.revision_number
+            )
+          );
+          nextRevisionNumber = maxPublishedRevision + 1;
+        }
+
+        console.log('🔢 Computed next revision_number for publish:', {
+          parentId,
+          nextRevisionNumber,
+          publishedCount: publishedProjects.length
+        });
+      }
+
+      const updatePayload: any = {
         publish_status: status,
         revision_notes: notes
-      }).eq('id', revision.id);
+      };
+
+      if (nextRevisionNumber !== undefined) {
+        updatePayload.revision_number = nextRevisionNumber;
+      }
+
+      const {
+        error
+      } = await supabase.from('projects').update(updatePayload).eq('id', revision.id);
       if (error) {
         console.error('❌ Supabase error:', error);
         throw error;
@@ -790,17 +841,13 @@ export function UnifiedProjectManagement({
           : []);
     
     const maxRevisionNumber = allRevisions.length > 0
-      ? Math.max(...allRevisions.map(r => r.revision_number || 0))
+      ? Math.max(...allRevisions.map(r => (r.revision_number ?? 0)))
       : 0;
     const nextRevisionNumber = maxRevisionNumber + 1;
 
     // Revision notes are optional for draft creation - only required on release
-    // For revision 1, automatically use "Initial Release" if notes are empty (for consistency)
-    let notesToUse = revisionNotes.trim();
-    if (nextRevisionNumber === 1 && !notesToUse) {
-      notesToUse = 'Initial Release';
-      setRevisionNotes('Initial Release');
-    }
+    // Notes for initial release are handled at publish time, not here
+    const notesToUse = revisionNotes.trim();
 
     const loadingToast = toast.loading("Creating revision...");
     try {
@@ -1287,12 +1334,12 @@ export function UnifiedProjectManagement({
       }
       
       // Now do the full update (parent is gone, so no name conflict)
-      // Update the latest revision to be revision 1, draft, with no parent
+      // Update the latest revision to be revision 0, draft, with no parent
       // BUT preserve all project information including name (no "(draft)" or revision_number suffix)
       // IMPORTANT: Do NOT create new phases - keep existing phases/structure
-      console.log('🔄 Step 3: Updating latest revision to revision 1, preserving project info and phases:', latestRevision.id);
+      console.log('🔄 Step 3: Updating latest revision to revision 0, preserving project info and phases:', latestRevision.id);
       const updateData: any = {
-        revision_number: 1,
+        revision_number: 0,
         parent_project_id: null,
         publish_status: 'draft',
         revision_notes: null,
@@ -2383,19 +2430,13 @@ export function UnifiedProjectManagement({
                                 : []);
                           
                           const maxRevisionNumber = allRevisions.length > 0
-                            ? Math.max(...allRevisions.map(r => r.revision_number || 0))
+                            ? Math.max(...allRevisions.map(r => (r.revision_number ?? 0)))
                             : 0;
                           const nextRevisionNumber = maxRevisionNumber + 1;
 
-                          // If this will be revision 1, automatically create with "Initial Release"
-                          if (nextRevisionNumber === 1) {
-                            setRevisionNotes('Initial Release');
-                            await createNewRevision();
-                          } else {
-                            // For revision 2+, show dialog and require notes
-                            setRevisionNotes('');
-                            setCreateRevisionDialogOpen(true);
-                          }
+                          // Always show dialog for new revisions; revision numbering is handled on publish
+                          setRevisionNotes('');
+                          setCreateRevisionDialogOpen(true);
                         }} variant="outline" className="flex items-center gap-2">
                               <GitBranch className="w-4 h-4" />
                               Create Revision
