@@ -46,7 +46,7 @@ export function ManualProjectEditDialog({ open, onOpenChange, projectRun, onProj
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    category: '',
+    category: [] as string[],
     status: 'complete',
     progress: 100,
     estimatedTime: '',
@@ -67,7 +67,9 @@ export function ManualProjectEditDialog({ open, onOpenChange, projectRun, onProj
       setFormData({
         name: projectRun.customProjectName || projectRun.name || '',
         description: projectRun.description || '',
-        category: Array.isArray(projectRun.category) ? projectRun.category.join(', ') : (projectRun.category || ''),
+        category: Array.isArray(projectRun.category)
+          ? projectRun.category
+          : (projectRun.category ? String(projectRun.category).split(',').map(c => c.trim()).filter(Boolean) : []),
         status: projectRun.status || 'complete',
         progress: projectRun.progress || 100,
         estimatedTime: projectRun.estimatedTime || '',
@@ -79,7 +81,7 @@ export function ManualProjectEditDialog({ open, onOpenChange, projectRun, onProj
     }
   }, [projectRun, open]);
 
-  const handleInputChange = (field: string, value: string | number) => {
+  const handleInputChange = (field: string, value: string | number | string[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -96,7 +98,7 @@ export function ManualProjectEditDialog({ open, onOpenChange, projectRun, onProj
         name: formData.name,
         description: formData.description || null,
         custom_project_name: formData.name,
-        category: formData.category || null,
+        category: formData.category.length > 0 ? formData.category.join(', ') : null,
         status: formData.status,
         progress: formData.progress,
         estimated_time: formData.estimatedTime || null,
@@ -183,19 +185,35 @@ export function ManualProjectEditDialog({ open, onOpenChange, projectRun, onProj
             </div>
 
             <div>
-              <Label htmlFor="category">Category</Label>
-              <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border shadow-md z-50">
-                  {categoryOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
+              <Label htmlFor="category">Category (multi-select)</Label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {categoryOptions.map((option) => {
+                  const selected = formData.category.includes(option.value);
+                  return (
+                    <Button
+                      key={option.value}
+                      type="button"
+                      variant={selected ? 'default' : 'outline'}
+                      size="xs"
+                      className="text-[11px] px-2 py-1 h-7"
+                      onClick={() => {
+                        setFormData(prev => {
+                          const current = prev.category;
+                          const exists = current.includes(option.value);
+                          return {
+                            ...prev,
+                            category: exists
+                              ? current.filter(v => v !== option.value)
+                              : [...current, option.value]
+                          };
+                        });
+                      }}
+                    >
                       {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

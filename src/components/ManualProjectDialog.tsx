@@ -51,7 +51,7 @@ export function ManualProjectDialog({ open, onOpenChange, onProjectCreated }: Ma
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    category: '',
+    category: [] as string[],
     status: 'complete',
     progress: 100,
     estimatedTime: '',
@@ -61,7 +61,7 @@ export function ManualProjectDialog({ open, onOpenChange, onProjectCreated }: Ma
     notes: ''
   });
 
-  const handleInputChange = (field: string, value: string | number) => {
+  const handleInputChange = (field: string, value: string | number | string[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -103,7 +103,7 @@ export function ManualProjectDialog({ open, onOpenChange, onProjectCreated }: Ma
         template_id: null, // Manual projects don't need a template
         name: formData.name,
         description: formData.description || null,
-        category: formData.category || null,
+        category: formData.category.length > 0 ? formData.category.join(', ') : null,
         status: validatedStatus,
         progress: progress,
         estimated_time: formData.estimatedTime || null,
@@ -130,7 +130,7 @@ export function ManualProjectDialog({ open, onOpenChange, onProjectCreated }: Ma
       setFormData({
         name: '',
         description: '',
-        category: '',
+        category: [],
         status: 'complete',
         progress: 100,
         estimatedTime: '',
@@ -212,19 +212,35 @@ export function ManualProjectDialog({ open, onOpenChange, onProjectCreated }: Ma
             </div>
 
             <div>
-              <Label htmlFor="category">Category</Label>
-              <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categoryOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
+              <Label htmlFor="category">Category (multi-select)</Label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {categoryOptions.map((option) => {
+                  const selected = formData.category.includes(option.value);
+                  return (
+                    <Button
+                      key={option.value}
+                      type="button"
+                      variant={selected ? 'default' : 'outline'}
+                      size="xs"
+                      className="text-[11px] px-2 py-1 h-7"
+                      onClick={() => {
+                        setFormData(prev => {
+                          const current = prev.category;
+                          const exists = current.includes(option.value);
+                          return {
+                            ...prev,
+                            category: exists
+                              ? current.filter(v => v !== option.value)
+                              : [...current, option.value]
+                          };
+                        });
+                      }}
+                    >
                       {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

@@ -131,7 +131,6 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
             <div>
               <CardTitle className="text-xl flex items-center gap-2">
                 Project Dashboard
-                <Badge variant="secondary" className="text-xs">Beta</Badge>
               </CardTitle>
               <CardDescription className="text-sm">
                 View and manage your project portfolio
