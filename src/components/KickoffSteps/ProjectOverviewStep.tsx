@@ -221,17 +221,34 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           ))}
         </div>
         
-        {/* Arrow indicator - positioned below with "This project" text */}
+        {/* Arrow indicators for project and user levels */}
         {hasValue && (
-          <div
-            className="absolute top-full left-0 flex flex-col items-center justify-center transition-all duration-200 z-10 mt-1"
-            style={{
-              left: `${getArrowPosition(position)}%`,
-              transform: 'translateX(-50%)'
-            }}
-          >
-            <ArrowUp className="w-3.5 h-3.5 text-foreground drop-shadow-sm" />
-            <span className="text-[9px] text-muted-foreground whitespace-nowrap mt-0.5">This project</span>
+          <div>
+            {/* This project arrow (below scale) */}
+            <div
+              className="absolute top-full left-0 flex flex-col items-center justify-center transition-all duration-200 z-10 mt-1"
+              style={{
+                left: `${getArrowPosition(position)}%`,
+                transform: 'translateX(-50%)'
+              }}
+            >
+              <ArrowUp className="w-3.5 h-3.5 text-foreground drop-shadow-sm" />
+              <span className="text-[9px] text-muted-foreground whitespace-nowrap mt-0.5">This project</span>
+            </div>
+
+            {/* Your level arrow (above scale, when userLevel is known) */}
+            {userLevel && (
+              <div
+                className="absolute bottom-full left-0 flex flex-col items-center justify-center transition-all duration-200 z-10 mb-1"
+                style={{
+                  left: `${getArrowPosition(levels.indexOf((userLevel || '').charAt(0).toUpperCase() + (userLevel || '').slice(1).toLowerCase()))}%`,
+                  transform: 'translateX(-50%)'
+                }}
+              >
+                <ArrowDown className="w-3.5 h-3.5 text-foreground drop-shadow-sm" />
+                <span className="text-[9px] text-muted-foreground whitespace-nowrap mt-0.5">Your level</span>
+              </div>
+            )}
           </div>
         )}
         
@@ -433,14 +450,14 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               <div className="flex items-center justify-between gap-2 mb-0.5">
                 <div className="flex items-center gap-1">
                   <Label className="text-xs">Project Challenges</Label>
-                  <TooltipProvider delayDuration={200}>
+                  <TooltipProvider delayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button type="button" className="p-0 border-0 bg-transparent cursor-help hover:opacity-70 transition-opacity focus:outline-none" aria-label="What are project challenges?">
                           <HelpCircle className="w-4 h-4 text-muted-foreground" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent className="max-w-xs z-50">
+                      <TooltipContent className="max-w-xs z-50" side="top">
                         <p className="text-sm">Known difficulties or risks for this project — for example, access, materials, or skill demands. Use these to plan ahead.</p>
                       </TooltipContent>
                     </Tooltip>
@@ -477,14 +494,14 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               <div>
                 <div className="flex items-center gap-1 mb-0">
                   <Label className="text-xs">Project Skill Level</Label>
-                  <TooltipProvider delayDuration={100}>
+                  <TooltipProvider delayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button type="button" className="p-0 border-0 bg-transparent cursor-help hover:opacity-70 transition-opacity focus:outline-none">
                           <HelpCircle className="w-4 h-4 text-muted-foreground" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent className="max-w-sm z-50">
+                      <TooltipContent className="max-w-sm z-50" side="top">
                         <p className="text-sm">
                           <strong>Skill level</strong> — technical expertise required:
                         </p>
@@ -541,14 +558,14 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               <div>
                 <div className="flex items-center gap-1 mb-0">
                   <Label className="text-xs">Project Effort Level</Label>
-                  <TooltipProvider delayDuration={100}>
+                  <TooltipProvider delayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button type="button" className="p-0 border-0 bg-transparent cursor-help hover:opacity-70 transition-opacity focus:outline-none">
                           <HelpCircle className="w-4 h-4 text-muted-foreground" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent className="max-w-sm z-50">
+                      <TooltipContent className="max-w-sm z-50" side="top">
                         <p className="text-sm">
                           <strong>Effort level</strong> — physical intensity and duration:
                         </p>
