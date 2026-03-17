@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Save, X, AlertTriangle, Shield } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Plus, Edit, Trash2, Save, X, AlertTriangle, Shield, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -26,8 +27,9 @@ interface Risk {
   budget_impact_dollars: number | null; // Maps to budget_impact_low or budget_impact_high
   budget_impact_low?: number | null; // Database field
   budget_impact_high?: number | null; // Database field
-  mitigation: string | null; // Maps to mitigation_strategy in DB
+  mitigation: string | null; // Legacy text field
   mitigation_strategy?: string | null; // Database field
+  mitigation_actions?: { action: string; benefit?: string | null }[] | null;
   notes?: string | null;
   status?: 'open' | 'mitigated' | 'closed' | 'monitoring';
   is_template_risk?: boolean;
@@ -66,6 +68,7 @@ export function RiskManagementWindow({
     schedule_impact_days: 0,
     budget_impact_dollars: 0,
     mitigation: '',
+    mitigation_actions: [] as { action: string; benefit?: string | null }[],
     notes: '',
     status: 'open' as 'open' | 'mitigated' | 'closed' | 'monitoring'
   });
@@ -125,6 +128,7 @@ export function RiskManagementWindow({
           budget_impact_high: risk.budget_impact_high,
           mitigation: risk.mitigation_strategy || null,
           mitigation_strategy: risk.mitigation_strategy,
+          mitigation_actions: Array.isArray(risk.mitigation_actions) ? risk.mitigation_actions : [],
           notes: risk.risk_description || null,
           status: 'open' as const,
           display_order: risk.display_order,
@@ -157,6 +161,7 @@ export function RiskManagementWindow({
           budget_impact_high: risk.budget_impact_high,
           mitigation: risk.mitigation_strategy || null,
           mitigation_strategy: risk.mitigation_strategy,
+          mitigation_actions: Array.isArray(risk.mitigation_actions) ? risk.mitigation_actions : [],
           notes: risk.risk_description || null,
           status: risk.status || 'open',
           is_template_risk: !!risk.template_risk_id,
@@ -205,7 +210,10 @@ export function RiskManagementWindow({
               schedule_impact_high_days: formData.schedule_impact_days || null,
               budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
               budget_impact_high: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
-              mitigation_strategy: formData.mitigation.trim() || null
+              mitigation_strategy: formData.mitigation.trim() || null,
+              mitigation_actions: formData.mitigation_actions && formData.mitigation_actions.length > 0
+                ? formData.mitigation_actions
+                : null
             })
             .eq('id', editingRisk.id);
 
@@ -235,6 +243,9 @@ export function RiskManagementWindow({
               budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
               budget_impact_high: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
               mitigation_strategy: formData.mitigation.trim() || null,
+              mitigation_actions: formData.mitigation_actions && formData.mitigation_actions.length > 0
+                ? formData.mitigation_actions
+                : null,
               display_order: nextOrder
             });
 
@@ -255,6 +266,9 @@ export function RiskManagementWindow({
               budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
               budget_impact_high: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
               mitigation_strategy: formData.mitigation.trim() || null,
+              mitigation_actions: formData.mitigation_actions && formData.mitigation_actions.length > 0
+                ? formData.mitigation_actions
+                : null,
               status: formData.status
             })
             .eq('id', editingRisk.id);
@@ -285,6 +299,9 @@ export function RiskManagementWindow({
               budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
               budget_impact_high: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
               mitigation_strategy: formData.mitigation.trim() || null,
+              mitigation_actions: formData.mitigation_actions && formData.mitigation_actions.length > 0
+                ? formData.mitigation_actions
+                : null,
               status: formData.status,
               display_order: nextOrder
             });
@@ -418,10 +435,24 @@ export function RiskManagementWindow({
               <DialogTitle className="text-lg md:text-xl font-bold flex items-center gap-2">
                 <Shield className="w-5 h-5" />
                 Risk Management
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="ml-1 inline-flex items-center justify-center rounded-full border border-muted-foreground/20 bg-background/80 p-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+                      >
+                        <Info className="w-3 h-3" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-sm text-xs">
+                      A risk is simply something uncertain. Construction projects often go off-schedule
+                      due to uncertainty at the start. Projects come pre-loaded with risks and potential
+                      impact, and you can add your own when you see additional concerns.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </DialogTitle>
-              <p className="text-xs text-muted-foreground mt-1 pr-4">
-                A risk is simply something uncertain. Construction projects often go off-schedule - usually due to uncertainty at the start. Projects come pre-loaded with risks and their potential impact. Plus, if you know of potential concerns that aren't listed - you can add your own.
-              </p>
             </div>
             <Button 
               variant="ghost" 
@@ -454,6 +485,7 @@ export function RiskManagementWindow({
                         schedule_impact_days: 0,
                         budget_impact_dollars: 0,
                         mitigation: '',
+                        mitigation_actions: [],
                         notes: '',
                         status: 'open'
                       });
@@ -553,7 +585,22 @@ export function RiskManagementWindow({
                               )}
                             </div>
                           )}
-                          {risk.mitigation && (
+                          {(risk.mitigation_actions && risk.mitigation_actions.length > 0) && (
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Mitigation</div>
+                              <ul className="text-sm list-disc list-inside space-y-1">
+                                {risk.mitigation_actions.map((ma, idx) => (
+                                  <li key={idx}>
+                                    <span className="font-medium">{ma.action}</span>
+                                    {ma.benefit && (
+                                      <span className="text-muted-foreground"> – {ma.benefit}</span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {!risk.mitigation_actions?.length && risk.mitigation && (
                             <div>
                               <div className="text-xs text-muted-foreground mb-1">Mitigation</div>
                               <p className="text-sm">{risk.mitigation}</p>
@@ -603,7 +650,20 @@ export function RiskManagementWindow({
                               {risk.budget_impact_dollars ? `$${risk.budget_impact_dollars.toLocaleString()}` : '-'}
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
-                              {risk.mitigation || '-'}
+                              {risk.mitigation_actions && risk.mitigation_actions.length > 0 ? (
+                                <div className="space-y-1">
+                                  {risk.mitigation_actions.map((ma, idx) => (
+                                    <div key={idx} className="flex flex-col">
+                                      <span className="font-medium">{ma.action}</span>
+                                      {ma.benefit && (
+                                        <span className="text-xs text-muted-foreground">{ma.benefit}</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                risk.mitigation || '-'
+                              )}
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground break-words max-w-[200px]">
                               {risk.notes || '-'}
@@ -749,15 +809,74 @@ export function RiskManagementWindow({
                 </div>
               </div>
 
-              <div>
+              <div className="space-y-3">
                 <Label htmlFor="mitigation">Mitigation Strategy</Label>
                 <Textarea
                   id="mitigation"
                   value={formData.mitigation}
                   onChange={(e) => setFormData({ ...formData, mitigation: e.target.value })}
-                  placeholder="Describe how to mitigate this risk..."
-                  rows={3}
+                  placeholder="High-level mitigation approach for this risk..."
+                  rows={2}
                 />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      Mitigation actions (each with an optional benefit)
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="xs"
+                      onClick={() =>
+                        setFormData(prev => ({
+                          ...prev,
+                          mitigation_actions: [
+                            ...(prev.mitigation_actions || []),
+                            { action: '', benefit: '' }
+                          ]
+                        }))
+                      }
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add action
+                    </Button>
+                  </div>
+                  {(formData.mitigation_actions || []).map((ma, idx) => (
+                    <div key={idx} className="grid grid-cols-1 md:grid-cols-[2fr,2fr,auto] gap-2 items-start">
+                      <Input
+                        placeholder="Mitigation action"
+                        value={ma.action}
+                        onChange={(e) => {
+                          const next = [...(formData.mitigation_actions || [])];
+                          next[idx] = { ...next[idx], action: e.target.value };
+                          setFormData(prev => ({ ...prev, mitigation_actions: next }));
+                        }}
+                      />
+                      <Input
+                        placeholder="Benefit (e.g., reduces delay, lowers cost)"
+                        value={ma.benefit || ''}
+                        onChange={(e) => {
+                          const next = [...(formData.mitigation_actions || [])];
+                          next[idx] = { ...next[idx], benefit: e.target.value || null };
+                          setFormData(prev => ({ ...prev, mitigation_actions: next }));
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="self-center text-destructive hover:text-destructive"
+                        onClick={() => {
+                          const next = [...(formData.mitigation_actions || [])];
+                          next.splice(idx, 1);
+                          setFormData(prev => ({ ...prev, mitigation_actions: next }));
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div>
@@ -801,6 +920,7 @@ export function RiskManagementWindow({
                     schedule_impact_days: 0,
                     budget_impact_dollars: 0,
                     mitigation: '',
+                    mitigation_actions: [],
                     notes: '',
                     status: 'open'
                   });
