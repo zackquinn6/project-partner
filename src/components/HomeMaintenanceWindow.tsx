@@ -191,7 +191,6 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           />
         </div>
         <div>
-        <div>
           <Label htmlFor="edit-instructions">Instructions</Label>
           <Textarea
             id="edit-instructions"
