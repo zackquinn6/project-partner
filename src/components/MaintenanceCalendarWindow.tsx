@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarDays, Pencil } from 'lucide-react';
+import { CalendarDays, Pencil, X } from 'lucide-react';
 import { addDays, format, isAfter, isBefore, startOfDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -163,11 +163,23 @@ export function MaintenanceCalendarWindow({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[96vw] max-w-[96vw] h-[88vh] max-h-[88vh] overflow-hidden flex flex-col p-0 sm:w-[90vw] sm:max-w-[90vw] sm:h-[80vh] sm:max-h-[80vh]">
+        <DialogContent className="w-[96vw] !max-w-[96vw] h-[88vh] max-h-[88vh] overflow-hidden flex flex-col p-0 sm:w-[90vw] sm:!max-w-[90vw] sm:h-[80vh] sm:max-h-[80vh]">
           <DialogHeader className="px-4 md:px-6 py-4 border-b">
-            <DialogTitle className="flex items-center gap-2">
-              <CalendarDays className="h-5 w-5 text-primary" />
-              Maintenance Calendar
+            <DialogTitle className="flex items-center justify-between gap-3">
+              <span className="flex items-center gap-2 min-w-0">
+                <CalendarDays className="h-5 w-5 text-primary shrink-0" />
+                <span className="truncate">Maintenance Calendar</span>
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                onClick={() => onOpenChange(false)}
+                title="Close"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </DialogTitle>
           </DialogHeader>
 
