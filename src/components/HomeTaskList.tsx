@@ -629,8 +629,8 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                             {completedTasks.length}
                           </span>
                         </div>
-                        <div className="hidden md:grid gap-3 items-stretch" style={{ gridTemplateColumns: '0.2fr 0.2fr 2.6fr' }}>
-                          <Card className="min-w-0 border-border/60 shadow-sm">
+                        <div className="hidden md:grid gap-2 items-stretch" style={{ gridTemplateColumns: 'auto auto minmax(0,1fr)' }}>
+                          <Card className="min-w-[140px] border-border/60 shadow-sm">
                             <CardContent className="p-2 py-1.5">
                               <div className="flex items-center justify-between gap-2">
                                 <span className="text-xs text-muted-foreground">Total open</span>
@@ -638,7 +638,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                               </div>
                             </CardContent>
                           </Card>
-                          <Card className="min-w-0 border-border/60 shadow-sm">
+                          <Card className="min-w-[160px] border-border/60 shadow-sm">
                             <CardContent className="p-2 py-1.5">
                               <div className="flex items-center justify-between gap-2">
                                 <span className="text-xs text-muted-foreground">Total Completed</span>

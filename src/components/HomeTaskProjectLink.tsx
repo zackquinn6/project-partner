@@ -267,16 +267,6 @@ export function HomeTaskProjectLink({
                             </CardDescription>
                           )}
                           <div className="flex gap-1 mt-2 flex-wrap">
-                            {template.category && (
-                              <Badge variant="secondary" className="text-[10px]">
-                                {template.category}
-                              </Badge>
-                            )}
-                            {template.difficulty_level && (
-                              <Badge variant="outline" className="text-[10px]">
-                                {template.difficulty_level}
-                              </Badge>
-                            )}
                             {template.estimated_time && (
                               <Badge variant="outline" className="text-[10px]">
                                 {template.estimated_time}
