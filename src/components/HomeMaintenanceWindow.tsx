@@ -62,6 +62,7 @@ interface MaintenanceTask {
   criticality?: number | null;
   repair_cost_savings?: string | null;
   progress_percentage?: number | null;
+  is_custom?: boolean | null;
 }
 interface MaintenanceCompletion {
   id: string;
@@ -528,16 +529,23 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const handleTaskComplete = (task: MaintenanceTask) => {
     setSelectedTask(task);
   };
-  const handleTaskCompleted = () => {
+  const handleTaskCompleted = async () => {
     const completed = selectedTask;
     setSelectedTask(null);
+    // When TaskCompletionDialog reports completion, we expect the DB to already
+    // have a new maintenance_completions row for the chosen date. To keep
+    // behavior consistent with quick log (including "completed today" grouping),
+    // refresh tasks and completions from Supabase so the UI reflects the change.
     if (completed) {
-      const now = new Date();
-      const nextDue = addDays(now, completed.frequency_days).toISOString();
-      setTasks(prev => prev.map(t => t.id === completed.id ? { ...t, last_completed: now.toISOString(), next_due: nextDue } : t));
+      try {
+        await Promise.all([fetchTasks(), fetchCompletions()]);
+      } catch (error) {
+        console.error('Error refreshing after detailed completion:', error);
+      }
+    } else {
+      fetchTasks();
+      fetchCompletions();
     }
-    fetchTasks();
-    fetchCompletions();
   };
   const handleQuickLogComplete = async (task: MaintenanceTask) => {
     if (!user) return;
