@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarDays, Pencil } from 'lucide-react';
+import { CalendarDays, ChevronDown, Pencil } from 'lucide-react';
 import { addDays, format, getDaysInMonth, isBefore, startOfDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -282,7 +282,7 @@ export function MaintenanceCalendarWindow({
                         <span className="text-[11px] text-muted-foreground/80 tabular-nums">{year}</span>
                         {isCurrent && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground">
-                            Now
+                            Current Month <ChevronDown className="h-3 w-3 ml-1" />
                           </span>
                         )}
                       </div>
@@ -345,7 +345,7 @@ export function MaintenanceCalendarWindow({
                         <span className="text-[11px] text-muted-foreground/80 tabular-nums">{year}</span>
                         {isCurrent && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground">
-                            Now
+                            Current Month <ChevronDown className="h-3 w-3 ml-1" />
                           </span>
                         )}
                       </div>
