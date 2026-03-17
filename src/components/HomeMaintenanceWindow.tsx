@@ -858,7 +858,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             className="hidden md:inline-flex h-8 min-h-8 px-3 py-2 shrink-0 text-xs md:text-sm rounded-md gap-1.5"
                           >
                             <ClipboardList className="h-4 w-4 text-primary shrink-0" />
-                            <span>Generate Maintenance Plan</span>
+                            <span>Generate Plan</span>
                           </Button>
                           <Button
                             variant="outline"
@@ -957,7 +957,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   <Button onClick={() => setShowMaintenancePlanComingSoon(true)} className="bg-primary hover:bg-primary/90 min-h-[44px]">
                                     <ClipboardList className="h-4 w-4 mr-2" />
                                     <span className="md:hidden">Plan Generator</span>
-                                    <span className="hidden md:inline">Generate Maintenance Plan</span>
+                                    <span className="hidden md:inline">Generate Plan</span>
                                   </Button>
                                 ) : (
                                   <Button onClick={() => setShowAddTask(true)} className="bg-primary hover:bg-primary/90 min-h-[44px]">
