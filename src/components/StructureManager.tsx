@@ -118,7 +118,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   
   // Detect if editing Standard Project Foundation
   const isEditingStandardProject = Boolean(
-    currentProject?.id === '00000000-0000-0000-0000-000000000001' || 
+    currentProject?.id === 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5' || 
     currentProject?.isStandardTemplate === true
   );
   
@@ -382,7 +382,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       throw new Error('No project ID provided');
     }
     
-    const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
+    const STANDARD_PROJECT_ID = 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5';
     
     if (isEditingStandardProject) {
       // Edit Standard: Read directly from project_phases table
@@ -1429,7 +1429,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         
         // Renumber starting from maxStandardPosition + 1
         // VALIDATION: Ensure we don't conflict with standard phase positions
-        const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
+        const STANDARD_PROJECT_ID = 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5';
         const { data: standardPhasesForValidation } = await supabase
           .from('project_phases')
           .select('id, position_rule, position_value')
@@ -2583,7 +2583,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       // VALIDATION: For regular projects, ensure custom phases don't occupy standard phase positions
       if (!isEditingStandardProject) {
         // Get standard phase positions
-        const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
+        const STANDARD_PROJECT_ID = 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5';
         const { data: standardPhasesForValidation } = await supabase
           .from('project_phases')
           .select('id, position_rule, position_value')

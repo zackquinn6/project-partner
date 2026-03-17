@@ -60,7 +60,7 @@ export default function EditWorkflowView({
   
   // Detect if editing Standard Project Foundation
   // Check both the hardcoded ID and the isStandardTemplate flag
-  const isEditingStandardProject = currentProject?.isStandardTemplate || currentProject?.id === '00000000-0000-0000-0000-000000000001';
+  const isEditingStandardProject = currentProject?.isStandardTemplate || currentProject?.id === 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5';
   
   // Load phases directly from database - EXACTLY like StructureManager does
   // This ensures workflow editor and structure manager always match
