@@ -1235,11 +1235,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           standardPhases = [];
         }
 
-        const { data: customPhases } = await supabase
-          .from('project_phases')
-          .select('id, position_rule, position_value')
-          .eq('project_id', currentProject.id);
-
         allPhases = [...standardPhases, ...(customPhases || [])];
       }
 
