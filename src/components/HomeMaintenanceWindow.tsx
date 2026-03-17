@@ -26,6 +26,7 @@ import { HomeManager } from './HomeManager';
 import { MaintenancePhotosWindow } from './MaintenancePhotosWindow';
 import { MaintenancePlanWorkflow } from './MaintenancePlanWorkflow';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
+import { MaintenanceCalendarWindow, type MaintenanceTaskForCalendar } from './MaintenanceCalendarWindow';
 import {
   Tooltip,
   TooltipContent,
@@ -63,6 +64,7 @@ interface MaintenanceTask {
   repair_cost_savings?: string | null;
   progress_percentage?: number | null;
   is_custom?: boolean | null;
+  recurrence_start_date?: string | null;
 }
 interface MaintenanceCompletion {
   id: string;
@@ -388,6 +390,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const [showHomeManager, setShowHomeManager] = useState(false);
   const [showMaintenancePhotos, setShowMaintenancePhotos] = useState(false);
   const [showMaintenancePlanComingSoon, setShowMaintenancePlanComingSoon] = useState(false);
+  const [showMaintenanceCalendar, setShowMaintenanceCalendar] = useState(false);
   const [quickLoggingTaskId, setQuickLoggingTaskId] = useState<string | null>(null);
   const {
     isMobile
@@ -869,6 +872,17 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                           >
                             <ClipboardList className="h-4 w-4 text-primary shrink-0" />
                             <span>Generate Maintenance Plan</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowMaintenanceCalendar(true)}
+                            disabled={!selectedHomeId}
+                            title="Plan and level-load maintenance across the year"
+                            className="hidden md:inline-flex h-8 min-h-8 px-3 py-2 shrink-0 text-xs md:text-sm rounded-md gap-1.5"
+                          >
+                            <Calendar className="h-4 w-4 text-primary shrink-0" />
+                            <span>Calendar</span>
                           </Button>
                           {/* Mobile: single filter dropdown (same h-8 as Add Task button); wider so label fits */}
                           <DropdownMenu>
@@ -1374,6 +1388,20 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
         homeId={selectedHomeId || null}
         homeName={homes.find(h => h.id === selectedHomeId)?.name || 'Home'}
         onPlanSaved={fetchTasks}
+      />
+
+      <MaintenanceCalendarWindow
+        open={showMaintenanceCalendar}
+        onOpenChange={setShowMaintenanceCalendar}
+        tasks={(tasks as MaintenanceTaskForCalendar[])}
+        onOpenEditTask={(taskId) => {
+          const t = tasks.find(x => x.id === taskId) || null;
+          setTaskBeingEdited(t);
+        }}
+        onTasksUpdated={() => {
+          fetchTasks();
+          fetchCompletions();
+        }}
       />
 
       {selectedTask && <TaskCompletionDialog open={!!selectedTask} onOpenChange={open => !open && setSelectedTask(null)} task={selectedTask} onCompleted={handleTaskCompleted} />}
