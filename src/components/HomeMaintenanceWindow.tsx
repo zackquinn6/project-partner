@@ -25,6 +25,7 @@ import { MaintenanceDashboard, getSystemForCategory, SYSTEM_CONFIG, type SystemK
 import { HomeManager } from './HomeManager';
 import { MaintenancePhotosWindow } from './MaintenancePhotosWindow';
 import { MaintenancePlanWorkflow } from './MaintenancePlanWorkflow';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import {
   Tooltip,
   TooltipContent,
@@ -366,6 +367,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const {
     user
   } = useAuth();
+  const { toast } = useToast();
   const [homes, setHomes] = useState<Home[]>([]);
   const [tasks, setTasks] = useState<MaintenanceTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -645,6 +647,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   return <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col min-h-0 [&>button]:hidden">
+        <DialogHeader className="sr-only">
+          <VisuallyHidden.Root>
+            <DialogTitle>Home Maintenance</DialogTitle>
+          </VisuallyHidden.Root>
+        </DialogHeader>
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         {/* Header with title, tooltip, and close button */}
         <div className="px-4 md:px-6 py-2 md:py-4 border-b flex items-center justify-between flex-shrink-0">
