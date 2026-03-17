@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarDays, Pencil, X } from 'lucide-react';
+import { CalendarDays, Pencil } from 'lucide-react';
 import { addDays, format, getDaysInMonth, isBefore, startOfDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -184,12 +184,11 @@ export function MaintenanceCalendarWindow({
               <Button
                 type="button"
                 variant="outline"
-                size="icon"
+                size="sm"
                 className="shrink-0"
                 onClick={() => onOpenChange(false)}
-                title="Close"
               >
-                <X className="h-4 w-4" />
+                Close
               </Button>
             </DialogTitle>
           </DialogHeader>

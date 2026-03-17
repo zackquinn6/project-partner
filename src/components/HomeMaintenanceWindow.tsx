@@ -111,7 +111,6 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
   const [form, setForm] = useState({
     title: task.title,
     description: task.description || '',
-    summary: task.summary ?? '',
     instructions: task.instructions ?? '',
     category: task.category,
     frequency_days: task.frequency_days,
@@ -132,7 +131,6 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
         .update({
           title: form.title.trim(),
           description: form.description.trim() || null,
-          summary: form.summary.trim() || null,
           instructions: form.instructions.trim() || null,
           category: form.category,
           frequency_days: form.frequency_days,
@@ -193,18 +191,8 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           />
         </div>
         <div>
-          <Label htmlFor="edit-summary">Summary</Label>
-          <Textarea
-            id="edit-summary"
-            rows={2}
-            className="min-h-0 resize-y"
-            value={form.summary}
-            onChange={(e) => setForm(prev => ({ ...prev, summary: e.target.value }))}
-            placeholder="Short one-line overview"
-          />
-        </div>
         <div>
-          <Label htmlFor="edit-instructions">Instructions (shown when task is opened)</Label>
+          <Label htmlFor="edit-instructions">Instructions</Label>
           <Textarea
             id="edit-instructions"
             rows={2}
@@ -284,7 +272,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
               step={1}
               value={[Math.min(200, form.progress_percentage)]}
               onValueChange={([v]) => setForm(prev => ({ ...prev, progress_percentage: v }))}
-              className="flex-1"
+              className="flex-1 [&_[data-radix-slider-track]]:bg-muted/60 [&_[data-radix-slider-range]]:bg-emerald-600 [&_[data-radix-slider-thumb]]:border-emerald-600"
             />
             <Input
               type="number"
@@ -987,7 +975,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             <div className="md:hidden space-y-2">
                               {tasksNotCompletedToday.map(task => {
                                 const progress = getTaskProgress(task);
-                                const summary = task.summary ?? task.description ?? 'No summary yet.';
+                                const summary = task.description ?? 'No description yet.';
                                 return (
                                   <Card
                                     key={task.id}
@@ -1068,7 +1056,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   </p>
                                   {tasksCompletedToday.map(task => {
                                     const progress = getTaskProgress(task);
-                                    const summary = task.summary ?? task.description ?? 'No summary yet.';
+                                    const summary = task.description ?? 'No description yet.';
                                     return (
                                       <Card
                                         key={task.id}
@@ -1151,28 +1139,12 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   <tr className="border-b border-border bg-muted/40">
                                     <th className="text-left px-2 py-2 font-medium">Task</th>
                                     <th className="text-left px-2 py-2 font-medium">Frequency</th>
-                                    <th className="text-left px-2 py-2 font-medium">
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <span className="inline-flex items-center gap-1">
-                                              Summary
-                                              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                                            </span>
-                                          </TooltipTrigger>
-                                          <TooltipContent side="top" className="max-w-xs">
-                                            <p>Short overview shown here. Open a task to view full step-by-step instructions.</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    </th>
                                     <th className="text-right px-2 py-2 font-medium">Actions</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {tasksNotCompletedToday.map(task => {
                                     const progress = getTaskProgress(task);
-                                    const summary = task.summary ?? task.description ?? 'No summary yet.';
                                     return (
                                       <tr
                                         key={task.id}
@@ -1201,15 +1173,6 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                           </div>
                                         </td>
                                         <td className="px-2 py-2 align-middle">Every {task.frequency_days} days</td>
-                                        <td
-                                          className="px-2 py-2 align-middle cursor-pointer max-w-xs"
-                                          onClick={() => {
-                                            setSwipedTaskId(null);
-                                            setSelectedTaskForDetails(task);
-                                          }}
-                                        >
-                                          <span className="line-clamp-3 text-xs text-muted-foreground">{summary}</span>
-                                        </td>
                                         <td className="px-2 py-2 align-middle">
                                           <div className="flex items-center justify-end gap-2">
                                             <Button
@@ -1253,7 +1216,6 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                     </tr>
                                     {tasksCompletedToday.map(task => {
                                       const progress = getTaskProgress(task);
-                                      const summary = task.summary ?? task.description ?? 'No summary yet.';
                                       return (
                                         <tr
                                           key={task.id}
@@ -1282,16 +1244,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                             </div>
                                           </td>
                                           <td className="px-2 py-2 align-middle">Every {task.frequency_days} days</td>
-                                          <td
-                                            className="px-2 py-2 align-middle cursor-pointer max-w-xs"
-                                            onClick={() => {
-                                              setSwipedTaskId(null);
-                                              setSelectedTaskForDetails(task);
-                                            }}
-                                          >
-                                            <span className="line-clamp-3 text-xs text-muted-foreground">{summary}</span>
-                                          </td>
-                                          <td className="px-2 py-2 align-middle">
+                                        <td className="px-2 py-2 align-middle">
                                             <div className="flex items-center justify-end gap-2">
                                               <Button
                                                 onClick={() => handleQuickLogComplete(task)}
@@ -1447,13 +1400,13 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 <div><span className="font-medium">Next due:</span> {format(new Date(selectedTaskForDetails.next_due), 'MMM dd, yyyy')}</div>
               </div>
               <section className="mt-2">
-                <h3 className="text-sm font-medium mb-1">Summary</h3>
-                {(selectedTaskForDetails.summary || selectedTaskForDetails.description) ? (
+                <h3 className="text-sm font-medium mb-1">Description</h3>
+                {selectedTaskForDetails.description ? (
                   <p className="text-sm text-foreground whitespace-pre-wrap">
-                    {selectedTaskForDetails.summary ?? selectedTaskForDetails.description}
+                    {selectedTaskForDetails.description}
                   </p>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No summary for this task.</p>
+                  <p className="text-sm text-muted-foreground">No description for this task.</p>
                 )}
               </section>
               <section className="mt-2 pt-3 border-t border-border">
