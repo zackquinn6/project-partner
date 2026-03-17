@@ -169,41 +169,19 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     if (!user) return null;
 
     try {
-      // CRITICAL: Validate template has phases before creating project run
-      // Project runs MUST be immutable snapshots - they cannot exist without phases
-      const templateHasPhases = project.phases && Array.isArray(project.phases) && project.phases.length > 0;
-      
-      if (!templateHasPhases) {
-        console.error('❌ CRITICAL: Cannot create project run - template has no phases!', {
-          templateId: project.id,
-          templateName: project.name,
-          templatePhases: project.phases,
-          templatePhasesType: typeof project.phases,
-          templatePhasesIsArray: Array.isArray(project.phases),
-          templatePhasesLength: Array.isArray(project.phases) ? project.phases.length : 'N/A'
-        });
-        
-        toast({
-          title: "Error",
-          description: `Cannot create project run: Template "${project.name}" has no phases. Please ensure the template has phases before creating a project run.`,
-          variant: "destructive",
-        });
-        return null;
-      }
-
       // Count incorporated phases in template
-      const incorporatedPhasesCount = project.phases.filter(p => p.isLinked === true).length;
-      const standardPhasesCount = project.phases.filter(p => p.isStandard === true && !p.isLinked).length;
-      const customPhasesCount = project.phases.filter(p => !p.isStandard && !p.isLinked).length;
+      const incorporatedPhasesCount = (project.phases || []).filter(p => p.isLinked === true).length;
+      const standardPhasesCount = (project.phases || []).filter(p => p.isStandard === true && !p.isLinked).length;
+      const customPhasesCount = (project.phases || []).filter(p => !p.isStandard && !p.isLinked).length;
       
       console.log('✅ Template validation passed - creating project run:', {
         templateId: project.id,
         templateName: project.name,
-        totalPhasesCount: project.phases.length,
+        totalPhasesCount: project.phases?.length || 0,
         standardPhasesCount,
         incorporatedPhasesCount,
         customPhasesCount,
-        incorporatedPhaseNames: project.phases.filter(p => p.isLinked === true).map(p => p.name)
+        incorporatedPhaseNames: (project.phases || []).filter(p => p.isLinked === true).map(p => p.name)
       });
 
       // Use database function to create project run snapshot with properly built phases
