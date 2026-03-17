@@ -66,7 +66,7 @@ CREATE OR REPLACE FUNCTION public.create_project_with_standard_foundation_v2(
 ) RETURNS UUID AS $$
 DECLARE
   new_project_id UUID;
-  standard_project_id CONSTANT UUID := '00000000-0000-0000-0000-000000000001';
+  standard_project_id CONSTANT UUID := 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5';
   std_phase RECORD;
   new_phase_id UUID;
   std_operation RECORD;

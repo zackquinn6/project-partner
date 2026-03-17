@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION public.get_project_workflow_with_standards(
 )
 RETURNS JSONB AS $$
 DECLARE
-  standard_project_id CONSTANT UUID := '00000000-0000-0000-0000-000000000001';
+  standard_project_id CONSTANT UUID := 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5';
   workflow_json JSONB;
   standard_phases_json JSONB;
   custom_phases_json JSONB;

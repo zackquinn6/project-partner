@@ -38,7 +38,7 @@ DECLARE
   v_phase_name TEXT;
   v_phase_description TEXT;
   v_is_standard BOOLEAN;
-  v_standard_project_id CONSTANT UUID := '00000000-0000-0000-0000-000000000001';
+  v_standard_project_id CONSTANT UUID := 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5';
   v_new_phase_id UUID;
   v_created_at TIMESTAMPTZ;
   v_updated_at TIMESTAMPTZ;

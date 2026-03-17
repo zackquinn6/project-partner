@@ -4,7 +4,7 @@
 -- 1. Check if standard foundation project exists
 SELECT id, name, is_standard_template 
 FROM public.projects 
-WHERE id = '00000000-0000-0000-0000-000000000001'::uuid;
+WHERE id = 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5'::uuid;
 
 -- 2. Check if standard foundation has phases
 SELECT 
@@ -15,7 +15,7 @@ SELECT
   sp.name as standard_phase_name
 FROM public.project_phases pp
 LEFT JOIN public.standard_phases sp ON pp.standard_phase_id = sp.id
-WHERE pp.project_id = '00000000-0000-0000-0000-000000000001'::uuid
+WHERE pp.project_id = 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5'::uuid
 ORDER BY pp.display_order;
 
 -- 3. Check if standard foundation has operations
@@ -29,7 +29,7 @@ SELECT
 FROM public.template_operations op
 JOIN public.project_phases pp ON op.phase_id = pp.id
 LEFT JOIN public.standard_phases sp ON pp.standard_phase_id = sp.id
-WHERE op.project_id = '00000000-0000-0000-0000-000000000001'::uuid
+WHERE op.project_id = 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5'::uuid
 ORDER BY pp.display_order, op.display_order;
 
 -- 4. Count operations by phase
@@ -38,8 +38,8 @@ SELECT
   pp.standard_phase_id,
   COUNT(op.id) as operations_count
 FROM public.project_phases pp
-LEFT JOIN public.template_operations op ON op.phase_id = pp.id AND op.project_id = '00000000-0000-0000-0000-000000000001'::uuid
-WHERE pp.project_id = '00000000-0000-0000-0000-000000000001'::uuid
+LEFT JOIN public.template_operations op ON op.phase_id = pp.id AND op.project_id = 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5'::uuid
+WHERE pp.project_id = 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5'::uuid
 GROUP BY pp.name, pp.standard_phase_id, pp.display_order
 ORDER BY pp.display_order;
 
