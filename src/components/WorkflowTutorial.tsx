@@ -327,7 +327,6 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
 
   const handleSkip = () => {
     document.querySelectorAll('.tutorial-highlight-circle').forEach(el => el.remove());
-    onComplete();
     onOpenChange(false);
   };
 
@@ -435,14 +434,24 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
           <ChevronLeft className="h-3 w-3 mr-1" />
           Previous
         </Button>
-        <Button
-          size="sm"
-          onClick={handleNext}
-          className="flex-1 h-8 text-xs"
-        >
-          {currentStep === tutorialSteps.length - 1 ? 'Finish' : 'Next'}
-          {currentStep < tutorialSteps.length - 1 && <ChevronRight className="h-3 w-3 ml-1" />}
-        </Button>
+        <div className="flex flex-1 gap-2 justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSkip}
+            className="h-8 text-xs"
+          >
+            Do not show again
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleNext}
+            className="h-8 text-xs"
+          >
+            {currentStep === tutorialSteps.length - 1 ? 'Finish' : 'Next'}
+            {currentStep < tutorialSteps.length - 1 && <ChevronRight className="h-3 w-3 ml-1" />}
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -17,6 +17,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { WorkflowThemeSelector } from './WorkflowThemeSelector';
 import { WorkflowTutorial } from './WorkflowTutorial';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { ProgressReportingStyleDialog } from './ProgressReportingStyleDialog';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useProject } from '@/contexts/ProjectContext';
@@ -73,6 +75,7 @@ export function WorkflowSidebar({
   onToolRentalsClick
 }: WorkflowSidebarProps) {
   const { updateProjectRun } = useProject();
+  const { user } = useAuth();
   const { expertSupportEnabled, toolRentalsEnabled } = usePartnerAppSettings();
   const {
     state
@@ -145,22 +148,62 @@ export function WorkflowSidebar({
 
   // Check if user is new and should see tutorial
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    const maybeShowTutorial = async () => {
+      if (typeof window === 'undefined' || !projectRunId || !isKickoffComplete) return;
+
       const tutorialCompleted = localStorage.getItem('workflow-tutorial-completed');
-      const isFirstProjectRun = !tutorialCompleted && projectRunId;
-      if (isFirstProjectRun && !showTutorial) {
-        // Small delay to ensure UI is rendered
+      if (tutorialCompleted === 'true') return;
+
+      // Check profile-level preference
+      try {
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('personality_profile')
+            .eq('user_id', user.id)
+            .single();
+          const prefs = profile?.personality_profile || {};
+          if (prefs.do_not_show_workflow_tutorial) {
+            // Mirror to localStorage so future checks are fast
+            localStorage.setItem('workflow-tutorial-completed', 'true');
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to read workflow tutorial preference from profile:', err);
+      }
+
+      if (!showTutorial) {
         const timer = setTimeout(() => {
           setShowTutorial(true);
         }, 1000);
         return () => clearTimeout(timer);
       }
-    }
-  }, [projectRunId]);
+    };
 
-  const handleTutorialComplete = () => {
+    maybeShowTutorial();
+  }, [projectRunId, isKickoffComplete, showTutorial, user]);
+
+  const handleTutorialComplete = async () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('workflow-tutorial-completed', 'true');
+    }
+    // Persist preference in user profile so we don't show tutorial again across devices
+    try {
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, personality_profile')
+        .eq('user_id', user.id)
+        .single();
+      const currentProfile = profile?.personality_profile || {};
+      const updatedProfile = { ...currentProfile, do_not_show_workflow_tutorial: true };
+      await supabase
+        .from('profiles')
+        .update({ personality_profile: updatedProfile })
+        .eq('user_id', user.id);
+    } catch (err) {
+      console.error('Failed to persist workflow tutorial preference to profile:', err);
     }
   };
   
