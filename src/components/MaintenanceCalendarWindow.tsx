@@ -76,8 +76,6 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ] as const;
 
-const DISPLAY_MONTH_ORDER: number[] = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1]; // Start in March
-
 type SeasonKey = 'spring' | 'summer' | 'fall' | 'winter';
 
 function seasonForMonthIndex(monthIndex: number): SeasonKey {
@@ -99,20 +97,20 @@ function seasonLabel(season: SeasonKey): string {
 
 function seasonBarClass(season: SeasonKey): string {
   switch (season) {
-    case 'spring': return 'bg-gradient-to-r from-emerald-200/60 to-lime-200/60 text-emerald-900 border-emerald-200/60';
-    case 'summer': return 'bg-gradient-to-r from-sky-200/60 to-cyan-200/60 text-sky-900 border-sky-200/60';
-    case 'fall': return 'bg-gradient-to-r from-amber-200/60 to-orange-200/60 text-amber-900 border-amber-200/60';
-    case 'winter': return 'bg-gradient-to-r from-indigo-200/60 to-violet-200/60 text-indigo-900 border-indigo-200/60';
+    case 'spring': return 'bg-emerald-900/90 text-emerald-50 border-emerald-700';
+    case 'summer': return 'bg-sky-900/90 text-sky-50 border-sky-700';
+    case 'fall': return 'bg-amber-900/90 text-amber-50 border-amber-700';
+    case 'winter': return 'bg-slate-900/90 text-slate-50 border-slate-700';
   }
 }
 
 function monthHeaderClass(monthIndex: number): string {
   const season = seasonForMonthIndex(monthIndex);
   switch (season) {
-    case 'spring': return 'bg-emerald-50/70 dark:bg-emerald-950/25';
-    case 'summer': return 'bg-sky-50/70 dark:bg-sky-950/25';
-    case 'fall': return 'bg-amber-50/70 dark:bg-amber-950/25';
-    case 'winter': return 'bg-indigo-50/70 dark:bg-indigo-950/25';
+    case 'spring': return 'bg-emerald-950/70 text-emerald-50';
+    case 'summer': return 'bg-sky-950/70 text-sky-50';
+    case 'fall': return 'bg-amber-950/70 text-amber-50';
+    case 'winter': return 'bg-slate-950/70 text-slate-50';
   }
 }
 
@@ -125,7 +123,7 @@ export function MaintenanceCalendarWindow({
 }: MaintenanceCalendarWindowProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [year] = useState(() => new Date().getFullYear());
+  const [baseYear] = useState(() => new Date().getFullYear());
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [monthValue, setMonthValue] = useState<string>('');
   const [dayValue, setDayValue] = useState<string>('');
@@ -133,21 +131,35 @@ export function MaintenanceCalendarWindow({
 
   const taskById = useMemo(() => new Map(tasks.map(t => [t.id, t])), [tasks]);
 
-  const yearBuckets = useMemo(() => {
-    const buckets: { monthIndex: number; items: { due: Date; task: MaintenanceTaskForCalendar }[] }[] = [];
-    for (let m = 0; m < 12; m++) {
-      const all = tasks.flatMap(t => occurrencesInMonth(t, year, m));
-      // For a month view, duplicates can happen when freq<=31. Keep all occurrences, but display one row per task (earliest due in month).
+  const monthSlots = useMemo(() => {
+    const now = new Date();
+    const startMonth = now.getMonth(); // rolling 12 months starting from current month
+    const startYear = now.getFullYear();
+
+    return Array.from({ length: 12 }, (_, i) => {
+      const offsetMonth = startMonth + i;
+      const monthIndex = offsetMonth % 12;
+      const year = startYear + Math.floor(offsetMonth / 12);
+
+      const all = tasks.flatMap(t => occurrencesInMonth(t, year, monthIndex));
       const earliestByTask = new Map<string, { due: Date; task: MaintenanceTaskForCalendar }>();
       for (const item of all) {
         const existing = earliestByTask.get(item.task.id);
         if (!existing || isBefore(item.due, existing.due)) earliestByTask.set(item.task.id, item);
       }
       const items = Array.from(earliestByTask.values()).sort((a, b) => a.due.getTime() - b.due.getTime());
-      buckets.push({ monthIndex: m, items });
-    }
-    return buckets;
-  }, [tasks, year]);
+
+      return { monthIndex, year, items };
+    });
+  }, [tasks]);
+
+  const longTermTasks = useMemo(
+    () =>
+      tasks
+        .filter(t => t.frequency_days > 365)
+        .sort((a, b) => new Date(a.next_due).getTime() - new Date(b.next_due).getTime()),
+    [tasks]
+  );
 
   const openRecurrenceEditor = (taskId: string) => {
     const t = taskById.get(taskId);
@@ -211,6 +223,10 @@ export function MaintenanceCalendarWindow({
   const editingTask = editingTaskId ? taskById.get(editingTaskId) : null;
   const disableMonth = !!editingTask && editingTask.frequency_days <= 31;
 
+  const now = new Date();
+  const currentMonthIndex = now.getMonth();
+  const currentYear = now.getFullYear();
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -236,23 +252,41 @@ export function MaintenanceCalendarWindow({
           <div className="flex-1 min-h-0 overflow-auto p-3 md:p-4">
             {/* Seasonal header bars (desktop / wide layouts only) */}
             <div className="hidden xl:grid grid-cols-6 gap-3 mb-3">
-              <div className={`col-span-3 rounded-lg border px-3 py-2 text-sm font-semibold ${seasonBarClass('spring')}`}>
-                {seasonLabel('spring')}
-              </div>
-              <div className={`col-span-3 rounded-lg border px-3 py-2 text-sm font-semibold ${seasonBarClass('summer')}`}>
-                {seasonLabel('summer')}
-              </div>
+              {(['spring', 'summer'] as SeasonKey[]).map((s) => (
+                <div
+                  key={s}
+                  className={`col-span-3 rounded-lg border px-3 py-2 text-sm font-semibold ${seasonBarClass(s)}`}
+                >
+                  {seasonLabel(s)}
+                </div>
+              ))}
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-              {DISPLAY_MONTH_ORDER.slice(0, 6).map((monthIndex) => {
-                const items = yearBuckets[monthIndex]?.items ?? [];
+              {monthSlots.slice(0, 6).map(({ monthIndex, year, items }) => {
+                const isCurrent = monthIndex === currentMonthIndex && year === currentYear;
                 return (
-                <div key={monthIndex} className="border rounded-lg bg-card overflow-hidden flex flex-col min-h-[10rem]">
-                  <div className={`px-3 py-2 border-b flex items-center justify-between ${monthHeaderClass(monthIndex)}`}>
-                    <div className="font-semibold text-sm">{MONTHS[monthIndex]}</div>
-                    <div className="text-xs text-muted-foreground">{year}</div>
-                  </div>
+                  <div
+                    key={`${monthIndex}-${year}`}
+                    className={`border rounded-lg bg-card overflow-hidden flex flex-col min-h-[10rem] ${
+                      isCurrent ? 'border-primary shadow-sm' : ''
+                    }`}
+                  >
+                    <div
+                      className={`px-3 py-2 border-b flex items-center justify-between ${monthHeaderClass(
+                        monthIndex
+                      )}`}
+                    >
+                      <div className="font-semibold text-sm flex items-center gap-2">
+                        <span>{MONTHS[monthIndex]}</span>
+                        <span className="text-[11px] text-muted-foreground/80 tabular-nums">{year}</span>
+                        {isCurrent && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground">
+                            Now
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   <div className="p-2 flex-1 min-h-0 overflow-auto space-y-1">
                     {items.length === 0 ? (
                       <div className="text-xs text-muted-foreground">No tasks due</div>
@@ -281,22 +315,40 @@ export function MaintenanceCalendarWindow({
             </div>
 
             <div className="hidden xl:grid grid-cols-6 gap-3 my-3">
-              <div className={`col-span-3 rounded-lg border px-3 py-2 text-sm font-semibold ${seasonBarClass('fall')}`}>
-                {seasonLabel('fall')}
-              </div>
-              <div className={`col-span-3 rounded-lg border px-3 py-2 text-sm font-semibold ${seasonBarClass('winter')}`}>
-                {seasonLabel('winter')}
-              </div>
+              {(['fall', 'winter'] as SeasonKey[]).map((s) => (
+                <div
+                  key={s}
+                  className={`col-span-3 rounded-lg border px-3 py-2 text-sm font-semibold ${seasonBarClass(s)}`}
+                >
+                  {seasonLabel(s)}
+                </div>
+              ))}
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-              {DISPLAY_MONTH_ORDER.slice(6, 12).map((monthIndex) => {
-                const items = yearBuckets[monthIndex]?.items ?? [];
+              {monthSlots.slice(6, 12).map(({ monthIndex, year, items }) => {
+                const isCurrent = monthIndex === currentMonthIndex && year === currentYear;
                 return (
-                  <div key={monthIndex} className="border rounded-lg bg-card overflow-hidden flex flex-col min-h-[10rem]">
-                    <div className={`px-3 py-2 border-b flex items-center justify-between ${monthHeaderClass(monthIndex)}`}>
-                      <div className="font-semibold text-sm">{MONTHS[monthIndex]}</div>
-                      <div className="text-xs text-muted-foreground">{year}</div>
+                  <div
+                    key={`${monthIndex}-${year}`}
+                    className={`border rounded-lg bg-card overflow-hidden flex flex-col min-h-[10rem] ${
+                      isCurrent ? 'border-primary shadow-sm' : ''
+                    }`}
+                  >
+                    <div
+                      className={`px-3 py-2 border-b flex items-center justify-between ${monthHeaderClass(
+                        monthIndex
+                      )}`}
+                    >
+                      <div className="font-semibold text-sm flex items-center gap-2">
+                        <span>{MONTHS[monthIndex]}</span>
+                        <span className="text-[11px] text-muted-foreground/80 tabular-nums">{year}</span>
+                        {isCurrent && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground">
+                            Now
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="p-2 flex-1 min-h-0 overflow-auto space-y-1">
                       {items.length === 0 ? (
@@ -324,6 +376,38 @@ export function MaintenanceCalendarWindow({
                 );
               })}
             </div>
+
+            {longTermTasks.length > 0 && (
+              <div className="mt-6 border-t pt-4">
+                <h3 className="text-sm font-semibold mb-2">Long-term Maintenance</h3>
+                <div className="overflow-auto">
+                  <table className="w-full text-xs md:text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/50">
+                        <th className="text-left px-2 py-2 font-medium">Task</th>
+                        <th className="text-left px-2 py-2 font-medium">Frequency</th>
+                        <th className="text-left px-2 py-2 font-medium">Next due</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {longTermTasks.map((task) => (
+                        <tr key={task.id} className="border-b border-border last:border-b-0">
+                          <td className="px-2 py-1.5 align-middle">
+                            <span className="truncate inline-block max-w-[14rem] md:max-w-none">{task.title}</span>
+                          </td>
+                          <td className="px-2 py-1.5 align-middle text-muted-foreground">
+                            {`${task.frequency_days} days`}
+                          </td>
+                          <td className="px-2 py-1.5 align-middle text-muted-foreground tabular-nums">
+                            {format(new Date(task.next_due), 'MMM d, yyyy')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
