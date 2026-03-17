@@ -19,9 +19,9 @@ import { HeroSection } from './landing/HeroSection';
 import { ValuePropSection } from './landing/ValuePropSection';
 import { StatisticsBar } from './landing/StatisticsBar';
 import { HowItWorksSection } from './landing/HowItWorksSection';
-import { FeaturesSection } from './landing/FeaturesSection';
 import { PersonasSection } from './landing/PersonasSection';
 import { PricingSection } from './landing/PricingSection';
+import { FounderInfoDialog } from './landing/FounderInfoDialog';
 import { FAQSection } from './landing/FAQSection';
 import { FinalCTASection } from './landing/FinalCTASection';
 import { PreSignInNavigation } from '@/components/PreSignInNavigation';
@@ -54,6 +54,7 @@ export default function Home({
   const [isCodePermitsOpen, setIsCodePermitsOpen] = useState(false);
   const [isContractorFinderOpen, setIsContractorFinderOpen] = useState(false);
   const [isKCExplainerOpen, setIsKCExplainerOpen] = useState(false);
+  const [isFounderDialogOpen, setIsFounderDialogOpen] = useState(false);
   const [stats, setStats] = useState({
     activeProjects: 0,
     completedProjects: 0,
@@ -169,9 +170,7 @@ export default function Home({
   const handleScrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
-      element.scrollIntoView({
-        behavior: 'smooth'
-      });
+      element.scrollIntoView({ behavior: 'smooth' });
     }
   };
   return <div className="min-h-screen">
@@ -438,7 +437,7 @@ export default function Home({
       <PreSignInNavigation />
       
       {/* Hero Section */}
-      <HeroSection onOpenDemo={() => setIsKCExplainerOpen(true)} />
+      <HeroSection onOpenDemo={() => setIsKCExplainerOpen(true)} onScrollToSection={handleScrollToSection} />
 
       {/* Value Prop Section */}
       <ValuePropSection />
@@ -449,11 +448,19 @@ export default function Home({
       {/* How It Works Section */}
       <HowItWorksSection onOpenDemo={() => setIsKCExplainerOpen(true)} />
 
-      {/* Features Section */}
-      <FeaturesSection />
-
       {/* Personas Section */}
       <PersonasSection />
+
+      {/* See our story - before pricing */}
+      <section className="py-8 px-4 text-center">
+        <button
+          type="button"
+          onClick={() => setIsFounderDialogOpen(true)}
+          className="text-primary font-semibold hover:underline underline-offset-2"
+        >
+          See our story
+        </button>
+      </section>
 
       {/* Pricing Section */}
       <PricingSection />
@@ -477,5 +484,7 @@ export default function Home({
       <ContractorFinderWindow open={isContractorFinderOpen} onOpenChange={setIsContractorFinderOpen} />
       
       <KeyCharacteristicsExplainer open={isKCExplainerOpen} onOpenChange={setIsKCExplainerOpen} />
+
+      <FounderInfoDialog open={isFounderDialogOpen} onOpenChange={setIsFounderDialogOpen} />
     </div>;
 }

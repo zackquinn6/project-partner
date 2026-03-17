@@ -1,4 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 import founderPhoto from '@/assets/zack-quinn-founder.png';
 
 interface FounderInfoDialogProps {
@@ -10,8 +12,11 @@ export const FounderInfoDialog = ({ open, onOpenChange }: FounderInfoDialogProps
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>About Project Partner</DialogTitle>
+        <DialogHeader className="flex flex-row items-start justify-between gap-2">
+          <DialogTitle className="text-lg font-bold">About Project Partner</DialogTitle>
+          <Button variant="ghost" size="icon" className="shrink-0 -mr-2 -mt-2" onClick={() => onOpenChange(false)} aria-label="Close">
+            <X className="h-5 w-5" />
+          </Button>
         </DialogHeader>
         
         <div className="space-y-6">

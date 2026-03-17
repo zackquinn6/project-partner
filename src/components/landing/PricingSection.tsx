@@ -81,23 +81,7 @@ export const PricingSection: React.FC = () => {
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span>Aggregated Content From DIY / Building Leaders</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span>Project Personalization</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span>Project Scheduling & Budgeting</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span>Project Shopping List</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span>DIY Achievement Tracking</span>
+                  <span>Guided Project Management</span>
                 </li>
               </ul>
               <Button className="w-full" onClick={() => navigate('/auth?mode=signup')}>

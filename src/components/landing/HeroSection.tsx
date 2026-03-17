@@ -1,20 +1,19 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import { FounderInfoDialog } from './FounderInfoDialog';
 import { OnboardingDialog } from './OnboardingDialog';
 
 interface HeroSectionProps {
   onOpenDemo?: () => void;
+  onScrollToSection?: (sectionId: string) => void;
 }
 
-export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
-  const [isFounderDialogOpen, setIsFounderDialogOpen] = useState(false);
+export const HeroSection = ({ onOpenDemo, onScrollToSection }: HeroSectionProps) => {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   
   return (
     <>
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-background via-background to-muted">
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-background via-background to-muted pt-20 sm:pt-24 md:pt-12">
       {/* Floating animated background elements */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-20 left-10 animate-float">
@@ -57,7 +56,7 @@ export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
                 variant="outline" 
                 size="xl" 
                 className="border-2 hover:bg-muted" 
-                onClick={() => setIsFounderDialogOpen(true)}
+                onClick={() => onScrollToSection?.('value-prop')}
               >
                 Learn More
               </Button>
@@ -78,10 +77,6 @@ export const HeroSection = ({ onOpenDemo }: HeroSectionProps) => {
       </div>
       </section>
       
-      <FounderInfoDialog 
-        open={isFounderDialogOpen} 
-        onOpenChange={setIsFounderDialogOpen} 
-      />
       <OnboardingDialog
         open={isOnboardingOpen}
         onOpenChange={setIsOnboardingOpen}
