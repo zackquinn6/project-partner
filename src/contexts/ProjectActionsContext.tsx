@@ -201,7 +201,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
       // Use database function to create project run snapshot with properly built phases
       // This ensures phases include operations and steps from the template
-      console.log('🔄 Calling create_project_run_snapshot with:', {
+      console.log('🔄 Calling create_project_run_snapshot_v2 with:', {
         templateId: project.id,
         templateName: project.name,
         templatePhasesCount: project.phases?.length || 0,
@@ -211,7 +211,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         CRITICAL_NOTE: 'Function MUST copy ALL phases including incorporated phases (isLinked: true)'
       });
 
-      const { data, error } = await supabase.rpc('create_project_run_snapshot', {
+      const { data, error } = await supabase.rpc('create_project_run_snapshot_v2', {
         p_template_id: project.id,
         p_user_id: user.id,
         p_run_name: customName || project.name,
@@ -221,7 +221,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       });
 
       if (error) {
-        console.error('❌ Error calling create_project_run_snapshot:', {
+        console.error('❌ Error calling create_project_run_snapshot_v2:', {
           error,
           message: error.message,
           details: error.details,
@@ -239,11 +239,11 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       }
 
       if (!data) {
-        console.error('❌ create_project_run_snapshot returned no ID');
+        console.error('❌ create_project_run_snapshot_v2 returned no ID');
         throw new Error('Project run creation returned no ID');
       }
 
-      console.log('✅ create_project_run_snapshot returned run ID:', data);
+      console.log('✅ create_project_run_snapshot_v2 returned run ID:', data);
 
       // CRITICAL: Verify that phases were copied to the project run
       // Project runs MUST be immutable snapshots with their own copy of phases
@@ -471,7 +471,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
       // Use new RPC function to create immutable project run snapshot
       const { data: newProjectRunId, error } = await supabase
-        .rpc('create_project_run_snapshot', {
+        .rpc('create_project_run_snapshot_v2', {
           p_template_id: projectRunData.templateId,
           p_user_id: user.id,
           p_run_name: projectRunData.name,

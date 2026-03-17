@@ -169,7 +169,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- First, drop ALL overloads so PostgREST can resolve the function unambiguously.
 DROP FUNCTION IF EXISTS public.create_project_run_snapshot;
 
-CREATE OR REPLACE FUNCTION public.create_project_run_snapshot(
+CREATE OR REPLACE FUNCTION public.create_project_run_snapshot_v2(
   p_template_id UUID,
   p_user_id UUID,
   p_run_name TEXT,

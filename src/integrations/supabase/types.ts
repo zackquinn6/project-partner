@@ -3270,7 +3270,7 @@ export type Database = {
         Args: { revision_notes_text?: string; source_project_id: string }
         Returns: string
       }
-      create_project_run_snapshot: {
+      create_project_run_snapshot_v2: {
         Args: {
           p_home_id?: string
           p_plan_end_date?: string
