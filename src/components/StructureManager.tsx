@@ -1194,8 +1194,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         counter++;
       }
       
-      // Calculate position: Get total phases and determine position
-      // Need to get all phases including standard phases if not editing standard project
+      // Calculate position: need all phases including standard phases if not editing standard project
       let allPhases: any[] = [];
       let standardPhases: any[] = [];
       
@@ -1207,94 +1206,67 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           .eq('project_id', currentProject.id);
         allPhases = projectPhases || [];
       } else {
-        // For regular projects: get both standard phases and custom phases
-        const STANDARD_PROJECT_ID = '00000000-0000-0000-0000-000000000001';
-        
-        // Get standard phases
-        const { data: fetchedStandardPhases } = await supabase
-          .from('project_phases')
-          .select('id, position_rule, position_value')
-          .eq('project_id', STANDARD_PROJECT_ID)
-          .eq('is_standard', true);
-        
-        standardPhases = fetchedStandardPhases || [];
-        
-        // Get custom phases from current project
+        // For regular projects:
+        // - Fetch the current project's own phases
+        // - Fetch the active standard project's phases by resolving projects.is_standard at runtime
         const { data: customPhases } = await supabase
           .from('project_phases')
           .select('id, position_rule, position_value')
-          .eq('project_id', currentProject.id)
-          .eq('is_standard', false);
-        
+          .eq('project_id', currentProject.id);
+
+        let standardProjectId: string | null = null;
+        const { data: standardProject } = await supabase
+          .from('projects')
+          .select('id')
+          .eq('is_standard', true)
+          .maybeSingle();
+
+        if (standardProject && standardProject.id) {
+          standardProjectId = standardProject.id as string;
+        }
+
+        if (standardProjectId) {
+          const { data: fetchedStandardPhases } = await supabase
+            .from('project_phases')
+            .select('id, position_rule, position_value')
+            .eq('project_id', standardProjectId);
+          standardPhases = fetchedStandardPhases || [];
+        } else {
+          standardPhases = [];
+        }
+
+        const { data: customPhases } = await supabase
+          .from('project_phases')
+          .select('id, position_rule, position_value')
+          .eq('project_id', currentProject.id);
+
         allPhases = [...standardPhases, ...(customPhases || [])];
       }
-      
-      const totalPhases = allPhases.length;
-      
-      // Determine position rule and value
-      // New phase should be placed at position: last - 1 (just before the 'last' phase)
-      // Count total phases, then set position_value to totalPhases - 1
+
+      // Determine position rule and value.
+      // New custom phase should always occupy the next available 'nth' slot
+      // AFTER all existing standard and custom 'nth' phases.
+      // This guarantees:
+      // - No duplicate nth positions
+      // - Custom phases never occupy standard phase positions
+      // - Future changes to standard structure are respected automatically.
       let positionRule: string = 'nth';
       let positionValue: number;
       
-      // Find the maximum position_value among all 'nth' phases
+      // Find the maximum position_value among all 'nth' phases (standard + custom)
       const nthPhases = allPhases.filter(p => p.position_rule === 'nth' && typeof p.position_value === 'number');
       const maxNthValue = nthPhases.length > 0 
         ? Math.max(...nthPhases.map(p => p.position_value as number))
         : 0;
       
-      // Check if there's a 'last' phase
-      const hasLastPhase = allPhases.some(p => p.position_rule === 'last');
-      
-      // Calculate position: last minus one
-      // If there's a 'last' phase, place new phase just before it (maxNthValue + 1)
-      // Otherwise, use totalPhases - 1, but ensure it's after all existing nth phases
-      if (hasLastPhase) {
-        // If there's a 'last' phase, place new phase just before it
-        // Use maxNthValue + 1 to ensure it's after all existing nth phases but before 'last'
-        positionValue = maxNthValue + 1;
-      } else {
-        // If no 'last' phase, place at totalPhases - 1 (last position minus one)
-        // But ensure it's after all existing nth phases
-        positionValue = Math.max(totalPhases - 1, maxNthValue + 1);
-      }
-      
-      // VALIDATION: For regular projects, ensure new custom phase doesn't occupy a standard phase position
-      if (!isEditingStandardProject && standardPhases) {
-        // Get all standard phase positions from the standardPhases we fetched
-        const standardPositions = new Set<number>();
-        (standardPhases || []).forEach((p: any) => {
-          const positionRule = p.position_rule;
-          const positionValue = p.position_value;
-          if (positionRule === 'nth' && typeof positionValue === 'number') {
-            standardPositions.add(positionValue);
-          }
-        });
-        
-        // Check if calculated position conflicts with standard phase position
-        if (standardPositions.has(positionValue)) {
-          // Find the next available position after all standard phases
-          const maxStandardPosition = standardPositions.size > 0 
-            ? Math.max(...Array.from(standardPositions))
-            : 0;
-          positionValue = maxStandardPosition + 1;
-          
-          // If there's a 'last' phase, ensure we're still before it
-          if (hasLastPhase && positionValue > maxNthValue) {
-            // This shouldn't happen, but if it does, place after maxNthValue
-            positionValue = maxNthValue + 1;
-          }
-          
-          console.log('⚠️ Position conflict detected, adjusted to:', positionValue);
-        }
-      }
+      // Always place the new phase immediately after the highest existing nth position.
+      positionValue = maxNthValue + 1;
       
       console.log('📍 Adding new phase at position:', {
-        totalPhases,
         maxNthValue,
-        hasLastPhase,
         positionValue,
-        positionRule
+        positionRule,
+        isEditingStandardProject
       });
       
       // Insert phase directly into database
