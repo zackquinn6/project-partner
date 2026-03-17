@@ -76,6 +76,46 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ] as const;
 
+const DISPLAY_MONTH_ORDER: number[] = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1]; // Start in March
+
+type SeasonKey = 'spring' | 'summer' | 'fall' | 'winter';
+
+function seasonForMonthIndex(monthIndex: number): SeasonKey {
+  // monthIndex: 0=Jan ... 11=Dec
+  if (monthIndex >= 2 && monthIndex <= 4) return 'spring'; // Mar-May
+  if (monthIndex >= 5 && monthIndex <= 7) return 'summer'; // Jun-Aug
+  if (monthIndex >= 8 && monthIndex <= 10) return 'fall'; // Sep-Nov
+  return 'winter'; // Dec-Feb
+}
+
+function seasonLabel(season: SeasonKey): string {
+  switch (season) {
+    case 'spring': return 'Spring';
+    case 'summer': return 'Summer';
+    case 'fall': return 'Fall';
+    case 'winter': return 'Winter';
+  }
+}
+
+function seasonBarClass(season: SeasonKey): string {
+  switch (season) {
+    case 'spring': return 'bg-gradient-to-r from-emerald-200/60 to-lime-200/60 text-emerald-900 border-emerald-200/60';
+    case 'summer': return 'bg-gradient-to-r from-sky-200/60 to-cyan-200/60 text-sky-900 border-sky-200/60';
+    case 'fall': return 'bg-gradient-to-r from-amber-200/60 to-orange-200/60 text-amber-900 border-amber-200/60';
+    case 'winter': return 'bg-gradient-to-r from-indigo-200/60 to-violet-200/60 text-indigo-900 border-indigo-200/60';
+  }
+}
+
+function monthHeaderClass(monthIndex: number): string {
+  const season = seasonForMonthIndex(monthIndex);
+  switch (season) {
+    case 'spring': return 'bg-emerald-50/70 dark:bg-emerald-950/25';
+    case 'summer': return 'bg-sky-50/70 dark:bg-sky-950/25';
+    case 'fall': return 'bg-amber-50/70 dark:bg-amber-950/25';
+    case 'winter': return 'bg-indigo-50/70 dark:bg-indigo-950/25';
+  }
+}
+
 export function MaintenanceCalendarWindow({
   open,
   onOpenChange,
@@ -194,10 +234,22 @@ export function MaintenanceCalendarWindow({
           </DialogHeader>
 
           <div className="flex-1 min-h-0 overflow-auto p-3 md:p-4">
+            {/* Seasonal header bars (desktop / wide layouts only) */}
+            <div className="hidden xl:grid grid-cols-6 gap-3 mb-3">
+              <div className={`col-span-3 rounded-lg border px-3 py-2 text-sm font-semibold ${seasonBarClass('spring')}`}>
+                {seasonLabel('spring')}
+              </div>
+              <div className={`col-span-3 rounded-lg border px-3 py-2 text-sm font-semibold ${seasonBarClass('summer')}`}>
+                {seasonLabel('summer')}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-              {yearBuckets.map(({ monthIndex, items }) => (
+              {DISPLAY_MONTH_ORDER.slice(0, 6).map((monthIndex) => {
+                const items = yearBuckets[monthIndex]?.items ?? [];
+                return (
                 <div key={monthIndex} className="border rounded-lg bg-card overflow-hidden flex flex-col min-h-[10rem]">
-                  <div className="px-3 py-2 border-b bg-muted/30 flex items-center justify-between">
+                  <div className={`px-3 py-2 border-b flex items-center justify-between ${monthHeaderClass(monthIndex)}`}>
                     <div className="font-semibold text-sm">{MONTHS[monthIndex]}</div>
                     <div className="text-xs text-muted-foreground">{year}</div>
                   </div>
@@ -224,7 +276,53 @@ export function MaintenanceCalendarWindow({
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
+            </div>
+
+            <div className="hidden xl:grid grid-cols-6 gap-3 my-3">
+              <div className={`col-span-3 rounded-lg border px-3 py-2 text-sm font-semibold ${seasonBarClass('fall')}`}>
+                {seasonLabel('fall')}
+              </div>
+              <div className={`col-span-3 rounded-lg border px-3 py-2 text-sm font-semibold ${seasonBarClass('winter')}`}>
+                {seasonLabel('winter')}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+              {DISPLAY_MONTH_ORDER.slice(6, 12).map((monthIndex) => {
+                const items = yearBuckets[monthIndex]?.items ?? [];
+                return (
+                  <div key={monthIndex} className="border rounded-lg bg-card overflow-hidden flex flex-col min-h-[10rem]">
+                    <div className={`px-3 py-2 border-b flex items-center justify-between ${monthHeaderClass(monthIndex)}`}>
+                      <div className="font-semibold text-sm">{MONTHS[monthIndex]}</div>
+                      <div className="text-xs text-muted-foreground">{year}</div>
+                    </div>
+                    <div className="p-2 flex-1 min-h-0 overflow-auto space-y-1">
+                      {items.length === 0 ? (
+                        <div className="text-xs text-muted-foreground">No tasks due</div>
+                      ) : (
+                        items.map(({ due, task }) => (
+                          <button
+                            key={task.id}
+                            type="button"
+                            onClick={() => openRecurrenceEditor(task.id)}
+                            className="w-full text-left text-xs px-2 py-1 rounded-md hover:bg-accent/40 transition-colors flex items-center justify-between gap-2"
+                            title={`Due ${format(due, 'MMM d')}`}
+                          >
+                            <span className="truncate">
+                              {task.title}
+                            </span>
+                            <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+                              {format(due, 'MMM d')}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </DialogContent>
