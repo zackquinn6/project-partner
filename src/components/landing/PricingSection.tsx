@@ -12,7 +12,7 @@ export const PricingSection: React.FC = () => {
       <div className="container mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-            Be in control of your projects for just $59/yr.
+            Be in control of your home improvements for just $59/yr.
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Start with free tools, upgrade when you're ready to tackle bigger projects

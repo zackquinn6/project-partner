@@ -16,9 +16,6 @@ export const HowItWorksSection = ({ onOpenDemo }: HowItWorksSectionProps) => {
           Designed to run one great project—not a career of building
         </p>
         <div className="text-center mb-8">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
-            How It Works
-          </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mt-2">
             In 30min or less—build a project framework that leads to success
           </p>
@@ -27,7 +24,7 @@ export const HowItWorksSection = ({ onOpenDemo }: HowItWorksSectionProps) => {
         <div className="grid md:grid-cols-3 gap-4 md:gap-6 max-w-4xl mx-auto">
           {steps.map((step, index) => (
             <div key={index} className="text-center py-2">
-              <span className="text-xs font-semibold text-primary">Step {step.number}</span>
+              <span className="text-sm md:text-base font-semibold text-primary">Step {step.number}</span>
               <h3 className="text-base md:text-lg font-bold mt-1 mb-1 text-foreground">
                 {step.title}
               </h3>

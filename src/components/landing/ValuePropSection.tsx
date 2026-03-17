@@ -8,7 +8,7 @@ export const ValuePropSection = () => {
           {/* Header */}
           <div className="text-center mb-12 md:mb-16">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-              Modular project management built for home improvement
+              Project Management Tailored to Home Improvements
             </h2>
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
               A tool to get maximum efficiency from home improvement projects.
@@ -20,7 +20,6 @@ export const ValuePropSection = () => {
             {/* Step 1: Structured Process Library */}
             <div className="group relative p-8 rounded-2xl border border-border bg-card hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 hover:-translate-y-1">
               <div className="flex flex-col items-center text-center space-y-4">
-                <span className="text-sm font-semibold text-primary">Step 1</span>
                 <div className="w-16 h-16 rounded-xl bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                   <BookOpen className="w-8 h-8 text-accent" />
                 </div>
@@ -36,7 +35,6 @@ export const ValuePropSection = () => {
             {/* Step 2: Home Management Apps */}
             <div className="group relative p-8 rounded-2xl border border-border bg-card hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 hover:-translate-y-1">
               <div className="flex flex-col items-center text-center space-y-4">
-                <span className="text-sm font-semibold text-primary">Step 2</span>
                 <div className="w-16 h-16 rounded-xl bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                   <Calendar className="w-8 h-8 text-accent" />
                 </div>

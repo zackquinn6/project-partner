@@ -453,13 +453,14 @@ export default function Home({
 
       {/* See our story - before pricing */}
       <section className="py-8 px-4 text-center">
-        <button
+        <Button
           type="button"
           onClick={() => setIsFounderDialogOpen(true)}
-          className="text-primary font-semibold hover:underline underline-offset-2"
+          size="lg"
+          className="h-14 px-10 text-base sm:text-lg font-semibold rounded-full shadow-md hover:shadow-lg transition-shadow bg-primary text-primary-foreground"
         >
-          See our story
-        </button>
+          See Our Story
+        </Button>
       </section>
 
       {/* Pricing Section */}
