@@ -167,9 +167,14 @@ export function RiskManagementWindow({
         
         setRisks(mappedRisks);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching risks:', error);
-      toast.error('Failed to load risks');
+      const code = error?.code || error?.message;
+      if (code === 'PGRST205') {
+        toast.error('Risk tracking table is missing. Please run the latest database migrations to create project_risks.');
+      } else {
+        toast.error('Failed to load risks');
+      }
     } finally {
       setLoading(false);
     }
