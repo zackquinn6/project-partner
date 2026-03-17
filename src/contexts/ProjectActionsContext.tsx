@@ -143,7 +143,14 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
       console.log('✅ Project created with standard foundation:', projectId);
 
+      // Refetch projects so new template appears in context
       await refetchProjects();
+
+      // NOTE: Standard phases for runs are always provided by the database via
+      // get_project_workflow_with_standards / create_project_run_snapshot_v2.
+      // We do NOT synthesize or mutate phases on the client here to avoid
+      // diverging from the canonical database representation.
+
       toast({
         title: "Success",
         description: "Project created successfully with standard foundation",
