@@ -786,13 +786,25 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           }
         }
         if (normalized.length === 0) {
-          throw new Error(
-            `Template "${projectTemplate.name}" has no phases. ` +
-            'Ensure the project has phases in the database (project_phases, phase_operations, and operation_steps) or add phases in admin.'
-          );
+          // Fallback: use template's phases column (e.g. from admin or prior build) so run can start
+          const { data: projectRow } = await supabase
+            .from('projects')
+            .select('phases')
+            .eq('id', projectTemplate.id)
+            .single();
+          const storedPhases = projectRow?.phases;
+          if (Array.isArray(storedPhases) && storedPhases.length > 0) {
+            templatePhases = storedPhases;
+          } else {
+            throw new Error(
+              `Template "${projectTemplate.name}" has no phases. ` +
+              'Ensure the project has phases in the database (project_phases, phase_operations, and operation_steps) or add phases in admin.'
+            );
+          }
+        } else {
+          templatePhases = normalized;
+          await supabase.from('projects').update({ phases: templatePhases }).eq('id', projectTemplate.id);
         }
-        templatePhases = normalized;
-        await supabase.from('projects').update({ phases: templatePhases }).eq('id', projectTemplate.id);
       }
 
       // Validate: Template must have phases before creating project run
