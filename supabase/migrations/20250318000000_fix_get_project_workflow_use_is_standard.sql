@@ -1,3 +1,101 @@
+-- Use actual schema: phase_operations and operation_steps (not template_operations/template_steps).
+-- Defines get_operation_steps_json and rebuild_phases_json_from_project_phases so get_project_workflow_with_standards works.
+
+CREATE OR REPLACE FUNCTION public.get_operation_steps_json(p_operation_id UUID)
+RETURNS JSONB AS $$
+DECLARE
+  steps_json JSONB;
+BEGIN
+  SELECT COALESCE(jsonb_agg(
+    jsonb_build_object(
+      'id', os.id,
+      'step', os.step_title,
+      'description', os.description,
+      'contentSections', os.content_sections,
+      'materials', os.materials,
+      'tools', os.tools,
+      'outputs', os.outputs,
+      'displayOrder', os.display_order,
+      'timeEstimateLow', os.time_estimate_low,
+      'timeEstimateMedium', os.time_estimate_med,
+      'timeEstimateHigh', os.time_estimate_high,
+      'content', os.content,
+      'contentType', os.content_type,
+      'flowType', os.flow_type,
+      'stepType', os.step_type
+    )
+    ORDER BY os.display_order
+  ), '[]'::jsonb)
+  INTO steps_json
+  FROM public.operation_steps os
+  WHERE os.operation_id = p_operation_id;
+  RETURN COALESCE(steps_json, '[]'::jsonb);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+CREATE OR REPLACE FUNCTION public.rebuild_phases_json_from_project_phases(p_project_id UUID)
+RETURNS JSONB AS $$
+DECLARE
+  phases_json JSONB := '[]'::jsonb;
+  phase_record RECORD;
+  operations_json JSONB;
+  op_record RECORD;
+  steps_json JSONB;
+BEGIN
+  FOR phase_record IN
+    SELECT id, project_id, name, description, is_standard, position_rule, position_value, display_order
+    FROM public.project_phases
+    WHERE project_id = p_project_id
+    ORDER BY
+      CASE
+        WHEN position_rule = 'nth' THEN COALESCE(position_value, 999)
+        WHEN position_rule = 'last' THEN 2147483647
+        ELSE 999
+      END ASC,
+      display_order ASC,
+      created_at ASC
+  LOOP
+    operations_json := '[]'::jsonb;
+    FOR op_record IN
+      SELECT id, phase_id, operation_name, operation_description, flow_type, display_order
+      FROM public.phase_operations
+      WHERE phase_id = phase_record.id
+      ORDER BY display_order ASC
+    LOOP
+      steps_json := public.get_operation_steps_json(op_record.id);
+      operations_json := operations_json || jsonb_build_array(
+        jsonb_build_object(
+          'id', op_record.id,
+          'name', op_record.operation_name,
+          'description', op_record.operation_description,
+          'flowType', COALESCE(op_record.flow_type, 'prime'),
+          'steps', COALESCE(steps_json, '[]'::jsonb),
+          'isStandard', phase_record.is_standard
+        )
+      );
+    END LOOP;
+    phases_json := phases_json || jsonb_build_array(
+      jsonb_build_object(
+        'id', phase_record.id,
+        'name', phase_record.name,
+        'description', phase_record.description,
+        'operations', COALESCE(operations_json, '[]'::jsonb),
+        'isStandard', phase_record.is_standard,
+        'phaseOrderNumber',
+          CASE
+            WHEN phase_record.position_rule = 'last' THEN '"last"'::jsonb
+            WHEN phase_record.position_rule = 'nth' AND phase_record.position_value IS NOT NULL THEN to_jsonb(phase_record.position_value)
+            ELSE to_jsonb(999)
+          END,
+        'position_rule', phase_record.position_rule,
+        'position_value', phase_record.position_value
+      )
+    );
+  END LOOP;
+  RETURN COALESCE(phases_json, '[]'::jsonb);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
 -- Fix get_project_workflow_with_standards: use is_standard (actual column) and resolve Standard Project at runtime.
 -- Ensures standard phases are compiled into the workflow so templates (e.g. Tile Flooring) get foundation phases.
 
