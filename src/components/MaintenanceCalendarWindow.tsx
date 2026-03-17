@@ -163,7 +163,7 @@ export function MaintenanceCalendarWindow({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[90vw] max-w-[90vw] h-[80vh] max-h-[80vh] overflow-hidden flex flex-col p-0">
+        <DialogContent className="w-[96vw] max-w-[96vw] h-[88vh] max-h-[88vh] overflow-hidden flex flex-col p-0 sm:w-[90vw] sm:max-w-[90vw] sm:h-[80vh] sm:max-h-[80vh]">
           <DialogHeader className="px-4 md:px-6 py-4 border-b">
             <DialogTitle className="flex items-center gap-2">
               <CalendarDays className="h-5 w-5 text-primary" />
@@ -172,7 +172,7 @@ export function MaintenanceCalendarWindow({
           </DialogHeader>
 
           <div className="flex-1 min-h-0 overflow-auto p-3 md:p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
               {yearBuckets.map(({ monthIndex, items }) => (
                 <div key={monthIndex} className="border rounded-lg bg-card overflow-hidden flex flex-col min-h-[10rem]">
                   <div className="px-3 py-2 border-b bg-muted/30 flex items-center justify-between">
