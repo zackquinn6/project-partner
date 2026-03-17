@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarDays, Pencil, X } from 'lucide-react';
-import { addDays, format, isAfter, isBefore, startOfDay } from 'date-fns';
+import { addDays, format, getDaysInMonth, isBefore, startOfDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -49,6 +49,17 @@ function occurrencesInMonth(task: MaintenanceTaskForCalendar, year: number, mont
   if (!anchorStr) return [];
 
   const anchor = startOfDay(new Date(anchorStr));
+
+  // Monthly-style recurrence: show the task in every month on the chosen day-of-month.
+  // This avoids drift from "every N days" and matches user expectation for monthly maintenance.
+  if (task.frequency_days > 0 && task.frequency_days <= 31) {
+    const desiredDay = anchor.getDate();
+    const daysInThisMonth = getDaysInMonth(monthStart);
+    const clampedDay = Math.min(desiredDay, daysInThisMonth);
+    const due = startOfDay(new Date(year, monthIndex, clampedDay));
+    return [{ due, task }];
+  }
+
   const first = firstOccurrenceOnOrAfter(anchor, task.frequency_days, monthStart);
 
   const out: { due: Date; task: MaintenanceTaskForCalendar }[] = [];
