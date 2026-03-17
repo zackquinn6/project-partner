@@ -17,11 +17,19 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
   };
 
   return (
-    <ScrollableDialog
-      open={isOpen}
-      onOpenChange={onClose}
-      title="Tool Access & Rentals"
-    >
+    <div className={`fixed inset-0 z-[60] ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+      {isOpen && (
+        <div
+          className="absolute inset-0 bg-background/60 backdrop-blur-md"
+          onClick={onClose}
+        />
+      )}
+      <ScrollableDialog
+        open={isOpen}
+        onOpenChange={onClose}
+        title="Tool Access & Rentals"
+        className="relative z-[61]"
+      >
       <div className="flex items-center justify-between mb-6">
         <Button 
           variant="outline" 
@@ -156,5 +164,6 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
         </Tabs>
       </div>
     </ScrollableDialog>
+    </div>
   );
 };

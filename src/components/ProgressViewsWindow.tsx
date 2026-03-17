@@ -62,7 +62,7 @@ export function ProgressViewsWindow({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[75vw] max-w-[75vw] max-h-[90vh] overflow-hidden flex flex-col p-0 [&>button]:hidden">
+      <DialogContent className="w-[90vw] h-[90vh] max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col p-0 [&>button]:hidden">
         <DialogTitle className="sr-only">Progress views</DialogTitle>
         <DialogDescription className="sr-only">
           Gantt and Kanban views of project progress
@@ -70,7 +70,7 @@ export function ProgressViewsWindow({
 
         <div className="flex items-center justify-between border-b px-4 py-3">
           <h2 className="text-lg font-semibold">Progress views</h2>
-          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
             <ToggleGroup
               type="single"
               value={viewMode}
@@ -87,12 +87,12 @@ export function ProgressViewsWindow({
               </ToggleGroupItem>
             </ToggleGroup>
             <Button
-              variant="ghost"
-              size="icon"
+              variant="outline"
+              size="sm"
               onClick={() => onOpenChange(false)}
-              className="h-8 w-8"
+              className="h-8 px-3 text-xs"
             >
-              <X className="h-4 w-4" />
+              Close
             </Button>
           </div>
         </div>

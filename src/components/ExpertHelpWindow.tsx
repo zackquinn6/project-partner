@@ -17,13 +17,20 @@ interface ExpertHelpWindowProps {
 
 export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({ isOpen, onClose }) => {
   return (
-    <ScrollableDialog
-      open={isOpen}
-      onOpenChange={onClose}
-      title="Video Chat With a Pro"
-      description="Get a human expert to guide you through your next project"
-      className="w-[90vw] max-w-md h-auto max-h-[90vh]"
-    >
+    <div className={`fixed inset-0 z-[60] ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+      {isOpen && (
+        <div
+          className="absolute inset-0 bg-background/60 backdrop-blur-md"
+          onClick={onClose}
+        />
+      )}
+      <ScrollableDialog
+        open={isOpen}
+        onOpenChange={onClose}
+        title="Video Chat With a Pro"
+        description="Get a human expert to guide you through your next project"
+        className="w-[90vw] max-w-md h-auto max-h-[90vh] relative z-[61]"
+      >
       <div className="relative space-y-6">
         {/* Coming Soon Banner */}
         <div className="relative z-10 -mx-4 -mt-4 mb-4">
@@ -88,5 +95,6 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({ isOpen, onCl
         </div>
       </div>
     </ScrollableDialog>
+    </div>
   );
 };
