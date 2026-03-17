@@ -1,7 +1,11 @@
 -- Use actual schema: phase_operations and operation_steps (not template_operations/template_steps).
 -- Defines get_operation_steps_json and rebuild_phases_json_from_project_phases so get_project_workflow_with_standards works.
+-- First, drop any old overloads that may conflict with the new canonical signature.
 
-CREATE OR REPLACE FUNCTION public.get_operation_steps_json(p_operation_id UUID)
+DROP FUNCTION IF EXISTS public.get_operation_steps_json(UUID);
+DROP FUNCTION IF EXISTS public.get_operation_steps_json(UUID, BOOLEAN);
+
+CREATE OR REPLACE FUNCTION public.get_operation_steps_json(p_operation_id UUID, p_is_reference BOOLEAN DEFAULT false)
 RETURNS JSONB AS $$
 DECLARE
   steps_json JSONB;
@@ -62,7 +66,7 @@ BEGIN
       WHERE phase_id = phase_record.id
       ORDER BY display_order ASC
     LOOP
-      steps_json := public.get_operation_steps_json(op_record.id);
+      steps_json := public.get_operation_steps_json(op_record.id, false);
       operations_json := operations_json || jsonb_build_array(
         jsonb_build_object(
           'id', op_record.id,
