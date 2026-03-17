@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     const { data: templates, error: templatesError } = await supabase
       .from('projects')
       .select('id, name, revision_number, is_current_version, parent_project_id')
-      .eq('is_standard_template', false)
+      .eq('is_standard', false)
       .neq('id', standardProjectId);
 
     if (templatesError) {

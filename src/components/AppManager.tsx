@@ -260,7 +260,7 @@ export function AppManager({
       const {
         data: projectsData,
         error: projectsError
-      } = await supabase.from('projects').select('id').eq('is_standard_template', false);
+      } = await supabase.from('projects').select('id').eq('is_standard', false);
       if (projectsError) {
         console.error('❌ Error fetching projects:', projectsError);
       } else if (projectsData && projectsData.length > 0) {
