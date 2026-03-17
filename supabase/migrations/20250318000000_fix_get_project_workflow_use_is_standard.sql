@@ -166,8 +166,10 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Ensure create_project_run_snapshot uses get_project_workflow_with_standards so runs get standard + custom phases
--- First, drop ALL overloads so PostgREST can resolve the function unambiguously.
-DROP FUNCTION IF EXISTS public.create_project_run_snapshot;
+-- First, drop ALL known overloads with explicit signatures so Postgres can resolve unambiguously.
+DROP FUNCTION IF EXISTS public.create_project_run_snapshot(UUID, UUID, TEXT);
+DROP FUNCTION IF EXISTS public.create_project_run_snapshot(UUID, UUID, TEXT, UUID, TIMESTAMPTZ, TIMESTAMPTZ);
+DROP FUNCTION IF EXISTS public.create_project_run_snapshot(UUID, UUID, TEXT, UUID, TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION public.create_project_run_snapshot_v2(
   p_template_id UUID,
