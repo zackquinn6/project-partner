@@ -785,34 +785,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             normalized = (workflowPhases as any).phases;
           }
         }
-        if (normalized.length === 0) {
-          // Fallback: use template's phases column (e.g. from admin or prior build) so run can start
-          const { data: projectRow } = await supabase
-            .from('projects')
-            .select('phases')
-            .eq('id', projectTemplate.id)
-            .single();
-          const storedPhases = projectRow?.phases;
-          if (Array.isArray(storedPhases) && storedPhases.length > 0) {
-            templatePhases = storedPhases;
-          } else {
-            throw new Error(
-              `Template "${projectTemplate.name}" has no phases. ` +
-              'Ensure the project has phases in the database (project_phases, phase_operations, and operation_steps) or add phases in admin.'
-            );
-          }
-        } else {
-          templatePhases = normalized;
+        // Use workflowPhases from the database when available. If none are returned,
+        // defer to create_project_run_snapshot_v2 to assemble phases from the
+        // canonical project_phases / phase_operations / operation_steps tables.
+        templatePhases = normalized;
+        if (templatePhases.length > 0) {
           await supabase.from('projects').update({ phases: templatePhases }).eq('id', projectTemplate.id);
         }
-      }
-
-      // Validate: Template must have phases before creating project run
-      if (!templatePhases || !Array.isArray(templatePhases) || templatePhases.length === 0) {
-        throw new Error(
-          `Template "${projectTemplate.name}" has no phases. ` +
-          'Ensure the project has phases in the database (project_phases, phase_operations, and operation_steps) or add phases in admin.'
-        );
       }
       
       // Create a new project RUN based on the template without setup info
@@ -828,8 +807,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         // No user customization data when skipping
         completedSteps: [],
         progress: 0,
-        // Copy template data with rebuilt phases
-        phases: templatePhases,
+        // phases are assembled in the database snapshot; this client copy is only advisory
+        phases: templatePhases || [],
         category: projectTemplate.category,
         effortLevel: projectTemplate.effortLevel,
         skillLevel: projectTemplate.skillLevel,
