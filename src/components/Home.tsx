@@ -303,7 +303,6 @@ export default function Home({
                       <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myProjects} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                         <Folder className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                       </div>
-                      <span className="absolute -top-0.5 -right-0.5 rounded-full border-2 border-background bg-amber-500 px-1.5 py-0 text-[9px] font-semibold text-white shadow-sm" aria-hidden>Beta</span>
                     </div>
                     <span className="text-xs font-medium text-black text-center leading-tight px-1">Project Dashboard</span>
                   </div>
