@@ -93,7 +93,6 @@ export default function EditWorkflowView({
           id,
           name,
           description,
-          display_order,
           position_rule,
           position_value,
           is_standard,
@@ -103,7 +102,8 @@ export default function EditWorkflowView({
         `)
         .eq('project_id', projectId)
         .eq('is_standard', true)  // Only show standard phases when editing standard project
-        .order('display_order', { ascending: true });
+        .order('position_rule', { ascending: true })
+        .order('position_value', { ascending: true, nullsFirst: false });
       
       console.log('📊 Standard phases query result:', {
         phasesCount: phasesData?.length || 0,
