@@ -37,6 +37,8 @@ ALTER TABLE public.project_run_risks
   ADD COLUMN IF NOT EXISTS severity TEXT NULL;
 
 -- Functions: update create_project_revision_v2 to stop referencing removed column
+-- Postgres cannot change input parameter names via CREATE OR REPLACE for an existing signature.
+DROP FUNCTION IF EXISTS public.create_project_revision_v2(uuid, text);
 CREATE OR REPLACE FUNCTION public.create_project_revision_v2(source_project_id uuid, new_name text)
 RETURNS uuid
 LANGUAGE plpgsql
