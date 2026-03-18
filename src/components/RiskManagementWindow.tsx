@@ -870,7 +870,7 @@ export function RiskManagementWindow({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
-                      Mitigation actions (each with an optional benefit)
+                      Mitigation actions
                     </span>
                     <Button
                       type="button"
