@@ -2,14 +2,12 @@
 -- Root cause: frontend and generated types expect these columns:
 --   - is_linked boolean
 --   - source_project_id uuid (FK to projects.id)
---   - source_project_name text
 -- but the table in the database is missing them, causing 42703 on REST queries.
 
 -- 1. Ensure base columns exist
 ALTER TABLE public.project_phases
   ADD COLUMN IF NOT EXISTS is_linked boolean,
-  ADD COLUMN IF NOT EXISTS source_project_id uuid,
-  ADD COLUMN IF NOT EXISTS source_project_name text;
+  ADD COLUMN IF NOT EXISTS source_project_id uuid;
 
 -- 2. Ensure foreign key from source_project_id → projects.id
 DO $$

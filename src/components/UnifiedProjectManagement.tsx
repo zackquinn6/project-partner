@@ -1453,7 +1453,6 @@ export function UnifiedProjectManagement({
           is_standard,
           is_linked,
           source_project_id,
-          source_project_name,
           phase_operations (
             id,
             operation_name,
@@ -1487,7 +1486,7 @@ export function UnifiedProjectManagement({
         isStandard: phase.is_standard || false,
         isLinked: phase.is_linked || false,
         sourceProjectId: phase.source_project_id,
-        sourceProjectName: phase.source_project_name,
+        sourceProjectName: undefined,
         phaseOrderNumber: phase.position_rule === 'last' ? 'last'
           : (phase.position_rule === 'nth' && phase.position_value) ? phase.position_value
           : 999,

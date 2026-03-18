@@ -514,8 +514,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           is_standard,
           position_rule,
           position_value,
-          source_project_id,
-          source_project_name
+          source_project_id
         `)
         .eq('project_id', projectId)
         .eq('is_standard', false)
@@ -3508,8 +3507,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 is_standard: false,
                 position_rule: positionRule,
                 position_value: positionValue,
-                source_project_id: phaseToIncorporate.sourceProjectId,
-                source_project_name: phaseToIncorporate.sourceProjectName || null
+                source_project_id: phaseToIncorporate.sourceProjectId
               })
               .select('id')
               .single();

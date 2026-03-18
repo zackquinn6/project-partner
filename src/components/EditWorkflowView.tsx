@@ -97,8 +97,7 @@ export default function EditWorkflowView({
           position_value,
           is_standard,
           is_linked,
-          source_project_id,
-          source_project_name
+          source_project_id
         `)
         .eq('project_id', projectId)
         .eq('is_standard', true)  // Only show standard phases when editing standard project
@@ -223,7 +222,7 @@ export default function EditWorkflowView({
           isStandard: phaseData.is_standard || false,
           isLinked: phaseData.is_linked || false,
           sourceProjectId: phaseData.source_project_id,
-          sourceProjectName: phaseData.source_project_name,
+          sourceProjectName: undefined,
           phaseOrderNumber: phaseData.position_rule === 'last' ? 'last'
             : (phaseData.position_rule === 'nth' && phaseData.position_value) ? phaseData.position_value
             : 999,
@@ -258,8 +257,7 @@ export default function EditWorkflowView({
           is_linked,
           position_rule,
           position_value,
-          source_project_id,
-          source_project_name
+          source_project_id
         `)
         .eq('project_id', projectId)
         .order('position_rule', { ascending: true })

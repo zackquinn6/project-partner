@@ -1876,7 +1876,6 @@ export type Database = {
           position_value: number | null
           project_id: string
           source_project_id: string | null
-          source_project_name: string | null
           updated_at: string
         }
         Insert: {
@@ -1891,7 +1890,6 @@ export type Database = {
           position_value?: number | null
           project_id: string
           source_project_id?: string | null
-          source_project_name?: string | null
           updated_at?: string
         }
         Update: {
@@ -1906,7 +1904,6 @@ export type Database = {
           position_value?: number | null
           project_id?: string
           source_project_id?: string | null
-          source_project_name?: string | null
           updated_at?: string
         }
         Relationships: [
