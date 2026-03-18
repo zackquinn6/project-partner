@@ -2043,6 +2043,7 @@ export type Database = {
           schedule_impact_high_days: number | null
           schedule_impact_low_days: number | null
           status: string | null
+          severity: string | null
           template_risk_id: string | null
           updated_at: string | null
         }
@@ -2064,6 +2065,7 @@ export type Database = {
           schedule_impact_high_days?: number | null
           schedule_impact_low_days?: number | null
           status?: string | null
+          severity?: string | null
           template_risk_id?: string | null
           updated_at?: string | null
         }
@@ -2347,6 +2349,7 @@ export type Database = {
           risk_title: string
           schedule_impact_high_days: number | null
           schedule_impact_low_days: number | null
+          severity: string | null
           updated_at: string | null
         }
         Insert: {
@@ -2367,6 +2370,7 @@ export type Database = {
           risk_title: string
           schedule_impact_high_days?: number | null
           schedule_impact_low_days?: number | null
+          severity?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -2387,6 +2391,7 @@ export type Database = {
           risk_title?: string
           schedule_impact_high_days?: number | null
           schedule_impact_low_days?: number | null
+          severity?: string | null
           updated_at?: string | null
         }
         Relationships: [

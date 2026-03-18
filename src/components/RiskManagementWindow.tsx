@@ -21,6 +21,7 @@ interface Risk {
   risk_title?: string; // Database field
   risk_description?: string; // Database field
   likelihood: 'low' | 'medium' | 'high';
+  severity?: 'low' | 'medium' | 'high' | null;
   schedule_impact_days: number | null; // Maps to schedule_impact_low_days or schedule_impact_high_days
   schedule_impact_low_days?: number | null; // Database field
   schedule_impact_high_days?: number | null; // Database field
@@ -65,6 +66,7 @@ export function RiskManagementWindow({
   const [formData, setFormData] = useState({
     risk: '',
     likelihood: 'medium' as 'low' | 'medium' | 'high',
+    severity: 'medium' as 'low' | 'medium' | 'high',
     schedule_impact_days: 0,
     budget_impact_dollars: 0,
     mitigation: '',
@@ -120,6 +122,7 @@ export function RiskManagementWindow({
           risk_title: risk.risk_title,
           risk_description: risk.risk_description,
           likelihood: risk.likelihood,
+          severity: risk.severity,
           schedule_impact_days: risk.schedule_impact_high_days || risk.schedule_impact_low_days || null,
           schedule_impact_low_days: risk.schedule_impact_low_days,
           schedule_impact_high_days: risk.schedule_impact_high_days,
@@ -153,6 +156,7 @@ export function RiskManagementWindow({
           risk_title: risk.risk_title,
           risk_description: risk.risk_description,
           likelihood: risk.likelihood,
+          severity: risk.severity,
           schedule_impact_days: risk.schedule_impact_high_days || risk.schedule_impact_low_days || null,
           schedule_impact_low_days: risk.schedule_impact_low_days,
           schedule_impact_high_days: risk.schedule_impact_high_days,
@@ -206,6 +210,7 @@ export function RiskManagementWindow({
               risk_title: formData.risk.trim(),
               risk_description: formData.notes.trim() || null,
               likelihood: formData.likelihood,
+              severity: formData.severity,
               schedule_impact_low_days: formData.schedule_impact_days || null,
               schedule_impact_high_days: formData.schedule_impact_days || null,
               budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
@@ -238,6 +243,7 @@ export function RiskManagementWindow({
               risk_title: formData.risk.trim(),
               risk_description: formData.notes.trim() || null,
               likelihood: formData.likelihood,
+              severity: formData.severity,
               schedule_impact_low_days: formData.schedule_impact_days || null,
               schedule_impact_high_days: formData.schedule_impact_days || null,
               budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
@@ -261,6 +267,7 @@ export function RiskManagementWindow({
               risk_title: formData.risk.trim(),
               risk_description: formData.notes.trim() || null,
               likelihood: formData.likelihood,
+              severity: formData.severity,
               schedule_impact_low_days: formData.schedule_impact_days || null,
               schedule_impact_high_days: formData.schedule_impact_days || null,
               budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
@@ -294,6 +301,7 @@ export function RiskManagementWindow({
               risk_title: formData.risk.trim(),
               risk_description: formData.notes.trim() || null,
               likelihood: formData.likelihood,
+              severity: formData.severity,
               schedule_impact_low_days: formData.schedule_impact_days || null,
               schedule_impact_high_days: formData.schedule_impact_days || null,
               budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
@@ -316,6 +324,7 @@ export function RiskManagementWindow({
       setFormData({
         risk: '',
         likelihood: 'medium',
+        severity: 'medium',
         schedule_impact_days: 0,
         budget_impact_dollars: 0,
         mitigation: '',
@@ -337,6 +346,7 @@ export function RiskManagementWindow({
     setFormData({
       risk: risk.risk || risk.risk_title || '',
       likelihood: risk.likelihood,
+      severity: risk.severity || 'medium',
       schedule_impact_days: risk.schedule_impact_days || risk.schedule_impact_high_days || risk.schedule_impact_low_days || 0,
       budget_impact_dollars: risk.budget_impact_dollars || risk.budget_impact_high || risk.budget_impact_low || 0,
       mitigation: risk.mitigation || risk.mitigation_strategy || '',
@@ -482,6 +492,7 @@ export function RiskManagementWindow({
                       setFormData({
                         risk: '',
                         likelihood: 'medium',
+                        severity: 'medium',
                         schedule_impact_days: 0,
                         budget_impact_dollars: 0,
                         mitigation: '',
@@ -745,40 +756,78 @@ export function RiskManagementWindow({
                 />
               </div>
 
-              <div>
-                <Label htmlFor="likelihood">Likelihood</Label>
-                <Select
-                  value={formData.likelihood}
-                  onValueChange={(value: any) => setFormData({ ...formData, likelihood: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue>
-                      {formData.likelihood === 'low' && 'Low'}
-                      {formData.likelihood === 'medium' && 'Medium'}
-                      {formData.likelihood === 'high' && 'High'}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">
-                      <div className="flex flex-col">
-                        <span className="font-medium">Low</span>
-                        <span className="text-xs text-muted-foreground">Possible but rare</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="medium">
-                      <div className="flex flex-col">
-                        <span className="font-medium">Medium</span>
-                        <span className="text-xs text-muted-foreground">It might happen</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="high">
-                      <div className="flex flex-col">
-                        <span className="font-medium">High</span>
-                        <span className="text-xs text-muted-foreground">Not sure but it probably will happen</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="likelihood">Likelihood</Label>
+                  <Select
+                    value={formData.likelihood}
+                    onValueChange={(value: any) => setFormData({ ...formData, likelihood: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue>
+                        {formData.likelihood === 'low' && 'Low'}
+                        {formData.likelihood === 'medium' && 'Medium'}
+                        {formData.likelihood === 'high' && 'High'}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Low</span>
+                          <span className="text-xs text-muted-foreground">Possible but rare</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="medium">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Medium</span>
+                          <span className="text-xs text-muted-foreground">It might happen</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="high">
+                        <div className="flex flex-col">
+                          <span className="font-medium">High</span>
+                          <span className="text-xs text-muted-foreground">Not sure but it probably will happen</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="severity">Severity</Label>
+                  <Select
+                    value={formData.severity}
+                    onValueChange={(value: any) => setFormData({ ...formData, severity: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue>
+                        {formData.severity === 'low' && 'Low'}
+                        {formData.severity === 'medium' && 'Medium'}
+                        {formData.severity === 'high' && 'High'}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Low</span>
+                          <span className="text-xs text-muted-foreground">Minor impact if it occurs</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="medium">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Medium</span>
+                          <span className="text-xs text-muted-foreground">Noticeable impact requiring management</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="high">
+                        <div className="flex flex-col">
+                          <span className="font-medium">High</span>
+                          <span className="text-xs text-muted-foreground">Severe impact to schedule or budget</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
