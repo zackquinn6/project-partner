@@ -67,10 +67,21 @@ export const HeroSection = ({ onOpenDemo, onScrollToSection }: HeroSectionProps)
             </p>
           </div>
 
-          {/* Right Column - Visual */}
-          <div className="relative">
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border hover-lift">
-              <img src="/lovable-uploads/workflow-interface-hero.png" alt="Project Partner Workflow Interface" className="w-full h-auto" />
+          {/* Right Column - Tee composite: primary image with two screenshots at bottom, 10% vertical overlap */}
+          <div className="relative w-full pb-[18%]">
+            <div className="relative rounded-2xl overflow-visible">
+              {/* Primary hero image */}
+              <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border border-border hover-lift">
+                <img src="/lovable-uploads/workflow-interface-hero.png" alt="Project Partner Workflow Interface" className="w-full h-auto block" />
+              </div>
+              {/* Bottom left screenshot */}
+              <div className="absolute left-0 bottom-0 z-20 w-[42%] rounded-xl overflow-hidden border border-border shadow-xl bg-card" style={{ transform: 'translateY(10%)' }}>
+                <img src="/lovable-uploads/hero-workshop.png" alt="My Workshop" className="w-full h-auto block" />
+              </div>
+              {/* Bottom right screenshot */}
+              <div className="absolute right-0 bottom-0 z-20 w-[42%] rounded-xl overflow-hidden border border-border shadow-xl bg-card" style={{ transform: 'translateY(10%)' }}>
+                <img src="/lovable-uploads/hero-maintenance.png" alt="Home Maintenance Tracker" className="w-full h-auto block" />
+              </div>
             </div>
           </div>
         </div>

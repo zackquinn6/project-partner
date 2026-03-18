@@ -8,10 +8,10 @@ export const ValuePropSection = () => {
           {/* Header */}
           <div className="text-center mb-12 md:mb-16">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-              Project Management Tailored to Home Improvements
+              Built for Better Project Experiences
             </h2>
             <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-              A tool to get maximum efficiency from home improvement projects.
+              Some sources show half of DIY projects don&apos;t land as planned—we think that&apos;s a problem.
             </p>
           </div>
 
