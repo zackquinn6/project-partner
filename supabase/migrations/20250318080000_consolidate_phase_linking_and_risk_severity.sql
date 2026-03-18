@@ -1,6 +1,42 @@
--- Update create_project_revision_v2 to stop referencing project_phases.source_project_name.
--- This column has been removed; the source project name should be resolved via source_project_id -> projects.
+-- Consolidated migration:
+-- - project_phases: incorporate linking fields via source_project_id, remove duplicative source_project_name
+-- - project_risks / project_run_risks: add severity
+-- - create_project_revision_v2: remove references to removed column
 
+-- project_phases: linking fields + remove duplicated name
+ALTER TABLE public.project_phases
+  ADD COLUMN IF NOT EXISTS is_linked boolean,
+  ADD COLUMN IF NOT EXISTS source_project_id uuid;
+
+ALTER TABLE public.project_phases
+  DROP COLUMN IF EXISTS source_project_name;
+
+-- Ensure foreign key from source_project_id → projects.id
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'project_phases_source_project_id_fkey'
+      AND conrelid = 'public.project_phases'::regclass
+  ) THEN
+    ALTER TABLE public.project_phases
+      ADD CONSTRAINT project_phases_source_project_id_fkey
+      FOREIGN KEY (source_project_id)
+      REFERENCES public.projects(id)
+      ON DELETE SET NULL;
+  END IF;
+END;
+$$;
+
+-- Risks: add severity
+ALTER TABLE public.project_risks
+  ADD COLUMN IF NOT EXISTS severity TEXT NULL;
+
+ALTER TABLE public.project_run_risks
+  ADD COLUMN IF NOT EXISTS severity TEXT NULL;
+
+-- Functions: update create_project_revision_v2 to stop referencing removed column
 CREATE OR REPLACE FUNCTION public.create_project_revision_v2(source_project_id uuid, new_name text)
 RETURNS uuid
 LANGUAGE plpgsql
