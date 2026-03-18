@@ -334,7 +334,7 @@ export default function Home({
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs text-center">
-                  <p>A lightweight home improvement task tracker, with ability to link to projects. Best for managing a portfolio of projects, like renovations.</p>
+                  <p>A task tracker with basic scheduling functions and ability to link to projects. Used for small tasks and large projects.</p>
                 </TooltipContent>
               </Tooltip>
             </div>
