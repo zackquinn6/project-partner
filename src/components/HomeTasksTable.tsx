@@ -284,7 +284,7 @@ export function HomeTasksTable({
     { id: 'pro', label: 'Pro', labelDesktop: 'Professional' },
   ];
 
-  return <div className="space-y-3 flex flex-col h-full">
+  return <div className="space-y-2 md:space-y-3 flex flex-col h-full">
       {/* Desktop filters and controls */}
       <div className="hidden md:flex flex-row gap-4 items-center pt-3">
         {onAddTask && (
@@ -345,7 +345,7 @@ export function HomeTasksTable({
       </div>
 
       {/* Mobile filters and controls */}
-      <div className="flex md:hidden flex-col gap-2 mb-2 pt-1">
+      <div className="flex md:hidden flex-col gap-1.5 mb-1 pt-0.5">
         <Input
           placeholder="Search tasks..."
           value={searchTerm}
@@ -405,24 +405,26 @@ export function HomeTasksTable({
         </div>
       </div>
 
-      {/* Table */}
-      <div className="border rounded-lg overflow-hidden flex-1">
+      {/* Table: mobile = Task + Due date only; desktop = full columns */}
+      <div className="border rounded-lg md:rounded-lg rounded-none border-x-0 md:border-x overflow-hidden flex-1">
         <div className="overflow-auto h-full">
           <Table>
-            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10">
+            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:px-2 [&_th]:md:px-4 [&_th]:py-2 [&_th]:md:py-3">
               <TableRow className="border-sky-500/50">
                 {!isMobile && <TableHead className="w-14 text-xs text-white"></TableHead>}
-                <TableHead className="min-w-[200px] md:min-w-[281px] md:w-[281px] text-xs text-white">
-                  <Button variant="ghost" size="sm" onClick={() => handleSort('title')} className="h-6 px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
+                <TableHead className="min-w-0 md:min-w-[281px] md:w-[281px] text-xs text-white">
+                  <Button variant="ghost" size="sm" onClick={() => handleSort('title')} className="h-6 px-1 md:px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
                     Task <SortIcon field="title" />
                   </Button>
                 </TableHead>
                 {!isMobile && <TableHead className="w-[180px] text-xs text-white">Notes</TableHead>}
-                <TableHead className="w-24 md:w-20 text-xs text-white">
-                  <Button variant="ghost" size="sm" onClick={() => handleSort('priority')} className="h-6 px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
-                    Priority <SortIcon field="priority" />
-                  </Button>
-                </TableHead>
+                {!isMobile && (
+                  <TableHead className="w-24 md:w-20 text-xs text-white">
+                    <Button variant="ghost" size="sm" onClick={() => handleSort('priority')} className="h-6 px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
+                      Priority <SortIcon field="priority" />
+                    </Button>
+                  </TableHead>
+                )}
                 {!isMobile && (
                   <TableHead className="w-24 md:w-20 text-xs text-white">
                     <Button variant="ghost" size="sm" onClick={() => handleSort('diy_level')} className="h-6 px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
@@ -430,17 +432,17 @@ export function HomeTasksTable({
                     </Button>
                   </TableHead>
                 )}
-                <TableHead className="w-32 md:w-24 text-xs text-white">
-                  <Button variant="ghost" size="sm" onClick={() => handleSort('due_date')} className="h-6 px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
-                    Due Date <SortIcon field="due_date" />
+                <TableHead className="w-[80px] md:w-24 text-xs text-white whitespace-nowrap">
+                  <Button variant="ghost" size="sm" onClick={() => handleSort('due_date')} className="h-6 px-1 md:px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
+                    Due <SortIcon field="due_date" />
                   </Button>
                 </TableHead>
                 {!isMobile && <TableHead className="w-[150px] text-xs text-right text-white">Actions</TableHead>}
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="[&_td]:px-2 [&_td]:md:px-4 [&_td]:py-2 [&_td]:md:py-3">
               {filteredAndSortedTasks.length === 0 ? <TableRow>
-                  <TableCell colSpan={isMobile ? 3 : 7} className="text-center py-8 text-[18px] text-muted-foreground">
+                  <TableCell colSpan={isMobile ? 2 : 7} className="text-center py-6 md:py-8 text-sm md:text-[18px] text-muted-foreground">
                     No tasks found. Add your first task to get started!
                   </TableCell>
                 </TableRow> : filteredAndSortedTasks.map(task => (
@@ -467,16 +469,16 @@ export function HomeTasksTable({
                           </Button>
                         </TableCell>
                       )}
-                     <TableCell>
-                      <div className="flex items-center gap-2 flex-wrap">
+                     <TableCell className="min-w-0">
+                      <div className="flex items-center gap-1.5 md:gap-2 flex-wrap min-w-0">
                         <span 
-                          className={`text-[18px] font-medium cursor-pointer leading-tight ${task.status === 'closed' ? 'line-through text-muted-foreground' : ''}`}
+                          className={`text-sm md:text-[18px] font-medium cursor-pointer leading-tight min-w-0 truncate ${task.status === 'closed' ? 'line-through text-muted-foreground' : ''}`}
                           onClick={() => handleToggleTaskComplete(task.id, task.status)}
                         >
                           {task.status === 'closed' ? '✓ ' : ''}{task.title}
                         </span>
                         {isMobile && (
-                          <Badge variant={getDiyLevelColor(task.diy_level)} className="text-[15px] px-1.5 py-0 shrink-0">
+                          <Badge variant={getDiyLevelColor(task.diy_level)} className="text-xs px-1 py-0 shrink-0">
                             {task.diy_level === 'beginner' ? 'new' : task.diy_level === 'intermediate' ? 'mid' : task.diy_level === 'advanced' ? 'adv' : 'pro'}
                           </Badge>
                         )}
@@ -485,12 +487,12 @@ export function HomeTasksTable({
                             variant="ghost"
                             size="sm"
                             onClick={() => toggleRow(task.id)}
-                            className="h-7 w-7 p-0"
+                            className="h-6 w-6 md:h-7 md:w-7 p-0 shrink-0"
                           >
                             {expandedRows.has(task.id) ? (
-                              <ChevronUp className="h-[18px] w-[18px]" />
+                              <ChevronUp className="h-4 w-4 md:h-[18px] md:w-[18px]" />
                             ) : (
-                              <ChevronDown className="h-[18px] w-[18px]" />
+                              <ChevronDown className="h-4 w-4 md:h-[18px] md:w-[18px]" />
                             )}
                           </Button>
                         )}
@@ -501,11 +503,13 @@ export function HomeTasksTable({
                         {task.notes || '-'}
                       </TableCell>
                     )}
-                    <TableCell>
-                      <Badge variant={getPriorityColor(task.priority)} className="text-[15px] px-1.5 py-0">
-                        {task.priority === 'medium' ? 'med' : task.priority}
-                      </Badge>
-                    </TableCell>
+                    {!isMobile && (
+                      <TableCell>
+                        <Badge variant={getPriorityColor(task.priority)} className="text-[15px] px-1.5 py-0">
+                          {task.priority === 'medium' ? 'med' : task.priority}
+                        </Badge>
+                      </TableCell>
+                    )}
                     {!isMobile && (
                       <TableCell>
                         <Badge variant={getDiyLevelColor(task.diy_level)} className="text-[15px] px-1.5 py-0">
@@ -515,8 +519,8 @@ export function HomeTasksTable({
                         </Badge>
                       </TableCell>
                     )}
-                    <TableCell className="text-[18px]">
-                      {task.due_date ? new Date(task.due_date).toLocaleDateString() : '-'}
+                    <TableCell className="text-sm md:text-[18px] whitespace-nowrap">
+                      {task.due_date ? new Date(task.due_date).toLocaleDateString(undefined, isMobile ? { month: 'numeric', day: 'numeric', year: '2-digit' } : undefined) : '-'}
                     </TableCell>
                     {!isMobile && (
                       <TableCell className="text-right">
@@ -565,7 +569,7 @@ export function HomeTasksTable({
                   </TableRow>
                   {isMobile && swipedTaskId === task.id && (
                     <TableRow key={`${task.id}-swipe-actions`} className="bg-muted/50">
-                      <TableCell colSpan={3} className="py-2">
+                      <TableCell colSpan={2} className="py-2">
                         <div className="flex gap-2 justify-end">
                           <Button variant="outline" size="sm" className="h-9 text-[18px]" onClick={() => { onEdit(task); setSwipedTaskId(null); }}>
                             <Pencil className="h-[18px] w-[18px] mr-1" />
@@ -581,7 +585,7 @@ export function HomeTasksTable({
                   )}
                    {expandedRows.has(task.id) && subtasks[task.id]?.length > 0 && (
                     <TableRow key={`${task.id}-subtasks`}>
-                      <TableCell colSpan={isMobile ? 3 : 7} className="bg-muted/30 p-3 md:p-4 border-l-4 border-l-primary/20">
+                      <TableCell colSpan={isMobile ? 2 : 7} className="bg-muted/30 p-2 md:p-4 border-l-4 border-l-primary/20">
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <div className="text-[18px] font-semibold text-primary">Subtasks</div>

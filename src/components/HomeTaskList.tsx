@@ -470,7 +470,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
       >
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
           <DialogDescription className="sr-only">Project & Task Manager for tasks, projects, sub-tasks, shopping list, and budgeting.</DialogDescription>
-          <DialogHeader className="px-4 md:px-6 py-2 md:py-4 border-b flex flex-row flex-nowrap items-center justify-between gap-2 flex-shrink-0 min-h-0 space-y-0 w-full">
+          <DialogHeader className="px-2 md:px-6 py-2 md:py-4 border-b flex flex-row flex-nowrap items-center justify-between gap-2 flex-shrink-0 min-h-0 space-y-0 w-full">
             <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
               <List className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" aria-hidden />
               <DialogTitle className="text-base font-bold md:text-xl truncate">Project & Task Manager</DialogTitle>
@@ -534,7 +534,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
 
           <div className="flex-1 overflow-hidden flex flex-col">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <div className="flex-shrink-0 px-2 md:px-4 pt-0 pb-1 md:pb-1.5 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="flex-shrink-0 px-1 md:px-4 pt-0 pb-1 md:pb-1.5 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="overflow-hidden">
                   <TabsList className={`w-full inline-flex ${canAccessPaidFeatures ? 'h-8 md:h-9' : 'h-8 md:h-9'} p-0.5 gap-0.5 md:gap-1 bg-muted/50 rounded-full`}>
                     <TabsTrigger value="tasks" className="text-[11px] md:text-xs px-2 md:px-3 py-1.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0 truncate">
@@ -552,7 +552,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                 </div>
               </div>
 
-              <div className="flex-1 overflow-auto px-2 md:px-4 pt-0.5 md:pt-0 pb-2 min-h-0 bg-gradient-to-b from-background to-muted/30">
+              <div className="flex-1 overflow-auto px-1 md:px-4 pt-0.5 md:pt-0 pb-2 min-h-0 bg-gradient-to-b from-background to-muted/30">
                 <TabsContent value="tasks" className="mt-0 space-y-0.5 md:space-y-3 h-full">
                   {/* Project Dashboard metrics (Project & Task Manager) */}
                   {(() => {
