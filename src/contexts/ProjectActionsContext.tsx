@@ -731,17 +731,26 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       lastUpdateRef.current = updateKey;
 
       try {
-        // CRITICAL: Fetch current values from database to preserve initial_budget, initial_timeline, initial_sizing
-        // if they're not explicitly provided in the projectRun object
+        // CRITICAL: Fetch current values from database to preserve settings that might be omitted
+        // in certain update payloads (e.g. when changing schedule_optimization_method).
         let preservedBudget = (projectRun as any).initial_budget;
         let preservedTimeline = (projectRun as any).initial_timeline;
         let preservedSizing = (projectRun as any).initial_sizing;
+
+        let preservedProgressReportingStyle = (projectRun as any).progress_reporting_style;
+        let preservedScheduleOptimizationMethod = (projectRun as any).schedule_optimization_method;
         
         // If any of these fields are undefined, fetch from database to preserve existing values
-        if (preservedBudget === undefined || preservedTimeline === undefined || preservedSizing === undefined) {
+        if (
+          preservedBudget === undefined ||
+          preservedTimeline === undefined ||
+          preservedSizing === undefined ||
+          preservedProgressReportingStyle === undefined ||
+          preservedScheduleOptimizationMethod === undefined
+        ) {
           const { data: currentRun, error: fetchError } = await supabase
             .from('project_runs')
-            .select('initial_budget, initial_timeline, initial_sizing')
+            .select('initial_budget, initial_timeline, initial_sizing, progress_reporting_style, schedule_optimization_method')
             .eq('id', projectRun.id)
             .single();
           
@@ -756,7 +765,24 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             if (preservedSizing === undefined) {
               preservedSizing = currentRun.initial_sizing;
             }
+
+            if (preservedProgressReportingStyle === undefined) {
+              preservedProgressReportingStyle = currentRun.progress_reporting_style;
+            }
+
+            if (preservedScheduleOptimizationMethod === undefined) {
+              preservedScheduleOptimizationMethod = currentRun.schedule_optimization_method;
+            }
           }
+        }
+
+        // If these settings are still undefined after attempting to preserve from the DB,
+        // the database schema is missing the required columns or returned unexpected data.
+        if (preservedProgressReportingStyle === undefined) {
+          throw new Error('progress_reporting_style is missing from project run data');
+        }
+        if (preservedScheduleOptimizationMethod === undefined) {
+          throw new Error('schedule_optimization_method is missing from project run data');
         }
         
         console.log('💾 ProjectActions - Saving project run to database:', {
@@ -800,8 +826,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           phase_ratings: projectRun.phase_ratings ? JSON.stringify(projectRun.phase_ratings) : null,
           schedule_events: projectRun.schedule_events ? JSON.stringify(projectRun.schedule_events) : null,
           shopping_checklist_data: projectRun.shopping_checklist_data ? JSON.stringify(projectRun.shopping_checklist_data) : null,
-          progress_reporting_style: projectRun.progress_reporting_style || 'linear',
-          schedule_optimization_method: (projectRun as any).schedule_optimization_method || 'single-piece-flow',
+          progress_reporting_style: preservedProgressReportingStyle,
+          schedule_optimization_method: preservedScheduleOptimizationMethod,
           instruction_level_preference: (projectRun as any).instruction_level_preference || null,
           initial_budget: preservedBudget !== undefined ? preservedBudget : null,
           initial_timeline: preservedTimeline !== undefined ? preservedTimeline : null,
