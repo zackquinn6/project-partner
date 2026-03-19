@@ -3032,13 +3032,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                           </>
                         ) : (
                           // Project phases OR standard phases in Edit Standard: Show edit/delete/reorder buttons
-                          <>
+                              <>
                             {isEditing ? (
                               <>
-                                <Button size="sm" onClick={saveEdit}>
+                                <Button type="button" size="sm" onClick={saveEdit}>
                                   <Check className="w-4 h-4" />
                                 </Button>
-                                <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
+                                <Button type="button" size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
                                   <X className="w-4 h-4" />
                                 </Button>
                               </>
@@ -3131,9 +3131,9 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                               
                               return (
                                 <Card key={operation.id} className="ml-4">
-                                  <CardHeader className="py-2 px-3">
+                                  <CardHeader className="py-2 px-4">
                                     <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2 flex-1">
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
                                         <Button
                                           variant="ghost"
                                           size="sm"
@@ -3144,7 +3144,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                         </Button>
                                         
                                         {isOperationEditing ? (
-                                          <div className="flex-1 space-y-1">
+                                          <div className="flex-1 space-y-1 min-w-0">
                                             <Input
                                               value={editingItem.data.name || ''}
                                               onChange={e => setEditingItem({
@@ -3152,7 +3152,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                 data: { ...editingItem.data, name: e.target.value }
                                               })}
                                               placeholder="Operation name"
-                                              className="text-sm h-7"
+                                              className="text-sm h-7 w-56 max-w-full"
                                             />
                                             <Textarea
                                               value={editingItem.data.description || ''}
@@ -3162,7 +3162,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                               })}
                                               placeholder="Operation description"
                                               rows={1}
-                                              className="text-xs"
+                                              className="text-xs w-56 max-w-full"
                                             />
                                           </div>
                                         ) : (
@@ -3183,7 +3183,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                         )}
                                       </div>
                                       
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-2 flex-shrink-0">
                                         <Badge variant="outline" className="text-xs">
                                           {operation.steps.length} steps
                                         </Badge>
@@ -3193,10 +3193,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                           <>
                                             {isOperationEditing ? (
                                               <>
-                                                <Button size="sm" onClick={saveEdit}>
+                                              <Button type="button" size="sm" onClick={saveEdit}>
                                                   <Check className="w-3 h-3" />
                                                 </Button>
-                                                <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
+                                              <Button type="button" size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
                                                   <X className="w-3 h-3" />
                                                 </Button>
                                               </>
@@ -3289,7 +3289,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                 <Card key={step.id} className="ml-4">
                                                   <CardContent className="p-2">
                                                     <div className="flex items-center justify-between">
-                                                      <div className="flex-1">
+                                                    <div className="flex-1 min-w-0">
                                                         {isStepEditing ? (
                                                           <div className="space-y-1">
                                                             <Input
@@ -3303,7 +3303,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                                 }
                                                               })}
                                                               placeholder="Step name"
-                                                              className="text-xs h-6"
+                                                            className="text-xs h-6 w-44 max-w-full"
                                                             />
                                                             <Textarea
                                                               value={editingItem.data.description || ''}
@@ -3313,7 +3313,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                               })}
                                                               placeholder="Step description"
                                                               rows={1}
-                                                              className="text-xs"
+                                                            className="text-xs w-44 max-w-full"
                                                             />
                                                           </div>
                                                         ) : (
@@ -3340,10 +3340,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                         <>
                                                           {isStepEditing ? (
                                                             <>
-                                                              <Button size="sm" onClick={saveEdit}>
+                                                              <Button type="button" size="sm" onClick={saveEdit}>
                                                                 <Check className="w-3 h-3" />
                                                               </Button>
-                                                              <Button size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
+                                                              <Button type="button" size="sm" variant="ghost" onClick={() => setEditingItem(null)}>
                                                                 <X className="w-3 h-3" />
                                                               </Button>
                                                             </>
