@@ -3152,7 +3152,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                 data: { ...editingItem.data, name: e.target.value }
                                               })}
                                               placeholder="Operation name"
-                                              className="text-sm h-7 w-56 max-w-full"
+                                              className="text-sm h-7"
                                             />
                                             <Textarea
                                               value={editingItem.data.description || ''}
@@ -3162,7 +3162,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                               })}
                                               placeholder="Operation description"
                                               rows={1}
-                                              className="text-xs w-56 max-w-full"
+                                              className="text-xs"
                                             />
                                           </div>
                                         ) : (
@@ -3303,7 +3303,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                                 }
                                                               })}
                                                               placeholder="Step name"
-                                                            className="text-xs h-6 w-44 max-w-full"
+                                                              className="text-xs h-6"
                                                             />
                                                             <Textarea
                                                               value={editingItem.data.description || ''}
@@ -3313,7 +3313,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                               })}
                                                               placeholder="Step description"
                                                               rows={1}
-                                                            className="text-xs w-44 max-w-full"
+                                                              className="text-xs"
                                                             />
                                                           </div>
                                                         ) : (
