@@ -941,7 +941,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
    * This is used after delete, order change, and other operations
    * @param skipValidation - If true, skip validation (useful during deletion before renumbering)
    */
-  const reloadPhasesWithPositions = useCallback(async (projectId: string, skipValidation: boolean = false): Promise<Phase[]> => {
+  const reloadPhasesWithPositions = useCallback(
+    async (
+      projectId: string,
+      skipValidation: boolean = false,
+      options?: { dispatchEvent?: boolean }
+    ): Promise<Phase[]> => {
     // Load phases directly from database (already includes position data)
     const loadedPhases = await loadPhases(projectId);
     
@@ -969,13 +974,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     
     const sortedPhases = sortPhasesByOrderNumber(loadedPhases);
     
-    // Dispatch event to notify other components (like EditWorkflowView) that phases were updated
-    window.dispatchEvent(new CustomEvent('phasesUpdated', { 
-      detail: { projectId } 
-    }));
+    // Dispatch event to notify other components (like EditWorkflowView) that phases were updated.
+    // Some edits (position, adding items, editing text) should not trigger a full parent refresh.
+    if (options?.dispatchEvent !== false) {
+      window.dispatchEvent(new CustomEvent('phasesUpdated', { 
+        detail: { projectId } 
+      }));
+    }
     
     return sortedPhases;
-  }, [loadPhases, validatePhaseOrdering]);
+    },
+    [loadPhases, validatePhaseOrdering]
+  );
   
   /**
    * Load and validate phases on component mount or project change
@@ -1321,7 +1331,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       
       // Reload phases with position data from database
       console.log('🔄 Reloading phases after adding new phase...');
-      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       console.log('✅ Successfully reloaded phases:', sortedPhases.length);
       
       // Reset loadedProjectIdRef to allow immediate UI update
@@ -1499,7 +1509,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Reload phases with position data after renumbering
-      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       
       // Reset loadedProjectIdRef to allow immediate UI update
       loadedProjectIdRef.current = null;
@@ -1692,7 +1702,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Reload phases with position data from database
-      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       
       // Reset loadedProjectIdRef to allow immediate UI update
       loadedProjectIdRef.current = null;
@@ -1781,7 +1791,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Reload phases with position data
-      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
@@ -1846,7 +1856,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         .eq('id', prevOperation.id);
       
       // Reload phases
-      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
@@ -1911,7 +1921,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         .eq('id', nextOperation.id);
       
       // Reload phases
-      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
@@ -2004,7 +2014,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         .eq('id', prevStep.id);
       
       // Reload phases
-      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
@@ -2097,7 +2107,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         .eq('id', nextStep.id);
       
       // Reload phases
-      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
@@ -2175,7 +2185,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Reload phases with position data
-      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
@@ -2305,7 +2315,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Reload phases with position data
-      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
@@ -2409,7 +2419,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       console.log('Step created successfully:', newStep);
       
       // Reload phases with position data
-      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
