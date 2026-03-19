@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -24,7 +24,8 @@ import {
   Info,
   Loader2,
   Shield,
-  TrendingUp
+  TrendingUp,
+  Briefcase
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, addDays } from 'date-fns';
@@ -89,7 +90,12 @@ interface SchedulerWizardProps {
   lunchDuration?: number;
   setLunchDuration?: (duration: number) => void;
   scheduledCompletionDate?: Date | null;
+  onOpenContractorScheduling?: () => void;
+  /** Increment after a successful generate to collapse all wizard sections */
+  collapseAccordionSignal?: number;
 }
+
+type SchedulerAccordionKey = 'dates' | 'availability' | 'tempo' | 'advanced' | 'generate';
 
 export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   targetDate,
@@ -121,11 +127,17 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   setQuietHours,
   lunchDuration = 30,
   setLunchDuration,
-  scheduledCompletionDate
+  scheduledCompletionDate,
+  onOpenContractorScheduling,
+  collapseAccordionSignal = 0
 }) => {
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showIndividualAvailability, setShowIndividualAvailability] = useState(false);
+  const [openSection, setOpenSection] = useState<SchedulerAccordionKey | null>('dates');
   const [noWorkOnHolidays, setNoWorkOnHolidays] = useState(false);
+
+  useEffect(() => {
+    if (collapseAccordionSignal <= 0) return;
+    setOpenSection(null);
+  }, [collapseAccordionSignal]);
   
   // Check if availability has been selected (either quick preset or individual)
   const hasAvailabilitySelected = teamMembers.some(member => 
@@ -134,129 +146,197 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
     member.weekdaysAfterFivePm
   );
   
-  // Handler for customize availability button
   const handleCustomizeAvailability = () => {
-    setShowAdvanced(true);
-    // Scroll to team members section after a brief delay to allow expansion
+    setOpenSection('advanced');
     setTimeout(() => {
-      const teamMembersSection = document.querySelector('[data-team-members-section]');
-      if (teamMembersSection) {
-        teamMembersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      document.querySelector('[data-team-members-section]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   };
+
+  const focusSection = (key: SchedulerAccordionKey) => () => setOpenSection(key);
 
   return (
     <div className="space-y-4">
       {/* Step 1: Target Dates */}
       <Card>
-        <CardContent className="p-4 space-y-3">
-          <div>
-            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-                1
-              </div>
-              <span>Target dates</span>
-            </h3>
-            
-            {/* Scheduled and Goal Completion Dates Display */}
-            {scheduledCompletionDate && (
-              <div className="mb-4 p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-2">
-                <div>
-                  <div className="text-2xl font-bold text-primary">
-                    Scheduled completion date: {format(scheduledCompletionDate, 'MMMM dd, yyyy')}
+        <Collapsible
+          open={openSection === 'dates'}
+          onOpenChange={(next) => {
+            if (next) setOpenSection('dates');
+            else setOpenSection((p) => (p === 'dates' ? null : p));
+          }}
+        >
+          <CardContent className="p-4 space-y-3">
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="w-full flex items-center justify-between gap-2 text-left rounded-md hover:bg-muted/50 -mx-1 px-1 py-0.5"
+              >
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shrink-0">
+                    1
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Goal completion date: {targetDate ? format(new Date(targetDate), 'MMMM dd, yyyy') : 'Not set'}
+                  <span>Target dates</span>
+                </h3>
+                {openSection === 'dates' ? (
+                  <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />
+                )}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div onPointerDownCapture={focusSection('dates')}>
+                {scheduledCompletionDate && (
+                  <div className="mb-4 p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-2">
+                    <div>
+                      <div className="text-2xl font-bold text-primary">
+                        Scheduled completion date: {format(scheduledCompletionDate, 'MMMM dd, yyyy')}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Goal completion date: {targetDate ? format(new Date(targetDate), 'MMMM dd, yyyy') : 'Not set'}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                  <div>
+                    <Label className="text-xs font-medium flex items-center gap-1">
+                      <Target className="w-3 h-3" />
+                      Target Completion
+                    </Label>
+                    <Input
+                      type="date"
+                      value={targetDate}
+                      onChange={(e) => setTargetDate(e.target.value)}
+                      className="mt-1 h-9"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Your goal date</p>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs font-medium flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 text-destructive" />
+                      Latest Acceptable Date
+                    </Label>
+                    <Input
+                      type="date"
+                      value={dropDeadDate}
+                      onChange={(e) => setDropDeadDate(e.target.value)}
+                      className="mt-1 h-9"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Absolute deadline</p>
                   </div>
                 </div>
               </div>
-            )}
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs font-medium flex items-center gap-1">
-                  <Target className="w-3 h-3" />
-                  Target Completion
-                </Label>
-                <Input
-                  type="date"
-                  value={targetDate}
-                  onChange={(e) => setTargetDate(e.target.value)}
-                  className="mt-1 h-9"
-                />
-                <p className="text-xs text-muted-foreground mt-1">Your goal date</p>
-              </div>
-              
-              <div>
-                <Label className="text-xs font-medium flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3 text-destructive" />
-                  Latest Acceptable Date
-                </Label>
-                <Input
-                  type="date"
-                  value={dropDeadDate}
-                  onChange={(e) => setDropDeadDate(e.target.value)}
-                  className="mt-1 h-9"
-                />
-                <p className="text-xs text-muted-foreground mt-1">Absolute deadline</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
+            </CollapsibleContent>
+          </CardContent>
+        </Collapsible>
       </Card>
 
       {/* Step 2: Availability */}
       <Card>
-        <CardContent className="p-4 space-y-3">
-          <div>
-            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-                2
+        <Collapsible
+          open={openSection === 'availability'}
+          onOpenChange={(next) => {
+            if (next) setOpenSection('availability');
+            else setOpenSection((p) => (p === 'availability' ? null : p));
+          }}
+        >
+          <CardContent className="p-4 space-y-3">
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="w-full flex items-center justify-between gap-2 text-left rounded-md hover:bg-muted/50 -mx-1 px-1 py-0.5"
+              >
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shrink-0">
+                    2
+                  </div>
+                  <span>Availability</span>
+                </h3>
+                {openSection === 'availability' ? (
+                  <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />
+                )}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="space-y-3 pt-1" onPointerDownCapture={focusSection('availability')}>
+                <QuickSchedulePresets onPresetSelect={onPresetApply} teamMembers={teamMembers} />
+
+                <div className="flex items-center space-x-2 pt-2">
+                  <Checkbox
+                    id="no-holidays"
+                    checked={noWorkOnHolidays}
+                    onCheckedChange={(checked) => setNoWorkOnHolidays(checked as boolean)}
+                  />
+                  <Label htmlFor="no-holidays" className="text-xs cursor-pointer">
+                    No work on national holidays
+                  </Label>
+                </div>
+
+                <div className="flex flex-col gap-2 mt-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCustomizeAvailability}
+                    className="w-full h-9 text-xs"
+                  >
+                    <Users className="w-3.5 h-3.5 mr-1.5" />
+                    Customize Your Team&apos;s Availability
+                  </Button>
+                  {onOpenContractorScheduling && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={onOpenContractorScheduling}
+                      className="w-full h-9 text-xs"
+                    >
+                      <Briefcase className="w-3.5 h-3.5 mr-1.5" />
+                      Add contractor scheduling
+                    </Button>
+                  )}
+                </div>
               </div>
-              <span>Availability</span>
-            </h3>
-            
-            {/* Quick Availability Presets */}
-            <QuickSchedulePresets onPresetSelect={onPresetApply} teamMembers={teamMembers} />
-            
-            {/* No work on national holidays checkbox */}
-            <div className="flex items-center space-x-2 pt-2">
-              <Checkbox 
-                id="no-holidays"
-                checked={noWorkOnHolidays}
-                onCheckedChange={(checked) => setNoWorkOnHolidays(checked as boolean)}
-              />
-              <Label htmlFor="no-holidays" className="text-xs cursor-pointer">
-                No work on national holidays
-              </Label>
-            </div>
-            
-            {/* Customize Availability Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCustomizeAvailability}
-              className="w-full h-9 text-xs mt-3"
-            >
-              <Users className="w-3.5 h-3.5 mr-1.5" />
-              Customize availability
-            </Button>
-          </div>
-        </CardContent>
+            </CollapsibleContent>
+          </CardContent>
+        </Collapsible>
       </Card>
 
       {/* Step 3: Tempo */}
       <Card>
-        <CardContent className="p-4 space-y-3">
-          <div>
-            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-                3
-              </div>
-              <span>Tempo</span>
-            </h3>
-            
+        <Collapsible
+          open={openSection === 'tempo'}
+          onOpenChange={(next) => {
+            if (next) setOpenSection('tempo');
+            else setOpenSection((p) => (p === 'tempo' ? null : p));
+          }}
+        >
+          <CardContent className="p-4 space-y-3">
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="w-full flex items-center justify-between gap-2 text-left rounded-md hover:bg-muted/50 -mx-1 px-1 py-0.5"
+              >
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shrink-0">
+                    3
+                  </div>
+                  <span>Tempo</span>
+                </h3>
+                {openSection === 'tempo' ? (
+                  <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />
+                )}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="space-y-3 pt-1" onPointerDownCapture={focusSection('tempo')}>
             <Label className="text-xs font-medium mb-2 flex items-center gap-1">
               <Clock className="w-3 h-3" />
               Schedule Tempo
@@ -305,24 +385,32 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 </span>
               </Button>
             </div>
-          </div>
-        </CardContent>
+              </div>
+            </CollapsibleContent>
+          </CardContent>
+        </Collapsible>
       </Card>
 
-      {/* Advanced Settings (Collapsible) */}
-      <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
-        <Card>
+      {/* Advanced Settings */}
+      <Card>
+        <Collapsible
+          open={openSection === 'advanced'}
+          onOpenChange={(next) => {
+            if (next) setOpenSection('advanced');
+            else setOpenSection((p) => (p === 'advanced' ? null : p));
+          }}
+        >
           <CardContent className="p-4 pb-2">
             <CollapsibleTrigger asChild>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 className="w-full justify-between p-0 h-auto mb-2"
               >
                 <div className="flex items-center gap-2">
                   <Settings className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Advanced Options</span>
                 </div>
-                {showAdvanced ? (
+                {openSection === 'advanced' ? (
                   <ChevronDown className="w-4 h-4" />
                 ) : (
                   <ChevronRight className="w-4 h-4" />
@@ -333,10 +421,10 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
               Use this section to define specific schedule detail and work assignments.
             </p>
           </CardContent>
-          
+
           <CollapsibleContent>
             <CardContent className="pt-0 pb-2 px-4">
-              <div className="space-y-4 pt-3 border-t">
+              <div className="space-y-4 pt-3 border-t" onPointerDownCapture={focusSection('advanced')}>
                 {/* Advanced Action Buttons */}
                 <div className="flex gap-1.5">
                   {onAssignWork && (
@@ -652,86 +740,112 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
               </div>
             </CardContent>
           </CollapsibleContent>
-        </Card>
-      </Collapsible>
+        </Collapsible>
+      </Card>
 
-      {/* Generate Schedule Button - Always visible but disabled until requirements met */}
+      {/* Generate Schedule */}
       <Card>
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-medium">Generate Schedule</h3>
-              <TooltipProvider delayDuration={100}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      className="inline-flex items-center justify-center rounded-full p-0.5 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-1"
-                      aria-label="Scheduling algorithm info"
-                    >
-                      <Info className="w-3.5 h-3.5 text-muted-foreground" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-md text-xs">
-                    <div className="space-y-2">
-                      <p className="font-semibold">Scheduling Algorithm</p>
-                      <p>The scheduler uses your settings to create an optimized schedule:</p>
-                      <div className="space-y-1.5 mt-2">
-                        <p><strong>Estimated Times:</strong></p>
-                        <p className="ml-2">Uses time estimates from your customized project workflow (only applicable phases that you've included). Each step's low/medium/high time estimates are selected based on Schedule Tempo.</p>
-                        <p className="mt-2"><strong>Schedule Tempo:</strong></p>
-                        <ul className="list-disc list-inside space-y-0.5 ml-2">
-                          <li><strong>Fast-track:</strong> Uses low end of time estimates (10th percentile) - best for skilled teams</li>
-                          <li><strong>Steady:</strong> Uses medium time estimates (50th percentile) - balanced, not rushed</li>
-                          <li><strong>Extended:</strong> Uses high end of time estimates (90th percentile) - ideal for beginners or low-urgency projects</li>
-                        </ul>
-                        <p className="mt-2"><strong>Team Member Availability:</strong></p>
-                        <p className="ml-2">Schedules tasks based on each team member's availability calendar. The algorithm matches tasks to available time slots, respecting working hours, blackout dates, and site constraints.</p>
-                        <p className="mt-2"><strong>Schedule Optimization Method:</strong></p>
-                        <ul className="list-disc list-inside space-y-0.5 ml-2">
-                          <li><strong>Single-piece flow:</strong> Fastest first room ready — you'll see progress right away. Completes all phases of a space before moving to the next space.</li>
-                          <li><strong>Batch flow:</strong> Most efficient overall — but you won't see a finished room until the end. Completes each phase across all spaces before moving to the next phase.</li>
-                        </ul>
-                        <p className="mt-2"><strong>Planning Detail Level:</strong></p>
-                        <ul className="list-disc list-inside space-y-0.5 ml-2">
-                          <li><strong>Quick:</strong> Plans phases and major milestones</li>
-                          <li><strong>Standard:</strong> Plans daily tasks (recommended)</li>
-                          <li><strong>Detailed:</strong> Plans hour-by-hour tasks for each team member</li>
-                        </ul>
-                        <p className="mt-2"><strong>Resource Allocation:</strong></p>
-                        <p className="ml-2">Allocates workers based on step requirements (workers needed per step). Steps with 0 workers still require duration but workers can be assigned elsewhere.</p>
-                      </div>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
-          
-          {!hasAvailabilitySelected && (
-            <p className="text-xs text-muted-foreground">
-              Select an availability option above to enable schedule generation
-            </p>
-          )}
-          
-          <Button 
-            onClick={onGenerateSchedule} 
-            className="w-full h-9 text-sm"
-            disabled={isComputing || teamMembers.length === 0 || !targetDate || !hasAvailabilitySelected}
-          >
-            {isComputing ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                Computing...
-              </>
-            ) : (
-              <>
-                <Zap className="w-3.5 h-3.5 mr-1.5" />
-                Generate Schedule
-              </>
-            )}
-          </Button>
-        </CardContent>
+        <Collapsible
+          open={openSection === 'generate'}
+          onOpenChange={(next) => {
+            if (next) setOpenSection('generate');
+            else setOpenSection((p) => (p === 'generate' ? null : p));
+          }}
+        >
+          <CardContent className="p-4 space-y-3">
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="w-full flex items-center justify-between gap-2 text-left rounded-md hover:bg-muted/50 -mx-1 px-1 py-0.5 mb-1"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <h3 className="text-sm font-medium">Generate Schedule</h3>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Scheduling algorithm info"
+                          className="inline-flex items-center justify-center rounded-full p-0.5 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-1 shrink-0"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onPointerDown={(e) => e.stopPropagation()}
+                        >
+                          <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-md text-xs">
+                        <div className="space-y-2">
+                          <p className="font-semibold">Scheduling Algorithm</p>
+                          <p>The scheduler uses your settings to create an optimized schedule:</p>
+                          <div className="space-y-1.5 mt-2">
+                            <p><strong>Estimated Times:</strong></p>
+                            <p className="ml-2">Uses time estimates from your customized project workflow (only applicable phases that you&apos;ve included). Each step&apos;s low/medium/high time estimates are selected based on Schedule Tempo.</p>
+                            <p className="mt-2"><strong>Schedule Tempo:</strong></p>
+                            <ul className="list-disc list-inside space-y-0.5 ml-2">
+                              <li><strong>Fast-track:</strong> Uses low end of time estimates (10th percentile) - best for skilled teams</li>
+                              <li><strong>Steady:</strong> Uses medium time estimates (50th percentile) - balanced, not rushed</li>
+                              <li><strong>Extended:</strong> Uses high end of time estimates (90th percentile) - ideal for beginners or low-urgency projects</li>
+                            </ul>
+                            <p className="mt-2"><strong>Team Member Availability:</strong></p>
+                            <p className="ml-2">Schedules tasks based on each team member&apos;s availability calendar. The algorithm matches tasks to available time slots, respecting working hours, blackout dates, and site constraints.</p>
+                            <p className="mt-2"><strong>Schedule Optimization Method:</strong></p>
+                            <ul className="list-disc list-inside space-y-0.5 ml-2">
+                              <li><strong>Single-piece flow:</strong> Fastest first room ready — you&apos;ll see progress right away. Completes all phases of a space before moving to the next space.</li>
+                              <li><strong>Batch flow:</strong> Most efficient overall — but you won&apos;t see a finished room until the end. Completes each phase across all spaces before moving to the next phase.</li>
+                            </ul>
+                            <p className="mt-2"><strong>Planning Detail Level:</strong></p>
+                            <ul className="list-disc list-inside space-y-0.5 ml-2">
+                              <li><strong>Quick:</strong> Plans phases and major milestones</li>
+                              <li><strong>Standard:</strong> Plans daily tasks (recommended)</li>
+                              <li><strong>Detailed:</strong> Plans hour-by-hour tasks for each team member</li>
+                            </ul>
+                            <p className="mt-2"><strong>Resource Allocation:</strong></p>
+                            <p className="ml-2">Allocates workers based on step requirements (workers needed per step). Steps with 0 workers still require duration but workers can be assigned elsewhere.</p>
+                          </div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                {openSection === 'generate' ? (
+                  <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />
+                )}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="space-y-3 pt-1" onPointerDownCapture={focusSection('generate')}>
+                {!hasAvailabilitySelected && (
+                  <p className="text-xs text-muted-foreground">
+                    Select an availability option above to enable schedule generation
+                  </p>
+                )}
+
+                <Button
+                  onClick={onGenerateSchedule}
+                  className="w-full h-9 text-sm"
+                  disabled={isComputing || teamMembers.length === 0 || !targetDate || !hasAvailabilitySelected}
+                >
+                  {isComputing ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      Computing...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-3.5 h-3.5 mr-1.5" />
+                      Generate Schedule
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CollapsibleContent>
+          </CardContent>
+        </Collapsible>
       </Card>
     </div>
   );

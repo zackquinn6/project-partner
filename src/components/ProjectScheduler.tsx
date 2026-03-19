@@ -15,7 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, Clock, CheckCircle, Plus, Users, Settings, Zap, Trash2, Save, X, Target, AlertTriangle, TrendingUp, Brain, FileText, Mail, Printer, Info, Layers, Briefcase } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, CheckCircle, Plus, Users, Settings, Zap, Trash2, Save, X, Target, AlertTriangle, TrendingUp, Brain, FileText, Mail, Printer, Info, Layers } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, addDays, parseISO, addHours, isSameDay } from 'date-fns';
 import { Project } from '@/interfaces/Project';
@@ -138,6 +138,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [planningMode, setPlanningMode] = useState<PlanningMode>('standard');
   const [scheduleTempo, setScheduleTempo] = useState<ScheduleTempo>('steady');
   const [schedulingResult, setSchedulingResult] = useState<SchedulingResult | null>(null);
+  const [schedulerAccordionCollapseSignal, setSchedulerAccordionCollapseSignal] = useState(0);
   const [isComputing, setIsComputing] = useState(false);
   const [showCalendarView, setShowCalendarView] = useState(false);
   const [showScheduleView, setShowScheduleView] = useState(false);
@@ -919,7 +920,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       // Compute schedule
       const result = schedulingEngine.computeSchedule(schedulingInputs);
       setSchedulingResult(result);
-      
+      setSchedulerAccordionCollapseSignal((n) => n + 1);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          document
+            .getElementById('project-scheduler-schedule-output-anchor')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+
       // Set scheduled completion date from result
       if (result.scheduledTasks.length > 0) {
         const lastTask = result.scheduledTasks.reduce((latest, task) => 
@@ -1405,20 +1415,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-6">
-            {/* Contractor Scheduling Button */}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowContractors(true)}
-                className="flex-1 h-11 md:h-9 text-xs md:text-sm"
-              >
-                <Briefcase className="w-4 h-4 mr-1 md:mr-2" />
-                <span className="truncate">Add contractor scheduling</span>
-              </Button>
-            </div>
-
-            {/* New Wizard Interface */}
             <SchedulerWizard 
               targetDate={targetDate} 
               setTargetDate={setTargetDate} 
@@ -1450,11 +1446,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               lunchDuration={lunchDuration}
               setLunchDuration={setLunchDuration}
               scheduledCompletionDate={scheduledCompletionDate}
+              onOpenContractorScheduling={() => setShowContractors(true)}
+              collapseAccordionSignal={schedulerAccordionCollapseSignal}
             />
 
             {/* Results - Show View Schedule button after generation */}
             {schedulingResult && (
-              <div className="space-y-4">
+              <div
+                id="project-scheduler-schedule-output-anchor"
+                className="space-y-4 scroll-mt-4"
+              >
                 <Alert>
                   <CheckCircle className="h-4 w-4" />
                   <AlertDescription className="space-y-3">
@@ -1499,6 +1500,13 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                     <span className="truncate">Email Me</span>
                   </Button>
                 </div>
+
+                <ScheduleOutputView
+                  schedulingResult={schedulingResult}
+                  planningMode={planningMode}
+                  schedulingTasks={schedulingTasks}
+                  teamMembers={teamMembers}
+                />
               </div>
             )}
 
@@ -1717,27 +1725,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                   </CardContent>
                 </Card>
               </div>
-            </div>
-
-            {/* Step 5: Generate Schedule */}
-            <div className="space-y-4">
-              
-              
-              
-
-              {/* Action Buttons removed - shown in main results section instead */}
-
-              {schedulingResult && <>
-                  <Alert>
-                    <CheckCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Schedule generated with {schedulingResult.scheduledTasks.length} tasks
-                    </AlertDescription>
-                  </Alert>
-
-                  {/* Enhanced Schedule Output View */}
-                  <ScheduleOutputView schedulingResult={schedulingResult} planningMode={planningMode} schedulingTasks={schedulingTasks} teamMembers={teamMembers} />
-                </>}
             </div>
 
           </div>
