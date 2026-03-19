@@ -883,6 +883,26 @@ export default function EditWorkflowView({
     const handlePhaseUpdate = (event: CustomEvent) => {
       // Refresh phases when StructureManager updates them
       if (currentProject?.id && event.detail?.projectId === currentProject.id) {
+        const updateKind = event.detail?.updateKind;
+        const stepId = event.detail?.stepId;
+        const newStepTitle = event.detail?.newStepTitle;
+
+        // Step rename updates should patch local state (avoid disruptive full reload)
+        if (updateKind === 'step_renamed' && stepId && typeof newStepTitle === 'string') {
+          setRawPhases(prev => prev.map(phase => ({
+            ...phase,
+            operations: phase.operations.map(op => ({
+              ...op,
+              steps: op.steps.map(step => (
+                step.id === stepId
+                  ? { ...step, step: newStepTitle }
+                  : step
+              ))
+            }))
+          })));
+          return;
+        }
+
         setLoadingPhases(true);
         loadPhasesFromDatabase(currentProject.id)
           .then(phases => {

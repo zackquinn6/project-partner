@@ -1661,6 +1661,34 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         if (error) {
           throw error;
         }
+
+        // Avoid full phases reload (and disruptive parent refresh) when only step titles change.
+        // Update local state in-place so the UI updates immediately.
+        const updatedPhases = phases.map(phase => ({
+          ...phase,
+          operations: phase.operations.map(op => ({
+            ...op,
+            steps: op.steps.map(s =>
+              s.id === editingItem.id ? { ...s, step: stepTitle } : s
+            )
+          }))
+        }));
+
+        setPhases(updatedPhases);
+
+        // Notify parent views to patch the specific step title without reloading everything.
+        window.dispatchEvent(new CustomEvent('phasesUpdated', {
+          detail: {
+            projectId: currentProject.id,
+            updateKind: 'step_renamed',
+            stepId: editingItem.id,
+            newStepTitle: stepTitle
+          }
+        }));
+
+        setEditingItem(null);
+        toast.success('Step updated successfully');
+        return;
       }
       
       // Reload phases with position data from database
