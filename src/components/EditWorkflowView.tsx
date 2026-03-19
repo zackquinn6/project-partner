@@ -69,7 +69,6 @@ export default function EditWorkflowView({
   
   const loadPhasesFromDatabase = React.useCallback(async (projectId: string): Promise<Phase[]> => {
     if (!projectId) {
-      console.log('❌ EditWorkflowView: No project ID provided');
       return [];
     }
     
@@ -77,15 +76,8 @@ export default function EditWorkflowView({
     // Use isEditingStandardProject flag which is set based on currentProject.isStandardTemplate
     const isStandardProject = isEditingStandardProject;
     
-    console.log('🔍 EditWorkflowView loadPhasesFromDatabase:', {
-      projectId,
-      isStandardProject,
-      isEditingStandardProject
-    });
-    
     if (isStandardProject) {
       // Edit Standard: Read directly from project_phases table (same approach as UnifiedProjectManagement)
-      console.log('📖 Loading Standard Project Foundation phases');
       // Use separate queries instead of nested selects to avoid column alias issues with new fields
       const { data: phasesData, error: phasesError } = await supabase
         .from('project_phases')
@@ -104,18 +96,11 @@ export default function EditWorkflowView({
         .order('position_rule', { ascending: true })
         .order('position_value', { ascending: true, nullsFirst: false });
       
-      console.log('📊 Standard phases query result:', {
-        phasesCount: phasesData?.length || 0,
-        phases: phasesData?.map(p => p.name),
-        error: phasesError
-      });
-      
       if (phasesError) {
         throw new Error(`Failed to load phases: ${phasesError.message}`);
       }
       
       if (!phasesData || phasesData.length === 0) {
-        console.warn('⚠️ No standard phases found for project:', projectId);
         return [];
       }
       
@@ -146,6 +131,7 @@ export default function EditWorkflowView({
             .select(`
               id,
               step_title,
+              apps,
               description,
               content_type,
               content,
@@ -192,6 +178,22 @@ export default function EditWorkflowView({
               return {
                 id: step.id,
                 step: step.step_title,
+                apps: (() => {
+                  let parsedApps: any[] = [];
+                  const stepApps = (step as any).apps;
+                  if (stepApps) {
+                    if (typeof stepApps === 'string') {
+                      try {
+                        parsedApps = JSON.parse(stepApps);
+                      } catch (_) {
+                        parsedApps = [];
+                      }
+                    } else if (Array.isArray(stepApps)) {
+                      parsedApps = stepApps;
+                    }
+                  }
+                  return parsedApps;
+                })(),
                 description: step.description || '',
                 contentType: step.content_type || 'text',
                 content: step.content || '',
@@ -229,15 +231,6 @@ export default function EditWorkflowView({
           operations: operationsWithSteps.sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
         };
       }));
-      
-      console.log('✅ Standard phases fully loaded with operations and steps:', {
-        count: phases.length,
-        details: phases.map(p => ({
-          name: p.name,
-          operationsCount: p.operations.length,
-          totalSteps: p.operations.reduce((sum: number, op: any) => sum + (op.steps?.length || 0), 0)
-        }))
-      });
       
       return phases;
     } else {
@@ -283,19 +276,6 @@ export default function EditWorkflowView({
       if (customError) {
         throw new Error(`Failed to load phases: ${customError.message}`);
       }
-      
-      console.log('📊 Loaded phases for project:', {
-        totalPhases: allPhasesData?.length || 0,
-        customPhases: customPhasesData.length,
-        filteredOut: (allPhasesData || []).length - customPhasesData.length,
-        details: allPhasesData?.map((p: any) => ({
-          name: p.name,
-          is_standard: p.is_standard,
-          is_linked: p.is_linked,
-          source_project_id: p.source_project_id,
-          included: customPhasesData.some((cp: any) => cp.id === p.id)
-        }))
-      });
       
       // Get standard phases from Standard Project Foundation
       // Find the standard project ID first
@@ -353,6 +333,7 @@ export default function EditWorkflowView({
               .select(`
                 id,
                 step_title,
+                apps,
                 description,
                 content_type,
                 content,
@@ -514,6 +495,7 @@ export default function EditWorkflowView({
               .select(`
                 id,
                 step_title,
+                apps,
                 description,
                 content_type,
                 content,
@@ -698,6 +680,7 @@ export default function EditWorkflowView({
             .select(`
               id,
               step_title,
+              apps,
               description,
               content_type,
               content,
@@ -870,12 +853,6 @@ export default function EditWorkflowView({
         } as Phase;
       }));
       
-      console.log('✅ Combined phases for regular project:', {
-        customCount: customPhases.length,
-        standardCount: standardPhases.length,
-        total: customPhases.length + standardPhases.length
-      });
-      
       // Combine custom and standard phases
       return [...customPhases, ...standardPhases];
     }
@@ -883,25 +860,10 @@ export default function EditWorkflowView({
   
   // Load phases when project changes
   React.useEffect(() => {
-    console.log('🔄 EditWorkflowView useEffect triggered:', {
-      hasProject: !!currentProject,
-      projectId: currentProject?.id,
-      projectName: currentProject?.name
-    });
-    
     if (currentProject?.id) {
       setLoadingPhases(true);
       loadPhasesFromDatabase(currentProject.id)
         .then(phases => {
-          console.log('✅ Phases loaded successfully:', {
-            count: phases.length,
-            phaseNames: phases.map(p => p.name),
-            details: phases.map(p => ({
-              name: p.name,
-              operationsCount: p.operations?.length || 0,
-              totalSteps: p.operations?.reduce((sum, op) => sum + (op.steps?.length || 0), 0) || 0
-            }))
-          });
           setRawPhases(phases);
           setLoadingPhases(false);
         })
@@ -911,7 +873,6 @@ export default function EditWorkflowView({
           setLoadingPhases(false);
         });
     } else {
-      console.log('⚠️ No project ID, clearing phases');
       setRawPhases([]);
       setLoadingPhases(false);
     }
@@ -922,7 +883,6 @@ export default function EditWorkflowView({
     const handlePhaseUpdate = (event: CustomEvent) => {
       // Refresh phases when StructureManager updates them
       if (currentProject?.id && event.detail?.projectId === currentProject.id) {
-        console.log('🔄 EditWorkflowView: Refreshing phases after StructureManager update');
         setLoadingPhases(true);
         loadPhasesFromDatabase(currentProject.id)
           .then(phases => {
@@ -992,15 +952,6 @@ export default function EditWorkflowView({
     return sortedPhases;
   };
   
-  console.log('🔍 EditWorkflowView - rawPhases state:', {
-    count: rawPhases.length,
-    details: rawPhases.map(p => ({
-      name: p.name,
-      operationsCount: p.operations?.length || 0,
-      totalSteps: p.operations?.reduce((sum, op) => sum + (op.steps?.length || 0), 0) || 0
-    }))
-  });
-  
   const deduplicatedPhases = deduplicatePhases(rawPhases);
   
   // Order numbers are already set from database (position_rule/position_value)
@@ -1010,26 +961,11 @@ export default function EditWorkflowView({
   // This ensures 'first' is first, 'last' is last, and numeric orders (2, 3, 4, etc.) are in between sequentially
   // Do NOT use enforceStandardPhaseOrdering here as it groups phases incorrectly
   const displayPhases = sortPhasesByOrderNumber(deduplicatedPhases);
-  
-  console.log('🔍 EditWorkflowView - displayPhases:', {
-    count: displayPhases.length,
-    phases: displayPhases.map(p => ({ 
-      name: p.name, 
-      order: p.phaseOrderNumber, 
-      isStandard: p.isStandard,
-      operationsCount: p.operations?.length || 0,
-      operations: p.operations?.map(op => ({
-        name: op.name,
-        stepsCount: op.steps?.length || 0
-      }))
-    }))
-  });
 
   // Helper to check if current step is from a standard or incorporated phase
   const isStepFromStandardOrIncorporatedPhase = (step: WorkflowStep | undefined) => {
     if (!step || isEditingStandardProject) {
       if (isEditingStandardProject) {
-        console.log('🔍 EditWorkflowView: isEditingStandardProject=true, blocking edit');
       }
       return false;
     }
@@ -1038,7 +974,6 @@ export default function EditWorkflowView({
     const phaseName = step.phaseName;
     if (!phaseName) {
       // No phase name - allow editing (shouldn't happen, but be permissive)
-      console.warn('⚠️ Step has no phaseName - allowing edit');
       return false;
     }
     
@@ -1047,7 +982,6 @@ export default function EditWorkflowView({
       // Phase not found in displayPhases - allow editing
       // This can happen with phases that haven't been properly loaded
       // We want to allow editing in this case
-      console.warn(`⚠️ Phase "${phaseName}" not found in displayPhases - allowing edit`);
       return false;
     }
     
@@ -1070,23 +1004,6 @@ export default function EditWorkflowView({
     // This allows content customization while maintaining step structure
     const shouldBlock = (isStandardPhase || isLinkedPhase) && !allowContentEdit;
     
-    // Debug logging for troubleshooting
-    console.log(`🔍 Edit Step Check for "${step.step}" in phase "${phaseName}":`, {
-      isStandardPhase,
-      isLinkedPhase,
-      phaseIsStandard: phase.isStandard,
-      phaseIsLinked: phase.isLinked,
-      phaseIsLinkedType: typeof phase.isLinked,
-      shouldBlock,
-      willShowEditButton: !shouldBlock
-    });
-    
-    if (shouldBlock) {
-      console.log(`🚫 Blocking edit for step "${step.step}" in phase "${phaseName}": isStandard=${isStandardPhase}, isLinked=${isLinkedPhase}`);
-    } else {
-      console.log(`✅ Allowing edit for step "${step.step}" in phase "${phaseName}": phase.isStandard=${phase.isStandard}, phase.isLinked=${phase.isLinked}, step.isStandard=${step.isStandard}`);
-    }
-    
     return shouldBlock;
   };
 
@@ -1096,20 +1013,6 @@ export default function EditWorkflowView({
       const hasPhases = displayPhases && displayPhases.length > 0;
       const hasOperations = hasPhases && displayPhases.some(p => p.operations && p.operations.length > 0);
       
-      console.log('🔍 EditWorkflowView - Project loaded:', {
-        projectId: currentProject.id,
-        projectName: currentProject.name,
-        isEditingStandardProject,
-        hasPhases,
-        hasOperations,
-        phaseCount: displayPhases?.length || 0,
-        phases: displayPhases?.map(p => ({
-          name: p.name,
-          isStandard: p.isStandard,
-          operationCount: p.operations?.length || 0
-        }))
-      });
-
       // Show warning if no phases
       if (!hasPhases) {
         toast.error('This project has no phases. The project data may be corrupted.');
@@ -1155,32 +1058,6 @@ export default function EditWorkflowView({
     parentId?: string;
   } | null>(null);
 
-  // Debug logging for project structure
-  useEffect(() => {
-    if (currentProject) {
-      console.log('🔍 EditWorkflowView - currentProject loaded:', {
-        projectId: currentProject.id,
-        projectName: currentProject.name,
-        phaseCount: displayPhases?.length,
-        phases: displayPhases?.map(p => ({
-          name: p.name,
-          isStandard: p.isStandard,
-          isLinked: p.isLinked,
-          operationCount: p.operations?.length,
-          operations: p.operations?.map(op => ({
-            name: op.name,
-            isStandard: op.isStandard,
-            stepCount: op.steps?.length,
-            steps: op.steps?.map(s => ({
-              step: s.step,
-              isStandard: s.isStandard
-            }))
-          }))
-        }))
-      });
-    }
-  }, [currentProject?.id, displayPhases]);
-
   // Flatten all steps from all phases and operations for navigation
   const allSteps = displayPhases.flatMap(phase => phase.operations.flatMap(operation => operation.steps.map(step => ({
     ...step,
@@ -1189,10 +1066,6 @@ export default function EditWorkflowView({
     phaseId: phase.id,
     operationId: operation.id
   }))));
-  console.log('🔍 EditWorkflowView - allSteps flattened:', {
-    totalSteps: allSteps.length,
-    steps: allSteps.map(s => `${s.phaseName} > ${s.operationName} > ${s.step}`)
-  });
   const currentStep = allSteps[currentStepIndex];
   const progress = allSteps.length > 0 ? (currentStepIndex + 1) / allSteps.length * 100 : 0;
   
@@ -1200,16 +1073,6 @@ export default function EditWorkflowView({
   useEffect(() => {
     if (currentProject && currentStep) {
       const phase = displayPhases.find(p => p.name === currentStep.phaseName);
-      console.log('🔍 Current Step Debug:', {
-        stepId: currentStep.id,
-        stepName: currentStep.step,
-        phaseName: currentStep.phaseName,
-        stepIsStandard: currentStep.isStandard,
-        phaseFound: !!phase,
-        phaseIsStandard: phase?.isStandard,
-        phaseIsLinked: phase?.isLinked,
-        canEdit: !isStepFromStandardOrIncorporatedPhase(currentStep)
-      });
     }
   }, [currentProject?.id, displayPhases, currentStep]);
   
@@ -1233,10 +1096,6 @@ export default function EditWorkflowView({
     
     try {
       if (!silent) {
-        console.log(`💾 Saving content to level: ${targetLevel}`, { 
-          stepId,
-          sectionCount: sections.length 
-        });
       }
       
       const { error } = await supabase
@@ -1262,7 +1121,6 @@ export default function EditWorkflowView({
           pendingContentRef.current.changes = null;
         }
         if (!silent) {
-          console.log(`✅ ${targetLevel} content saved successfully`);
         }
       }
     } catch (err) {
@@ -1280,7 +1138,6 @@ export default function EditWorkflowView({
     
     // Save pending changes from ref to their ORIGINAL level before loading new level (silent)
     if (pendingContentRef.current.changes && pendingContentRef.current.level) {
-      console.log(`💾 Saving pending changes for level: ${pendingContentRef.current.level} before switching to: ${instructionLevel}`);
       await saveInstructionContentStable(pendingContentRef.current.changes, pendingContentRef.current.level, true);
       lastSaveRef.current = new Date();
       pendingContentRef.current = { changes: null, level: instructionLevel };
@@ -1288,7 +1145,6 @@ export default function EditWorkflowView({
     }
     
     setIsLoadingContent(true);
-    console.log(`📥 Loading content for level: ${instructionLevel}`);
     
     try {
       const { data, error } = await supabase
@@ -1309,12 +1165,10 @@ export default function EditWorkflowView({
         setLevelSpecificContent(content);
         setPendingContentLevel(instructionLevel);
         pendingContentRef.current.level = instructionLevel;
-        console.log(`✅ Loaded ${content?.length || 0} sections for ${instructionLevel}`);
       } else {
         setLevelSpecificContent(null);
         setPendingContentLevel(instructionLevel);
         pendingContentRef.current.level = instructionLevel;
-        console.log(`ℹ️ No content found for ${instructionLevel} level`);
       }
     } catch (err) {
       console.error('Exception loading instruction content:', err);
@@ -1350,7 +1204,6 @@ export default function EditWorkflowView({
       // Only save if content hasn't been saved recently (prevent duplicate saves)
       const timeSinceLastSave = new Date().getTime() - lastSaveRef.current.getTime();
       if (timeSinceLastSave > 5000 && pendingContentRef.current.changes) {
-        console.log(`⏰ Auto-saving content for level: ${pendingContentRef.current.level} after 60s inactivity`);
         saveInstructionContentStable(pendingContentRef.current.changes, pendingContentRef.current.level, true);
         lastSaveRef.current = new Date();
         pendingContentRef.current = { changes: null, level: pendingContentRef.current.level };
@@ -1409,28 +1262,8 @@ export default function EditWorkflowView({
       });
       return;
     }
-    console.log('💾 SaveEdit: Starting save with editingStep data:', {
-      stepId: editingStep.id,
-      stepName: editingStep.step,
-      stepType: editingStep.stepType,
-      description: editingStep.description,
-      contentSectionsCount: editingStep.contentSections?.length || 0,
-      materialsCount: editingStep.materials?.length || 0,
-      materials: editingStep.materials,
-      toolsCount: editingStep.tools?.length || 0,
-      tools: editingStep.tools,
-      outputsCount: editingStep.outputs?.length || 0,
-      outputs: editingStep.outputs,
-      inputsCount: editingStep.inputs?.length || 0,
-      appsCount: editingStep.apps?.length || 0,
-      workersNeeded: editingStep.workersNeeded,
-      skillLevel: editingStep.skillLevel,
-      timeEstimation: editingStep.timeEstimation
-    });
-
     // Save pending content changes to correct level first (silent)
     if (pendingContentRef.current.changes && pendingContentRef.current.level) {
-      console.log(`💾 Saving pending changes for level: ${pendingContentRef.current.level} before closing edit mode`);
       await saveInstructionContentStable(pendingContentRef.current.changes, pendingContentRef.current.level, true);
       lastSaveRef.current = new Date();
       pendingContentRef.current = { changes: null, level: 'intermediate' };
@@ -1450,34 +1283,13 @@ export default function EditWorkflowView({
       updatedAt: new Date()
     };
     
-    console.log('💾 SaveEdit: Calling updateProject with:', {
-      projectId: updatedProject.id,
-      projectName: updatedProject.name,
-      phasesCount: updatedProject.phases?.length || 0,
-      isEditingStandardProject
-    });
     updateProject(updatedProject);
-    console.log('  ✅ updateProject called');
     
     // If editing Standard Project Foundation, also update operation_steps table
     if (isEditingStandardProject) {
-      console.log('💾 SaveEdit: Updating operation_steps table for Standard Project Foundation');
       try {
         // Ensure apps is properly formatted - handle both array and ensure it's not undefined
         const appsToSave = Array.isArray(editingStep.apps) ? editingStep.apps : (editingStep.apps ? [editingStep.apps] : []);
-        
-        console.log('💾 SaveEdit: Saving apps to database:', {
-          stepId: editingStep.id,
-          appsCount: appsToSave.length,
-          apps: appsToSave
-        });
-        
-        console.log('💾 SaveEdit: Step data before save:', {
-          stepId: editingStep.id,
-          stepType: editingStep.stepType,
-          stepTypeType: typeof editingStep.stepType,
-          hasStepType: editingStep.stepType !== undefined && editingStep.stepType !== null
-        });
         
         const updateData: any = {
           step_title: editingStep.step,
@@ -1498,23 +1310,7 @@ export default function EditWorkflowView({
           skill_level: editingStep.skillLevel || 'intermediate',
           updated_at: new Date().toISOString()
         };
-        
-        console.log('💾 SaveEdit: Complete update data being sent to database:', {
-          stepId: editingStep.id,
-          step_title: updateData.step_title,
-          step_type: updateData.step_type,
-          flow_type: updateData.flow_type,
-          materialsCount: updateData.materials?.length || 0,
-          materials: updateData.materials,
-          toolsCount: updateData.tools?.length || 0,
-          tools: updateData.tools,
-          outputsCount: updateData.outputs?.length || 0,
-          outputs: updateData.outputs,
-          appsCount: updateData.apps?.length || 0,
-          number_of_workers: updateData.number_of_workers,
-          skill_level: updateData.skill_level
-        });
-        
+
         const { error, data } = await supabase
           .from('operation_steps')
           .update(updateData)
@@ -1525,24 +1321,12 @@ export default function EditWorkflowView({
           console.error('❌ SaveEdit: Error updating operation_steps:', error);
           toast.error(`Failed to save step: ${error.message}`);
         } else {
-          console.log('✅ SaveEdit: Successfully saved to operation_steps. Verification:', {
-            savedStepType: data?.[0]?.step_type,
-            savedAppsCount: Array.isArray(data?.[0]?.apps) ? data[0].apps.length : 0,
-            savedMaterialsCount: Array.isArray(data?.[0]?.materials) ? data[0].materials.length : 0,
-            savedToolsCount: Array.isArray(data?.[0]?.tools) ? data[0].tools.length : 0,
-            savedOutputsCount: Array.isArray(data?.[0]?.outputs) ? data[0].outputs.length : 0,
-            savedWorkersNeeded: data?.[0]?.number_of_workers,
-            savedSkillLevel: data?.[0]?.skill_level,
-            fullSavedData: data?.[0]
-          });
           toast.success('Step saved successfully');
           
           // Reload phases to reflect the changes
-          console.log('🔄 Reloading phases to reflect changes...');
           if (currentProject?.id) {
             const reloadedPhases = await loadPhasesFromDatabase(currentProject.id);
             setRawPhases(reloadedPhases);
-            console.log('✅ Phases reloaded');
           }
         }
       } catch (err) {
@@ -1551,7 +1335,6 @@ export default function EditWorkflowView({
       }
     } else {
       // For regular projects, also save to operation_steps if this is a custom step
-      console.log('💾 SaveEdit: Regular project - checking if we should save to operation_steps');
       
       // Find the phase and operation to determine if this step should be saved to database
       const currentPhase = displayPhases.find(p => p.operations.some(op => op.steps.some(s => s.id === editingStep.id)));
@@ -1560,9 +1343,7 @@ export default function EditWorkflowView({
       
       if (isCustomStep || isEditableStandardStep) {
         if (isEditableStandardStep) {
-          console.log('  📝 This is an editable standard step (allowContentEdit=true), saving content to operation_steps');
         } else {
-          console.log('  📝 This is a custom step, saving to operation_steps');
         }
         try {
           const appsToSave = Array.isArray(editingStep.apps) ? editingStep.apps : (editingStep.apps ? [editingStep.apps] : []);
@@ -1598,21 +1379,7 @@ export default function EditWorkflowView({
             skill_level: editingStep.skillLevel || 'intermediate',
             updated_at: new Date().toISOString()
           };
-          
-          console.log('  💾 Custom step: Complete update data being sent to database:', {
-            stepId: editingStep.id,
-            step_title: updateData.step_title,
-            step_type: updateData.step_type,
-            materialsCount: updateData.materials?.length || 0,
-            materials: updateData.materials,
-            toolsCount: updateData.tools?.length || 0,
-            tools: updateData.tools,
-            outputsCount: updateData.outputs?.length || 0,
-            outputs: updateData.outputs,
-            number_of_workers: updateData.number_of_workers,
-            skill_level: updateData.skill_level
-          });
-          
+
           const { error, data } = await supabase
             .from('operation_steps')
             .update(updateData)
@@ -1623,35 +1390,22 @@ export default function EditWorkflowView({
             console.error('❌ Error saving custom step to operation_steps:', error);
             toast.error(`Failed to save step: ${error.message}`);
           } else {
-            console.log('✅ Custom step saved to operation_steps. Verification:', {
-              savedStepType: data?.[0]?.step_type,
-              savedMaterialsCount: Array.isArray(data?.[0]?.materials) ? data[0].materials.length : 0,
-              savedToolsCount: Array.isArray(data?.[0]?.tools) ? data[0].tools.length : 0,
-              savedOutputsCount: Array.isArray(data?.[0]?.outputs) ? data[0].outputs.length : 0,
-              savedWorkersNeeded: data?.[0]?.number_of_workers,
-              savedSkillLevel: data?.[0]?.skill_level,
-              fullSavedData: data?.[0]
-            });
             toast.success('Step saved successfully');
             
             // Reload phases to reflect the changes
-            console.log('🔄 Reloading phases to reflect changes...');
             if (currentProject?.id) {
               const reloadedPhases = await loadPhasesFromDatabase(currentProject.id);
               setRawPhases(reloadedPhases);
-              console.log('✅ Phases reloaded');
             }
           }
         } catch (err) {
           console.error('❌ Exception saving custom step:', err);
         }
       } else {
-        console.log('  ℹ️ This is a standard/linked step, skipping operation_steps update');
       }
     }
     
     setEditMode(false);
-    console.log('✅ SaveEdit: Completed successfully');
   };
   const handleEditOutput = (output: Output) => {
     setEditingOutput(output);
@@ -1691,19 +1445,12 @@ export default function EditWorkflowView({
       console.error('❌ updateEditingStep: No editingStep found');
       return;
     }
-    console.log('📝 updateEditingStep:', {
-      field,
-      valueType: typeof value,
-      valueLength: Array.isArray(value) ? value.length : undefined,
-      value: Array.isArray(value) ? `Array(${value.length})` : value
-    });
     const updated = {
       ...editingStep,
       [field]: value
     };
     setEditingStep(updated);
     editingStepRef.current = updated;
-    console.log('  ✅ Step updated in state');
   };
 
   // Handle import functionality
@@ -1719,17 +1466,6 @@ export default function EditWorkflowView({
   };
   const renderContent = (step: typeof currentStep) => {
     if (!step) return null;
-    console.log('🎨 EditWorkflowView renderContent:', {
-      stepId: step.id,
-      stepName: step.step,
-      hasContentSections: !!step.contentSections,
-      contentSectionsLength: step.contentSections?.length,
-      contentSections: step.contentSections,
-      contentType: (step as any).contentType,
-      editMode,
-      instructionLevel,
-      levelSpecificContent: levelSpecificContent?.length
-    });
     if (editMode && editingStep) {
       // Use level-specific content if available, otherwise use default step content
       let contentSections: ContentSection[] = [];
@@ -1782,32 +1518,27 @@ export default function EditWorkflowView({
     // In view mode, try to load level-specific content first
     // If levelSpecificContent is available (loaded in edit mode), use it
     if (levelSpecificContent && levelSpecificContent.length > 0) {
-      console.log('  📖 Rendering level-specific content in view mode');
       return <MultiContentRenderer sections={levelSpecificContent} />;
     }
 
     // Render multi-content sections if available, otherwise fallback to legacy
     if (step.contentSections && step.contentSections.length > 0) {
-      console.log('  📖 Rendering step.contentSections');
       return <MultiContentRenderer sections={step.contentSections} />;
     }
 
     // Handle case where content might be an array (content_sections)
     if (Array.isArray(step.content) && step.content.length > 0) {
-      console.log('  📖 Rendering step.content as array');
       return <MultiContentRenderer sections={step.content} />;
     }
 
     // Fallback for steps with legacy string content
     if (typeof step.content === 'string' && step.content.trim()) {
-      console.log('  📖 Rendering legacy string content');
       return <div className="text-muted-foreground whitespace-pre-wrap">
           {step.content}
         </div>;
     }
 
     // Show empty state only if truly no content
-    console.log('  ⚠️ No content found - showing empty state');
     return <div className="flex items-center justify-center h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg">
         <p className="text-muted-foreground">No content available. Click Edit Step to add instructions.</p>
       </div>;
@@ -2061,10 +1792,6 @@ export default function EditWorkflowView({
                   </CardHeader>
                   <CardContent>
                     <CompactAppsSection apps={editingStep.apps || []} onAppsChange={apps => {
-                console.log('📱 Apps changed:', {
-                  count: apps.length,
-                  apps
-                });
                 updateEditingStep('apps', apps);
               }} onAddApp={() => setAppsLibraryOpen(true)} onLaunchApp={() => {}} editMode={true} />
                   </CardContent>
@@ -2258,13 +1985,6 @@ export default function EditWorkflowView({
 
               {/* Apps Section - View Mode */}
               {(() => {
-            console.log('🎨 Rendering apps section:', {
-              stepId: currentStep?.id,
-              stepName: currentStep?.step,
-              hasApps: !!currentStep?.apps,
-              appsLength: currentStep?.apps?.length || 0,
-              apps: currentStep?.apps
-            });
             return null;
           })()}
               
