@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Play, Trash2, Plus, User, Wrench, Home, Users, Zap, Folder, Calculator, HelpCircle, Hammer, BookOpen, MapPin, Edit, Camera } from "lucide-react";
+import { Play, Trash2, Plus, User, Wrench, Home, Users, Zap, Folder, Calculator, HelpCircle, Hammer, BookOpen, MapPin, Edit, Camera, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useProject } from '@/contexts/ProjectContext';
 import { Project } from '@/interfaces/Project';
@@ -20,6 +20,7 @@ import { ManualProjectDialog } from '@/components/ManualProjectDialog';
 import { ManualProjectEditDialog } from '@/components/ManualProjectEditDialog';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
 import { PhotoGallery } from '@/components/PhotoGallery';
+import { ProjectPortfolioRemindersDialog } from '@/components/ProjectPortfolioRemindersDialog';
 
 interface ProjectListingProps {
   onProjectSelect?: (project: Project | null | 'workflow') => void;
@@ -37,6 +38,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
   const [showManualProjectEditDialog, setShowManualProjectEditDialog] = useState(false);
   const [editingProjectRun, setEditingProjectRun] = useState<ProjectRun | null>(null);
   const [showPhotoGallery, setShowPhotoGallery] = useState(false);
+  const [showPortfolioReminders, setShowPortfolioReminders] = useState(false);
 
   const calculateProgress = (projectRun: ProjectRun) => {
     return calculateProjectProgress(projectRun);
@@ -137,6 +139,16 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
               </CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+              <Button 
+                onClick={() => setShowPortfolioReminders(true)}
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-auto"
+              >
+                <Bell className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Reminders &amp; notifications</span>
+                <span className="sm:hidden">Reminders</span>
+              </Button>
               <Button 
                 onClick={() => setShowPhotoGallery(true)}
                 variant="outline"
@@ -458,6 +470,10 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
           console.log('Manual project updated');
           // Project runs will refresh automatically
         }}
+      />
+      <ProjectPortfolioRemindersDialog
+        open={showPortfolioReminders}
+        onOpenChange={setShowPortfolioReminders}
       />
       <PhotoGallery
         open={showPhotoGallery}

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Home as HomeIcon, X, GripVertical, List, ListOrdered, ShoppingCart, Users, Link2, HelpCircle } from "lucide-react";
+import { Plus, Home as HomeIcon, X, GripVertical, List, ListOrdered, ShoppingCart, Users, Link2, HelpCircle, Bell } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,6 +24,7 @@ import { ShoppingListManager } from "./ShoppingListManager";
 import { useIsMobile } from "@/hooks/useResponsive";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ProjectPortfolioRemindersDialog } from "@/components/ProjectPortfolioRemindersDialog";
 
 interface HomeTask {
   id: string;
@@ -73,6 +74,7 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
   const [subtasksOrdered, setSubtasksOrdered] = useState(false);
   const [showTeamWindow, setShowTeamWindow] = useState(false);
   const [showAssignWindow, setShowAssignWindow] = useState(false);
+  const [showPortfolioReminders, setShowPortfolioReminders] = useState(false);
   const [subtasks, setSubtasks] = useState<Array<{ 
     id: string; 
     title: string; 
@@ -498,6 +500,16 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
               </TooltipProvider>
             </div>
             <div className="flex flex-row flex-nowrap items-center gap-2 min-w-0 flex-shrink-0 ml-auto">
+              <Button
+                variant={isMobile ? "ghost" : "outline"}
+                size="sm"
+                className={`h-8 w-8 md:h-9 md:w-9 p-0 shrink-0 ${isMobile ? "border-0 outline-none bg-slate-900/40 hover:bg-slate-800/80 text-slate-100" : "border-input bg-background hover:bg-muted"}`}
+                onClick={() => setShowPortfolioReminders(true)}
+                title="Reminders & notifications"
+                aria-label="Reminders & notifications"
+              >
+                <Bell className="h-4 w-4" />
+              </Button>
               <Button
                 variant={isMobile ? "ghost" : "outline"}
                 size="sm"
@@ -1074,6 +1086,11 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
         selectedHomeId={null}
         onHomeSelected={() => fetchHomes()}
         showSelector={false}
+      />
+
+      <ProjectPortfolioRemindersDialog
+        open={showPortfolioReminders}
+        onOpenChange={setShowPortfolioReminders}
       />
 
       {selectedTask && (

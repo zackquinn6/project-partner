@@ -1797,6 +1797,48 @@ export type Database = {
         }
         Relationships: []
       }
+      portfolio_notification_settings: {
+        Row: {
+          created_at: string
+          email_address: string | null
+          email_enabled: boolean
+          id: string
+          notify_daily_celebrations: boolean
+          notify_daily_task_status: boolean
+          notify_weekly_budget: boolean
+          phone_number: string | null
+          sms_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_address?: string | null
+          email_enabled?: boolean
+          id?: string
+          notify_daily_celebrations?: boolean
+          notify_daily_task_status?: boolean
+          notify_weekly_budget?: boolean
+          phone_number?: string | null
+          sms_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_address?: string | null
+          email_enabled?: boolean
+          id?: string
+          notify_daily_celebrations?: boolean
+          notify_daily_task_status?: boolean
+          notify_weekly_budget?: boolean
+          phone_number?: string | null
+          sms_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avoid_projects: string[] | null
