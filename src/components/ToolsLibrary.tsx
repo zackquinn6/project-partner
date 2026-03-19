@@ -12,8 +12,6 @@ import { VariationViewer } from "./VariationViewer";
 import { ToolsImportManager } from "./ToolsImportManager";
 import { ExportToolsData } from "./ExportToolsData";
 import { supabase } from "@/integrations/supabase/client";
-import { clearAllTools } from "@/utils/variationUtils";
-import { EnhancedToolParser, importEnhancedToolsToDatabase } from "@/utils/enhancedToolParser";
 import { toast } from "sonner";
 
 interface Tool {
@@ -182,23 +180,6 @@ export function ToolsLibrary() {
     setShowEditDialog(true);
   };
 
-  const handleDeleteAll = async () => {
-    try {
-      setLoading(true);
-      const success = await clearAllTools();
-      if (success) {
-        setTools([]);
-        toast.success('All tools deleted successfully');
-      }
-    } catch (error) {
-      console.error('Error deleting all tools:', error);
-      toast.error('Failed to delete all tools');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
   if (loading) {
     return <div className="flex justify-center p-8">Loading tools...</div>;
   }
@@ -215,27 +196,6 @@ export function ToolsLibrary() {
             className="pl-12 px-6 py-4"
           />
         </div>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm" className="text-xs" title="Delete All Tools">
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete All Tools</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete all tools, variations, and models from the library. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Delete All Tools
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
         <ExportToolsData className="text-xs" />
         <Button
           variant="outline"
