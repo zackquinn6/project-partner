@@ -48,6 +48,8 @@ interface WorkflowSidebarProps {
   onViewScheduleClick: () => void;
   onProgressViewsClick?: () => void;
   onToolRentalsClick?: () => void;
+  /** When true, project planning dialog is open — workflow tutorial must not auto-open. */
+  projectPlanningWizardOpen?: boolean;
 }
 export function WorkflowSidebar({
   allSteps,
@@ -72,7 +74,8 @@ export function WorkflowSidebar({
   onNotesClick,
   onViewScheduleClick,
   onProgressViewsClick,
-  onToolRentalsClick
+  onToolRentalsClick,
+  projectPlanningWizardOpen = false,
 }: WorkflowSidebarProps) {
   const { updateProjectRun } = useProject();
   const { user } = useAuth();
@@ -146,64 +149,52 @@ export function WorkflowSidebar({
   const [showTutorial, setShowTutorial] = useState(false);
   const [showProgressReportingDialog, setShowProgressReportingDialog] = useState(false);
 
-  // Check if user is new and should see tutorial
+  // Auto-open tutorial when viewing the main workflow (not during project planning wizard).
+  // Runs once per dependency change; cleanup clears the timer to avoid repeated popups.
   useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
     const maybeShowTutorial = async () => {
-      if (typeof window === 'undefined' || !projectRunId || !isKickoffComplete) return;
+      if (typeof window === 'undefined') return;
+      if (!projectRunId || !isKickoffComplete || projectPlanningWizardOpen) return;
+      if (!user?.id) return;
 
-      const tutorialCompleted = localStorage.getItem('workflow-tutorial-completed');
-      if (tutorialCompleted === 'true') return;
-
-      // Check profile-level preference
       try {
-        if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('personality_profile')
-            .eq('user_id', user.id)
-            .single();
-          const prefs = profile?.personality_profile || {};
-          if (prefs.do_not_show_workflow_tutorial) {
-            // Mirror to localStorage so future checks are fast
-            localStorage.setItem('workflow-tutorial-completed', 'true');
-            return;
-          }
-        }
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('do_not_show_workflow_tutorial')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (error) throw error;
+        if (cancelled) return;
+        if (profile?.do_not_show_workflow_tutorial === true) return;
+
+        timer = setTimeout(() => {
+          if (!cancelled) setShowTutorial(true);
+        }, 1000);
       } catch (err) {
         console.error('Failed to read workflow tutorial preference from profile:', err);
       }
-
-      if (!showTutorial) {
-        const timer = setTimeout(() => {
-          setShowTutorial(true);
-        }, 1000);
-        return () => clearTimeout(timer);
-      }
     };
 
-    maybeShowTutorial();
-  }, [projectRunId, isKickoffComplete, showTutorial, user]);
+    void maybeShowTutorial();
 
-  const handleTutorialComplete = async () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('workflow-tutorial-completed', 'true');
-    }
-    // Persist preference in user profile so we don't show tutorial again across devices
-    try {
-      if (!user) return;
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, personality_profile')
-        .eq('user_id', user.id)
-        .single();
-      const currentProfile = profile?.personality_profile || {};
-      const updatedProfile = { ...currentProfile, do_not_show_workflow_tutorial: true };
-      await supabase
-        .from('profiles')
-        .update({ personality_profile: updatedProfile })
-        .eq('user_id', user.id);
-    } catch (err) {
-      console.error('Failed to persist workflow tutorial preference to profile:', err);
+    return () => {
+      cancelled = true;
+      if (timer !== null) clearTimeout(timer);
+    };
+  }, [projectRunId, isKickoffComplete, projectPlanningWizardOpen, user?.id]);
+
+  const handleTutorialPermanentOptOut = async () => {
+    if (!user?.id) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ do_not_show_workflow_tutorial: true })
+      .eq('user_id', user.id);
+    if (error) {
+      console.error('Failed to persist workflow tutorial opt-out to profile:', error);
+      throw error;
     }
   };
   
@@ -1033,7 +1024,7 @@ Call or text (617) 545-3367
       <WorkflowTutorial 
         open={showTutorial} 
         onOpenChange={setShowTutorial}
-        onComplete={handleTutorialComplete}
+        onPermanentOptOut={handleTutorialPermanentOptOut}
       />
 
       {/* Progress Reporting Style Dialog */}

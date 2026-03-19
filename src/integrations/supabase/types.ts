@@ -1843,6 +1843,7 @@ export type Database = {
         Row: {
           avoid_projects: string[] | null
           created_at: string
+          do_not_show_workflow_tutorial: boolean
           full_name: string | null
           home_build_year: string | null
           home_ownership: string | null
@@ -1864,6 +1865,7 @@ export type Database = {
         Insert: {
           avoid_projects?: string[] | null
           created_at?: string
+          do_not_show_workflow_tutorial?: boolean
           full_name?: string | null
           home_build_year?: string | null
           home_ownership?: string | null
@@ -1885,6 +1887,7 @@ export type Database = {
         Update: {
           avoid_projects?: string[] | null
           created_at?: string
+          do_not_show_workflow_tutorial?: boolean
           full_name?: string | null
           home_build_year?: string | null
           home_ownership?: string | null

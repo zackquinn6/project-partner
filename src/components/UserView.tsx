@@ -2738,6 +2738,7 @@ export default function UserView({
             }}
             onProgressViewsClick={() => setProgressViewsOpen(true)}
             onToolRentalsClick={() => setToolRentalsOpen(true)}
+            projectPlanningWizardOpen={projectPlanningWizardOpen}
           />
 
           <main className="flex-1 overflow-auto">

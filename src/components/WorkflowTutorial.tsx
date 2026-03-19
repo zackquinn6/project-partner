@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -15,7 +17,8 @@ interface TutorialStep {
 interface WorkflowTutorialProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onComplete: () => void;
+  /** Persisted to profile when user checked "Don't show again" and closes or finishes */
+  onPermanentOptOut: () => Promise<void>;
 }
 
 const tutorialSteps: TutorialStep[] = [
@@ -139,19 +142,47 @@ interface TooltipPosition {
   arrowPosition: 'top' | 'bottom' | 'left' | 'right';
 }
 
-export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTutorialProps) {
+/** Layout size used for viewport clamping (must match card max dimensions). */
+const TOOLTIP_W = 320;
+const TOOLTIP_H = 380;
+
+function clampTooltipPosition(
+  top: number,
+  left: number,
+  viewportWidth: number,
+  viewportHeight: number,
+  tw: number,
+  th: number
+): { top: number; left: number } {
+  const pad = 8;
+  const maxTop = viewportHeight - th - pad;
+  const maxLeft = viewportWidth - tw - pad;
+  return {
+    top: Math.max(pad, Math.min(top, maxTop)),
+    left: Math.max(pad, Math.min(left, maxLeft)),
+  };
+}
+
+export function WorkflowTutorial({ open, onOpenChange, onPermanentOptOut }: WorkflowTutorialProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<TooltipPosition | null>(null);
   const [highlightPosition, setHighlightPosition] = useState<DOMRect | null>(null);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
-  // Calculate tooltip position based on target element
+  useEffect(() => {
+    if (open) {
+      setDontShowAgain(false);
+      setCurrentStep(0);
+    }
+  }, [open]);
+
   const calculateTooltipPosition = (element: HTMLElement, preferredPosition: string = 'bottom'): TooltipPosition => {
     const rect = element.getBoundingClientRect();
-    const tooltipWidth = 320; // Approximate tooltip width
-    const tooltipHeight = 200; // Approximate tooltip height
-    const spacing = 16; // Space between element and tooltip
+    const tooltipWidth = TOOLTIP_W;
+    const tooltipHeight = TOOLTIP_H;
+    const spacing = 16;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
@@ -159,9 +190,8 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
     let left = 0;
     let arrowPosition: 'top' | 'bottom' | 'left' | 'right' = 'bottom';
 
-    // Try preferred position first, then fallback to others
     const positions = [preferredPosition, 'bottom', 'top', 'right', 'left'];
-    
+
     for (const pos of positions) {
       switch (pos) {
         case 'bottom':
@@ -169,7 +199,8 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
           left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
           arrowPosition = 'top';
           if (top + tooltipHeight <= viewportHeight && left >= 0 && left + tooltipWidth <= viewportWidth) {
-            return { top, left, arrowPosition };
+            const c = clampTooltipPosition(top, left, viewportWidth, viewportHeight, tooltipWidth, tooltipHeight);
+            return { top: c.top, left: c.left, arrowPosition };
           }
           break;
         case 'top':
@@ -177,7 +208,8 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
           left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
           arrowPosition = 'bottom';
           if (top >= 0 && left >= 0 && left + tooltipWidth <= viewportWidth) {
-            return { top, left, arrowPosition };
+            const c = clampTooltipPosition(top, left, viewportWidth, viewportHeight, tooltipWidth, tooltipHeight);
+            return { top: c.top, left: c.left, arrowPosition };
           }
           break;
         case 'right':
@@ -185,7 +217,8 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
           left = rect.right + spacing;
           arrowPosition = 'left';
           if (left + tooltipWidth <= viewportWidth && top >= 0 && top + tooltipHeight <= viewportHeight) {
-            return { top, left, arrowPosition };
+            const c = clampTooltipPosition(top, left, viewportWidth, viewportHeight, tooltipWidth, tooltipHeight);
+            return { top: c.top, left: c.left, arrowPosition };
           }
           break;
         case 'left':
@@ -193,16 +226,19 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
           left = rect.left - tooltipWidth - spacing;
           arrowPosition = 'right';
           if (left >= 0 && top >= 0 && top + tooltipHeight <= viewportHeight) {
-            return { top, left, arrowPosition };
+            const c = clampTooltipPosition(top, left, viewportWidth, viewportHeight, tooltipWidth, tooltipHeight);
+            return { top: c.top, left: c.left, arrowPosition };
           }
           break;
       }
     }
 
-    // Fallback to center if all positions fail
+    const fallbackTop = viewportHeight / 2 - tooltipHeight / 2;
+    const fallbackLeft = viewportWidth / 2 - tooltipWidth / 2;
+    const c = clampTooltipPosition(fallbackTop, fallbackLeft, viewportWidth, viewportHeight, tooltipWidth, tooltipHeight);
     return {
-      top: viewportHeight / 2 - tooltipHeight / 2,
-      left: viewportWidth / 2 - tooltipWidth / 2,
+      top: c.top,
+      left: c.left,
       arrowPosition: 'bottom'
     };
   };
@@ -213,7 +249,6 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
       setTargetElement(null);
       setTooltipPosition(null);
       setHighlightPosition(null);
-      // Remove all highlights
       document.querySelectorAll('.tutorial-highlight-circle').forEach(el => el.remove());
       return;
     }
@@ -226,34 +261,37 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
       return;
     }
 
-    // Small delay to ensure DOM is ready
     const timer = setTimeout(() => {
       const element = document.querySelector(step.targetSelector!) as HTMLElement;
       if (element) {
         setTargetElement(element);
-        
-        // Get initial position
+
         const rect = element.getBoundingClientRect();
         setHighlightPosition(rect);
-        
-        // Scroll element into view
+
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-        // Update highlight and tooltip position after scroll
+
         setTimeout(() => {
           const updatedRect = element.getBoundingClientRect();
-          // Update highlight position after scroll
           setHighlightPosition(updatedRect);
-          // Calculate tooltip position
           const position = calculateTooltipPosition(element, step.position);
           setTooltipPosition(position);
         }, 400);
       } else {
         console.warn('Tutorial element not found:', step.targetSelector);
-        // Element not found, use center position
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const c = clampTooltipPosition(
+          vh / 2 - TOOLTIP_H / 2,
+          vw / 2 - TOOLTIP_W / 2,
+          vw,
+          vh,
+          TOOLTIP_W,
+          TOOLTIP_H
+        );
         setTooltipPosition({
-          top: window.innerHeight / 2 - 100,
-          left: window.innerWidth / 2 - 160,
+          top: c.top,
+          left: c.left,
           arrowPosition: 'bottom'
         });
         setHighlightPosition(null);
@@ -265,23 +303,19 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
     };
   }, [open, currentStep]);
 
-  // Create highlight circle overlay
   useEffect(() => {
     if (!highlightPosition || !open) {
       document.querySelectorAll('.tutorial-highlight-circle').forEach(el => el.remove());
       return;
     }
 
-    // Remove existing circles
     document.querySelectorAll('.tutorial-highlight-circle').forEach(el => el.remove());
 
-    // Ensure we have valid dimensions
     if (highlightPosition.width <= 0 || highlightPosition.height <= 0) {
       console.warn('Invalid highlight dimensions:', highlightPosition);
       return;
     }
 
-    // Create circle overlay
     const circle = document.createElement('div');
     circle.className = 'tutorial-highlight-circle';
     circle.style.position = 'fixed';
@@ -290,14 +324,14 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
     circle.style.width = `${highlightPosition.width}px`;
     circle.style.height = `${highlightPosition.height}px`;
     circle.style.borderRadius = '8px';
-    circle.style.border = '3px solid #ef4444'; // Red border
+    circle.style.border = '3px solid #ef4444';
     circle.style.boxShadow = '0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(239, 68, 68, 0.6)';
     circle.style.pointerEvents = 'none';
     circle.style.zIndex = '9998';
     circle.style.transition = 'all 0.3s ease-in-out';
     circle.style.backgroundColor = 'transparent';
     circle.style.display = 'block';
-    
+
     document.body.appendChild(circle);
 
     return () => {
@@ -305,11 +339,23 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
     };
   }, [highlightPosition, open]);
 
+  const dismiss = async () => {
+    document.querySelectorAll('.tutorial-highlight-circle').forEach(el => el.remove());
+    if (dontShowAgain) {
+      try {
+        await onPermanentOptOut();
+      } catch (e) {
+        console.error('Workflow tutorial: failed to save opt-out', e);
+      }
+    }
+    onOpenChange(false);
+  };
+
   const handleNext = () => {
     if (currentStep < tutorialSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      handleComplete();
+      void dismiss();
     }
   };
 
@@ -317,17 +363,6 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
-  };
-
-  const handleComplete = () => {
-    document.querySelectorAll('.tutorial-highlight-circle').forEach(el => el.remove());
-    onComplete();
-    onOpenChange(false);
-  };
-
-  const handleSkip = () => {
-    document.querySelectorAll('.tutorial-highlight-circle').forEach(el => el.remove());
-    onOpenChange(false);
   };
 
   if (!open) return null;
@@ -338,17 +373,16 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
   const tooltipContent = (
     <div
       ref={tooltipRef}
-      className="fixed z-[9999] bg-background border border-border rounded-lg shadow-lg p-4 w-80 transition-all duration-300"
+      className="fixed z-[9999] bg-background border border-border rounded-lg shadow-lg flex flex-col max-h-[min(85dvh,26rem)] w-[min(20rem,calc(100vw-1rem))] transition-all duration-300 overflow-hidden"
       style={{
-        top: tooltipPosition?.top ? `${tooltipPosition.top}px` : '50%',
-        left: tooltipPosition?.left ? `${tooltipPosition.left}px` : '50%',
-        transform: tooltipPosition ? 'none' : 'translate(-50%, -50%)',
-        opacity: tooltipPosition ? 1 : 0
+        top: tooltipPosition != null ? `${tooltipPosition.top}px` : '50%',
+        left: tooltipPosition != null ? `${tooltipPosition.left}px` : '50%',
+        transform: tooltipPosition != null ? 'none' : 'translate(-50%, -50%)',
+        opacity: tooltipPosition != null ? 1 : 0,
+        maxWidth: TOOLTIP_W,
       }}
     >
-      {/* Arrow */}
       {tooltipPosition && targetElement && (() => {
-        const rect = targetElement.getBoundingClientRect();
         const arrowStyles: React.CSSProperties = {
           position: 'absolute',
           width: 0,
@@ -393,64 +427,75 @@ export function WorkflowTutorial({ open, onOpenChange, onComplete }: WorkflowTut
         return <div style={arrowStyles} />;
       })()}
 
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <h3 className="text-sm font-semibold">Workflow Tutorial</h3>
-          <p className="text-xs text-muted-foreground">
-            Step {currentStep + 1} of {tutorialSteps.length}
+      <div className="flex flex-col min-h-0 flex-1 p-3 sm:p-4">
+        <div className="flex items-start justify-between gap-2 mb-2 shrink-0">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold">Workflow Tutorial</h3>
+            <p className="text-xs text-muted-foreground">
+              Step {currentStep + 1} of {tutorialSteps.length}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => void dismiss()}
+            className="h-8 w-8 shrink-0"
+            aria-label="Close tutorial"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <Progress value={progress} className="h-1 mb-2 shrink-0" />
+
+        <div className="space-y-2 mb-2 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <h4 className="font-semibold text-sm">{step.title}</h4>
+          <p className="text-xs text-muted-foreground leading-relaxed pr-1">
+            {step.description}
           </p>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleSkip}
-          className="h-6 w-6"
-        >
-          <X className="h-3 w-3" />
-        </Button>
-      </div>
 
-      {/* Progress Bar */}
-      <Progress value={progress} className="h-1 mb-3" />
+        <div className="shrink-0 pt-2 border-t space-y-3">
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="workflow-tutorial-dont-show"
+              checked={dontShowAgain}
+              onCheckedChange={(checked) => setDontShowAgain(checked === true)}
+              className="mt-0.5"
+            />
+            <Label
+              htmlFor="workflow-tutorial-dont-show"
+              className="text-xs font-normal leading-snug cursor-pointer"
+            >
+              Don&apos;t show this tutorial again (saved to your profile)
+            </Label>
+          </div>
 
-      {/* Content */}
-      <div className="space-y-2 mb-3">
-        <h4 className="font-semibold text-sm">{step.title}</h4>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          {step.description}
-        </p>
-      </div>
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between gap-2 pt-2 border-t">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handlePrevious}
-          disabled={currentStep === 0}
-          className="flex-1 h-8 text-xs"
-        >
-          <ChevronLeft className="h-3 w-3 mr-1" />
-          Previous
-        </Button>
-        <div className="flex flex-1 gap-2 justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSkip}
-            className="h-8 text-xs"
-          >
-            Do not show again
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleNext}
-            className="h-8 text-xs"
-          >
-            {currentStep === tutorialSteps.length - 1 ? 'Finish' : 'Next'}
-            {currentStep < tutorialSteps.length - 1 && <ChevronRight className="h-3 w-3 ml-1" />}
-          </Button>
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handlePrevious}
+              disabled={currentStep === 0}
+              className="w-full sm:flex-1 h-9 text-xs"
+            >
+              <ChevronLeft className="h-3 w-3 mr-1 shrink-0" />
+              Previous
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleNext}
+              className="w-full sm:flex-1 h-9 text-xs"
+            >
+              {currentStep === tutorialSteps.length - 1 ? 'Finish' : 'Next'}
+              {currentStep < tutorialSteps.length - 1 && (
+                <ChevronRight className="h-3 w-3 ml-1 shrink-0" />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
