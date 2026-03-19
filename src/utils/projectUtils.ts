@@ -20,7 +20,7 @@ export const createKickoffPhase = (): Phase => {
     },
     {
       id: 'kickoff-step-2',
-      step: 'Build Style',
+      step: 'Personalize',
       description: 'Complete your DIY profile for personalized project guidance',
       contentType: 'text' as const,
       content: 'Set up your DIY profile to receive personalized project recommendations, tool suggestions, and guidance tailored to your skill level and preferences.',
@@ -28,7 +28,7 @@ export const createKickoffPhase = (): Phase => {
       tools: [],
       outputs: [{
         id: 'diy-profile-output',
-        name: 'Build Style Complete',
+        name: 'Personalize Complete',
         description: 'Personal DIY profile completed and saved',
         type: 'none' as const
       }]

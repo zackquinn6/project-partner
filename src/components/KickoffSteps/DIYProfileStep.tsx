@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Edit3, CheckCircle, Target } from 'lucide-react';
+import { User, Edit3, CheckCircle, Target, Wrench } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import DIYSurveyPopup from '../DIYSurveyPopup';
@@ -116,7 +116,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
         <div className="text-center space-y-2">
           <User className="w-10 h-10 mx-auto text-muted-foreground" />
           <div>
-            <h3 className="text-sm font-semibold mb-1">Build Style</h3>
+            <h3 className="text-sm font-semibold mb-1">Personalize</h3>
             <p className="text-xs text-muted-foreground mb-2">
               Help us personalize your project experience by completing your DIY profile.
             </p>
@@ -137,41 +137,58 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
           </p>
         </div>
 
-        <Card>
-          <CardContent className="p-2 sm:p-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
-              {/* Column 1 */}
-              <div className="space-y-1.5 sm:space-y-2">
+        {/* Two-card layout: Profile (about 25%) + Owned Tools (tool library) */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <Card className="md:col-span-1">
+            <CardContent className="p-3 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <h4 className="font-semibold text-xs sm:text-sm truncate">Personal Info</h4>
+                </div>
+                <Button
+                  onClick={handleStartEdit}
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 flex items-center gap-1 text-xs"
+                >
+                  <Edit3 className="w-3 h-3" />
+                  <span className="hidden sm:inline">Edit Profile</span>
+                  <span className="sm:hidden">Edit</span>
+                </Button>
+              </div>
+
+              <div className="space-y-2">
                 <div>
-                  <h4 className="font-semibold text-xs sm:text-sm">Full Name</h4>
+                  <h4 className="font-semibold text-xs">Full Name</h4>
                   <p className="text-xs text-muted-foreground break-words mt-0.5">
                     {existingProfile.full_name || "Not specified"}
                   </p>
                 </div>
-                
+
                 <div>
-                  <h4 className="font-semibold text-xs sm:text-sm">Nickname</h4>
+                  <h4 className="font-semibold text-xs">Nickname</h4>
                   <p className="text-xs text-muted-foreground break-words mt-0.5">
                     {existingProfile.nickname || "Not specified"}
                   </p>
                 </div>
-                
+
                 <div>
-                  <h4 className="font-semibold text-xs sm:text-sm">Skill Level</h4>
+                  <h4 className="font-semibold text-xs">Skill Level</h4>
                   <p className="text-xs text-muted-foreground capitalize mt-0.5">
                     {existingProfile.skill_level || "Not specified"}
                   </p>
                 </div>
-                
+
                 <div>
-                  <h4 className="font-semibold text-xs sm:text-sm">Physical Capability</h4>
+                  <h4 className="font-semibold text-xs">Physical Capability</h4>
                   <p className="text-xs text-muted-foreground capitalize mt-0.5">
                     {existingProfile.physical_capability || "Not specified"}
                   </p>
                 </div>
-                
+
                 <div>
-                  <h4 className="font-semibold text-xs sm:text-sm">Project Focus</h4>
+                  <h4 className="font-semibold text-xs">Project Focus</h4>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {existingProfile.project_focus
                       ? (PROJECT_FOCUS_LABELS[existingProfile.project_focus] ?? existingProfile.project_focus)
@@ -179,19 +196,41 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Column 2 */}
-              <div className="space-y-2 sm:space-y-3">
-                <div>
-                  <h4 className="font-semibold text-xs sm:text-sm">Owned Tools</h4>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {existingProfile.owned_tools?.length ? `${existingProfile.owned_tools.length} tool${existingProfile.owned_tools.length !== 1 ? 's' : ''} in library` : "No tools specified"}
-                  </p>
+          <Card className="md:col-span-3">
+            <CardContent className="p-3 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Wrench className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <h4 className="font-semibold text-xs sm:text-sm truncate">Owned Tools</h4>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 flex items-center gap-1 text-xs"
+                  onClick={() => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))}
+                >
+                  <Edit3 className="w-3 h-3" />
+                  <span className="hidden sm:inline">Edit Tool Library</span>
+                  <span className="sm:hidden">Tools</span>
+                </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  {existingProfile.owned_tools?.length
+                    ? `${existingProfile.owned_tools.length} tool${existingProfile.owned_tools.length !== 1 ? 's' : ''} in library`
+                    : "No tools specified"}
+                </p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+                  Update your tool library to improve recommendations for future steps.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   };
@@ -202,7 +241,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />
-            Build Style
+            Personalize
             {isCompleted && <Badge variant="secondary">Complete</Badge>}
           </CardTitle>
           <CardDescription>
@@ -226,25 +265,13 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
             <div className="flex-1 min-w-0">
               <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
                 <User className="w-4 h-4 flex-shrink-0" />
-                <span className="truncate">Build Style</span>
+                <span className="truncate">Personalize</span>
                 {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">
                 Set up your DIY profile for personalized project guidance
               </CardDescription>
             </div>
-            {existingProfile && (
-              <Button 
-                onClick={handleStartEdit} 
-                variant="outline" 
-                size="sm"
-                className="flex items-center gap-1.5 text-xs h-7 flex-shrink-0 px-2"
-              >
-                <Edit3 className="w-3 h-3" />
-                <span className="hidden sm:inline">Edit Profile</span>
-                <span className="sm:hidden">Edit</span>
-              </Button>
-            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-1.5 p-2 sm:p-3">

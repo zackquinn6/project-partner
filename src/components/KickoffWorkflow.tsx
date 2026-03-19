@@ -38,7 +38,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     description: 'Review and customize your project details'
   }, {
     id: 'kickoff-step-2',
-    title: 'Build Style',
+    title: 'Personalize',
     description: 'Complete your DIY profile for personalized guidance'
   }, {
     id: 'kickoff-step-3',
@@ -250,7 +250,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     switch (title) {
       case 'Project Match':
         return 'Overview the project and make sure this project is a good fit';
-      case 'Build Style':
+      case 'Personalize':
         return 'Personalize the project to your unique DIY experience level and preferences';
       case 'Scope & Specs':
         return 'Complete initial customization to your unique project';
