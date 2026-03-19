@@ -1313,7 +1313,6 @@ export default function EditWorkflowView({
         
         const updateData: any = {
           step_title: editingStep.step,
-          display_order: (editingStep as any).display_order || (editingStep as any).stepNumber || 0,
           description: editingStep.description,
           content_type: editingStep.contentType || 'text',
           content: editingStep.content || '',
@@ -1382,7 +1381,6 @@ export default function EditWorkflowView({
           } : {
             // For custom steps, allow all fields to be updated
             step_title: editingStep.step,
-            display_order: (editingStep as any).display_order || 0,
             description: editingStep.description,
             content_type: editingStep.contentType || 'text',
             content: editingStep.content || '',
