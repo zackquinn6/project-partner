@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { sanitizeInput } from '@/utils/inputSanitization';
+import { useResponsive } from '@/hooks/useResponsive';
 
 /**
  * PhotoUpload Component
@@ -66,6 +67,7 @@ export function PhotoUpload({
   onPhotoUploaded 
 }: PhotoUploadProps) {
   const { user } = useAuth();
+  const { isMobile } = useResponsive();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = controlledOnOpenChange || setInternalOpen;
@@ -298,6 +300,7 @@ export function PhotoUpload({
                       ref={fileInputRef}
                       type="file"
                       accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                      capture={isMobile ? 'environment' : undefined}
                       onChange={handleFileSelect}
                       className="hidden"
                     />
