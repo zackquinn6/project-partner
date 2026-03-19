@@ -1839,7 +1839,7 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
+      user_profiles: {
         Row: {
           avoid_projects: string[] | null
           created_at: string

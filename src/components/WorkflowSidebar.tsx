@@ -162,7 +162,7 @@ export function WorkflowSidebar({
 
       try {
         const { data: profile, error } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('do_not_show_workflow_tutorial')
           .eq('user_id', user.id)
           .maybeSingle();
@@ -189,7 +189,7 @@ export function WorkflowSidebar({
   const handleTutorialPermanentOptOut = async () => {
     if (!user?.id) return;
     const { error } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .update({ do_not_show_workflow_tutorial: true })
       .eq('user_id', user.id);
     if (error) {
