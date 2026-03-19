@@ -450,12 +450,13 @@ export function RiskManagementWindow({
                     <TooltipTrigger asChild>
                       <button
                         type="button"
+                        tabIndex={-1}
                         className="ml-1 inline-flex items-center justify-center rounded-full border border-muted-foreground/20 bg-background/80 p-0.5 text-[10px] text-muted-foreground hover:bg-muted"
                       >
                         <Info className="w-3 h-3" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-sm text-xs">
+                    <TooltipContent side="bottom" sideOffset={8} className="max-w-sm text-xs">
                       A risk is simply something uncertain. Construction projects often go off-schedule
                       due to uncertainty at the start. Projects come pre-loaded with risks and potential
                       impact, and you can add your own when you see additional concerns.
