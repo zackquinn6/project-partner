@@ -22,9 +22,11 @@ interface CompactMaterialsTableProps {
   materials: StepMaterial[];
   onMaterialsChange: (materials: StepMaterial[]) => void;
   onAddMaterial: () => void;
+  title?: string;
+  addButtonLabel?: string;
 }
 
-export function CompactMaterialsTable({ materials, onMaterialsChange, onAddMaterial }: CompactMaterialsTableProps) {
+export function CompactMaterialsTable({ materials, onMaterialsChange, onAddMaterial, title = 'Materials', addButtonLabel = 'Add Material' }: CompactMaterialsTableProps) {
   // Ensure materials is always an array to prevent undefined errors
   const safeMaterials = materials || [];
   
@@ -46,11 +48,11 @@ export function CompactMaterialsTable({ materials, onMaterialsChange, onAddMater
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <Package className="w-4 h-4" />
-          Materials ({safeMaterials.length})
+          {title} ({safeMaterials.length})
         </h3>
         <Button size="sm" variant="outline" onClick={onAddMaterial}>
           <Plus className="w-3 h-3 mr-1" />
-          Add Material
+          {addButtonLabel}
         </Button>
       </div>
 

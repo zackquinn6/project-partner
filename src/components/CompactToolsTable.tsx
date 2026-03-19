@@ -21,9 +21,11 @@ interface CompactToolsTableProps {
   tools: StepTool[];
   onToolsChange: (tools: StepTool[]) => void;
   onAddTool: () => void;
+  title?: string;
+  addButtonLabel?: string;
 }
 
-export function CompactToolsTable({ tools, onToolsChange, onAddTool }: CompactToolsTableProps) {
+export function CompactToolsTable({ tools, onToolsChange, onAddTool, title = 'Tools', addButtonLabel = 'Add Tool' }: CompactToolsTableProps) {
   // Ensure tools is always an array to prevent undefined errors
   const safeTools = tools || [];
   
@@ -45,11 +47,11 @@ export function CompactToolsTable({ tools, onToolsChange, onAddTool }: CompactTo
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <Wrench className="w-4 h-4" />
-          Tools ({safeTools.length})
+          {title} ({safeTools.length})
         </h3>
         <Button size="sm" variant="outline" onClick={onAddTool}>
           <Plus className="w-3 h-3 mr-1" />
-          Add Tool
+          {addButtonLabel}
         </Button>
       </div>
 

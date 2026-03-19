@@ -17,6 +17,7 @@ interface SelectedItem {
   coreItemId: string;
   variationId?: string;
   item: string;
+  category?: string | null;
   quantity: number;
   description?: string | null;
   attributes: Record<string, string>;
@@ -31,6 +32,9 @@ interface MultiSelectLibraryDialogProps {
   type: 'tools' | 'materials';
   onSelect: (items: SelectedItem[]) => void;
   availableStepTools?: Array<{id: string; name: string}>;
+  /** Optional library category filter (used by PPE step editor) */
+  categoryInclude?: string | null;
+  categoryExclude?: string | null;
 }
 
 export function MultiSelectLibraryDialog({
@@ -38,7 +42,9 @@ export function MultiSelectLibraryDialog({
   onOpenChange,
   type,
   onSelect,
-  availableStepTools = []
+  availableStepTools = [],
+  categoryInclude = null,
+  categoryExclude = null
 }: MultiSelectLibraryDialogProps) {
   const [items, setItems] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
@@ -175,6 +181,13 @@ export function MultiSelectLibraryDialog({
   // For tools, filter out items the user already owns
   const filteredItems = items
     .filter(item => {
+      if (categoryInclude !== null && categoryInclude !== undefined) {
+        if ((item as any).category !== categoryInclude) return false;
+      }
+      if (categoryExclude !== null && categoryExclude !== undefined) {
+        if ((item as any).category === categoryExclude) return false;
+      }
+
       const matchesSearch = item.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
       
@@ -248,6 +261,7 @@ export function MultiSelectLibraryDialog({
           variationId: variation.variationId,
           item: variation.name,
           quantity: 1,
+          category: coreItem?.category ?? null,
           description: coreItem?.description,
           attributes: variation.attributes,
           isPrime: variation.isPrime,

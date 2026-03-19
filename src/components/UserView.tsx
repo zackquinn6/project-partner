@@ -1610,6 +1610,9 @@ export default function UserView({
         console.log('🛡️ Launching Risk Management app');
         setRiskManagementOpen(true);
         break;
+      case 'waste-removal':
+        toast.info('Waste Removal is coming soon.');
+        break;
       default:
         console.warn('Unknown app action:', app.actionKey);
     }

@@ -12,7 +12,7 @@ export interface Material {
   id: string;
   name: string;
   description: string;
-  category: 'Hardware' | 'Software' | 'Consumable' | 'Other';
+  category: 'Hardware' | 'Software' | 'Consumable' | 'Other' | 'PPE';
   alternates: string[];
   unit?: string;
   item?: string;
@@ -23,7 +23,7 @@ export interface Tool {
   id: string;
   name: string;
   description: string;
-  category: 'Hardware' | 'Software' | 'Hand Tool' | 'Power Tool' | 'Other';
+  category: 'Hardware' | 'Software' | 'Hand Tool' | 'Power Tool' | 'Other' | 'PPE';
   alternates: string[];
   item?: string;
 }

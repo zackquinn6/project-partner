@@ -1052,6 +1052,9 @@ export default function EditWorkflowView({
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
   const [toolsLibraryOpen, setToolsLibraryOpen] = useState(false);
   const [materialsLibraryOpen, setMaterialsLibraryOpen] = useState(false);
+  const [ppeToolsLibraryOpen, setPpeToolsLibraryOpen] = useState(false);
+  const [ppeMaterialsLibraryOpen, setPpeMaterialsLibraryOpen] = useState(false);
+  const [ppeEditorType, setPpeEditorType] = useState<'tools' | 'materials'>('tools');
   const [appsLibraryOpen, setAppsLibraryOpen] = useState(false);
   const [showStructureManager, setShowStructureManager] = useState(false);
   const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
@@ -1869,20 +1872,79 @@ export default function EditWorkflowView({
                   </CardContent>
                 </Card>
 
-                {/* Tools, Materials, Inputs, and Outputs */}
+                {/* Tools, Materials, PPE, Inputs, and Outputs */}
                 <div className="grid lg:grid-cols-1 gap-6">
-                  {/* Tools & Materials Card */}
-                  <Card className="bg-muted/30 border shadow-sm">
-                    <CardHeader>
-                      <CardTitle>Tools & Materials</CardTitle>
-                      <CardDescription>Manage tools and materials for this step</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <CompactToolsTable tools={editingStep.tools} onToolsChange={tools => updateEditingStep('tools', tools)} onAddTool={() => setToolsLibraryOpen(true)} />
-                      
-                      <CompactMaterialsTable materials={editingStep.materials} onMaterialsChange={materials => updateEditingStep('materials', materials)} onAddMaterial={() => setMaterialsLibraryOpen(true)} />
-                    </CardContent>
-                  </Card>
+                  {/* Tools & Materials + PPE Card */}
+                  {(() => {
+                    const ppeTools = (editingStep?.tools || []).filter(t => t.category === 'PPE');
+                    const nonPpeTools = (editingStep?.tools || []).filter(t => t.category !== 'PPE');
+                    const ppeMaterials = (editingStep?.materials || []).filter(m => m.category === 'PPE');
+                    const nonPpeMaterials = (editingStep?.materials || []).filter(m => m.category !== 'PPE');
+
+                    return (
+                      <Card className="bg-muted/30 border shadow-sm">
+                        <CardHeader>
+                          <CardTitle>Tools & Materials</CardTitle>
+                          <CardDescription>Manage tools, materials, and PPE for this step</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <CompactToolsTable
+                            title="Tools"
+                            tools={nonPpeTools}
+                            onToolsChange={tools => updateEditingStep('tools', [...tools, ...ppeTools])}
+                            onAddTool={() => setToolsLibraryOpen(true)}
+                          />
+
+                          <CompactMaterialsTable
+                            title="Materials"
+                            materials={nonPpeMaterials}
+                            onMaterialsChange={materials => updateEditingStep('materials', [...materials, ...ppeMaterials])}
+                            onAddMaterial={() => setMaterialsLibraryOpen(true)}
+                          />
+
+                          <div className="pt-2 border-t">
+                            <div className="flex items-start justify-between gap-4 mb-4">
+                              <div className="space-y-1">
+                                <CardTitle className="text-base">Personal Protective Equipment</CardTitle>
+                                <CardDescription>Manage PPE tools/materials tagged as PPE</CardDescription>
+                              </div>
+
+                              <div className="min-w-[160px]">
+                                <Label className="text-xs font-medium">PPE Type</Label>
+                                <Select value={ppeEditorType} onValueChange={(value: 'tools' | 'materials') => setPpeEditorType(value)}>
+                                  <SelectContent>
+                                    <SelectItem value="tools">PPE Tools</SelectItem>
+                                    <SelectItem value="materials">PPE Materials</SelectItem>
+                                  </SelectContent>
+                                  <SelectTrigger className="h-8 mt-1">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </Select>
+                              </div>
+                            </div>
+
+                            {ppeEditorType === 'tools' ? (
+                              <CompactToolsTable
+                                title="PPE Tools"
+                                addButtonLabel="Add PPE Tool"
+                                tools={ppeTools}
+                                onToolsChange={tools => updateEditingStep('tools', [...nonPpeTools, ...tools])}
+                                onAddTool={() => setPpeToolsLibraryOpen(true)}
+                              />
+                            ) : (
+                              <CompactMaterialsTable
+                                title="PPE Materials"
+                                addButtonLabel="Add PPE Material"
+                                materials={ppeMaterials}
+                                onMaterialsChange={materials => updateEditingStep('materials', [...nonPpeMaterials, ...materials])}
+                                onAddMaterial={() => setPpeMaterialsLibraryOpen(true)}
+                              />
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })()}
 
                 {/* Process Variables Card */}
                   <Card className="bg-muted/30 border shadow-sm">
@@ -2196,7 +2258,7 @@ export default function EditWorkflowView({
       {/* Apps Library Dialog */}
       <AppsLibraryDialog open={appsLibraryOpen} onOpenChange={setAppsLibraryOpen} selectedApps={editingStep?.apps || []} onAppsSelected={apps => updateEditingStep('apps', apps)} />
       
-      <MultiSelectLibraryDialog open={toolsLibraryOpen} onOpenChange={setToolsLibraryOpen} type="tools" availableStepTools={editingStep?.tools?.map(t => ({
+      <MultiSelectLibraryDialog open={toolsLibraryOpen} onOpenChange={setToolsLibraryOpen} type="tools" categoryExclude="PPE" availableStepTools={editingStep?.tools?.map(t => ({
       id: t.id,
       name: t.name
     })) || []} onSelect={selectedItems => {
@@ -2204,25 +2266,66 @@ export default function EditWorkflowView({
         id: `tool-${Date.now()}-${Math.random()}`,
         name: item.item,
         description: item.description || '',
-        category: 'Hand Tool',
+        category: item.category as any,
         alternates: [],
         quantity: item.quantity
       }));
       updateEditingStep('tools', [...(editingStep?.tools || []), ...newTools]);
     }} />
       
-      <MultiSelectLibraryDialog open={materialsLibraryOpen} onOpenChange={setMaterialsLibraryOpen} type="materials" onSelect={selectedItems => {
+      <MultiSelectLibraryDialog open={materialsLibraryOpen} onOpenChange={setMaterialsLibraryOpen} type="materials" categoryExclude="PPE" onSelect={selectedItems => {
       const newMaterials: StepMaterial[] = selectedItems.map(item => ({
         id: `material-${Date.now()}-${Math.random()}`,
         name: item.item,
         description: item.description || '',
-        category: 'Consumable',
+        category: item.category as any,
         alternates: [],
         quantity: item.quantity,
         unit: item.unit || undefined
       }));
       updateEditingStep('materials', [...(editingStep?.materials || []), ...newMaterials]);
     }} />
+
+      <MultiSelectLibraryDialog
+        open={ppeToolsLibraryOpen}
+        onOpenChange={setPpeToolsLibraryOpen}
+        type="tools"
+        categoryInclude="PPE"
+        availableStepTools={editingStep?.tools?.map(t => ({
+          id: t.id,
+          name: t.name
+        })) || []}
+        onSelect={selectedItems => {
+          const newPpeTools: StepTool[] = selectedItems.map(item => ({
+            id: `ppe-tool-${Date.now()}-${Math.random()}`,
+            name: item.item,
+            description: item.description || '',
+            category: item.category as any,
+            alternates: [],
+            quantity: item.quantity
+          }));
+          updateEditingStep('tools', [...(editingStep?.tools || []), ...newPpeTools]);
+        }}
+      />
+
+      <MultiSelectLibraryDialog
+        open={ppeMaterialsLibraryOpen}
+        onOpenChange={setPpeMaterialsLibraryOpen}
+        type="materials"
+        categoryInclude="PPE"
+        onSelect={selectedItems => {
+          const newPpeMaterials: StepMaterial[] = selectedItems.map(item => ({
+            id: `ppe-material-${Date.now()}-${Math.random()}`,
+            name: item.item,
+            description: item.description || '',
+            category: item.category as any,
+            alternates: [],
+            quantity: item.quantity,
+            unit: item.unit || undefined
+          }));
+          updateEditingStep('materials', [...(editingStep?.materials || []), ...newPpeMaterials]);
+        }}
+      />
 
       {/* Decision Tree Manager */}
       <DecisionTreeManager 

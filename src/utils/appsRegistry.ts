@@ -97,6 +97,14 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     description: 'Identify, assess, and mitigate project risks',
     actionKey: 'risk-management',
     displayOrder: 10
+  },
+  'waste-removal': {
+    appName: 'Waste Removal',
+    appType: 'native',
+    icon: 'Trash2',
+    description: 'Manage waste handling during a project (coming soon)',
+    actionKey: 'waste-removal',
+    displayOrder: 11
   }
 };
 

@@ -12,6 +12,7 @@ import { VariationManager } from './VariationManager';
 import { AlternatesEditor } from './AlternatesEditor';
 import { MultiContentEditor } from './MultiContentEditor';
 import type { ContentSection } from '@/interfaces/Project';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface LibraryItemFormProps {
   type: 'tools' | 'materials';
@@ -34,6 +35,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
     description: item?.description || '',
     unit: item?.unit || '', // for materials
     alternates: item?.alternates || '', // JSON string of alternates
+    category: typeof item?.category === 'string' ? item.category : '',
   });
   const [instructions, setInstructions] = useState<ContentSection[]>(() => parseInstructions(item?.instructions));
   const [uploading, setUploading] = useState(false);
@@ -114,6 +116,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
         description: formData.description.trim() || null,
         photo_url: finalPhotoUrl || null,
         alternates: formData.alternates || null,
+        category: formData.category.trim() || null,
         ...(type === 'materials' && {
           unit: formData.unit.trim() || null
         }),
@@ -260,6 +263,38 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
                 </p>
               </div>
             </div>
+          </div>
+
+          <div>
+            <Label>Category / Type</Label>
+            <Select
+              value={formData.category}
+              onValueChange={(value) => setFormData({ ...formData, category: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a category..." />
+              </SelectTrigger>
+              <SelectContent>
+                {type === 'tools' ? (
+                  <>
+                    <SelectItem value="PPE">PPE</SelectItem>
+                    <SelectItem value="Hardware">Hardware</SelectItem>
+                    <SelectItem value="Software">Software</SelectItem>
+                    <SelectItem value="Hand Tool">Hand Tool</SelectItem>
+                    <SelectItem value="Power Tool">Power Tool</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="PPE">PPE</SelectItem>
+                    <SelectItem value="Hardware">Hardware</SelectItem>
+                    <SelectItem value="Software">Software</SelectItem>
+                    <SelectItem value="Consumable">Consumable</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </>
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex gap-2 pt-4">
