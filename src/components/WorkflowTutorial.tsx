@@ -468,7 +468,7 @@ export function WorkflowTutorial({ open, onOpenChange, onPermanentOptOut }: Work
               htmlFor="workflow-tutorial-dont-show"
               className="text-xs font-normal leading-snug cursor-pointer"
             >
-              Don&apos;t show this tutorial again (saved to your profile)
+              Don&apos;t show this tutorial again
             </Label>
           </div>
 
