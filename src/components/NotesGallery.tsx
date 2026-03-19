@@ -1,329 +1,276 @@
-import { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Calendar, Trash2, Edit2, Plus, Loader2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { FileText, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 
-interface Note {
+type Mode = 'user' | 'admin';
+
+type StepOption = {
   id: string;
-  user_id: string;
-  project_run_id: string;
-  project_run_name?: string | null;
-  template_id: string | null;
-  step_id: string;
-  step_name?: string | null;
-  phase_id?: string | null;
-  phase_name?: string | null;
-  operation_id?: string | null;
-  operation_name?: string | null;
-  note_text: string;
-  created_at: string;
-  updated_at: string;
-}
+  step: string;
+  phaseName?: string;
+  operationName?: string;
+};
+
+// Raw shapes coming back from `project_runs.phases` JSON.
+// Keep this intentionally narrow to avoid `any` while still parsing dynamically.
+type RawStep = { id: string; step?: string };
+type RawOperation = { name?: string; steps?: RawStep[] };
+type RawPhase = { name?: string; operations?: RawOperation[] };
 
 interface NotesGalleryProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectRunId?: string;
   templateId?: string;
-  mode?: 'user' | 'admin';
+  mode?: Mode;
   title?: string;
+  initialStepId?: string;
 }
 
-export function NotesGallery({ 
-  open, 
-  onOpenChange, 
+export function NotesGallery({
+  open,
+  onOpenChange,
   projectRunId,
-  templateId,
   mode = 'user',
-  title = 'Project Notes'
+  title = 'Project Notes',
+  initialStepId
 }: NotesGalleryProps) {
   const { user } = useAuth();
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [editingNote, setEditingNote] = useState<Note | null>(null);
-  const [editText, setEditText] = useState('');
-  const [projectFilter, setProjectFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<string>('all');
-  const [availableProjects, setAvailableProjects] = useState<Array<{ id: string; name: string }>>([]);
-  const [showAddNote, setShowAddNote] = useState(false);
-  const [newNoteText, setNewNoteText] = useState('');
-  const [addingNote, setAddingNote] = useState(false);
-  const [availableSteps, setAvailableSteps] = useState<Array<{ id: string; step: string; phaseName?: string; operationName?: string }>>([]);
+
+  const isWorkflowNotes = mode === 'user' && !!projectRunId;
+
+  const [availableSteps, setAvailableSteps] = useState<StepOption[]>([]);
+  const [notesData, setNotesData] = useState<Record<string, string>>({});
+
   const [selectedStepId, setSelectedStepId] = useState<string>('');
+  const [draft, setDraft] = useState<string>('');
+
+  const [loadingSteps, setLoadingSteps] = useState(false);
+  const [loadingNotes, setLoadingNotes] = useState(false);
+
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+
+  const dirtyRef = useRef(false);
+  const savingRef = useRef(false);
+  const draftRef = useRef('');
+  const selectedStepIdRef = useRef('');
+  const notesDataRef = useRef<Record<string, string>>({});
 
   useEffect(() => {
-    if (open) {
-      fetchAvailableProjects();
-      fetchNotes();
-      if (projectRunId) {
-        fetchAvailableSteps();
-      }
-    }
-  }, [open, projectRunId, templateId, projectFilter, dateFilter]);
-  
-  const fetchAvailableSteps = async () => {
+    dirtyRef.current = dirty;
+  }, [dirty]);
+
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
+
+  useEffect(() => {
+    selectedStepIdRef.current = selectedStepId;
+  }, [selectedStepId]);
+
+  useEffect(() => {
+    notesDataRef.current = notesData;
+  }, [notesData]);
+
+  const getStepDisplayName = (step: StepOption) => {
+    const parts = [step.phaseName, step.operationName, step.step].filter(Boolean);
+    return parts.length ? parts.join(' > ') : step.id;
+  };
+
+  const fetchAvailableSteps = async (): Promise<StepOption[]> => {
     if (!projectRunId) return;
-    
+    setLoadingSteps(true);
     try {
       const { data: projectRun, error } = await supabase
         .from('project_runs')
         .select('phases')
         .eq('id', projectRunId)
         .single();
-      
+
       if (error) throw error;
-      
+
+      const steps: StepOption[] = [];
       if (projectRun?.phases && Array.isArray(projectRun.phases)) {
-        const steps: Array<{ id: string; step: string; phaseName?: string; operationName?: string }> = [];
-        
-        projectRun.phases.forEach((phase: any) => {
-          if (phase.operations && Array.isArray(phase.operations)) {
-            phase.operations.forEach((operation: any) => {
-              if (operation.steps && Array.isArray(operation.steps)) {
-                operation.steps.forEach((step: any) => {
-                  steps.push({
-                    id: step.id,
-                    step: step.step || '',
-                    phaseName: phase.name,
-                    operationName: operation.name
-                  });
-                });
-              }
+        const phases = projectRun.phases as RawPhase[];
+
+        phases.forEach((phase) => {
+          if (!phase?.operations || !Array.isArray(phase.operations)) return;
+
+          phase.operations.forEach((operation) => {
+            if (!operation?.steps || !Array.isArray(operation.steps)) return;
+
+            operation.steps.forEach((step) => {
+              steps.push({
+                id: step.id,
+                step: step.step || '',
+                phaseName: phase.name,
+                operationName: operation.name
+              });
             });
-          }
+          });
         });
-        
-        setAvailableSteps(steps);
       }
-    } catch (error) {
-      console.error('Error fetching available steps:', error);
+
+      setAvailableSteps(steps);
+      return steps;
+    } catch (err) {
+      console.error('Error fetching available steps:', err);
+      toast.error('Failed to load steps for notes');
+      return [];
+    } finally {
+      setLoadingSteps(false);
     }
   };
 
-  const fetchAvailableProjects = async () => {
-    if (!user || projectRunId) return;
+  const fetchNotesData = async () => {
+    if (!projectRunId || !user) return;
+    setLoadingNotes(true);
+    try {
+      const { data, error } = await supabase
+        .from('project_runs')
+        .select('notes_data')
+        .eq('id', projectRunId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      const nextNotesData = (data?.notes_data ?? {}) as Record<string, string>;
+      setNotesData(nextNotesData);
+    } catch (err) {
+      console.error('Error fetching notes:', err);
+      toast.error('Failed to load existing notes');
+    } finally {
+      setLoadingNotes(false);
+    }
+  };
+
+  const saveNow = useCallback(async () => {
+    if (!projectRunId || !user) return;
+    const stepId = selectedStepIdRef.current;
+    if (!stepId) return;
+
+    if (!dirtyRef.current) return;
+    if (savingRef.current) return;
+
+    savingRef.current = true;
+    setSaving(true);
 
     try {
-      const { data: projectRuns, error } = await supabase
+      const nextNotesData = {
+        ...notesDataRef.current,
+        [stepId]: draftRef.current
+      };
+
+      const { error } = await supabase
         .from('project_runs')
-        .select('id, name, custom_project_name')
-        .eq('user_id', user.id)
-        .order('name', { ascending: true });
+        .update({ notes_data: nextNotesData })
+        .eq('id', projectRunId)
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
-      const projects = (projectRuns || []).map(run => ({
-        id: run.id,
-        name: run.custom_project_name || run.name
-      }));
-
-      setAvailableProjects(projects);
-    } catch (error) {
-      console.error('Error fetching available projects:', error);
+      setNotesData(nextNotesData);
+      setDirty(false);
+      setLastSavedAt(new Date());
+    } catch (err) {
+      console.error('Error saving notes:', err);
+      toast.error('Failed to save notes');
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
-  };
+  }, [projectRunId, user]);
 
-  const fetchNotes = async () => {
+  // Load steps + notes when the dialog opens.
+  useEffect(() => {
+    if (!open) return;
+    if (!isWorkflowNotes) return;
     if (!user) return;
 
-    setLoading(true);
-    try {
-      let query = supabase
-        .from('project_notes')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+    setAvailableSteps([]);
+    setNotesData({});
+    setSelectedStepId('');
+    setDraft('');
+    setDirty(false);
+    setLastSavedAt(null);
 
-      if (projectRunId) {
-        query = query.eq('project_run_id', projectRunId);
-      } else if (templateId) {
-        query = query.eq('template_id', templateId);
+    const run = async () => {
+      const steps = await fetchAvailableSteps();
+      await fetchNotesData();
+
+      // Only apply initialStepId once steps are loaded (so we can ensure it exists).
+      if (initialStepId && steps.some(s => s.id === initialStepId)) {
+        setSelectedStepId(initialStepId);
       }
+    };
 
-      if (projectFilter !== 'all' && !projectRunId) {
-        query = query.eq('project_run_id', projectFilter);
-      }
+    void run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, projectRunId, user, isWorkflowNotes, initialStepId]);
 
-      if (dateFilter !== 'all') {
-        const now = new Date();
-        let startDate: Date;
-        
-        switch (dateFilter) {
-          case 'today':
-            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            break;
-          case 'week':
-            startDate = new Date(now);
-            startDate.setDate(now.getDate() - 7);
-            break;
-          case 'month':
-            startDate = new Date(now);
-            startDate.setMonth(now.getMonth() - 1);
-            break;
-          case 'year':
-            startDate = new Date(now);
-            startDate.setFullYear(now.getFullYear() - 1);
-            break;
-          default:
-            startDate = new Date(0);
-        }
-        
-        query = query.gte('created_at', startDate.toISOString());
-      }
+  // Keep the draft in sync when notesData and selection are ready.
+  useEffect(() => {
+    if (!isWorkflowNotes) return;
+    if (!selectedStepId) return;
+    const existing = notesData[selectedStepId];
+    setDraft(typeof existing === 'string' ? existing : '');
+    setDirty(false);
+  }, [isWorkflowNotes, selectedStepId, notesData]);
 
-      const { data, error } = await query;
+  // Autosave every 10 seconds.
+  useEffect(() => {
+    if (!open) return;
+    if (!isWorkflowNotes) return;
+    const interval = window.setInterval(() => {
+      if (!dirtyRef.current) return;
+      void saveNow();
+    }, 10_000);
 
-      if (error) throw error;
-      
-      const projectRunIds = [...new Set((data || []).map((n: any) => n.project_run_id))];
-      const { data: projectRunsData } = await supabase
-        .from('project_runs')
-        .select('id, name, custom_project_name')
-        .in('id', projectRunIds);
-      
-      const projectRunMap = new Map(
-        (projectRunsData || []).map((run: any) => [
-          run.id,
-          run.custom_project_name || run.name
-        ])
-      );
-      
-      const fetchedNotes: Note[] = (data || []).map((note: any) => ({
-        ...note,
-        project_run_name: projectRunMap.get(note.project_run_id) || null
-      }));
-      
-      setNotes(fetchedNotes);
-    } catch (error) {
-      console.error('Error fetching notes:', error);
-      toast.error('Failed to load notes');
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => window.clearInterval(interval);
+  }, [open, isWorkflowNotes, saveNow]);
 
-  const handleDeleteNote = async (noteId: string) => {
-    if (!confirm('Are you sure you want to delete this note?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('project_notes')
-        .delete()
-        .eq('id', noteId);
-
-      if (error) throw error;
-
-      toast.success('Note deleted');
-      fetchNotes();
-    } catch (error) {
-      console.error('Error deleting note:', error);
-      toast.error('Failed to delete note');
-    }
-  };
-
-  const handleEditNote = (note: Note) => {
-    setEditingNote(note);
-    setEditText(note.note_text);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingNote || !editText.trim()) return;
-
-    try {
-      const { error } = await supabase
-        .from('project_notes')
-        .update({ note_text: editText.trim() })
-        .eq('id', editingNote.id);
-
-      if (error) throw error;
-
-      toast.success('Note updated');
-      setEditingNote(null);
-      setEditText('');
-      fetchNotes();
-    } catch (error) {
-      console.error('Error updating note:', error);
-      toast.error('Failed to update note');
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingNote(null);
-    setEditText('');
-  };
-
-  const getStepDisplayName = (note: Note) => {
-    // If step_name is "-", it means the note was added from the gallery (not from a specific step)
-    if (note.step_name === '-') {
-      return '-';
-    }
-    const parts = [];
-    if (note.phase_name) parts.push(note.phase_name);
-    if (note.operation_name) parts.push(note.operation_name);
-    if (note.step_name) parts.push(note.step_name);
-    return parts.length > 0 ? parts.join(' > ') : note.step_id;
-  };
-
-  const handleAddNote = async () => {
-    if (!newNoteText.trim() || !user) {
-      toast.error('Please enter a note');
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      onOpenChange(true);
       return;
     }
 
-    if (!projectRunId) {
-      toast.error('Project run ID is required');
-      return;
-    }
-
-    setAddingNote(true);
-    try {
-      // Use selected step or fall back to "-" if blank
-      const finalStepId = selectedStepId || '-';
-      const selectedStep = availableSteps.find(s => s.id === selectedStepId);
-      const finalStepName = selectedStep ? selectedStep.step : '-';
-      const finalPhaseName = selectedStep?.phaseName || null;
-      const finalOperationName = selectedStep?.operationName || null;
-      
-      const { error } = await supabase
-        .from('project_notes')
-        .insert({
-          user_id: user.id,
-          project_run_id: projectRunId,
-          template_id: templateId || null,
-          step_id: finalStepId,
-          step_name: finalStepId === '-' ? '-' : finalStepName,
-          phase_id: null,
-          phase_name: finalPhaseName,
-          operation_id: null,
-          operation_name: finalOperationName,
-          note_text: newNoteText.trim()
-        });
-
-      if (error) throw error;
-
-      toast.success('Note added successfully');
-      setNewNoteText('');
-      setSelectedStepId('');
-      setShowAddNote(false);
-      fetchNotes();
-    } catch (error) {
-      console.error('Error adding note:', error);
-      toast.error('Failed to add note');
-    } finally {
-      setAddingNote(false);
-    }
+    // Save immediately, then close. Keeping the dialog open until save completes prevents data loss.
+    void (async () => {
+      await saveNow();
+      onOpenChange(false);
+    })();
   };
+
+  const handleStepChange = async (nextStepId: string) => {
+    if (nextStepId === selectedStepId) return;
+    if (dirtyRef.current) {
+      await saveNow();
+    }
+    setSelectedStepId(nextStepId);
+    const existing = notesDataRef.current[nextStepId];
+    setDraft(typeof existing === 'string' ? existing : '');
+    setDirty(false);
+  };
+
+  if (!isWorkflowNotes) {
+    // NotesGallery is only expected to be used in workflow 'user' mode.
+    return null;
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
         <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center justify-between gap-2">
@@ -332,246 +279,83 @@ export function NotesGallery({
               {title}
             </DialogTitle>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => onOpenChange(false)} 
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDialogOpenChange(false)}
+                disabled={saving}
                 className="h-7 px-2 text-[9px] md:text-xs"
               >
                 Close
               </Button>
             </div>
           </div>
-        </DialogHeader>
-        
-        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
-          {/* Filters - only show if viewing all projects */}
-          {!projectRunId && (
-            <div className="flex flex-col sm:flex-row gap-2 mb-4">
-              <Select value={projectFilter} onValueChange={setProjectFilter}>
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <SelectValue placeholder="Filter by project" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Projects</SelectItem>
-                  {availableProjects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={dateFilter} onValueChange={setDateFilter}>
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <SelectValue placeholder="Filter by date" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">Last 7 Days</SelectItem>
-                  <SelectItem value="month">Last 30 Days</SelectItem>
-                  <SelectItem value="year">Last Year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {saving ? (
+            <DialogDescription className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Saving...
+            </DialogDescription>
+          ) : (
+            <DialogDescription className="text-xs text-muted-foreground mt-1">
+              Autosaves every 10 seconds and on close
+            </DialogDescription>
           )}
+        </DialogHeader>
 
-          {loading ? (
+        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+          {loadingSteps || loadingNotes ? (
             <div className="flex items-center justify-center py-12">
-              <div className="text-muted-foreground">Loading notes...</div>
+              <div className="text-muted-foreground flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading notes...
+              </div>
             </div>
           ) : (
-            <div className="space-y-3">
-              {/* Add Note Button - Always visible */}
-              {projectRunId && (
-                <div className="flex justify-end">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => setShowAddNote(true)}
-                    className="h-8 px-4 text-sm"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Note
-                  </Button>
-                </div>
-              )}
-              
-              {notes.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No notes yet</p>
-                  <p className="text-sm text-muted-foreground mt-2">Add notes to your project steps to track your progress</p>
-                </div>
-              ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[200px]">Step</TableHead>
-                      <TableHead>Note</TableHead>
-                      {!projectRunId && <TableHead className="w-[150px]">Project</TableHead>}
-                      <TableHead className="w-[150px]">Date</TableHead>
-                      <TableHead className="w-[100px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                <TableBody>
-                  {notes.map((note) => (
-                    <TableRow key={note.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex flex-col">
-                          <span className="text-sm">{getStepDisplayName(note)}</span>
-                          {note.phase_name && (
-                            <span className="text-xs text-muted-foreground">{note.phase_name}</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-[400px]">
-                        {editingNote?.id === note.id ? (
-                          <div className="space-y-2">
-                            <Textarea
-                              value={editText}
-                              onChange={(e) => setEditText(e.target.value)}
-                              rows={3}
-                              className="text-sm"
-                            />
-                            <div className="flex gap-2">
-                              <Button size="sm" onClick={handleSaveEdit} className="h-7 text-xs">
-                                Save
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={handleCancelEdit} className="h-7 text-xs">
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-sm whitespace-pre-wrap break-words">{note.note_text}</p>
-                        )}
-                      </TableCell>
-                      {!projectRunId && (
-                        <TableCell className="text-sm text-muted-foreground">
-                          {note.project_run_name || 'Unknown'}
-                        </TableCell>
-                      )}
-                      <TableCell className="text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {format(new Date(note.created_at), 'MMM d, yyyy')}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {editingNote?.id !== note.id && (
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditNote(note)}
-                              className="h-7 w-7 p-0"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteNote(note.id)}
-                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="notes-step-select">Step</Label>
+                <Select value={selectedStepId} onValueChange={handleStepChange} disabled={!availableSteps.length || saving}>
+                  <SelectTrigger id="notes-step-select">
+                    <SelectValue placeholder="Select a step" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSteps.map(step => (
+                      <SelectItem key={step.id} value={step.id}>
+                        {getStepDisplayName(step)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="notes-text">Note</Label>
+                <Textarea
+                  id="notes-text"
+                  value={draft}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setDraft(next);
+                    if (!selectedStepId) {
+                      setDirty(false);
+                      return;
+                    }
+                    const baseline = notesDataRef.current[selectedStepId] ?? '';
+                    setDirty(next !== baseline);
+                  }}
+                  placeholder={selectedStepId ? 'Write your note here...' : 'Select a step to start writing...'}
+                  rows={14}
+                  className="resize-none"
+                  disabled={!selectedStepId || saving}
+                />
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                {lastSavedAt ? `Last saved: ${format(lastSavedAt, 'MMM d, yyyy HH:mm')}` : 'Not saved yet'}
+              </div>
             </div>
           )}
         </div>
-
-        {/* Add Note Dialog */}
-        <Dialog open={showAddNote} onOpenChange={setShowAddNote}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Add Note
-              </DialogTitle>
-              <DialogDescription>
-                Add a note to your project. You can optionally tag it to a specific step.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4 py-4">
-              {/* Step Selection - Only show if availableSteps provided */}
-              {availableSteps.length > 0 && (
-                <div className="space-y-2">
-                  <Label htmlFor="step-select">Tag to Step (Optional)</Label>
-                  <Select value={selectedStepId || 'none'} onValueChange={(value) => setSelectedStepId(value === 'none' ? '' : value)}>
-                    <SelectTrigger id="step-select">
-                      <SelectValue placeholder="No step tag" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No step tag</SelectItem>
-                      {availableSteps.map((step) => {
-                        const displayName = [step.phaseName, step.operationName, step.step]
-                          .filter(Boolean)
-                          .join(' > ');
-                        return (
-                          <SelectItem key={step.id} value={step.id}>
-                            {displayName}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="new-note-text">Note</Label>
-                <Textarea
-                  id="new-note-text"
-                  value={newNoteText}
-                  onChange={(e) => setNewNoteText(e.target.value)}
-                  placeholder="Enter your note here..."
-                  rows={6}
-                  className="resize-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setShowAddNote(false);
-                  setNewNoteText('');
-                  setSelectedStepId('');
-                }} 
-                disabled={addingNote}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleAddNote} 
-                disabled={addingNote || !newNoteText.trim()}
-              >
-                {addingNote ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Adding...
-                  </>
-                ) : (
-                  'Add Note'
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </DialogContent>
     </Dialog>
   );

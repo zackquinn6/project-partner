@@ -205,6 +205,7 @@ export default function UserView({
   const [qualityCheckOpen, setQualityCheckOpen] = useState(false);
   const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false);
   const [notesGalleryOpen, setNotesGalleryOpen] = useState(false);
+  const [notesGalleryInitialStepId, setNotesGalleryInitialStepId] = useState<string>('');
   const [progressViewsOpen, setProgressViewsOpen] = useState(false);
   const [scaledProgressDialogOpen, setScaledProgressDialogOpen] = useState(false);
   const [currentScaledStep, setCurrentScaledStep] = useState<{ id: string; title: string } | null>(null);
@@ -2780,7 +2781,11 @@ export default function UserView({
             }}
             onKeysToSuccessClick={() => setKeyCharacteristicsOpen(true)}
             onPhotosClick={() => setPhotoGalleryOpen(true)}
-            onNotesClick={() => setNotesGalleryOpen(true)}
+            onNotesClick={() => {
+              if (!currentStep?.id) return;
+              setNotesGalleryInitialStepId(currentStep.id);
+              setNotesGalleryOpen(true);
+            }}
             onViewScheduleClick={() => {
               setProjectSchedulerOpen(true);
               // Dispatch event to show calendar view automatically
@@ -3684,6 +3689,7 @@ export default function UserView({
           templateId={currentProjectRun.templateId || undefined}
           mode="user"
           title="Project Notes"
+          initialStepId={notesGalleryInitialStepId}
         />
       )}
 

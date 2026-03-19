@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,81 +30,146 @@ interface NoteUploadProps {
   onNoteAdded?: () => void;
 }
 
-export function NoteUpload({ 
-  projectRunId, 
-  templateId, 
-  stepId: initialStepId = '', 
-  stepName: initialStepName = '',
-  phaseId: initialPhaseId,
-  phaseName: initialPhaseName,
-  operationId: initialOperationId,
-  operationName: initialOperationName,
+export function NoteUpload({
+  projectRunId,
+  stepId: initialStepId,
   availableSteps = [],
   showButton = true,
-  onNoteAdded 
+  onNoteAdded
 }: NoteUploadProps) {
   const { user } = useAuth();
+
   const [open, setOpen] = useState(false);
-  const [noteText, setNoteText] = useState('');
-  const [uploading, setUploading] = useState(false);
+  const [notesData, setNotesData] = useState<Record<string, string>>({});
+
   const [selectedStepId, setSelectedStepId] = useState<string>(initialStepId || '');
-  
-  // Get selected step details
-  const selectedStep = availableSteps.find(s => s.id === selectedStepId);
+  const [noteText, setNoteText] = useState<string>('');
 
-  const handleUpload = async () => {
-    if (!noteText.trim() || !user) {
-      toast.error('Please enter a note');
-      return;
-    }
+  const [loadingNotes, setLoadingNotes] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
-    setUploading(true);
+  const dirtyRef = useRef(false);
+  const savingRef = useRef(false);
+  const noteTextRef = useRef('');
+  const selectedStepIdRef = useRef('');
+  const notesDataRef = useRef<Record<string, string>>({});
+
+  useEffect(() => {
+    dirtyRef.current = dirty;
+  }, [dirty]);
+
+  useEffect(() => {
+    noteTextRef.current = noteText;
+  }, [noteText]);
+
+  useEffect(() => {
+    selectedStepIdRef.current = selectedStepId;
+  }, [selectedStepId]);
+
+  useEffect(() => {
+    notesDataRef.current = notesData;
+  }, [notesData]);
+
+  const fetchNotesData = async () => {
+    if (!projectRunId || !user) return;
+    setLoadingNotes(true);
     try {
-      // Use selected step or fall back to initial values, or use "-" if blank
-      const finalStepId = selectedStepId || initialStepId || '-';
-      const finalStepName = selectedStep?.step || initialStepName || '-';
-      const finalPhaseName = selectedStep?.phaseName || initialPhaseName || null;
-      const finalOperationName = selectedStep?.operationName || initialOperationName || null;
-      
-      const { error } = await supabase
-        .from('project_notes')
-        .insert({
-          user_id: user.id,
-          project_run_id: projectRunId,
-          template_id: templateId || null,
-          step_id: finalStepId,
-          step_name: finalStepId === '-' ? '-' : (finalStepName || null),
-          phase_id: initialPhaseId || null,
-          phase_name: finalPhaseName || null,
-          operation_id: initialOperationId || null,
-          operation_name: finalOperationName || null,
-          note_text: noteText.trim()
-        });
+      const { data, error } = await supabase
+        .from('project_runs')
+        .select('notes_data')
+        .eq('id', projectRunId)
+        .eq('user_id', user.id)
+        .single();
 
       if (error) throw error;
 
-      toast.success('Note added successfully');
-      
-      // Reset form
-      setNoteText('');
-      setSelectedStepId(initialStepId || '');
-      setOpen(false);
-      
-      if (onNoteAdded) {
-        onNoteAdded();
-      }
-    } catch (error) {
-      console.error('Error adding note:', error);
-      toast.error('Failed to add note');
+      const nextNotesData = (data?.notes_data ?? {}) as Record<string, string>;
+      setNotesData(nextNotesData);
+
+      const existing = selectedStepIdRef.current;
+      const existingText = nextNotesData[existing];
+      setNoteText(typeof existingText === 'string' ? existingText : '');
+      setDirty(false);
+    } catch (err) {
+      console.error('Error fetching notes:', err);
+      toast.error('Failed to load notes');
     } finally {
-      setUploading(false);
+      setLoadingNotes(false);
     }
   };
 
-  const handleCancel = () => {
-    setNoteText('');
-    setSelectedStepId(initialStepId || '');
-    setOpen(false);
+  const saveNow = useCallback(async () => {
+    if (!projectRunId || !user) return;
+    const step = selectedStepIdRef.current;
+    if (!step) return;
+    if (!dirtyRef.current) return;
+    if (savingRef.current) return;
+
+    savingRef.current = true;
+    setSaving(true);
+
+    try {
+      const nextNotesData = {
+        ...notesDataRef.current,
+        [step]: noteTextRef.current
+      };
+
+      const { error } = await supabase
+        .from('project_runs')
+        .update({ notes_data: nextNotesData })
+        .eq('id', projectRunId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setNotesData(nextNotesData);
+      setDirty(false);
+    } catch (err) {
+      console.error('Error saving notes:', err);
+      toast.error('Failed to save notes');
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  }, [projectRunId, user]);
+
+  // Load notes whenever the dialog opens.
+  useEffect(() => {
+    if (!open) return;
+    if (!user) return;
+    if (!selectedStepId) return;
+    void fetchNotesData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user]);
+
+  // Autosave every 10 seconds.
+  useEffect(() => {
+    if (!open) return;
+    const interval = window.setInterval(() => {
+      if (!dirtyRef.current) return;
+      void saveNow();
+    }, 10_000);
+    return () => window.clearInterval(interval);
+  }, [open, projectRunId, user, saveNow]);
+
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setOpen(true);
+      return;
+    }
+
+    // Save immediately then close (keeps the dialog mounted until save completes).
+    void (async () => {
+      await saveNow();
+      setOpen(false);
+      onNoteAdded?.();
+    })();
+  };
+
+  const getStepDisplayName = (step: StepOption) => {
+    const parts = [step.phaseName, step.operationName, step.step].filter(Boolean);
+    return parts.length ? parts.join(' > ') : step.id;
   };
 
   return (
@@ -117,75 +182,92 @@ export function NoteUpload({
           className="flex items-center gap-2"
         >
           <FileText className="w-4 h-4" />
-          <span className="hidden sm:inline">Add Note</span>
+          <span className="hidden sm:inline">Note</span>
           <span className="sm:hidden">Note</span>
         </Button>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5" />
-              Add Note
+              Notes
             </DialogTitle>
-            <DialogDescription>
-              {initialStepName ? `Add a note for: ${initialStepName}` : 'Add a note to your project to track your progress, observations, or reminders.'}
+            <DialogDescription className="flex items-center gap-2">
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Autosaves every 10 seconds and on close'
+              )}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
-            {/* Step Selection - Only show if availableSteps provided */}
             {availableSteps.length > 0 && (
               <div className="space-y-2">
                 <Label htmlFor="step-select">Tag to Step (Optional)</Label>
-                <Select value={selectedStepId || 'none'} onValueChange={(value) => setSelectedStepId(value === 'none' ? '' : value)}>
+                <Select
+                  value={selectedStepId || 'none'}
+                  onValueChange={(value) => {
+                    const next = value === 'none' ? '' : value;
+                    if (next === selectedStepId) return;
+                    if (dirtyRef.current) void saveNow();
+                    setSelectedStepId(next);
+                    const existing = notesDataRef.current[next];
+                    setNoteText(typeof existing === 'string' ? existing : '');
+                    setDirty(false);
+                  }}
+                  disabled={saving}
+                >
                   <SelectTrigger id="step-select">
                     <SelectValue placeholder="No step tag" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No step tag</SelectItem>
-                    {availableSteps.map((step) => {
-                      const displayName = [step.phaseName, step.operationName, step.step]
-                        .filter(Boolean)
-                        .join(' > ');
-                      return (
-                        <SelectItem key={step.id} value={step.id}>
-                          {displayName}
-                        </SelectItem>
-                      );
-                    })}
+                    {availableSteps.map(step => (
+                      <SelectItem key={step.id} value={step.id}>
+                        {getStepDisplayName(step)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
-            
+
             <div className="space-y-2">
               <Label htmlFor="note-text">Note</Label>
               <Textarea
                 id="note-text"
                 value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                placeholder="Enter your note here..."
-                rows={6}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setNoteText(next);
+                  if (!selectedStepId) {
+                    setDirty(false);
+                    return;
+                  }
+                  const baseline = notesDataRef.current[selectedStepId] ?? '';
+                  setDirty(next !== baseline);
+                }}
+                placeholder={selectedStepId ? 'Write your note here...' : 'Select a step to start writing...'}
+                rows={10}
                 className="resize-none"
+                disabled={!selectedStepId || saving || loadingNotes}
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={handleCancel} disabled={uploading}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpload} disabled={uploading || !noteText.trim()}>
-              {uploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Adding...
-                </>
-              ) : (
-                'Add Note'
-              )}
+          <div className="flex justify-end gap-2 pb-2">
+            <Button
+              variant="outline"
+              onClick={() => handleDialogOpenChange(false)}
+              disabled={saving}
+            >
+              Close
             </Button>
           </div>
         </DialogContent>

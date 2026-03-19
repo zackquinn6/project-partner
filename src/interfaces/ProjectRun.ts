@@ -226,6 +226,9 @@ export interface ProjectRun {
     materialLeadTimes?: Record<string, number>;
   };
 
+  // Step notes saved for the workflow (JSONB mapping stepId -> note text)
+  notes_data?: Record<string, string>;
+
   schedule_events?: {
     events: Array<{
       id: string;
