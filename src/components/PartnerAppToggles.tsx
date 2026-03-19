@@ -18,20 +18,29 @@ export const PartnerAppToggles: React.FC = () => {
     const setBusy = key === 'partner_apps_enabled' ? setUpdatingPartner : key === 'expert_support_enabled' ? setUpdatingExpert : setUpdatingToolRentals;
     setBusy(true);
     try {
-      const { error } = await supabase
-        .from('app_settings')
-        .upsert(
-          {
-            setting_key: key,
-            setting_value: { enabled },
-            updated_at: new Date().toISOString()
-          },
-          { onConflict: 'setting_key' }
-        );
+      // When disabling partner apps, disable all dependent options at the same time.
+      // This ensures expert support / tool rentals cannot be used when partner apps are off.
+      const keysToUpdate =
+        key === 'partner_apps_enabled' && enabled === false
+          ? ['partner_apps_enabled', 'expert_support_enabled', 'tool_rentals_enabled']
+          : [key];
+
+      const payload = keysToUpdate.map(settingKey => ({
+        setting_key: settingKey,
+        setting_value: { enabled: settingKey === 'partner_apps_enabled' ? enabled : false },
+        updated_at: new Date().toISOString()
+      }));
+
+      const { error } = await supabase.from('app_settings').upsert(payload, { onConflict: 'setting_key' });
 
       if (error) throw error;
       await refetch();
-      const label = key === 'partner_apps_enabled' ? 'Partner apps' : key === 'expert_support_enabled' ? 'Expert support' : 'Tool rentals';
+      const label =
+        key === 'partner_apps_enabled'
+          ? 'Partner apps'
+          : key === 'expert_support_enabled'
+            ? 'Expert support'
+            : 'Tool rentals';
       toast.success(`${label} ${enabled ? 'enabled' : 'disabled'}`);
     } catch (err) {
       console.error('Error updating partner app setting:', err);
@@ -50,6 +59,9 @@ export const PartnerAppToggles: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/*
+          When partner apps are disabled, dependent options must be off and non-interactive.
+        */}
         <div className="flex items-center justify-between">
           <Label htmlFor="partner-apps" className="flex-1">
             <div className="font-medium">Use partner apps</div>
@@ -75,8 +87,11 @@ export const PartnerAppToggles: React.FC = () => {
           <Switch
             id="expert-support"
             checked={expertSupportEnabled}
-            onCheckedChange={checked => updateSetting('expert_support_enabled', checked)}
-            disabled={loading || updatingExpert}
+            onCheckedChange={checked => {
+              if (!partnerAppsEnabled) return;
+              updateSetting('expert_support_enabled', checked);
+            }}
+            disabled={loading || updatingExpert || !partnerAppsEnabled}
           />
         </div>
 
@@ -90,8 +105,11 @@ export const PartnerAppToggles: React.FC = () => {
           <Switch
             id="tool-rentals"
             checked={toolRentalsEnabled}
-            onCheckedChange={checked => updateSetting('tool_rentals_enabled', checked)}
-            disabled={loading || updatingToolRentals}
+            onCheckedChange={checked => {
+              if (!partnerAppsEnabled) return;
+              updateSetting('tool_rentals_enabled', checked);
+            }}
+            disabled={loading || updatingToolRentals || !partnerAppsEnabled}
           />
         </div>
 
