@@ -1058,6 +1058,10 @@ export default function EditWorkflowView({
   const [decisionTreeOpen, setDecisionTreeOpen] = useState(false);
   const [instructionLevel, setInstructionLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
   const [levelSpecificContent, setLevelSpecificContent] = useState<ContentSection[] | null>(null);
+  const [levelSpecificContentKey, setLevelSpecificContentKey] = useState<{ stepId: string | null; level: 'beginner' | 'intermediate' | 'advanced' }>({
+    stepId: null,
+    level: 'intermediate',
+  });
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [pendingContentChanges, setPendingContentChanges] = useState<ContentSection[] | null>(null);
   const [pendingContentLevel, setPendingContentLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
@@ -1110,6 +1114,19 @@ export default function EditWorkflowView({
     }
   }, [currentStep?.id]);
 
+  // Prevent cross-step UI leakage: clear pending/loaded state when step changes
+  useEffect(() => {
+    const stepId = currentStep?.id ?? null;
+    if (!stepId) return;
+
+    if (pendingContentRef.current.stepId && pendingContentRef.current.stepId !== stepId) {
+      setPendingContentChanges(null);
+    }
+    if (levelSpecificContentKey.stepId && levelSpecificContentKey.stepId !== stepId) {
+      setLevelSpecificContent(null);
+    }
+  }, [currentStep?.id, levelSpecificContentKey.stepId]);
+
   // Save instruction content to database - stable version using refs
   const saveInstructionContentStable = useCallback(async (
     sections: ContentSection[] | null, 
@@ -1161,7 +1178,7 @@ export default function EditWorkflowView({
   // Load instruction content based on selected level - stable version
   const loadInstructionContent = useCallback(async () => {
     const stepId = editingStepRef.current?.id;
-    if (!stepId || !editMode) return;
+    if (!stepId) return;
     
     // Save pending changes from ref to their ORIGINAL level before loading new level (silent)
     if (pendingContentRef.current.changes && pendingContentRef.current.level && pendingContentRef.current.stepId) {
@@ -1189,22 +1206,26 @@ export default function EditWorkflowView({
       if (error) {
         console.error('Error loading instruction content:', error);
         setLevelSpecificContent(null);
+        setLevelSpecificContentKey({ stepId, level: instructionLevel });
         setPendingContentLevel(instructionLevel);
         pendingContentRef.current.level = instructionLevel;
       } else if (data?.content) {
         // Content is stored as Json, convert to ContentSection[]
         const content = Array.isArray(data.content) ? data.content as unknown as ContentSection[] : null;
         setLevelSpecificContent(content);
+        setLevelSpecificContentKey({ stepId, level: instructionLevel });
         setPendingContentLevel(instructionLevel);
         pendingContentRef.current.level = instructionLevel;
       } else {
         setLevelSpecificContent(null);
+        setLevelSpecificContentKey({ stepId, level: instructionLevel });
         setPendingContentLevel(instructionLevel);
         pendingContentRef.current.level = instructionLevel;
       }
     } catch (err) {
       console.error('Exception loading instruction content:', err);
       setLevelSpecificContent(null);
+      setLevelSpecificContentKey({ stepId, level: instructionLevel });
       setPendingContentLevel(instructionLevel);
       pendingContentRef.current.level = instructionLevel;
     } finally {
@@ -1214,9 +1235,7 @@ export default function EditWorkflowView({
 
   // Load content when instruction level changes or step changes
   useEffect(() => {
-    if (editMode) {
-      loadInstructionContent();
-    }
+    loadInstructionContent();
   }, [instructionLevel, editingStep?.id, editMode, loadInstructionContent]);
 
   // Debounced auto-save - only saves after 60 seconds of complete inactivity
@@ -1518,9 +1537,16 @@ export default function EditWorkflowView({
       
       try {
         // Use pending changes if available, otherwise use loaded content
-        if (pendingContentChanges) {
+        const currentStepId = editingStepRef.current?.id ?? null;
+        const pendingMatchesStep = !!currentStepId && pendingContentRef.current.stepId === currentStepId;
+        const loadedMatchesStep =
+          !!currentStepId &&
+          levelSpecificContentKey.stepId === currentStepId &&
+          levelSpecificContentKey.level === instructionLevel;
+
+        if (pendingContentChanges && pendingMatchesStep) {
           contentSections = pendingContentChanges;
-        } else if (levelSpecificContent && levelSpecificContent.length > 0) {
+        } else if (loadedMatchesStep && levelSpecificContent && levelSpecificContent.length > 0) {
           contentSections = levelSpecificContent;
         } else if (editingStep.contentSections && editingStep.contentSections.length > 0) {
           contentSections = editingStep.contentSections;
@@ -1558,7 +1584,12 @@ export default function EditWorkflowView({
 
     // In view mode, try to load level-specific content first
     // If levelSpecificContent is available (loaded in edit mode), use it
-    if (levelSpecificContent && levelSpecificContent.length > 0) {
+    if (
+      levelSpecificContent &&
+      levelSpecificContent.length > 0 &&
+      levelSpecificContentKey.stepId === step.id &&
+      levelSpecificContentKey.level === instructionLevel
+    ) {
       return <MultiContentRenderer sections={levelSpecificContent} />;
     }
 
