@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useBetaMode } from '@/hooks/useBetaMode';
 
 /** Apps that are always openable without a subscription. All other apps require an active subscription. */
-export const FREE_APP_ACTION_KEYS = ['my-tools', 'home-maintenance', 'task-manager'] as const;
+export const FREE_APP_ACTION_KEYS = ['my-tools', 'home-maintenance', 'task-manager', 'quality-check'] as const;
 
 interface MembershipContextType {
   isSubscribed: boolean;

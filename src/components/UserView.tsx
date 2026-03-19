@@ -74,6 +74,7 @@ import { ProjectCompletionHandler } from './ProjectCompletionHandler';
 import { ProjectBudgetingWindow } from './ProjectBudgetingWindow';
 import { ProjectPerformanceWindow } from './ProjectPerformanceWindow';
 import { RiskManagementWindow } from './RiskManagementWindow';
+import { QualityCheckWindow } from './QualityCheckWindow';
 import { getSafeEmbedUrl } from '@/utils/videoEmbedSanitizer';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
 import { PostKickoffNotification } from './PostKickoffNotification';
@@ -198,6 +199,7 @@ export default function UserView({
   const [projectBudgetingOpen, setProjectBudgetingOpen] = useState(false);
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
   const [projectPerformanceOpen, setProjectPerformanceOpen] = useState(false);
+  const [qualityCheckOpen, setQualityCheckOpen] = useState(false);
   const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false);
   const [notesGalleryOpen, setNotesGalleryOpen] = useState(false);
   const [progressViewsOpen, setProgressViewsOpen] = useState(false);
@@ -1115,6 +1117,23 @@ export default function UserView({
     }
   };
 
+  const navigateToStepInstance = (stepId: string, spaceId?: string | null) => {
+    const stepIndex = allSteps.findIndex(step => {
+      if (step.id !== stepId) return false;
+      if (!spaceId) return true;
+      return (step as any).spaceId === spaceId;
+    });
+
+    if (stepIndex !== -1) {
+      setCurrentStepIndex(stepIndex);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return true;
+    }
+
+    console.error(`❌ Step instance not found: ${stepId}${spaceId ? ` (space: ${spaceId})` : ''}`);
+    return false;
+  };
+
   // Track step start time when user views a step (for analytics)
   useEffect(() => {
     if (!currentStep || !currentProjectRun) return;
@@ -1609,6 +1628,9 @@ export default function UserView({
       case 'risk-management':
         console.log('🛡️ Launching Risk Management app');
         setRiskManagementOpen(true);
+        break;
+      case 'quality-check':
+        setQualityCheckOpen(true);
         break;
       case 'waste-removal':
         toast.info('Waste Removal is coming soon.');
@@ -3594,6 +3616,17 @@ export default function UserView({
           mode="run"
         />
       )}
+
+      {/* Quality Check Window */}
+      <QualityCheckWindow
+        open={qualityCheckOpen}
+        onOpenChange={setQualityCheckOpen}
+        steps={allSteps as any[]}
+        completedSteps={completedSteps}
+        checkedOutputs={checkedOutputs}
+        onJumpToStep={(stepId, spaceId) => navigateToStepInstance(stepId, spaceId)}
+        onToggleOutputComplete={toggleOutputCheck}
+      />
 
       {/* Upgrade prompt when launching a paid app without subscription */}
       <UpgradePrompt open={showUpgradePrompt} onOpenChange={setShowUpgradePrompt} feature="this app" />

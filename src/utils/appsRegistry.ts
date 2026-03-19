@@ -98,6 +98,14 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     actionKey: 'risk-management',
     displayOrder: 10
   },
+  'quality-check': {
+    appName: 'Quality Check',
+    appType: 'native',
+    icon: 'CheckCircle',
+    description: 'Verify workflow outputs are completed',
+    actionKey: 'quality-check',
+    displayOrder: 10.5
+  },
   'waste-removal': {
     appName: 'Waste Removal',
     appType: 'native',
