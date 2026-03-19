@@ -14,6 +14,44 @@ BEGIN;
 
 ALTER TABLE public.step_instructions ENABLE ROW LEVEL SECURITY;
 
+-- Make this script safe to re-run
+DROP POLICY IF EXISTS step_instructions_select_authenticated ON public.step_instructions;
+DROP POLICY IF EXISTS step_instructions_insert_authenticated ON public.step_instructions;
+DROP POLICY IF EXISTS step_instructions_update_authenticated ON public.step_instructions;
+DROP POLICY IF EXISTS step_instructions_delete_authenticated ON public.step_instructions;
+
+-- Common access rule (repeated in each policy; keep identical)
+-- operation_steps -> phase_operations -> project_phases -> projects
+-- user must own the underlying project or be in project_owners
+
+-- SELECT
+CREATE POLICY step_instructions_select_authenticated
+  ON public.step_instructions
+  FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.operation_steps os
+      JOIN public.phase_operations po
+        ON po.id = os.operation_id
+      JOIN public.project_phases pp
+        ON pp.id = po.phase_id
+      JOIN public.projects p
+        ON p.id = pp.project_id
+      WHERE os.id = step_instructions.template_step_id
+        AND (
+          p.user_id = auth.uid()
+          OR EXISTS (
+            SELECT 1
+            FROM public.project_owners pov
+            WHERE pov.project_id = pp.project_id
+              AND pov.user_id = auth.uid()
+          )
+        )
+    )
+  );
+
 -- INSERT
 CREATE POLICY step_instructions_insert_authenticated
   ON public.step_instructions
