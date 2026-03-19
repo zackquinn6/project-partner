@@ -302,6 +302,12 @@ export function PlanningGuideWindow({ open, onOpenChange, initialTab }: Planning
                   </ol>
                 </section>
                 <section>
+                  <h2 className="text-base font-semibold flex items-center gap-2 mb-2">Waiting steps (drying, curing)</h2>
+                  <p className="mb-2">
+                    Be sure to engineer all waiting steps - e.g. paint dry, curing. This should be its own step with specific wait times - and shown as workers needed = 0
+                  </p>
+                </section>
+                <section>
                   <h2 className="text-base font-semibold flex items-center gap-2 mb-2">
                     <GraduationCap className="w-4 h-4" />
                     Instructions for different user levels
