@@ -1,4 +1,5 @@
 import React from 'react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProject } from '@/contexts/ProjectContext';
 import { ProjectOverviewStep } from './KickoffSteps/ProjectOverviewStep';
@@ -23,8 +24,14 @@ export function ProjectWorkflowOverviewPage({
   return (
     <div className="space-y-6">
       <Card className="gradient-card border-0 shadow-card overflow-hidden">
+        <CardHeader className="pb-3">
+          <CardTitle className="font-bold" style={{ fontSize: '3em', lineHeight: 1.05 }}>
+            {projectName}
+          </CardTitle>
+        </CardHeader>
+
         {coverImageUrl ? (
-          <div className="w-full h-48 overflow-hidden bg-muted">
+          <div className="w-full h-52 overflow-hidden bg-muted">
             <img
               src={coverImageUrl}
               alt={projectName ? `${projectName} cover` : 'Project cover'}
@@ -33,18 +40,28 @@ export function ProjectWorkflowOverviewPage({
           </div>
         ) : null}
 
-        <CardHeader className="pb-3">
-          <CardTitle className="text-xl">{projectName}</CardTitle>
-          {projectDescription ? (
-            <CardDescription className="text-sm">{projectDescription}</CardDescription>
-          ) : null}
-        </CardHeader>
+        {projectDescription ? (
+          <div className="px-6 pb-6">
+            <CardDescription className="text-sm leading-relaxed">
+              {projectDescription}
+            </CardDescription>
+          </div>
+        ) : null}
       </Card>
 
-      <ProjectOverviewStep
-        onComplete={() => {}}
-        isCompleted={isKickoffStep1Completed}
-      />
+      <Accordion type="single" collapsible defaultValue="project-details">
+        <AccordionItem value="project-details">
+          <AccordionTrigger className="text-sm sm:text-base">
+            See project details
+          </AccordionTrigger>
+          <AccordionContent>
+            <ProjectOverviewStep
+              onComplete={() => {}}
+              isCompleted={isKickoffStep1Completed}
+            />
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }
