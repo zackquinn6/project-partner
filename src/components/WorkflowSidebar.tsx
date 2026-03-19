@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp } from "lucide-react";
+import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -512,21 +512,10 @@ export function WorkflowSidebar({
                     </Select>
                   </div>
 
-                  {/* Project Tools Section - min-w-0 so flex children can shrink and are not clipped */}
-                    <div className="space-y-1.5 min-w-0">
+                  {/* Project Tools: primary buttons + more in menu (Experts/Tool Rentals follow admin app_settings toggles) */}
+                    <div className="space-y-1.5 min-w-0" data-tutorial="project-tools">
                     <div className="text-xs font-semibold text-muted-foreground">Project Tools</div>
-                    {/* Row 1: View Schedule */}
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={onViewScheduleClick}
-                      className="h-7 px-2 text-[11px] w-full min-w-0"
-                      style={{ backgroundColor: 'rgba(99, 102, 241, 0.40)', color: 'black' }}
-                    >
-                      <Calendar className="h-3 w-3 mr-1.5 shrink-0" style={{ color: 'black' }} />
-                      <span className="truncate">View Schedule</span>
-                    </Button>
-                    {/* Row 2: Key Characteristics, Re-Plan */}
+                    {/* Key Characteristics, Re-Plan */}
                     <div className="flex items-center gap-1.5 min-w-0">
                       <Button
                         variant="default"
@@ -551,7 +540,7 @@ export function WorkflowSidebar({
                         </Button>
                       )}
                     </div>
-                    {/* Row 3: Notes, Photos */}
+                    {/* Notes, Photos */}
                     <div className="flex items-center gap-1.5 min-w-0">
                       <Button
                         variant="default"
@@ -574,44 +563,53 @@ export function WorkflowSidebar({
                         <span className="truncate">Photos</span>
                       </Button>
                     </div>
-                    {/* Progress views */}
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={onProgressViewsClick ?? (() => {})}
-                      className="h-7 px-2 text-[11px] w-full min-w-0"
-                      style={{ backgroundColor: 'rgba(20, 184, 166, 0.40)', color: 'black' }}
-                    >
-                      <BarChart3 className="h-3 w-3 mr-2 shrink-0" style={{ color: 'black' }} />
-                      <span className="truncate">Progress</span>
-                    </Button>
-                    {/* Row 4: Experts, Tool Rentals (visibility from admin toggles) - keep at bottom */}
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      {expertSupportEnabled && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
                         <Button
-                          variant="default"
+                          type="button"
+                          variant="outline"
                           size="sm"
-                          onClick={onHelpClick}
-                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
-                          style={{ backgroundColor: 'rgba(59, 130, 246, 0.40)', color: 'black' }}
+                          className="h-7 px-2 text-[11px] w-full min-w-0 justify-between gap-1 font-normal"
                         >
-                          <MessageCircle className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
-                          <span className="truncate">Experts</span>
+                          <span className="truncate">More project tools</span>
+                          <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" />
                         </Button>
-                      )}
-                      {toolRentalsEnabled && onToolRentalsClick && (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={onToolRentalsClick}
-                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
-                          style={{ backgroundColor: 'rgba(245, 158, 11, 0.40)', color: 'black' }}
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] max-w-[min(100%,14rem)]">
+                        <DropdownMenuItem
+                          className="text-xs gap-2 cursor-pointer"
+                          onClick={onViewScheduleClick}
                         >
-                          <Wrench className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
-                          <span className="truncate">Tool Rentals</span>
-                        </Button>
-                      )}
-                    </div>
+                          <Calendar className="h-3.5 w-3.5 shrink-0" />
+                          Scheduler
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-xs gap-2 cursor-pointer"
+                          onClick={() => (onProgressViewsClick ?? (() => {}))()}
+                        >
+                          <BarChart3 className="h-3.5 w-3.5 shrink-0" />
+                          Progress
+                        </DropdownMenuItem>
+                        {expertSupportEnabled && (
+                          <DropdownMenuItem
+                            className="text-xs gap-2 cursor-pointer"
+                            onClick={onHelpClick}
+                          >
+                            <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                            Experts
+                          </DropdownMenuItem>
+                        )}
+                        {toolRentalsEnabled && onToolRentalsClick && (
+                          <DropdownMenuItem
+                            className="text-xs gap-2 cursor-pointer"
+                            onClick={onToolRentalsClick}
+                          >
+                            <Wrench className="h-3.5 w-3.5 shrink-0" />
+                            Tool Rentals
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
 
                   {/* Separator */}
