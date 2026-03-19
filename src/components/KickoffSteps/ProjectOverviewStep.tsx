@@ -254,7 +254,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           <div>
             {/* This project: arrow above label, arrow nearly touching the bar */}
             <div
-              className="absolute top-full left-0 flex flex-col items-center justify-center gap-0 transition-all duration-200 z-10 -mt-px pointer-events-none"
+              className="absolute top-7 left-0 flex flex-col items-center justify-center gap-0 transition-all duration-200 z-10 -mt-px pointer-events-none"
               style={{
                 left: `${getArrowPosition(position)}%`,
                 transform: 'translateX(-50%)'
