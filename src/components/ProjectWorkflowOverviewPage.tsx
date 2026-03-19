@@ -11,7 +11,7 @@ interface ProjectWorkflowOverviewPageProps {
 export function ProjectWorkflowOverviewPage({
   isKickoffStep1Completed
 }: ProjectWorkflowOverviewPageProps) {
-  const { currentProject, currentProjectRun } = useProject();
+  const { currentProject, currentProjectRun, projects } = useProject();
 
   const projectName =
     currentProjectRun?.customProjectName ?? currentProjectRun?.name ?? currentProject?.name;
@@ -19,7 +19,14 @@ export function ProjectWorkflowOverviewPage({
   const projectDescription =
     currentProjectRun?.description ?? currentProject?.description;
 
-  const coverImageUrl = currentProject?.cover_image;
+  // In workflow mode, `currentProject` can be null while `currentProjectRun` is set.
+  // Use the run's template project to source the cover photo.
+  const templateProject =
+    currentProjectRun && projects
+      ? projects.find(p => p.id === currentProjectRun.templateId) || null
+      : null;
+
+  const coverImageUrl = currentProject?.cover_image ?? templateProject?.cover_image;
 
   return (
     <div className="space-y-6">
@@ -49,7 +56,7 @@ export function ProjectWorkflowOverviewPage({
         ) : null}
       </Card>
 
-      <Accordion type="single" collapsible defaultValue="project-details">
+      <Accordion type="single" collapsible>
         <AccordionItem value="project-details">
           <AccordionTrigger className="text-sm sm:text-base">
             See project details
