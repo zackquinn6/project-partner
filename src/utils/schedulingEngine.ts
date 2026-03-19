@@ -196,35 +196,62 @@ export class SchedulingEngine {
   ): ScheduledTask[] {
     const scheduledTasks: ScheduledTask[] = [];
     const reservedSlots = new Set<string>();
-    const taskCompletionTimes = new Map<string, Date>();
-    const taskLatestTimes = new Map<string, Date>();
 
-    // Calculate latest completion dates using backward pass
-    const dropDead = inputs.dropDeadDate || inputs.targetCompletionDate;
-    for (let i = tasks.length - 1; i >= 0; i--) {
-      const task = tasks[i];
-      
-      // Find earliest required finish based on dependent tasks
-      let earliestRequiredFinish = dropDead;
-      for (const otherTask of tasks) {
-        if (otherTask.dependencies.includes(task.id)) {
-          const dependentLatest = taskLatestTimes.get(otherTask.id);
-          if (dependentLatest && dependentLatest < earliestRequiredFinish) {
-            earliestRequiredFinish = dependentLatest;
-          }
+    const taskStartTimes = new Map<string, Date>();
+
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+    const taskById = new Map(tasks.map(t => [t.id, t]));
+
+    // Build reverse dependency index: for a given prerequisite, list tasks that depend on it.
+    const dependentsByPrerequisite = new Map<string, string[]>();
+    for (const t of tasks) {
+      for (const depId of t.dependencies) {
+        const existing = dependentsByPrerequisite.get(depId);
+        if (existing) {
+          existing.push(t.id);
+        } else {
+          dependentsByPrerequisite.set(depId, [t.id]);
         }
       }
-      
-      const latestCompletion = new Date(earliestRequiredFinish.getTime() - task.estimatedHours * 60 * 60 * 1000);
-      taskLatestTimes.set(task.id, latestCompletion);
     }
+
+    const dropDead = inputs.dropDeadDate || inputs.targetCompletionDate;
 
     for (const task of tasks) {
       // Determine worker type required
       const workerType = this.getRequiredWorkerType(task, inputs);
-      
-      // Find latest possible start time based on dependencies
-      const latestStart = this.findLatestStartTime(task, taskCompletionTimes, inputs.targetCompletionDate);
+
+      const taskDurationMs = task.estimatedHours * 60 * 60 * 1000;
+
+      // Latest time this task is allowed to END so all already-scheduled dependents
+      // can START without violating material lead time.
+      let latestAllowedEnd = new Date(dropDead);
+      const dependents = dependentsByPrerequisite.get(task.id) || [];
+
+      for (const dependentId of dependents) {
+        const dependentStart = taskStartTimes.get(dependentId);
+        if (!dependentStart) continue;
+
+        const dependentTask = taskById.get(dependentId);
+        if (!dependentTask) continue;
+
+        const leadDaysRaw = dependentTask.materialLeadTimeDays;
+        let leadDays = 0;
+        if (typeof leadDaysRaw === 'number' && !Number.isNaN(leadDaysRaw)) {
+          leadDays = leadDaysRaw;
+        }
+        const lagMs = leadDays * MS_PER_DAY;
+
+        // Constraint: dependentStart >= prerequisiteEnd + leadTime(dependent)
+        // => prerequisiteEnd <= dependentStart - leadTime(dependent)
+        const allowedEnd = new Date(dependentStart.getTime() - lagMs);
+        if (allowedEnd < latestAllowedEnd) {
+          latestAllowedEnd = allowedEnd;
+        }
+      }
+
+      const latestStart = new Date(latestAllowedEnd.getTime() - taskDurationMs);
       
       // Find contiguous slots that can accommodate this task
       const suitableSlots = this.findSuitableSlots(
@@ -239,8 +266,7 @@ export class SchedulingEngine {
       if (suitableSlots.length > 0) {
         // Schedule the task in the latest suitable slot
         const selectedSlot = suitableSlots[0];
-        const endTime = new Date(selectedSlot.start.getTime() + task.estimatedHours * 60 * 60 * 1000);
-        const latestCompletion = taskLatestTimes.get(task.id) || dropDead;
+        const endTime = new Date(selectedSlot.start.getTime() + taskDurationMs);
         
         const scheduledTask: ScheduledTask = {
           taskId: task.id,
@@ -248,19 +274,19 @@ export class SchedulingEngine {
           startTime: selectedSlot.start,
           endTime,
           targetCompletionDate: endTime,
-          latestCompletionDate: latestCompletion,
+          latestCompletionDate: latestAllowedEnd,
           status: 'confirmed',
           bufferApplied: this.calculateAppliedBuffer(task)
         };
 
         scheduledTasks.push(scheduledTask);
-        taskCompletionTimes.set(task.id, endTime);
+        taskStartTimes.set(task.id, selectedSlot.start);
         
         // Reserve the slot
         reservedSlots.add(`${selectedSlot.workerId}-${selectedSlot.start.getTime()}`);
       } else {
         // Cannot schedule - mark as conflict
-        const latestCompletion = taskLatestTimes.get(task.id) || dropDead;
+        const latestCompletion = latestAllowedEnd;
         const conflictTask: ScheduledTask = {
           taskId: task.id,
           workerId: inputs.workers[0]?.id || 'unknown',
@@ -350,10 +376,20 @@ export class SchedulingEngine {
       const scheduled = scheduledMap.get(task.id);
       if (!scheduled || scheduled.status !== 'confirmed') continue;
       
+      const leadDaysRaw = task.materialLeadTimeDays;
+      let leadDays = 0;
+      if (typeof leadDaysRaw === 'number' && !Number.isNaN(leadDaysRaw)) {
+        leadDays = leadDaysRaw;
+      }
+      const leadHours = leadDays * 24;
+
       let maxDependencyFinish = 0;
       for (const depId of task.dependencies) {
-        const depFinish = earliestFinish.get(depId) || 0;
-        maxDependencyFinish = Math.max(maxDependencyFinish, depFinish);
+        const depFinish = earliestFinish.get(depId);
+        const safeDepFinish = typeof depFinish === 'number' ? depFinish : 0;
+        // Constraint: task.start >= dep.finish + leadTime(task)
+        const candidate = safeDepFinish + leadHours;
+        maxDependencyFinish = Math.max(maxDependencyFinish, candidate);
       }
       
       earliestStart.set(task.id, maxDependencyFinish);
@@ -377,16 +413,27 @@ export class SchedulingEngine {
       if (!scheduled || scheduled.status !== 'confirmed') continue;
       
       // Find minimum latest start of dependent tasks
-      let minDependentStart = projectEnd;
+      let minLatestFinish = projectEnd;
       for (const otherTask of tasks) {
         if (otherTask.dependencies.includes(task.id)) {
-          const dependentLatest = latestStart.get(otherTask.id) || projectEnd;
-          minDependentStart = Math.min(minDependentStart, dependentLatest);
+          const dependentLatestStart = latestStart.get(otherTask.id);
+          const safeDependentLatestStart = typeof dependentLatestStart === 'number' ? dependentLatestStart : projectEnd;
+
+          const leadDaysRaw = otherTask.materialLeadTimeDays;
+          let leadDays = 0;
+          if (typeof leadDaysRaw === 'number' && !Number.isNaN(leadDaysRaw)) {
+            leadDays = leadDaysRaw;
+          }
+          const leadHours = leadDays * 24;
+
+          // Constraint: prerequisiteEnd <= dependentStart - leadTime(dependent)
+          const candidateLatestFinish = safeDependentLatestStart - leadHours;
+          minLatestFinish = Math.min(minLatestFinish, candidateLatestFinish);
         }
       }
       
-      latestFinish.set(task.id, minDependentStart);
-      latestStart.set(task.id, minDependentStart - task.estimatedHours);
+      latestFinish.set(task.id, minLatestFinish);
+      latestStart.set(task.id, minLatestFinish - task.estimatedHours);
     }
     
     // Calculate slack times and identify critical path

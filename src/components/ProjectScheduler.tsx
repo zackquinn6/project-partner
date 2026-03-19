@@ -403,6 +403,36 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     const scalingFactor = projectRun?.scalingFactor || 1;
     const skillMultiplier = projectRun?.skillLevelMultiplier || 1;
     const completedSteps = projectRun?.completedSteps || [];
+
+    const materialLeadTimes = projectRun?.shopping_checklist_data?.materialLeadTimes;
+
+    const getStepMaterialLeadTimeDays = (step: any): number => {
+      const stepMaterials = step?.materials;
+      if (!Array.isArray(stepMaterials) || stepMaterials.length === 0) {
+        return 0;
+      }
+
+      // A step can't start until all required materials are ready, so we apply the max lead time.
+      let maxLeadDays = 0;
+      for (const material of stepMaterials) {
+        const materialId = typeof material?.id === 'string' && material.id.trim() !== '' ? material.id : '';
+        const materialName = typeof material?.name === 'string' ? material.name : '';
+        const key = materialId !== '' ? materialId : materialName;
+        if (typeof key !== 'string' || key.trim() === '') continue;
+
+        const leadDaysRaw = materialLeadTimes ? materialLeadTimes[key] : undefined;
+        let leadDays = 0;
+        if (typeof leadDaysRaw === 'number' && !Number.isNaN(leadDaysRaw)) {
+          leadDays = leadDaysRaw;
+        }
+
+        if (leadDays > maxLeadDays) {
+          maxLeadDays = leadDays;
+        }
+      }
+
+      return maxLeadDays;
+    };
     
     // Create a map of space priority for quick lookup
     const spacePriorityMap = new Map<string, number>();
@@ -441,6 +471,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           if (completedSteps.includes(step.id)) {
             return;
           }
+
+          const stepMaterialLeadTimeDays = getStepMaterialLeadTimeDays(step);
 
           const baseTimeLow = step.timeEstimation?.variableTime?.low || 0;
           const baseTimeMed = step.timeEstimation?.variableTime?.medium || 0;
@@ -540,6 +572,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                 phaseId: phase.id,
                 operationId: operation.id,
                 stepId: step.id,
+                materialLeadTimeDays: stepMaterialLeadTimeDays,
                 // Add metadata for scheduling algorithm
                 metadata: { 
                   spaceId: space.id, 
@@ -611,6 +644,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               phaseId: phase.id,
               operationId: operation.id,
               stepId: step.id,
+              materialLeadTimeDays: stepMaterialLeadTimeDays,
               metadata: {
                 workersNeeded,
                 isFixedStep,

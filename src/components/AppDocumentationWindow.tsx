@@ -688,6 +688,25 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                             </ul>
                           </CardContent>
                         </Card>
+
+                        <Card className="border-l-4 border-l-indigo-500">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="flex items-center gap-2 text-base">
+                              <div className="w-8 h-8 bg-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">5</div>
+                              Plan Purchases with Lead Times
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="mb-2 text-sm">
+                              The shopping checklist can model material procurement delays with per-material “Lead days”.
+                            </p>
+                            <ul className="space-y-1 text-sm">
+                              <li>• Set each material’s lead time (default is 0 days).</li>
+                              <li>• Longer lead times delay the step that requires that material.</li>
+                              <li>• The “Needed by” date moves earlier by the same lead time so you know when to order.</li>
+                            </ul>
+                          </CardContent>
+                        </Card>
                       </div>
 
                       <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">

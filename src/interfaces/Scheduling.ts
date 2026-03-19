@@ -13,6 +13,12 @@ export interface Task {
   confidence?: number; // 0-1 scale
   phaseId?: string;
   operationId?: string;
+  /**
+   * Lead time (in days) required for any material(s) consumed by this step.
+   * During backwards scheduling this acts like a dependency "lag" that delays
+   * when this step is allowed to start.
+   */
+  materialLeadTimeDays?: number;
 }
 
 export interface TimeSlot {

@@ -76,6 +76,7 @@ export function OrderingWindow({
   const [orderedMaterials, setOrderedMaterials] = useState<Set<string>>(new Set());
   const [shoppedTools, setShoppedTools] = useState<Set<string>>(new Set());
   const [shoppedMaterials, setShoppedMaterials] = useState<Set<string>>(new Set());
+  const [materialLeadTimes, setMaterialLeadTimes] = useState<Record<string, number>>({});
   const [showShopped, setShowShopped] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -97,8 +98,15 @@ export function OrderingWindow({
 
   // Load shopping checklist data from database on mount
   useEffect(() => {
-    if (!open || !projectRun?.shopping_checklist_data) return;
+    if (!open) return;
+    if (!projectRun?.shopping_checklist_data) {
+      setMaterialLeadTimes({});
+      return;
+    }
     const savedData = projectRun.shopping_checklist_data;
+    if (savedData.materialLeadTimes && typeof savedData.materialLeadTimes === 'object') {
+      setMaterialLeadTimes(savedData.materialLeadTimes);
+    }
     if (savedData.orderedItems && Array.isArray(savedData.orderedItems)) {
       const shoppedToolIds = new Set<string>();
       const shoppedMaterialIds = new Set<string>();
@@ -115,9 +123,16 @@ export function OrderingWindow({
   }, [open, projectRun]);
 
   // Save shopping checklist data to database
-  const saveShoppingData = async (shoppedToolsSet: Set<string>, shoppedMaterialsSet: Set<string>) => {
+  const saveShoppingData = async (
+    shoppedToolsSet: Set<string>,
+    shoppedMaterialsSet: Set<string>,
+    leadTimesOverride?: Record<string, number>
+  ) => {
     if (!projectRun) return;
     try {
+      const prevShoppingData = projectRun.shopping_checklist_data || {};
+      const nextMaterialLeadTimes = leadTimesOverride ? leadTimesOverride : materialLeadTimes;
+
       const orderedItems = [...Array.from(shoppedToolsSet).map(toolId => {
         const tool = uniqueTools.find(t => t.id === toolId);
         return {
@@ -142,9 +157,11 @@ export function OrderingWindow({
       await updateProjectRun({
         ...projectRun,
         shopping_checklist_data: {
+          ...prevShoppingData,
           orderedItems,
           completedDate: allItemsOrdered ? new Date().toISOString() : null,
-          scheduleSnapshot: scheduleSnapshot
+          scheduleSnapshot: scheduleSnapshot,
+          materialLeadTimes: nextMaterialLeadTimes
         }
       });
     } catch (error) {
@@ -508,6 +525,8 @@ export function OrderingWindow({
                       {/* Active Materials */}
                       {activeMaterials.map((material, index) => {
                     const needDate = getNeedDate(material.id, material.name, 'material');
+                    const rawLeadDays = materialLeadTimes[material.id];
+                    const leadDaysValue = (typeof rawLeadDays === 'number' && !Number.isNaN(rawLeadDays)) ? rawLeadDays : 0;
                     return <div key={`active-${material.id}-${index}`} className="border rounded-lg p-1.5 hover:bg-muted/50 transition-colors">
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
@@ -522,6 +541,47 @@ export function OrderingWindow({
                                   <Calendar className="h-3 w-3" />
                                   <span>Needed by: {format(needDate.startDate, 'MM/dd/yyyy')}</span>
                                 </div>}
+                              <div className="flex items-center gap-2 mt-2 ml-7">
+                                <span className="text-[10px] text-muted-foreground whitespace-nowrap">Lead days</span>
+                                <TooltipProvider delayDuration={100}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs text-xs">
+                                      <p className="font-semibold">How it affects scheduling</p>
+                                      <p className="mt-1 text-muted-foreground">
+                                        This delays the start of any workflow step that requires this material.
+                                      </p>
+                                      <p className="mt-1 text-muted-foreground">
+                                        Set to `0` for no delay.
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  step={1}
+                                  value={leadDaysValue}
+                                  onChange={(e) => {
+                                    const parsed = Number(e.target.value);
+                                    if (Number.isNaN(parsed) || parsed < 0) {
+                                      toast.error('Lead days must be 0 or greater');
+                                      return;
+                                    }
+                                    const nextLeadTimes = { ...materialLeadTimes };
+                                    if (parsed === 0) {
+                                      delete nextLeadTimes[material.id];
+                                    } else {
+                                      nextLeadTimes[material.id] = parsed;
+                                    }
+                                    setMaterialLeadTimes(nextLeadTimes);
+                                    saveShoppingData(shoppedTools, shoppedMaterials, nextLeadTimes);
+                                  }}
+                                  className="h-7 text-xs w-20"
+                                />
+                              </div>
                               {material.totalQuantity && <Badge variant="secondary" className="text-xs mt-2 ml-7">
                                   Qty: {material.totalQuantity} {material.unit || 'pieces'}
                                 </Badge>}
@@ -539,7 +599,11 @@ export function OrderingWindow({
                           <div className="mb-3">
                             <h3 className="text-sm font-medium text-muted-foreground">Completed Items</h3>
                           </div>
-                          {shoppedMaterialsList.map((material, index) => <div key={`shopped-${material.id}-${index}`} className="border rounded-lg p-1.5 bg-muted/30 opacity-60">
+                          {shoppedMaterialsList.map((material, index) => {
+                            const rawLeadDays = materialLeadTimes[material.id];
+                            const leadDaysValue = (typeof rawLeadDays === 'number' && !Number.isNaN(rawLeadDays)) ? rawLeadDays : 0;
+
+                            return <div key={`shopped-${material.id}-${index}`} className="border rounded-lg p-1.5 bg-muted/30 opacity-60">
                               <div className="flex items-start justify-between">
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-3">
@@ -549,6 +613,49 @@ export function OrderingWindow({
                                   <p className="text-xs text-muted-foreground mt-2 ml-7 line-through">
                                     {material.description}
                                   </p>
+
+                                  <div className="flex items-center gap-2 mt-2 ml-7">
+                                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">Lead days</span>
+                                    <TooltipProvider delayDuration={100}>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="max-w-xs text-xs">
+                                          <p className="font-semibold">How it affects scheduling</p>
+                                          <p className="mt-1 text-muted-foreground">
+                                            This delays the start of any workflow step that requires this material.
+                                          </p>
+                                          <p className="mt-1 text-muted-foreground">
+                                            Set to `0` for no delay.
+                                          </p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      step={1}
+                                      value={leadDaysValue}
+                                      onChange={(e) => {
+                                        const parsed = Number(e.target.value);
+                                        if (Number.isNaN(parsed) || parsed < 0) {
+                                          toast.error('Lead days must be 0 or greater');
+                                          return;
+                                        }
+                                        const nextLeadTimes = { ...materialLeadTimes };
+                                        if (parsed === 0) {
+                                          delete nextLeadTimes[material.id];
+                                        } else {
+                                          nextLeadTimes[material.id] = parsed;
+                                        }
+                                        setMaterialLeadTimes(nextLeadTimes);
+                                        saveShoppingData(shoppedTools, shoppedMaterials, nextLeadTimes);
+                                      }}
+                                      className="h-7 text-xs w-20"
+                                    />
+                                  </div>
+
                                   {material.totalQuantity && <Badge variant="secondary" className="text-xs mt-2 ml-7 line-through">
                                       Qty: {material.totalQuantity} {material.unit || 'pieces'}
                                     </Badge>}
@@ -557,7 +664,8 @@ export function OrderingWindow({
                                   <Info className="w-4 h-4" />
                                 </Button>
                               </div>
-                            </div>)}
+                            </div>;
+                          })}
                         </>}
                     </>}
                 </div>

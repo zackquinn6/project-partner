@@ -216,8 +216,14 @@ export interface ProjectRun {
       itemName: string;
       orderedDate: string;
       vendor?: string;
+      itemType?: 'tool' | 'material';
     }>;
     completedDate?: string;
+    /**
+     * Project-specific material lead times.
+     * Keyed by `material.id` as used in the shopping checklist.
+     */
+    materialLeadTimes?: Record<string, number>;
   };
 
   schedule_events?: {

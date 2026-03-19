@@ -37,6 +37,9 @@ export function extractNeedDatesFromSchedule(projectRun: ProjectRun): NeedDate[]
     return [];
   }
 
+  const materialLeadTimes = projectRun.shopping_checklist_data?.materialLeadTimes;
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
   const materialDates = new Map<string, { name: string; dates: Date[]; stepIds: string[] }>();
   const toolDates = new Map<string, { name: string; dates: Date[]; stepIds: string[] }>();
 
@@ -89,11 +92,19 @@ export function extractNeedDatesFromSchedule(projectRun: ProjectRun): NeedDate[]
   // Materials: needed by the earliest date
   materialDates.forEach((data, itemId) => {
     const sortedDates = data.dates.sort((a, b) => a.getTime() - b.getTime());
+
+    const leadDaysRaw = materialLeadTimes ? materialLeadTimes[itemId] : undefined;
+    let leadDays = 0;
+    if (typeof leadDaysRaw === 'number' && !Number.isNaN(leadDaysRaw)) {
+      leadDays = leadDaysRaw;
+    }
+
+    const orderingReadyDate = sortedDates[0] ? new Date(sortedDates[0].getTime() - (leadDays * MS_PER_DAY)) : null;
     needDates.push({
       itemId,
       itemName: data.name,
       itemType: 'material',
-      startDate: sortedDates[0],
+      startDate: orderingReadyDate,
       endDate: null,
       stepIds: [...new Set(data.stepIds)]
     });
