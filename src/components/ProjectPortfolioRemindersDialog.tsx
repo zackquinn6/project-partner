@@ -20,9 +20,9 @@ export function ProjectPortfolioRemindersDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Reminders &amp; notifications</DialogTitle>
+          <DialogTitle>Notifications</DialogTitle>
           <DialogDescription>
-            Email preferences for project dashboard and task manager updates.
+            Notification preferences for project &amp; task manager updates.
           </DialogDescription>
         </DialogHeader>
         <PortfolioNotifications />

@@ -30,7 +30,6 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
   const [phoneNumber, setPhoneNumber] = useState("");
   const [notifyWeeklyBudget, setNotifyWeeklyBudget] = useState(false);
   const [notifyDailyTaskStatus, setNotifyDailyTaskStatus] = useState(false);
-  const [notifyDailyCelebrations, setNotifyDailyCelebrations] = useState(false);
 
   const [loadingSettings, setLoadingSettings] = useState(true);
 
@@ -63,7 +62,6 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
           );
           setNotifyWeeklyBudget(data.notify_weekly_budget === true);
           setNotifyDailyTaskStatus(data.notify_daily_task_status === true);
-          setNotifyDailyCelebrations(data.notify_daily_celebrations === true);
         } else {
           setEmailEnabled(!!user.email);
           setEmailAddress(user.email ?? "");
@@ -71,7 +69,6 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
           setPhoneNumber("");
           setNotifyWeeklyBudget(false);
           setNotifyDailyTaskStatus(false);
-          setNotifyDailyCelebrations(false);
         }
       } catch (e) {
         if (!cancelled) console.error("Error loading portfolio notifications:", e);
@@ -96,7 +93,7 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
         phone_number: phoneNumber.trim() === "" ? null : phoneNumber.trim(),
         notify_weekly_budget: notifyWeeklyBudget,
         notify_daily_task_status: notifyDailyTaskStatus,
-        notify_daily_celebrations: notifyDailyCelebrations,
+        notify_daily_celebrations: false,
         updated_at: new Date().toISOString(),
       };
       const { data: existing } = await supabase
@@ -118,7 +115,7 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
       }
       toast({
         title: "Settings Saved",
-        description: "Your reminder preferences have been updated.",
+        description: "Your notification preferences have been updated.",
       });
       onSaved?.();
     } catch (error) {
@@ -236,8 +233,7 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="flex items-center gap-2 text-sm md:text-base font-semibold leading-snug md:leading-snug">
           <Bell className="h-4 w-4 md:h-5 md:w-5 text-amber-500 shrink-0" />
-          Stay on top of budgets and tasks. Turn on reminders so updates land
-          where you already check every day.
+          Stay on top of project and task activity. Turn on notifications so updates land where you already check every day.
         </h3>
         <Button
           onClick={saveNotificationSettings}
@@ -371,7 +367,7 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
       <div className="space-y-3 md:space-y-4">
         <Label className="text-xs md:text-base font-medium flex items-center gap-1.5">
           <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
-          Reminder messages
+          Notifications
         </Label>
 
         <div className="space-y-2 md:space-y-3">
@@ -385,7 +381,7 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
               className="sm:h-5 sm:w-5 h-3 w-3 shrink-0"
             />
             <Label htmlFor="notify-weekly-budget" className="text-xs md:text-sm">
-              Weekly budget update reminder
+              Open task report (weekly)
             </Label>
           </div>
 
@@ -402,24 +398,7 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
               htmlFor="notify-daily-task-status"
               className="text-xs md:text-sm"
             >
-              Daily task status update reminder
-            </Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="notify-daily-celebrations"
-              checked={notifyDailyCelebrations}
-              onCheckedChange={(checked) =>
-                setNotifyDailyCelebrations(checked === true)
-              }
-              className="sm:h-5 sm:w-5 h-3 w-3 shrink-0"
-            />
-            <Label
-              htmlFor="notify-daily-celebrations"
-              className="text-xs md:text-sm"
-            >
-              Daily completions celebration
+              Open task report (daily)
             </Label>
           </div>
         </div>
