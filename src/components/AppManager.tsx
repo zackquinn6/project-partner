@@ -140,7 +140,7 @@ export function AppManager({
       const {
         data: stepsData,
         error
-      } = await supabase.from('template_steps').select('apps').not('apps', 'is', null);
+      } = await supabase.from('operation_steps').select('apps').not('apps', 'is', null);
       if (error) throw error;
 
       // Aggregate unique external apps
@@ -209,7 +209,7 @@ export function AppManager({
         editingAppId: editingApp.id
       });
 
-      // Upsert app override in database (this will trigger update in all template_steps)
+      // Upsert app override in database (RPC may update step app payloads in operation_steps)
       const {
         data: upsertData,
         error: upsertError
@@ -230,7 +230,7 @@ export function AppManager({
       }
       console.log('✅ App override saved:', upsertData);
 
-      // Manually trigger the update function to update all template_steps
+      // Manually trigger the update function to refresh embedded app metadata in steps
       const {
         data: updateData,
         error: updateError
@@ -308,11 +308,11 @@ export function AppManager({
     }
     setSaving(true);
     try {
-      // Update external app in all template_steps that use it
+      // Update external app in all operation_steps that use it
       const {
         data: stepsData,
         error: fetchError
-      } = await supabase.from('template_steps').select('id, apps').not('apps', 'is', null);
+      } = await supabase.from('operation_steps').select('id, apps').not('apps', 'is', null);
       if (fetchError) throw fetchError;
       let updatedCount = 0;
       for (const step of stepsData || []) {
@@ -332,7 +332,7 @@ export function AppManager({
           if (hasChanges) {
             const {
               error: updateError
-            } = await supabase.from('template_steps').update({
+            } = await supabase.from('operation_steps').update({
               apps: updatedApps,
               updated_at: new Date().toISOString()
             }).eq('id', step.id);
@@ -408,11 +408,11 @@ export function AppManager({
       return;
     }
     try {
-      // Remove from all template_steps
+      // Remove from all operation_steps
       const {
         data: stepsData,
         error: fetchError
-      } = await supabase.from('template_steps').select('id, apps').not('apps', 'is', null);
+      } = await supabase.from('operation_steps').select('id, apps').not('apps', 'is', null);
       if (fetchError) throw fetchError;
       let updatedCount = 0;
       for (const step of stepsData || []) {
@@ -421,7 +421,7 @@ export function AppManager({
           if (updatedApps.length !== step.apps.length) {
             const {
               error: updateError
-            } = await supabase.from('template_steps').update({
+            } = await supabase.from('operation_steps').update({
               apps: updatedApps,
               updated_at: new Date().toISOString()
             }).eq('id', step.id);
