@@ -1,20 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 /** DB row: content is JSONB array of { id, type, title, content } */
 export interface StepInstructionRow {
-  id: string;
-  template_step_id: string;
-  instruction_level: 'beginner' | 'intermediate' | 'advanced';
   content: unknown;
-  created_at: string;
-  updated_at: string;
 }
 
 /** Normalized shape for UI: sections array plus optional text/photos/videos/links */
 export interface StepInstruction {
-  id: string;
-  template_step_id: string;
   instruction_level: 'beginner' | 'intermediate' | 'advanced';
   content: {
     text: string;
@@ -39,11 +32,13 @@ export interface StepInstruction {
       description?: string;
     }>;
   };
-  created_at: string;
-  updated_at: string;
+  id?: string;
+  template_step_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
-function normalizeContent(row: StepInstructionRow | null): StepInstruction | null {
+function normalizeContent(row: StepInstructionRow | null, instructionLevel: StepInstruction['instruction_level']): StepInstruction | null {
   if (!row) return null;
   const raw = row.content;
   const empty = {
@@ -62,8 +57,7 @@ function normalizeContent(row: StepInstructionRow | null): StepInstruction | nul
   } else if (raw && typeof raw === 'object' && 'sections' in (raw as object)) {
     const obj = raw as StepInstruction['content'];
     return {
-      ...row,
-      instruction_level: row.instruction_level as StepInstruction['instruction_level'],
+      instruction_level: instructionLevel,
       content: {
         text: obj.text ?? '',
         sections: obj.sections ?? [],
@@ -74,8 +68,7 @@ function normalizeContent(row: StepInstructionRow | null): StepInstruction | nul
     };
   }
   return {
-    ...row,
-    instruction_level: row.instruction_level as StepInstruction['instruction_level'],
+    instruction_level: instructionLevel,
     content: empty,
   };
 }
@@ -84,27 +77,34 @@ export function useStepInstructions(stepId: string, instructionLevel: 'beginner'
   const [instruction, setInstruction] = useState<StepInstruction | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     async function fetchInstruction() {
       try {
+        const requestId = ++requestIdRef.current;
         setLoading(true);
         setError(null);
 
         const { data, error: fetchError } = await supabase
           .from('step_instructions')
-          .select('*')
+          .select('content')
           .eq('template_step_id', stepId)
           .eq('instruction_level', instructionLevel)
           .maybeSingle();
 
         if (fetchError) throw fetchError;
 
-        setInstruction(normalizeContent(data as StepInstructionRow | null));
+        // Ignore stale responses (stepId/level may have changed while request was in flight)
+        if (requestId !== requestIdRef.current) return;
+
+        setInstruction(normalizeContent(data as StepInstructionRow | null, instructionLevel));
       } catch (err) {
+        if (requestIdRef.current === 0) return;
         console.error('Error fetching step instruction:', err);
         setError(err instanceof Error ? err : new Error('Failed to fetch instruction'));
       } finally {
+        // Only end loading state for the latest request
         setLoading(false);
       }
     }
