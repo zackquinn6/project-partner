@@ -3144,7 +3144,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                         </Button>
                                         
                                         {isOperationEditing ? (
-                                          <div className="flex-1 space-y-1 min-w-0">
+                                          <div className="flex-1 space-y-1 min-w-0 pr-2">
                                             <Input
                                               value={editingItem.data.name || ''}
                                               onChange={e => setEditingItem({
@@ -3289,7 +3289,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                 <Card key={step.id} className="ml-4">
                                                   <CardContent className="p-2">
                                                     <div className="flex items-center justify-between">
-                                                    <div className="flex-1 min-w-0">
+                                                    <div className="flex-1 min-w-0 pr-2">
                                                         {isStepEditing ? (
                                                           <div className="space-y-1">
                                                             <Input
