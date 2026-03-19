@@ -48,6 +48,7 @@ interface WorkflowSidebarProps {
   onViewScheduleClick: () => void;
   onProgressViewsClick?: () => void;
   onToolRentalsClick?: () => void;
+  onProjectNameClick?: () => void;
   /** When true, project planning dialog is open — workflow tutorial must not auto-open. */
   projectPlanningWizardOpen?: boolean;
 }
@@ -75,6 +76,7 @@ export function WorkflowSidebar({
   onViewScheduleClick,
   onProgressViewsClick,
   onToolRentalsClick,
+  onProjectNameClick,
   projectPlanningWizardOpen = false,
 }: WorkflowSidebarProps) {
   const { updateProjectRun } = useProject();
@@ -437,7 +439,16 @@ export function WorkflowSidebar({
       
       <SidebarContent className="pt-4 flex flex-col h-full overflow-hidden">
         <SidebarGroup className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <SidebarGroupLabel className="px-4 text-sm font-semibold flex-shrink-0" data-tutorial="project-name">{projectName || 'Project Progress'}</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-4 text-sm font-semibold flex-shrink-0" data-tutorial="project-name">
+            <button
+              type="button"
+              className="w-full text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded"
+              onClick={() => onProjectNameClick?.()}
+              aria-label="Open project overview"
+            >
+              {projectName || 'Project Progress'}
+            </button>
+          </SidebarGroupLabel>
           <SidebarGroupContent className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {!collapsed && <div className="flex flex-col h-full p-2 min-h-0 overflow-hidden min-w-0">
                 {/* Fixed Upper Section - scrolls when viewport short so Project Tools are never clipped */}

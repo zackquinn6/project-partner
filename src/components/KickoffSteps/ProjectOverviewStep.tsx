@@ -252,18 +252,18 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         {/* Arrow indicators for project and user levels */}
         {hasValue && (
           <div>
-            {/* This project: label above arrow, arrow tight to bar */}
+            {/* This project: arrow above label, arrow nearly touching the bar */}
             <div
-              className="absolute top-full left-0 flex flex-col items-center justify-center gap-0 transition-all duration-200 z-10 mt-px pointer-events-none"
+              className="absolute top-full left-0 flex flex-col items-center justify-center gap-0 transition-all duration-200 z-10 -mt-px pointer-events-none"
               style={{
                 left: `${getArrowPosition(position)}%`,
                 transform: 'translateX(-50%)'
               }}
             >
+              <ArrowUp className="w-3.5 h-3.5 text-foreground drop-shadow-sm shrink-0" />
               <span className="text-[9px] text-muted-foreground whitespace-nowrap leading-tight">
                 This project
               </span>
-              <ArrowUp className="w-3.5 h-3.5 text-foreground drop-shadow-sm shrink-0" />
             </div>
 
             {/* Your level: label above arrow, arrow tight to bar */}

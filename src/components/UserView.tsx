@@ -35,6 +35,7 @@ import { OrderingWindow } from './OrderingWindow';
 import { MaterialsSelectionWindow } from './MaterialsSelectionWindow';
 import { MaterialsSelectionDialog } from './MaterialsSelectionDialog';
 import { KickoffWorkflow } from './KickoffWorkflow';
+import { ProjectWorkflowOverviewPage } from './ProjectWorkflowOverviewPage';
 import { ProjectPlanningWizard } from './ProjectPlanningWizard';
 import { UnplannedWorkWindow } from './UnplannedWorkWindow';
 import { ProjectSurvey } from './ProjectSurvey';
@@ -123,6 +124,8 @@ export default function UserView({
   } = useProject();
   const { refetchProjectRuns, updateProjectRunsCache } = useProjectData();
   const [viewMode, setViewMode] = useState<'listing' | 'workflow'>('listing');
+  const [workflowMainView, setWorkflowMainView] = useState<'overview' | 'steps'>('overview');
+  const lastWorkflowProjectRunIdRef = useRef<string | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [checkedMaterials, setCheckedMaterials] = useState<Record<string, Set<string>>>({});
@@ -216,6 +219,21 @@ export default function UserView({
 
   // Check if kickoff phase is complete for project runs - MOVED UP to fix TypeScript error
   const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
+
+  // When entering a workflow, default to the overview page (per project run).
+  useEffect(() => {
+    const projectRunId = currentProjectRun?.id;
+    if (viewMode === 'workflow' && isKickoffComplete && projectRunId) {
+      if (lastWorkflowProjectRunIdRef.current !== projectRunId) {
+        setWorkflowMainView('overview');
+        lastWorkflowProjectRunIdRef.current = projectRunId;
+      }
+    }
+
+    if (viewMode !== 'workflow') {
+      lastWorkflowProjectRunIdRef.current = null;
+    }
+  }, [viewMode, isKickoffComplete, currentProjectRun?.id]);
 
   // Post-kickoff notification state
   const [showPostKickoffNotification, setShowPostKickoffNotification] = useState(false);
@@ -1134,8 +1152,14 @@ export default function UserView({
     return false;
   };
 
+  const handleProjectNameClick = () => {
+    setWorkflowMainView('overview');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Track step start time when user views a step (for analytics)
   useEffect(() => {
+    if (workflowMainView !== 'steps') return;
     if (!currentStep || !currentProjectRun) return;
 
     // Record started_at timestamp when step is first viewed
@@ -1146,7 +1170,7 @@ export default function UserView({
     };
 
     trackStepStart();
-  }, [currentStep?.id, currentProjectRun?.id]); // Track when step or project changes
+  }, [workflowMainView, currentStep?.id, currentProjectRun?.id]); // Track when step or project changes
   // Helper functions for check-off functionality
   const toggleMaterialCheck = (stepId: string, materialId: string) => {
     setCheckedMaterials(prev => {
@@ -2737,6 +2761,7 @@ export default function UserView({
                   stepName: step.step,
                   stepId: step.id
                 });
+                setWorkflowMainView('steps');
                 setCurrentStepIndex(stepIndex);
                 startTimeTracking('step', step.id);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2763,12 +2788,18 @@ export default function UserView({
             }}
             onProgressViewsClick={() => setProgressViewsOpen(true)}
             onToolRentalsClick={() => setToolRentalsOpen(true)}
+            onProjectNameClick={handleProjectNameClick}
             projectPlanningWizardOpen={projectPlanningWizardOpen}
           />
 
           <main className="flex-1 overflow-auto">
             <div className="container mx-auto px-6 py-8">
-              <div className="space-y-6">
+              {workflowMainView === 'overview' ? (
+                <ProjectWorkflowOverviewPage
+                  isKickoffStep1Completed={completedSteps.has('kickoff-step-1')}
+                />
+              ) : (
+                <div className="space-y-6">
               {/* Header */}
               <Card className="gradient-card border-0 shadow-card">
             <CardHeader>
@@ -3231,6 +3262,7 @@ export default function UserView({
           </Card>
 
               </div>
+            )}
             </div>
           </main>
         </div>
