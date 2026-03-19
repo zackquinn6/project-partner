@@ -25,16 +25,16 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
   // Effect to find and navigate to the operation containing the current step
   React.useEffect(() => {
     if (currentStepId && operations.length > 0) {
-      console.log('🔍 KC Window: Looking for operation containing step:', currentStepId);
+      console.log('🔍 Critical Points window: Looking for operation containing step:', currentStepId);
       
       const operationIndex = operations.findIndex(operation => 
         operation.steps.some(step => step.id === currentStepId)
       );
       
-      console.log('🎯 KC Window: Found operation index:', operationIndex, 'for step:', currentStepId);
+      console.log('🎯 Critical Points window: Found operation index:', operationIndex, 'for step:', currentStepId);
       
       if (operationIndex >= 0 && operationIndex !== selectedOperationIndex) {
-        console.log('📍 KC Window: Switching to operation:', operations[operationIndex].name);
+        console.log('📍 Critical Points window: Switching to operation:', operations[operationIndex].name);
         setSelectedOperationIndex(operationIndex);
       }
     }
@@ -43,7 +43,7 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
   // Reset to first operation if no current step when window opens
   React.useEffect(() => {
     if (open && operations.length > 0 && !currentStepId) {
-      console.log('🔄 KC Window: No current step, resetting to first operation');
+      console.log('🔄 Critical Points window: No current step, resetting to first operation');
       setSelectedOperationIndex(0);
     }
   }, [open, operations.length, currentStepId]);
@@ -107,12 +107,12 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
 
   return (
     <>
-      {/* Main KC Window */}
+      {/* Main Critical Points window */}
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-[90vw] lg:max-w-6xl h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <div className="flex items-center justify-between gap-4">
-              <DialogTitle className="text-lg sm:text-xl font-bold">Key Characteristics (KC's)</DialogTitle>
+              <DialogTitle className="text-lg sm:text-xl font-bold">Critical Points</DialogTitle>
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
@@ -121,7 +121,7 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
                   className="flex items-center gap-1 text-xs sm:text-sm"
                 >
                   <HelpCircle className="w-4 h-4" />
-                  <span className="hidden sm:inline">What's a KC?</span>
+                  <span className="hidden sm:inline">What are Critical Points?</span>
                   <span className="sm:hidden">Help</span>
                 </Button>
                 <DialogClose asChild>
@@ -187,7 +187,7 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
           <div className="flex-1 min-h-0 overflow-y-auto pb-4">
             {criticalOutputs.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p>No critical characteristics found for this operation.</p>
+                <p>No critical points found for this operation.</p>
                 <p className="text-sm mt-2">This operation may not have outputs marked as critical.</p>
               </div>
             ) : (
@@ -260,15 +260,15 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
       <Dialog open={showHelpPopup} onOpenChange={setShowHelpPopup}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold">What are Key Characteristics (KC's)?</DialogTitle>
+            <DialogTitle className="text-lg font-bold">What are Critical Points?</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
             <p className="text-primary font-medium">
-              KCs are how we personalize our projects to each builder.
+              Critical points are how we personalize our projects to each builder.
             </p>
             <p>
               We tailor detail to skill level: first‑timers get the full play‑by‑play, while seasoned DIYers aren't stuck reading what a miter saw looks like. 
-              KCs deliver the right level of detail for successful project completion.
+              Critical points deliver the right level of detail for successful project completion.
             </p>
             <div className="flex justify-center mt-4">
               <Button 
@@ -280,7 +280,7 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
                 }}
                 className="text-primary border-primary hover:bg-primary/10"
               >
-                Learn More About Key Characteristics
+                Learn More About Critical Points
               </Button>
             </div>
           </div>
@@ -363,7 +363,7 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
         </DialogContent>
       </Dialog>
 
-      {/* Key Characteristics Detailed Explainer */}
+      {/* Critical Points detailed explainer */}
       <KeyCharacteristicsExplainer 
         open={showKCExplainer} 
         onOpenChange={setShowKCExplainer} 

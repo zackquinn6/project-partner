@@ -3542,7 +3542,7 @@ export default function UserView({
         />
       )}
 
-      {/* Key Characteristics Window */}
+      {/* Critical Points window */}
       {activeProject && (
         <KeyCharacteristicsWindow
           open={keyCharacteristicsOpen}

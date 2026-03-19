@@ -480,7 +480,7 @@ export default function Auth() {
               </AlertDescription>
             </Alert>}
 
-          {/* Key Characteristics Section */}
+          {/* Critical Points section */}
           
         </CardContent>
       </Card>

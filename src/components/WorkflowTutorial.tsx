@@ -39,7 +39,7 @@ const tutorialSteps: TutorialStep[] = [
   {
     id: 'project-tools',
     title: 'Project Tools',
-    description: 'Access helpful tools: Experts for questions, Key Characteristics for important details, and Re-Plan to adjust your project timeline.',
+    description: 'Access helpful tools: Experts for questions, Critical Points for important details, and Re-Plan to adjust your project timeline.',
     targetSelector: '[data-tutorial="project-tools"]',
     position: 'bottom'
   },

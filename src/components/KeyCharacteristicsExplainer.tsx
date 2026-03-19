@@ -14,7 +14,7 @@ export function KeyCharacteristicsExplainer({ open, onOpenChange }: KeyCharacter
     <ResponsiveDialog 
       open={open} 
       onOpenChange={onOpenChange}
-      title="🥪 Key Characteristics in Action: The PB&J Example"
+      title="🥪 Critical Points in Action: The PB&J Example"
       size="xlarge"
     >
       {/* Floating close button for mobile */}
@@ -32,7 +32,7 @@ export function KeyCharacteristicsExplainer({ open, onOpenChange }: KeyCharacter
       <div className="space-y-6 p-6 max-h-[80vh] overflow-y-auto">
         <div className="bg-primary/10 p-4 rounded-lg">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            KCs are how we personalize our projects to each builder. We tailor detail to skill level: first‑timers get the full play‑by‑play, while seasoned DIYers aren't stuck reading what a miter saw looks like.
+            Critical points are how we personalize our projects to each builder. We tailor detail to skill level: first‑timers get the full play‑by‑play, while seasoned DIYers aren't stuck reading what a miter saw looks like.
           </p>
         </div>
 
@@ -140,7 +140,7 @@ export function KeyCharacteristicsExplainer({ open, onOpenChange }: KeyCharacter
             </ul>
             
             <div className="bg-primary/10 p-4 rounded-lg mt-4">
-              <p className="font-medium mb-2">This is the essence of Key Characteristics:</p>
+              <p className="font-medium mb-2">This is the essence of Critical Points:</p>
               <ul className="list-disc list-inside space-y-1 ml-4 text-sm">
                 <li>Root everything in the step-by-step process.</li>
                 <li>Scale the instructions to match the skill level.</li>
@@ -149,7 +149,7 @@ export function KeyCharacteristicsExplainer({ open, onOpenChange }: KeyCharacter
             </div>
             
             <p className="font-medium text-primary">
-              KC's aren't about dumbing things down—it's about precision at the right level of detail.
+              Critical points aren't about dumbing things down—they're about precision at the right level of detail.
             </p>
           </CardContent>
         </Card>
