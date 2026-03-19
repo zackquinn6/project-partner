@@ -15,16 +15,16 @@ export const ValuePropSection = () => {
             </p>
           </div>
 
-          {/* Two-step structure: 1. Structured process library, 2. Home management apps */}
+          {/* Two-step structure: 1. Structured Projects, 2. Home management apps */}
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Step 1: Structured Process Library */}
+            {/* Step 1: Structured Projects */}
             <div className="group relative p-8 rounded-2xl border border-border bg-card hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 hover:-translate-y-1">
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="w-16 h-16 rounded-xl bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                   <BookOpen className="w-8 h-8 text-accent" />
                 </div>
                 <h3 className="text-xl font-bold text-foreground">
-                  Structured Process Library
+                  Structured Projects
                 </h3>
                 <p className="text-muted-foreground leading-relaxed">
                   Manufacturing-style process design makes DIY repeatable. Multi-level instructions, tool alternatives, quality checks, and critical focus points—all in one organized hub.
@@ -41,15 +41,9 @@ export const ValuePropSection = () => {
                 <h3 className="text-xl font-bold text-foreground">
                   Home Management Apps
                 </h3>
-                <p className="text-muted-foreground leading-relaxed mb-2">
-                  Home Maintenance, Maintenance tracking, Tool Tracking, and Task & Project Tracking—so you stay on top of ongoing work and link it to your projects.
+                <p className="text-muted-foreground leading-relaxed">
+                  Home Maintenance, Tool Tracking, and Task & Project Tracking, and others so you stay on top of ongoing work.
                 </p>
-                <ul className="text-sm text-muted-foreground text-left space-y-1 w-full max-w-xs mx-auto">
-                  <li>• Home Maintenance</li>
-                  <li>• Maintenance</li>
-                  <li>• Tool Tracking</li>
-                  <li>• Task & Project Tracking</li>
-                </ul>
               </div>
             </div>
           </div>
