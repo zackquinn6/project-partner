@@ -1063,9 +1063,14 @@ export default function EditWorkflowView({
   const [pendingContentLevel, setPendingContentLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSaveRef = useRef<Date>(new Date());
-  const pendingContentRef = useRef<{ changes: ContentSection[] | null; level: 'beginner' | 'intermediate' | 'advanced' }>({ 
-    changes: null, 
-    level: 'intermediate' 
+  const pendingContentRef = useRef<{
+    stepId: string | null;
+    changes: ContentSection[] | null;
+    level: 'beginner' | 'intermediate' | 'advanced';
+  }>({
+    stepId: null,
+    changes: null,
+    level: 'intermediate',
   });
   const editingStepRef = useRef<WorkflowStep | null>(null);
 
@@ -1109,9 +1114,10 @@ export default function EditWorkflowView({
   const saveInstructionContentStable = useCallback(async (
     sections: ContentSection[] | null, 
     targetLevel: 'beginner' | 'intermediate' | 'advanced',
-    silent: boolean = false
+    silent: boolean = false,
+    overrideStepId?: string | null
   ) => {
-    const stepId = editingStepRef.current?.id;
+    const stepId = overrideStepId ?? editingStepRef.current?.id ?? null;
     if (!stepId || !sections) return;
     
     try {
@@ -1136,9 +1142,10 @@ export default function EditWorkflowView({
         }
       } else {
         // Only clear pending changes if we saved the current pending level
-        if (targetLevel === pendingContentRef.current.level) {
+        if (targetLevel === pendingContentRef.current.level && stepId === pendingContentRef.current.stepId) {
           setPendingContentChanges(null);
           pendingContentRef.current.changes = null;
+          pendingContentRef.current.stepId = null;
         }
         if (!silent) {
         }
@@ -1157,10 +1164,15 @@ export default function EditWorkflowView({
     if (!stepId || !editMode) return;
     
     // Save pending changes from ref to their ORIGINAL level before loading new level (silent)
-    if (pendingContentRef.current.changes && pendingContentRef.current.level) {
-      await saveInstructionContentStable(pendingContentRef.current.changes, pendingContentRef.current.level, true);
+    if (pendingContentRef.current.changes && pendingContentRef.current.level && pendingContentRef.current.stepId) {
+      await saveInstructionContentStable(
+        pendingContentRef.current.changes,
+        pendingContentRef.current.level,
+        true,
+        pendingContentRef.current.stepId
+      );
       lastSaveRef.current = new Date();
-      pendingContentRef.current = { changes: null, level: instructionLevel };
+      pendingContentRef.current = { stepId: null, changes: null, level: instructionLevel };
       setPendingContentChanges(null);
     }
     
@@ -1223,10 +1235,15 @@ export default function EditWorkflowView({
     autoSaveTimeoutRef.current = setTimeout(() => {
       // Only save if content hasn't been saved recently (prevent duplicate saves)
       const timeSinceLastSave = new Date().getTime() - lastSaveRef.current.getTime();
-      if (timeSinceLastSave > 5000 && pendingContentRef.current.changes) {
-        saveInstructionContentStable(pendingContentRef.current.changes, pendingContentRef.current.level, true);
+      if (timeSinceLastSave > 5000 && pendingContentRef.current.changes && pendingContentRef.current.stepId) {
+        saveInstructionContentStable(
+          pendingContentRef.current.changes,
+          pendingContentRef.current.level,
+          true,
+          pendingContentRef.current.stepId
+        );
         lastSaveRef.current = new Date();
-        pendingContentRef.current = { changes: null, level: pendingContentRef.current.level };
+        pendingContentRef.current = { stepId: null, changes: null, level: pendingContentRef.current.level };
         setPendingContentChanges(null);
       }
     }, 60000); // 60 seconds
@@ -1283,10 +1300,15 @@ export default function EditWorkflowView({
       return;
     }
     // Save pending content changes to correct level first (silent)
-    if (pendingContentRef.current.changes && pendingContentRef.current.level) {
-      await saveInstructionContentStable(pendingContentRef.current.changes, pendingContentRef.current.level, true);
+    if (pendingContentRef.current.changes && pendingContentRef.current.level && pendingContentRef.current.stepId) {
+      await saveInstructionContentStable(
+        pendingContentRef.current.changes,
+        pendingContentRef.current.level,
+        true,
+        pendingContentRef.current.stepId
+      );
       lastSaveRef.current = new Date();
-      pendingContentRef.current = { changes: null, level: 'intermediate' };
+      pendingContentRef.current = { stepId: null, changes: null, level: 'intermediate' };
       setPendingContentChanges(null);
     }
 
@@ -1525,9 +1547,10 @@ export default function EditWorkflowView({
             sections={contentSections} 
             onChange={(sections) => {
               // Track both the changes and which level they belong to
+              const currentStepId = editingStepRef.current?.id ?? null;
               setPendingContentChanges(sections);
               setPendingContentLevel(instructionLevel);
-              pendingContentRef.current = { changes: sections, level: instructionLevel };
+              pendingContentRef.current = { stepId: currentStepId, changes: sections, level: instructionLevel };
             }} 
           />
         </div>;
