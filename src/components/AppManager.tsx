@@ -456,9 +456,25 @@ export function AppManager({
     const allApps = [...nativeApps, ...externalApps];
     // Sort alphabetically by app name
     return allApps.sort((a, b) => {
-      const nameA = (a.appName || '').toLowerCase();
-      const nameB = (b.appName || '').toLowerCase();
-      return nameA.localeCompare(nameB);
+      const anyA = a as any;
+      const anyB = b as any;
+      const rawNameA =
+        typeof a.appName === 'string' && a.appName.trim().length > 0
+          ? a.appName
+          : typeof anyA.app_name === 'string'
+            ? anyA.app_name
+            : typeof anyA.name === 'string'
+              ? anyA.name
+              : a.id;
+      const rawNameB =
+        typeof b.appName === 'string' && b.appName.trim().length > 0
+          ? b.appName
+          : typeof anyB.app_name === 'string'
+            ? anyB.app_name
+            : typeof anyB.name === 'string'
+              ? anyB.name
+              : b.id;
+      return rawNameA.toLowerCase().localeCompare(rawNameB.toLowerCase());
     });
   }, [nativeApps, externalApps]);
 
