@@ -86,10 +86,15 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
       const { data, error } = await supabase
         .from('materials')
         .select('*')
-        .order('item');
+        .order('name', { ascending: true, nullsFirst: false });
       
       if (error) throw error;
-      setAvailableMaterials(data || []);
+
+      const mappedMaterials = (data || []).map((material) => ({
+        ...material,
+        item: material.name
+      }));
+      setAvailableMaterials(mappedMaterials);
     } catch (error) {
       console.error('Error fetching materials:', error);
     }

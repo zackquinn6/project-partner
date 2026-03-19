@@ -18,7 +18,7 @@ interface Material {
   id: string;
   item: string; // Mapped from database 'name' column
   description: string | null;
-  category?: string | null;
+  category: string;
   unit_size: string | null; // Mapped from database 'unit' column
   photo_url: string | null;
   created_at: string;
@@ -30,7 +30,7 @@ type MaterialRow = {
   id: string;
   name: string; // Database column name
   description: string | null;
-  category?: string | null;
+  category: string;
   unit: string | null; // Database column name
   photo_url: string | null;
   created_at: string;
@@ -68,7 +68,7 @@ export function MaterialsLibrary() {
         id: row.id,
         item: row.name, // Map 'name' to 'item' for UI
         description: row.description,
-        category: row.category ?? null,
+        category: row.category,
         unit_size: row.unit, // Map 'unit' to 'unit_size' for UI
         photo_url: row.photo_url,
         created_at: row.created_at,
@@ -291,11 +291,9 @@ export function MaterialsLibrary() {
                 </TableCell>
                 <TableCell className="font-medium capitalize w-32 break-words">
                   {material.item}
-                  {material.category && (
-                    <Badge variant="secondary" className="text-xs px-1 py-0 mt-1">
-                      {material.category}
-                    </Badge>
-                  )}
+                  <Badge variant="secondary" className="text-xs px-1 py-0 mt-1">
+                    {material.category}
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground break-words">
                   {material.description || '-'}

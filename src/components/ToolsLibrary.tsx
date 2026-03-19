@@ -20,7 +20,7 @@ interface Tool {
   id: string;
   item: string; // Mapped from database 'name' column
   description: string | null;
-  category?: string | null;
+  category: string;
   photo_url: string | null;
   created_at: string;
   updated_at: string;
@@ -36,7 +36,7 @@ type ToolRow = {
   id: string;
   name: string;
   description: string | null;
-  category?: string | null;
+  category: string;
   photo_url: string | null;
   created_at: string;
   updated_at: string;
@@ -75,7 +75,7 @@ export function ToolsLibrary() {
         id: row.id,
         item: row.name,
         description: row.description,
-        category: row.category ?? null,
+        category: row.category,
         photo_url: row.photo_url,
         created_at: row.created_at,
         updated_at: row.updated_at,
@@ -331,11 +331,9 @@ export function ToolsLibrary() {
                 </TableCell>
                 <TableCell className="font-medium capitalize py-2 w-32 break-words">
                   {tool.item}
-                  {tool.category && (
-                    <Badge variant="secondary" className="text-[10px] px-1 py-0 mt-1">
-                      {tool.category}
-                    </Badge>
-                  )}
+                  <Badge variant="secondary" className="text-[10px] px-1 py-0 mt-1">
+                    {tool.category}
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground py-2">
                   <div className="break-words" title={tool.description || '-'}>
