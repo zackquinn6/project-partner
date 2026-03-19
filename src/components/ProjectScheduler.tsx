@@ -15,7 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, Clock, CheckCircle, Plus, Users, Settings, Zap, Trash2, Save, X, Target, AlertTriangle, TrendingUp, Brain, FileText, Mail, Printer, Info, Layers } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, CheckCircle, Plus, Users, Settings, Zap, Trash2, Save, X, Target, AlertTriangle, TrendingUp, Brain, Mail, Printer, Info, Layers } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, addDays, parseISO, addHours, isSameDay } from 'date-fns';
 import { Project } from '@/interfaces/Project';
@@ -930,18 +930,28 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         });
       });
 
-      // Set scheduled completion date from result
       if (result.scheduledTasks.length > 0) {
         const lastTask = result.scheduledTasks.reduce((latest, task) => 
           task.targetCompletionDate > latest.targetCompletionDate ? task : latest
         );
         setScheduledCompletionDate(lastTask.targetCompletionDate);
       }
-      toast({
-        title: "Schedule computed",
-        description: `Generated ${planningMode} schedule with ${result.scheduledTasks.length} tasks. Click "View Schedule" to see your schedule.`,
-        duration: 5000
-      });
+
+      const persisted = await persistScheduleToProject(result);
+      if (persisted) {
+        toast({
+          title: "Schedule generated",
+          description: `Saved ${result.scheduledTasks.length} tasks to your project. Use Calendar View or View Schedule to review.`,
+          duration: 6000
+        });
+      } else {
+        toast({
+          title: "Schedule generated but not saved",
+          description: "Your schedule is shown below, but saving to the project failed. Use Save & Commit to try again.",
+          variant: "destructive",
+          duration: 8000
+        });
+      }
     } catch (error) {
       console.error('❌ Schedule generation error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -1079,15 +1089,13 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     setTempAvailability({});
   };
 
-  // Save schedule to project run
-  const saveSchedule = async () => {
-    if (!schedulingResult) return;
+  const persistScheduleToProject = async (result: SchedulingResult): Promise<boolean> => {
     try {
       const updatedProjectRun = {
         ...projectRun,
         schedule_optimization_method: scheduleOptimizationMethod,
         schedule_events: {
-          events: schedulingResult.scheduledTasks.map(task => ({
+          events: result.scheduledTasks.map(task => ({
             id: task.taskId,
             date: format(task.startTime, 'yyyy-MM-dd'),
             phaseId: schedulingTasks.find(t => t.id === task.taskId)?.phaseId || '',
@@ -1103,11 +1111,11 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           lunchDuration: lunchDuration,
           scheduleTempo: scheduleTempo,
           planningMode: planningMode,
-          lastGeneratedAt: new Date().toISOString(), // Store generation timestamp for auto-regeneration
-          lastScheduledAt: new Date().toISOString() // Store when schedule was committed
+          lastGeneratedAt: new Date().toISOString(),
+          lastScheduledAt: new Date().toISOString()
         },
         calendar_integration: {
-          scheduledDays: schedulingResult.scheduledTasks.reduce((acc, task) => {
+          scheduledDays: result.scheduledTasks.reduce((acc, task) => {
             const dateKey = format(task.startTime, 'yyyy-MM-dd');
             if (!acc[dateKey]) {
               acc[dateKey] = {
@@ -1131,30 +1139,34 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         }
       };
       await updateProjectRun(updatedProjectRun);
-      schedulingEngine.commitSchedule(schedulingResult);
-      
-      // Update local state for last scheduled date to trigger badge re-render
-      const savedDate = new Date().toISOString();
-      setLastScheduledDate(savedDate);
-      
-      // Dispatch refresh event for workflow navigation
+      schedulingEngine.commitSchedule(result);
+      setLastScheduledDate(new Date().toISOString());
       window.dispatchEvent(new CustomEvent('project-scheduler-updated', {
         detail: { projectRunId: projectRun.id }
       }));
-      
-      toast({
-        title: "Schedule saved",
-        description: `Your optimized schedule has been saved. Last scheduled: ${format(new Date(), 'MMM dd, yyyy')}`
-      });
-      onOpenChange(false);
+      return true;
     } catch (error) {
+      console.error('Error persisting schedule:', error);
+      return false;
+    }
+  };
+
+  const saveSchedule = async () => {
+    if (!schedulingResult) return;
+    const ok = await persistScheduleToProject(schedulingResult);
+    if (!ok) {
       toast({
         title: "Error saving schedule",
         description: "There was a problem saving your schedule. Please try again.",
         variant: "destructive"
       });
-      console.error('Error saving schedule:', error);
+      return;
     }
+    toast({
+      title: "Schedule saved",
+      description: `Your optimized schedule has been saved. Last scheduled: ${format(new Date(), 'MMM dd, yyyy')}`
+    });
+    onOpenChange(false);
   };
 
   // Apply optimization method (updates workflow navigation without generating schedule)
@@ -1195,14 +1207,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       });
       console.error('Error applying optimization:', error);
     }
-  };
-
-  // Save draft
-  const saveDraft = () => {
-    toast({
-      title: "Draft saved",
-      description: "Your scheduling configuration has been saved as a draft."
-    });
   };
 
   // Print to PDF
@@ -1482,11 +1486,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                 </Alert>
 
                 {/* Action Buttons */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <Button variant="outline" onClick={saveDraft} className="h-11 md:h-10 text-xs md:text-sm">
-                    <FileText className="w-4 h-4 mr-1 md:mr-2" />
-                    <span className="truncate">Save Draft</span>
-                  </Button>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <Button onClick={saveSchedule} className="h-11 md:h-10 text-xs md:text-sm">
                     <Save className="w-4 h-4 mr-1 md:mr-2" />
                     <span className="truncate">Save & Commit</span>

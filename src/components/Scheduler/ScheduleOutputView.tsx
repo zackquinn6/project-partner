@@ -2,11 +2,15 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, CheckCircle, AlertTriangle, Clock, Users, TrendingUp, Circle, CheckCircle2 } from 'lucide-react';
+import { Calendar, AlertTriangle, Clock, Users, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { format, isSameDay, startOfDay, addDays, differenceInDays } from 'date-fns';
 import { SchedulingResult, Task, PlanningMode } from '@/interfaces/Scheduling';
+
+function formatDurationHours(start: Date, end: Date): string {
+  const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+  return hours.toFixed(1);
+}
 
 interface TeamMember {
   id: string;
@@ -170,6 +174,10 @@ export const ScheduleOutputView: React.FC<ScheduleOutputViewProps> = ({
               const startDate = new Date(Math.min(...tasks.map(t => t.startTime.getTime())));
               const endDate = new Date(Math.max(...tasks.map(t => t.endTime.getTime())));
               const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+              const phaseWorkHours = tasks.reduce(
+                (sum, t) => sum + (t.endTime.getTime() - t.startTime.getTime()) / (1000 * 60 * 60),
+                0
+              );
               
               return (
                 <div 
@@ -202,7 +210,9 @@ export const ScheduleOutputView: React.FC<ScheduleOutputViewProps> = ({
                       </span>
                     </div>
                     
-                    <p className="text-xs text-muted-foreground">{tasks.length} tasks scheduled</p>
+                        <p className="text-xs text-muted-foreground">
+                          {tasks.length} tasks · {phaseWorkHours.toFixed(1)}h work
+                        </p>
                   </div>
                 </div>
               );
@@ -276,63 +286,75 @@ export const ScheduleOutputView: React.FC<ScheduleOutputViewProps> = ({
               }, 0);
 
               return (
-                <div 
-                  key={dateKey} 
-                  className={`relative rounded-lg border-l-4 pl-4 pr-4 py-3 transition-all ${
-                    isToday ? 'border-l-primary bg-primary/5 shadow-md' :
-                    isPast ? 'border-l-muted bg-muted/20' :
-                    'border-l-secondary bg-card'
+                <div
+                  key={dateKey}
+                  className={`rounded-lg border overflow-hidden ${
+                    isToday ? 'border-primary ring-1 ring-primary/20 bg-primary/[0.03]' :
+                    isPast ? 'border-muted bg-muted/15' :
+                    'border-border bg-card'
                   }`}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold ${
-                        isToday ? 'bg-primary text-primary-foreground' :
-                        'bg-muted text-muted-foreground'
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 sm:px-3 sm:py-2.5 bg-muted/40 border-b">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`tabular-nums text-xs font-bold w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${
+                        isToday ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground border'
                       }`}>
                         {format(date, 'd')}
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-sm">
-                          {format(date, 'EEEE, MMM d')}
+                      </span>
+                      <div className="min-w-0">
+                        <h4 className="font-semibold text-sm leading-tight">
+                          {format(date, 'EEE, MMM d')}
                         </h4>
-                        <p className="text-xs text-muted-foreground">
-                          {dayTasks.length} tasks · {Math.round(totalHours * 10) / 10}h total
+                        <p className="text-[11px] text-muted-foreground tabular-nums">
+                          {dayTasks.length} tasks · {totalHours.toFixed(1)}h
                         </p>
                       </div>
                     </div>
                     {isToday && (
-                      <Badge className="bg-primary text-primary-foreground">Today</Badge>
+                      <Badge className="bg-primary text-primary-foreground text-[10px] h-5 px-1.5">Today</Badge>
                     )}
                   </div>
-                  
-                  <Separator className="mb-3" />
-                  
-                  <div className="space-y-2">
-                    {dayTasks
-                      .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
-                      .map((scheduledTask) => {
-                        const task = schedulingTasks.find(t => t.id === scheduledTask.taskId);
-                        const worker = teamMembers.find(w => w.id === scheduledTask.workerId);
-                        
-                        return (
-                          <div 
-                            key={scheduledTask.taskId}
-                            className="group flex items-start gap-3 p-3 rounded-md bg-background/50 hover:bg-background border hover:shadow-sm transition-all"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium leading-tight">{task?.title || 'Unknown Task'}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {worker?.name || 'Unknown'} • {format(scheduledTask.startTime, 'h:mm a')} - {format(scheduledTask.endTime, 'h:mm a')}
-                              </p>
-                            </div>
-                            <Badge variant="outline" className="text-xs shrink-0">
-                              <Clock className="w-3 h-3 mr-1" />
-                              {Math.round(((scheduledTask.endTime.getTime() - scheduledTask.startTime.getTime()) / (1000 * 60 * 60)) * 10) / 10}h
-                            </Badge>
-                          </div>
-                        );
-                      })}
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs sm:text-sm border-collapse">
+                      <thead>
+                        <tr className="border-b bg-muted/25 text-left text-[10px] sm:text-xs uppercase tracking-wide text-muted-foreground">
+                          <th className="font-medium px-2 py-1.5 sm:px-3 sm:py-2 w-[36%]">Task</th>
+                          <th className="font-medium px-2 py-1.5 sm:px-3 sm:py-2 w-[22%]">Who</th>
+                          <th className="font-medium px-2 py-1.5 sm:px-3 sm:py-2 w-[30%]">Time</th>
+                          <th className="font-medium px-2 py-1.5 sm:px-3 sm:py-2 text-right w-[12%] tabular-nums">Hrs</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/80">
+                        {dayTasks
+                          .sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
+                          .map((scheduledTask) => {
+                            const task = schedulingTasks.find(t => t.id === scheduledTask.taskId);
+                            const worker = teamMembers.find(w => w.id === scheduledTask.workerId);
+                            const hrs = formatDurationHours(scheduledTask.startTime, scheduledTask.endTime);
+
+                            return (
+                              <tr
+                                key={`${scheduledTask.taskId}-${scheduledTask.startTime.getTime()}`}
+                                className="hover:bg-muted/20"
+                              >
+                                <td className="px-2 py-1.5 sm:px-3 sm:py-2 align-top font-medium leading-snug">
+                                  {task?.title || 'Unknown Task'}
+                                </td>
+                                <td className="px-2 py-1.5 sm:px-3 sm:py-2 align-top text-muted-foreground whitespace-nowrap">
+                                  {worker?.name || '—'}
+                                </td>
+                                <td className="px-2 py-1.5 sm:px-3 sm:py-2 align-top tabular-nums text-muted-foreground whitespace-nowrap">
+                                  {format(scheduledTask.startTime, 'h:mm a')} – {format(scheduledTask.endTime, 'h:mm a')}
+                                </td>
+                                <td className="px-2 py-1.5 sm:px-3 sm:py-2 align-top text-right tabular-nums font-medium">
+                                  {hrs}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               );
@@ -416,6 +438,9 @@ export const ScheduleOutputView: React.FC<ScheduleOutputViewProps> = ({
                     <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Start
                     </th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground tabular-nums">
+                      Hours
+                    </th>
                     <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-green-700">
                       Target Complete
                     </th>
@@ -449,6 +474,9 @@ export const ScheduleOutputView: React.FC<ScheduleOutputViewProps> = ({
                             </div>
                           </td>
                           <td className="px-3 py-3 text-xs">{format(scheduledTask.startTime, 'MMM dd, h:mm a')}</td>
+                          <td className="px-3 py-3 text-xs text-right tabular-nums font-medium">
+                            {formatDurationHours(scheduledTask.startTime, scheduledTask.endTime)}
+                          </td>
                           <td className="px-3 py-3 text-xs text-green-700 font-medium">
                             {format(scheduledTask.targetCompletionDate, 'MMM dd, h:mm a')}
                           </td>

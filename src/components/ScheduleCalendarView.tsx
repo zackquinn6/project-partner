@@ -1,8 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar } from '@/components/ui/calendar';
 import { ScheduledTask, Task, Worker } from '@/interfaces/Scheduling';
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
 
@@ -30,9 +29,6 @@ export function ScheduleCalendarView({
       return isSameDay(startDate, date);
     });
   };
-
-  // Get all dates with tasks
-  const datesWithTasks = scheduledTasks.map(st => new Date(st.startTime));
 
   // Get task details
   const getTaskDetails = (taskId: string) => {
@@ -77,59 +73,77 @@ export function ScheduleCalendarView({
 
   const { targetCompletionDate, latestDate } = getTargetAndLatestDates();
 
+  const formatTaskHours = (start: Date, end: Date) =>
+    ((end.getTime() - start.getTime()) / (1000 * 60 * 60)).toFixed(1);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-full h-[90vh] max-h-[90vh] overflow-y-auto [&>button]:hidden m-0 p-6">
-        <DialogHeader>
-          <div className="flex items-center justify-between mb-4">
-            <DialogTitle className="flex items-center gap-2">
+      <DialogContent
+        className="
+          flex flex-col gap-0 overflow-hidden p-0
+          h-[min(92dvh,920px)] max-h-[92dvh] w-[calc(100vw-1.25rem)] max-w-[calc(100vw-1.25rem)]
+          rounded-2xl border shadow-xl
+          sm:h-[90vh] sm:max-h-[90vh] sm:w-[min(calc(100vw-2rem),1600px)] sm:max-w-[min(calc(100vw-2rem),1600px)]
+          md:max-w-none md:w-[min(calc(100vw-2rem),1920px)]
+          lg:w-[min(calc(100vw-3rem),1920px)]
+          [&>button]:hidden
+        "
+      >
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <DialogHeader className="shrink-0 space-y-0 border-b bg-muted/20 px-4 py-4 sm:px-5 md:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <DialogTitle className="text-left text-base sm:text-lg pr-2">
               Project Schedule Calendar
             </DialogTitle>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handlePrevMonth}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-base font-normal min-w-[150px] text-center">
-                {format(currentMonth, 'MMMM yyyy')}
-              </span>
-              <Button variant="outline" size="sm" onClick={handleNextMonth}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="ml-4">
-                <X className="h-4 w-4" />
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1 rounded-lg border bg-background p-0.5">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handlePrevMonth} aria-label="Previous month">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-medium min-w-[8.5rem] text-center tabular-nums px-1">
+                  {format(currentMonth, 'MMMM yyyy')}
+                </span>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleNextMonth} aria-label="Next month">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <Button variant="outline" size="sm" className="h-9 shrink-0" onClick={() => onOpenChange(false)}>
+                Close
               </Button>
             </div>
           </div>
           
           {/* Target completion date and Latest date */}
           {(targetCompletionDate || latestDate) && (
-            <div className="flex items-center gap-6 text-sm mb-4 pb-4 border-b">
+            <div className="flex flex-col gap-2 text-xs sm:text-sm pt-3 mt-3 border-t border-border/60 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-1">
               {targetCompletionDate && (
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-muted-foreground">Target completion date:</span>
-                  <span className="font-semibold">{format(targetCompletionDate, 'MMM dd, yyyy')}</span>
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <span className="font-medium text-muted-foreground">Target completion:</span>
+                  <span className="font-semibold tabular-nums">{format(targetCompletionDate, 'MMM dd, yyyy')}</span>
                 </div>
               )}
               {latestDate && (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-baseline gap-2">
                   <span className="font-medium text-muted-foreground">Latest date:</span>
-                  <span className="font-semibold">{format(latestDate, 'MMM dd, yyyy')}</span>
+                  <span className="font-semibold tabular-nums">{format(latestDate, 'MMM dd, yyyy')}</span>
                 </div>
               )}
             </div>
           )}
         </DialogHeader>
 
-        <div className="grid grid-cols-7 gap-1 mt-4">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto px-3 pb-4 pt-3 sm:px-4 md:px-6">
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-1 min-w-[280px]">
           {/* Weekday headers */}
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="text-center text-xs font-medium text-muted-foreground p-2">
-              {day}
+            <div key={day} className="text-center text-[10px] font-medium text-muted-foreground p-1 sm:text-xs sm:p-2">
+              <span className="sm:hidden">{day.slice(0, 1)}</span>
+              <span className="hidden sm:inline">{day}</span>
             </div>
           ))}
 
           {/* Calendar days */}
-          {daysInMonth.map((day, index) => {
+          {daysInMonth.map((day) => {
             const tasksForDay = getTasksForDate(day);
             const isToday = isSameDay(day, new Date());
             const hasScheduledWork = tasksForDay.length > 0;
@@ -137,30 +151,31 @@ export function ScheduleCalendarView({
             return (
               <div
                 key={day.toISOString()}
-                className={`min-h-[100px] border rounded-lg p-2 ${
-                  isToday ? 'border-primary bg-primary/5' : 'border-border'
-                } ${hasScheduledWork ? 'bg-accent/30' : ''}`}
+                className={`min-h-[72px] sm:min-h-[100px] border rounded-md sm:rounded-lg p-1 sm:p-2 ${
+                  isToday ? 'border-primary bg-primary/5 ring-1 ring-primary/20' : 'border-border'
+                } ${hasScheduledWork ? 'bg-accent/25' : ''}`}
               >
-                <div className={`text-xs font-medium mb-1 ${isToday ? 'text-primary' : 'text-foreground'}`}>
+                <div className={`text-[10px] sm:text-xs font-semibold mb-0.5 sm:mb-1 tabular-nums ${isToday ? 'text-primary' : 'text-foreground'}`}>
                   {format(day, 'd')}
                 </div>
-                
-                {/* Display tasks for this day */}
-                <div className="space-y-1">
+
+                <div className="space-y-0.5 sm:space-y-1">
                   {tasksForDay.map(scheduledTask => {
                     const task = getTaskDetails(scheduledTask.taskId);
                     const workerName = getWorkerName(scheduledTask.workerId);
-                    
+                    const st = new Date(scheduledTask.startTime);
+                    const en = new Date(scheduledTask.endTime);
+
                     return (
                       <div
                         key={`${scheduledTask.taskId}-${scheduledTask.startTime}`}
-                        className="text-[10px] p-1 rounded bg-primary/20 border border-primary/40"
+                        className="text-[9px] sm:text-[10px] leading-tight p-1 rounded-md bg-primary/15 border border-primary/30"
                       >
-                        <div className="font-medium truncate" title={task?.title || scheduledTask.taskId}>
+                        <div className="font-medium line-clamp-2" title={task?.title || scheduledTask.taskId}>
                           {task?.title || scheduledTask.taskId}
                         </div>
-                        <div className="text-muted-foreground truncate">
-                          {format(new Date(scheduledTask.startTime), 'HH:mm')} - {format(new Date(scheduledTask.endTime), 'HH:mm')}
+                        <div className="text-muted-foreground tabular-nums">
+                          {format(st, 'HH:mm')}–{format(en, 'HH:mm')} · {formatTaskHours(st, en)}h
                         </div>
                         <div className="text-muted-foreground truncate">
                           {workerName}
@@ -174,16 +189,17 @@ export function ScheduleCalendarView({
           })}
         </div>
 
-        {/* Legend */}
-        <div className="mt-4 flex items-center gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-primary bg-primary/5 rounded"></div>
+        <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-3 sm:gap-4 text-[10px] sm:text-xs text-muted-foreground px-1">
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 sm:h-4 sm:w-4 shrink-0 border-2 border-primary bg-primary/5 rounded" />
             <span>Today</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border border-border bg-accent/30 rounded"></div>
-            <span>Scheduled Work</span>
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 sm:h-4 sm:w-4 shrink-0 border border-border bg-accent/30 rounded" />
+            <span>Scheduled work</span>
           </div>
+        </div>
+        </div>
         </div>
       </DialogContent>
     </Dialog>
