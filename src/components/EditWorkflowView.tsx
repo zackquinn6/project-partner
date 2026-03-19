@@ -1054,7 +1054,6 @@ export default function EditWorkflowView({
   const [materialsLibraryOpen, setMaterialsLibraryOpen] = useState(false);
   const [ppeToolsLibraryOpen, setPpeToolsLibraryOpen] = useState(false);
   const [ppeMaterialsLibraryOpen, setPpeMaterialsLibraryOpen] = useState(false);
-  const [ppeEditorType, setPpeEditorType] = useState<'tools' | 'materials'>('tools');
   const [appsLibraryOpen, setAppsLibraryOpen] = useState(false);
   const [showStructureManager, setShowStructureManager] = useState(false);
   const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
@@ -1903,35 +1902,15 @@ export default function EditWorkflowView({
                           />
 
                           <div className="pt-2 border-t">
-                            <div className="flex items-start justify-between gap-4 mb-4">
-                              <div className="space-y-1">
-                                <CardTitle className="text-base">Personal Protective Equipment</CardTitle>
-                                <CardDescription>Manage PPE tools/materials tagged as PPE</CardDescription>
-                              </div>
-
-                              <div className="min-w-[160px]">
-                                <Label className="text-xs font-medium">PPE Type</Label>
-                                <Select value={ppeEditorType} onValueChange={(value: 'tools' | 'materials') => setPpeEditorType(value)}>
-                                  <SelectContent>
-                                    <SelectItem value="tools">PPE Tools</SelectItem>
-                                    <SelectItem value="materials">PPE Materials</SelectItem>
-                                  </SelectContent>
-                                  <SelectTrigger className="h-8 mt-1">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                </Select>
-                              </div>
-                            </div>
-
-                            {ppeEditorType === 'tools' ? (
+                            <div className="space-y-4">
                               <CompactToolsTable
-                                title="PPE Tools"
+                                title="Personal Protective Equipment"
                                 addButtonLabel="Add PPE Tool"
                                 tools={ppeTools}
                                 onToolsChange={tools => updateEditingStep('tools', [...nonPpeTools, ...tools])}
                                 onAddTool={() => setPpeToolsLibraryOpen(true)}
                               />
-                            ) : (
+
                               <CompactMaterialsTable
                                 title="PPE Materials"
                                 addButtonLabel="Add PPE Material"
@@ -1939,7 +1918,7 @@ export default function EditWorkflowView({
                                 onMaterialsChange={materials => updateEditingStep('materials', [...nonPpeMaterials, ...materials])}
                                 onAddMaterial={() => setPpeMaterialsLibraryOpen(true)}
                               />
-                            )}
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
