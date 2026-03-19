@@ -703,7 +703,12 @@ export function WorkflowSidebar({
                                               : 'text-primary'
                                           }`}
                                         >
-                                          <span>{phase}</span>
+                                          <span className="inline-flex items-center gap-1">
+                                            {isPhaseCompleted && (
+                                              <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                            )}
+                                            <span>{phase}</span>
+                                          </span>
                                         </AccordionTrigger>
                                         <AccordionContent className="pt-1 pb-2">
                                           <Accordion 
@@ -752,7 +757,12 @@ export function WorkflowSidebar({
                                                         : 'text-muted-foreground'
                                                     }`}
                                                   >
-                                                    <span>{operation}</span>
+                                                    <span className="inline-flex items-center gap-1">
+                                                      {isOperationCompleted && (
+                                                        <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                                      )}
+                                                      <span>{operation}</span>
+                                                    </span>
                                                   </AccordionTrigger>
                                                   <AccordionContent className="pt-1 pb-1">
                                                     <div className="space-y-1 ml-2">
@@ -779,7 +789,12 @@ export function WorkflowSidebar({
                                                               }
                                                             }}
                                                           >
-                                                            <span className="truncate">{step.step}</span>
+                                                            <div className="flex items-center gap-1">
+                                                              {isStepCompleted && (
+                                                                <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                                              )}
+                                                              <span className="truncate">{step.step}</span>
+                                                            </div>
                                                           </div>
                                                         );
                                                       })}
@@ -820,7 +835,12 @@ export function WorkflowSidebar({
                                     : 'text-primary'
                                 }`}
                               >
-                                <span>{topLevelKey}</span>
+                                <span className="inline-flex items-center gap-1">
+                                  {isPhaseCompleted && (
+                                    <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                  )}
+                                  <span>{topLevelKey}</span>
+                                </span>
                               </AccordionTrigger>
                               <AccordionContent className="pt-1 pb-2">
                                 <Accordion 
@@ -869,7 +889,12 @@ export function WorkflowSidebar({
                                               : 'text-muted-foreground'
                                           }`}
                                         >
-                                          <span>{operation}</span>
+                                          <span className="inline-flex items-center gap-1">
+                                            {isOperationCompleted && (
+                                              <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                            )}
+                                            <span>{operation}</span>
+                                          </span>
                                         </AccordionTrigger>
                                         <AccordionContent className="pt-1 pb-1">
                                           <div className="space-y-1 ml-2">
@@ -896,7 +921,12 @@ export function WorkflowSidebar({
                                                     }
                                                   }}
                                                 >
-                                                  <span className="truncate">{step.step}</span>
+                                                  <div className="flex items-center gap-1">
+                                                    {isStepCompleted && (
+                                                      <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                                    )}
+                                                    <span className="truncate">{step.step}</span>
+                                                  </div>
                                                 </div>
                                               );
                                             })}
