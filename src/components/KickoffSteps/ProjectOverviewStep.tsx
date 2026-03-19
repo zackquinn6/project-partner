@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Edit3, Save, X, Target, XCircle, AlertTriangle, CheckCircle2, Eye, ArrowUp, ArrowDown, HelpCircle } from 'lucide-react';
+import { CheckCircle, Edit3, Save, X, Target, XCircle, AlertTriangle, Eye, ArrowUp, ArrowDown, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProject } from '@/contexts/ProjectContext';
 import { useNavigate } from 'react-router-dom';
@@ -186,7 +186,28 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   };
 
   // Helper function to render 3-step slider
-  const renderLevelSlider = (currentLevel: string | null | undefined, levels: string[], labels: string[], userLevel?: string | null, comparison?: { type: string; message: string } | null) => {
+  /** Map profile physical_capability to 0–2 for the Low/Medium/High track (same segments as the effort bar). */
+  const getPhysicalCapabilitySegmentIndex = (cap: string | null | undefined): number => {
+    const key = (cap || '').toLowerCase();
+    const segmentByCapability: Record<string, number> = {
+      limited: 0,
+      moderate: 1,
+      high: 2,
+      'very high': 2,
+    };
+    const idx = segmentByCapability[key];
+    return idx === undefined ? -1 : idx;
+  };
+
+  const renderLevelSlider = (
+    currentLevel: string | null | undefined,
+    levels: string[],
+    labels: string[],
+    userLevel?: string | null,
+    comparison?: { type: string; message: string } | null,
+    /** When set (0–2), positions the “Your level” arrow on that segment (e.g. physical_capability vs Low/Medium/High). */
+    userLevelSegmentOverride?: number | null
+  ) => {
     const position = getLevelPosition(currentLevel, levels);
     const hasValue = position >= 0;
 
@@ -198,10 +219,15 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       return 50; // Default to middle
     };
 
+    const userLevelIndex =
+      userLevelSegmentOverride !== undefined && userLevelSegmentOverride !== null && userLevelSegmentOverride >= 0
+        ? userLevelSegmentOverride
+        : userLevel
+          ? getLevelPosition(userLevel, levels.map((l) => l.toLowerCase()))
+          : -1;
+
     return (
-      // Provide enough vertical room for both arrows without overlapping segment labels.
-      // (Especially important in the first "Beginner" segment.)
-      <div className="mt-2 relative pt-4 pb-4 min-h-[72px]">
+      <div className="mt-2 relative pt-1 pb-1 min-h-[52px]">
         {/* Slider track with colored sections */}
         <div className="relative h-6 rounded-full flex items-center overflow-hidden">
           {/* Color blocks background - green, blue, black */}
@@ -226,29 +252,33 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         {/* Arrow indicators for project and user levels */}
         {hasValue && (
           <div>
-            {/* This project arrow (below scale) */}
+            {/* This project: label above arrow, arrow tight to bar */}
             <div
-              className="absolute top-full left-0 flex flex-col items-center justify-center transition-all duration-200 z-10 mt-2 pointer-events-none"
+              className="absolute top-full left-0 flex flex-col items-center justify-center gap-0 transition-all duration-200 z-10 mt-px pointer-events-none"
               style={{
                 left: `${getArrowPosition(position)}%`,
                 transform: 'translateX(-50%)'
               }}
             >
-              <ArrowUp className="w-3.5 h-3.5 text-foreground drop-shadow-sm" />
-              <span className="text-[9px] text-muted-foreground whitespace-nowrap mt-0.5 leading-tight">This project</span>
+              <span className="text-[9px] text-muted-foreground whitespace-nowrap leading-tight">
+                This project
+              </span>
+              <ArrowUp className="w-3.5 h-3.5 text-foreground drop-shadow-sm shrink-0" />
             </div>
 
-            {/* Your level arrow (above scale, when userLevel is known) */}
-            {userLevel && (
+            {/* Your level: label above arrow, arrow tight to bar */}
+            {userLevelIndex >= 0 && (
               <div
-                className="absolute bottom-full left-0 flex flex-col items-center justify-center transition-all duration-200 z-10 mb-2 pointer-events-none"
+                className="absolute bottom-full left-0 flex flex-col items-center justify-center gap-0 transition-all duration-200 z-10 mb-px pointer-events-none"
                 style={{
-                  left: `${getArrowPosition(levels.indexOf((userLevel || '').charAt(0).toUpperCase() + (userLevel || '').slice(1).toLowerCase()))}%`,
+                  left: `${getArrowPosition(userLevelIndex)}%`,
                   transform: 'translateX(-50%)'
                 }}
               >
-                <ArrowDown className="w-3.5 h-3.5 text-foreground drop-shadow-sm" />
-                <span className="text-[9px] text-muted-foreground whitespace-nowrap mt-0.5 leading-tight">Your level</span>
+                <span className="text-[9px] text-muted-foreground whitespace-nowrap leading-tight">
+                  Your level
+                </span>
+                <ArrowDown className="w-3.5 h-3.5 text-foreground drop-shadow-sm shrink-0" />
               </div>
             )}
           </div>
@@ -257,14 +287,13 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         {!hasValue && (
           <p className="text-xs text-muted-foreground mt-1 text-center">Not specified</p>
         )}
-        {/* User level comparison at bottom */}
-        {userLevel && comparison && (
+        {/* Mismatch / caution only (no green "your level matches" row) */}
+        {userLevel && comparison && comparison.type !== 'success' && (
           <div className="mt-2 flex items-center gap-1.5">
             {comparison.type === 'error' && <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0" />}
             {comparison.type === 'warning' && <AlertTriangle className="w-3 h-3 text-yellow-500 flex-shrink-0" />}
-            {comparison.type === 'success' && <CheckCircle2 className="w-3 h-3 text-green-500 flex-shrink-0" />}
-            <span className={`text-xs ${comparison.type === 'error' ? 'text-red-600' : comparison.type === 'warning' ? 'text-yellow-600' : 'text-green-600'}`}>
-              Your level: {userLevel}
+            <span className={`text-xs ${comparison.type === 'error' ? 'text-red-600' : 'text-yellow-600'}`}>
+              {comparison.message}
             </span>
           </div>
         )}
@@ -307,7 +336,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     const userCapability = (userProfile?.physical_capability || '').toLowerCase();
     if (!projectEffort || !userCapability) return null;
 
-    // Map effort levels and physical capabilities
+    // Map effort levels and physical capabilities (segment index for comparison; aligns with 3-segment bar)
     const effortLevels = ['low', 'medium', 'high'];
     const capabilityLevels: Record<string, number> = {
       'limited': 0,
@@ -580,7 +609,14 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                {renderLevelSlider(displayEffortLevel, ['Low', 'Medium', 'High'], ['Low', 'Medium', 'High'], userProfile?.physical_capability, effortComparison)}
+                {renderLevelSlider(
+                  displayEffortLevel,
+                  ['Low', 'Medium', 'High'],
+                  ['Low', 'Medium', 'High'],
+                  userProfile?.physical_capability,
+                  effortComparison,
+                  getPhysicalCapabilitySegmentIndex(userProfile?.physical_capability)
+                )}
               </div>
 
               {/* Right Column - Second Row */}
