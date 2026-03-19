@@ -199,7 +199,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     };
 
     return (
-      <div className="mt-2 relative pb-1">
+      // Provide enough vertical room for both arrows without overlapping segment labels.
+      // (Especially important in the first "Beginner" segment.)
+      <div className="mt-2 relative pt-4 pb-4 min-h-[72px]">
         {/* Slider track with colored sections */}
         <div className="relative h-6 rounded-full flex items-center overflow-hidden">
           {/* Color blocks background - green, blue, black */}
@@ -226,27 +228,27 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           <div>
             {/* This project arrow (below scale) */}
             <div
-              className="absolute top-full left-0 flex flex-col items-center justify-center transition-all duration-200 z-10 mt-1"
+              className="absolute top-full left-0 flex flex-col items-center justify-center transition-all duration-200 z-10 mt-2 pointer-events-none"
               style={{
                 left: `${getArrowPosition(position)}%`,
                 transform: 'translateX(-50%)'
               }}
             >
               <ArrowUp className="w-3.5 h-3.5 text-foreground drop-shadow-sm" />
-              <span className="text-[9px] text-muted-foreground whitespace-nowrap mt-0.5">This project</span>
+              <span className="text-[9px] text-muted-foreground whitespace-nowrap mt-0.5 leading-tight">This project</span>
             </div>
 
             {/* Your level arrow (above scale, when userLevel is known) */}
             {userLevel && (
               <div
-                className="absolute bottom-full left-0 flex flex-col items-center justify-center transition-all duration-200 z-10 mb-1"
+                className="absolute bottom-full left-0 flex flex-col items-center justify-center transition-all duration-200 z-10 mb-2 pointer-events-none"
                 style={{
                   left: `${getArrowPosition(levels.indexOf((userLevel || '').charAt(0).toUpperCase() + (userLevel || '').slice(1).toLowerCase()))}%`,
                   transform: 'translateX(-50%)'
                 }}
               >
                 <ArrowDown className="w-3.5 h-3.5 text-foreground drop-shadow-sm" />
-                <span className="text-[9px] text-muted-foreground whitespace-nowrap mt-0.5">Your level</span>
+                <span className="text-[9px] text-muted-foreground whitespace-nowrap mt-0.5 leading-tight">Your level</span>
               </div>
             )}
           </div>
