@@ -62,6 +62,7 @@ export function RiskManagementWindow({
   const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingRisk, setEditingRisk] = useState<Risk | null>(null);
+  const [templateProjectIdForRisks, setTemplateProjectIdForRisks] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({
     risk: '',
@@ -104,19 +105,55 @@ export function RiskManagementWindow({
           templateProjectId = projectData.parent_project_id;
           console.log('📋 RiskManagementWindow: Detected revision, using parent project ID:', templateProjectId);
         }
-        
-        console.log('📊 RiskManagementWindow: Querying project_risks for project:', templateProjectId);
-        // Fetch template-level risks using the template project ID
-        const { data, error } = await supabase
-          .from('project_risks')
-          .select('*')
-          .eq('project_id', templateProjectId)
-          .order('display_order', { ascending: true });
 
-        if (error) throw error;
+        setTemplateProjectIdForRisks(templateProjectId);
+        
+        // Standard foundation risks are merged into each project at the UI layer,
+        // but mitigation action tracking remains run-level (project_run_risks).
+        const { data: standardProject, error: standardProjectError } = await supabase
+          .from('projects')
+          .select('id')
+          .eq('is_standard', true)
+          .single();
+
+        if (standardProjectError) throw standardProjectError;
+        if (!standardProject?.id) throw new Error('Standard project foundation not found (is_standard = true).');
+
+        let mergedRisksData: any[] = [];
+        if (standardProject.id === templateProjectId) {
+          console.log('📊 RiskManagementWindow: Template is the standard foundation; querying only foundation risks');
+          const { data, error } = await supabase
+            .from('project_risks')
+            .select('*')
+            .eq('project_id', templateProjectId)
+            .order('display_order', { ascending: true });
+
+          if (error) throw error;
+          mergedRisksData = data || [];
+        } else {
+          console.log('📊 RiskManagementWindow: Querying foundation + project risks for merged view');
+          const [{ data: foundationRisks, error: foundationError }, { data: projectRisks, error: projectRisksError }] =
+            await Promise.all([
+              supabase
+                .from('project_risks')
+                .select('*')
+                .eq('project_id', standardProject.id)
+                .order('display_order', { ascending: true }),
+              supabase
+                .from('project_risks')
+                .select('*')
+                .eq('project_id', templateProjectId)
+                .order('display_order', { ascending: true }),
+            ]);
+
+          if (foundationError) throw foundationError;
+          if (projectRisksError) throw projectRisksError;
+
+          mergedRisksData = [...(foundationRisks || []), ...(projectRisks || [])];
+        }
         
         // Map database fields to component interface
-        const mappedRisks: Risk[] = (data || []).map((risk: any) => ({
+        const mappedRisks: Risk[] = (mergedRisksData || []).map((risk: any) => ({
           id: risk.id,
           risk: risk.risk_title || '',
           risk_title: risk.risk_title,
@@ -202,6 +239,11 @@ export function RiskManagementWindow({
 
     try {
       if (mode === 'template' && projectId) {
+        if (!templateProjectIdForRisks) {
+          toast.error('Unable to determine which project record to save risks into.');
+          return;
+        }
+
         // Save template risk
         if (editingRisk) {
           const { error } = await supabase
@@ -228,7 +270,7 @@ export function RiskManagementWindow({
           const { data: existingRisks } = await supabase
             .from('project_risks')
             .select('display_order')
-            .eq('project_id', projectId)
+            .eq('project_id', templateProjectIdForRisks)
             .order('display_order', { ascending: false })
             .limit(1);
 
@@ -239,7 +281,7 @@ export function RiskManagementWindow({
           const { error } = await supabase
             .from('project_risks')
             .insert({
-              project_id: projectId,
+              project_id: templateProjectIdForRisks,
               risk_title: formData.risk.trim(),
               risk_description: formData.notes.trim() || null,
               likelihood: formData.likelihood,

@@ -377,6 +377,106 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         }
       }
 
+      // Risk management rules:
+      // - Foundation risks + project risks are assembled ONLY at project run creation.
+      // - Mitigation/action tracking is maintained at `project_run_risks` level.
+      // - Run-specific risks (user-added later) have `template_risk_id = null` and must not be modified.
+      const templateProjectIdForRisks = project.parent_project_id ?? project.id;
+
+      try {
+        const { data: standardProject, error: standardProjectError } = await supabase
+          .from('projects')
+          .select('id')
+          .eq('is_standard', true)
+          .single();
+
+        if (standardProjectError) throw standardProjectError;
+        if (!standardProject?.id) throw new Error('Standard project foundation not found (is_standard = true).');
+
+        const { data: foundationRisksRes, error: foundationRisksError } = await supabase
+          .from('project_risks')
+          .select('*')
+          .eq('project_id', standardProject.id)
+          .order('display_order', { ascending: true });
+
+        if (foundationRisksError) throw foundationRisksError;
+
+        let projectRisks: any[] = [];
+        if (standardProject.id !== templateProjectIdForRisks) {
+          const { data: projectRisksRes, error: projectRisksError } = await supabase
+            .from('project_risks')
+            .select('*')
+            .eq('project_id', templateProjectIdForRisks)
+            .order('display_order', { ascending: true });
+
+          if (projectRisksError) throw projectRisksError;
+          projectRisks = projectRisksRes || [];
+        }
+
+        const foundationRisks = foundationRisksRes || [];
+
+        // Only insert template-derived risks that are missing in this run.
+        const { data: existingRunTemplateRisks, error: existingRunTemplateRisksError } = await supabase
+          .from('project_run_risks')
+          .select('template_risk_id, display_order')
+          .eq('project_run_id', data);
+
+        if (existingRunTemplateRisksError) throw existingRunTemplateRisksError;
+
+        const existingTemplateRiskIds = new Set(
+          (existingRunTemplateRisks || [])
+            .map(r => r.template_risk_id)
+            .filter((id): id is string => id != null)
+        );
+
+        const existingTemplateDisplayOrders = (existingRunTemplateRisks || [])
+          .map(r => (typeof r.display_order === 'number' ? r.display_order : null))
+          .filter((v): v is number => v != null);
+
+        const nextDisplayOrder = existingTemplateDisplayOrders.length > 0
+          ? Math.max(...existingTemplateDisplayOrders) + 1
+          : 0;
+
+        const sourceRisks = [...(foundationRisks || []), ...(projectRisks || [])];
+        const risksToInsert = sourceRisks.filter(r => !existingTemplateRiskIds.has(r.id));
+
+        if (risksToInsert.length > 0) {
+          const insertRows = risksToInsert.map((risk: any, idx: number) => ({
+            project_run_id: data,
+            template_risk_id: risk.id,
+            risk_title: risk.risk_title,
+            risk_description: risk.risk_description,
+            likelihood: risk.likelihood,
+            severity: risk.severity,
+            schedule_impact_low_days: risk.schedule_impact_low_days,
+            schedule_impact_high_days: risk.schedule_impact_high_days,
+            budget_impact_low: risk.budget_impact_low,
+            budget_impact_high: risk.budget_impact_high,
+            mitigation_strategy: risk.mitigation_strategy,
+            mitigation_actions: risk.mitigation_actions,
+            mitigation_cost: risk.mitigation_cost,
+            recommendation: risk.recommendation,
+            impact: risk.impact,
+            benefit: risk.benefit,
+            status: 'open',
+            display_order: nextDisplayOrder + idx,
+          }));
+
+          const { error: insertError } = await supabase
+            .from('project_run_risks')
+            .insert(insertRows);
+
+          if (insertError) throw insertError;
+        }
+      } catch (riskAssemblyError) {
+        console.error('❌ Risk assembly failed; deleting created run for consistency:', riskAssemblyError);
+        await supabase
+          .from('project_runs')
+          .delete()
+          .eq('id', data);
+        throw riskAssemblyError;
+      }
+
       // Update additional fields that the function doesn't handle
       if (customName || project.projectChallenges || project.scalingUnit || project.estimatedTimePerUnit) {
         await supabase
