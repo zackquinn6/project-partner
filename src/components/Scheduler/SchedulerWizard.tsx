@@ -131,7 +131,8 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   onOpenContractorScheduling,
   collapseAccordionSignal = 0
 }) => {
-  const [openSection, setOpenSection] = useState<SchedulerAccordionKey | null>('dates');
+  // Design intent: keep "Generate Schedule" expanded by default.
+  const [openSection, setOpenSection] = useState<SchedulerAccordionKey | null>('generate');
   const [noWorkOnHolidays, setNoWorkOnHolidays] = useState(false);
 
   useEffect(() => {

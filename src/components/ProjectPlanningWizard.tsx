@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const validToolIds = useMemo(() => new Set(PLANNING_TOOLS.map(t => t.id)), []);
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const stepNavRef = useRef<HTMLDivElement | null>(null);
   /** Local copy of selected tools so dropdown changes apply immediately without waiting for context */
   const [localSelectedTools, setLocalSelectedTools] = useState<PlanningToolId[] | null>(null);
 
@@ -107,6 +108,16 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     if (stepIndex < wizardSteps.length - 1) {
       setCurrentStep(stepIndex + 1);
     }
+  };
+
+  const scrollStepNav = (direction: 'left' | 'right') => {
+    const el = stepNavRef.current;
+    if (!el) return;
+    const amount = Math.max(160, Math.floor(el.clientWidth * 0.9));
+    el.scrollBy({
+      left: direction === 'left' ? -amount : amount,
+      behavior: 'smooth'
+    });
   };
 
   const handleNext = () => {
@@ -283,31 +294,56 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
 
         {/* Step Navigation */}
         <Card>
-          <CardContent className="p-2 sm:p-3 md:p-4">
+        <CardContent className="p-1 sm:p-2 md:p-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <div className="flex items-center space-x-2 sm:space-x-2 md:space-x-4 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 -mx-2 sm:mx-0 px-2 sm:px-0 scrollbar-hide">
-                {wizardSteps.map((step, index) => (
-                  <div key={step.id} className="flex items-center flex-shrink-0">
-                    <div className={`
-                      flex items-center justify-center w-8 h-8 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full border-2 transition-colors flex-shrink-0
-                      ${index === currentStep ? 'border-primary bg-primary text-primary-foreground' : isStepCompleted(index) ? 'border-green-500 bg-green-500 text-white' : 'border-muted-foreground bg-background'}
-                    `}>
-                      {isStepCompleted(index) ? (
-                        <CheckCircle className="w-4 h-4 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" />
-                      ) : (
-                        <span className="text-xs sm:text-xs md:text-sm font-medium">{index + 1}</span>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 sm:hidden flex-shrink-0"
+                  onClick={() => scrollStepNav('left')}
+                  disabled={wizardSteps.length <= 4}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <div
+                  ref={stepNavRef}
+                  className="flex items-center space-x-2 sm:space-x-2 md:space-x-4 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 -mx-2 sm:mx-0 px-2 sm:px-0 scrollbar-hide whitespace-nowrap"
+                >
+                  {wizardSteps.map((step, index) => (
+                    <div key={step.id} className="flex items-center flex-shrink-0">
+                      <div className={`
+                        flex items-center justify-center w-8 h-8 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full border-2 transition-colors flex-shrink-0
+                        ${index === currentStep ? 'border-primary bg-primary text-primary-foreground' : isStepCompleted(index) ? 'border-green-500 bg-green-500 text-white' : 'border-muted-foreground bg-background'}
+                      `}>
+                        {isStepCompleted(index) ? (
+                          <CheckCircle className="w-4 h-4 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" />
+                        ) : (
+                          <span className="text-xs sm:text-xs md:text-sm font-medium">{index + 1}</span>
+                        )}
+                      </div>
+                      <div className="ml-1.5 sm:ml-1.5 md:ml-2 hidden sm:block">
+                        <p className={`text-xs sm:text-sm font-medium whitespace-nowrap ${index === currentStep ? 'text-primary' : isStepCompleted(index) ? 'text-green-700' : 'text-muted-foreground'}`}>
+                          {step.title}
+                        </p>
+                      </div>
+                      {index < wizardSteps.length - 1 && (
+                        <div className="mx-2 sm:mx-2 md:mx-4 w-4 sm:w-4 md:w-8 h-0.5 bg-muted-foreground/20 flex-shrink-0" />
                       )}
                     </div>
-                    <div className="ml-1.5 sm:ml-1.5 md:ml-2 hidden sm:block">
-                      <p className={`text-xs sm:text-sm font-medium whitespace-nowrap ${index === currentStep ? 'text-primary' : isStepCompleted(index) ? 'text-green-700' : 'text-muted-foreground'}`}>
-                        {step.title}
-                      </p>
-                    </div>
-                    {index < wizardSteps.length - 1 && (
-                      <div className="mx-2 sm:mx-2 md:mx-4 w-4 sm:w-4 md:w-8 h-0.5 bg-muted-foreground/20 flex-shrink-0" />
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 sm:hidden flex-shrink-0"
+                  onClick={() => scrollStepNav('right')}
+                  disabled={wizardSteps.length <= 4}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
