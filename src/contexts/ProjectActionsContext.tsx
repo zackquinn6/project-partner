@@ -765,7 +765,12 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     const initialBudgetKey = (projectRun as any).initial_budget !== undefined ? String((projectRun as any).initial_budget) : 'undefined';
     const initialTimelineKey = (projectRun as any).initial_timeline !== undefined ? String((projectRun as any).initial_timeline) : 'undefined';
     const initialSizingKey = (projectRun as any).initial_sizing !== undefined ? String((projectRun as any).initial_sizing) : 'undefined';
-    const updateKey = `${projectRun.id}-${projectRun.progress}-${JSON.stringify(projectRun.completedSteps)}-${budgetDataKey}-${issueReportsKey}-${timeTrackingKey}-${initialBudgetKey}-${initialTimelineKey}-${initialSizingKey}`;
+
+    // Include fields that can change independently (e.g. schedule_optimization_method)
+    const scheduleOptimizationMethodKey = JSON.stringify((projectRun as any).schedule_optimization_method);
+    const progressReportingStyleKey = JSON.stringify((projectRun as any).progress_reporting_style);
+
+    const updateKey = `${projectRun.id}-${projectRun.progress}-${JSON.stringify(projectRun.completedSteps)}-${budgetDataKey}-${issueReportsKey}-${timeTrackingKey}-${initialBudgetKey}-${initialTimelineKey}-${initialSizingKey}-${scheduleOptimizationMethodKey}-${progressReportingStyleKey}`;
     
     // Skip if this is the exact same update as the last one
     if (lastUpdateRef.current === updateKey) {
