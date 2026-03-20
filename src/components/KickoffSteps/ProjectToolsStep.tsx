@@ -13,7 +13,6 @@ export const PLANNING_TOOL_IDS = [
   'risk',
   'budget',
   'shopping_list',
-  'detailed_instructions',
   'quality_control',
   'expert_support'
 ] as const;
@@ -24,7 +23,6 @@ export const PLANNING_TOOLS: { id: (typeof PLANNING_TOOL_IDS)[number]; label: st
   { id: 'risk', label: 'Risk/Uncertainty', benefit: 'Proactively avoid issues' },
   { id: 'budget', label: 'Budget', benefit: 'Spend what you want' },
   { id: 'shopping_list', label: 'Shopping List', benefit: 'Track tool & material shopping' },
-  { id: 'detailed_instructions', label: 'Learning preferences', benefit: 'Step-by-step when you need it' },
   { id: 'quality_control', label: 'Quality Control', benefit: 'Document results for future inspections' },
   { id: 'expert_support', label: 'Expert Support', benefit: 'Get help when you\'re stuck' }
 ];
@@ -36,7 +34,7 @@ const DEFAULT_SELECTED: PlanningToolId[] = ['scope', 'risk'];
 /** Preset tool sets by project focus. Scope is always included. */
 const FOCUS_PRESETS: Record<string, PlanningToolId[]> = {
   savings: ['scope', 'budget', 'shopping_list', 'risk'],
-  quality: ['scope', 'quality_control', 'detailed_instructions', 'risk'],
+  quality: ['scope', 'quality_control', 'risk'],
   schedule: ['scope', 'schedule', 'risk'],
 };
 
@@ -97,10 +95,12 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   }, [initialSelected.join(','), expertSupportEnabled]);
 
   const notifySelection = (next: Set<PlanningToolId>) => {
+    const validToolIds = new Set(PLANNING_TOOL_IDS as unknown as string[]);
     const withScope = new Set(next);
     withScope.add('scope');
     if (!expertSupportEnabled) withScope.delete('expert_support');
-    onSelectionChange?.(Array.from(withScope));
+    const cleaned = Array.from(withScope).filter(id => validToolIds.has(id as any)) as PlanningToolId[];
+    onSelectionChange?.(cleaned);
   };
 
   const handleToggle = (id: PlanningToolId) => {

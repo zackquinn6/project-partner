@@ -53,7 +53,7 @@ export const createKickoffPhase = (): Phase => {
       step: 'Workflow Setup',
       description: 'Choose which planning tools to use for this project',
       contentType: 'text' as const,
-      content: 'Select the tools you want to use: Scope, Schedule, Risk/Uncertainty, Budget, Learning preferences, Quality Control, Expert Support. Tools can be added later.',
+      content: 'Select the tools you want to use: Scope, Schedule, Risk/Uncertainty, Budget, Shopping List, Quality Control, Expert Support. Tools can be added later.',
       materials: [],
       tools: [],
       outputs: [{

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown } from "lucide-react";
+import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, Shield, DollarSign, ShoppingCart, ClipboardCheck } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -198,6 +198,11 @@ export function WorkflowSidebar({
       console.error('Failed to persist workflow tutorial opt-out to profile:', error);
       throw error;
     }
+  };
+
+  const openAppByActionKey = (actionKey: string) => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey } }));
   };
   
   // Track which phases and operations are open
@@ -572,6 +577,52 @@ export function WorkflowSidebar({
                       >
                         <Image className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
                         <span className="truncate">Photos</span>
+                      </Button>
+                    </div>
+
+                    {/* Risk management, Budget, Shopping List, Quality Control */}
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => openAppByActionKey('risk-management')}
+                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
+                        style={{ backgroundColor: 'rgba(59, 130, 246, 0.35)', color: 'black' }}
+                      >
+                        <Shield className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
+                        <span className="truncate">Risk management</span>
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => openAppByActionKey('project-budgeting')}
+                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
+                        style={{ backgroundColor: 'rgba(34, 197, 94, 0.35)', color: 'black' }}
+                      >
+                        <DollarSign className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
+                        <span className="truncate">Budget</span>
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => openAppByActionKey('shopping-checklist')}
+                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
+                        style={{ backgroundColor: 'rgba(251, 146, 60, 0.35)', color: 'black' }}
+                      >
+                        <ShoppingCart className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
+                        <span className="truncate">Shopping List</span>
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => openAppByActionKey('quality-check')}
+                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
+                        style={{ backgroundColor: 'rgba(20, 184, 166, 0.35)', color: 'black' }}
+                      >
+                        <ClipboardCheck className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
+                        <span className="truncate">Quality Control</span>
                       </Button>
                     </div>
                     <DropdownMenu>
