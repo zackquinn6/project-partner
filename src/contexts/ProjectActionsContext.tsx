@@ -768,9 +768,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
     // Include fields that can change independently (e.g. schedule_optimization_method)
     const scheduleOptimizationMethodKey = JSON.stringify((projectRun as any).schedule_optimization_method);
-    const progressReportingStyleKey = JSON.stringify((projectRun as any).progress_reporting_style);
 
-    const updateKey = `${projectRun.id}-${projectRun.progress}-${JSON.stringify(projectRun.completedSteps)}-${budgetDataKey}-${issueReportsKey}-${timeTrackingKey}-${initialBudgetKey}-${initialTimelineKey}-${initialSizingKey}-${scheduleOptimizationMethodKey}-${progressReportingStyleKey}`;
+    const updateKey = `${projectRun.id}-${projectRun.progress}-${JSON.stringify(projectRun.completedSteps)}-${budgetDataKey}-${issueReportsKey}-${timeTrackingKey}-${initialBudgetKey}-${initialTimelineKey}-${initialSizingKey}-${scheduleOptimizationMethodKey}`;
     
     // Skip if this is the exact same update as the last one
     if (lastUpdateRef.current === updateKey) {
