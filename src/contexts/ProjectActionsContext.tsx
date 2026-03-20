@@ -430,6 +430,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         );
 
         const existingTemplateDisplayOrders = (existingRunTemplateRisks || [])
+          .filter(r => r.template_risk_id != null)
           .map(r => (typeof r.display_order === 'number' ? r.display_order : null))
           .filter((v): v is number => v != null);
 
