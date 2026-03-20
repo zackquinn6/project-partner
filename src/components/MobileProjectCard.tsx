@@ -37,7 +37,15 @@ export function MobileProjectCard({ project, onSelect, variant = 'project', onDe
   
   const isProjectRun = variant === 'run' || 'progress' in project;
   const projectRunData = isProjectRun ? (project as ProjectRun) : null;
-  const progress = projectRunData ? calculateProjectProgress(projectRunData) : 0;
+  const progress = (() => {
+    if (!projectRunData) return 0;
+    try {
+      return calculateProjectProgress(projectRunData);
+    } catch (error) {
+      console.error('Failed to calculate project progress:', error);
+      return 0;
+    }
+  })();
   const status = isProjectRun ? getProjectRunStatus(project as ProjectRun) : 'template';
   
   // Only allow swipe to delete for project runs (not templates)

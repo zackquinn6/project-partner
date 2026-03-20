@@ -88,8 +88,12 @@ export function calculateProjectProgress(
   projectRun: ProjectRun,
   progressStyle?: ProgressReportingStyle
 ): number {
-  // Default to linear if not specified, or use projectRun's setting
-  const style = progressStyle || projectRun.progress_reporting_style || 'linear';
+  // Use the explicit style if provided, otherwise require the project run setting.
+  // The design intent is that every project run has a default stored in the database.
+  const style = progressStyle ?? projectRun.progress_reporting_style;
+  if (!style) {
+    throw new Error('progress_reporting_style is missing from project run data');
+  }
   // For manual projects, use the stored progress value
   if (projectRun.isManualEntry) {
     return projectRun.progress ?? 0;

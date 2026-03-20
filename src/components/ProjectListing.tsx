@@ -41,7 +41,12 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
   const [showPortfolioReminders, setShowPortfolioReminders] = useState(false);
 
   const calculateProgress = (projectRun: ProjectRun) => {
-    return calculateProjectProgress(projectRun);
+    try {
+      return calculateProjectProgress(projectRun);
+    } catch (error) {
+      console.error('Failed to calculate project progress:', error);
+      return 0;
+    }
   };
 
   const getStatusColor = (status: ProjectRun['status']) => {

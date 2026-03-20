@@ -256,7 +256,9 @@ export default function Navigation({
       initial_budget: freshRun.initial_budget,
       initial_timeline: freshRun.initial_timeline,
       initial_sizing: freshRun.initial_sizing,
-      progress_reporting_style: (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based') || 'linear'
+      progress_reporting_style: freshRun.progress_reporting_style
+        ? (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
+        : undefined
     };
     
     console.log('✅ Navigation: Fresh project data loaded:', {
@@ -378,12 +380,27 @@ export default function Navigation({
                   <div className="h-px bg-border my-1" />
                   
                   {/* Active Projects List */}
-                  {activeProjectRuns.length > 0 ? activeProjectRuns.map(run => <DropdownMenuItem key={run.id} onClick={() => handleProjectSelect(run.id)} className="flex flex-col items-start py-3">
-                        <div className="font-medium text-sm">{run.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {calculateProjectProgress(run)}% complete
-                        </div>
-                      </DropdownMenuItem>) : <DropdownMenuItem disabled className="text-muted-foreground italic">
+                  {activeProjectRuns.length > 0 ? activeProjectRuns.map(run => {
+                        let progress = 0;
+                        try {
+                          progress = calculateProjectProgress(run);
+                        } catch (error) {
+                          console.error('Failed to calculate project progress:', error);
+                        }
+                        
+                        return (
+                          <DropdownMenuItem
+                            key={run.id}
+                            onClick={() => handleProjectSelect(run.id)}
+                            className="flex flex-col items-start py-3"
+                          >
+                            <div className="font-medium text-sm">{run.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {progress}% complete
+                            </div>
+                          </DropdownMenuItem>
+                        );
+                      }) : <DropdownMenuItem disabled className="text-muted-foreground italic">
                       No active projects
                     </DropdownMenuItem>}
                 </DropdownMenuContent>

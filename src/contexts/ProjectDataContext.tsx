@@ -254,7 +254,9 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         initial_budget: run.initial_budget,
         initial_timeline: run.initial_timeline,
         initial_sizing: run.initial_sizing,
-        progress_reporting_style: (run.progress_reporting_style as 'linear' | 'exponential' | 'time-based') || 'linear'
+        progress_reporting_style: run.progress_reporting_style
+          ? (run.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
+          : undefined
       } as ProjectRun;
     });
   }, []);

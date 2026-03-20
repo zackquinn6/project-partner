@@ -858,7 +858,9 @@ export default function UserView({
               initial_budget: freshRun.initial_budget,
               initial_timeline: freshRun.initial_timeline,
               initial_sizing: freshRun.initial_sizing,
-              progress_reporting_style: (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based') || 'linear'
+              progress_reporting_style: freshRun.progress_reporting_style
+                ? (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
+                : undefined
             };
             
             if (transformedRun.status === 'cancelled') {
@@ -1102,9 +1104,16 @@ export default function UserView({
   const { total: totalSteps, completed: completedStepsCount } = currentProjectRun 
     ? getWorkflowStepsCount(currentProjectRun) 
     : { total: 0, completed: 0 };
-  const progress = currentProjectRun 
-    ? calculateProjectProgress(currentProjectRun)
-    : 0;
+  const progress = (() => {
+    if (!currentProjectRun) return 0;
+    try {
+      return calculateProjectProgress(currentProjectRun);
+    } catch (error) {
+      console.error('Failed to calculate project progress:', error);
+      toast.error('Progress reporting style is missing for this project run.');
+      return 0;
+    }
+  })();
   
   // Progress calculation
   
@@ -1322,7 +1331,14 @@ export default function UserView({
           
           // Use the centralized progress calculation utility (includes ALL steps)
           const tempProjectRun = { ...currentProjectRun, completedSteps: uniqueCompletedSteps };
-          const calculatedProgress = calculateProjectProgress(tempProjectRun);
+          let calculatedProgress = 0;
+          try {
+            calculatedProgress = calculateProjectProgress(tempProjectRun);
+          } catch (error) {
+            console.error('Failed to calculate project progress:', error);
+            toast.error('Progress reporting style is missing for this project run.');
+            calculatedProgress = 0;
+          }
           
           // Set status to 'complete' if progress is 100%
           const newStatus = calculatedProgress >= 100 ? 'complete' : currentProjectRun.status;

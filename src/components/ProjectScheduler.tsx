@@ -34,6 +34,7 @@ import { ScheduleCalendarView } from '@/components/ScheduleCalendarView';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import { ScheduleSensitivity } from './Scheduler/ScheduleSensitivity';
 import { ScheduleViewDialog } from '@/components/ScheduleViewDialog';
+import { autoRegenerateSchedule } from '@/utils/autoScheduleRegeneration';
 interface ProjectSchedulerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -1189,8 +1190,51 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       // CRITICAL: Update local state to reflect the saved value
       // This ensures the selection persists after applying
       setScheduleOptimizationMethod(scheduleOptimizationMethod);
-      
-      // Dispatch refresh event for workflow navigation
+
+      // Design intent: schedule optimization method change must rebuild the project plan
+      // (schedule events/dependencies) without losing user progress (completed steps).
+      if (!Array.isArray(projectRun.completedSteps)) {
+        toast({
+          title: "Cannot rebuild schedule",
+          description: "Missing completed step data for this project run.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const completedStepIds = new Set<string>();
+      projectRun.completedSteps.forEach(cs => {
+        if (typeof cs !== 'string') return;
+        completedStepIds.add(cs);
+        const colonIndex = cs.indexOf(':');
+        if (colonIndex > 0) completedStepIds.add(cs.slice(0, colonIndex));
+      });
+
+      if (!Array.isArray(project.phases) || project.phases.length === 0) {
+        toast({
+          title: "Cannot rebuild schedule",
+          description: "Missing project phases required for schedule rebuilding.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const ok = await autoRegenerateSchedule(
+        updatedProjectRun as ProjectRun,
+        project,
+        project.phases,
+        completedStepIds
+      );
+
+      if (!ok) {
+        toast({
+          title: "Schedule rebuild not performed",
+          description: "There was no existing schedule to rebuild or required scheduling inputs were missing.",
+          variant: "destructive"
+        });
+      }
+
+      // Dispatch refresh event for workflow navigation + schedule dependent UI
       window.dispatchEvent(new CustomEvent('project-scheduler-updated', {
         detail: { projectRunId: projectRun.id }
       }));

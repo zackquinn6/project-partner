@@ -769,7 +769,25 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     // Include fields that can change independently (e.g. schedule_optimization_method)
     const scheduleOptimizationMethodKey = JSON.stringify((projectRun as any).schedule_optimization_method);
 
-    const updateKey = `${projectRun.id}-${projectRun.progress}-${JSON.stringify(projectRun.completedSteps)}-${budgetDataKey}-${issueReportsKey}-${timeTrackingKey}-${initialBudgetKey}-${initialTimelineKey}-${initialSizingKey}-${scheduleOptimizationMethodKey}`;
+    const progressReportingStyleKey = JSON.stringify((projectRun as any).progress_reporting_style);
+    const shouldIncludeProgressReportingStyleKey =
+      progressReportingStyleKey !== JSON.stringify(currentProjectRun?.progress_reporting_style);
+
+    const updateKeyParts = [
+      projectRun.id,
+      projectRun.progress,
+      JSON.stringify(projectRun.completedSteps),
+      budgetDataKey,
+      issueReportsKey,
+      timeTrackingKey,
+      initialBudgetKey,
+      initialTimelineKey,
+      initialSizingKey,
+      scheduleOptimizationMethodKey,
+      ...(shouldIncludeProgressReportingStyleKey ? [progressReportingStyleKey] : [])
+    ];
+
+    const updateKey = updateKeyParts.join('-');
     
     // Skip if this is the exact same update as the last one
     if (lastUpdateRef.current === updateKey) {
@@ -1119,7 +1137,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           schedule_events: typeof freshRun.schedule_events === 'string' ? JSON.parse(freshRun.schedule_events) : freshRun.schedule_events,
           customization_decisions: typeof freshRun.customization_decisions === 'string' ? JSON.parse(freshRun.customization_decisions) : freshRun.customization_decisions,
           instruction_level_preference: freshRun.instruction_level_preference as 'beginner' | 'intermediate' | 'advanced' | undefined,
-          progress_reporting_style: (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based') || 'linear',
+          progress_reporting_style: freshRun.progress_reporting_style
+            ? (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
+            : undefined,
           // CRITICAL: Include initial_budget, initial_timeline, initial_sizing from database
           initial_budget: freshRun.initial_budget || null,
           initial_timeline: freshRun.initial_timeline || null,

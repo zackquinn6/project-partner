@@ -20,24 +20,35 @@ export const ProgressReportingStyleDialog = ({
   projectRun
 }: ProgressReportingStyleDialogProps) => {
   const { updateProjectRun } = useProject();
-  const [selectedStyle, setSelectedStyle] = useState<'linear' | 'exponential' | 'time-based'>(
-    (projectRun?.progress_reporting_style as 'linear' | 'exponential' | 'time-based') || 'linear'
+  const [selectedStyle, setSelectedStyle] = useState<'linear' | 'exponential' | 'time-based' | null>(
+    projectRun?.progress_reporting_style
+      ? (projectRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
+      : null
   );
   const [saving, setSaving] = useState(false);
 
   // Update local state when projectRun changes or dialog opens
   useEffect(() => {
-    if (open && projectRun?.progress_reporting_style) {
+    if (!open) return;
+    if (projectRun?.progress_reporting_style) {
       setSelectedStyle(projectRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based');
+    } else {
+      setSelectedStyle(null);
     }
   }, [projectRun?.progress_reporting_style, open]);
 
   // Check if there are unsaved changes
-  const hasUnsavedChanges = selectedStyle !== (projectRun?.progress_reporting_style as 'linear' | 'exponential' | 'time-based');
+  const hasUnsavedChanges =
+    selectedStyle !== null &&
+    selectedStyle !== (projectRun?.progress_reporting_style as 'linear' | 'exponential' | 'time-based');
 
   const handleApply = async () => {
     if (!projectRun) {
       toast.error('No project run selected');
+      return;
+    }
+    if (selectedStyle === null) {
+      toast.error('No progress reporting style is selected');
       return;
     }
 
@@ -62,6 +73,8 @@ export const ProgressReportingStyleDialog = ({
     // Reset to original value
     if (projectRun?.progress_reporting_style) {
       setSelectedStyle(projectRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based');
+    } else {
+      setSelectedStyle(null);
     }
     onOpenChange(false);
   };
@@ -85,7 +98,7 @@ export const ProgressReportingStyleDialog = ({
             </CardHeader>
             <CardContent>
               <RadioGroup
-                value={selectedStyle}
+                value={selectedStyle ?? ''}
                 onValueChange={(value) => setSelectedStyle(value as 'linear' | 'exponential' | 'time-based')}
                 className="space-y-3"
               >
