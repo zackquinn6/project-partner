@@ -132,8 +132,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
       <div className="space-y-1.5">
         <div className="text-center">
           <p className="text-[10px] sm:text-xs text-muted-foreground">
-            Your profile helps us match you with the right tools, guidance, and partners—
-            so every project starts with an advantage.
+            Your profile helps us customize your project to fit your tools, skillset, and build style.
           </p>
         </div>
 
@@ -224,9 +223,46 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                     ? `${existingProfile.owned_tools.length} tool${existingProfile.owned_tools.length !== 1 ? 's' : ''} in library`
                     : "No tools specified"}
                 </p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
-                  Update your tool library to improve recommendations for future steps.
-                </p>
+                <div className="mt-2">
+                  <div className="flex flex-wrap gap-2">
+                    {(existingProfile.owned_tools || []).slice(0, 12).map((tool: any, index: number) => {
+                      const toolId = tool?.id;
+                      const toolName = tool?.name;
+                      const photoUrl =
+                        typeof tool?.user_photo_url === 'string' && tool.user_photo_url.trim() !== ''
+                          ? tool.user_photo_url
+                          : (typeof tool?.photo_url === 'string' && tool.photo_url.trim() !== ''
+                              ? tool.photo_url
+                              : undefined);
+                      const quantity = typeof tool?.quantity === 'number' ? tool.quantity : undefined;
+
+                      return (
+                        <div
+                          key={toolId ?? toolName ?? String(index)}
+                          className="relative w-9 h-9 rounded-md border bg-background flex items-center justify-center overflow-hidden flex-shrink-0"
+                          title={toolName || 'Tool'}
+                        >
+                          {photoUrl ? (
+                            <img src={photoUrl} alt={toolName || 'Tool'} className="w-full h-full object-cover" />
+                          ) : (
+                            <Wrench className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          {typeof quantity === 'number' && quantity > 1 && (
+                            <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px] border border-primary/20">
+                              {quantity}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {existingProfile.owned_tools && existingProfile.owned_tools.length > 12 && (
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">
+                      +{existingProfile.owned_tools.length - 12} more
+                    </p>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -245,7 +281,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
             {isCompleted && <Badge variant="secondary">Complete</Badge>}
           </CardTitle>
           <CardDescription>
-            Set up your DIY profile for personalized project guidance
+            Your profile helps us customize your project to fit your tools, skillset, and build style.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -269,7 +305,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                 {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">
-                Set up your DIY profile for personalized project guidance
+                Your profile helps us customize your project to fit your tools, skillset, and build style.
               </CardDescription>
             </div>
           </div>
