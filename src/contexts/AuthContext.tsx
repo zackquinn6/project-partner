@@ -67,16 +67,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Sanitize inputs
     const sanitizedEmail = sanitizeInput(email.trim().toLowerCase());
     
-    // Use production URL for email confirmation links - redirect to auth page
-    // After confirmation, user will be signed in and redirected to home/projects
-    const redirectUrl = 'https://projectpartner.toolio.us/auth';
-    
+    const explicitRedirect = import.meta.env.VITE_AUTH_EMAIL_REDIRECT_URL;
+    const redirectUrl =
+      typeof explicitRedirect === 'string' && explicitRedirect.trim() !== ''
+        ? explicitRedirect.trim()
+        : `${window.location.origin}/auth`;
+
     const { error } = await supabase.auth.signUp({
       email: sanitizedEmail,
       password,
       options: {
-        emailRedirectTo: redirectUrl
-      }
+        emailRedirectTo: redirectUrl,
+      },
     });
 
     // Log sign-up attempt

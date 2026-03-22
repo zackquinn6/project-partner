@@ -499,19 +499,18 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
         };
       });
 
-      const SUPABASE_URL = "https://drshvrukkavtpsprfcbc.supabase.co";
-
-      await fetch(`${SUPABASE_URL}/functions/v1/send-assignment-notification`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+      const { error: notifyError } = await supabase.functions.invoke(
+        'send-assignment-notification',
+        {
+          body: {
+            notifications: notificationData,
+            userEmail: user?.email,
+          },
         },
-        body: JSON.stringify({
-          notifications: notificationData,
-          userEmail: user?.email
-        })
-      });
+      );
+      if (notifyError) {
+        console.error('send-assignment-notification failed:', notifyError);
+      }
     } catch (error) {
       console.error("Error sending notifications:", error);
       // Don't throw - notifications are secondary to saving assignments
