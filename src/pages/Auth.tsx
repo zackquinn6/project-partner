@@ -41,6 +41,7 @@ export default function Auth() {
   const searchParams = new URLSearchParams(location.search);
   const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
   const [defaultLanding, setDefaultLanding] = useState<'projects' | 'workspace'>('projects');
+  const [projectCatalogEnabled, setProjectCatalogEnabled] = useState(true);
   const [landingLoaded, setLandingLoaded] = useState(false);
   const {
     user,
@@ -87,26 +88,35 @@ export default function Auth() {
     setIsSignUp(mode === 'signup');
   }, [location.search]);
 
-  // Load default landing view setting
+  // Load default landing view and global catalog availability (same source as admin toggles)
   useEffect(() => {
     const loadLanding = async () => {
       try {
         const { data, error } = await supabase
           .from('app_settings')
-          .select('setting_value')
-          .eq('setting_key', 'default_landing_view')
-          .maybeSingle();
+          .select('setting_key, setting_value')
+          .in('setting_key', ['default_landing_view', 'project_catalog_enabled']);
 
         if (error) {
-          console.error('Error loading default landing view setting:', error);
+          console.error('Error loading post-auth routing settings:', error);
         } else {
-          const value = (data?.setting_value as { mode?: 'projects' | 'workspace' } | null)?.mode;
-          if (value === 'projects' || value === 'workspace') {
-            setDefaultLanding(value);
+          for (const row of data ?? []) {
+            if (row.setting_key === 'default_landing_view') {
+              const value = (row.setting_value as { mode?: 'projects' | 'workspace' } | null)?.mode;
+              if (value === 'projects' || value === 'workspace') {
+                setDefaultLanding(value);
+              }
+            }
+            if (row.setting_key === 'project_catalog_enabled') {
+              const enabled = (row.setting_value as { enabled?: boolean } | null)?.enabled;
+              if (typeof enabled === 'boolean') {
+                setProjectCatalogEnabled(enabled);
+              }
+            }
           }
         }
       } catch (err) {
-        console.error('Unexpected error loading default landing view setting:', err);
+        console.error('Unexpected error loading post-auth routing settings:', err);
       } finally {
         setLandingLoaded(true);
       }
@@ -121,7 +131,11 @@ export default function Auth() {
     flushPendingOnboarding(user.email ?? '', user.id).then(() => {
       const returnPath = searchParams.get('return');
       if (returnPath === 'projects') {
-        navigate('/projects');
+        if (projectCatalogEnabled) {
+          navigate('/projects');
+        } else {
+          navigate('/');
+        }
         return;
       }
 
@@ -130,9 +144,14 @@ export default function Auth() {
         return;
       }
 
-      navigate('/projects');
+      if (defaultLanding === 'projects' && projectCatalogEnabled) {
+        navigate('/projects');
+        return;
+      }
+
+      navigate('/');
     });
-  }, [user, loading, landingLoaded, defaultLanding, navigate, searchParams, flushPendingOnboarding]);
+  }, [user, loading, landingLoaded, defaultLanding, projectCatalogEnabled, navigate, searchParams, flushPendingOnboarding]);
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);

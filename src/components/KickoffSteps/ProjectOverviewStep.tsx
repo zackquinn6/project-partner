@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 interface ProjectOverviewStepProps {
   onComplete: () => void;
@@ -36,6 +37,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     user
   } = useAuth();
   const navigate = useNavigate();
+  const { projectCatalogEnabled } = useGlobalPublicSettings();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     name: currentProjectRun?.name || '',
@@ -410,8 +412,11 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       // Delete the project run entirely from database
       deleteProjectRun(currentProjectRun.id);
       toast.success('Project removed');
-      // Navigate to projects catalog page
-      navigate('/projects');
+      if (projectCatalogEnabled) {
+        navigate('/projects');
+      } else {
+        navigate('/', { state: { view: 'user' } });
+      }
     } catch (error) {
       console.error('Error removing project:', error);
       toast.error('Failed to remove project');

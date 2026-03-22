@@ -88,7 +88,7 @@ export const PricingSection: React.FC = () => {
                 Start Free Trial
               </Button>
               <p className="text-xs text-center text-muted-foreground mt-3">
-                No credit card required for trial. Cancel anytime.
+                No credit card required for trial.
               </p>
             </CardContent>
           </Card>

@@ -686,21 +686,26 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       // The database triggers will automatically rebuild it from template_operations/template_steps
       
       // Update only the project metadata (not phases)
+      const projectMeta: Record<string, unknown> = {
+        name: project.name,
+        description: project.description,
+        category: Array.isArray(project.category) ? project.category : (project.category ? [project.category] : []),
+        scaling_unit: project.scalingUnit,
+        estimated_time_per_unit: project.estimatedTimePerUnit,
+        skill_level: project.skillLevel,
+        effort_level: project.effortLevel,
+        estimated_time: project.estimatedTime,
+        project_challenges: project.projectChallenges,
+        image: project.image,
+        updated_at: new Date().toISOString()
+      };
+      if (project.instructionsDataSources !== undefined) {
+        projectMeta.instructions_data_sources = project.instructionsDataSources;
+      }
+
       const { error: updateError } = await supabase
         .from('projects')
-        .update({
-          name: project.name,
-          description: project.description,
-          category: Array.isArray(project.category) ? project.category : (project.category ? [project.category] : []),
-          scaling_unit: project.scalingUnit,
-          estimated_time_per_unit: project.estimatedTimePerUnit,
-          skill_level: project.skillLevel,
-          effort_level: project.effortLevel,
-          estimated_time: project.estimatedTime,
-          project_challenges: project.projectChallenges,
-          image: project.image,
-          updated_at: new Date().toISOString()
-        })
+        .update(projectMeta)
         .eq('id', project.id);
 
       if (updateError) {

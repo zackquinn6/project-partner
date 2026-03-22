@@ -51,9 +51,7 @@ export const FinalCTASection = () => {
           </div>
         </form>
 
-        <p className="text-sm opacity-70 mb-8">
-          ✓ No credit card required • ✓ Cancel anytime • ✓ 7-day free trial
-        </p>
+        <p className="text-sm opacity-70 mb-8">✓ No credit card required</p>
 
         {/* Trust badges */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6">

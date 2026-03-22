@@ -111,7 +111,9 @@ export function MaintenanceNotifications({
         title: "Settings Saved",
         description: "Your notification preferences have been updated.",
       });
-      onSaved?.();
+      queueMicrotask(() => {
+        onSaved?.();
+      });
     } catch (error) {
       console.error('Error saving notification settings:', error);
       toast({
@@ -239,8 +241,14 @@ export function MaintenanceNotifications({
           <Bell className="h-4 w-4 md:h-5 md:w-5 text-amber-500 shrink-0" />
           Maintenance only works when it’s acted on. Turn on reminders so tasks surface naturally in the places you already check every day.
         </h3>
-        <Button onClick={saveNotificationSettings} disabled={saving || loadingSettings} size="sm" className="shrink-0">
-          {saving ? "Saving..." : loadingSettings ? "Loading..." : "Save Settings"}
+        <Button
+          type="button"
+          onClick={() => void saveNotificationSettings()}
+          disabled={saving || loadingSettings || !user?.id}
+          size="sm"
+          className="shrink-0"
+        >
+          {saving ? "Saving..." : loadingSettings ? "Loading..." : "Save"}
         </Button>
       </div>
         
@@ -314,7 +322,7 @@ export function MaintenanceNotifications({
                       setSmsEnabled(false);
                     }
                   }}
-                  className="sm:h-5 sm:w-5 h-3 w-3 shrink-0"
+                  className="h-3 w-3 shrink-0 md:h-4 md:w-4 max-md:[&_svg]:h-2 max-md:[&_svg]:w-2"
                   disabled
                 />
                 <Label htmlFor="sms-enabled" className="flex items-center gap-1.5 text-xs md:text-sm text-muted-foreground">
@@ -358,21 +366,21 @@ export function MaintenanceNotifications({
           
           <div className="space-y-2 md:space-y-3">
             <div className="flex items-center space-x-2">
-              <Checkbox id="notify-monthly" checked={notifyMonthly} onCheckedChange={checked => setNotifyMonthly(checked === true)} className="sm:h-5 sm:w-5 h-3 w-3 shrink-0" />
+              <Checkbox id="notify-monthly" checked={notifyMonthly} onCheckedChange={checked => setNotifyMonthly(checked === true)} className="h-3 w-3 shrink-0 md:h-4 md:w-4 max-md:[&_svg]:h-2 max-md:[&_svg]:w-2" />
               <Label htmlFor="notify-monthly" className="text-xs md:text-sm">
                 Tasks due in the upcoming month
               </Label>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Checkbox id="notify-weekly" checked={notifyWeekly} onCheckedChange={checked => setNotifyWeekly(checked === true)} className="sm:h-5 sm:w-5 h-3 w-3 shrink-0" />
+              <Checkbox id="notify-weekly" checked={notifyWeekly} onCheckedChange={checked => setNotifyWeekly(checked === true)} className="h-3 w-3 shrink-0 md:h-4 md:w-4 max-md:[&_svg]:h-2 max-md:[&_svg]:w-2" />
               <Label htmlFor="notify-weekly" className="text-xs md:text-sm">
                 Tasks due in the upcoming week
               </Label>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Checkbox id="notify-due-date" checked={notifyDueDate} onCheckedChange={checked => setNotifyDueDate(checked === true)} className="sm:h-5 sm:w-5 h-3 w-3 shrink-0" />
+              <Checkbox id="notify-due-date" checked={notifyDueDate} onCheckedChange={checked => setNotifyDueDate(checked === true)} className="h-3 w-3 shrink-0 md:h-4 md:w-4 max-md:[&_svg]:h-2 max-md:[&_svg]:w-2" />
               <Label htmlFor="notify-due-date" className="text-xs md:text-sm">
                 Tasks due today
               </Label>

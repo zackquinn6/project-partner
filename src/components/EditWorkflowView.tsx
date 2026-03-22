@@ -1080,6 +1080,33 @@ export default function EditWorkflowView({
   });
   const editingStepRef = useRef<WorkflowStep | null>(null);
 
+  const [instructionsDataSourcesDraft, setInstructionsDataSourcesDraft] = useState('');
+  const [savingInstructionsDataSources, setSavingInstructionsDataSources] = useState(false);
+
+  useEffect(() => {
+    if (!currentProject?.id) {
+      setInstructionsDataSourcesDraft('');
+      return;
+    }
+    const v = currentProject.instructionsDataSources;
+    setInstructionsDataSourcesDraft(v === null || v === undefined ? '' : String(v));
+  }, [currentProject?.id, currentProject?.instructionsDataSources]);
+
+  const handleSaveInstructionsDataSources = useCallback(async () => {
+    if (!currentProject) return;
+    setSavingInstructionsDataSources(true);
+    try {
+      const trimmed = instructionsDataSourcesDraft.trim();
+      const value = trimmed === '' ? null : trimmed;
+      await updateProject({
+        ...currentProject,
+        instructionsDataSources: value,
+      });
+    } finally {
+      setSavingInstructionsDataSources(false);
+    }
+  }, [currentProject, instructionsDataSourcesDraft, updateProject]);
+
   // Structure editing state
   const [editingPhase, setEditingPhase] = useState<Phase | null>(null);
   const [editingOperation, setEditingOperation] = useState<Operation | null>(null);
@@ -1741,6 +1768,46 @@ export default function EditWorkflowView({
       </div>
 
       <div className="w-full px-6 py-8">
+        {!editMode && (
+          <Card className="mb-6 border-border/80">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Instruction data sources</CardTitle>
+              <CardDescription>
+                Document where this project&apos;s step instructions come from (manuals, codes, internal references,
+                SMEs, etc.). One field for the whole template.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Textarea
+                value={instructionsDataSourcesDraft}
+                onChange={(e) => setInstructionsDataSourcesDraft(e.target.value)}
+                placeholder="e.g. IRC 2021 Chapter 3; manufacturer installation guide SKU 123; in-house playbook v2"
+                rows={4}
+                className="text-sm"
+                disabled={savingInstructionsDataSources}
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSaveInstructionsDataSources}
+                disabled={savingInstructionsDataSources}
+              >
+                {savingInstructionsDataSources ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save data sources
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {editMode ?
       // Full-screen edit mode
       <div className="space-y-6">

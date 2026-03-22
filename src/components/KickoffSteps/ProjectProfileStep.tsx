@@ -6,7 +6,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Home, CheckCircle, Plus, Target, DollarSign, Calendar, Ruler, ChevronUp, ChevronDown } from 'lucide-react';
+import { Home, Plus, DollarSign, Calendar, Ruler, ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -60,6 +66,50 @@ function addDays(dateStr: string, n: number): string {
   return d.toISOString().split('T')[0];
 }
 
+function parseMoneyish(s: string | null | undefined): number | undefined {
+  if (s == null || typeof s !== 'string') return undefined;
+  const t = s.trim();
+  if (!t) return undefined;
+  const n = parseFloat(t.replace(/[^0-9.-]/g, ''));
+  if (Number.isNaN(n)) return undefined;
+  return n;
+}
+
+/** Budget for a typical-sized project from template fields (DB-backed). */
+function deriveTypicalBudgetString(
+  budgetPerTypicalSize: string | null | undefined,
+  budgetPerUnit: string | null | undefined,
+  typicalProjectSize: number | null | undefined
+): string {
+  const fromTypical = parseMoneyish(budgetPerTypicalSize);
+  if (fromTypical !== undefined) return String(Math.round(fromTypical));
+  if (typicalProjectSize != null && typicalProjectSize > 0) {
+    const unit = parseMoneyish(budgetPerUnit);
+    if (unit !== undefined) return String(Math.round(unit * typicalProjectSize));
+  }
+  return '';
+}
+
+function getScalingUnitShortLabel(
+  scalingUnit: string,
+  itemType: string | null | undefined,
+  templateProject: { item_type?: string; itemType?: string } | null | undefined
+): string {
+  const normalizedScalingUnit = scalingUnit?.toLowerCase().trim() || '';
+  if (normalizedScalingUnit === 'per square feet' || normalizedScalingUnit === 'per square foot') return 'sq ft';
+  if (normalizedScalingUnit === 'per 10x10 room') return 'rooms';
+  if (normalizedScalingUnit === 'per linear feet' || normalizedScalingUnit === 'per linear foot') return 'linear ft';
+  if (normalizedScalingUnit === 'per cubic yard') return 'cu yd';
+  if (normalizedScalingUnit === 'per item') {
+    const currentItemType = itemType || templateProject?.item_type || templateProject?.itemType;
+    if (currentItemType && typeof currentItemType === 'string' && currentItemType.trim().length > 0) {
+      return currentItemType.trim().toLowerCase();
+    }
+    return 'per item';
+  }
+  return scalingUnit || '';
+}
+
 export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComplete, isCompleted, checkedOutputs = new Set(), onOutputToggle }) => {
   const { currentProjectRun, updateProjectRun } = useProject();
   const { projects } = useProjectData();
@@ -83,85 +133,180 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   // Fetch scaling_unit and item_type directly from database since they may not be in the transformed Project interface
   const [scalingUnit, setScalingUnit] = useState<string>('per item');
   const [itemType, setItemType] = useState<string | null>(null);
-  
+  const [templateTypicalProjectSize, setTemplateTypicalProjectSize] = useState<number | null>(null);
+  const [templateBudgetPerUnit, setTemplateBudgetPerUnit] = useState<string | null>(null);
+  const [templateBudgetPerTypicalSize, setTemplateBudgetPerTypicalSize] = useState<string | null>(null);
+  const [templateEconomicsLoaded, setTemplateEconomicsLoaded] = useState(false);
+  const [mobileGoalsMode, setMobileGoalsMode] = useState<'typical' | 'custom'>('typical');
+
   useEffect(() => {
     const fetchScalingUnitAndItemType = async () => {
-      // CRITICAL FIX: Use templateProject.id if available, otherwise use currentProjectRun.templateId directly
-      // This ensures we can fetch even if projects array hasn't loaded yet
+      setTemplateEconomicsLoaded(false);
       const templateId = templateProject?.id || currentProjectRun?.templateId;
-      
-      
-      if (templateId) {
-        try {
-          const { data, error } = await supabase
-            .from('projects')
-            .select('scaling_unit, item_type')
-            .eq('id', templateId)
-            .single();
-          
-          if (!error && data) {
-            // Use scaling_unit from database, fallback to templateProject.scalingUnit, then currentProjectRun.scalingUnit, then 'per item'
-            const fetchedScalingUnit = data.scaling_unit || templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item';
-            // CRITICAL: Ensure item_type is properly extracted - check both snake_case and camelCase
-            const fetchedItemType = data.item_type || (data as any).itemType || null;
-            
-            
-            setScalingUnit(fetchedScalingUnit);
-            setItemType(fetchedItemType);
-            
-          } else if (error) {
-            console.error('❌ Error fetching scaling_unit and item_type:', error);
-            // Fallback to templateProject values if database fetch fails
-            const fallbackScalingUnit = templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item';
-            const fallbackItemType = (templateProject as any)?.itemType || (templateProject as any)?.item_type || null;
-            setScalingUnit(fallbackScalingUnit);
-            setItemType(fallbackItemType);
-          }
-        } catch (error) {
-          console.error('❌ Exception fetching scaling_unit and item_type:', error);
-          // Fallback to templateProject values if database fetch fails
-          const fallbackScalingUnit = templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item';
-          const fallbackItemType = (templateProject as any)?.itemType || (templateProject as any)?.item_type || null;
-          setScalingUnit(fallbackScalingUnit);
-          setItemType(fallbackItemType);
-        }
-      } else {
-        // No template ID available, use currentProjectRun values or fallback
-        const fallbackScalingUnit = (currentProjectRun as any)?.scalingUnit || 'per item';
-        const fallbackItemType = (currentProjectRun as any)?.itemType || (currentProjectRun as any)?.item_type || null;
+
+      const applyTemplateFallback = () => {
+        const fallbackScalingUnit =
+          templateProject?.scalingUnit || (currentProjectRun as any)?.scalingUnit || 'per item';
+        const fallbackItemType =
+          (templateProject as any)?.itemType || (templateProject as any)?.item_type || null;
         setScalingUnit(fallbackScalingUnit);
         setItemType(fallbackItemType);
+        const tps = templateProject?.typicalProjectSize;
+        setTemplateTypicalProjectSize(typeof tps === 'number' && tps > 0 ? tps : null);
+        setTemplateBudgetPerUnit(null);
+        setTemplateBudgetPerTypicalSize(null);
+      };
+
+      try {
+        if (templateId) {
+          try {
+            const { data, error } = await supabase
+              .from('projects')
+              .select(
+                'scaling_unit, item_type, typical_project_size, budget_per_unit, budget_per_typical_size'
+              )
+              .eq('id', templateId)
+              .single();
+
+            if (!error && data) {
+              const fetchedScalingUnit =
+                data.scaling_unit ||
+                templateProject?.scalingUnit ||
+                (currentProjectRun as any)?.scalingUnit ||
+                'per item';
+              const fetchedItemType = data.item_type || (data as any).itemType || null;
+              setScalingUnit(fetchedScalingUnit);
+              setItemType(fetchedItemType);
+              const tps = data.typical_project_size;
+              setTemplateTypicalProjectSize(typeof tps === 'number' && tps > 0 ? tps : null);
+              setTemplateBudgetPerUnit(
+                typeof data.budget_per_unit === 'string' ? data.budget_per_unit : null
+              );
+              setTemplateBudgetPerTypicalSize(
+                typeof data.budget_per_typical_size === 'string'
+                  ? data.budget_per_typical_size
+                  : null
+              );
+            } else {
+              if (error) console.error('❌ Error fetching scaling_unit and item_type:', error);
+              applyTemplateFallback();
+            }
+          } catch (error) {
+            console.error('❌ Exception fetching scaling_unit and item_type:', error);
+            applyTemplateFallback();
+          }
+        } else {
+          const fallbackScalingUnit = (currentProjectRun as any)?.scalingUnit || 'per item';
+          const fallbackItemType =
+            (currentProjectRun as any)?.itemType || (currentProjectRun as any)?.item_type || null;
+          setScalingUnit(fallbackScalingUnit);
+          setItemType(fallbackItemType);
+          setTemplateTypicalProjectSize(null);
+          setTemplateBudgetPerUnit(null);
+          setTemplateBudgetPerTypicalSize(null);
+        }
+      } finally {
+        setTemplateEconomicsLoaded(true);
       }
     };
-    
+
     if (currentProjectRun?.templateId || templateProject?.id) {
-      fetchScalingUnitAndItemType();
+      void fetchScalingUnitAndItemType();
+    } else {
+      const fallbackScalingUnit = (currentProjectRun as any)?.scalingUnit || 'per item';
+      const fallbackItemType =
+        (currentProjectRun as any)?.itemType || (currentProjectRun as any)?.item_type || null;
+      setScalingUnit(fallbackScalingUnit);
+      setItemType(fallbackItemType);
+      setTemplateTypicalProjectSize(null);
+      setTemplateBudgetPerUnit(null);
+      setTemplateBudgetPerTypicalSize(null);
+      setTemplateEconomicsLoaded(true);
     }
   }, [templateProject?.id, currentProjectRun?.templateId, currentProjectRun, projects]);
+
+  useEffect(() => {
+    if (!currentProjectRun?.id) return;
+    const hasStoredGoals =
+      Boolean(String((currentProjectRun as any).initial_sizing ?? '').trim()) ||
+      Boolean(String((currentProjectRun as any).initial_budget ?? '').trim());
+    setMobileGoalsMode(hasStoredGoals ? 'custom' : 'typical');
+  }, [currentProjectRun?.id]);
 
   useEffect(() => {
     if (user) {
       fetchHomes();
     }
-    
+
     if (currentProjectRun) {
-      // Calculate default timeline (2 weeks from now)
-      const defaultDate = new Date();
-      defaultDate.setDate(defaultDate.getDate() + 14);
-      const defaultDateString = defaultDate.toISOString().split('T')[0];
-      
+      const todayStr = new Date().toISOString().split('T')[0];
+      const defaultDateString = addDays(todayStr, 30);
+
+      const runSizing = String((currentProjectRun as any).initial_sizing ?? '').trim();
+      const runBudget = String((currentProjectRun as any).initial_budget ?? '').trim();
+      const runTimeline = (currentProjectRun as any).initial_timeline;
+
+      const typicalSizing =
+        templateEconomicsLoaded &&
+        !runSizing &&
+        templateTypicalProjectSize != null &&
+        templateTypicalProjectSize > 0
+          ? String(templateTypicalProjectSize)
+          : '';
+
+      const typicalBudget =
+        templateEconomicsLoaded && !runBudget
+          ? deriveTypicalBudgetString(
+              templateBudgetPerTypicalSize,
+              templateBudgetPerUnit,
+              templateTypicalProjectSize
+            )
+          : '';
+
       setProjectForm({
         customProjectName: currentProjectRun.customProjectName || currentProjectRun.name || '',
-        initialSizing: (currentProjectRun as any).initial_sizing || '',
-        initialTimeline: (currentProjectRun as any).initial_timeline || defaultDateString,
-        initialBudget: (currentProjectRun as any).initial_budget || ''
+        initialSizing: runSizing || typicalSizing,
+        initialTimeline: runTimeline || defaultDateString,
+        initialBudget: runBudget || typicalBudget,
       });
-      
+
       if (currentProjectRun.home_id) {
         setSelectedHomeId(currentProjectRun.home_id);
       }
     }
-  }, [user, currentProjectRun]);
+  }, [
+    user,
+    currentProjectRun,
+    templateEconomicsLoaded,
+    templateTypicalProjectSize,
+    templateBudgetPerUnit,
+    templateBudgetPerTypicalSize,
+  ]);
+
+  const applyTypicalProjectGoals = useCallback(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const timeline = addDays(todayStr, 30);
+    const sizing =
+      templateTypicalProjectSize != null && templateTypicalProjectSize > 0
+        ? String(templateTypicalProjectSize)
+        : '';
+    const budget = deriveTypicalBudgetString(
+      templateBudgetPerTypicalSize,
+      templateBudgetPerUnit,
+      templateTypicalProjectSize
+    );
+    setProjectForm((prev) => ({
+      ...prev,
+      initialTimeline: timeline,
+      initialSizing: sizing,
+      initialBudget: budget,
+    }));
+    setMobileGoalsMode('typical');
+  }, [
+    templateTypicalProjectSize,
+    templateBudgetPerTypicalSize,
+    templateBudgetPerUnit,
+  ]);
 
   const fetchHomes = async () => {
     if (!user) return;
@@ -539,6 +684,161 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     );
   }
 
+  const scalingLabel = getScalingUnitShortLabel(scalingUnit, itemType, templateProject);
+
+  const renderGoalFieldsGrid = () => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 max-w-md md:max-w-none mx-auto md:mx-0">
+      <div className="flex flex-col items-center text-center">
+        <Label className="text-xs font-medium mb-0.5 flex items-center gap-1 justify-center">
+          <Ruler className="w-3 h-3" />
+          Project Size
+        </Label>
+        <p className="text-[10px] text-muted-foreground mb-1">How much work are you doing?</p>
+        <div className="flex items-center gap-1 w-full justify-center flex-wrap">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 flex-shrink-0"
+            aria-label="Decrease by 1"
+            onClick={() => {
+              const n = Math.max(0, (parseFloat(projectForm.initialSizing) || 0) - 1);
+              setProjectForm((prev) => ({ ...prev, initialSizing: String(n) }));
+            }}
+          >
+            <ChevronDown className="w-4 h-4" />
+          </Button>
+          <Input
+            type="number"
+            value={projectForm.initialSizing}
+            onChange={(e) => {
+              setProjectForm((prev) => ({ ...prev, initialSizing: e.target.value }));
+            }}
+            placeholder="0"
+            className="text-xs h-9 w-[80px]"
+            step="1"
+            min="0"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 flex-shrink-0"
+            aria-label="Increase by 1"
+            onClick={() => {
+              const n = (parseFloat(projectForm.initialSizing) || 0) + 1;
+              setProjectForm((prev) => ({ ...prev, initialSizing: String(n) }));
+            }}
+          >
+            <ChevronUp className="w-4 h-4" />
+          </Button>
+          <span className="text-xs text-muted-foreground whitespace-nowrap ml-0.5">{scalingLabel}</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center text-center">
+        <Label className="text-xs font-medium mb-0.5 flex items-center gap-1 justify-center">
+          <Calendar className="w-3 h-3" />
+          Timeline
+        </Label>
+        <p className="text-[10px] text-muted-foreground mb-1">When do you want this done?</p>
+        <div className="flex items-center gap-1 w-full justify-center flex-wrap">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 flex-shrink-0"
+            aria-label="Move back one week"
+            onClick={() => {
+              const base = projectForm.initialTimeline || new Date().toISOString().split('T')[0];
+              const next = addWeeks(base, -1);
+              setProjectForm((prev) => ({ ...prev, initialTimeline: next }));
+            }}
+          >
+            <ChevronDown className="w-4 h-4" />
+          </Button>
+          <Input
+            type="date"
+            value={projectForm.initialTimeline}
+            onChange={(e) => {
+              setProjectForm((prev) => ({ ...prev, initialTimeline: e.target.value }));
+            }}
+            className="text-xs h-9 w-auto min-w-[120px]"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 flex-shrink-0"
+            aria-label="Move forward one week"
+            onClick={() => {
+              const base = projectForm.initialTimeline || new Date().toISOString().split('T')[0];
+              const next = addWeeks(base, 1);
+              setProjectForm((prev) => ({ ...prev, initialTimeline: next }));
+            }}
+          >
+            <ChevronUp className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center text-center">
+        <Label className="text-xs font-medium mb-0.5 flex items-center gap-1 justify-center">
+          <DollarSign className="w-3 h-3" />
+          Budget
+        </Label>
+        <p className="text-[10px] text-muted-foreground mb-1">How much do you want to spend?</p>
+        <div className="flex items-center gap-1 w-full justify-center flex-wrap">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 flex-shrink-0"
+            aria-label="Decrease by $100"
+            onClick={() => {
+              const n = Math.max(
+                0,
+                (parseFloat(projectForm.initialBudget.replace(/[^0-9.-]/g, '')) || 0) - 100
+              );
+              setProjectForm((prev) => ({ ...prev, initialBudget: String(n) }));
+            }}
+          >
+            <ChevronDown className="w-4 h-4" />
+          </Button>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+            <Input
+              value={projectForm.initialBudget}
+              onChange={(e) => {
+                setProjectForm((prev) => ({ ...prev, initialBudget: e.target.value }));
+              }}
+              placeholder="0"
+              className="text-xs h-9 pl-7 w-[100px]"
+              type="number"
+              step="1"
+              min="0"
+              max="999999"
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 flex-shrink-0"
+            aria-label="Increase by $100"
+            onClick={() => {
+              const n =
+                (parseFloat(projectForm.initialBudget.replace(/[^0-9.-]/g, '')) || 0) + 100;
+              setProjectForm((prev) => ({ ...prev, initialBudget: String(n) }));
+            }}
+          >
+            <ChevronUp className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <Card>
@@ -551,7 +851,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                 {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">
-                Setup your project goals
+                Set your initial project goals
               </CardDescription>
             </div>
           </div>
@@ -574,269 +874,70 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
               />
             </div>
 
-            {/* Header for Quick Project Goals */}
             <div className="mt-3 mb-1.5">
               <h3 className="text-xs sm:text-sm font-medium text-foreground">
-                Quick project goals - you can edit these later
+                Initial project goals — you can edit these later
               </h3>
             </div>
 
-            {/* Three column layout for Project Size, Timeline, Budget - Single column on mobile, centered */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 max-w-md md:max-w-none mx-auto md:mx-0">
-              {/* Project Size */}
-              <div className="flex flex-col items-center text-center">
-                <Label className="text-xs font-medium mb-0.5 flex items-center gap-1 justify-center">
-                  <Ruler className="w-3 h-3" />
-                  Project Size
-                </Label>
-                <p className="text-[10px] text-muted-foreground mb-1">How much work are you doing?</p>
-                <div className="flex items-center gap-1 w-full justify-center">
+            <div className="md:hidden space-y-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button
                     type="button"
                     variant="outline"
-                    size="icon"
-                    className="h-9 w-9 flex-shrink-0"
-                    aria-label="Decrease by 25"
+                    className="w-full h-9 text-xs font-normal justify-between gap-2"
+                  >
+                    <span className="truncate text-left">
+                      {mobileGoalsMode === 'typical'
+                        ? 'Typical project (template defaults)'
+                        : 'Custom project goals'}
+                    </span>
+                    <ChevronDown className="h-4 w-4 shrink-0 opacity-70" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[12rem]">
+                  <DropdownMenuItem
+                    className="text-xs"
                     onClick={() => {
-                      const n = Math.max(0, (parseFloat(projectForm.initialSizing) || 0) - 25);
-                      setProjectForm(prev => ({ ...prev, initialSizing: String(n) }));
+                      applyTypicalProjectGoals();
                     }}
                   >
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 flex-shrink-0"
-                    aria-label="Decrease by 1"
-                    onClick={() => {
-                      const n = Math.max(0, (parseFloat(projectForm.initialSizing) || 0) - 1);
-                      setProjectForm(prev => ({ ...prev, initialSizing: String(n) }));
-                    }}
+                    Use typical project (template size and budget, 30-day target)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-xs"
+                    onClick={() => setMobileGoalsMode('custom')}
                   >
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                  <Input
-                    type="number"
-                    value={projectForm.initialSizing}
-                    onChange={(e) => {
-                      setProjectForm(prev => ({ ...prev, initialSizing: e.target.value }));
-                    }}
-                    placeholder="0"
-                    className="text-xs h-9 w-[80px]"
-                    step="1"
-                    min="0"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 flex-shrink-0"
-                    aria-label="Increase by 1"
-                    onClick={() => {
-                      const n = (parseFloat(projectForm.initialSizing) || 0) + 1;
-                      setProjectForm(prev => ({ ...prev, initialSizing: String(n) }));
-                    }}
-                  >
-                    <ChevronUp className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 flex-shrink-0"
-                    aria-label="Increase by 25"
-                    onClick={() => {
-                      const n = (parseFloat(projectForm.initialSizing) || 0) + 25;
-                      setProjectForm(prev => ({ ...prev, initialSizing: String(n) }));
-                    }}
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </Button>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap ml-0.5">
-                    {(() => {
-                      // Standard scaling units
-                      const normalizedScalingUnit = scalingUnit?.toLowerCase().trim() || '';
-                      
-                      if (normalizedScalingUnit === 'per square feet' || normalizedScalingUnit === 'per square foot') return 'sq ft';
-                      if (normalizedScalingUnit === 'per 10x10 room') return 'rooms';
-                      if (normalizedScalingUnit === 'per linear feet' || normalizedScalingUnit === 'per linear foot') return 'linear ft';
-                      if (normalizedScalingUnit === 'per cubic yard') return 'cu yd';
-                      
-                      // For "per item", use item_type if available, otherwise use "per item"
-                      if (normalizedScalingUnit === 'per item') {
-                        // Check if itemType exists and is not empty
-                        // Also check state directly in case of timing issues
-                        const currentItemType = itemType || (templateProject as any)?.item_type || (templateProject as any)?.itemType;
-                        const validItemType = currentItemType && typeof currentItemType === 'string' && currentItemType.trim().length > 0;
-                        
-                        if (validItemType) {
-                          const displayValue = currentItemType.trim().toLowerCase();
-                          return displayValue;
-                        }
-                        
-                        // No item_type available, using "per item"
-                        return 'per item';
-                      }
-                      
-                      // If scalingUnit is a custom value (not one of the standard ones), use it directly
-                      // This handles cases like "per toilet(s)" as a custom scaling unit
-                      return scalingUnit;
-                    })()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Timeline - one week at a time ending Sunday; large = ±1 week, small = ±1 day */}
-              <div className="flex flex-col items-center text-center">
-                <Label className="text-xs font-medium mb-0.5 flex items-center gap-1 justify-center">
-                  <Calendar className="w-3 h-3" />
-                  Timeline
-                </Label>
-                <p className="text-[10px] text-muted-foreground mb-1">When do you want this done?</p>
-                <div className="flex items-center gap-1 w-full justify-center">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 flex-shrink-0"
-                    aria-label="Move back one week (previous Sunday)"
-                    onClick={() => {
-                      const next = addWeeks(projectForm.initialTimeline || new Date().toISOString().split('T')[0], -1);
-                      setProjectForm(prev => ({ ...prev, initialTimeline: next }));
-                    }}
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 flex-shrink-0"
-                    aria-label="Move back one day"
-                    onClick={() => {
-                      const next = addDays(projectForm.initialTimeline || new Date().toISOString().split('T')[0], -1);
-                      setProjectForm(prev => ({ ...prev, initialTimeline: next }));
-                    }}
-                  >
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                  <Input
-                    type="date"
-                    value={projectForm.initialTimeline}
-                    onChange={(e) => {
-                      setProjectForm(prev => ({ ...prev, initialTimeline: e.target.value }));
-                    }}
-                    className="text-xs h-9 w-auto min-w-[120px]"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 flex-shrink-0"
-                    aria-label="Move forward one day"
-                    onClick={() => {
-                      const next = addDays(projectForm.initialTimeline || new Date().toISOString().split('T')[0], 1);
-                      setProjectForm(prev => ({ ...prev, initialTimeline: next }));
-                    }}
-                  >
-                    <ChevronUp className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 flex-shrink-0"
-                    aria-label="Move forward one week (next Sunday)"
-                    onClick={() => {
-                      const next = addWeeks(projectForm.initialTimeline || new Date().toISOString().split('T')[0], 1);
-                      setProjectForm(prev => ({ ...prev, initialTimeline: next }));
-                    }}
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Budget */}
-              <div className="flex flex-col items-center text-center">
-                <Label className="text-xs font-medium mb-0.5 flex items-center gap-1 justify-center">
-                  <DollarSign className="w-3 h-3" />
-                  Budget
-                </Label>
-                <p className="text-[10px] text-muted-foreground mb-1">How much do you want to spend?</p>
-                <div className="flex items-center gap-1 w-full justify-center">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 flex-shrink-0"
-                    aria-label="Decrease by $100"
-                    onClick={() => {
-                      const n = Math.max(0, (parseFloat(projectForm.initialBudget.replace(/[^0-9.-]/g, '')) || 0) - 100);
-                      setProjectForm(prev => ({ ...prev, initialBudget: String(n) }));
-                    }}
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 flex-shrink-0"
-                    aria-label="Decrease by $1"
-                    onClick={() => {
-                      const n = Math.max(0, (parseFloat(projectForm.initialBudget.replace(/[^0-9.-]/g, '')) || 0) - 1);
-                      setProjectForm(prev => ({ ...prev, initialBudget: String(n) }));
-                    }}
-                  >
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-                    <Input
-                      value={projectForm.initialBudget}
-                      onChange={(e) => {
-                        setProjectForm(prev => ({ ...prev, initialBudget: e.target.value }));
-                      }}
-                      placeholder="0"
-                      className="text-xs h-9 pl-7 w-[100px]"
-                      type="number"
-                      step="1"
-                      min="0"
-                      max="999999"
-                    />
+                    Edit values manually
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {mobileGoalsMode === 'typical' ? (
+                <div className="rounded-md border border-border bg-muted/30 px-3 py-2 space-y-1.5 text-xs text-left">
+                  <div>
+                    <span className="text-muted-foreground">Size: </span>
+                    <span className="font-medium">
+                      {projectForm.initialSizing || '—'} {scalingLabel}
+                    </span>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 flex-shrink-0"
-                    aria-label="Increase by $1"
-                    onClick={() => {
-                      const n = (parseFloat(projectForm.initialBudget.replace(/[^0-9.-]/g, '')) || 0) + 1;
-                      setProjectForm(prev => ({ ...prev, initialBudget: String(n) }));
-                    }}
-                  >
-                    <ChevronUp className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 flex-shrink-0"
-                    aria-label="Increase by $100"
-                    onClick={() => {
-                      const n = (parseFloat(projectForm.initialBudget.replace(/[^0-9.-]/g, '')) || 0) + 100;
-                      setProjectForm(prev => ({ ...prev, initialBudget: String(n) }));
-                    }}
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </Button>
+                  <div>
+                    <span className="text-muted-foreground">Target date: </span>
+                    <span className="font-medium">{projectForm.initialTimeline || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Budget: </span>
+                    <span className="font-medium">
+                      {projectForm.initialBudget ? `$${projectForm.initialBudget}` : '—'}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                renderGoalFieldsGrid()
+              )}
             </div>
+
+            <div className="hidden md:block">{renderGoalFieldsGrid()}</div>
 
             {/* Primary home selection - show whenever user has at least one home (Scope & Specs step) */}
             {homes.length >= 1 && (

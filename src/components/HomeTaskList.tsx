@@ -57,7 +57,15 @@ function decimalHoursToHhMm(value: number | null | undefined): string {
   return `${h}:${m.toString().padStart(2, "0")}`;
 }
 
-export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function HomeTaskList({
+  open,
+  onOpenChange,
+  embedded = false,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  embedded?: boolean;
+}) {
   const { user } = useAuth();
   const { canAccessPaidFeatures } = useMembership();
   const isMobile = useIsMobile();
@@ -136,11 +144,11 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
   }, [user, tasks]);
 
   useEffect(() => {
-    if (open && user) {
+    if ((open || embedded) && user) {
       fetchHomes();
       fetchTasks();
     }
-  }, [open, user]);
+  }, [open, embedded, user]);
 
   useEffect(() => {
     if (selectedHomeId) {
@@ -458,94 +466,99 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
     setMaterials(materials.filter(m => m.id !== id));
   };
 
-  return (
-    <>
-      <Dialog 
-        open={open} 
-        onOpenChange={(isOpen) => {
-          // Prevent closing Project & Task Manager if Rapid Costing is open
-          if (!isOpen && showRapidCosting) {
-            return; // Don't close if child dialog is open
-          }
-          onOpenChange(isOpen);
-        }}
-      >
-        <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-          <DialogDescription className="sr-only">Project & Task Manager for tasks, projects, sub-tasks, shopping list, and budgeting.</DialogDescription>
-          <DialogHeader className="px-2 md:px-6 py-2 md:py-4 border-b flex flex-row flex-nowrap items-center justify-between gap-2 flex-shrink-0 min-h-0 space-y-0 w-full">
-            <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
-              <List className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" aria-hidden />
-              <DialogTitle className="text-base font-bold md:text-xl truncate">Project & Task Manager</DialogTitle>
-              <TooltipProvider delayDuration={400}>
-                <Popover>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <PopoverTrigger asChild>
-                        <button type="button" tabIndex={-1} className="text-muted-foreground hover:text-foreground p-0.5 rounded shrink-0" aria-label="About Project & Task Manager">
-                          <HelpCircle className="h-4 w-4" />
-                        </button>
-                      </PopoverTrigger>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs">
-                      <p>About Project & Task Manager</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <PopoverContent side="bottom" className="max-w-sm" align="start">
-                    <p className="font-medium mb-1">About Project & Task Manager</p>
-                    <p className="text-sm text-muted-foreground">
-                      Project & Task Manager includes both projects and tasks. Complex projects should be linked to allow for detailed project management. All tasks can have tracking of sub-tasks, materials shopping list, and budgeting.
-                    </p>
-                  </PopoverContent>
-                </Popover>
-              </TooltipProvider>
-            </div>
-            <div className="flex flex-row flex-nowrap items-center gap-2 min-w-0 flex-shrink-0 ml-auto">
-              <Button
-                variant={isMobile ? "ghost" : "outline"}
-                size="sm"
-                className={`h-8 w-8 md:h-9 md:w-9 p-0 shrink-0 ${isMobile ? "border-0 outline-none bg-slate-900/40 hover:bg-slate-800/80 text-slate-100" : "border-input bg-background hover:bg-muted"}`}
-                onClick={() => setShowPortfolioReminders(true)}
-                title="Reminders & notifications"
-                aria-label="Reminders & notifications"
-              >
-                <Bell className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={isMobile ? "ghost" : "outline"}
-                size="sm"
-                className={`h-8 w-8 md:h-9 md:w-9 p-0 shrink-0 ${isMobile ? "border-0 outline-none bg-slate-900/40 hover:bg-slate-800/80 text-slate-100" : "border-input bg-background hover:bg-muted"}`}
-                onClick={() => setShowHomeManager(true)}
-                title="Homes"
-                aria-label="Homes"
-              >
-                <HomeIcon className="h-4 w-4" />
-              </Button>
-              <Select value={selectedHomeId || ""} onValueChange={setSelectedHomeId}>
-                <SelectTrigger className="w-[133px] md:w-[187px] text-[10px] md:text-xs h-8 md:h-9 shrink-0">
-                  <SelectValue placeholder="Select home" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Homes</SelectItem>
-                  {homes.map((home) => (
-                    <SelectItem key={home.id} value={home.id}>
-                      {home.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-                className="shrink-0"
-              >
-                {isMobile ? 'Back to Workspace' : 'Close'}
-              </Button>
-            </div>
-          </DialogHeader>
+  const handleMainOpenChange = (isOpen: boolean) => {
+    if (!isOpen && showRapidCosting) {
+      return;
+    }
+    onOpenChange(isOpen);
+  };
 
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+  const tryCloseFromChrome = () => {
+    if (showRapidCosting) return;
+    onOpenChange(false);
+  };
+
+  const headerTitleBlock = (
+    <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
+      <List className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" aria-hidden />
+      {embedded ? (
+        <h2 className="text-base font-bold md:text-xl truncate">Project & Task Manager</h2>
+      ) : (
+        <DialogTitle className="text-base font-bold md:text-xl truncate">Project & Task Manager</DialogTitle>
+      )}
+      <TooltipProvider delayDuration={400}>
+        <Popover>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <PopoverTrigger asChild>
+                <button type="button" tabIndex={-1} className="text-muted-foreground hover:text-foreground p-0.5 rounded shrink-0" aria-label="About Project & Task Manager">
+                  <HelpCircle className="h-4 w-4" />
+                </button>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-xs">
+              <p>About Project & Task Manager</p>
+            </TooltipContent>
+          </Tooltip>
+          <PopoverContent side="bottom" className="max-w-sm" align="start">
+            <p className="font-medium mb-1">About Project & Task Manager</p>
+            <p className="text-sm text-muted-foreground">
+              Project & Task Manager includes both projects and tasks. Complex projects should be linked to allow for detailed project management. All tasks can have tracking of sub-tasks, materials shopping list, and budgeting.
+            </p>
+          </PopoverContent>
+        </Popover>
+      </TooltipProvider>
+    </div>
+  );
+
+  const headerToolbar = (
+    <div className="flex flex-row flex-nowrap items-center gap-2 min-w-0 flex-shrink-0 ml-auto">
+      <Button
+        variant={isMobile ? "ghost" : "outline"}
+        size="sm"
+        className={`h-8 w-8 md:h-9 md:w-9 p-0 shrink-0 ${isMobile ? "border-0 outline-none bg-slate-900/40 hover:bg-slate-800/80 text-slate-100" : "border-input bg-background hover:bg-muted"}`}
+        onClick={() => setShowPortfolioReminders(true)}
+        title="Reminders & notifications"
+        aria-label="Reminders & notifications"
+      >
+        <Bell className="h-4 w-4" />
+      </Button>
+      <Button
+        variant={isMobile ? "ghost" : "outline"}
+        size="sm"
+        className={`h-8 w-8 md:h-9 md:w-9 p-0 shrink-0 ${isMobile ? "border-0 outline-none bg-slate-900/40 hover:bg-slate-800/80 text-slate-100" : "border-input bg-background hover:bg-muted"}`}
+        onClick={() => setShowHomeManager(true)}
+        title="Homes"
+        aria-label="Homes"
+      >
+        <HomeIcon className="h-4 w-4" />
+      </Button>
+      <Select value={selectedHomeId || ""} onValueChange={setSelectedHomeId}>
+        <SelectTrigger className="w-[133px] md:w-[187px] text-[10px] md:text-xs h-8 md:h-9 shrink-0">
+          <SelectValue placeholder="Select home" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Homes</SelectItem>
+          {homes.map((home) => (
+            <SelectItem key={home.id} value={home.id}>
+              {home.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={tryCloseFromChrome}
+        className="shrink-0"
+      >
+        {isMobile ? 'Back to Workspace' : 'Close'}
+      </Button>
+    </div>
+  );
+
+  const taskManagerTabs = (
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
               <div className="flex-shrink-0 px-1 md:px-4 pt-0 pb-1 md:pb-1.5 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="overflow-hidden">
                   <TabsList className={`w-full inline-flex ${canAccessPaidFeatures ? 'h-8 md:h-9' : 'h-8 md:h-9'} p-0.5 gap-0.5 md:gap-1 bg-muted/50 rounded-full`}>
@@ -1076,9 +1089,37 @@ export function HomeTaskList({ open, onOpenChange }: { open: boolean; onOpenChan
                 )}
               </div>
             </Tabs>
+  );
+
+  return (
+    <>
+      {embedded ? (
+        <div className="flex flex-col flex-1 min-h-0 h-full max-h-full overflow-hidden bg-background">
+          <p className="sr-only">
+            Project & Task Manager for tasks, projects, sub-tasks, shopping list, and budgeting.
+          </p>
+          <div className="px-2 md:px-6 py-2 md:py-4 border-b flex flex-row flex-nowrap items-center justify-between gap-2 flex-shrink-0 min-h-0 w-full">
+            {headerTitleBlock}
+            {headerToolbar}
           </div>
-        </DialogContent>
-      </Dialog>
+          <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+            {taskManagerTabs}
+          </div>
+        </div>
+      ) : (
+        <Dialog open={open} onOpenChange={handleMainOpenChange}>
+          <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+            <DialogDescription className="sr-only">Project & Task Manager for tasks, projects, sub-tasks, shopping list, and budgeting.</DialogDescription>
+            <DialogHeader className="px-2 md:px-6 py-2 md:py-4 border-b flex flex-row flex-nowrap items-center justify-between gap-2 flex-shrink-0 min-h-0 space-y-0 w-full">
+              {headerTitleBlock}
+              {headerToolbar}
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden flex flex-col">
+              {taskManagerTabs}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <HomeManager
         open={showHomeManager}

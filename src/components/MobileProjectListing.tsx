@@ -13,10 +13,17 @@ import { useButtonTracker } from '@/hooks/useButtonTracker';
 interface MobileProjectListingProps {
   onProjectSelect: (project: Project | ProjectRun) => void;
   onNewProject?: () => void;
+  /** When false, hide catalog entry (+) and adjust empty state (global admin toggle). */
+  catalogNewProjectEnabled?: boolean;
   onClose?: () => void;
 }
 
-export function MobileProjectListing({ onProjectSelect, onNewProject, onClose }: MobileProjectListingProps) {
+export function MobileProjectListing({
+  onProjectSelect,
+  onNewProject,
+  catalogNewProjectEnabled = true,
+  onClose,
+}: MobileProjectListingProps) {
   const { projects, projectRuns, currentProjectRun } = useProject();
   const { trackClick } = useButtonTracker();
   const navigate = useNavigate();
@@ -114,17 +121,19 @@ export function MobileProjectListing({ onProjectSelect, onNewProject, onClose }:
           >
             <SortAsc className="h-4 w-4" />
           </Button>
+          {catalogNewProjectEnabled && onNewProject && (
           <Button
             variant="default"
             size="sm"
             onClick={() => {
               console.log('📱 MobileProjectListing: + button clicked, calling onNewProject');
-              onNewProject?.();
+              onNewProject();
             }}
             className="px-3 h-10"
           >
             <Plus className="h-4 w-4" />
           </Button>
+          )}
         </div>
 
         {/* Continue Current Project (if any) */}
@@ -206,8 +215,13 @@ export function MobileProjectListing({ onProjectSelect, onNewProject, onClose }:
         {filteredProjectRuns.length === 0 && (
           <EmptyState
             title="No projects yet"
-            description="Start a new project by tapping the + button"
+            description={
+              catalogNewProjectEnabled && onNewProject
+                ? 'Start a new project by tapping the + button'
+                : 'Add a project from your workshop on a larger screen, or when the project catalog is available.'
+            }
             actionLabel="New Project"
+            showAction={Boolean(catalogNewProjectEnabled && onNewProject)}
             onAction={() => onNewProject?.()}
           />
         )}
@@ -220,20 +234,23 @@ interface EmptyStateProps {
   title: string;
   description: string;
   actionLabel: string;
+  showAction: boolean;
   onAction: () => void;
 }
 
-function EmptyState({ title, description, actionLabel, onAction }: EmptyStateProps) {
+function EmptyState({ title, description, actionLabel, showAction, onAction }: EmptyStateProps) {
   return (
     <div className="text-center py-12">
       <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
         <Plus className="h-8 w-8 text-muted-foreground" />
       </div>
       <h3 className="text-lg font-semibold text-card-foreground mb-2">{title}</h3>
-      <p className="text-muted-foreground mb-6">{description}</p>
-      <Button variant="outline" onClick={onAction}>
-        {actionLabel}
-      </Button>
+      <p className="text-muted-foreground mb-6 px-2">{description}</p>
+      {showAction && (
+        <Button variant="outline" onClick={onAction}>
+          {actionLabel}
+        </Button>
+      )}
     </div>
   );
 }

@@ -10,8 +10,9 @@ import { AdminActionCenter } from '@/components/AdminActionCenter';
 import EditWorkflowView from '@/components/EditWorkflowView';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Settings, BarChart3, Shield, Wrench, AlertTriangle, RefreshCw, Bell, FileText, MapPin, Cog, RefreshCcw, Edit, Grid3x3, Sparkles } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Settings, BarChart3, Shield, Wrench, AlertTriangle, RefreshCw, Bell, FileText, MapPin, Cog, RefreshCcw, Edit, Grid3x3, Sparkles, GraduationCap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { StructureManager } from './StructureManager';
@@ -20,6 +21,7 @@ import { AdminFeatureRequestManager } from './AdminFeatureRequestManager';
 import { AdminGuideWindow } from './AdminGuideWindow';
 import { BetaModeToggle } from './BetaModeToggle';
 import { PartnerAppToggles } from './PartnerAppToggles';
+import { PublicSiteSettingsCard } from '@/components/admin/PublicSiteSettingsCard';
 import { AppManager } from './AppManager';
 import { Card as SettingCard, CardHeader as SettingCardHeader, CardTitle as SettingCardTitle, CardDescription as SettingCardDescription, CardContent as SettingCardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -145,6 +147,7 @@ export const AdminView: React.FC = () => {
   const [adminGuideOpen, setAdminGuideOpen] = useState(false);
   const [actionCenterOpen, setActionCenterOpen] = useState(false);
   const [appManagerOpen, setAppManagerOpen] = useState(false);
+  const [projectSkillAssessmentsOpen, setProjectSkillAssessmentsOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'admin' | 'structure-manager'>('admin');
 
   useEffect(() => {
@@ -320,6 +323,37 @@ export const AdminView: React.FC = () => {
           </Card>
           )}
 
+          {!isProjectOwnerOnly && (
+          <Card
+            className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col border-dashed"
+            onClick={() => setProjectSkillAssessmentsOpen(true)}
+          >
+            <CardHeader className="text-center flex-1">
+              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <GraduationCap className="w-6 h-6 text-primary" />
+              </div>
+              <CardTitle className="flex flex-col items-center gap-2">
+                <span>Project Skill Assessments</span>
+                <Badge variant="secondary" className="text-[10px] font-normal">
+                  Coming soon
+                </Badge>
+              </CardTitle>
+              <CardDescription className="min-h-[3rem] flex items-center justify-center">
+                Configure per–project-type skill checks and view how users rate themselves
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="mt-auto">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setProjectSkillAssessmentsOpen(true)}
+              >
+                Learn more
+              </Button>
+            </CardContent>
+          </Card>
+          )}
+
         </div>
 
         {!isProjectOwnerOnly && (
@@ -332,6 +366,8 @@ export const AdminView: React.FC = () => {
 
             {/* Default landing view setting */}
             <DefaultLandingSetting />
+
+            <PublicSiteSettingsCard />
           </>
         )}
 
@@ -402,6 +438,30 @@ export const AdminView: React.FC = () => {
         <AdminActionCenter open={actionCenterOpen} onOpenChange={setActionCenterOpen} />
 
         <AppManager open={appManagerOpen} onOpenChange={setAppManagerOpen} />
+
+        <Dialog open={projectSkillAssessmentsOpen} onOpenChange={setProjectSkillAssessmentsOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex flex-wrap items-center gap-2">
+                Project Skill Assessments
+                <Badge variant="secondary">Coming soon</Badge>
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                Planned admin tools for project-specific user skill assessments.
+              </DialogDescription>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              For each project type, you will be able to create assessments for users to determine their
+              skill levels—including experience, formal training, and technical knowledge. User responses
+              will map to beginner, intermediate, or advanced tiers per project template and will be stored
+              on their profile (in addition to their general DIY skill level). Until then, the product
+              defaults everyone to beginner for each project type.
+            </p>
+            <Button className="w-full" type="button" onClick={() => setProjectSkillAssessmentsOpen(false)}>
+              Close
+            </Button>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={editWorkflowOpen} onOpenChange={setEditWorkflowOpen}>
           <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">

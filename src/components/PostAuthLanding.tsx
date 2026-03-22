@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +22,7 @@ import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
 export const PostAuthLanding = () => {
   const navigate = useNavigate();
+  const { projectCatalogEnabled, workshopLabsAccordionEnabled } = useGlobalPublicSettings();
   const {
     user
   } = useAuth();
@@ -141,26 +143,36 @@ export const PostAuthLanding = () => {
     textColor: "text-white"
   }];
 
-  // Section 2: Explore
-  const exploreActions = [{
-    icon: BookOpen,
-    title: "Browse Project Catalog",
-    action: () => navigate('/projects'),
-    color: "bg-blue-700", // Projects: Blue
-    textColor: "text-white"
-  }, {
-    icon: HelpCircle,
-    title: "Expert Help",
-    action: () => setShowExpertHelp(true),
-    color: "bg-purple-600", // Help: Purple
-    textColor: "text-white"
-  }, {
-    icon: Hammer,
-    title: "Tool Access",
-    action: () => setShowToolRentals(true),
-    color: "bg-orange-500", // Tools: Orange (Labs item)
-    textColor: "text-white"
-  }];
+  const exploreActions = useMemo(
+    () => [
+      ...(projectCatalogEnabled
+        ? [
+            {
+              icon: BookOpen,
+              title: 'Browse Project Catalog',
+              action: () => navigate('/projects'),
+              color: 'bg-blue-700',
+              textColor: 'text-white',
+            },
+          ]
+        : []),
+      {
+        icon: HelpCircle,
+        title: 'Expert Help',
+        action: () => setShowExpertHelp(true),
+        color: 'bg-purple-600',
+        textColor: 'text-white',
+      },
+      {
+        icon: Hammer,
+        title: 'Tool Access',
+        action: () => setShowToolRentals(true),
+        color: 'bg-orange-500',
+        textColor: 'text-white',
+      },
+    ],
+    [projectCatalogEnabled, navigate]
+  );
 
   // Section 3: Account
   const accountActions = [{
@@ -190,7 +202,7 @@ export const PostAuthLanding = () => {
         {/* Welcome Header */}
         <div className="text-center mb-8 md:mb-12 px-4">
           <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold text-foreground mb-4 md:mb-6">
-            {userNickname ? `Welcome back, ${userNickname}!` : 'My Workshop'}
+            {userNickname ? `Welcome, ${userNickname}!` : 'My Workshop'}
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
             Continue where you left off, or start something new
@@ -259,7 +271,7 @@ export const PostAuthLanding = () => {
               </div>
             </div>
             
-            {/* Labs - Experimental Features - Collapsed by default */}
+            {workshopLabsAccordionEnabled && (
             <div>
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="labs" className="border rounded-xl shadow-sm max-w-md mx-auto">
@@ -318,6 +330,7 @@ export const PostAuthLanding = () => {
                 </AccordionItem>
               </Accordion>
             </div>
+            )}
           </div>
         </div>
 

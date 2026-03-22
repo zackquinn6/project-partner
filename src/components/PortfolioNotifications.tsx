@@ -117,7 +117,9 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
         title: "Settings Saved",
         description: "Your notification preferences have been updated.",
       });
-      onSaved?.();
+      queueMicrotask(() => {
+        onSaved?.();
+      });
     } catch (error) {
       console.error("Error saving portfolio notification settings:", error);
       toast({
@@ -236,12 +238,13 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
           Stay on top of project and task activity. Turn on notifications so updates land where you already check every day.
         </h3>
         <Button
-          onClick={saveNotificationSettings}
-          disabled={saving || loadingSettings}
+          type="button"
+          onClick={() => void saveNotificationSettings()}
+          disabled={saving || loadingSettings || !user?.id}
           size="sm"
           className="shrink-0"
         >
-          {saving ? "Saving..." : loadingSettings ? "Loading..." : "Save Settings"}
+          {saving ? "Saving..." : loadingSettings ? "Loading..." : "Save"}
         </Button>
       </div>
 

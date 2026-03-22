@@ -1,7 +1,29 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
 import { OnboardingDialog } from './OnboardingDialog';
+
+const HERO_SCREENSHOTS = [
+  {
+    src: '/lovable-uploads/workflow-interface-hero.png',
+    alt: 'Project Partner Workflow Interface',
+  },
+  {
+    src: '/lovable-uploads/hero-workshop.png',
+    alt: 'My Workshop',
+  },
+  {
+    src: '/lovable-uploads/hero-maintenance.png',
+    alt: 'Home Maintenance Tracker',
+  },
+] as const;
 
 interface HeroSectionProps {
   onOpenDemo?: () => void;
@@ -36,10 +58,8 @@ export const HeroSection = ({ onOpenDemo, onScrollToSection }: HeroSectionProps)
             </h1>
 
             <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              Project Partner reshapes scattered DIY content into a predictable, timeline‑based execution system.
+              Transform scattered DIY content and tools to a predictable execution system
             </p>
-
-            
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -62,26 +82,35 @@ export const HeroSection = ({ onOpenDemo, onScrollToSection }: HeroSectionProps)
               </Button>
             </div>
 
-            <p className="text-xs text-muted-foreground mt-4">
-              ✓ 7-day free trial • ✓ Cancel anytime
-            </p>
           </div>
 
-          {/* Right Column - Tee composite: primary image with two screenshots at bottom, 10% vertical overlap */}
-          <div className="relative w-full pb-[18%]">
-            <div className="relative rounded-2xl overflow-visible">
-              {/* Primary hero image */}
-              <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border border-border hover-lift">
-                <img src="/lovable-uploads/workflow-interface-hero.png" alt="Project Partner Workflow Interface" className="w-full h-auto block" />
-              </div>
-              {/* Bottom left screenshot */}
-              <div className="absolute left-0 bottom-0 z-20 w-[42%] rounded-xl overflow-hidden border border-border shadow-xl bg-card" style={{ transform: 'translateY(10%)' }}>
-                <img src="/lovable-uploads/hero-workshop.png" alt="My Workshop" className="w-full h-auto block" />
-              </div>
-              {/* Bottom right screenshot */}
-              <div className="absolute right-0 bottom-0 z-20 w-[42%] rounded-xl overflow-hidden border border-border shadow-xl bg-card" style={{ transform: 'translateY(10%)' }}>
-                <img src="/lovable-uploads/hero-maintenance.png" alt="Home Maintenance Tracker" className="w-full h-auto block" />
-              </div>
+          {/* Right Column — stacked on small screens, carousel on lg+ */}
+          <div className="relative w-full">
+            <div className="flex flex-col gap-4 lg:hidden">
+              {HERO_SCREENSHOTS.map(({ src, alt }) => (
+                <div
+                  key={src}
+                  className="rounded-2xl overflow-hidden shadow-2xl border border-border hover-lift bg-card"
+                >
+                  <img src={src} alt={alt} className="w-full h-auto block" />
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden lg:block relative w-full px-12">
+              <Carousel opts={{ loop: true }} className="w-full">
+                <CarouselContent>
+                  {HERO_SCREENSHOTS.map(({ src, alt }) => (
+                    <CarouselItem key={src}>
+                      <div className="rounded-2xl overflow-hidden shadow-2xl border border-border hover-lift bg-card">
+                        <img src={src} alt={alt} className="w-full h-auto block" />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="left-0 top-1/2 -translate-y-1/2" />
+                <CarouselNext className="right-0 top-1/2 -translate-y-1/2" />
+              </Carousel>
             </div>
           </div>
         </div>

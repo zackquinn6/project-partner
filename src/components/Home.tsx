@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +14,7 @@ import { AIRepairWindow } from '@/components/AIRepairWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
 import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
-import { ArrowRight, Home as HomeIcon, Wrench, BookOpen, Calendar, ShoppingCart, Hammer, MapPin, CheckCircle, Star, Target, Zap, Shield, User, Users, Folder, Calculator, HelpCircle, Camera, Building2, ListChecks } from 'lucide-react';
+import { ArrowRight, Home as HomeIcon, Wrench, BookOpen, Calendar, ShoppingCart, Hammer, MapPin, CheckCircle, Star, Target, Zap, Shield, User, Users, Folder, Calculator, HelpCircle, Camera, Building2, ListChecks, Loader2 } from 'lucide-react';
 import heroDIYPerson from '@/assets/hero-diy-person.png';
 import { HeroSection } from './landing/HeroSection';
 import { ValuePropSection } from './landing/ValuePropSection';
@@ -24,6 +25,7 @@ import { PricingSection } from './landing/PricingSection';
 import { FounderInfoDialog } from './landing/FounderInfoDialog';
 import { FAQSection } from './landing/FAQSection';
 import { FinalCTASection } from './landing/FinalCTASection';
+import { SimplifiedLandingHero } from './landing/SimplifiedLandingHero';
 import { PreSignInNavigation } from '@/components/PreSignInNavigation';
 import { TrialBanner } from '@/components/TrialBanner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -48,6 +50,13 @@ export default function Home({
     setCurrentProjectRun
   } = useProject();
   const navigate = useNavigate();
+  const {
+    simplifiedPublicLanding,
+    projectCatalogEnabled,
+    workshopLabsAccordionEnabled,
+    loading: publicSettingsLoading,
+  } = useGlobalPublicSettings();
+  const [showFullMarketingLanding, setShowFullMarketingLanding] = useState(false);
   const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [isDIYStyleQuizOpen, setIsDIYStyleQuizOpen] = useState(false);
   const [isAIRepairOpen, setIsAIRepairOpen] = useState(false);
@@ -283,6 +292,7 @@ export default function Home({
             <h3 className="text-sm font-semibold text-foreground mb-3 max-w-xl mx-auto px-2 md:hidden">Start Here</h3>
             <TooltipProvider delayDuration={300}>
             <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-6 px-2">
+              {projectCatalogEnabled && (
               <div className="col-span-3 mb-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -296,6 +306,7 @@ export default function Home({
                   </TooltipContent>
                 </Tooltip>
               </div>
+              )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex flex-col items-center group cursor-pointer" onClick={() => { setCurrentProjectRun(null); window.dispatchEvent(new CustomEvent('force-project-dashboard-listing')); navigate('/', { state: { view: 'user' }, replace: true }); onViewChange('user'); }}>
@@ -365,7 +376,7 @@ export default function Home({
             </div>
             </TooltipProvider>
 
-            {/* Labs - Experimental Features - Collapsed by default */}
+            {workshopLabsAccordionEnabled && (
             <div className="mb-6">
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="labs" className="border rounded-xl shadow-sm max-w-md mx-auto">
@@ -424,33 +435,36 @@ export default function Home({
                 </AccordionItem>
               </Accordion>
             </div>
+            )}
 
           <footer className="text-center py-6 mt-4">
             <p className="text-[10px] text-muted-foreground">Project Partner - 2026</p>
           </footer>
          </div>
        </div> :
-    // Non-logged-in users see the new modern landing page
+    publicSettingsLoading ? (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" aria-hidden />
+    </div>
+    ) : simplifiedPublicLanding && !showFullMarketingLanding ? (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
       <PreSignInNavigation />
-      
-      {/* Hero Section */}
+      <SimplifiedLandingHero onLearnMore={() => setShowFullMarketingLanding(true)} />
+    </div>
+    ) : (
+    <div className="min-h-screen bg-background">
+      <PreSignInNavigation />
+
       <HeroSection onOpenDemo={() => setIsKCExplainerOpen(true)} onScrollToSection={handleScrollToSection} />
 
-      {/* Value Prop Section */}
       <ValuePropSection />
 
-      {/* Statistics Bar */}
       <StatisticsBar />
 
-      {/* How It Works Section */}
       <HowItWorksSection onOpenDemo={() => setIsKCExplainerOpen(true)} />
 
-      {/* Personas Section */}
       <PersonasSection />
 
-      {/* See our story - before pricing */}
       <section className="py-8 px-4 text-center">
         <Button
           type="button"
@@ -462,15 +476,13 @@ export default function Home({
         </Button>
       </section>
 
-      {/* Pricing Section */}
       <PricingSection />
 
-      {/* FAQ Section */}
       <FAQSection />
 
-      {/* Final CTA Section */}
       <FinalCTASection />
-    </div>}
+    </div>
+    )}
 
       {/* Modals */}
       <PricingWindow open={isPricingOpen} onOpenChange={open => setIsPricingOpen(open)} />

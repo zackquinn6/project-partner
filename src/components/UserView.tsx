@@ -67,6 +67,7 @@ import {
   extractStepIdFromCompletionKey
 } from '@/utils/projectUtils';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { useMembership } from '@/contexts/MembershipContext';
 import { UpgradePrompt } from './UpgradePrompt';
 import { markOrderingStepIncompleteIfNeeded, extractProjectToolsAndMaterials } from '@/utils/shoppingUtils';
@@ -109,6 +110,8 @@ export default function UserView({
   projectRunId,
   showProfile
 }: UserViewProps) {
+  const navigate = useNavigate();
+  const { projectCatalogEnabled } = useGlobalPublicSettings();
   const { isMobile } = useResponsive();
   const { isAdmin } = useUserRole();
   const { canAccessApp } = useMembership();
@@ -2588,11 +2591,13 @@ export default function UserView({
           // Clear view mode to show listing
           setViewMode('listing');
           
-          // Navigate back to project catalog
-          navigate('/projects', { replace: true });
-          
-          // Clear URL parameters
-          window.history.replaceState({}, document.title, '/projects');
+          if (projectCatalogEnabled) {
+            navigate('/projects', { replace: true });
+            window.history.replaceState({}, document.title, '/projects');
+          } else {
+            navigate('/', { replace: true, state: { view: 'user' } });
+            window.history.replaceState({ view: 'user' }, document.title, '/');
+          }
           
           // Notify parent component to return to listing
           onProjectSelected?.('listing' as any);

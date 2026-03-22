@@ -1908,6 +1908,41 @@ export type Database = {
         }
         Relationships: []
       }
+      user_project_skill_levels: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          skill_level: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          skill_level?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          skill_level?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_project_skill_levels_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_phases: {
         Row: {
           created_at: string
@@ -2462,6 +2497,7 @@ export type Database = {
           icon: string | null
           id: string
           images: string[] | null
+          instructions_data_sources: string | null
           is_standard: boolean | null
           is_template: boolean | null
           item_type: string | null
@@ -2496,6 +2532,7 @@ export type Database = {
           icon?: string | null
           id?: string
           images?: string[] | null
+          instructions_data_sources?: string | null
           is_standard?: boolean | null
           is_template?: boolean | null
           item_type?: string | null
@@ -2530,6 +2567,7 @@ export type Database = {
           icon?: string | null
           id?: string
           images?: string[] | null
+          instructions_data_sources?: string | null
           is_standard?: boolean | null
           is_template?: boolean | null
           item_type?: string | null

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Dialog,
   DialogContent,
@@ -67,10 +68,44 @@ interface OnboardingDialogProps {
 
 export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const [visualViewportHeight, setVisualViewportHeight] = useState<number | null>(null);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [name, setName] = useState('');
   const [diyLevel, setDiyLevel] = useState<DIYLevel | null>(null);
   const [pmFocus, setPmFocus] = useState<PMFocus | null>(null);
+
+  useEffect(() => {
+    if (!open || !isMobile) {
+      setVisualViewportHeight(null);
+      return;
+    }
+    const vv = window.visualViewport;
+    if (!vv) {
+      setVisualViewportHeight(window.innerHeight);
+      return;
+    }
+    const sync = () => setVisualViewportHeight(vv.height);
+    sync();
+    vv.addEventListener('resize', sync);
+    vv.addEventListener('scroll', sync);
+    return () => {
+      vv.removeEventListener('resize', sync);
+      vv.removeEventListener('scroll', sync);
+    };
+  }, [open, isMobile]);
+
+  useLayoutEffect(() => {
+    if (!open || step !== 1 || !isMobile) return;
+    const id = window.requestAnimationFrame(() => {
+      const el = nameInputRef.current;
+      if (!el) return;
+      el.focus({ preventScroll: true });
+      el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [open, step, isMobile]);
 
   const handleClose = (open: boolean) => {
     if (!open) {
@@ -111,10 +146,28 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
     (step === 2 && diyLevel !== null) ||
     (step === 3 && pmFocus !== null);
 
+  const mobileMaxHeight =
+    isMobile && visualViewportHeight != null
+      ? Math.max(220, visualViewportHeight - 24)
+      : undefined;
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
-        className="max-w-md border-border/60 shadow-xl bg-background/95 backdrop-blur sm:max-w-[420px]"
+        className={
+          'max-w-md border-border/60 shadow-xl bg-background/95 backdrop-blur sm:max-w-[420px] ' +
+          'max-md:top-3 max-md:translate-y-0 max-md:max-h-[min(92dvh,calc(100svh-0.75rem))] max-md:overflow-y-auto max-md:flex max-md:flex-col'
+        }
+        style={
+          isMobile && mobileMaxHeight != null
+            ? { maxHeight: mobileMaxHeight }
+            : undefined
+        }
+        onOpenAutoFocus={(e) => {
+          if (isMobile && step === 1) {
+            e.preventDefault();
+          }
+        }}
         aria-describedby={step === 1 ? 'name-description' : step === 2 ? 'diy-description' : undefined}
       >
         {/* Step progress */}
@@ -154,20 +207,32 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
         </DialogHeader>
 
         {step === 1 && (
-          <div className="space-y-2 py-2">
+          <div className="space-y-2 py-2 min-h-0">
             <Label htmlFor="onboarding-name" className="sr-only">
               Your name
             </Label>
             <Input
+              ref={nameInputRef}
               id="onboarding-name"
               type="text"
+              inputMode="text"
+              enterKeyHint="next"
               placeholder="e.g. Alex or Jordan"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && canProceed && handleNext()}
-              className="h-12 text-base border-border/80 bg-muted/30 focus-visible:ring-2 focus-visible:ring-primary/20"
-              autoFocus
+              onFocus={(e) => {
+                if (isMobile) {
+                  window.requestAnimationFrame(() => {
+                    e.target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                  });
+                }
+              }}
+              className="h-14 min-h-[48px] text-base md:h-12 md:min-h-0 md:text-sm border-border/80 bg-muted/30 focus-visible:ring-2 focus-visible:ring-primary/20"
+              autoFocus={!isMobile}
               autoComplete="given-name"
+              autoCorrect="on"
+              spellCheck={false}
               aria-invalid={name.length > 0 && !name.trim()}
             />
           </div>

@@ -132,6 +132,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
           name: project.name,
           description: project.description || '',
           projectChallenges: project.project_challenges,
+          instructionsDataSources: project.instructions_data_sources,
           projectType: project.project_type?.toLowerCase() === 'secondary' ? 'Secondary' : 'Primary',
           image: project.image,
           images: normalizedImages,

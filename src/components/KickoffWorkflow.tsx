@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProject } from '@/contexts/ProjectContext';
 import { DIYProfileStep } from './KickoffSteps/DIYProfileStep';
@@ -11,6 +11,31 @@ import { ProjectProfileStep } from './KickoffSteps/ProjectProfileStep';
 import { ProjectToolsStep, PLANNING_TOOLS, type PlanningToolId } from './KickoffSteps/ProjectToolsStep';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+
+const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string }[] = [
+  {
+    id: 'kickoff-step-1',
+    title: 'Project Match',
+    description: 'Review and customize your project details',
+  },
+  {
+    id: 'kickoff-step-2',
+    title: 'Personalize',
+    description: 'Complete your DIY profile for personalized guidance',
+  },
+  {
+    id: 'kickoff-step-3',
+    title: 'Scope & Specs',
+    description: 'Set up your project team and home selection',
+  },
+  {
+    id: 'kickoff-step-4',
+    title: 'Workflow Setup',
+    description: 'Choose which planning tools to use',
+  },
+];
+
 interface KickoffWorkflowProps {
   onKickoffComplete: () => void;
   onExit?: () => void; // Add optional exit handler
@@ -26,70 +51,96 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     updateProjectRun,
     deleteProjectRun
   } = useProject();
+  const { user } = useAuth();
+  const [kickoffOrderResolved, setKickoffOrderResolved] = useState(false);
+  const [kickoffStepOrder, setKickoffStepOrder] = useState<'profile_first' | 'match_first'>('match_first');
   const [currentKickoffStep, setCurrentKickoffStep] = useState(0);
   const [completedKickoffSteps, setCompletedKickoffSteps] = useState<Set<number>>(new Set());
   const [checkedOutputs, setCheckedOutputs] = useState<Record<string, Set<string>>>({});
   const [selectedPlanningTools, setSelectedPlanningTools] = useState<PlanningToolId[]>([]);
   // CRITICAL FIX: Use ref instead of state to avoid race conditions
   const isCompletingStepRef = useRef(false);
-  const kickoffSteps = [{
-    id: 'kickoff-step-1',
-    title: 'Project Match',
-    description: 'Review and customize your project details'
-  }, {
-    id: 'kickoff-step-2',
-    title: 'Personalize',
-    description: 'Complete your DIY profile for personalized guidance'
-  }, {
-    id: 'kickoff-step-3',
-    title: 'Scope & Specs',
-    description: 'Set up your project team and home selection'
-  }, {
-    id: 'kickoff-step-4',
-    title: 'Workflow Setup',
-    description: 'Choose which planning tools to use'
-  }];
+
+  const kickoffSteps = useMemo(() => {
+    const copy = KICKOFF_STEP_DEFINITIONS.map((s) => ({ ...s }));
+    if (kickoffStepOrder === 'profile_first') {
+      return [copy[1], copy[0], copy[2], copy[3]];
+    }
+    return copy;
+  }, [kickoffStepOrder]);
+
+  useEffect(() => {
+    if (!currentProjectRun?.id) {
+      setKickoffOrderResolved(true);
+      setKickoffStepOrder('match_first');
+      return;
+    }
+    if (!user?.id) {
+      setKickoffOrderResolved(true);
+      setKickoffStepOrder('match_first');
+      return;
+    }
+    let cancelled = false;
+    setKickoffOrderResolved(false);
+    (async () => {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('survey_completed_at')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        console.error('KickoffWorkflow: could not load profile for step order', error);
+        setKickoffStepOrder('match_first');
+        setKickoffOrderResolved(true);
+        return;
+      }
+      const profileDone = Boolean(data?.survey_completed_at);
+      setKickoffStepOrder(profileDone ? 'match_first' : 'profile_first');
+      setKickoffOrderResolved(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProjectRun?.id, user?.id]);
 
   // Initialize completed steps from project run data - ONLY on mount or when project changes
   useEffect(() => {
+    if (!kickoffOrderResolved) return;
     // Don't overwrite state during step completion
     if (isCompletingStepRef.current) {
       console.log("⏸️ KickoffWorkflow: Skipping initialization during step completion");
       return;
     }
     if (currentProjectRun?.completedSteps) {
-      const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
       const completedIndices = new Set<number>();
+      const stepIdsInDisplayOrder = kickoffSteps.map((s) => s.id);
       console.log("KickoffWorkflow - Initializing from project run:", {
         completedSteps: currentProjectRun.completedSteps,
-        kickoffStepIds
+        stepIdsInDisplayOrder,
+        kickoffStepOrder,
       });
 
-      // Check BOTH kickoff step IDs AND actual workflow step IDs
-      kickoffStepIds.forEach((stepId, index) => {
+      stepIdsInDisplayOrder.forEach((stepId, index) => {
         const isKickoffStepComplete = currentProjectRun.completedSteps.includes(stepId);
-
-        // Also check if the actual workflow step is complete (for longer step IDs)
-        const hasWorkflowStepComplete = currentProjectRun.completedSteps.some(completedId => completedId.length > 20 && completedId.includes('-'));
         if (isKickoffStepComplete) {
           completedIndices.add(index);
-          console.log(`KickoffWorkflow - Step ${index} (${stepId}) is complete`);
+          console.log(`KickoffWorkflow - Display step ${index} (${stepId}) is complete`);
         } else {
-          console.log(`KickoffWorkflow - Step ${index} (${stepId}) is NOT complete`);
+          console.log(`KickoffWorkflow - Display step ${index} (${stepId}) is NOT complete`);
         }
       });
       setCompletedKickoffSteps(completedIndices);
 
-      // Only set current step if not all complete - otherwise let step completion handle it
       if (completedIndices.size < kickoffSteps.length) {
-        const firstIncomplete = kickoffStepIds.findIndex((stepId, index) => !completedIndices.has(index));
+        const firstIncomplete = kickoffSteps.findIndex((_, index) => !completedIndices.has(index));
         if (firstIncomplete !== -1) {
           console.log("KickoffWorkflow - Setting current step to first incomplete:", firstIncomplete);
           setCurrentKickoffStep(firstIncomplete);
         }
       }
     }
-  }, [currentProjectRun?.id]); // Only re-run when project ID changes
+  }, [currentProjectRun?.id, kickoffOrderResolved, kickoffSteps, kickoffStepOrder]);
 
   const handleStepComplete = async (stepIndex: number, selectedTools?: PlanningToolId[]) => {
     console.log("🎯 handleStepComplete called with stepIndex:", stepIndex);
@@ -110,15 +161,15 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         alreadyCompleted: newCompletedSteps.includes(stepId)
       });
 
-      // Find the actual workflow step ID in the Kickoff phase
+      // Resolve workflow step by stable kickoff id (display order may swap steps 1 and 2)
       const kickoffPhase = currentProjectRun.phases.find(p => p.name === 'Kickoff');
       let actualStepId = stepId;
-      if (kickoffPhase && kickoffPhase.operations && kickoffPhase.operations.length > 0) {
-        // Map kickoff step index to actual step in the workflow
+      if (kickoffPhase?.operations?.length) {
         const allKickoffSteps = kickoffPhase.operations.flatMap(op => op.steps || []);
-        if (allKickoffSteps[stepIndex]) {
-          actualStepId = allKickoffSteps[stepIndex].id;
-          console.log("KickoffWorkflow - Found actual workflow step ID:", actualStepId);
+        const matched = allKickoffSteps.find(s => s.id === stepId);
+        if (matched) {
+          actualStepId = matched.id;
+          console.log("KickoffWorkflow - Resolved workflow step ID:", actualStepId);
         }
       }
 
@@ -170,9 +221,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       
       // For step 4 (tools), merge selected_planning_tools into customization_decisions
       const existingDecisions = (currentProjectRun.customization_decisions || {}) as Record<string, unknown>;
-      const customization_decisions = stepIndex === 3 && selectedTools
-        ? { ...existingDecisions, selected_planning_tools: selectedTools }
-        : currentProjectRun.customization_decisions;
+      const customization_decisions =
+        stepId === 'kickoff-step-4' && selectedTools
+          ? { ...existingDecisions, selected_planning_tools: selectedTools }
+          : currentProjectRun.customization_decisions;
 
       // Update project run with completed step - WAIT for completion
       const updatedProjectRun = {
@@ -245,16 +297,17 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     }, 0);
   };
 
+  const currentStepId = kickoffSteps[currentKickoffStep]?.id;
+
   const currentStepPurpose = (() => {
-    const title = kickoffSteps[currentKickoffStep]?.title;
-    switch (title) {
-      case 'Project Match':
+    switch (currentStepId) {
+      case 'kickoff-step-1':
         return 'Overview the project and make sure this project is a good fit';
-      case 'Personalize':
+      case 'kickoff-step-2':
         return 'Personalize the project to your unique DIY experience level and preferences';
-      case 'Scope & Specs':
+      case 'kickoff-step-3':
         return 'Complete initial customization to your unique project';
-      case 'Workflow Setup':
+      case 'kickoff-step-4':
         return 'Equip your project with the right planning tools';
       default:
         return '';
@@ -301,18 +354,18 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     const existingDecisions = currentProjectRun?.customization_decisions as Record<string, unknown> | undefined;
     const initialTools = (existingDecisions?.selected_planning_tools as PlanningToolId[] | undefined) || [];
 
-    switch (currentKickoffStep) {
-      case 0:
+    switch (kickoffSteps[currentKickoffStep]?.id) {
+      case 'kickoff-step-1':
         return <ProjectOverviewStep {...stepProps} />;
-      case 1:
+      case 'kickoff-step-2':
         return <DIYProfileStep {...stepProps} />;
-      case 2:
+      case 'kickoff-step-3':
         return <ProjectProfileStep {...stepProps} />;
-      case 3:
+      case 'kickoff-step-4':
         return (
           <ProjectToolsStep
             {...stepProps}
-            onComplete={() => handleStepComplete(3, selectedPlanningTools)}
+            onComplete={() => handleStepComplete(currentKickoffStep, selectedPlanningTools)}
             initialSelected={initialTools}
             onSelectionChange={setSelectedPlanningTools}
           />
@@ -321,6 +374,27 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         return null;
     }
   };
+
+  if (!currentProjectRun) {
+    return (
+      <div className="max-w-6xl mx-auto p-4">
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">No project selected</CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!kickoffOrderResolved) {
+    return (
+      <div className="max-w-6xl mx-auto p-4">
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">Loading kickoff…</CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return <div className="max-w-6xl mx-auto p-2 sm:p-3 space-y-2 sm:space-y-3 pb-20 sm:pb-4">
       {/* Progress Header */}
       <Card>
@@ -389,7 +463,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
             <h2 className="text-base sm:text-lg font-semibold">
               {currentStepPurpose}
             </h2>
-            {currentKickoffStep === 0 && (
+            {currentStepId === 'kickoff-step-1' && (
               <TooltipProvider delayDuration={200}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -412,55 +486,22 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       )}
 
       {/* Current Step Content - Scrollable with Fixed Button */}
-      <div className="flex flex-col" style={{ height: 'calc(100vh - 300px)', minHeight: '500px' }}>
-        <div className="flex-1 overflow-y-auto -mx-2 sm:mx-0 px-2 sm:px-0 pb-4">
+      <div className="flex flex-col min-h-0 flex-1 sm:min-h-[500px]" style={{ minHeight: 'min(500px, 55dvh)' }}>
+        <div className="flex-1 overflow-y-auto -mx-2 sm:mx-0 px-2 sm:px-0 pb-4 min-h-0">
           {renderCurrentStep()}
         </div>
         {/* Fixed Button Area - Always Visible */}
-        <div className="flex-shrink-0 bg-background border-t pt-4 pb-2 mt-4 -mx-2 sm:mx-0 px-2 sm:px-0">
+        <div className="flex-shrink-0 bg-background border-t pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pt-4 sm:pb-2 mt-2 sm:mt-4 -mx-2 sm:mx-0 px-2 sm:px-0">
           <Card>
-            <CardContent className="p-3 sm:p-4">
+            <CardContent className="p-2.5 sm:p-4">
               {!isStepCompleted(currentKickoffStep) ? (
-                <div className="flex gap-2">
-                  {/* Left-side secondary action */}
-                  {currentKickoffStep === 0 ? (
-                    <Button 
-                      onClick={async () => {
-                        if (currentProjectRun) {
-                          await deleteProjectRun(currentProjectRun.id);
-                          toast.success('Project removed');
-                          if (onExit) onExit();
-                        }
-                      }} 
-                      variant="outline"
-                      size="lg"
-                      className="w-1/4 border-red-300 text-red-700 hover:bg-red-50"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      <span className="hidden sm:inline sm:block">Not a match -<br />take me back to catalog</span>
-                      <span className="sm:hidden">Not a match</span>
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="lg"
-                      className="w-1/4 border-muted-foreground/40 text-muted-foreground hover:bg-muted/40"
-                      onClick={() => {
-                        // Skip remaining kickoff steps and go directly to project workflow
-                        onKickoffComplete();
-                      }}
-                    >
-                      Skip direct to project workflow
-                    </Button>
-                  )}
-                  
-                  {/* Main Continue button - consistent shape/size across steps */}
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
+                  {/* Primary action first on mobile (thumb reach); secondary full width below */}
                   <Button 
                     onClick={async () => {
                       console.log('🎯 KickoffWorkflow: Step complete button clicked for step:', currentKickoffStep);
                       
-                      if (currentKickoffStep === 2 && (window as any).__projectProfileStepSave) {
+                      if (currentStepId === 'kickoff-step-3' && (window as any).__projectProfileStepSave) {
                         console.log('💾 KickoffWorkflow: Calling ProjectProfileStep save function...');
                         try {
                           await (window as any).__projectProfileStepSave();
@@ -474,8 +515,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                         }
                       }
 
-                      if (currentKickoffStep === 3) {
-                        await handleStepComplete(3, selectedPlanningTools);
+                      if (currentStepId === 'kickoff-step-4') {
+                        await handleStepComplete(currentKickoffStep, selectedPlanningTools);
                         if (onPlanningWizard) {
                           onPlanningWizard();
                         }
@@ -485,15 +526,15 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       handleStepComplete(currentKickoffStep);
                     }} 
                     size="lg"
-                    className="w-full bg-green-600 hover:bg-green-700 text-sm"
+                    className="order-1 w-full sm:order-2 sm:flex-1 min-h-[48px] bg-green-600 hover:bg-green-700 text-sm px-3"
                   >
-                    <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-                    {currentKickoffStep === 2 ? (
+                    <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 shrink-0" />
+                    {currentStepId === 'kickoff-step-3' ? (
                       <>
                         <span className="hidden sm:inline">Continue to Workflow Setup</span>
                         <span className="sm:hidden">Continue</span>
                       </>
-                    ) : currentKickoffStep === 3 ? (
+                    ) : currentStepId === 'kickoff-step-4' ? (
                       <>
                         <span className="hidden sm:inline">Complete & Start Planning</span>
                         <span className="sm:hidden">Complete</span>
@@ -505,6 +546,38 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       </>
                     )}
                   </Button>
+
+                  {currentStepId === 'kickoff-step-1' ? (
+                    <Button 
+                      onClick={async () => {
+                        if (currentProjectRun) {
+                          await deleteProjectRun(currentProjectRun.id);
+                          toast.success('Project removed');
+                          if (onExit) onExit();
+                        }
+                      }} 
+                      variant="outline"
+                      size="lg"
+                      className="order-2 w-full sm:order-1 sm:w-auto sm:max-w-[42%] sm:shrink-0 min-h-[44px] border-red-300 text-red-700 hover:bg-red-50 text-xs sm:text-sm px-2"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-1.5 sm:mr-2 shrink-0" />
+                      <span className="hidden sm:inline sm:text-left sm:leading-tight">Not a match -<br />take me back to catalog</span>
+                      <span className="sm:hidden">Not a match — back</span>
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      className="order-2 w-full sm:order-1 sm:w-auto sm:max-w-[42%] sm:shrink-0 min-h-[44px] border-muted-foreground/40 text-muted-foreground hover:bg-muted/40 text-xs sm:text-sm px-2"
+                      onClick={() => {
+                        onKickoffComplete();
+                      }}
+                    >
+                      <span className="hidden sm:inline">Skip direct to project workflow</span>
+                      <span className="sm:hidden">Skip to workflow</span>
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="w-full p-2 bg-green-50 border border-green-200 rounded-lg text-center">

@@ -334,8 +334,8 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
         </div>
       </div>
       <div className="flex justify-between gap-2 pt-2 border-t shrink-0 bg-background px-4">
-        <Button variant="destructive" size="sm" onClick={onDelete} className="mr-auto h-7 w-7 md:h-7 md:w-auto md:px-2 md:py-1.5">
-          <Trash2 className="h-3.5 w-3.5 md:mr-1" />
+        <Button variant="destructive" size="sm" onClick={onDelete} className="mr-auto h-6 w-6 p-0 md:h-7 md:w-auto md:px-2 md:py-1.5">
+          <Trash2 className="h-3 w-3 md:h-3.5 md:w-3.5 md:mr-1" />
           <span className="hidden md:inline">Delete task</span>
         </Button>
         <div className="flex gap-1.5">
@@ -644,7 +644,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   };
   return <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col min-h-0 [&>button]:hidden">
+      <DialogContent
+        className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col min-h-0 [&>button]:hidden"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <DialogHeader className="sr-only">
           <VisuallyHidden.Root>
             <DialogTitle>Home Maintenance</DialogTitle>
@@ -1001,11 +1004,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                             <Button
                                               variant="ghost"
                                               size="icon"
-                                              className="h-7 w-7 shrink-0 md:hidden text-muted-foreground hover:text-foreground md:h-7 md:w-7"
+                                              className="h-6 w-6 shrink-0 md:hidden text-muted-foreground hover:text-foreground"
                                               title="Edit Task"
                                               onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
                                             >
-                                              <Pencil className="h-3.5 w-3.5 shrink-0" />
+                                              <Pencil className="h-3 w-3 shrink-0" />
                                             </Button>
                                           </div>
                                           <p className="hidden md:block text-xs text-muted-foreground line-clamp-2 mt-1">{summary}</p>
@@ -1016,19 +1019,19 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                               onClick={(e) => { e.stopPropagation(); handleQuickLogComplete(task); }}
                                               disabled={quickLoggingTaskId === task.id}
                                               size="sm"
-                                              className="h-7 w-7 md:h-9 md:min-w-[44px] md:w-auto bg-green-600 hover:bg-green-700 text-white p-0 shrink-0 md:px-2"
+                                              className="h-6 w-6 md:h-9 md:min-w-[44px] md:w-auto bg-green-600 hover:bg-green-700 text-white p-0 shrink-0 md:px-2"
                                               title="Log complete for today"
                                             >
-                                              <Check className="h-3.5 w-3.5 md:h-3.5 md:w-3.5" />
+                                              <Check className="h-3 w-3 md:h-3.5 md:w-3.5" />
                                             </Button>
                                             <Button
                                               onClick={(e) => { e.stopPropagation(); handleTaskComplete(task); }}
                                               variant="ghost"
                                               size="sm"
-                                              className="h-7 w-7 md:h-8 md:w-auto md:min-h-[36px] text-muted-foreground hover:text-foreground md:bg-green-600 md:hover:bg-green-700 md:text-white md:px-2 shrink-0"
+                                              className="h-6 w-6 md:h-8 md:w-auto md:min-h-[36px] text-muted-foreground hover:text-foreground md:bg-green-600 md:hover:bg-green-700 md:text-white md:px-2 shrink-0"
                                               title="Log Complete (add date, notes, photo)"
                                             >
-                                              <FileText className="h-4 w-4 md:hidden shrink-0" />
+                                              <FileText className="h-3 w-3 md:hidden shrink-0" />
                                               <span className="hidden md:inline">Log Complete</span>
                                             </Button>
                                           </div>
@@ -1082,11 +1085,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                                 <Button
                                                   variant="ghost"
                                                   size="icon"
-                                                  className="h-7 w-7 shrink-0 md:hidden text-muted-foreground hover:text-foreground md:h-7 md:w-7"
+                                                  className="h-6 w-6 shrink-0 md:hidden text-muted-foreground hover:text-foreground"
                                                   title="Edit Task"
                                                   onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
                                                 >
-                                                  <Pencil className="h-3.5 w-3.5 shrink-0" />
+                                                  <Pencil className="h-3 w-3 shrink-0" />
                                                 </Button>
                                               </div>
                                               <p className="hidden md:block text-xs text-muted-foreground line-clamp-2 mt-1">{summary}</p>
@@ -1097,19 +1100,19 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                                   onClick={(e) => { e.stopPropagation(); handleQuickLogComplete(task); }}
                                                   disabled={quickLoggingTaskId === task.id}
                                                   size="sm"
-                                                  className="h-7 w-7 md:h-9 md:min-w-[44px] md:w-auto bg-green-600 hover:bg-green-700 text-white p-0 shrink-0 md:px-2"
+                                                  className="h-6 w-6 md:h-9 md:min-w-[44px] md:w-auto bg-green-600 hover:bg-green-700 text-white p-0 shrink-0 md:px-2"
                                                   title="Log complete for today"
                                                 >
-                                                  <Check className="h-3.5 w-3.5 md:h-3.5 md:w-3.5" />
+                                                  <Check className="h-3 w-3 md:h-3.5 md:w-3.5" />
                                                 </Button>
                                                 <Button
                                                   onClick={(e) => { e.stopPropagation(); handleTaskComplete(task); }}
                                                   variant="ghost"
                                                   size="sm"
-                                                  className="h-7 w-7 md:h-8 md:w-auto md:min-h-[36px] text-muted-foreground hover:text-foreground md:bg-green-600 md:hover:bg-green-700 md:text-white md:px-2 shrink-0"
+                                                  className="h-6 w-6 md:h-8 md:w-auto md:min-h-[36px] text-muted-foreground hover:text-foreground md:bg-green-600 md:hover:bg-green-700 md:text-white md:px-2 shrink-0"
                                                   title="Log Complete (add date, notes, photo)"
                                                 >
-                                                  <FileText className="h-4 w-4 md:hidden shrink-0" />
+                                                  <FileText className="h-3 w-3 md:hidden shrink-0" />
                                                   <span className="hidden md:inline">Log Complete</span>
                                                 </Button>
                                               </div>
@@ -1359,16 +1362,24 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       {selectedTask && <TaskCompletionDialog open={!!selectedTask} onOpenChange={open => !open && setSelectedTask(null)} task={selectedTask} onCompleted={handleTaskCompleted} />}
 
       <Dialog open={showAlerts} onOpenChange={setShowAlerts}>
-        <DialogContent className="w-full max-w-[95vw] md:max-w-4xl max-h-[90vh] overflow-hidden text-xs md:text-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-sm md:text-base">
-              <Bell className="h-5 w-5 text-amber-500" />
+        <DialogContent
+          className="w-[min(100vw-1rem,42rem)] max-w-[95vw] md:max-w-4xl max-h-[min(92dvh,880px)] p-0 gap-0 flex flex-col overflow-hidden text-xs md:text-sm [&>button]:z-30"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <DialogHeader className="shrink-0 px-4 pt-4 pb-3 border-b border-border bg-background z-20">
+            <DialogTitle className="flex items-center gap-2 text-sm md:text-base pr-8">
+              <Bell className="h-5 w-5 text-amber-500 shrink-0" />
               Setup Alerts
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-y-auto space-y-2 py-3 px-3 md:px-6">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 md:px-6 md:py-4">
             {selectedHomeId ? (
-              <MaintenanceNotifications selectedHomeId={selectedHomeId} onSaved={() => setShowAlerts(false)} />
+              <MaintenanceNotifications
+                selectedHomeId={selectedHomeId}
+                onSaved={() => {
+                  queueMicrotask(() => setShowAlerts(false));
+                }}
+              />
             ) : (
               <div className="flex flex-col items-center gap-2 py-6 text-center">
                 <Home className="h-10 w-10 text-muted-foreground" />

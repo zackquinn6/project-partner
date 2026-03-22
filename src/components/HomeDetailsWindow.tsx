@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { HomeSpacesTab } from './HomeSpacesTab';
 import { useNavigate } from 'react-router-dom';
+import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 
 interface Home {
   id: string;
@@ -85,6 +86,7 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { projectCatalogEnabled } = useGlobalPublicSettings();
   const [loading, setLoading] = useState(false);
   const [completedProjects, setCompletedProjects] = useState<ProjectRun[]>([]);
   const [completedMaintenance, setCompletedMaintenance] = useState<CompletedMaintenance[]>([]);
@@ -608,6 +610,7 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
           <Card>
             <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>Completed Projects</CardTitle>
+              {projectCatalogEnabled && (
               <Button
                 size="sm"
                 onClick={() => navigate('/projects')}
@@ -615,6 +618,7 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
               >
                 Start a New Project Today
               </Button>
+              )}
             </CardHeader>
             <CardContent>
               {loading ? (

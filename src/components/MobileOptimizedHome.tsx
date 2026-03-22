@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/accordion";
 import { useAuth } from '@/contexts/AuthContext';
 import { useProject } from '@/contexts/ProjectContext';
+import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { countDueSoon } from '@/utils/maintenanceProgress';
 import { 
@@ -34,6 +35,7 @@ export function MobileOptimizedHome() {
   const { user } = useAuth();
   const { projectRuns, currentProjectRun } = useProject();
   const navigate = useNavigate();
+  const { projectCatalogEnabled, workshopLabsAccordionEnabled } = useGlobalPublicSettings();
   
   const [stats, setStats] = useState({
     activeProjects: 0,
@@ -43,6 +45,14 @@ export function MobileOptimizedHome() {
   });
   
   const [userNickname, setUserNickname] = useState<string>('');
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    rootRef.current?.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+  }, [user?.id]);
 
   // Project completion from project runs; task-based stats from API
   useEffect(() => {
@@ -203,7 +213,7 @@ export function MobileOptimizedHome() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-subtle pb-20 mobile-scroll">
+    <div ref={rootRef} className="flex-1 min-h-0 overflow-y-auto bg-gradient-subtle pb-20 mobile-scroll">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="p-4">
@@ -227,7 +237,7 @@ export function MobileOptimizedHome() {
           
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              {userNickname ? `Welcome back, ${userNickname}!` : 'Welcome back!'}
+              {userNickname ? `Welcome, ${userNickname}!` : 'Welcome!'}
             </h1>
             <p className="text-muted-foreground text-sm mb-4">
               Continue where you left off, or start something new
@@ -311,6 +321,7 @@ export function MobileOptimizedHome() {
         {/* Start Here: Explore New Projects + Project & Task Manager + Home Maintenance */}
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-3 md:hidden">Start Here</h2>
+          {projectCatalogEnabled && (
           <Button
             onClick={() => {
               console.log('📱 Mobile: Navigating to project catalog');
@@ -322,6 +333,7 @@ export function MobileOptimizedHome() {
             <BookOpen className="w-4 h-4 mr-2" />
             Explore New Projects
           </Button>
+          )}
           <div className="grid grid-cols-2 gap-3">
             {quickActions.map((action) => {
               const Icon = action.icon;
@@ -372,7 +384,7 @@ export function MobileOptimizedHome() {
           </div>
         </div>
 
-        {/* Labs - Experimental Features - Collapsed by default */}
+        {workshopLabsAccordionEnabled && (
         <div>
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="labs" className="border rounded-xl shadow-sm max-w-md mx-auto">
@@ -407,6 +419,7 @@ export function MobileOptimizedHome() {
             </AccordionItem>
           </Accordion>
         </div>
+        )}
       </div>
     </div>
   );

@@ -25,7 +25,11 @@ export function ProjectPortfolioRemindersDialog({
             Notification preferences for project &amp; task manager updates.
           </DialogDescription>
         </DialogHeader>
-        <PortfolioNotifications />
+        <PortfolioNotifications
+          onSaved={() => {
+            queueMicrotask(() => onOpenChange(false));
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

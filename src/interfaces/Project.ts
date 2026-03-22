@@ -221,6 +221,8 @@ export interface Project {
   name: string;
   description: string;
   projectChallenges?: string; // Admin-defined field explaining most difficult aspects
+  /** Citations or notes for where step instruction content is sourced (admin workflow editor). */
+  instructionsDataSources?: string | null;
   image?: string;
   images?: string[]; // Array of image URLs
   cover_image?: string | null; // URL of cover image for display

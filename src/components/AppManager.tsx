@@ -219,7 +219,8 @@ export function AppManager({
         app_name: appName,
         description: editForm.description?.trim() || null,
         icon: editForm.icon || editingApp.icon || 'Sparkles',
-        display_order: editingApp.displayOrder || 1,
+        // DB column is integer; registry may use fractional displayOrder (e.g. 10.5) for sort gaps
+        display_order: Math.round(Number(editingApp.displayOrder ?? 1)),
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'app_id'

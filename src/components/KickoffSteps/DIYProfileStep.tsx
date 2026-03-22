@@ -22,6 +22,16 @@ const PROJECT_FOCUS_LABELS: Record<string, string> = {
   all_three: 'Balanced',
 };
 
+function toolDisplayName(tool: Record<string, unknown> | null | undefined): string | undefined {
+  if (!tool || typeof tool !== 'object') return undefined;
+  const candidates = ['name', 'tool_name', 'title', 'label', 'appName', 'toolName'] as const;
+  for (const key of candidates) {
+    const v = tool[key];
+    if (typeof v === 'string' && v.trim() !== '') return v.trim();
+  }
+  return undefined;
+}
+
 interface ProfileData {
   skill_level?: string;
   avoid_projects?: string[];
@@ -224,10 +234,10 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                     : "No tools specified"}
                 </p>
                 <div className="mt-2">
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-x-2 gap-y-3">
                     {(existingProfile.owned_tools || []).slice(0, 12).map((tool: any, index: number) => {
                       const toolId = tool?.id;
-                      const toolName = tool?.name;
+                      const toolName = toolDisplayName(tool as Record<string, unknown>);
                       const photoUrl =
                         typeof tool?.user_photo_url === 'string' && tool.user_photo_url.trim() !== ''
                           ? tool.user_photo_url
@@ -235,23 +245,31 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                               ? tool.photo_url
                               : undefined);
                       const quantity = typeof tool?.quantity === 'number' ? tool.quantity : undefined;
+                      const label = toolName ?? 'Tool';
 
                       return (
                         <div
                           key={toolId ?? toolName ?? String(index)}
-                          className="relative w-9 h-9 rounded-md border bg-background flex items-center justify-center overflow-hidden flex-shrink-0"
-                          title={toolName || 'Tool'}
+                          className="flex w-[4.25rem] flex-col items-center gap-1 flex-shrink-0 sm:w-9 sm:gap-0"
                         >
-                          {photoUrl ? (
-                            <img src={photoUrl} alt={toolName || 'Tool'} className="w-full h-full object-cover" />
-                          ) : (
-                            <Wrench className="w-4 h-4 text-muted-foreground" />
-                          )}
-                          {typeof quantity === 'number' && quantity > 1 && (
-                            <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px] border border-primary/20">
-                              {quantity}
-                            </div>
-                          )}
+                          <div
+                            className="relative h-9 w-9 rounded-md border bg-background flex items-center justify-center overflow-hidden"
+                            title={label}
+                          >
+                            {photoUrl ? (
+                              <img src={photoUrl} alt={label} className="w-full h-full object-cover" />
+                            ) : (
+                              <Wrench className="w-4 h-4 text-muted-foreground" />
+                            )}
+                            {typeof quantity === 'number' && quantity > 1 && (
+                              <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px] border border-primary/20">
+                                {quantity}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[9px] leading-tight text-center text-muted-foreground line-clamp-2 w-full sm:hidden">
+                            {label}
+                          </span>
                         </div>
                       );
                     })}

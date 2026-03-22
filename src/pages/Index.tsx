@@ -35,6 +35,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
 import { Button } from '@/components/ui/button';
 import { useLiabilityAcceptance } from '@/hooks/useLiabilityAcceptance';
+import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { LiabilityAgreementDialog } from '@/components/LiabilityAgreementDialog';
 
 // Force rebuild to clear cache
@@ -42,6 +43,7 @@ import { LiabilityAgreementDialog } from '@/components/LiabilityAgreementDialog'
 const Index = () => {
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL RETURNS
   const { user } = useAuth();
+  const { projectCatalogEnabled } = useGlobalPublicSettings();
   const { accepted: liabilityAccepted, loading: liabilityLoading, refetch: refetchLiability } = useLiabilityAcceptance();
   const { isAdmin } = useUserRole();
   const { hasProjectOwnerRole } = useProjectOwner();
@@ -51,10 +53,10 @@ const Index = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [currentView, setCurrentView] = useState<'home' | 'admin' | 'user' | 'editWorkflow'>('home');
-  const [mobileView, setMobileView] = useState<'home' | 'projects' | 'workflow' | 'catalog'>('home');
+  const [mobileView, setMobileView] = useState<'home' | 'projects' | 'workflow' | 'catalog' | 'tasks'>('home');
   const [resetUserView, setResetUserView] = useState(false);
   const [forceListingMode, setForceListingMode] = useState(false);
-  const [mobileActiveTab, setMobileActiveTab] = useState<'home' | 'projects' | 'profile' | 'help' | 'expert'>('home');
+  const [mobileActiveTab, setMobileActiveTab] = useState<'home' | 'projects' | 'tasks' | 'profile' | 'help' | 'expert'>('home');
   
   // Modal states - moved from Navigation to work on both mobile and desktop
   const [showKCExplainer, setShowKCExplainer] = useState(false);
@@ -89,6 +91,12 @@ const Index = () => {
     }
   }, [setCurrentProjectRun, setCurrentProject]);
 
+  useEffect(() => {
+    if (!projectCatalogEnabled && mobileView === 'catalog') {
+      setMobileView('projects');
+    }
+  }, [projectCatalogEnabled, mobileView]);
+
   // Removed debug logging - no longer tracking duplicate modals
 
   // Handle navigation state changes (including view parameter)
@@ -96,7 +104,12 @@ const Index = () => {
     const openFromState = location.state?.openTaskList === true;
     const openFromStorage = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('openTaskList') === '1';
     if (openFromState || openFromStorage) {
-      setIsHomeTaskListOpen(true);
+      if (isMobile) {
+        setMobileView('tasks');
+        setMobileActiveTab('tasks');
+      } else {
+        setIsHomeTaskListOpen(true);
+      }
       if (openFromStorage) sessionStorage.removeItem('openTaskList');
       if (openFromState) {
         navigate(location.pathname, { state: { ...location.state, openTaskList: undefined }, replace: true });
@@ -221,7 +234,12 @@ const Index = () => {
     const handleHomeTaskListEvent = (event: Event) => {
       console.log('📋 Opening Home Task List');
       event.stopPropagation();
-      setIsHomeTaskListOpen(true);
+      if (isMobile) {
+        setMobileView('tasks');
+        setMobileActiveTab('tasks');
+      } else {
+        setIsHomeTaskListOpen(true);
+      }
     };
 
     // Add event listeners
@@ -252,7 +270,7 @@ const Index = () => {
       window.removeEventListener('show-tools-library-grid', handleToolsLibraryGridEvent);
       window.removeEventListener('show-home-task-list', handleHomeTaskListEvent);
     };
-  }, []);
+  }, [isMobile]);
 
   // Listen for force-project-dashboard-listing event - CRITICAL for Project Dashboard button
   useEffect(() => {
@@ -424,8 +442,17 @@ const Index = () => {
     setResetUserView(false);
   };
 
+  const mobileNavCurrentView =
+    mobileView === 'tasks'
+      ? 'tasks'
+      : mobileView === 'projects'
+        ? 'projects'
+        : mobileView === 'workflow'
+          ? 'projects'
+          : mobileActiveTab;
+
   // Mobile navigation handlers
-  const handleMobileNavigation = (tab: 'home' | 'projects' | 'profile' | 'help' | 'expert') => {
+  const handleMobileNavigation = (tab: 'home' | 'projects' | 'tasks' | 'profile' | 'help' | 'expert') => {
     setMobileActiveTab(tab);
     switch (tab) {
       case 'home':
@@ -433,6 +460,9 @@ const Index = () => {
         break;
       case 'projects':
         setMobileView('projects');
+        break;
+      case 'tasks':
+        setMobileView('tasks');
         break;
       case 'profile':
         // Don't set showProfileManager here, Navigation handles this
@@ -477,17 +507,42 @@ const Index = () => {
               }} />
             </div>
           );
+        case 'tasks':
+          return (
+            <div className="h-screen flex flex-col min-h-0">
+              <div className="flex-1 min-h-0 flex flex-col overflow-hidden pb-20">
+                <HomeTaskList
+                  embedded
+                  open
+                  onOpenChange={(isOpen) => {
+                    if (!isOpen) {
+                      setMobileView('home');
+                      setMobileActiveTab('home');
+                    }
+                  }}
+                />
+              </div>
+              <MobileBottomNav
+                currentView={mobileNavCurrentView}
+                onViewChange={handleMobileNavigation}
+                onQuickAction={handleMobileQuickAction}
+              />
+            </div>
+          );
         case 'projects':
           console.log('🔍 RENDERING Index MobileProjectListing - mobileView is projects');
           return (
             <div className="h-screen flex flex-col">
               <MobileProjectListing
                 onProjectSelect={handleMobileProjectSelect}
-                onNewProject={() => setMobileView('catalog')}
+                onNewProject={
+                  projectCatalogEnabled ? () => setMobileView('catalog') : undefined
+                }
+                catalogNewProjectEnabled={projectCatalogEnabled}
                 onClose={() => setMobileView('home')}
               />
               <MobileBottomNav
-                currentView="projects"
+                currentView={mobileNavCurrentView}
                 onViewChange={handleMobileNavigation}
                 onQuickAction={handleMobileQuickAction}
               />
@@ -509,7 +564,7 @@ const Index = () => {
                 showProfile={location.state?.showProfile}
               />
               <MobileBottomNav
-                currentView="projects"
+                currentView={mobileNavCurrentView}
                 onViewChange={handleMobileNavigation}
                 onQuickAction={handleMobileQuickAction}
               />
@@ -521,7 +576,7 @@ const Index = () => {
             <div className="h-screen flex flex-col">
               <MobileOptimizedHome />
               <MobileBottomNav
-                currentView={mobileActiveTab}
+                currentView={mobileNavCurrentView}
                 onViewChange={handleMobileNavigation}
                 onQuickAction={handleMobileQuickAction}
               />
@@ -624,10 +679,12 @@ const Index = () => {
         onOpenChange={setIsToolsLibraryGridOpen}
       />
 
-      <HomeTaskList 
-        open={isHomeTaskListOpen}
-        onOpenChange={setIsHomeTaskListOpen}
-      />
+      {!isMobile && (
+        <HomeTaskList
+          open={isHomeTaskListOpen}
+          onOpenChange={setIsHomeTaskListOpen}
+        />
+      )}
     </div>
   );
 };

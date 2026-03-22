@@ -8,11 +8,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { FeedbackDialog } from './FeedbackDialog';
 import { FeatureRoadmapWindow } from './FeatureRoadmapWindow';
 import { AppDocumentationWindow } from './AppDocumentationWindow';
-import { HomeTaskList } from './HomeTaskList';
-
 interface MobileBottomNavProps {
   currentView: string;
-  onViewChange: (view: 'home' | 'projects' | 'profile' | 'help' | 'expert') => void;
+  onViewChange: (view: 'home' | 'projects' | 'tasks' | 'profile' | 'help' | 'expert') => void;
   onQuickAction?: () => void;
 }
 
@@ -32,7 +30,7 @@ export function MobileBottomNav({ currentView, onViewChange, onQuickAction }: Mo
 
   if (!isMobile || !user) return null;
 
-  const handleTabClick = (tab: 'home' | 'projects' | 'profile' | 'help' | 'expert') => {
+  const handleTabClick = (tab: 'home' | 'projects' | 'tasks' | 'profile' | 'help' | 'expert') => {
     setActiveTab(tab);
     onViewChange(tab);
   };
@@ -128,7 +126,6 @@ export function MobileBottomNav({ currentView, onViewChange, onQuickAction }: Mo
       <FeedbackDialog open={showFeedback} onOpenChange={setShowFeedback} />
       <FeatureRoadmapWindow open={isRoadmapOpen} onOpenChange={setIsRoadmapOpen} />
       <AppDocumentationWindow open={isDocumentationOpen} onOpenChange={setIsDocumentationOpen} />
-      <HomeTaskList open={showTaskManager} onOpenChange={setShowTaskManager} />
     </>
   );
 }

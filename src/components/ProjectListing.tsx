@@ -15,6 +15,7 @@ import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
 import { HomeManager } from '@/components/HomeManager';
 import { useState, useCallback } from "react";
 import { useButtonTracker } from '@/hooks/useButtonTracker';
+import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { CommunityPostsWindow } from '@/components/CommunityPostsWindow';
 import { ManualProjectDialog } from '@/components/ManualProjectDialog';
 import { ManualProjectEditDialog } from '@/components/ManualProjectEditDialog';
@@ -29,6 +30,7 @@ interface ProjectListingProps {
 export default function ProjectListing({ onProjectSelect }: ProjectListingProps) {
   const { projectRuns, currentProjectRun, setCurrentProjectRun, deleteProjectRun, fetchProjectRuns } = useProject();
   const { trackClick } = useButtonTracker();
+  const { projectCatalogEnabled } = useGlobalPublicSettings();
   const navigate = useNavigate();
   const [showProfileManager, setShowProfileManager] = useState(false);
   const [showToolsLibrary, setShowToolsLibrary] = useState(false);
@@ -164,6 +166,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                 <span className="hidden sm:inline">View All Photos</span>
                 <span className="sm:hidden">Photos</span>
               </Button>
+              {projectCatalogEnabled && (
               <Button 
                 onClick={() => navigate('/projects')}
                 variant="default"
@@ -174,6 +177,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                 <span className="hidden sm:inline">Start a New Project</span>
                 <span className="sm:hidden">New Project</span>
               </Button>
+              )}
               <Button 
                 variant="outline"
                 size="sm"
@@ -193,6 +197,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
             {projectRuns.filter(run => run.status !== 'cancelled').length === 0 ? (
               <div className="h-24 flex flex-col items-center justify-center space-y-2 text-center">
                 <p className="text-muted-foreground">No projects yet.</p>
+                {projectCatalogEnabled && (
                 <Button 
                   onClick={() => navigate('/projects')}
                   variant="outline"
@@ -201,6 +206,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                   <Plus className="w-4 h-4 mr-2" />
                   Start Your First Project
                 </Button>
+                )}
               </div>
             ) : (
               projectRuns
@@ -314,6 +320,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                   <TableCell colSpan={7} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <p className="text-muted-foreground">No projects yet.</p>
+                      {projectCatalogEnabled && (
                       <Button 
                         onClick={() => navigate('/projects')}
                         variant="outline"
@@ -322,6 +329,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                         <Plus className="w-4 h-4 mr-2" />
                         Start Your First Project
                       </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
