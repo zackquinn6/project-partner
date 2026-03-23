@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Edit3, Save, X, Target, XCircle, AlertTriangle, Eye, ArrowUp, ArrowDown, HelpCircle } from 'lucide-react';
+import { CheckCircle, Edit3, Save, X, Target, XCircle, AlertTriangle, Eye, ArrowUp, ArrowDown, HelpCircle, Ban, CircleCheckBig } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProject } from '@/contexts/ProjectContext';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +16,60 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
+import {
+  computeProjectMatchExplanation,
+  physicalCapabilityToEffortSegment,
+  type ProjectMatchRecommendationTier,
+} from '@/utils/projectMatchRecommendation';
+
+export type { ProjectMatchRecommendationTier } from '@/utils/projectMatchRecommendation';
+
+const MATCH_TIER_COPY: Record<
+  ProjectMatchRecommendationTier,
+  {
+    title: string;
+    subtitle: string;
+    Icon: LucideIcon;
+    cardClass: string;
+    iconWrapClass: string;
+    titleClass: string;
+    subtitleClass: string;
+  }
+> = {
+  not_yet: {
+    title: 'Not Yet',
+    subtitle: 'Skill or effort signals suggest waiting or more preparation.',
+    Icon: Ban,
+    cardClass:
+      'border-red-200 bg-red-50/60 dark:bg-red-950/25 dark:border-red-900/60',
+    iconWrapClass: 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400',
+    titleClass: 'text-red-900 dark:text-red-100',
+    subtitleClass: 'text-red-800/80 dark:text-red-200/80',
+  },
+  proceed_mindfully: {
+    title: 'Proceed Mindfully',
+    subtitle: 'Mixed signals—move forward with clear eyes on risk and scope.',
+    Icon: AlertTriangle,
+    cardClass:
+      'border-amber-200 bg-amber-50/60 dark:bg-amber-950/25 dark:border-amber-900/60',
+    iconWrapClass:
+      'bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400',
+    titleClass: 'text-amber-950 dark:text-amber-100',
+    subtitleClass: 'text-amber-900/85 dark:text-amber-200/85',
+  },
+  ready_to_start: {
+    title: 'Ready to Start',
+    subtitle: 'Skill and effort alignment supports starting this project.',
+    Icon: CircleCheckBig,
+    cardClass:
+      'border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/25 dark:border-emerald-900/60',
+    iconWrapClass:
+      'bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400',
+    titleClass: 'text-emerald-950 dark:text-emerald-100',
+    subtitleClass: 'text-emerald-900/85 dark:text-emerald-200/85',
+  },
+};
+
 interface ProjectOverviewStepProps {
   onComplete: () => void;
   isCompleted: boolean;
@@ -141,7 +197,28 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const displaySkillLevel = templateProject?.skillLevel ?? fetchedProjectInfo?.skillLevel ?? (currentProjectRun as any)?.skillLevel;
   const displayEstimatedTime = templateProject?.estimatedTime ?? fetchedProjectInfo?.estimatedTime ?? (currentProjectRun as any)?.estimatedTime;
   const displayEffortLevel = templateProject?.effortLevel ?? fetchedProjectInfo?.effortLevel ?? (currentProjectRun as any)?.effortLevel;
-  
+
+  const matchExplanation = useMemo(
+    () =>
+      currentProjectRun
+        ? computeProjectMatchExplanation({
+            projectSkillLevel: displaySkillLevel,
+            userSkillLevel: userProfile?.skill_level,
+            projectEffortLevel: displayEffortLevel,
+            userPhysicalCapability: userProfile?.physical_capability,
+            projectChallengesText: displayProjectChallenges,
+          })
+        : null,
+    [
+      currentProjectRun?.id,
+      displaySkillLevel,
+      userProfile?.skill_level,
+      displayEffortLevel,
+      userProfile?.physical_capability,
+      displayProjectChallenges,
+    ]
+  );
+
   // Budget fields - handle both camelCase and snake_case
   const rawBudgetPerUnit = (templateProject as any)?.budgetPerUnit ?? (templateProject as any)?.budget_perUnit ?? fetchedProjectInfo?.budgetPerUnit ?? (currentProjectRun as any)?.budgetPerUnit ?? (currentProjectRun as any)?.budget_perUnit;
   const displayBudgetPerUnit = rawBudgetPerUnit && typeof rawBudgetPerUnit === 'string' 
@@ -188,18 +265,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   };
 
   // Helper function to render 3-step slider
-  /** Map profile physical_capability to 0–2 for the Low/Medium/High track (same segments as the effort bar). */
-  const getPhysicalCapabilitySegmentIndex = (cap: string | null | undefined): number => {
-    const key = (cap || '').toLowerCase();
-    const segmentByCapability: Record<string, number> = {
-      limited: 0,
-      moderate: 1,
-      high: 2,
-      'very high': 2,
-    };
-    const idx = segmentByCapability[key];
-    return idx === undefined ? -1 : idx;
-  };
+  /** Map profile physical_capability to 0–2 for the Low/Medium/High track (same scale as recommendation logic). */
+  const getPhysicalCapabilitySegmentIndex = (cap: string | null | undefined): number =>
+    physicalCapabilityToEffortSegment(cap) ?? -1;
 
   const renderLevelSlider = (
     currentLevel: string | null | undefined,
@@ -335,20 +403,13 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   // Note: Using physical_capability as a proxy for effort level since user profile doesn't have effort_level
   const getEffortLevelComparison = () => {
     const projectEffort = (displayEffortLevel || '').toLowerCase();
-    const userCapability = (userProfile?.physical_capability || '').toLowerCase();
-    if (!projectEffort || !userCapability) return null;
+    if (!projectEffort) return null;
 
-    // Map effort levels and physical capabilities (segment index for comparison; aligns with 3-segment bar)
     const effortLevels = ['low', 'medium', 'high'];
-    const capabilityLevels: Record<string, number> = {
-      'limited': 0,
-      'moderate': 1,
-      'high': 2,
-      'very high': 3
-    };
     const projectIndex = effortLevels.indexOf(projectEffort);
-    const userIndex = capabilityLevels[userCapability] ?? -1;
-    if (projectIndex === -1 || userIndex === -1) return null;
+    const userSeg = physicalCapabilityToEffortSegment(userProfile?.physical_capability);
+    if (projectIndex === -1 || userSeg === null) return null;
+    const userIndex = userSeg;
 
     // Adjust comparison logic based on effort vs capability mapping
     if (userIndex >= projectIndex) {
@@ -439,7 +500,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     });
     setIsEditing(false);
   };
-  if (!currentProjectRun) {
+  if (!currentProjectRun || !matchExplanation) {
     return <div>No project selected</div>;
   }
   const skillComparison = getSkillLevelComparison();
@@ -450,6 +511,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   // Priority: templateProject > fetchedProjectInfo > currentProjectRun
   const itemType = (templateProject as any)?.item_type ?? (templateProject as any)?.itemType ?? fetchedProjectInfo?.itemType ?? (currentProjectRun as any)?.itemType;
   
+  const tierVisual = MATCH_TIER_COPY[matchExplanation.tier];
+  const TierIcon = tierVisual.Icon;
+
   const formattedScalingUnit = displayScalingUnit ? (() => {
     const scalingUnitToUse = displayScalingUnit;
     const normalizedScalingUnit = scalingUnitToUse.toLowerCase().trim();
@@ -476,7 +540,63 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="space-y-2 p-2 sm:p-3">
+        <CardContent className="space-y-4 p-2 sm:p-3">
+          <section className="space-y-4" aria-label="Project fit recommendation">
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground text-center">
+              Recommendation
+            </h2>
+            <div className="flex justify-center w-full">
+              <div
+                className={`flex w-full max-w-md flex-col items-center text-center rounded-xl border-2 px-5 py-6 gap-3 shadow-sm ${tierVisual.cardClass}`}
+              >
+                <div
+                  className={`flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full ${tierVisual.iconWrapClass}`}
+                  aria-hidden
+                >
+                  <TierIcon className="h-7 w-7 sm:h-8 sm:w-8 stroke-[2.5]" />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <p
+                    className={`text-base sm:text-lg font-semibold leading-snug ${tierVisual.titleClass}`}
+                  >
+                    {tierVisual.title}
+                  </p>
+                  <p className={`text-xs ${tierVisual.subtitleClass}`}>
+                    {tierVisual.subtitle}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-muted/20 px-4 py-4 text-left space-y-4">
+              <h3 className="text-sm font-semibold text-foreground sm:text-base">Summary</h3>
+              <p className="text-sm text-foreground leading-relaxed">{matchExplanation.summary}</p>
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Project challenges
+                </p>
+                <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
+                  {matchExplanation.challengesParagraph}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Why this recommendation
+                </p>
+                <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1.5 leading-relaxed">
+                  <li>{matchExplanation.reasonSkill}</li>
+                  <li>{matchExplanation.reasonEffort}</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <Accordion type="single" collapsible className="w-full rounded-lg border bg-muted/20 px-2 sm:px-3">
+            <AccordionItem value="project-details" className="border-none">
+              <AccordionTrigger className="text-sm sm:text-base font-semibold py-3 hover:no-underline">
+                Project details
+              </AccordionTrigger>
+              <AccordionContent className="pb-4 pt-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             <div className="flex-1 min-w-0">
               <Label className="text-xs">Description</Label>
@@ -662,6 +782,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               </div>
             </div>
           </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
         </CardContent>
       </Card>

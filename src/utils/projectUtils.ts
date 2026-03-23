@@ -595,16 +595,19 @@ export const extractSpaceIdFromCompletionKey = (completionKey: string): string |
   return completionKey.substring(colonIndex + 1); // Composite format: extract spaceId
 };
 
+/** Stable UI kickoff step ids (must match KickoffWorkflow / template kickoff steps). */
+export const KICKOFF_UI_STEP_IDS = [
+  'kickoff-step-1',
+  'kickoff-step-2',
+  'kickoff-step-3',
+  'kickoff-step-4',
+] as const;
+
 export const isKickoffPhaseComplete = (completedSteps: string[]): boolean => {
-  const kickoffStepIds = [
-    'kickoff-step-1',
-    'kickoff-step-2',
-    'kickoff-step-3',
-    'kickoff-step-4'
-  ];
-  
+  const kickoffStepIds = KICKOFF_UI_STEP_IDS;
+
   // STRICT CHECK: All 4 UI kickoff step IDs must be present
-  const allKickoffStepsComplete = kickoffStepIds.every(stepId => 
+  const allKickoffStepsComplete = kickoffStepIds.every(stepId =>
     completedSteps.includes(stepId)
   );
   
@@ -622,12 +625,5 @@ export const isKickoffPhaseComplete = (completedSteps: string[]): boolean => {
 };
 
 export const getKickoffStepIndex = (stepId: string): number => {
-  const kickoffStepIds = [
-    'kickoff-step-1',
-    'kickoff-step-2',
-    'kickoff-step-3',
-    'kickoff-step-4'
-  ];
-  
-  return kickoffStepIds.indexOf(stepId);
+  return (KICKOFF_UI_STEP_IDS as readonly string[]).indexOf(stepId);
 };

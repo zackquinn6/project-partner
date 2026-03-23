@@ -7,7 +7,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectData } from './ProjectDataContext';
 import { useGuest } from './GuestContext';
 import { toast } from '@/components/ui/use-toast';
-import { ensureStandardPhasesForNewProject } from '@/utils/projectUtils';
+import { ensureStandardPhasesForNewProject, isKickoffPhaseComplete } from '@/utils/projectUtils';
 import { useOptimizedState } from '@/hooks/useOptimizedState';
 import { mergeQualityControlSettings, parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
 
@@ -845,10 +845,12 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     const isInitialTimelineUpdate = (projectRun as any).initial_timeline !== undefined;
     const isInitialSizingUpdate = (projectRun as any).initial_sizing !== undefined;
     // Check if this is a kickoff completion update (status changing to 'in-progress' with kickoff steps completed)
-    const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
-    const hasAllKickoffSteps = kickoffStepIds.every(id => projectRun.completedSteps.includes(id));
-    const isKickoffCompletion = projectRun.status === 'in-progress' && hasAllKickoffSteps && 
-                                 (currentProjectRun?.status !== 'in-progress' || !kickoffStepIds.every(id => (currentProjectRun?.completedSteps || []).includes(id)));
+    const incomingKickoffComplete = isKickoffPhaseComplete(projectRun.completedSteps || []);
+    const previousKickoffComplete = isKickoffPhaseComplete(currentProjectRun?.completedSteps || []);
+    const isKickoffCompletion =
+      projectRun.status === 'in-progress' &&
+      incomingKickoffComplete &&
+      (currentProjectRun?.status !== 'in-progress' || !previousKickoffComplete);
     const qcIncoming = (projectRun as any).quality_control_settings;
     const isQualityControlSettingsUpdate =
       qcIncoming !== undefined &&

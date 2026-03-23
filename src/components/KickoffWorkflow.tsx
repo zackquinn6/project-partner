@@ -302,7 +302,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   const currentStepPurpose = (() => {
     switch (currentStepId) {
       case 'kickoff-step-1':
-        return 'Overview the project and make sure this project is a good fit';
+        return "Let's make sure this project is a great fit";
       case 'kickoff-step-2':
         return 'Personalize the project to your unique DIY experience level and preferences';
       case 'kickoff-step-3':

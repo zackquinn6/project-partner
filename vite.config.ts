@@ -16,12 +16,12 @@ export default defineConfig(({ mode }) => {
       fileEnv.VITE_SUPABASE_ANON_KEY?.trim() ||
       fileEnv.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
     if (!url || !key) {
-      console.error(
+      console.warn(
         "\n[!] Missing Supabase environment variables for local dev.\n" +
           "    Copy .env.example to .env in the project root, then set:\n" +
-          "    VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY).\n"
+          "    VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY).\n" +
+          "    The dev server will still start; the app will error when the Supabase client loads until these are set.\n"
       );
-      process.exit(1);
     }
   }
 

@@ -54,6 +54,8 @@ interface QualityCheckWindowProps {
   onToggleOutputComplete: (stepId: string, outputId: string) => void;
   onRefresh?: () => void;
   userDisplayName: string;
+  /** When true for an open cycle, the settings accordion starts expanded (e.g. opened from planning wizard). */
+  expandSettingsAccordionWhenOpen?: boolean;
 }
 
 export function QualityCheckWindow({
@@ -68,10 +70,12 @@ export function QualityCheckWindow({
   onJumpToStep,
   onToggleOutputComplete,
   onRefresh,
-  userDisplayName
+  userDisplayName,
+  expandSettingsAccordionWhenOpen = false,
 }: QualityCheckWindowProps) {
   const [showOnlyIncomplete, setShowOnlyIncomplete] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsAccordionValue, setSettingsAccordionValue] = useState<string[]>([]);
 
   const settings = useMemo(
     () => mergeQualityControlSettings(projectRun?.quality_control_settings),
@@ -85,6 +89,12 @@ export function QualityCheckWindow({
     setLocalRequirePhotos(settings.require_photos_per_step);
     setLocalRequireAllOutputs(settings.require_all_outputs);
   }, [settings.require_photos_per_step, settings.require_all_outputs, projectRun?.id]);
+
+  useEffect(() => {
+    if (open) {
+      setSettingsAccordionValue(expandSettingsAccordionWhenOpen ? ['qc-settings'] : []);
+    }
+  }, [open, expandSettingsAccordionWhenOpen]);
 
   const persistSettings = useCallback(
     async (next: QualityControlSettings) => {
@@ -220,7 +230,7 @@ export function QualityCheckWindow({
             'flex flex-col overflow-hidden'
           )}
         >
-          <DialogHeader className="px-4 md:px-6 py-2 md:py-3 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-left space-y-2">
+          <DialogHeader className="px-4 md:px-6 pt-5 pb-3 md:pt-6 md:pb-4 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-left space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
@@ -250,20 +260,12 @@ export function QualityCheckWindow({
                     </Tooltip>
                   </TooltipProvider>
                 )}
-                {projectRun && (
-                  <QualityControlPdfPrinter
-                    rows={pdfRows}
-                    reportTitle={appTitle}
-                    projectName={projectDisplayName}
-                    userDisplayName={userDisplayName}
-                  />
-                )}
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => onOpenChange(false)}
-                  className="h-8 px-3 text-xs"
+                  className="h-8 px-3 text-xs font-medium"
                 >
                   Close
                 </Button>
@@ -272,10 +274,25 @@ export function QualityCheckWindow({
             <DialogDescription className="text-sm text-muted-foreground text-left">
               Track outputs for this project. Settings apply only to this project run.
             </DialogDescription>
+            {projectRun ? (
+              <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                <QualityControlPdfPrinter
+                  rows={pdfRows}
+                  reportTitle={appTitle}
+                  projectName={projectDisplayName}
+                  userDisplayName={userDisplayName}
+                />
+              </div>
+            ) : null}
           </DialogHeader>
 
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 py-4 md:py-6 space-y-4">
-            <Accordion type="multiple" defaultValue={['qc-settings']} className="w-full border rounded-lg px-3">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 pt-6 md:pt-8 pb-4 md:pb-6 space-y-4">
+            <Accordion
+              type="multiple"
+              value={settingsAccordionValue}
+              onValueChange={setSettingsAccordionValue}
+              className="w-full border rounded-lg px-3"
+            >
               <AccordionItem value="qc-settings" className="border-none">
                 <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline">
                   Quality Control Settings
@@ -354,8 +371,7 @@ export function QualityCheckWindow({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-40">Phase</TableHead>
-                      <TableHead className="w-56">Step</TableHead>
+                      <TableHead className="min-w-[10rem] max-w-[18rem]">Phase &amp; step</TableHead>
                       <TableHead>Output</TableHead>
                       <TableHead className="w-32">Type</TableHead>
                       <TableHead className="w-28">Status</TableHead>
@@ -365,8 +381,12 @@ export function QualityCheckWindow({
                   <TableBody>
                     {visibleRows.map((row) => (
                       <TableRow key={row.key}>
-                        <TableCell className="align-top text-sm">{row.phaseName || '—'}</TableCell>
-                        <TableCell className="align-top text-sm">{row.operationStepName}</TableCell>
+                        <TableCell className="align-top">
+                          <div className="text-sm font-medium leading-snug">{row.phaseName || '—'}</div>
+                          <div className="text-xs text-muted-foreground leading-snug mt-0.5">
+                            {row.operationStepName}
+                          </div>
+                        </TableCell>
                         <TableCell className="align-top text-sm font-medium">{row.outputName}</TableCell>
                         <TableCell className="align-top">
                           <Badge variant="outline" className="text-[10px] capitalize">

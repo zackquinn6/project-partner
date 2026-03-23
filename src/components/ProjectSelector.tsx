@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus, FolderOpen, Edit, Home } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { HomeManager } from '@/components/HomeManager';
+import { isKickoffPhaseComplete } from '@/utils/projectUtils';
 
 interface ProjectSelectorProps {
   isAdminMode?: boolean;
@@ -90,10 +91,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
         );
         
         if (existingRun) {
-          const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
-          const kickoffComplete = kickoffStepIds.every(stepId => 
-            existingRun.completedSteps.includes(stepId)
-          );
+          const kickoffComplete = isKickoffPhaseComplete(existingRun.completedSteps || []);
           
           // Only show project setup dialog if kickoff is complete
           if (kickoffComplete) {
@@ -120,10 +118,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
         );
         
         if (existingRun) {
-          const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
-          const kickoffComplete = kickoffStepIds.every(stepId => 
-            existingRun.completedSteps.includes(stepId)
-          );
+          const kickoffComplete = isKickoffPhaseComplete(existingRun.completedSteps || []);
           
           // Only show project setup dialog if kickoff is complete
           if (kickoffComplete) {

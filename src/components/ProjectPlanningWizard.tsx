@@ -36,6 +36,10 @@ interface ProjectPlanningWizardProps {
   onOpenBudgeting?: () => void;
   /** When provided, opens Risk Management at the host level (avoids nested dialog) */
   onOpenRiskManagement?: () => void;
+  /** Opens Quality Control with settings expanded (planning wizard quality tab). */
+  onOpenQualityControl?: () => void;
+  /** Persist workflow step completion + outputs when the user finishes every wizard step */
+  onWorkflowFullyComplete?: (selectedTools: PlanningToolId[]) => void | Promise<void>;
 }
 
 export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
@@ -43,7 +47,9 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   onOpenChange,
   onGoToWorkflow,
   onOpenBudgeting,
-  onOpenRiskManagement
+  onOpenRiskManagement,
+  onOpenQualityControl,
+  onWorkflowFullyComplete,
 }) => {
   const { currentProjectRun, updateProjectRun } = useProject();
   const { expertSupportEnabled } = usePartnerAppSettings();
@@ -206,7 +212,12 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       case 'shopping_list':
         return <ShoppingStep {...stepProps} />;
       case 'quality_control':
-        return <QualityControlStep {...stepProps} />;
+        return (
+          <QualityControlStep
+            {...stepProps}
+            onOpenQualityControlApp={onOpenQualityControl}
+          />
+        );
       case 'expert_support':
         return <ExpertSupportStep {...stepProps} />;
       default:
@@ -374,7 +385,15 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
               <CardContent className="p-3 sm:p-4">
                 {allStepsComplete ? (
                   <Button 
-                    onClick={() => onOpenChange(false)}
+                    onClick={async () => {
+                      const isNoToolsPlaceholder =
+                        wizardSteps.length === 1 && wizardSteps[0].toolId === null;
+                      if (!isNoToolsPlaceholder && onWorkflowFullyComplete) {
+                        const tools = localSelectedTools ?? selectedToolsFromContext;
+                        await onWorkflowFullyComplete(tools);
+                      }
+                      onOpenChange(false);
+                    }}
                     className="w-full bg-green-600 hover:bg-green-700"
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />

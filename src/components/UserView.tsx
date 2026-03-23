@@ -64,8 +64,11 @@ import {
   isKickoffPhaseComplete,
   getStepCompletionKey,
   isStepCompleted,
-  extractStepIdFromCompletionKey
+  extractStepIdFromCompletionKey,
+  KICKOFF_UI_STEP_IDS
 } from '@/utils/projectUtils';
+import { collectPlanningWizardWorkflowCompletion } from '@/utils/planningWizardCompletion';
+import type { PlanningToolId } from '@/components/KickoffSteps/ProjectToolsStep';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { useMembership } from '@/contexts/MembershipContext';
@@ -225,6 +228,7 @@ export default function UserView({
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
   const [projectPerformanceOpen, setProjectPerformanceOpen] = useState(false);
   const [qualityCheckOpen, setQualityCheckOpen] = useState(false);
+  const [qualityCheckExpandSettingsAccordion, setQualityCheckExpandSettingsAccordion] = useState(false);
   const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false);
   const [notesGalleryOpen, setNotesGalleryOpen] = useState(false);
   const [notesGalleryInitialStepId, setNotesGalleryInitialStepId] = useState<string>('');
@@ -676,6 +680,40 @@ export default function UserView({
       });
     });
   }, [organizedNavigation, appOverrides]);
+
+  const persistedCompletedStepsSignature = useMemo(() => {
+    const arr = currentProjectRun?.completedSteps;
+    if (!Array.isArray(arr)) return '';
+    return [...arr].sort().join(',');
+  }, [currentProjectRun?.completedSteps]);
+
+  /** When steps are marked complete in the DB (kickoff, planning wizard, etc.), mirror required outputs as checked in the main workflow UI. */
+  useEffect(() => {
+    if (!currentProjectRun?.id || allSteps.length === 0) return;
+    const completedArr = currentProjectRun.completedSteps;
+    if (!Array.isArray(completedArr) || completedArr.length === 0) return;
+
+    setCheckedOutputs((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const step of allSteps) {
+        const spaceId = (step as { spaceId?: string | null }).spaceId ?? null;
+        if (!isStepCompleted(completedArr, step.id, spaceId)) continue;
+        const outputs = step.outputs || [];
+        if (outputs.length === 0) continue;
+        const existing = new Set(next[step.id] || []);
+        const beforeSize = existing.size;
+        for (const o of outputs) {
+          existing.add(o.id);
+        }
+        if (existing.size !== beforeSize) {
+          next[step.id] = existing;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [currentProjectRun?.id, persistedCompletedStepsSignature, allSteps]);
   
   // CRITICAL DEBUG: Log what's actually in the data - simplified output
   const firstPhase = workflowPhases?.[0];
@@ -1120,6 +1158,49 @@ export default function UserView({
       }
     }
   }, [currentProjectRun, currentProject, workflowPhases, isKickoffComplete, setCurrentProjectRun, refreshEstimatedFinishDate]);
+
+  const handlePlanningWizardFullyComplete = React.useCallback(
+    async (tools: PlanningToolId[]) => {
+      if (!currentProjectRun) return;
+      const phases = Array.isArray(currentProjectRun.phases) ? (currentProjectRun.phases as Phase[]) : [];
+      const { stepIds, outputEntries } = collectPlanningWizardWorkflowCompletion(phases, tools);
+      if (stepIds.length === 0) {
+        return;
+      }
+
+      const base = [...(currentProjectRun.completedSteps || [])];
+      const uniqueCompleted = [...new Set([...base, ...stepIds])];
+
+      setCheckedOutputs((prev) => {
+        const next = { ...prev };
+        for (const { stepId, outputIds } of outputEntries) {
+          next[stepId] = new Set([...(next[stepId] || []), ...outputIds]);
+        }
+        return next;
+      });
+
+      setCompletedSteps(new Set(uniqueCompleted));
+
+      const tempRun = { ...currentProjectRun, completedSteps: uniqueCompleted };
+      let calculatedProgress = 0;
+      try {
+        calculatedProgress = calculateProjectProgress(tempRun);
+      } catch {
+        toast.error('Progress reporting style is missing for this project run.');
+        return;
+      }
+      const newStatus = calculatedProgress >= 100 ? 'complete' : currentProjectRun.status;
+
+      await updateProjectRun({
+        ...currentProjectRun,
+        completedSteps: uniqueCompleted,
+        progress: Math.round(calculatedProgress),
+        status: newStatus,
+        updatedAt: new Date(),
+      });
+    },
+    [currentProjectRun, updateProjectRun]
+  );
   
   // Check and regenerate schedule on project open
   useEffect(() => {
@@ -1401,11 +1482,10 @@ export default function UserView({
         
         // Immediately update the project run to persist the step completion
         if (currentProjectRun) {
-          const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
-          // Filter kickoff steps (handle both simple and composite keys)
+          // Preserve all kickoff UI step completion keys when persisting other workflow steps
           const preservedKickoffSteps = currentProjectRun.completedSteps.filter(stepId => {
             const extractedStepId = extractStepIdFromCompletionKey(stepId);
-            return kickoffStepIds.includes(extractedStepId);
+            return (KICKOFF_UI_STEP_IDS as readonly string[]).includes(extractedStepId);
           });
           
           // Filter out kickoff steps from new completed steps (handle both simple and composite keys)
@@ -1758,6 +1838,7 @@ export default function UserView({
         setRiskManagementOpen(true);
         break;
       case 'quality-check':
+        setQualityCheckExpandSettingsAccordion(false);
         setQualityCheckOpen(true);
         break;
       case 'waste-removal':
@@ -3714,6 +3795,7 @@ export default function UserView({
       <ProjectPlanningWizard
         open={projectPlanningWizardOpen}
         onOpenChange={setProjectPlanningWizardOpen}
+        onWorkflowFullyComplete={handlePlanningWizardFullyComplete}
         onGoToWorkflow={() => {
           console.log("🎯 Planning Wizard: Let's get to work - switching to workflow");
           setProjectPlanningWizardOpen(false);
@@ -3721,6 +3803,10 @@ export default function UserView({
         }}
         onOpenBudgeting={() => setProjectBudgetingOpen(true)}
         onOpenRiskManagement={() => setRiskManagementOpen(true)}
+        onOpenQualityControl={() => {
+          setQualityCheckExpandSettingsAccordion(true);
+          setQualityCheckOpen(true);
+        }}
       />
       
       {/* Project Completion Popup */}
@@ -3803,7 +3889,11 @@ export default function UserView({
       {/* Quality Control (native app quality-check) */}
       <QualityCheckWindow
         open={qualityCheckOpen}
-        onOpenChange={setQualityCheckOpen}
+        onOpenChange={(open) => {
+          if (!open) setQualityCheckExpandSettingsAccordion(false);
+          setQualityCheckOpen(open);
+        }}
+        expandSettingsAccordionWhenOpen={qualityCheckExpandSettingsAccordion}
         appTitle={qualityControlAppTitle}
         projectRun={currentProjectRun ?? undefined}
         updateProjectRun={updateProjectRun}

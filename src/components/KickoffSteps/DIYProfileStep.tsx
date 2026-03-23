@@ -140,15 +140,9 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
 
     return (
       <div className="space-y-1.5">
-        <div className="text-center">
-          <p className="text-[10px] sm:text-xs text-muted-foreground">
-            Your profile helps us customize your project to fit your tools, skillset, and build style.
-          </p>
-        </div>
-
-        {/* Two-card layout: Profile (about 25%) + Owned Tools (tool library) */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <Card className="md:col-span-1">
+        {/* Two-card layout: Personal info ~28.75% (+15% vs 1/4) + Owned Tools */}
+        <div className="grid grid-cols-1 md:grid-cols-[23fr_57fr] gap-3">
+          <Card className="min-w-0">
             <CardContent className="p-3 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
@@ -159,9 +153,9 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                   onClick={handleStartEdit}
                   variant="outline"
                   size="sm"
-                  className="h-7 px-2 flex items-center gap-1 text-xs"
+                  className="h-6 min-h-6 px-1.5 gap-0.5 text-[10px] font-normal leading-none"
                 >
-                  <Edit3 className="w-3 h-3" />
+                  <Edit3 className="w-2.5 h-2.5 shrink-0" />
                   <span className="hidden sm:inline">Edit Profile</span>
                   <span className="sm:hidden">Edit</span>
                 </Button>
@@ -208,7 +202,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
             </CardContent>
           </Card>
 
-          <Card className="md:col-span-3">
+          <Card className="min-w-0">
             <CardContent className="p-3 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
@@ -218,10 +212,10 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 px-2 flex items-center gap-1 text-xs"
+                  className="h-6 min-h-6 px-1.5 gap-0.5 text-[10px] font-normal leading-none"
                   onClick={() => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))}
                 >
-                  <Edit3 className="w-3 h-3" />
+                  <Edit3 className="w-2.5 h-2.5 shrink-0" />
                   <span className="hidden sm:inline">Edit Tool Library</span>
                   <span className="sm:hidden">Tools</span>
                 </Button>
@@ -250,7 +244,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                       return (
                         <div
                           key={toolId ?? toolName ?? String(index)}
-                          className="flex w-[4.25rem] flex-col items-center gap-1 flex-shrink-0 sm:w-9 sm:gap-0"
+                          className="flex w-[4.75rem] sm:w-20 flex-col items-center gap-1 flex-shrink-0"
                         >
                           <div
                             className="relative h-9 w-9 rounded-md border bg-background flex items-center justify-center overflow-hidden"
@@ -267,7 +261,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                               </div>
                             )}
                           </div>
-                          <span className="text-[9px] leading-tight text-center text-muted-foreground line-clamp-2 w-full sm:hidden">
+                          <span className="text-[9px] sm:text-[10px] leading-tight text-center text-muted-foreground line-clamp-2 w-full px-0.5">
                             {label}
                           </span>
                         </div>

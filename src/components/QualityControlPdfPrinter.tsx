@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
@@ -24,6 +25,8 @@ interface QualityControlPdfPrinterProps {
   userDisplayName: string;
   /** Optional id to trigger export from a menu (mobile pattern). */
   buttonId?: string;
+  /** Extra classes for the trigger button (e.g. smaller type in dense headers). */
+  triggerClassName?: string;
 }
 
 function formatOutputType(t: string): string {
@@ -35,7 +38,8 @@ export const QualityControlPdfPrinter: React.FC<QualityControlPdfPrinterProps> =
   reportTitle,
   projectName,
   userDisplayName,
-  buttonId
+  buttonId,
+  triggerClassName,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -105,8 +109,7 @@ export const QualityControlPdfPrinter: React.FC<QualityControlPdfPrinterProps> =
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
         <thead>
           <tr style={{ backgroundColor: '#f8f9fa' }}>
-            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Phase</th>
-            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Step</th>
+            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Phase &amp; step</th>
             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Output</th>
             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Type</th>
             <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Status</th>
@@ -116,7 +119,7 @@ export const QualityControlPdfPrinter: React.FC<QualityControlPdfPrinterProps> =
           {data.length === 0 ? (
             <tr>
               <td
-                colSpan={5}
+                colSpan={4}
                 style={{ border: '1px solid #ddd', padding: '10px', color: '#666', fontStyle: 'italic' }}
               >
                 None
@@ -125,8 +128,10 @@ export const QualityControlPdfPrinter: React.FC<QualityControlPdfPrinterProps> =
           ) : (
             data.map((row, index) => (
               <tr key={row.key} style={{ backgroundColor: index % 2 === 0 ? '#fff' : '#f8f9fa' }}>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{row.phaseName || '—'}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{row.operationStepName}</td>
+                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                  <div style={{ fontWeight: 600 }}>{row.phaseName || '—'}</div>
+                  <div style={{ fontSize: '11px', color: '#555' }}>{row.operationStepName}</div>
+                </td>
                 <td style={{ border: '1px solid #ddd', padding: '8px' }}>{row.outputName}</td>
                 <td style={{ border: '1px solid #ddd', padding: '8px', textTransform: 'capitalize' }}>
                   {formatOutputType(row.outputType)}
@@ -149,7 +154,7 @@ export const QualityControlPdfPrinter: React.FC<QualityControlPdfPrinterProps> =
           id={buttonId}
           variant="outline"
           onClick={generatePDF}
-          className="h-8 w-8 p-0 shrink-0"
+          className={cn('h-8 w-8 p-0 shrink-0', triggerClassName)}
           title="Export PDF"
         >
           <Download className="h-4 w-4 text-primary" />
@@ -159,10 +164,10 @@ export const QualityControlPdfPrinter: React.FC<QualityControlPdfPrinterProps> =
           id={buttonId}
           variant="outline"
           onClick={generatePDF}
-          className="flex items-center gap-2 text-xs md:text-sm h-8"
+          className={cn('flex items-center gap-1.5 text-[10px] h-7 px-2 font-medium', triggerClassName)}
           title="Export PDF"
         >
-          <Download className="h-4 w-4 text-primary" />
+          <Download className="h-3.5 w-3.5 text-primary shrink-0" />
           Export PDF
         </Button>
       )}

@@ -34,6 +34,7 @@ import { HomeTaskList } from '@/components/HomeTaskList';
 import { BetaProjectWarning } from '@/components/BetaProjectWarning';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { isKickoffPhaseComplete } from '@/utils/projectUtils';
 interface ProjectTemplate {
   id: string;
   name: string;
@@ -951,10 +952,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     
     // If there's an existing project run, check if kickoff is complete
     if (existingRun) {
-      const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3'];
-      const kickoffComplete = kickoffStepIds.every(stepId => 
-        existingRun.completedSteps.includes(stepId)
-      );
+      const kickoffComplete = isKickoffPhaseComplete(existingRun.completedSteps || []);
       
       // Only show project setup dialog if kickoff is complete AND template doesn't have phases
       // (But we already checked above, so this should never happen for templates with phases)
