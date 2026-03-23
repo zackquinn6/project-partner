@@ -140,13 +140,13 @@ export const OutputDetailPopup: React.FC<OutputDetailPopupProps> = ({
             </Card>
           )}
 
-          {/* Quality Check */}
+          {/* Quality control (step output field) */}
           {output.qualityChecks && (
             <Card>
               <CardContent className="p-4">
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  Quality Check
+                  Quality control
                 </h4>
                 <p className="text-muted-foreground">{output.qualityChecks}</p>
               </CardContent>

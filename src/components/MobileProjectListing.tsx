@@ -9,6 +9,15 @@ import { MobileProjectCard } from './MobileProjectCard';
 import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useButtonTracker } from '@/hooks/useButtonTracker';
+import { calculateProjectProgress } from '@/utils/progressCalculation';
+
+function listingProgressPercent(run: ProjectRun): number {
+  try {
+    return calculateProjectProgress(run);
+  } catch {
+    return run.progress || 0;
+  }
+}
 
 interface MobileProjectListingProps {
   onProjectSelect: (project: Project | ProjectRun) => void;
@@ -55,8 +64,8 @@ export function MobileProjectListing({
 
     // Sort by progress (active first, then completed)
     return filtered.sort((a, b) => {
-      const aProgress = a.progress || 0;
-      const bProgress = b.progress || 0;
+      const aProgress = listingProgressPercent(a);
+      const bProgress = listingProgressPercent(b);
       
       // Active projects first
       if (aProgress < 100 && bProgress >= 100) return -1;
@@ -79,8 +88,8 @@ export function MobileProjectListing({
   }, [projects, searchQuery]);
 
   // Get counts
-  const activeCount = projectRuns.filter(run => (run.progress || 0) < 100).length;
-  const completedCount = projectRuns.filter(run => (run.progress || 0) >= 100).length;
+  const activeCount = projectRuns.filter((run) => listingProgressPercent(run) < 100).length;
+  const completedCount = projectRuns.filter((run) => listingProgressPercent(run) >= 100).length;
 
   return (
     <div className="flex flex-col h-full">
@@ -172,13 +181,13 @@ export function MobileProjectListing({
       {/* Content */}
       <div className="flex-1 overflow-auto p-4 space-y-3">
         {/* Active Projects Section */}
-        {filteredProjectRuns.filter(run => (run.progress || 0) < 100).length > 0 && (
+        {filteredProjectRuns.filter((run) => listingProgressPercent(run) < 100).length > 0 && (
           <>
             <div className="text-sm font-medium text-muted-foreground px-1 mb-2">
               Active Projects ({activeCount})
             </div>
             {filteredProjectRuns
-              .filter(run => (run.progress || 0) < 100)
+              .filter((run) => listingProgressPercent(run) < 100)
               .map((run) => (
                 <MobileProjectCard
                   key={run.id}
@@ -192,13 +201,13 @@ export function MobileProjectListing({
         )}
 
         {/* Completed Projects Section */}
-        {filteredProjectRuns.filter(run => (run.progress || 0) >= 100).length > 0 && (
+        {filteredProjectRuns.filter((run) => listingProgressPercent(run) >= 100).length > 0 && (
           <>
             <div className="text-sm font-medium text-muted-foreground px-1 mb-2 mt-6">
               Completed Projects ({completedCount})
             </div>
             {filteredProjectRuns
-              .filter(run => (run.progress || 0) >= 100)
+              .filter((run) => listingProgressPercent(run) >= 100)
               .map((run) => (
                 <MobileProjectCard
                   key={run.id}

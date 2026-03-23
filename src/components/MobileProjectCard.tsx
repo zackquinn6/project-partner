@@ -46,7 +46,7 @@ export function MobileProjectCard({ project, onSelect, variant = 'project', onDe
       return 0;
     }
   })();
-  const status = isProjectRun ? getProjectRunStatus(project as ProjectRun) : 'template';
+  const status = isProjectRun ? getProjectRunStatus(progress) : 'template';
   
   // Only allow swipe to delete for project runs (not templates)
   const canDelete = isProjectRun;
@@ -353,10 +353,9 @@ function ActionButton({ status, progress, onSelect }: { status: string; progress
   );
 }
 
-function getProjectRunStatus(projectRun: ProjectRun): string {
-  if (!projectRun.progress || projectRun.progress === 0) return 'not-started';
-  if (projectRun.progress >= 100) return 'completed';
-  if (projectRun.progress > 0) return 'in-progress';
+function getProjectRunStatus(calculatedProgress: number): string {
+  if (calculatedProgress >= 100) return 'completed';
+  if (calculatedProgress > 0) return 'in-progress';
   return 'not-started';
 }
 

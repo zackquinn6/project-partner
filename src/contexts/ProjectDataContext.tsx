@@ -1,6 +1,7 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
+import { parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
 import { useDataFetch } from '@/hooks/useDataFetch';
 import { useAuth } from './AuthContext';
 import { useGuest } from './GuestContext';
@@ -257,7 +258,8 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         initial_sizing: run.initial_sizing,
         progress_reporting_style: run.progress_reporting_style
           ? (run.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
-          : undefined
+          : undefined,
+        quality_control_settings: parseQualityControlSettingsColumn(run.quality_control_settings)
       } as ProjectRun;
     });
   }, []);

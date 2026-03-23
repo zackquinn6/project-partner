@@ -580,51 +580,7 @@ export function WorkflowSidebar({
                       </Button>
                     </div>
 
-                    {/* Risk management, Budget, Shopping List, Quality Control */}
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => openAppByActionKey('risk-management')}
-                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
-                        style={{ backgroundColor: 'rgba(59, 130, 246, 0.35)', color: 'black' }}
-                      >
-                        <Shield className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
-                        <span className="truncate">Risk management</span>
-                      </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => openAppByActionKey('project-budgeting')}
-                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
-                        style={{ backgroundColor: 'rgba(34, 197, 94, 0.35)', color: 'black' }}
-                      >
-                        <DollarSign className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
-                        <span className="truncate">Budget</span>
-                      </Button>
-                    </div>
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => openAppByActionKey('shopping-checklist')}
-                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
-                        style={{ backgroundColor: 'rgba(251, 146, 60, 0.35)', color: 'black' }}
-                      >
-                        <ShoppingCart className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
-                        <span className="truncate">Shopping List</span>
-                      </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => openAppByActionKey('quality-check')}
-                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
-                        style={{ backgroundColor: 'rgba(20, 184, 166, 0.35)', color: 'black' }}
-                      >
-                        <ClipboardCheck className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
-                        <span className="truncate">Quality Control</span>
-                      </Button>
-                    </div>
+                    {/* Shopping List & Quality Control live under "More project tools" with Risk, Budget, etc. */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -638,6 +594,34 @@ export function WorkflowSidebar({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] max-w-[min(100%,14rem)]">
+                        <DropdownMenuItem
+                          className="text-xs gap-2 cursor-pointer"
+                          onClick={() => openAppByActionKey('risk-management')}
+                        >
+                          <Shield className="h-3.5 w-3.5 shrink-0" />
+                          Risk management
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-xs gap-2 cursor-pointer"
+                          onClick={() => openAppByActionKey('project-budgeting')}
+                        >
+                          <DollarSign className="h-3.5 w-3.5 shrink-0" />
+                          Budget
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-xs gap-2 cursor-pointer"
+                          onClick={() => openAppByActionKey('shopping-checklist')}
+                        >
+                          <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
+                          Shopping List
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-xs gap-2 cursor-pointer"
+                          onClick={() => openAppByActionKey('quality-check')}
+                        >
+                          <ClipboardCheck className="h-3.5 w-3.5 shrink-0" />
+                          Quality Control
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"
                           onClick={onViewScheduleClick}

@@ -9,6 +9,7 @@ import { useGuest } from './GuestContext';
 import { toast } from '@/components/ui/use-toast';
 import { ensureStandardPhasesForNewProject } from '@/utils/projectUtils';
 import { useOptimizedState } from '@/hooks/useOptimizedState';
+import { mergeQualityControlSettings, parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
 
 
 interface ProjectActionsContextType {
@@ -778,6 +779,10 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     const shouldIncludeProgressReportingStyleKey =
       progressReportingStyleKey !== JSON.stringify(currentProjectRun?.progress_reporting_style);
 
+    const qualityControlSettingsKey = JSON.stringify(
+      mergeQualityControlSettings((projectRun as any).quality_control_settings ?? null)
+    );
+
     const updateKeyParts = [
       projectRun.id,
       projectRun.progress,
@@ -789,6 +794,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       initialTimelineKey,
       initialSizingKey,
       scheduleOptimizationMethodKey,
+      qualityControlSettingsKey,
       ...(shouldIncludeProgressReportingStyleKey ? [progressReportingStyleKey] : [])
     ];
 
@@ -843,7 +849,20 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     const hasAllKickoffSteps = kickoffStepIds.every(id => projectRun.completedSteps.includes(id));
     const isKickoffCompletion = projectRun.status === 'in-progress' && hasAllKickoffSteps && 
                                  (currentProjectRun?.status !== 'in-progress' || !kickoffStepIds.every(id => (currentProjectRun?.completedSteps || []).includes(id)));
-    const requiresImmediateSave = isBudgetDataUpdate || isIssueReportsUpdate || isTimeTrackingUpdate || isInitialBudgetUpdate || isInitialTimelineUpdate || isInitialSizingUpdate || isKickoffCompletion;
+    const qcIncoming = (projectRun as any).quality_control_settings;
+    const isQualityControlSettingsUpdate =
+      qcIncoming !== undefined &&
+      JSON.stringify(mergeQualityControlSettings(qcIncoming)) !==
+        JSON.stringify(mergeQualityControlSettings(currentProjectRun?.quality_control_settings ?? null));
+    const requiresImmediateSave =
+      isBudgetDataUpdate ||
+      isIssueReportsUpdate ||
+      isTimeTrackingUpdate ||
+      isInitialBudgetUpdate ||
+      isInitialTimelineUpdate ||
+      isInitialSizingUpdate ||
+      isKickoffCompletion ||
+      isQualityControlSettingsUpdate;
     
     // For immediate saves (budget, issues, time tracking), execute right away
     // For other updates, debounce to avoid excessive database writes
@@ -867,6 +886,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
         let preservedProgressReportingStyle = (projectRun as any).progress_reporting_style;
         let preservedScheduleOptimizationMethod = (projectRun as any).schedule_optimization_method;
+        let preservedQualityControlSettings = (projectRun as any).quality_control_settings;
         
         // If any of these fields are undefined, fetch from database to preserve existing values
         if (
@@ -874,11 +894,12 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           preservedTimeline === undefined ||
           preservedSizing === undefined ||
           preservedProgressReportingStyle === undefined ||
-          preservedScheduleOptimizationMethod === undefined
+          preservedScheduleOptimizationMethod === undefined ||
+          preservedQualityControlSettings === undefined
         ) {
           const { data: currentRun, error: fetchError } = await supabase
             .from('project_runs')
-            .select('initial_budget, initial_timeline, initial_sizing, progress_reporting_style, schedule_optimization_method')
+            .select('initial_budget, initial_timeline, initial_sizing, progress_reporting_style, schedule_optimization_method, quality_control_settings')
             .eq('id', projectRun.id)
             .single();
           
@@ -900,6 +921,10 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
             if (preservedScheduleOptimizationMethod === undefined) {
               preservedScheduleOptimizationMethod = currentRun.schedule_optimization_method;
+            }
+
+            if (preservedQualityControlSettings === undefined) {
+              preservedQualityControlSettings = currentRun.quality_control_settings;
             }
           }
         }
@@ -960,7 +985,15 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           initial_budget: preservedBudget !== undefined ? preservedBudget : null,
           initial_timeline: preservedTimeline !== undefined ? preservedTimeline : null,
           initial_sizing: preservedSizing !== undefined ? preservedSizing : null,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          ...(preservedQualityControlSettings !== undefined
+            ? {
+                quality_control_settings:
+                  preservedQualityControlSettings === null
+                    ? null
+                    : JSON.stringify(mergeQualityControlSettings(preservedQualityControlSettings))
+              }
+            : {})
         };
 
         const { error } = await supabase
@@ -1148,7 +1181,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           // CRITICAL: Include initial_budget, initial_timeline, initial_sizing from database
           initial_budget: freshRun.initial_budget || null,
           initial_timeline: freshRun.initial_timeline || null,
-          initial_sizing: freshRun.initial_sizing || null
+          initial_sizing: freshRun.initial_sizing || null,
+          quality_control_settings: parseQualityControlSettingsColumn(freshRun.quality_control_settings)
         };
 
         // Update cache and current project run

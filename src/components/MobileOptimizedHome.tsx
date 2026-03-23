@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { useProject } from '@/contexts/ProjectContext';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { countDueSoon } from '@/utils/maintenanceProgress';
+import { calculateProjectProgress } from '@/utils/progressCalculation';
 import { 
   Home as HomeIcon, 
   User, 
@@ -47,6 +48,15 @@ export function MobileOptimizedHome() {
   const [userNickname, setUserNickname] = useState<string>('');
   const rootRef = useRef<HTMLDivElement>(null);
 
+  const activeProjectProgressPercent = useMemo(() => {
+    if (!currentProjectRun) return 0;
+    try {
+      return calculateProjectProgress(currentProjectRun);
+    } catch {
+      return Math.round(currentProjectRun.progress || 0);
+    }
+  }, [currentProjectRun]);
+
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
     document.documentElement.scrollTop = 0;
@@ -56,7 +66,13 @@ export function MobileOptimizedHome() {
 
   // Project completion from project runs; task-based stats from API
   useEffect(() => {
-    const completed = projectRuns.filter(run => (run.progress || 0) >= 100).length;
+    const completed = projectRuns.filter((run) => {
+      try {
+        return calculateProjectProgress(run) >= 100;
+      } catch {
+        return (run.progress || 0) >= 100;
+      }
+    }).length;
     setStats(prev => ({ ...prev, completedProjects: completed }));
   }, [projectRuns]);
 
@@ -269,7 +285,7 @@ export function MobileOptimizedHome() {
               </div>
               <h3 className="font-semibold text-card-foreground mb-2">{currentProjectRun.name}</h3>
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>{Math.round(currentProjectRun.progress || 0)}% complete</span>
+                <span>{activeProjectProgressPercent}% complete</span>
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   In progress

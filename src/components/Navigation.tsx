@@ -5,6 +5,7 @@ import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingU
 import { Link } from "react-router-dom";
 import { useProject } from '@/contexts/ProjectContext';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
+import { parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectOwner } from '@/hooks/useProjectOwner';
@@ -136,7 +137,14 @@ export default function Navigation({
       window.removeEventListener('navigate-to-projects', handleNavigateToProjectsEvent);
     };
   }, [onViewChange, onProjectsView]);
-  const activeProjectRuns = projectRuns.filter(run => run.progress && run.progress < 100);
+  const activeProjectRuns = projectRuns.filter((run) => {
+    if (run.status === 'complete' || run.status === 'cancelled') return false;
+    try {
+      return calculateProjectProgress(run) < 100;
+    } catch {
+      return (run.progress || 0) < 100;
+    }
+  });
   const handleSignOut = async () => {
     if (signingOut) return; // Prevent multiple clicks
 
@@ -258,7 +266,8 @@ export default function Navigation({
       initial_sizing: freshRun.initial_sizing,
       progress_reporting_style: freshRun.progress_reporting_style
         ? (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
-        : undefined
+        : undefined,
+      quality_control_settings: parseQualityControlSettingsColumn(freshRun.quality_control_settings)
     };
     
     console.log('✅ Navigation: Fresh project data loaded:', {

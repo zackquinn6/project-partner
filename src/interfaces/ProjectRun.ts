@@ -1,4 +1,5 @@
 import { Project } from './Project';
+import type { QualityControlSettings } from '@/utils/qualityControlSettings';
 
 /**
  * Project run (user's instance of a project).
@@ -16,6 +17,7 @@ import { Project } from './Project';
  * - initial_budget, initial_timeline, initial_sizing
  * - progress_reporting_style, schedule_optimization_method
  * - schedule_events, project_photos, shopping_checklist_data (JSONB)
+ * - quality_control_settings (JSONB): per-run QC rules
  */
 export interface ProjectRun {
   id: string;
@@ -269,4 +271,7 @@ export interface ProjectRun {
   initial_sizing?: string; // Initial project size entered at kickoff
   schedule_optimization_method?: 'single-piece-flow' | 'batch-flow'; // Workflow navigation method: single-piece-flow (default) processes one space at a time through custom phases; batch-flow processes all spaces through one phase before moving to the next
   progress_reporting_style?: 'linear' | 'exponential' | 'time-based'; // Progress calculation method: linear (step count), exponential (weighted), or time-based (uses time estimates)
+
+  /** Per-run Quality Control rules (project_runs.quality_control_settings) */
+  quality_control_settings?: QualityControlSettings;
 }

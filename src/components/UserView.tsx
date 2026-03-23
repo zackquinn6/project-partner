@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -69,6 +69,7 @@ import {
 import { useUserRole } from '@/hooks/useUserRole';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { useMembership } from '@/contexts/MembershipContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { UpgradePrompt } from './UpgradePrompt';
 import { markOrderingStepIncompleteIfNeeded, extractProjectToolsAndMaterials } from '@/utils/shoppingUtils';
 import { MobileDIYDropdown } from './MobileDIYDropdown';
@@ -88,6 +89,11 @@ import {
   type ProjectSpace as WorkflowProjectSpace
 } from '@/utils/workflowNavigationUtils';
 import { getNativeAppById } from '@/utils/appsRegistry';
+import {
+  mergeQualityControlSettings,
+  isOutputInQualityScope,
+  parseQualityControlSettingsColumn
+} from '@/utils/qualityControlSettings';
 import { 
   formatEstimatedFinishDate,
   shouldRefreshEstimatedFinishDate
@@ -115,6 +121,17 @@ export default function UserView({
   const { isMobile } = useResponsive();
   const { isAdmin } = useUserRole();
   const { canAccessApp } = useMembership();
+  const { user } = useAuth();
+  const qualityControlPdfUserLabel = useMemo(() => {
+    if (!user) return '';
+    const meta = user.user_metadata as Record<string, unknown> | undefined;
+    const fullName = meta?.full_name;
+    if (typeof fullName === 'string' && fullName.trim()) return fullName.trim();
+    const metaName = meta?.name;
+    if (typeof metaName === 'string' && metaName.trim()) return metaName.trim();
+    if (user.email) return user.email;
+    return '';
+  }, [user]);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const {
     currentProject,
@@ -134,6 +151,8 @@ export default function UserView({
   const [checkedMaterials, setCheckedMaterials] = useState<Record<string, Set<string>>>({});
   const [checkedTools, setCheckedTools] = useState<Record<string, Set<string>>>({});
   const [checkedOutputs, setCheckedOutputs] = useState<Record<string, Set<string>>>({});
+  const [stepPhotosRefreshNonce, setStepPhotosRefreshNonce] = useState(0);
+  const [stepPhotoCountForCompletion, setStepPhotoCountForCompletion] = useState<number | null>(null);
   const [toolInstructions, setToolInstructions] = useState<{ id: string; name: string } | null>(null);
   
   // Project spaces state for workflow navigation
@@ -863,7 +882,8 @@ export default function UserView({
               initial_sizing: freshRun.initial_sizing,
               progress_reporting_style: freshRun.progress_reporting_style
                 ? (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
-                : undefined
+                : undefined,
+              quality_control_settings: parseQualityControlSettingsColumn(freshRun.quality_control_settings)
             };
             
             if (transformedRun.status === 'cancelled') {
@@ -964,6 +984,27 @@ export default function UserView({
   }, [resetToListing, forceListingMode, showProfile, currentProjectRun, projectRunId, viewMode, onProjectSelected]);
   
   const currentStep = allSteps[currentStepIndex];
+
+  useEffect(() => {
+    if (!currentProjectRun || !currentStep) {
+      setStepPhotoCountForCompletion(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { count, error } = await supabase
+        .from('project_photos')
+        .select('id', { count: 'exact', head: true })
+        .eq('project_run_id', currentProjectRun.id)
+        .eq('step_id', currentStep.id);
+      if (!cancelled && !error) {
+        setStepPhotoCountForCompletion(count ?? 0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProjectRun?.id, currentStep?.id, stepPhotosRefreshNonce]);
   
   // Function to refresh estimated finish date
   const refreshEstimatedFinishDate = React.useCallback(async (forceRefresh: boolean = false) => {
@@ -1117,6 +1158,12 @@ export default function UserView({
       return 0;
     }
   })();
+
+  const qualityControlAppTitle = useMemo(() => {
+    const override = appOverrides.get('quality-check');
+    const native = getNativeAppById('quality-check');
+    return override?.app_name ?? native?.appName ?? 'Quality Control';
+  }, [appOverrides]);
   
   // Progress calculation
   
@@ -1281,11 +1328,28 @@ export default function UserView({
     });
   };
 
-  // Check if all outputs are completed (required for step completion)
+  // Required outputs + optional photo rule for step completion (per project QC settings)
   const areAllOutputsCompleted = (step: typeof currentStep) => {
-    if (!step || !step.outputs || step.outputs.length === 0) return true;
-    const stepOutputs = checkedOutputs[step.id] || new Set();
-    return step.outputs.every(output => stepOutputs.has(output.id));
+    if (!step) return true;
+    const qc = mergeQualityControlSettings(currentProjectRun?.quality_control_settings);
+    const outputs = step.outputs || [];
+    const required = outputs.filter((o) => isOutputInQualityScope(o, qc.require_all_outputs));
+    if (required.length > 0) {
+      const stepOutputs = checkedOutputs[step.id] || new Set();
+      if (!required.every((output) => stepOutputs.has(output.id))) {
+        return false;
+      }
+    }
+    if (
+      qc.require_photos_per_step &&
+      currentProjectRun &&
+      currentStep &&
+      step.id === currentStep.id &&
+      (stepPhotoCountForCompletion ?? 0) < 1
+    ) {
+      return false;
+    }
+    return true;
   };
 
   const handleStepComplete = async () => {
@@ -1296,13 +1360,33 @@ export default function UserView({
     
     try {
       
-      // Check if all outputs for this step are completed
-      const stepOutputs = currentStep.outputs || [];
-      const stepCheckedOutputs = checkedOutputs[currentStep.id] || new Set();
-      const allOutputsCompleted = stepOutputs.length === 0 || stepOutputs.every(output => 
-        stepCheckedOutputs.has(output.id)
+      const qc = mergeQualityControlSettings(currentProjectRun?.quality_control_settings);
+      const stepOutputsList = currentStep.outputs || [];
+      const requiredOutputs = stepOutputsList.filter((o) =>
+        isOutputInQualityScope(o, qc.require_all_outputs)
       );
-      
+      const stepCheckedOutputs = checkedOutputs[currentStep.id] || new Set();
+      const allOutputsCompleted =
+        requiredOutputs.length === 0 ||
+        requiredOutputs.every((output) => stepCheckedOutputs.has(output.id));
+
+      if (qc.require_photos_per_step && currentProjectRun) {
+        const { count, error: photoCountError } = await supabase
+          .from('project_photos')
+          .select('id', { count: 'exact', head: true })
+          .eq('project_run_id', currentProjectRun.id)
+          .eq('step_id', currentStep.id);
+        if (photoCountError) {
+          console.error('Photo count check failed:', photoCountError);
+          toast.error('Could not verify photos for this step. Try again.');
+          return;
+        }
+        if (!count || count < 1) {
+          toast.error('Add at least one photo tagged to this step before completing it (Quality Control setting).');
+          return;
+        }
+      }
+
       if (allOutputsCompleted) {
         
         // Add step to completed steps with immediate persistence
@@ -2968,57 +3052,97 @@ export default function UserView({
               <CardContent className="p-6">
                 <Accordion type="multiple" defaultValue={["step-checklist"]} className="w-full">
                   {(() => {
+                    const qc = mergeQualityControlSettings(currentProjectRun?.quality_control_settings);
                     const stepOutputs = checkedOutputs[currentStep.id] || new Set();
-                    const completedCount = stepOutputs.size;
-                    const totalCount = currentStep.outputs.length;
-                    const isAllCompleted = completedCount === totalCount;
-                    
-                    return <AccordionItem value="step-checklist">
-                      <AccordionTrigger className="text-base font-semibold">
-                        <div className="flex items-center gap-2">
-                          <span>Step Checklist</span>
-                          <Badge variant={isAllCompleted ? "default" : "outline"} className={isAllCompleted ? "bg-green-500 text-white text-xs" : "text-xs"}>
-                            {completedCount}/{totalCount}
-                          </Badge>
-                          {isAllCompleted && <CheckCircle className="w-4 h-4 text-green-500" />}
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="space-y-2.5 pt-2">
-                          {currentStep.outputs.map(output => (
-                            <div key={output.id} className="p-2.5 bg-background/50 rounded-lg">
-                              <div className="flex items-start gap-2.5">
-                                <Checkbox 
-                                  id={`output-${output.id}`}
-                                  checked={stepOutputs.has(output.id)}
-                                  onCheckedChange={() => toggleOutputCheck(currentStep.id, output.id)}
-                                  className="mt-0.5"
-                                />
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <div className="text-sm font-medium">{output.name}</div>
-                                    {output.type !== 'none' && ['major-aesthetics', 'performance-durability', 'safety'].includes(output.type) && (
-                                      <Badge variant="outline" className="text-xs capitalize">{output.type.replace('-', ' ')}</Badge>
-                                    )}
-                                    <button
-                                      onClick={() => {
-                                        setSelectedOutput(output);
-                                        setOutputPopupOpen(true);
-                                      }}
-                                      className="p-1 rounded-full hover:bg-muted transition-colors"
-                                      title="View output details"
-                                    >
-                                      <Info className="w-3 h-3 text-muted-foreground hover:text-primary" />
-                                    </button>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground mt-1">{output.description}</div>
-                                </div>
-                              </div>
+                    const allOut = currentStep.outputs || [];
+                    const required = allOut.filter((o) => isOutputInQualityScope(o, qc.require_all_outputs));
+                    const optional = allOut.filter((o) => !isOutputInQualityScope(o, qc.require_all_outputs));
+                    const requiredDone = required.filter((o) => stepOutputs.has(o.id)).length;
+                    const isAllCompleted =
+                      required.length === 0 ? true : requiredDone === required.length;
+                    const badgeText =
+                      optional.length === 0
+                        ? `${requiredDone}/${required.length || allOut.length}`
+                        : required.length === 0
+                          ? `${optional.length} optional`
+                          : `${requiredDone}/${required.length} req · ${optional.length} opt`;
+
+                    const renderRow = (output: (typeof allOut)[0], optionalTag: boolean) => (
+                      <div key={output.id} className="p-2.5 bg-background/50 rounded-lg">
+                        <div className="flex items-start gap-2.5">
+                          <Checkbox
+                            id={`output-${output.id}`}
+                            checked={stepOutputs.has(output.id)}
+                            onCheckedChange={() => toggleOutputCheck(currentStep.id, output.id)}
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="text-sm font-medium">{output.name}</div>
+                              {optionalTag && (
+                                <Badge variant="secondary" className="text-[10px]">
+                                  Optional
+                                </Badge>
+                              )}
+                              {output.type !== 'none' &&
+                                ['major-aesthetics', 'performance-durability', 'safety'].includes(output.type) && (
+                                  <Badge variant="outline" className="text-xs capitalize">
+                                    {output.type.replace('-', ' ')}
+                                  </Badge>
+                                )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedOutput(output);
+                                  setOutputPopupOpen(true);
+                                }}
+                                className="p-1 rounded-full hover:bg-muted transition-colors"
+                                title="View output details"
+                              >
+                                <Info className="w-3 h-3 text-muted-foreground hover:text-primary" />
+                              </button>
                             </div>
-                          ))}
+                            <div className="text-xs text-muted-foreground mt-1">{output.description}</div>
+                          </div>
                         </div>
-                      </AccordionContent>
-                    </AccordionItem>;
+                      </div>
+                    );
+
+                    return (
+                      <AccordionItem value="step-checklist">
+                        <AccordionTrigger className="text-base font-semibold">
+                          <div className="flex items-center gap-2">
+                            <span>Step Checklist</span>
+                            <Badge
+                              variant={isAllCompleted ? 'default' : 'outline'}
+                              className={isAllCompleted ? 'bg-green-500 text-white text-xs' : 'text-xs'}
+                            >
+                              {badgeText}
+                            </Badge>
+                            {isAllCompleted && <CheckCircle className="w-4 h-4 text-green-500" />}
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-2.5 pt-2">
+                            {required.map((output) => renderRow(output, false))}
+                            {optional.length > 0 && (
+                              <>
+                                <p className="text-xs text-muted-foreground pt-1 font-medium">
+                                  Optional outputs (not required to complete this step)
+                                </p>
+                                {optional.map((output) => renderRow(output, true))}
+                              </>
+                            )}
+                            {qc.require_photos_per_step && (
+                              <p className="text-xs text-amber-900 dark:text-amber-100 bg-amber-500/10 border border-amber-500/30 rounded-md px-2 py-1.5 mt-2">
+                                Quality Control: add at least one photo tagged to this step before marking it
+                                complete.
+                              </p>
+                            )}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
                   })()}
                 </Accordion>
               </CardContent>
@@ -3064,6 +3188,7 @@ export default function UserView({
                         phaseName={currentStep.phaseName}
                         operationId={currentStep.operationId}
                         operationName={currentStep.operationName}
+                        onPhotoUploaded={() => setStepPhotosRefreshNonce((n) => n + 1)}
                       />
                       <NoteUpload
                         projectRunId={currentProjectRun.id}
@@ -3675,15 +3800,19 @@ export default function UserView({
         />
       )}
 
-      {/* Quality Check Window */}
+      {/* Quality Control (native app quality-check) */}
       <QualityCheckWindow
         open={qualityCheckOpen}
         onOpenChange={setQualityCheckOpen}
+        appTitle={qualityControlAppTitle}
+        projectRun={currentProjectRun ?? undefined}
+        updateProjectRun={updateProjectRun}
         steps={allSteps as any[]}
         completedSteps={completedSteps}
         checkedOutputs={checkedOutputs}
         onJumpToStep={(stepId, spaceId) => navigateToStepInstance(stepId, spaceId)}
         onToggleOutputComplete={toggleOutputCheck}
+        userDisplayName={qualityControlPdfUserLabel}
       />
 
       {/* Upgrade prompt when launching a paid app without subscription */}

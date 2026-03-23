@@ -99,7 +99,7 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     displayOrder: 10
   },
   'quality-check': {
-    appName: 'Quality Check',
+    appName: 'Quality Control',
     appType: 'native',
     icon: 'CheckCircle',
     description: 'Verify workflow outputs are completed',

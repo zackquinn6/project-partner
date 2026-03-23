@@ -10,6 +10,7 @@ import {
   DollarSign, Clock, CheckCircle2, Trophy
 } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
+import { calculateProjectProgress } from '@/utils/progressCalculation';
 
 interface ProjectPerformanceWindowProps {
   open: boolean;
@@ -89,7 +90,12 @@ export const ProjectPerformanceWindow: React.FC<ProjectPerformanceWindowProps> =
       }, 0) || 0);
     }, 0) || 0;
 
-    const progress = currentProjectRun.progress || 0;
+    let progress = 0;
+    try {
+      progress = calculateProjectProgress(currentProjectRun);
+    } catch {
+      progress = currentProjectRun.progress || 0;
+    }
     
     const badges = [];
     if (progress >= 25) badges.push({ name: 'Quarter Way', icon: '🎯' });
