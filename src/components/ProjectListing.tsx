@@ -22,6 +22,7 @@ import { ManualProjectEditDialog } from '@/components/ManualProjectEditDialog';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
 import { PhotoGallery } from '@/components/PhotoGallery';
 import { ProjectPortfolioRemindersDialog } from '@/components/ProjectPortfolioRemindersDialog';
+import { getRiskFocusAwareDisplayName, isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 
 interface ProjectListingProps {
   onProjectSelect?: (project: Project | null | 'workflow') => void;
@@ -83,6 +84,15 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
 
   const handleOpenProjectRun = useCallback((projectRun: ProjectRun) => {
     console.log("🎯 Opening project run:", projectRun.name);
+
+    if (isRiskFocusRun(projectRun)) {
+      window.dispatchEvent(
+        new CustomEvent('open-risk-focus-register-for-run', {
+          detail: { projectRunId: projectRun.id },
+        })
+      );
+      return;
+    }
     
     // CRITICAL FIX: Clear reset flags immediately BEFORE setting project run
     // This prevents UserView useEffect from forcing listing mode
@@ -153,8 +163,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                 className="w-full sm:w-auto"
               >
                 <Bell className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Reminders &amp; notifications</span>
-                <span className="sm:hidden">Reminders</span>
+                Notifications
               </Button>
               <Button 
                 onClick={() => setShowPhotoGallery(true)}
@@ -163,8 +172,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                 className="w-full sm:w-auto"
               >
                 <Camera className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">View All Photos</span>
-                <span className="sm:hidden">Photos</span>
+                Photos
               </Button>
               {projectCatalogEnabled && (
               <Button 
@@ -217,9 +225,14 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                   <Card key={projectRun.id} className="p-4">
                     <div className="space-y-3">
                       <div className="flex justify-between items-start">
-                        <div className="flex-1">
+                        <div className="flex-1 flex flex-col gap-1">
+                          {isRiskFocusRun(projectRun) && (
+                            <Badge variant="outline" className="text-xs w-fit">
+                              Risk-Focus
+                            </Badge>
+                          )}
                           <div className="flex items-center gap-2">
-                            <h3 className="font-semibold">{projectRun.customProjectName || projectRun.name}</h3>
+                            <h3 className="font-semibold">{getRiskFocusAwareDisplayName(projectRun)}</h3>
                             {projectRun.isManualEntry && (
                               <Badge variant="secondary" className="text-xs">
                                 Manual
@@ -342,9 +355,14 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                   return (
                     <TableRow key={projectRun.id}>
                       <TableCell className="font-medium">
-                        <div>
+                        <div className="flex flex-col gap-1">
+                          {isRiskFocusRun(projectRun) && (
+                            <Badge variant="outline" className="text-xs w-fit">
+                              Risk-Focus
+                            </Badge>
+                          )}
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold">{projectRun.customProjectName || projectRun.name}</span>
+                            <span className="font-semibold">{getRiskFocusAwareDisplayName(projectRun)}</span>
                             {projectRun.isManualEntry && (
                               <Badge variant="secondary" className="text-xs">
                                 User-uploaded

@@ -98,6 +98,14 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     actionKey: 'risk-management',
     displayOrder: 10
   },
+  'risk-focus': {
+    appName: 'Risk Focus',
+    appType: 'native',
+    icon: 'Crosshair',
+    description: 'Start a project run dedicated to tracking risks for a template',
+    actionKey: 'risk-focus',
+    displayOrder: 10.25
+  },
   'quality-check': {
     appName: 'Quality Control',
     appType: 'native',

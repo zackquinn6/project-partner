@@ -14,8 +14,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { useTempQuiz } from "@/contexts/TempQuizContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { ProjectSkillsWindow } from "@/components/ProjectSkillsWindow";
+import {
+  ProjectSkillsForm,
+  buildProjectSkillRows,
+  type ProjectSkillRow,
+} from "@/components/ProjectSkillsWindow";
 import { type PMFocus, PM_FOCUS_OPTIONS } from "@/components/landing/OnboardingDialog";
+import { cn } from "@/lib/utils";
 
 interface DIYSurveyPopupProps {
   open: boolean;
@@ -32,8 +37,21 @@ interface DIYSurveyPopupProps {
     ownedTools?: any[];
     fullName?: string;
     nickname?: string;
+    projectSkills?: Record<string, number> | null;
+    avoidProjects?: string[] | null;
   };
 }
+
+/** Numbered profile wizard steps (Build / Update profile, excluding verify overview). */
+const PROFILE_MAX_STEP = 5;
+
+const PROFILE_SECTIONS: { step: number; title: string; navLabel: string }[] = [
+  { step: 1, title: "Tell us about yourself", navLabel: "About you" },
+  { step: 2, title: "Experience & capabilities", navLabel: "Experience" },
+  { step: 3, title: "Project skills", navLabel: "Project skills" },
+  { step: 4, title: "Project priorities", navLabel: "Priorities" },
+  { step: 5, title: "Your tools", navLabel: "Tools" },
+];
 
 interface PersonalityTraits {
   planner: number;
@@ -76,8 +94,9 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     fullName: initialData?.fullName || "",
     nickname: initialData?.nickname || ""
   });
-  const [showProjectSkillsWindow, setShowProjectSkillsWindow] = useState(false);
-  const [projectSkills, setProjectSkills] = useState<Record<string, number>>({});
+  const [projectSkillRows, setProjectSkillRows] = useState<ProjectSkillRow[]>(() =>
+    buildProjectSkillRows(initialData?.projectSkills ?? null, initialData?.avoidProjects ?? null)
+  );
   const [quickAddTools, setQuickAddTools] = useState<Record<string, boolean>>({});
   const [quickAddToolsList, setQuickAddToolsList] = useState<Array<{ id: string; name: string; variant: string; core_item_id: string }>>([]);
   // Store continuous slider values separately to allow smooth movement without snapping
@@ -94,14 +113,19 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     return 0;
   });
 
-  const totalSteps = mode === 'verify' ? 6 : (mode === 'personality' ? 12 : 4);
+  const profileProgressPercent =
+    mode === 'verify' && currentStep === 0
+      ? 0
+      : currentStep >= 1 && currentStep <= PROFILE_MAX_STEP
+        ? (currentStep / PROFILE_MAX_STEP) * 100
+        : 0;
   const progress = mode === 'personality' && currentStep >= 0 ? 
     ((currentStep + 1) / 11) * 100 : 
-    (currentStep / totalSteps) * 100;
+    (mode === 'personality' ? 0 : profileProgressPercent);
 
   // Fetch quick-add tools from database
   useEffect(() => {
-    if (open && currentStep === 4) {
+    if (open && currentStep === 5) {
       const fetchQuickAddTools = async () => {
         try {
           // Fetch variation instances marked as quick_add for tools (from unified tool_variations)
@@ -151,6 +175,16 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
       fetchQuickAddTools();
     }
   }, [open, currentStep]);
+
+  useEffect(() => {
+    if (!open) return;
+    setProjectSkillRows(
+      buildProjectSkillRows(
+        initialData?.projectSkills ?? null,
+        initialData?.avoidProjects ?? null
+      )
+    );
+  }, [open]);
 
   const usStates = [
     "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", 
@@ -469,9 +503,12 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
       return;
     }
     
-    if (currentStep < totalSteps) {
+    if (currentStep < PROFILE_MAX_STEP) {
       setCurrentStep(currentStep + 1);
-    } else {
+      return;
+    }
+
+    {
       setIsSubmitting(true);
       try {
         // Process quick add tools and add to ownedTools
@@ -525,6 +562,16 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           }
         }
 
+        const skillsPayload: Record<string, number> = {};
+        const avoidPayload: string[] = [];
+        for (const r of projectSkillRows) {
+          skillsPayload[r.name] = r.skillLevel;
+          if (r.avoid) avoidPayload.push(r.name);
+        }
+        const hasProjectSkillActivity = projectSkillRows.some(
+          (r) => r.skillLevel > 0 || r.avoid
+        );
+
         if (user) {
           // User is signed in - save to database
           const { error } = await supabase
@@ -540,7 +587,8 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
               home_state: answers.homeState,
               project_focus: answers.projectFocus,
               owned_tools: finalOwnedTools,
-              project_skills: Object.keys(projectSkills).length > 0 ? projectSkills : null,
+              project_skills: hasProjectSkillActivity ? skillsPayload : null,
+              avoid_projects: avoidPayload.length > 0 ? avoidPayload : null,
               survey_completed_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             }, {
@@ -559,7 +607,12 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
 
         } else {
           // User is not signed in - save temporarily
-          saveTempProfileAnswers({ ...answers, ownedTools: finalOwnedTools });
+          saveTempProfileAnswers({
+            ...answers,
+            ownedTools: finalOwnedTools,
+            project_skills: hasProjectSkillActivity ? skillsPayload : null,
+            avoid_projects: avoidPayload.length > 0 ? avoidPayload : null,
+          });
           // Removed toast notification during kickoff to prevent distraction
         }
         onOpenChange(false);
@@ -609,8 +662,9 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
       case 0: return true; // Verify step
       case 1: return answers.fullName.trim() !== ""; // Name step - require full name
       case 2: return answers.skillLevel !== "" && answers.physicalCapability !== "";
-      case 3: return answers.projectFocus != null;
-      case 4: return true; // Owned tools is optional
+      case 3: return true; // Project skills — optional detail (sliders / avoid)
+      case 4: return answers.projectFocus != null;
+      case 5: return true; // Owned tools is optional
       default: return false;
     }
   };
@@ -892,14 +946,6 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                       </div>
                     </div>
                   </div>
-                  
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowProjectSkillsWindow(true)}
-                    className="w-full text-xs bg-muted/50 hover:bg-muted"
-                  >
-                    Optional: Define Project Skills
-                  </Button>
                 </CardContent>
               </Card>
             </div>
@@ -970,6 +1016,20 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
+              <h3 className="text-2xl font-bold">🎯 Step 3 — Project skills</h3>
+              <p className="text-muted-foreground">Define project-specific experience</p>
+            </div>
+            <ProjectSkillsForm
+              rows={projectSkillRows}
+              onRowsChange={setProjectSkillRows}
+            />
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
               <h3 className="text-2xl font-bold">What is most important to you?</h3>
               <p className="text-muted-foreground">Pick your primary project management focus. This helps us prioritize guidance for your projects.</p>
             </div>
@@ -1004,7 +1064,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           </div>
         );
 
-      case 4:
+      case 5:
         return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -1088,25 +1148,16 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     }
   };
 
-  const handleProjectSkillsSave = (avoidProjects: string[], projectSkillsData?: Record<string, number>) => {
-    // Store project skills for saving to database (avoidProjects is ignored)
-    if (projectSkillsData) {
-      setProjectSkills(projectSkillsData);
-    }
-  };
+  const showProfileWizardNav =
+    (mode === 'new' || mode === 'verify') &&
+    currentStep >= 1 &&
+    currentStep <= PROFILE_MAX_STEP;
 
   return (
-    <>
-      <ProjectSkillsWindow
-        open={showProjectSkillsWindow}
-        onOpenChange={setShowProjectSkillsWindow}
-        initialAvoidProjects={[]}
-        onSave={handleProjectSkillsSave}
-      />
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogPortal>
           <DialogOverlay className="z-[100]" />
-          <DialogContent className="w-full h-screen max-w-full max-h-full md:w-[90vw] md:max-w-4xl md:h-[85vh] md:rounded-lg flex flex-col z-[101]" aria-describedby="diy-survey-description">
+          <DialogContent className="w-full h-screen max-w-full max-h-full md:w-[92vw] md:max-w-5xl md:h-[85vh] md:rounded-lg flex flex-col z-[101]" aria-describedby="diy-survey-description">
             <DialogDescription id="diy-survey-description" className="sr-only">
               {mode === 'verify' ? "Update your DIY profile and preferences" : (mode === 'personality' ? 'DIY builder personality quiz' : "Set up your profile for project recommendations")}
             </DialogDescription>
@@ -1124,15 +1175,65 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                 <p className="text-sm text-muted-foreground">
                   {mode === 'personality' && currentStep >= 0 ? 
                     (currentStep <= 9 ? `Question ${currentStep + 1} of 10` : 'Your Results') : 
-                    `Step ${currentStep} of ${mode === 'verify' ? totalSteps - 1 : totalSteps}`
+                    `Step ${currentStep} of ${PROFILE_MAX_STEP}`
                   }
                 </p>
               </div>
             )}
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-3 py-4 md:px-6 md:py-6">
-            {renderStep()}
+          <div className="flex min-h-0 flex-1 flex-col md:flex-row overflow-hidden">
+            {showProfileWizardNav && (
+              <>
+                <nav
+                  className="hidden md:flex w-52 shrink-0 flex-col gap-1 border-r border-border bg-muted/20 p-3 overflow-y-auto"
+                  aria-label="Profile sections"
+                >
+                  {PROFILE_SECTIONS.map((s) => (
+                    <button
+                      key={s.step}
+                      type="button"
+                      onClick={() => setCurrentStep(s.step)}
+                      className={cn(
+                        'rounded-md px-3 py-2 text-left text-sm transition-colors',
+                        currentStep === s.step
+                          ? 'bg-primary font-medium text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      )}
+                    >
+                      <span className="text-[10px] font-semibold uppercase tracking-wide opacity-80">
+                        Step {s.step}
+                      </span>
+                      <span className="block leading-tight">{s.navLabel}</span>
+                    </button>
+                  ))}
+                </nav>
+                <div className="md:hidden shrink-0 border-b border-border bg-muted/10 px-2 py-2 overflow-x-auto">
+                  <div className="flex gap-2 pb-0.5" role="tablist" aria-label="Profile sections">
+                    {PROFILE_SECTIONS.map((s) => (
+                      <button
+                        key={s.step}
+                        type="button"
+                        role="tab"
+                        aria-selected={currentStep === s.step}
+                        onClick={() => setCurrentStep(s.step)}
+                        className={cn(
+                          'shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                          currentStep === s.step
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-border bg-background text-muted-foreground hover:bg-muted/60'
+                        )}
+                      >
+                        {s.navLabel}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+            <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 md:px-6 md:py-6">
+              {renderStep()}
+            </div>
           </div>
 
           {(currentStep > 0 || (mode === 'personality' && currentStep >= 0)) && (
@@ -1155,8 +1256,8 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
                     {isSubmitting ? "Saving..." : (
                       mode === 'personality' && currentStep === 10 ? "Save Profile" :
                       mode === 'personality' && currentStep === -1 ? "Start Quiz" :
-                      mode === 'verify' ? (currentStep === totalSteps - 1 ? "Complete" : "Next") :
-                      (currentStep === totalSteps ? "Complete" : "Next")
+                      mode === 'verify' ? (currentStep === PROFILE_MAX_STEP ? "Complete" : "Next") :
+                      (currentStep === PROFILE_MAX_STEP ? "Complete" : "Next")
                     )}
                   </span>
                   {!isSubmitting && !(mode === 'personality' && currentStep === 10) && (
@@ -1169,6 +1270,5 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
         </DialogContent>
         </DialogPortal>
       </Dialog>
-    </>
   );
 }

@@ -5,7 +5,7 @@ import type { PlanningToolId } from '@/components/KickoffSteps/ProjectToolsStep'
 const TOOL_TO_BUTTON_ACTIONS: Record<PlanningToolId, readonly string[]> = {
   scope: ['project-customizer'],
   schedule: ['project-scheduler'],
-  risk: ['risk-management'],
+  risk: ['risk-management', 'risk-focus'],
   budget: ['project-budgeting'],
   shopping_list: ['shopping-checklist'],
   quality_control: ['quality-check'],

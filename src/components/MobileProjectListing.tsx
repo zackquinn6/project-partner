@@ -10,6 +10,7 @@ import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useButtonTracker } from '@/hooks/useButtonTracker';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
+import { getRiskFocusAwareDisplayName, isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 
 function listingProgressPercent(run: ProjectRun): number {
   try {
@@ -56,10 +57,15 @@ export function MobileProjectListing({
 
   // Filter and sort project runs
   const filteredProjectRuns = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
     let filtered = projectRuns.filter(run => {
-      const matchesSearch = run.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          run.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesSearch;
+      if (!q) return true;
+      const display = getRiskFocusAwareDisplayName(run);
+      const haystack = [run.name, run.customProjectName, display, run.description]
+        .filter((s): s is string => typeof s === 'string' && s.length > 0)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
     });
 
     // Sort by progress (active first, then completed)
@@ -151,7 +157,14 @@ export function MobileProjectListing({
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-primary">Continue Current Project</p>
-                <p className="text-xs text-muted-foreground truncate">{currentProjectRun.name}</p>
+                {isRiskFocusRun(currentProjectRun) && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 mt-1 mb-0.5">
+                    Risk-Focus
+                  </Badge>
+                )}
+                <p className="text-xs text-muted-foreground truncate">
+                  {getRiskFocusAwareDisplayName(currentProjectRun)}
+                </p>
               </div>
               <Button
                 variant="default"
@@ -164,7 +177,14 @@ export function MobileProjectListing({
                   setForceListingMode(false);
                   window.dispatchEvent(new CustomEvent('clear-reset-flags'));
                   
-                  // Navigate to project
+                  if (currentProjectRun && isRiskFocusRun(currentProjectRun)) {
+                    window.dispatchEvent(
+                      new CustomEvent('open-risk-focus-register-for-run', {
+                        detail: { projectRunId: currentProjectRun.id },
+                      })
+                    );
+                    return;
+                  }
                   if (currentProjectRun) {
                     onProjectSelect(currentProjectRun);
                   }

@@ -17,6 +17,7 @@ import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useProject } from '@/contexts/ProjectContext';
 import { useButtonTracker } from '@/hooks/useButtonTracker';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
+import { getRiskFocusAwareDisplayName, isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 
 interface MobileProjectCardProps {
   project: Project | ProjectRun;
@@ -174,8 +175,13 @@ export function MobileProjectCard({ project, onSelect, variant = 'project', onDe
               {/* Header */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
+                  {projectRunData != null && isRiskFocusRun(projectRunData) && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 mb-1">
+                      Risk-Focus
+                    </Badge>
+                  )}
                   <h3 className="font-semibold text-card-foreground text-base leading-tight line-clamp-2">
-                    {project.name}
+                    {displayTitle}
                   </h3>
                   {project.description && (
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
@@ -228,7 +234,7 @@ export function MobileProjectCard({ project, onSelect, variant = 'project', onDe
           <DialogHeader>
             <DialogTitle>Delete Project</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{project.name}"? This action cannot be undone.
+              Are you sure you want to delete "{displayTitle}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 sm:gap-0">

@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Edit, Trash2, Save, X, AlertTriangle, Shield, Info } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, AlertTriangle, Shield, Crosshair, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -47,6 +47,7 @@ interface RiskManagementWindowProps {
   projectRunId?: string; // Project run ID (for user viewing/editing)
   mode?: 'template' | 'run'; // 'template' for admin editing templates, 'run' for user editing runs
   readOnly?: boolean; // If true, disable all editing functionality
+  variant?: 'default' | 'risk-focus';
 }
 
 export function RiskManagementWindow({
@@ -55,7 +56,8 @@ export function RiskManagementWindow({
   projectId,
   projectRunId,
   mode = 'run',
-  readOnly = false
+  readOnly = false,
+  variant = 'default'
 }: RiskManagementWindowProps) {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
@@ -485,8 +487,12 @@ export function RiskManagementWindow({
           <div className="flex items-center justify-between gap-2">
             <div>
               <DialogTitle className="text-lg md:text-xl font-bold flex items-center gap-2">
-                <Shield className="w-5 h-5" />
-                Risk Management
+                {variant === 'risk-focus' ? (
+                  <Crosshair className="w-5 h-5" />
+                ) : (
+                  <Shield className="w-5 h-5" />
+                )}
+                {variant === 'risk-focus' ? 'Risk Focus' : 'Risk Management'}
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -499,9 +505,9 @@ export function RiskManagementWindow({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" sideOffset={8} className="max-w-sm text-xs">
-                      A risk is simply something uncertain. Construction projects often go off-schedule
-                      due to uncertainty at the start. Projects come pre-loaded with risks and potential
-                      impact, and you can add your own when you see additional concerns.
+                      {variant === 'risk-focus'
+                        ? 'This session is dedicated to risks for your template: foundation and project risks are on the run, and you can add run-specific risks anytime.'
+                        : 'A risk is simply something uncertain. Construction projects often go off-schedule due to uncertainty at the start. Projects come pre-loaded with risks and potential impact, and you can add your own when you see additional concerns.'}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

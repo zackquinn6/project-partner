@@ -37,6 +37,10 @@ import { Button } from '@/components/ui/button';
 import { useLiabilityAcceptance } from '@/hooks/useLiabilityAcceptance';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { LiabilityAgreementDialog } from '@/components/LiabilityAgreementDialog';
+import { RiskFocusLauncherDialog } from '@/components/RiskFocusLauncher';
+import { RiskManagementWindow } from '@/components/RiskManagementWindow';
+import type { ProjectRun } from '@/interfaces/ProjectRun';
+import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 
 // Force rebuild to clear cache
 
@@ -70,12 +74,20 @@ const Index = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isToolsLibraryGridOpen, setIsToolsLibraryGridOpen] = useState(false);
   const [isHomeTaskListOpen, setIsHomeTaskListOpen] = useState(false);
+  const [isRiskFocusLauncherOpen, setIsRiskFocusLauncherOpen] = useState(false);
+  /** Risk Focus: full-screen register only (no workflow); set after Start from launcher. */
+  const [riskFocusRegisterRunId, setRiskFocusRegisterRunId] = useState<string | null>(null);
 
   // CRITICAL: All hooks must be at the top - before any conditional logic
   const handleMobileProjectSelect = useCallback((project: any) => {
     console.log('🎯 Index: Mobile project selected:', project.name);
     
     if ('progress' in project) {
+      const run = project as ProjectRun;
+      if (isRiskFocusRun(run)) {
+        setRiskFocusRegisterRunId(run.id);
+        return;
+      }
       // Project run selected - go directly to workflow
       setCurrentProjectRun(project);
       setMobileView('workflow');
@@ -256,6 +268,19 @@ const Index = () => {
     window.addEventListener('show-tools-library-grid', handleToolsLibraryGridEvent);
     window.addEventListener('show-home-task-list', handleHomeTaskListEvent);
 
+    const handleOpenRiskFocusLauncher = (event: Event) => {
+      event.stopPropagation();
+      setIsRiskFocusLauncherOpen(true);
+    };
+    window.addEventListener('open-risk-focus-launcher', handleOpenRiskFocusLauncher);
+
+    const handleOpenRiskFocusRegisterForRun = (event: Event) => {
+      const ce = event as CustomEvent<{ projectRunId?: string }>;
+      const id = ce.detail?.projectRunId;
+      if (id) setRiskFocusRegisterRunId(id);
+    };
+    window.addEventListener('open-risk-focus-register-for-run', handleOpenRiskFocusRegisterForRun);
+
     return () => {
       window.removeEventListener('show-home-manager', handleHomeManagerEvent);
       window.removeEventListener('show-home-maintenance', handleHomeMaintenanceEvent);
@@ -269,6 +294,8 @@ const Index = () => {
       window.removeEventListener('show-expert-help', handleExpertHelpEvent);
       window.removeEventListener('show-tools-library-grid', handleToolsLibraryGridEvent);
       window.removeEventListener('show-home-task-list', handleHomeTaskListEvent);
+      window.removeEventListener('open-risk-focus-launcher', handleOpenRiskFocusLauncher);
+      window.removeEventListener('open-risk-focus-register-for-run', handleOpenRiskFocusRegisterForRun);
     };
   }, [isMobile]);
 
@@ -685,6 +712,24 @@ const Index = () => {
           onOpenChange={setIsHomeTaskListOpen}
         />
       )}
+
+      <RiskFocusLauncherDialog
+        open={isRiskFocusLauncherOpen}
+        onOpenChange={setIsRiskFocusLauncherOpen}
+        onRiskFocusRunStarted={(runId) => setRiskFocusRegisterRunId(runId)}
+      />
+
+      {user && riskFocusRegisterRunId ? (
+        <RiskManagementWindow
+          open
+          onOpenChange={(open) => {
+            if (!open) setRiskFocusRegisterRunId(null);
+          }}
+          projectRunId={riskFocusRegisterRunId}
+          mode="run"
+          variant="risk-focus"
+        />
+      ) : null}
     </div>
   );
 };

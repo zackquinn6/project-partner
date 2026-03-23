@@ -29,7 +29,8 @@ import {
   CheckCircle,
   Clock,
   ListChecks,
-  ArrowRight
+  ArrowRight,
+  Crosshair
 } from 'lucide-react';
 
 export function MobileOptimizedHome() {
@@ -150,7 +151,7 @@ export function MobileOptimizedHome() {
     fetchNickname();
   }, [user]);
 
-  // Semantic color system for apps (mobile: Project & Task Manager + Home Maintenance only; no Project Dashboard or Expert Help)
+  // Semantic color system for apps (mobile Start Here: tasks, maintenance, risk focus)
   const quickActions = [
     {
       id: 'home-task-list',
@@ -167,6 +168,14 @@ export function MobileOptimizedHome() {
       subtitle: 'Schedule & track',
       color: 'bg-green-600', // Home: Green
       action: () => window.dispatchEvent(new CustomEvent('show-home-maintenance'))
+    },
+    {
+      id: 'risk-focus',
+      icon: Crosshair,
+      title: 'Risk Focus',
+      subtitle: 'Risks for a template',
+      color: 'bg-teal-600',
+      action: () => window.dispatchEvent(new CustomEvent('open-risk-focus-launcher'))
     }
   ];
 
@@ -334,7 +343,7 @@ export function MobileOptimizedHome() {
         </div>
 
 
-        {/* Start Here: Explore New Projects + Project & Task Manager + Home Maintenance */}
+        {/* Start Here: catalog + Project & Task Manager + Home Maintenance + Risk Focus */}
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-3 md:hidden">Start Here</h2>
           {projectCatalogEnabled && (
@@ -350,7 +359,7 @@ export function MobileOptimizedHome() {
             Explore New Projects
           </Button>
           )}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {quickActions.map((action) => {
               const Icon = action.icon;
               return (

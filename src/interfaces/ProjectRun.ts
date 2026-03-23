@@ -260,6 +260,8 @@ export interface ProjectRun {
     customPlannedWork: any[];
     customUnplannedWork: any[];
     workflowOrder: string[];
+    /** When true, this run was started from Risk Focus (kickoff UI skipped; risks-only session). */
+    risk_focus?: boolean;
   };
 
   // Detail level preference

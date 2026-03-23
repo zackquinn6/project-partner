@@ -14,7 +14,7 @@ import { AIRepairWindow } from '@/components/AIRepairWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
 import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
-import { ArrowRight, Home as HomeIcon, Wrench, BookOpen, Calendar, ShoppingCart, Hammer, MapPin, CheckCircle, Star, Target, Zap, Shield, User, Users, Folder, Calculator, HelpCircle, Camera, Building2, ListChecks, Loader2 } from 'lucide-react';
+import { ArrowRight, Home as HomeIcon, Wrench, BookOpen, Calendar, ShoppingCart, Hammer, MapPin, CheckCircle, Star, Target, Zap, Crosshair, User, Users, Folder, Calculator, HelpCircle, Camera, Building2, ListChecks, Loader2 } from 'lucide-react';
 import heroDIYPerson from '@/assets/hero-diy-person.png';
 import { HeroSection } from './landing/HeroSection';
 import { ValuePropSection } from './landing/ValuePropSection';
@@ -149,6 +149,7 @@ export default function Home({
     homeMaintenance: 'bg-green-600',
     homeTaskList: 'bg-green-500',
     myHomes: 'bg-green-700',
+    riskFocus: 'bg-teal-600',
     // Tools & Resources (Orange/Amber shades)
     toolLibrary: 'bg-orange-600',
     toolAccess: 'bg-orange-500',
@@ -291,9 +292,9 @@ export default function Home({
             {/* Start Here */}
             <h3 className="text-sm font-semibold text-foreground mb-3 max-w-xl mx-auto px-2 md:hidden">Start Here</h3>
             <TooltipProvider delayDuration={300}>
-            <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-6 px-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-sm sm:max-w-2xl md:max-w-3xl mx-auto mb-6 px-2">
               {projectCatalogEnabled && (
-              <div className="col-span-3 mb-1">
+              <div className="col-span-2 sm:col-span-4 mb-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button onClick={() => { console.log('Navigating to project catalog'); navigate('/projects'); }} variant="outline" className="w-full h-10 text-sm font-medium border-primary bg-slate-600 hover:bg-slate-500 text-slate-50">
@@ -346,6 +347,19 @@ export default function Home({
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs text-center">
                   <p>A task tracker with basic scheduling functions and ability to link to projects. Used for small tasks and large projects.</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('open-risk-focus-launcher'))}>
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.riskFocus} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
+                      <Crosshair className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Risk Focus</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs text-center">
+                  <p>Start a run dedicated to risks for a project template—foundation and template risks load automatically; add your own on the run.</p>
                 </TooltipContent>
               </Tooltip>
             </div>

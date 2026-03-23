@@ -105,6 +105,7 @@ import {
   shouldRegenerateSchedule,
   autoRegenerateSchedule
 } from '@/utils/autoScheduleRegeneration';
+import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 interface UserViewProps {
   resetToListing?: boolean;
   forceListingMode?: boolean;
@@ -1836,6 +1837,9 @@ export default function UserView({
       case 'risk-management':
         console.log('🛡️ Launching Risk Management app');
         setRiskManagementOpen(true);
+        break;
+      case 'risk-focus':
+        window.dispatchEvent(new CustomEvent('open-risk-focus-launcher'));
         break;
       case 'quality-check':
         setQualityCheckExpandSettingsAccordion(false);
@@ -3883,6 +3887,7 @@ export default function UserView({
           onOpenChange={setRiskManagementOpen}
           projectRunId={currentProjectRun.id}
           mode="run"
+          variant={isRiskFocusRun(currentProjectRun) ? 'risk-focus' : 'default'}
         />
       )}
 

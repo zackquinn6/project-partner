@@ -16,7 +16,12 @@ interface ProjectContextType {
   setCurrentProject: (project: Project | null) => void;
   setCurrentProjectRun: (projectRun: ProjectRun | null) => void;
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  createProjectRun: (project: Project, customName?: string, homeId?: string) => Promise<string | null>;
+  createProjectRun: (
+    project: Project,
+    customName?: string,
+    homeId?: string,
+    options?: { riskFocusSession?: boolean }
+  ) => Promise<string | null>;
   addProjectRun: (projectRun: Omit<ProjectRun, 'id' | 'createdAt' | 'updatedAt'>, onSuccess?: (projectRunId: string) => void) => Promise<void>;
   updateProject: (project: Project) => Promise<void>;
   updateProjectRun: (projectRun: ProjectRun) => Promise<void>;

@@ -167,10 +167,15 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const canAccessPaidFeatures = isBetaMode || isSubscribed || isAdmin || inTrial;
 
-  const canAccessApp = useCallback((actionKey: string): boolean => {
-    if ((FREE_APP_ACTION_KEYS as readonly string[]).includes(actionKey)) return true;
-    return canAccessPaidFeatures;
-  }, [canAccessPaidFeatures]);
+  const canAccessApp = useCallback(
+    (actionKey: string): boolean => {
+      if ((FREE_APP_ACTION_KEYS as readonly string[]).includes(actionKey)) return true;
+      // While subscription status is loading, do not treat a signed-in user as unpaid (avoids false blocks).
+      if (user && loading) return true;
+      return canAccessPaidFeatures;
+    },
+    [canAccessPaidFeatures, user, loading]
+  );
 
   const trialDaysRemaining = trialEndDate
     ? Math.max(0, Math.ceil((new Date(trialEndDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))

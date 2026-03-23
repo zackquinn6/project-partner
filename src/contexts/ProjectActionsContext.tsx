@@ -7,10 +7,69 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectData } from './ProjectDataContext';
 import { useGuest } from './GuestContext';
 import { toast } from '@/components/ui/use-toast';
-import { ensureStandardPhasesForNewProject, isKickoffPhaseComplete } from '@/utils/projectUtils';
+import { ensureStandardPhasesForNewProject, isKickoffPhaseComplete, KICKOFF_UI_STEP_IDS } from '@/utils/projectUtils';
 import { useOptimizedState } from '@/hooks/useOptimizedState';
 import { mergeQualityControlSettings, parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
 
+function parseCompletedStepsColumn(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((x): x is string => typeof x === 'string');
+  }
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed)
+        ? parsed.filter((x): x is string => typeof x === 'string')
+        : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+async function applyRiskFocusSessionToRun(runId: string): Promise<void> {
+  const { data: row, error } = await supabase
+    .from('project_runs')
+    .select('completed_steps, customization_decisions')
+    .eq('id', runId)
+    .single();
+
+  if (error) throw error;
+  if (!row) throw new Error('Project run not found for risk focus finalize');
+
+  const existingSteps = parseCompletedStepsColumn(row.completed_steps);
+  const mergedSteps = [...new Set([...existingSteps, ...KICKOFF_UI_STEP_IDS])];
+
+  let decisions: Record<string, unknown> = {};
+  const raw = row.customization_decisions;
+  if (raw != null) {
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          decisions = { ...(parsed as Record<string, unknown>) };
+        }
+      } catch {
+        decisions = {};
+      }
+    } else if (typeof raw === 'object' && !Array.isArray(raw)) {
+      decisions = { ...(raw as Record<string, unknown>) };
+    }
+  }
+  decisions.risk_focus = true;
+
+  const { error: updErr } = await supabase
+    .from('project_runs')
+    .update({
+      completed_steps: mergedSteps,
+      customization_decisions: decisions,
+      status: 'in-progress',
+    })
+    .eq('id', runId);
+
+  if (updErr) throw updErr;
+}
 
 interface ProjectActionsContextType {
   currentProject: Project | null;
@@ -18,7 +77,12 @@ interface ProjectActionsContextType {
   setCurrentProject: (project: Project | null) => void;
   setCurrentProjectRun: (projectRun: ProjectRun | null) => void;
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  createProjectRun: (project: Project, customName?: string, homeId?: string) => Promise<string | null>;
+  createProjectRun: (
+    project: Project,
+    customName?: string,
+    homeId?: string,
+    options?: { riskFocusSession?: boolean }
+  ) => Promise<string | null>;
   addProjectRun: (projectRun: Omit<ProjectRun, 'id' | 'createdAt' | 'updatedAt'>, onSuccess?: (projectRunId: string) => void) => Promise<void>;
   updateProject: (project: Project) => Promise<void>;
   updateProjectRun: (projectRun: ProjectRun) => Promise<void>;
@@ -166,8 +230,20 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     }
   }, [user, isAdmin, refetchProjects]);
 
-  const createProjectRun = useCallback(async (project: Project, customName?: string, homeId?: string): Promise<string | null> => {
-    if (!user) return null;
+  const createProjectRun = useCallback(async (
+    project: Project,
+    customName?: string,
+    homeId?: string,
+    options?: { riskFocusSession?: boolean }
+  ): Promise<string | null> => {
+    if (!user) {
+      toast({
+        title: 'Sign in required',
+        description: 'Sign in to create a project run.',
+        variant: 'destructive',
+      });
+      return null;
+    }
 
     try {
       // Count incorporated phases in template
@@ -492,13 +568,25 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           .eq('id', data);
       }
 
+      if (options?.riskFocusSession) {
+        try {
+          await applyRiskFocusSessionToRun(data);
+        } catch (riskFocusFinalizeError) {
+          console.error('❌ Risk focus finalize failed; deleting created run:', riskFocusFinalizeError);
+          await supabase.from('project_runs').delete().eq('id', data);
+          throw riskFocusFinalizeError;
+        }
+      }
+
       await refetchProjectRuns();
       return data || null;
     } catch (error) {
       console.error('Error creating project run:', error);
+      const message =
+        error instanceof Error ? error.message : typeof error === 'string' ? error : null;
       toast({
         title: "Error",
-        description: "Failed to create project run",
+        description: message || "Failed to create project run",
         variant: "destructive",
       });
       return null;

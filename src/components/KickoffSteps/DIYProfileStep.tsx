@@ -35,6 +35,7 @@ function toolDisplayName(tool: Record<string, unknown> | null | undefined): stri
 interface ProfileData {
   skill_level?: string;
   avoid_projects?: string[];
+  project_skills?: Record<string, number> | null;
   physical_capability?: string;
   home_ownership?: string;
   home_build_year?: string;
@@ -74,6 +75,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
         .select(`
           skill_level, 
           avoid_projects, 
+          project_skills,
           physical_capability, 
           home_ownership, 
           home_build_year, 
@@ -353,7 +355,9 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
           projectFocus: existingProfile?.project_focus ?? undefined,
           ownedTools: existingProfile?.owned_tools || [],
           fullName: existingProfile?.full_name || "",
-          nickname: existingProfile?.nickname || ""
+          nickname: existingProfile?.nickname || "",
+          projectSkills: existingProfile?.project_skills ?? null,
+          avoidProjects: existingProfile?.avoid_projects ?? null,
         }} 
       />
     </>
