@@ -45,7 +45,7 @@ function RiskFocusStartControls({
   className?: string;
 }) {
   const { projects, createProjectRun, loading: projectsLoading } = useProject();
-  const { canAccessApp } = useMembership();
+  const { canAccessApp, loading: membershipLoading } = useMembership();
   const { isAdmin } = useUserRole();
   const [selectedId, setSelectedId] = useState<string>('');
   const [starting, setStarting] = useState(false);
