@@ -29,13 +29,20 @@ function parseCompletedStepsColumn(value: unknown): string[] {
   return [];
 }
 
-function optionalDbText(value: unknown): string | null {
-  if (value == null) return null;
-  if (typeof value !== 'string') {
-    throw new Error('Risk row text field from database is not a string');
+/** Copy `project_risks` → `project_run_risks`: tolerate driver/PostgREST types for nullable text columns. */
+function optionalDbTextForRiskCopy(value: unknown): string | null {
+  if (value == null || value === '') return null;
+  if (typeof value === 'string') {
+    const t = value.trim();
+    return t.length > 0 ? t : null;
   }
-  const t = value.trim();
-  return t.length > 0 ? t : null;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+  if (typeof value === 'boolean') {
+    return value ? 'true' : 'false';
+  }
+  throw new Error('Risk row text field has unsupported type for copy');
 }
 
 function numberOrNullForRunRisk(value: unknown, field: string): number | null {
@@ -74,6 +81,106 @@ function normalizeMitigationActionsForRunRisk(value: unknown): Json | null {
   throw new Error('mitigation_actions has invalid type');
 }
 
+function sanitizeMitigationActionsForInsert(value: unknown): Json | null {
+  const normalized = normalizeMitigationActionsForRunRisk(value);
+  if (normalized == null) return null;
+  try {
+    return JSON.parse(JSON.stringify(normalized)) as Json;
+  } catch {
+    throw new Error('mitigation_actions could not be serialized for storage');
+  }
+}
+
+type ProjectRunRiskInsertRow = {
+  project_run_id: string;
+  template_risk_id: string;
+  risk_title: string;
+  risk_description: string | null;
+  likelihood: string | null;
+  severity: string | null;
+  schedule_impact_low_days: number | null;
+  schedule_impact_high_days: number | null;
+  budget_impact_low: number | null;
+  budget_impact_high: number | null;
+  mitigation_strategy: string | null;
+  mitigation_actions: Json | null;
+  mitigation_cost: number | null;
+  recommendation: string | null;
+  impact: string | null;
+  benefit: string | null;
+  display_order: number;
+};
+
+function isPostgresUniqueViolation(err: { code?: string; message?: string } | null | undefined): boolean {
+  if (!err) return false;
+  if (err.code === '23505') return true;
+  const m = (err.message || '').toLowerCase();
+  return m.includes('duplicate key') || m.includes('unique constraint');
+}
+
+function mutableProjectRunRiskFields(row: ProjectRunRiskInsertRow) {
+  return {
+    template_risk_id: row.template_risk_id,
+    risk_title: row.risk_title,
+    risk_description: row.risk_description,
+    likelihood: row.likelihood,
+    severity: row.severity,
+    schedule_impact_low_days: row.schedule_impact_low_days,
+    schedule_impact_high_days: row.schedule_impact_high_days,
+    budget_impact_low: row.budget_impact_low,
+    budget_impact_high: row.budget_impact_high,
+    mitigation_strategy: row.mitigation_strategy,
+    mitigation_actions: row.mitigation_actions,
+    mitigation_cost: row.mitigation_cost,
+    recommendation: row.recommendation,
+    impact: row.impact,
+    benefit: row.benefit,
+    display_order: row.display_order,
+  };
+}
+
+/** Sync one template-derived run risk: update by template id, else insert, else resolve unique conflict by title. */
+async function upsertProjectRunRiskRow(row: ProjectRunRiskInsertRow): Promise<void> {
+  const fields = mutableProjectRunRiskFields(row);
+  const { data: byTemplate, error: updateByTemplateError } = await supabase
+    .from('project_run_risks')
+    .update(fields)
+    .eq('project_run_id', row.project_run_id)
+    .eq('template_risk_id', row.template_risk_id)
+    .select('id');
+
+  if (updateByTemplateError) {
+    throw updateByTemplateError;
+  }
+  if (byTemplate && byTemplate.length > 0) {
+    return;
+  }
+
+  const { error: insertError } = await supabase.from('project_run_risks').insert(row);
+
+  if (!insertError) {
+    return;
+  }
+
+  if (isPostgresUniqueViolation(insertError)) {
+    const { data: byTitle, error: updateByTitleError } = await supabase
+      .from('project_run_risks')
+      .update(fields)
+      .eq('project_run_id', row.project_run_id)
+      .eq('risk_title', row.risk_title)
+      .select('id');
+
+    if (updateByTitleError) {
+      throw updateByTitleError;
+    }
+    if (byTitle && byTitle.length > 0) {
+      return;
+    }
+  }
+
+  throw insertError;
+}
+
 async function applyRiskFocusSessionToRun(runId: string): Promise<void> {
   const { data: row, error } = await supabase
     .from('project_runs')
@@ -105,11 +212,14 @@ async function applyRiskFocusSessionToRun(runId: string): Promise<void> {
   }
   decisions.risk_focus = true;
 
+  const completedStepsJson = JSON.parse(JSON.stringify(mergedSteps)) as Json;
+  const decisionsJson = JSON.parse(JSON.stringify(decisions)) as Json;
+
   const { error: updErr } = await supabase
     .from('project_runs')
     .update({
-      completed_steps: mergedSteps,
-      customization_decisions: decisions,
+      completed_steps: completedStepsJson,
+      customization_decisions: decisionsJson,
       status: 'in-progress',
     })
     .eq('id', runId);
@@ -396,11 +506,12 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         }
       }
 
-      const templatePhasesCount = project.phases?.length || 0;
+      // Catalog templates often omit `phases` on the client; never call `.filter` on undefined.
+      const templatePhases = Array.isArray(project.phases) ? project.phases : [];
+      const templatePhasesCount = templatePhases.length;
       const runPhasesCount = parsedPhases.length;
-      
-      // Count incorporated phases in template and run
-      const templateIncorporatedCount = project.phases.filter(p => p.isLinked === true).length;
+
+      const templateIncorporatedCount = templatePhases.filter(p => p.isLinked === true).length;
       const runIncorporatedCount = parsedPhases.filter(p => p.isLinked === true).length;
 
       if (!phasesExist || runPhasesCount === 0) {
@@ -424,8 +535,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         throw new Error('Project run was created without phases. The create_project_run_snapshot database function failed. Please ensure the template has phases in the database and the function is working correctly.');
       }
 
-      // CRITICAL: Validate that all phases from template were copied
-      if (runPhasesCount < templatePhasesCount) {
+      // CRITICAL: When the client has phase data, the run snapshot must cover it (RPC is source of truth).
+      if (templatePhasesCount > 0 && runPhasesCount < templatePhasesCount) {
         console.error('❌ CRITICAL: Project run created with incomplete phases!', {
           runId: data,
           templateId: project.id,
@@ -446,8 +557,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         throw new Error(`Project run was created with only ${runPhasesCount} of ${templatePhasesCount} phases. This indicates a problem with the create_project_run_snapshot function. The project run must be a complete snapshot of the template.`);
       }
       
-      // CRITICAL: Validate that incorporated phases were copied
-      if (runIncorporatedCount < templateIncorporatedCount) {
+      if (templatePhasesCount > 0 && runIncorporatedCount < templateIncorporatedCount) {
         console.error('❌ CRITICAL: Project run missing incorporated phases!', {
           runId: data,
           templateId: project.id,
@@ -455,7 +565,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           templateIncorporatedCount,
           runIncorporatedCount,
           missingIncorporatedPhases: templateIncorporatedCount - runIncorporatedCount,
-          templateIncorporatedPhaseNames: project.phases.filter(p => p.isLinked === true).map(p => p.name),
+          templateIncorporatedPhaseNames: templatePhases.filter(p => p.isLinked === true).map(p => p.name),
           runIncorporatedPhaseNames: parsedPhases.filter(p => p.isLinked === true).map(p => p.name)
         });
         
@@ -504,8 +614,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       // - Foundation risks + project risks are assembled ONLY at project run creation.
       // - Mitigation/action tracking is maintained at `project_run_risks` level.
       // - Run-specific risks (user-added later) have `template_risk_id = null` and must not be modified.
-      // - Replace any run risks created inside `create_project_run_snapshot_v2` with the merged foundation
-      //   + template copy so the snapshot matches `project_risks` (avoids duplicate rows / partial seeds).
+      // - Sync merged foundation + template `project_risks` onto `project_run_risks` via per-row upsert
+      //   (RPC may pre-seed rows; bulk delete is avoided so RLS/policy quirks cannot block launch).
       const templateProjectIdForRisks = project.parent_project_id ?? project.id;
 
       const riskAccessErrorMessage = 'Cannot contact database to access risks. Contact administrator';
@@ -562,17 +672,23 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           throw new Error(riskAccessErrorMessage);
         }
 
-        const insertRows = mergedForInsert.map((risk: any, idx: number) => {
-          if (typeof risk?.id !== 'string' || risk.id.length === 0) {
+        const insertRows: ProjectRunRiskInsertRow[] = mergedForInsert.map((risk: any, idx: number) => {
+          const templateRiskId =
+            typeof risk?.id === 'string' && risk.id.length > 0
+              ? risk.id
+              : risk?.id != null && String(risk.id).length > 0
+                ? String(risk.id)
+                : null;
+          if (!templateRiskId) {
             throw new Error('Risk row from database is missing id');
           }
           return {
             project_run_id: data,
-            template_risk_id: risk.id,
+            template_risk_id: templateRiskId,
             risk_title: risk.risk_title.trim(),
-            risk_description: optionalDbText(risk.risk_description),
-            likelihood: optionalDbText(risk.likelihood),
-            severity: optionalDbText(risk.severity),
+            risk_description: optionalDbTextForRiskCopy(risk.risk_description),
+            likelihood: optionalDbTextForRiskCopy(risk.likelihood),
+            severity: optionalDbTextForRiskCopy(risk.severity),
             schedule_impact_low_days: numberOrNullForRunRisk(
               risk.schedule_impact_low_days,
               'schedule_impact_low_days'
@@ -583,32 +699,30 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             ),
             budget_impact_low: numberOrNullForRunRisk(risk.budget_impact_low, 'budget_impact_low'),
             budget_impact_high: numberOrNullForRunRisk(risk.budget_impact_high, 'budget_impact_high'),
-            mitigation_strategy: optionalDbText(risk.mitigation_strategy),
-            mitigation_actions: normalizeMitigationActionsForRunRisk(risk.mitigation_actions),
+            mitigation_strategy: optionalDbTextForRiskCopy(risk.mitigation_strategy),
+            mitigation_actions: sanitizeMitigationActionsForInsert(risk.mitigation_actions),
             mitigation_cost: numberOrNullForRunRisk(risk.mitigation_cost, 'mitigation_cost'),
-            recommendation: optionalDbText(risk.recommendation),
-            impact: optionalDbText(risk.impact),
-            benefit: optionalDbText(risk.benefit),
+            recommendation: optionalDbTextForRiskCopy(risk.recommendation),
+            impact: optionalDbTextForRiskCopy(risk.impact),
+            benefit: optionalDbTextForRiskCopy(risk.benefit),
             display_order: idx,
           };
         });
 
-        const { error: deleteRisksError } = await supabase
-          .from('project_run_risks')
-          .delete()
-          .eq('project_run_id', data);
-
-        if (deleteRisksError) throw deleteRisksError;
-
-        const { error: insertError } = await supabase.from('project_run_risks').insert(insertRows);
-
-        if (insertError) {
-          console.error('❌ project_run_risks insert failed:', insertError, {
-            runId: data,
-            insertRowsCount: insertRows.length,
-            firstInsertRow: insertRows[0],
-          });
-          throw new Error(riskAccessErrorMessage);
+        // Do not bulk-delete here: RLS or RPC-seeded rows can make delete a no-op while insert then
+        // conflicts. Per-row upsert (update → insert → update on unique violation) reconciles state.
+        for (let i = 0; i < insertRows.length; i++) {
+          try {
+            await upsertProjectRunRiskRow(insertRows[i]);
+          } catch (rowErr) {
+            console.error('❌ project_run_risks row sync failed:', rowErr, {
+              runId: data,
+              index: i,
+              risk_title: insertRows[i].risk_title,
+              template_risk_id: insertRows[i].template_risk_id,
+            });
+            throw rowErr;
+          }
         }
       } catch (riskAssemblyError) {
         console.error('❌ Risk assembly failed; deleting created run for consistency:', riskAssemblyError);
