@@ -130,12 +130,13 @@ function RiskFocusDashboard({ risks }: { risks: Risk[] }) {
   const { high, medium, low, unset, total } = riskFocusSeverityCounts(risks);
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 pb-1.5 pt-1 md:px-6 md:pb-2 md:pt-1">
-      <div className="mb-0.5 shrink-0 border-b pb-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <div className="mb-0.5 shrink-0 border-b pb-0.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Current Risk Summary
       </div>
-      <Card className="min-w-0 overflow-hidden">
-        <CardContent className="flex flex-row flex-wrap items-center gap-y-2 px-2 py-1.5">
-          <div className="flex min-w-0 flex-row flex-wrap items-center gap-x-3 gap-y-1 sm:gap-x-4">
+      <div className="flex w-full justify-center">
+        <Card className="min-w-0 w-full max-w-xl overflow-hidden">
+          <CardContent className="flex flex-row flex-wrap items-center justify-center gap-y-2 px-2 py-1.5">
+            <div className="flex min-w-0 flex-row flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:gap-x-4">
             <div className="flex flex-row items-baseline gap-2.5">
               <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                 High
@@ -172,7 +173,8 @@ function RiskFocusDashboard({ risks }: { risks: Risk[] }) {
             Not set: {unset}
           </div>
         ) : null}
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }
