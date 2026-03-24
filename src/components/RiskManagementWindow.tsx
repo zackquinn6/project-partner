@@ -583,7 +583,9 @@ export function RiskManagementWindow({
       }
 
       fetchRisks();
-      
+      setShowAddForm(false);
+      setEditingRisk(null);
+
       // Notify scheduler that risks have been updated
       window.dispatchEvent(new CustomEvent('risks-updated'));
     } catch (error) {
@@ -816,138 +818,180 @@ export function RiskManagementWindow({
                 <>
                   {/* Mobile: Card Layout */}
                   <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain md:hidden">
-                    {risks.map((risk) => (
-                      <Card key={risk.id} className="p-4">
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="text-xs text-muted-foreground mb-1">What could go wrong?</div>
-                              <h3 className="font-semibold text-sm leading-snug">{risk.risk}</h3>
-                            </div>
-                            {!readOnly && (
-                              <div className="flex gap-1 flex-shrink-0">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEditRisk(risk)}
-                                  className="h-11 w-11 p-0"
+                    {risks.map((risk) => {
+                      const riskFocusRun = mode === 'run' && variant === 'risk-focus';
+                      return (
+                        <Card
+                          key={risk.id}
+                          className={cn(
+                            'p-4',
+                            riskFocusRun &&
+                              'cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                          )}
+                          tabIndex={riskFocusRun ? 0 : undefined}
+                          onClick={riskFocusRun ? () => setDetailsRisk(risk) : undefined}
+                          onKeyDown={
+                            riskFocusRun
+                              ? (e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setDetailsRisk(risk);
+                                  }
+                                }
+                              : undefined
+                          }
+                        >
+                          <div className="space-y-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs text-muted-foreground mb-1">What could go wrong?</div>
+                                <h3 className="font-semibold text-sm leading-snug">{risk.risk}</h3>
+                              </div>
+                              {!readOnly && (
+                                <div
+                                  className="flex gap-1 flex-shrink-0"
+                                  onClick={(e) => e.stopPropagation()}
+                                  onKeyDown={(e) => e.stopPropagation()}
                                 >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                {!(mode === 'run' && risk.is_template_risk) && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => handleDeleteRisk(risk)}
-                                    className="h-11 w-11 p-0 text-destructive hover:text-destructive"
+                                    onClick={() => handleEditRisk(risk)}
+                                    className="h-11 w-11 p-0"
                                   >
-                                    <Trash2 className="w-4 h-4" />
+                                    <Edit className="w-4 h-4" />
                                   </Button>
+                                  {!(mode === 'run' && risk.is_template_risk) &&
+                                    !(mode === 'run' && variant === 'risk-focus') && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteRisk(risk)}
+                                        className="h-11 w-11 p-0 text-destructive hover:text-destructive"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                </div>
+                              )}
+                            </div>
+                            <div className="space-y-3">
+                              <div>
+                                <div className="text-xs text-muted-foreground mb-1">How likely?</div>
+                                <Badge
+                                  className={getRiskLevelColor(
+                                    risk.likelihood,
+                                    risk.schedule_impact_days,
+                                    risk.budget_impact_dollars
+                                  )}
+                                >
+                                  {risk.likelihood}
+                                </Badge>
+                              </div>
+                              <div>
+                                <div className="text-xs text-muted-foreground mb-1">What happens if it does?</div>
+                                <ImpactIfItDoesContent risk={risk} />
+                              </div>
+                            </div>
+                            {mode === 'run' && variant === 'risk-focus' && (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => e.stopPropagation()}
+                              >
+                                <div className="text-xs text-muted-foreground mb-1">Whats the new status?</div>
+                                {readOnly ? (
+                                  <Badge className={currentRiskLevelBadgeClass(riskFocusLevelValue(risk))}>
+                                    {riskFocusLevelValue(risk) === 'high'
+                                      ? 'High'
+                                      : riskFocusLevelValue(risk) === 'low'
+                                        ? 'Low'
+                                        : 'Med'}
+                                  </Badge>
+                                ) : (
+                                  <Select
+                                    value={riskFocusLevelValue(risk)}
+                                    onValueChange={(value) =>
+                                      handleUpdateCurrentRiskLevel(risk, value as 'low' | 'medium' | 'high')
+                                    }
+                                  >
+                                    <SelectTrigger className="h-11 text-sm">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="high">High</SelectItem>
+                                      <SelectItem value="medium">Med</SelectItem>
+                                      <SelectItem value="low">Low</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 )}
                               </div>
                             )}
+                            {mode === 'run' && variant !== 'risk-focus' && (
+                              <div>
+                                <div className="text-xs text-muted-foreground mb-1">Status</div>
+                                {readOnly ? (
+                                  <Badge className={getStatusColor(risk.status || 'open')}>
+                                    {risk.status || 'open'}
+                                  </Badge>
+                                ) : (
+                                  <Select
+                                    value={risk.status || 'open'}
+                                    onValueChange={(value) => handleUpdateStatus(risk, value as any)}
+                                  >
+                                    <SelectTrigger className="h-11 text-sm">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="open">Open</SelectItem>
+                                      <SelectItem value="mitigated">Mitigated</SelectItem>
+                                      <SelectItem value="monitoring">Monitoring</SelectItem>
+                                      <SelectItem value="closed">Closed</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              </div>
+                            )}
+                            {(risk.mitigation_actions && risk.mitigation_actions.length > 0) && (
+                              <div>
+                                <div className="text-xs text-muted-foreground mb-1">
+                                  What can we do to prevent it?
+                                </div>
+                                <ul className="text-sm list-disc list-inside space-y-1">
+                                  {risk.mitigation_actions.map((ma, idx) => (
+                                    <li key={idx}>
+                                      <span className="font-medium">{ma.action}</span>
+                                      {ma.benefit && (
+                                        <span className="text-muted-foreground"> – {ma.benefit}</span>
+                                      )}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {!risk.mitigation_actions?.length && risk.mitigation && (
+                              <div>
+                                <div className="text-xs text-muted-foreground mb-1">
+                                  What can we do to prevent it?
+                                </div>
+                                <p className="text-sm">{risk.mitigation}</p>
+                              </div>
+                            )}
+                            {!(mode === 'run' && variant === 'risk-focus') ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => setDetailsRisk(risk)}
+                              >
+                                <Info className="w-4 h-4 mr-2" />
+                                More details
+                              </Button>
+                            ) : null}
                           </div>
-                          <div className="space-y-3">
-                            <div>
-                              <div className="text-xs text-muted-foreground mb-1">How likely?</div>
-                              <Badge className={getRiskLevelColor(risk.likelihood, risk.schedule_impact_days, risk.budget_impact_dollars)}>
-                                {risk.likelihood}
-                              </Badge>
-                            </div>
-                            <div>
-                              <div className="text-xs text-muted-foreground mb-1">What happens if it does?</div>
-                              <ImpactIfItDoesContent risk={risk} />
-                            </div>
-                          </div>
-                          {mode === 'run' && variant === 'risk-focus' && (
-                            <div>
-                              <div className="text-xs text-muted-foreground mb-1">Whats the new status?</div>
-                              {readOnly ? (
-                                <Badge className={currentRiskLevelBadgeClass(riskFocusLevelValue(risk))}>
-                                  {riskFocusLevelValue(risk) === 'high'
-                                    ? 'High'
-                                    : riskFocusLevelValue(risk) === 'low'
-                                      ? 'Low'
-                                      : 'Med'}
-                                </Badge>
-                              ) : (
-                                <Select
-                                  value={riskFocusLevelValue(risk)}
-                                  onValueChange={(value) =>
-                                    handleUpdateCurrentRiskLevel(risk, value as 'low' | 'medium' | 'high')
-                                  }
-                                >
-                                  <SelectTrigger className="h-11 text-sm">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="high">High</SelectItem>
-                                    <SelectItem value="medium">Med</SelectItem>
-                                    <SelectItem value="low">Low</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            </div>
-                          )}
-                          {mode === 'run' && variant !== 'risk-focus' && (
-                            <div>
-                              <div className="text-xs text-muted-foreground mb-1">Status</div>
-                              {readOnly ? (
-                                <Badge className={getStatusColor(risk.status || 'open')}>
-                                  {risk.status || 'open'}
-                                </Badge>
-                              ) : (
-                                <Select
-                                  value={risk.status || 'open'}
-                                  onValueChange={(value) => handleUpdateStatus(risk, value as any)}
-                                >
-                                  <SelectTrigger className="h-11 text-sm">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="open">Open</SelectItem>
-                                    <SelectItem value="mitigated">Mitigated</SelectItem>
-                                    <SelectItem value="monitoring">Monitoring</SelectItem>
-                                    <SelectItem value="closed">Closed</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            </div>
-                          )}
-                          {(risk.mitigation_actions && risk.mitigation_actions.length > 0) && (
-                            <div>
-                              <div className="text-xs text-muted-foreground mb-1">What can we do to prevent it?</div>
-                              <ul className="text-sm list-disc list-inside space-y-1">
-                                {risk.mitigation_actions.map((ma, idx) => (
-                                  <li key={idx}>
-                                    <span className="font-medium">{ma.action}</span>
-                                    {ma.benefit && (
-                                      <span className="text-muted-foreground"> – {ma.benefit}</span>
-                                    )}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {!risk.mitigation_actions?.length && risk.mitigation && (
-                            <div>
-                              <div className="text-xs text-muted-foreground mb-1">What can we do to prevent it?</div>
-                              <p className="text-sm">{risk.mitigation}</p>
-                            </div>
-                          )}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => setDetailsRisk(risk)}
-                          >
-                            <Info className="w-4 h-4 mr-2" />
-                            More details
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
+                        </Card>
+                    );
+                    })}
                   </div>
 
                   {/* Desktop: Table Layout — fills remaining height */}
@@ -972,8 +1016,28 @@ export function RiskManagementWindow({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {risks.map((risk) => (
-                          <TableRow key={risk.id}>
+                        {risks.map((risk) => {
+                          const riskFocusRunRow = mode === 'run' && variant === 'risk-focus';
+                          return (
+                          <TableRow
+                            key={risk.id}
+                            className={cn(
+                              riskFocusRunRow &&
+                                'cursor-pointer hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+                            )}
+                            tabIndex={riskFocusRunRow ? 0 : undefined}
+                            onClick={riskFocusRunRow ? () => setDetailsRisk(risk) : undefined}
+                            onKeyDown={
+                              riskFocusRunRow
+                                ? (e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      setDetailsRisk(risk);
+                                    }
+                                  }
+                                : undefined
+                            }
+                          >
                             <TableCell className="font-medium">
                               {risk.risk}
                             </TableCell>
@@ -1002,7 +1066,10 @@ export function RiskManagementWindow({
                               )}
                             </TableCell>
                             {mode === 'run' && variant === 'risk-focus' && (
-                              <TableCell className="align-top">
+                              <TableCell
+                                className="align-top"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 {readOnly ? (
                                   <Badge className={currentRiskLevelBadgeClass(riskFocusLevelValue(risk))}>
                                     {riskFocusLevelValue(risk) === 'high'
@@ -1054,17 +1121,22 @@ export function RiskManagementWindow({
                                 )}
                               </TableCell>
                             )}
-                            <TableCell className="align-top">
+                            <TableCell
+                              className="align-top"
+                              onClick={riskFocusRunRow ? (e) => e.stopPropagation() : undefined}
+                            >
                               <div className="flex flex-wrap gap-1">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setDetailsRisk(risk)}
-                                  className="h-7 px-2 text-[10px]"
-                                >
-                                  Details
-                                </Button>
+                                {!riskFocusRunRow && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setDetailsRisk(risk)}
+                                    className="h-7 px-2 text-[10px]"
+                                  >
+                                    Details
+                                  </Button>
+                                )}
                                 {!readOnly && (
                                   <>
                                     <Button
@@ -1075,7 +1147,7 @@ export function RiskManagementWindow({
                                     >
                                       <Edit className="w-3.5 h-3.5" />
                                     </Button>
-                                    {!(mode === 'run' && risk.is_template_risk) && (
+                                    {!(mode === 'run' && risk.is_template_risk) && !riskFocusRunRow && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1090,7 +1162,8 @@ export function RiskManagementWindow({
                               </div>
                             </TableCell>
                           </TableRow>
-                        ))}
+                        );
+                        })}
                       </TableBody>
                     </Table>
                     </div>
@@ -1341,31 +1414,50 @@ export function RiskManagementWindow({
 
             </div>
             </div>
-            <DialogFooter className="shrink-0 gap-2 border-t bg-background px-4 py-3 sm:px-5 sm:py-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowAddForm(false);
-                  setEditingRisk(null);
-                  setFormData({
-                    risk: '',
-                    likelihood: 'medium',
-                    severity: 'medium',
-                    schedule_impact_days: 0,
-                    budget_impact_dollars: 0,
-                    mitigation: '',
-                    mitigation_actions: [],
-                    notes: '',
-                    status: 'open'
-                  });
-                }}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleSaveRisk}>
-                <Save className="w-4 h-4 mr-2" />
-                {editingRisk ? 'Update' : 'Add'} Risk
-              </Button>
+            <DialogFooter className="shrink-0 flex-col gap-3 border-t bg-background px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                {editingRisk &&
+                mode === 'run' &&
+                variant === 'risk-focus' &&
+                !readOnly &&
+                !editingRisk.is_template_risk ? (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="w-full sm:w-auto"
+                    onClick={() => void handleDeleteRisk(editingRisk)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete risk
+                  </Button>
+                ) : null}
+              </div>
+              <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setEditingRisk(null);
+                    setFormData({
+                      risk: '',
+                      likelihood: 'medium',
+                      severity: 'medium',
+                      schedule_impact_days: 0,
+                      budget_impact_dollars: 0,
+                      mitigation: '',
+                      mitigation_actions: [],
+                      notes: '',
+                      status: 'open'
+                    });
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveRisk}>
+                  <Save className="w-4 h-4 mr-2" />
+                  {editingRisk ? 'Update' : 'Add'} Risk
+                </Button>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
