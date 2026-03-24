@@ -13,6 +13,7 @@ import { AlternatesEditor } from './AlternatesEditor';
 import { MultiContentEditor } from './MultiContentEditor';
 import type { ContentSection } from '@/interfaces/Project';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LibraryItemFormProps {
   type: 'tools' | 'materials';
@@ -30,6 +31,7 @@ function parseInstructions(value: unknown): ContentSection[] {
 }
 
 export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFormProps) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: item?.name || '',
     description: item?.description || '',
@@ -69,8 +71,12 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
 
   const uploadPhoto = async (file: File): Promise<string | null> => {
     try {
+      if (!user?.id) {
+        toast.error('You must be logged in to upload photos');
+        return null;
+      }
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('library-photos')
@@ -101,14 +107,20 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
     setUploading(true);
 
     try {
-      let finalPhotoUrl = photoUrl;
+      // Never persist browser blob preview URLs to the database.
+      let finalPhotoUrl =
+        typeof photoUrl === 'string' && photoUrl.startsWith('blob:')
+          ? (item?.photo_url || '')
+          : photoUrl;
       
       // Upload new photo if one was selected
       if (photoFile) {
         const uploadedUrl = await uploadPhoto(photoFile);
-        if (uploadedUrl) {
-          finalPhotoUrl = uploadedUrl;
+        if (!uploadedUrl) {
+          toast.error('Photo upload failed. Tool was not updated.');
+          return;
         }
+        finalPhotoUrl = uploadedUrl;
       }
 
       const dataToSave = {
@@ -274,7 +286,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
               <SelectTrigger>
                 <SelectValue placeholder="Select a category..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[220]">
                 {type === 'tools' ? (
                   <>
                     <SelectItem value="PPE">PPE</SelectItem>

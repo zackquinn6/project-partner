@@ -16,8 +16,11 @@ export function ProjectWorkflowOverviewPage({
   const projectName =
     currentProjectRun?.customProjectName ?? currentProjectRun?.name ?? currentProject?.name;
 
-  const projectDescription =
-    currentProjectRun?.description ?? currentProject?.description;
+  const runDescription = currentProjectRun?.description?.trim();
+  const templateDescription = currentProject?.description?.trim();
+  const projectDescription = runDescription && runDescription.length > 0
+    ? runDescription
+    : templateDescription;
 
   // In workflow mode, `currentProject` can be null while `currentProjectRun` is set.
   // Use the run's template project to source the cover photo.

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProject } from '@/contexts/ProjectContext';
@@ -325,7 +324,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   };
   const isStepCompleted = (stepIndex: number) => completedKickoffSteps.has(stepIndex);
   const allKickoffStepsComplete = completedKickoffSteps.size === kickoffSteps.length;
-  const progress = completedKickoffSteps.size / kickoffSteps.length * 100;
   const handleOutputToggle = (stepId: string, outputId: string) => {
     setCheckedOutputs(prev => {
       const stepOutputs = new Set(prev[stepId] || []);
@@ -397,21 +395,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
   return (
     <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-auto md:overflow-visible">
-      {/* Step Navigation + progress (no separate project-name header) */}
+      {/* Step Navigation (no separate project-name header) */}
       <Card className="shrink-0">
-        <CardContent className="p-2 sm:p-3 md:p-4">
-          <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground sm:text-sm">
-                Step {currentKickoffStep + 1} of {kickoffSteps.length}
-              </span>
-              {allKickoffStepsComplete && (
-                <CheckCircle className="h-4 w-4 shrink-0 text-green-500" aria-label="Kickoff complete" />
-              )}
-            </div>
-            <Progress value={progress} className="h-1.5 w-full sm:max-w-xs sm:flex-1" />
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <CardContent className="p-2 sm:p-2.5 md:p-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <div className="flex items-center space-x-2 sm:space-x-2 md:space-x-4 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 -mx-2 sm:mx-0 px-2 sm:px-0 scrollbar-hide">
               {kickoffSteps.map((step, index) => <div key={step.id} className="flex items-center flex-shrink-0">
                   <div className={`
@@ -429,17 +416,27 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                 </div>)}
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentKickoffStep === 0} className="flex-1 sm:flex-initial text-xs h-11 sm:h-9">
-                <ChevronLeft className="w-4 h-4 sm:w-4 sm:h-4 mr-1" />
-                <span className="hidden sm:inline">Previous</span>
-                <span className="sm:hidden">Prev</span>
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleNext} disabled={currentKickoffStep === kickoffSteps.length - 1} className="flex-1 sm:flex-initial text-xs h-11 sm:h-9">
-                <span className="hidden sm:inline">Next</span>
-                <span className="sm:hidden">Next</span>
-                <ChevronRight className="w-4 h-4 sm:w-4 sm:h-4 ml-1" />
-              </Button>
+            <div className="w-full sm:w-auto">
+              <div className="mb-1 flex items-center justify-end gap-2">
+                <span className="text-xs text-muted-foreground sm:text-sm">
+                  Step {currentKickoffStep + 1} of {kickoffSteps.length}
+                </span>
+                {allKickoffStepsComplete && (
+                  <CheckCircle className="h-4 w-4 shrink-0 text-green-500" aria-label="Kickoff complete" />
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentKickoffStep === 0} className="flex-1 sm:flex-initial text-xs h-11 sm:h-9">
+                  <ChevronLeft className="w-4 h-4 sm:w-4 sm:h-4 mr-1" />
+                  <span className="hidden sm:inline">Previous</span>
+                  <span className="sm:hidden">Prev</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleNext} disabled={currentKickoffStep === kickoffSteps.length - 1} className="flex-1 sm:flex-initial text-xs h-11 sm:h-9">
+                  <span className="hidden sm:inline">Next</span>
+                  <span className="sm:hidden">Next</span>
+                  <ChevronRight className="w-4 h-4 sm:w-4 sm:h-4 ml-1" />
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>

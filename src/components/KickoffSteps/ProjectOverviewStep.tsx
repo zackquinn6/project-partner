@@ -148,10 +148,16 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   } = useAuth();
   const navigate = useNavigate();
   const { projectCatalogEnabled } = useGlobalPublicSettings();
+  const templateProject = currentProject || projects.find(project => project.id === currentProjectRun?.templateId) || null;
+  const runDescription = currentProjectRun?.description?.trim();
+  const templateDescription = templateProject?.description?.trim();
+  const resolvedProjectDescription = runDescription && runDescription.length > 0
+    ? runDescription
+    : (templateDescription || '');
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     name: currentProjectRun?.name || '',
-    description: currentProjectRun?.description || ''
+    description: resolvedProjectDescription
   });
   const [userProfile, setUserProfile] = useState<{
     skill_level?: string;
@@ -188,8 +194,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       cancelled = true;
     };
   }, [user?.id]);
-  const templateProject = currentProject || projects.find(project => project.id === currentProjectRun?.templateId) || null;
-  
+ 
   // Fetch from database as backup if templateProject doesn't have the fields
   const [fetchedProjectInfo, setFetchedProjectInfo] = useState<{
     skillLevel?: string | null;
@@ -576,7 +581,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const handleCancel = () => {
     setEditForm({
       name: currentProjectRun?.name || '',
-      description: currentProjectRun?.description || ''
+      description: resolvedProjectDescription
     });
     setIsEditing(false);
   };
@@ -613,7 +618,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             <div className="flex-1 min-w-0">
               <Label className="text-xs">Description</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">{currentProjectRun.description || 'No description provided'}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{resolvedProjectDescription || 'No description provided'}</p>
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2 mb-0.5">
@@ -837,7 +842,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           <div className="space-y-1.5">
             <Label className="text-xs">Description</Label>
             <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-              {currentProjectRun.description?.trim() ? currentProjectRun.description.trim() : 'No description provided'}
+              {resolvedProjectDescription || 'No description provided'}
             </p>
           </div>
 
