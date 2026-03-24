@@ -137,42 +137,42 @@ function RiskFocusDashboard({ risks }: { risks: Risk[] }) {
         <Card className="min-w-0 w-full max-w-xl overflow-hidden">
           <CardContent className="flex flex-row flex-wrap items-center justify-center gap-y-2 px-2 py-1.5">
             <div className="flex min-w-0 flex-row flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:gap-x-4">
-            <div className="flex flex-row items-baseline gap-2.5">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                High
-              </span>
-              <span className="text-lg font-bold tabular-nums text-destructive sm:text-xl">{high}</span>
+              <div className="flex flex-row items-baseline gap-2.5">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  High
+                </span>
+                <span className="text-lg font-bold tabular-nums text-destructive sm:text-xl">{high}</span>
+              </div>
+              <div className="flex flex-row items-baseline gap-2.5 border-l border-foreground/20 pl-3 dark:border-foreground/30 sm:pl-4">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Med
+                </span>
+                <span className="text-lg font-bold tabular-nums text-amber-600 sm:text-xl">{medium}</span>
+              </div>
+              <div className="flex flex-row items-baseline gap-2.5 border-l border-foreground/20 pl-3 dark:border-foreground/30 sm:pl-4">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Low
+                </span>
+                <span className="text-lg font-bold tabular-nums text-emerald-600 sm:text-xl">{low}</span>
+              </div>
+              <div
+                className="mx-1 h-7 w-px shrink-0 self-center bg-foreground/45 dark:bg-foreground/55 sm:mx-2"
+                aria-hidden
+                role="presentation"
+              />
+              <div className="flex flex-row items-baseline gap-2.5">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Total
+                </span>
+                <span className="text-lg font-bold tabular-nums sm:text-xl">{total}</span>
+              </div>
             </div>
-            <div className="flex flex-row items-baseline gap-2.5 border-l border-foreground/20 pl-3 dark:border-foreground/30 sm:pl-4">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                Med
-              </span>
-              <span className="text-lg font-bold tabular-nums text-amber-600 sm:text-xl">{medium}</span>
+          </CardContent>
+          {unset > 0 ? (
+            <div className="border-t border-border/50 px-2 py-0.5 text-center text-[10px] text-muted-foreground">
+              Not set: {unset}
             </div>
-            <div className="flex flex-row items-baseline gap-2.5 border-l border-foreground/20 pl-3 dark:border-foreground/30 sm:pl-4">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                Low
-              </span>
-              <span className="text-lg font-bold tabular-nums text-emerald-600 sm:text-xl">{low}</span>
-            </div>
-            <div
-              className="mx-1 h-7 w-px shrink-0 self-center bg-foreground/45 dark:bg-foreground/55 sm:mx-2"
-              aria-hidden
-              role="presentation"
-            />
-            <div className="flex flex-row items-baseline gap-2.5">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                Total
-              </span>
-              <span className="text-lg font-bold tabular-nums sm:text-xl">{total}</span>
-            </div>
-          </div>
-        </CardContent>
-        {unset > 0 ? (
-          <div className="border-t border-border/50 px-2 py-0.5 text-center text-[10px] text-muted-foreground">
-            Not set: {unset}
-          </div>
-        ) : null}
+          ) : null}
         </Card>
       </div>
     </div>
