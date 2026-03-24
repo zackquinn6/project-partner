@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft } from 'lucide-react';
@@ -397,32 +397,20 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
   return (
     <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-auto md:overflow-visible">
-      {/* Progress Header */}
-      <Card className="shrink-0">
-        <CardHeader className="p-2 sm:p-3">
-          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-            <div className="flex-1 min-w-0">
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                Project Kickoff{currentProjectRun?.name ? `: ${currentProjectRun.name}` : ''}
-                {allKickoffStepsComplete && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" />}
-              </CardTitle>
-              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap" />
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="text-right">
-                <div className="text-xs text-muted-foreground mb-0.5">
-                  Step {currentKickoffStep + 1} of {kickoffSteps.length}
-                </div>
-                <Progress value={progress} className="w-20 sm:w-24 h-1.5" />
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Step Navigation */}
+      {/* Step Navigation + progress (no separate project-name header) */}
       <Card className="shrink-0">
         <CardContent className="p-2 sm:p-3 md:p-4">
+          <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground sm:text-sm">
+                Step {currentKickoffStep + 1} of {kickoffSteps.length}
+              </span>
+              {allKickoffStepsComplete && (
+                <CheckCircle className="h-4 w-4 shrink-0 text-green-500" aria-label="Kickoff complete" />
+              )}
+            </div>
+            <Progress value={progress} className="h-1.5 w-full sm:max-w-xs sm:flex-1" />
+          </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="flex items-center space-x-2 sm:space-x-2 md:space-x-4 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 -mx-2 sm:mx-0 px-2 sm:px-0 scrollbar-hide">
               {kickoffSteps.map((step, index) => <div key={step.id} className="flex items-center flex-shrink-0">

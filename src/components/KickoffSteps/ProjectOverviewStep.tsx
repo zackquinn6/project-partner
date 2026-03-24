@@ -834,6 +834,13 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           </div>
         </CardHeader>
         <CardContent className="space-y-4 p-2 sm:p-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Description</Label>
+            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+              {currentProjectRun.description?.trim() ? currentProjectRun.description.trim() : 'No description provided'}
+            </p>
+          </div>
+
           <section className="space-y-4" aria-label="Project fit recommendation">
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground text-center">
               Recommendation

@@ -220,7 +220,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
         })}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2">
         <Button variant="outline" size="sm" onClick={handleSelectAll}>
           Select all
         </Button>
