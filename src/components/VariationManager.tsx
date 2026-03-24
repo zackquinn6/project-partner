@@ -19,7 +19,6 @@ import {
   DialogPortal,
   DialogOverlay,
 } from '@/components/ui/dialog';
-import { clearAllToolVariations, clearAllMaterialVariations } from '@/utils/variationUtils';
 
 interface VariationAttribute {
   id: string;
@@ -204,14 +203,42 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
         });
       }
 
-      // Update attribute_definitions JSON on all variations for this core item
-      const { data: existingVariations, error: variationsError } = await supabase
+      // Update attribute_definitions JSON on all variations for this core item.
+      // If no variations exist yet, create a standard baseline variation to persist definitions.
+      let { data: existingVariations, error: variationsError } = await supabase
         .from('tool_variations')
         .select('id, attribute_definitions')
         .eq('core_item_id', coreItemId)
         .eq('item_type', itemType);
 
       if (variationsError) throw variationsError;
+
+      if (!existingVariations || existingVariations.length === 0) {
+        const standardVariationId = crypto.randomUUID();
+        const { error: seedError } = await supabase
+          .from('tool_variations')
+          .insert({
+            id: standardVariationId,
+            core_item_id: coreItemId,
+            item_type: itemType,
+            name: `Standard ${coreItemName}`,
+            description: null,
+            sku: null,
+            photo_url: null,
+            attributes: {},
+            attribute_definitions: [],
+            warning_flags: null
+          });
+        if (seedError) throw seedError;
+
+        const { data: seededRows, error: refetchError } = await supabase
+          .from('tool_variations')
+          .select('id, attribute_definitions')
+          .eq('core_item_id', coreItemId)
+          .eq('item_type', itemType);
+        if (refetchError) throw refetchError;
+        existingVariations = seededRows || [];
+      }
 
       for (const variation of existingVariations || []) {
         const defs = (variation.attribute_definitions || []) as any[];
@@ -239,7 +266,6 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
       setSelectedCommonAttributes([]);
       setShowAttributeDialog(false);
       fetchAttributes();
-      fetchGlobalAttributes();
     } catch (error) {
       console.error('Error creating attribute:', error);
       toast.error('Failed to create attribute');
@@ -326,8 +352,9 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
       }
 
       const { data: variationData, error } = await supabase
-        .from('variation_instances')
+        .from('tool_variations')
         .insert({
+          id: crypto.randomUUID(),
           core_item_id: coreItemId,
           item_type: itemType,
           name: variationName,
@@ -389,7 +416,7 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
 
     try {
       const { error } = await supabase
-        .from('variation_instances')
+        .from('tool_variations')
         .delete()
         .eq('id', variationId);
 
@@ -408,28 +435,23 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
     if (!confirm('Are you sure you want to delete this attribute? This will also delete all its values.')) return;
 
     try {
-      // Delete values first
-      await supabase
-        .from('variation_attribute_values')
-        .delete()
-        .eq('attribute_id', attributeId)
-        .eq('core_item_id', coreItemId);
+      const { data: existingVariations, error } = await supabase
+        .from('tool_variations')
+        .select('id, attribute_definitions')
+        .eq('core_item_id', coreItemId)
+        .eq('item_type', itemType);
 
-      // Then delete attribute if no other core items use it
-      const { data: otherValues } = await supabase
-        .from('variation_attribute_values')
-        .select('id')
-        .eq('attribute_id', attributeId)
-        .neq('core_item_id', coreItemId);
+      if (error) throw error;
 
-      if (!otherValues || otherValues.length === 0) {
-        await supabase
-          .from('variation_attributes')
-          .delete()
-          .eq('id', attributeId);
+      for (const variation of existingVariations || []) {
+        const defs = ((variation.attribute_definitions || []) as any[]).filter((a: any) => a.id !== attributeId);
+        const { error: updateError } = await supabase
+          .from('tool_variations')
+          .update({ attribute_definitions: defs })
+          .eq('id', variation.id);
+        if (updateError) throw updateError;
       }
 
-      
       fetchAttributes();
     } catch (error) {
       console.error('Error deleting attribute:', error);
@@ -441,14 +463,28 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
     if (!confirm('Are you sure you want to delete this attribute value?')) return;
 
     try {
-      const { error } = await supabase
-        .from('variation_attribute_values')
-        .delete()
-        .eq('id', valueId);
+      const { data: existingVariations, error } = await supabase
+        .from('tool_variations')
+        .select('id, attribute_definitions')
+        .eq('core_item_id', coreItemId)
+        .eq('item_type', itemType);
 
       if (error) throw error;
 
-      
+      for (const variation of existingVariations || []) {
+        const defs = (variation.attribute_definitions || []) as any[];
+        const nextDefs = defs.map((attr: any) => ({
+          ...attr,
+          values: (attr.values || []).filter((v: any) => v.id !== valueId)
+        }));
+
+        const { error: updateError } = await supabase
+          .from('tool_variations')
+          .update({ attribute_definitions: nextDefs })
+          .eq('id', variation.id);
+        if (updateError) throw updateError;
+      }
+
       fetchAttributes();
     } catch (error) {
       console.error('Error deleting attribute value:', error);
@@ -525,30 +561,6 @@ export function VariationManager({ coreItemId, itemType, coreItemName, onVariati
       setVariationName(generatedName);
     }
   };
-
-  // Get all global attributes for the add value dialog
-  const [globalAttributes, setGlobalAttributes] = useState<VariationAttribute[]>([]);
-
-  const fetchGlobalAttributes = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('variation_attributes')
-        .select('*')
-        .order('display_name');
-
-      if (error) throw error;
-      setGlobalAttributes((data || []).map(attr => ({
-        ...attr,
-        values: []
-      })));
-    } catch (error) {
-      console.error('Error fetching global attributes:', error);
-    }
-  };
-
-  React.useEffect(() => {
-    fetchGlobalAttributes();
-  }, []);
 
   return (
     <div className="space-y-6">

@@ -128,7 +128,9 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
         description: formData.description.trim() || null,
         photo_url: finalPhotoUrl || null,
         alternates: formData.alternates || null,
-        category: formData.category.trim() || null,
+        category: formData.category.trim()
+          ? formData.category.trim()
+          : (typeof item?.category === 'string' && item.category.trim() ? item.category.trim() : null),
         ...(type === 'materials' && {
           unit: formData.unit.trim() || null
         }),
@@ -164,7 +166,8 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
       onSave();
     } catch (error) {
       console.error('Error saving item:', error);
-      toast.error('Failed to save item');
+      const message = error instanceof Error ? error.message : 'Failed to save item';
+      toast.error(message);
     } finally {
       setUploading(false);
     }
@@ -286,7 +289,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
               <SelectTrigger>
                 <SelectValue placeholder="Select a category..." />
               </SelectTrigger>
-              <SelectContent className="z-[220]">
+              <SelectContent className="z-[1000]">
                 {type === 'tools' ? (
                   <>
                     <SelectItem value="PPE">PPE</SelectItem>
