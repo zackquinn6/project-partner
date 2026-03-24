@@ -593,7 +593,10 @@ export function WorkflowSidebar({
                           <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] max-w-[min(100%,14rem)]">
+                      <DropdownMenuContent
+                        align="start"
+                        className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] max-w-[min(100%,14rem)] bg-sky-50 dark:bg-sky-950/40 border-sky-200/80 dark:border-sky-800"
+                      >
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"
                           onClick={() => openAppByActionKey('project-budgeting')}
@@ -607,7 +610,7 @@ export function WorkflowSidebar({
                               <Handshake className="h-3.5 w-3.5 shrink-0" />
                               Partner Tools
                             </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent className="min-w-[10rem]">
+                            <DropdownMenuSubContent className="min-w-[10rem] bg-sky-50 dark:bg-sky-950/40 border-sky-200/80 dark:border-sky-800">
                               {expertSupportEnabled && (
                                 <DropdownMenuItem
                                   className="text-xs gap-2 cursor-pointer"
