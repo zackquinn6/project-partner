@@ -654,116 +654,123 @@ export function HomeTaskList({
                             {completedTasks.length}
                           </span>
                         </div>
-                        <div className="hidden md:grid gap-2 items-stretch" style={{ gridTemplateColumns: 'auto auto minmax(0,1fr)' }}>
-                          <Card className="min-w-[140px] border-border/60 shadow-sm">
-                            <CardContent className="p-2 py-1.5">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs text-muted-foreground">Total open</span>
-                                <span className="text-xl font-bold leading-tight pr-2">{openTasks.length}</span>
-                              </div>
-                            </CardContent>
-                          </Card>
-                          <Card className="min-w-[160px] border-border/60 shadow-sm">
-                            <CardContent className="p-2 py-1.5">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs text-muted-foreground">Total Completed</span>
-                                <span className="text-xl font-bold leading-tight pr-4">{completedTasks.length}</span>
-                              </div>
-                            </CardContent>
-                          </Card>
-                          <div className="min-w-0 flex">
-                            <Accordion type="single" collapsible className="w-full flex flex-col flex-1 min-h-0">
-                              <AccordionItem value="other-metrics" className="border rounded-lg bg-background/80 shadow-sm flex-1 flex flex-col min-h-0">
-                                <AccordionTrigger className="flex-1 min-h-[2.75rem] px-2 py-1 text-xs hover:no-underline [&[data-state=open]>svg]:rotate-180 flex items-center">
+                        <div className="hidden md:flex md:flex-wrap md:items-start md:gap-2">
+                          <div className="flex shrink-0 gap-2">
+                            <Card className="w-[5.75rem] shrink-0 border-border/60 shadow-sm">
+                              <CardContent className="px-2.5 py-2">
+                                <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground leading-none">
+                                  Open
+                                </div>
+                                <div className="text-lg font-bold tabular-nums leading-none mt-1">{openTasks.length}</div>
+                              </CardContent>
+                            </Card>
+                            <Card className="w-[5.75rem] shrink-0 border-border/60 shadow-sm">
+                              <CardContent className="px-2.5 py-2">
+                                <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground leading-none">
+                                  Done
+                                </div>
+                                <div className="text-lg font-bold tabular-nums leading-none mt-1">{completedTasks.length}</div>
+                              </CardContent>
+                            </Card>
+                          </div>
+                          <div className="min-w-0 flex-1 basis-[min(100%,20rem)]">
+                            <Accordion type="single" collapsible className="w-full">
+                              <AccordionItem
+                                value="other-metrics"
+                                className="rounded-lg border border-border/60 bg-background/80 shadow-sm border-b-0"
+                              >
+                                <AccordionTrigger className="px-3 py-2.5 text-xs hover:no-underline [&[data-state=open]>svg]:rotate-180">
                                   View metrics
                                 </AccordionTrigger>
-                                <AccordionContent className="px-4 pb-4">
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <Card className="border-border/60 shadow-sm">
-                                      <CardContent className="p-4">
-                                        <div className="text-xs text-muted-foreground">Completed tasks</div>
-                                        <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-                                          <div>
-                                            <div className="text-lg font-semibold">{completedLast7}</div>
-                                            <div className="text-[11px] text-muted-foreground">Last 7d</div>
+                                <AccordionContent className="px-3 pb-3 pt-0 text-xs">
+                                  <div className="grid grid-cols-1 gap-2 min-[520px]:grid-cols-2 min-w-0">
+                                    <Card className="min-w-0 border-border/60 shadow-sm overflow-hidden">
+                                      <CardContent className="p-3 space-y-2">
+                                        <div className="text-[11px] font-medium text-muted-foreground">Completed tasks</div>
+                                        <div className="grid grid-cols-3 gap-1.5 text-center min-w-0">
+                                          <div className="min-w-0 px-0.5">
+                                            <div className="text-base font-semibold tabular-nums">{completedLast7}</div>
+                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Last 7d</div>
                                           </div>
-                                          <div>
-                                            <div className="text-lg font-semibold">{completedLast30}</div>
-                                            <div className="text-[11px] text-muted-foreground">Last 30d</div>
+                                          <div className="min-w-0 px-0.5">
+                                            <div className="text-base font-semibold tabular-nums">{completedLast30}</div>
+                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Last 30d</div>
                                           </div>
-                                          <div>
-                                            <div className="text-lg font-semibold">{completedTasks.length}</div>
-                                            <div className="text-[11px] text-muted-foreground">All time</div>
-                                          </div>
-                                        </div>
-                                      </CardContent>
-                                    </Card>
-
-                                    <Card className="border-border/60 shadow-sm">
-                                      <CardContent className="p-4">
-                                        <div className="text-xs text-muted-foreground">Overdue tasks</div>
-                                        <div className="text-2xl font-bold mt-1">{overdueTasks}</div>
-                                      </CardContent>
-                                    </Card>
-
-                                    <Card className="border-border/60 shadow-sm">
-                                      <CardContent className="p-4">
-                                        <div className="text-xs text-muted-foreground">Open tasks by priority</div>
-                                        <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-                                          <div>
-                                            <div className="text-lg font-semibold">{openByPriority.high ?? 0}</div>
-                                            <div className="text-[11px] text-muted-foreground">High</div>
-                                          </div>
-                                          <div>
-                                            <div className="text-lg font-semibold">{openByPriority.medium ?? 0}</div>
-                                            <div className="text-[11px] text-muted-foreground">Med</div>
-                                          </div>
-                                          <div>
-                                            <div className="text-lg font-semibold">{openByPriority.low ?? 0}</div>
-                                            <div className="text-[11px] text-muted-foreground">Low</div>
+                                          <div className="min-w-0 px-0.5">
+                                            <div className="text-base font-semibold tabular-nums">{completedTasks.length}</div>
+                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">All time</div>
                                           </div>
                                         </div>
                                       </CardContent>
                                     </Card>
 
-                                    <Card className="border-border/60 shadow-sm">
-                                      <CardContent className="p-4">
-                                        <div className="text-xs text-muted-foreground">Open tasks by level</div>
-                                        <div className="mt-2 grid grid-cols-4 gap-2 text-center">
-                                          <div>
-                                            <div className="text-lg font-semibold">{openByLevel.beginner ?? 0}</div>
-                                            <div className="text-[11px] text-muted-foreground">Beginner</div>
+                                    <Card className="min-w-0 border-border/60 shadow-sm overflow-hidden">
+                                      <CardContent className="p-3 space-y-1">
+                                        <div className="text-[11px] font-medium text-muted-foreground">Overdue tasks</div>
+                                        <div className="text-xl font-bold tabular-nums leading-none">{overdueTasks}</div>
+                                      </CardContent>
+                                    </Card>
+
+                                    <Card className="min-w-0 border-border/60 shadow-sm overflow-hidden">
+                                      <CardContent className="p-3 space-y-2">
+                                        <div className="text-[11px] font-medium text-muted-foreground">Open by priority</div>
+                                        <div className="grid grid-cols-3 gap-1.5 text-center min-w-0">
+                                          <div className="min-w-0 px-0.5">
+                                            <div className="text-base font-semibold tabular-nums">{openByPriority.high ?? 0}</div>
+                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">High</div>
                                           </div>
-                                          <div>
-                                            <div className="text-lg font-semibold">{openByLevel.intermediate ?? 0}</div>
-                                            <div className="text-[11px] text-muted-foreground">Intermediate</div>
+                                          <div className="min-w-0 px-0.5">
+                                            <div className="text-base font-semibold tabular-nums">{openByPriority.medium ?? 0}</div>
+                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Med</div>
                                           </div>
-                                          <div>
-                                            <div className="text-lg font-semibold">{openByLevel.advanced ?? 0}</div>
-                                            <div className="text-[11px] text-muted-foreground">Advanced</div>
-                                          </div>
-                                          <div>
-                                            <div className="text-lg font-semibold">{openByLevel.pro ?? 0}</div>
-                                            <div className="text-[11px] text-muted-foreground">Professional</div>
+                                          <div className="min-w-0 px-0.5">
+                                            <div className="text-base font-semibold tabular-nums">{openByPriority.low ?? 0}</div>
+                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Low</div>
                                           </div>
                                         </div>
                                       </CardContent>
                                     </Card>
 
-                                    <Card className="border-border/60 shadow-sm">
-                                      <CardContent className="p-4">
-                                        <div className="text-xs text-muted-foreground">Active projects</div>
-                                        <div className="text-2xl font-bold mt-1">{activeProjects}</div>
-                                        <div className="text-[11px] text-muted-foreground mt-1">Tasks linked to a project</div>
+                                    <Card className="min-w-0 border-border/60 shadow-sm overflow-hidden">
+                                      <CardContent className="p-3 space-y-2">
+                                        <div className="text-[11px] font-medium text-muted-foreground">Open by level</div>
+                                        <div className="grid grid-cols-2 min-[640px]:grid-cols-4 gap-x-2 gap-y-2 text-center min-w-0">
+                                          <div className="min-w-0 px-0.5">
+                                            <div className="text-base font-semibold tabular-nums">{openByLevel.beginner ?? 0}</div>
+                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Beginner</div>
+                                          </div>
+                                          <div className="min-w-0 px-0.5">
+                                            <div className="text-base font-semibold tabular-nums">{openByLevel.intermediate ?? 0}</div>
+                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Intermediate</div>
+                                          </div>
+                                          <div className="min-w-0 px-0.5">
+                                            <div className="text-base font-semibold tabular-nums">{openByLevel.advanced ?? 0}</div>
+                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Advanced</div>
+                                          </div>
+                                          <div className="min-w-0 px-0.5">
+                                            <div className="text-base font-semibold tabular-nums">{openByLevel.pro ?? 0}</div>
+                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Pro</div>
+                                          </div>
+                                        </div>
                                       </CardContent>
                                     </Card>
 
-                                    <Card className="border-border/60 shadow-sm">
-                                      <CardContent className="p-4">
-                                        <div className="text-xs text-muted-foreground">Estimated hours remaining</div>
-                                        <div className="text-2xl font-bold mt-1">{remainingHours.toFixed(1)}h</div>
+                                    <Card className="min-w-0 border-border/60 shadow-sm overflow-hidden">
+                                      <CardContent className="p-3 space-y-1">
+                                        <div className="text-[11px] font-medium text-muted-foreground">Active projects</div>
+                                        <div className="text-xl font-bold tabular-nums leading-none">{activeProjects}</div>
+                                        <div className="text-[10px] text-muted-foreground leading-snug">Tasks linked to a project</div>
+                                      </CardContent>
+                                    </Card>
+
+                                    <Card className="min-w-0 border-border/60 shadow-sm overflow-hidden">
+                                      <CardContent className="p-3 space-y-1">
+                                        <div className="text-[11px] font-medium text-muted-foreground">Est. hours left</div>
+                                        <div className="text-xl font-bold tabular-nums leading-none">{remainingHours.toFixed(1)}h</div>
                                         {missingHoursCount > 0 && (
-                                          <div className="text-[11px] text-muted-foreground mt-1">+ {missingHoursCount} item(s) without hours</div>
+                                          <div className="text-[10px] text-muted-foreground leading-snug">
+                                            + {missingHoursCount} without hours
+                                          </div>
                                         )}
                                       </CardContent>
                                     </Card>

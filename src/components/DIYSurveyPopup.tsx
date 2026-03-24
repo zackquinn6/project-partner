@@ -40,6 +40,11 @@ interface DIYSurveyPopupProps {
     projectSkills?: Record<string, number> | null;
     avoidProjects?: string[] | null;
   };
+  /** Show Save next to Next; persist without closing (My Profile editor). */
+  enableProgressSave?: boolean;
+  onProfileSaved?: () => void;
+  /** Optional control (e.g. open achievements from host). */
+  onOpenAchievements?: () => void;
 }
 
 /** Numbered profile wizard steps (Build / Update profile, excluding verify overview). */
@@ -73,7 +78,15 @@ interface PersonalityProfile {
   traits: PersonalityTraits;
 }
 
-export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initialData }: DIYSurveyPopupProps) {
+export default function DIYSurveyPopup({
+  open,
+  onOpenChange,
+  mode = 'new',
+  initialData,
+  enableProgressSave = false,
+  onProfileSaved,
+  onOpenAchievements,
+}: DIYSurveyPopupProps) {
   const [currentStep, setCurrentStep] = useState(mode === 'verify' ? 0 : (mode === 'personality' ? -1 : 1));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -429,6 +442,146 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
     setPersonalityAnswers(newAnswers);
   };
 
+  /** Persist Build Profile wizard data (merge quick-add tools, upsert user_profiles). */
+  const persistBuildProfile = async (closeAfter: boolean): Promise<boolean> => {
+    setIsSubmitting(true);
+    try {
+      let finalOwnedTools = [...answers.ownedTools];
+
+      if (Object.keys(quickAddTools).length > 0) {
+        for (const [variationId, isChecked] of Object.entries(quickAddTools)) {
+          if (!isChecked) continue;
+
+          const { data: variation, error: variationError } = await supabase
+            .from('tool_variations')
+            .select('id, name, description, photo_url, sku, core_item_id')
+            .eq('id', variationId)
+            .eq('item_type', 'tools')
+            .single();
+
+          if (variationError || !variation) {
+            console.error('Error fetching variation:', variationError);
+            continue;
+          }
+
+          const { data: coreTool, error: toolError } = await supabase
+            .from('tools')
+            .select('id, name, description, photo_url')
+            .eq('id', variation.core_item_id)
+            .single();
+
+          if (toolError || !coreTool) {
+            console.error('Error fetching core tool:', toolError);
+            continue;
+          }
+
+          const toolToAdd: any = {
+            id: variation.id,
+            name: variation.name,
+            item: coreTool.name,
+            description: variation.description || coreTool.description || null,
+            photo_url: variation.photo_url || coreTool.photo_url || null,
+            quantity: 1,
+            model_name: variation.sku || '',
+          };
+
+          if (!finalOwnedTools.some((t) => t.id === toolToAdd.id)) {
+            finalOwnedTools.push(toolToAdd);
+          }
+        }
+      }
+
+      const skillsPayload: Record<string, number> = {};
+      const avoidPayload: string[] = [];
+      for (const r of projectSkillRows) {
+        skillsPayload[r.name] = r.skillLevel;
+        if (r.avoid) avoidPayload.push(r.name);
+      }
+      const hasProjectSkillActivity = projectSkillRows.some((r) => r.skillLevel > 0 || r.avoid);
+
+      if (user) {
+        const { error } = await supabase.from('user_profiles').upsert(
+          {
+            user_id: user.id,
+            full_name: answers.fullName,
+            nickname: answers.nickname,
+            skill_level: answers.skillLevel,
+            physical_capability: answers.physicalCapability,
+            home_ownership: answers.homeOwnership,
+            home_build_year: answers.homeBuildYear,
+            home_state: answers.homeState,
+            project_focus: answers.projectFocus,
+            owned_tools: finalOwnedTools,
+            project_skills: hasProjectSkillActivity ? skillsPayload : null,
+            avoid_projects: avoidPayload.length > 0 ? avoidPayload : null,
+            survey_completed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id' }
+        );
+
+        if (error) {
+          console.error('Error saving survey:', error);
+          toast({
+            title: 'Error saving survey',
+            description: 'Please try again later.',
+            variant: 'destructive',
+          });
+          return false;
+        }
+      } else {
+        saveTempProfileAnswers({
+          ...answers,
+          ownedTools: finalOwnedTools,
+          project_skills: hasProjectSkillActivity ? skillsPayload : null,
+          avoid_projects: avoidPayload.length > 0 ? avoidPayload : null,
+        });
+      }
+
+      if (!closeAfter && user) {
+        toast({
+          title: 'Saved',
+          description: 'Your profile was updated.',
+        });
+      }
+      onProfileSaved?.();
+      if (closeAfter) {
+        onOpenChange(false);
+      }
+      return true;
+    } catch (error) {
+      console.error('Error completing survey:', error);
+      toast({
+        title: 'Error saving survey',
+        description: 'Please try again later.',
+        variant: 'destructive',
+      });
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveProgress = async () => {
+    if (!user) {
+      toast({
+        title: 'Sign in required',
+        description: 'You need to be signed in to save your profile.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!answers.fullName.trim() || !answers.skillLevel || !answers.physicalCapability) {
+      toast({
+        title: 'Not ready to save',
+        description: 'Add your full name, skill level, and physical capability first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    await persistBuildProfile(false);
+  };
+
   const handleNext = async () => {
     if (mode === 'personality' && currentStep === -1) {
       setCurrentStep(0);
@@ -508,125 +661,7 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
       return;
     }
 
-    {
-      setIsSubmitting(true);
-      try {
-        // Process quick add tools and add to ownedTools
-        let finalOwnedTools = [...answers.ownedTools];
-        
-        if (Object.keys(quickAddTools).length > 0) {
-          // Process each checked quick add tool (toolKey is now the variation ID)
-          for (const [variationId, isChecked] of Object.entries(quickAddTools)) {
-            if (!isChecked) continue;
-            
-            // Fetch the variation instance from unified tool_variations
-            const { data: variation, error: variationError } = await supabase
-              .from('tool_variations')
-              .select('id, name, description, photo_url, sku, core_item_id')
-              .eq('id', variationId)
-              .eq('item_type', 'tools')
-              .single();
-
-            if (variationError || !variation) {
-              console.error('Error fetching variation:', variationError);
-              continue;
-            }
-
-            // Fetch the core tool info
-            const { data: coreTool, error: toolError } = await supabase
-              .from('tools')
-              .select('id, name, description, photo_url')
-              .eq('id', variation.core_item_id)
-              .single();
-
-            if (toolError || !coreTool) {
-              console.error('Error fetching core tool:', toolError);
-              continue;
-            }
-
-            // Create tool object from variation
-            const toolToAdd: any = {
-              id: variation.id, // Use variation ID as the tool ID
-              name: variation.name,
-              item: coreTool.name,
-              description: variation.description || coreTool.description || null,
-              photo_url: variation.photo_url || coreTool.photo_url || null,
-              quantity: 1,
-              model_name: variation.sku || ''
-            };
-
-            // Add tool if not already in ownedTools
-            if (!finalOwnedTools.some(t => t.id === toolToAdd.id)) {
-              finalOwnedTools.push(toolToAdd);
-            }
-          }
-        }
-
-        const skillsPayload: Record<string, number> = {};
-        const avoidPayload: string[] = [];
-        for (const r of projectSkillRows) {
-          skillsPayload[r.name] = r.skillLevel;
-          if (r.avoid) avoidPayload.push(r.name);
-        }
-        const hasProjectSkillActivity = projectSkillRows.some(
-          (r) => r.skillLevel > 0 || r.avoid
-        );
-
-        if (user) {
-          // User is signed in - save to database
-          const { error } = await supabase
-            .from('user_profiles')
-            .upsert({
-              user_id: user.id,
-              full_name: answers.fullName,
-              nickname: answers.nickname,
-              skill_level: answers.skillLevel,
-              physical_capability: answers.physicalCapability,
-              home_ownership: answers.homeOwnership,
-              home_build_year: answers.homeBuildYear,
-              home_state: answers.homeState,
-              project_focus: answers.projectFocus,
-              owned_tools: finalOwnedTools,
-              project_skills: hasProjectSkillActivity ? skillsPayload : null,
-              avoid_projects: avoidPayload.length > 0 ? avoidPayload : null,
-              survey_completed_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'user_id'
-            });
-
-          if (error) {
-            console.error('Error saving survey:', error);
-            toast({
-              title: "Error saving survey",
-              description: "Please try again later.",
-              variant: "destructive"
-            });
-            return;
-          }
-
-        } else {
-          // User is not signed in - save temporarily
-          saveTempProfileAnswers({
-            ...answers,
-            ownedTools: finalOwnedTools,
-            project_skills: hasProjectSkillActivity ? skillsPayload : null,
-            avoid_projects: avoidPayload.length > 0 ? avoidPayload : null,
-          });
-          // Removed toast notification during kickoff to prevent distraction
-        }
-        onOpenChange(false);
-      } catch (error) {
-        console.error('Error completing survey:', error);
-        toast({
-          title: "Error saving survey",
-          description: "Please try again later.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsSubmitting(false);
-      }
-    }
+    await persistBuildProfile(true);
   };
 
   const handleEdit = () => {
@@ -1237,31 +1272,51 @@ export default function DIYSurveyPopup({ open, onOpenChange, mode = 'new', initi
           </div>
 
           {(currentStep > 0 || (mode === 'personality' && currentStep >= 0)) && (
-            <div className="flex justify-between px-3 py-3 md:px-6 md:pt-6 border-t flex-shrink-0 gap-2">
-              {((currentStep > 1 && mode !== 'verify') || (mode === 'personality' && currentStep >= 0) || (mode === 'verify' && currentStep === 1)) && (
-                <Button variant="outline" onClick={handleBack} size="sm" className="md:h-10">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  {mode === 'verify' && currentStep === 1 ? 'Back to Overview' : 'Back'}
-                </Button>
-              )}
-              
-              <div className="flex-1 flex justify-end">
-                <Button 
-                  onClick={handleNext} 
+            <div className="flex flex-shrink-0 flex-col gap-2 border-t px-3 py-3 sm:flex-row sm:items-center sm:justify-between md:px-6 md:pt-6">
+              <div className="flex flex-wrap items-center gap-2">
+                {((currentStep > 1 && mode !== 'verify') || (mode === 'personality' && currentStep >= 0) || (mode === 'verify' && currentStep === 1)) && (
+                  <Button variant="outline" onClick={handleBack} size="sm" className="md:h-10">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    {mode === 'verify' && currentStep === 1 ? 'Back to Overview' : 'Back'}
+                  </Button>
+                )}
+                {enableProgressSave && showProfileWizardNav && onOpenAchievements ? (
+                  <Button type="button" variant="outline" size="sm" className="md:h-10" onClick={onOpenAchievements}>
+                    <Trophy className="mr-1.5 h-4 w-4" />
+                    Achievements
+                  </Button>
+                ) : null}
+              </div>
+
+              <div className="flex flex-1 justify-end gap-2 sm:flex-initial">
+                {enableProgressSave && showProfileWizardNav ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="md:h-10"
+                    disabled={isSubmitting}
+                    onClick={() => void handleSaveProgress()}
+                  >
+                    Save
+                  </Button>
+                ) : null}
+                <Button
+                  onClick={() => void handleNext()}
                   disabled={!canProceed() || isSubmitting}
                   size="sm"
                   className="flex items-center space-x-2 gradient-primary text-white md:h-10"
                 >
                   <span>
-                    {isSubmitting ? "Saving..." : (
-                      mode === 'personality' && currentStep === 10 ? "Save Profile" :
-                      mode === 'personality' && currentStep === -1 ? "Start Quiz" :
-                      mode === 'verify' ? (currentStep === PROFILE_MAX_STEP ? "Complete" : "Next") :
-                      (currentStep === PROFILE_MAX_STEP ? "Complete" : "Next")
+                    {isSubmitting ? 'Saving...' : (
+                      mode === 'personality' && currentStep === 10 ? 'Save Profile' :
+                      mode === 'personality' && currentStep === -1 ? 'Start Quiz' :
+                      mode === 'verify' ? (currentStep === PROFILE_MAX_STEP ? 'Complete' : 'Next') :
+                      (currentStep === PROFILE_MAX_STEP ? 'Complete' : 'Next')
                     )}
                   </span>
                   {!isSubmitting && !(mode === 'personality' && currentStep === 10) && (
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="h-4 w-4" />
                   )}
                 </Button>
               </div>

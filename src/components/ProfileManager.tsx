@@ -1,24 +1,16 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Edit3, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import DIYSurveyPopup from "./DIYSurveyPopup";
 import { AchievementsSection } from "./AchievementsSection";
+import type { PMFocus } from "@/components/landing/OnboardingDialog";
+
 interface ProfileManagerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-/** Project focus labels (step 3 onboarding). */
-const PROJECT_FOCUS_LABELS: Record<string, string> = {
-  schedule: 'Hitting my schedule',
-  quality: 'Highest quality work',
-  savings: 'Maximize savings',
-  all_three: 'Balanced',
-};
 
 interface ProfileData {
   skill_level?: string;
@@ -40,43 +32,45 @@ interface ProfileData {
     state?: string;
   };
 }
+
 export default function ProfileManager({
   open,
   onOpenChange
 }: ProfileManagerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [existingProfile, setExistingProfile] = useState<ProfileData | null>(null);
-  const [showSurveyEditor, setShowSurveyEditor] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
-  const {
-    toast
-  } = useToast();
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
+
   useEffect(() => {
-    if (open && user) {
-      loadExistingProfile();
+    if (!open) {
+      setIsLoading(true);
+      return;
+    }
+    if (user) {
+      void loadExistingProfile(false);
+    } else {
+      setIsLoading(false);
     }
   }, [open, user]);
-  const loadExistingProfile = async () => {
-    setIsLoading(true);
+
+  const loadExistingProfile = async (quiet: boolean) => {
+    if (!quiet) setIsLoading(true);
     try {
-      // First fetch profile data
       const {
         data: profileData,
         error: profileError
       } = await supabase.from('user_profiles').select(`
-          skill_level, 
+          skill_level,
           avoid_projects,
           project_skills,
-          physical_capability, 
-          home_ownership, 
-          home_build_year, 
-          home_state, 
-          preferred_learning_methods, 
-          project_focus, 
-          owned_tools, 
+          physical_capability,
+          home_ownership,
+          home_build_year,
+          home_state,
+          preferred_learning_methods,
+          project_focus,
+          owned_tools,
           survey_completed_at,
           full_name,
           nickname
@@ -86,12 +80,11 @@ export default function ProfileManager({
         setExistingProfile(null);
         return;
       }
-      if (!profileData || !profileData.survey_completed_at) {
+      if (!profileData) {
         setExistingProfile(null);
         return;
       }
 
-      // Fetch primary home (slim) then its home_details for city, state
       const { data: primaryHome, error: homeError } = await supabase
         .from('homes')
         .select('id, name')
@@ -117,147 +110,93 @@ export default function ProfileManager({
       console.error('Error loading profile:', error);
       setExistingProfile(null);
     } finally {
-      setIsLoading(false);
+      if (!quiet) setIsLoading(false);
     }
   };
-  const handleStartEdit = () => {
-    setShowSurveyEditor(true);
-  };
-  const handleSurveyComplete = () => {
-    setShowSurveyEditor(false);
-    loadExistingProfile(); // Reload the profile data
-  };
-  const renderProfileView = () => {
-    if (!existingProfile) return null;
-    return <div className="space-y-6">
-          <div className="text-center space-y-2">
-            <p className="text-muted-foreground">
-              Your profile helps us match you with the right tools, guidance, and partners—
-              so every project starts with an advantage.
-            </p>
-          </div>
 
-        <div className="space-y-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                <div>
-                  <h4 className="font-semibold">Personal Info</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p><strong>Full Name:</strong> {existingProfile.full_name || "Not specified"}</p>
-                    <p><strong>Nickname:</strong> {existingProfile.nickname || "Not specified"}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold">Skill Level</h4>
-                  <p className="text-sm text-muted-foreground capitalize">
-                    {existingProfile.skill_level || "Not specified"}
-                  </p>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold">Physical Capability</h4>
-                  <p className="text-sm text-muted-foreground capitalize">
-                    {existingProfile.physical_capability || "Not specified"}
-                  </p>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold">Primary Home</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {existingProfile.primary_home ? `${existingProfile.primary_home.name}${existingProfile.primary_home.city && existingProfile.primary_home.state ? ` • ${existingProfile.primary_home.city}, ${existingProfile.primary_home.state}` : ''}` : "No primary home set"}
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold">Project Focus Preference</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {existingProfile.project_focus
-                      ? (PROJECT_FOCUS_LABELS[existingProfile.project_focus] ?? existingProfile.project_focus)
-                      : "Not specified"}
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold">Owned Tools</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {existingProfile.owned_tools?.length ? `${existingProfile.owned_tools.length} tool${existingProfile.owned_tools.length !== 1 ? 's' : ''} in library` : "No tools specified"}
-                  </p>
+  if (open && (isLoading || !user)) {
+    return (
+      <>
+        <Dialog open onOpenChange={onOpenChange}>
+          <DialogContent className="flex h-screen max-h-full w-full max-w-full flex-col overflow-hidden p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
+            <div className="flex h-full flex-col overflow-hidden">
+              <div className="flex flex-shrink-0 items-center justify-between border-b px-4 py-4 md:px-6">
+                <h2 className="text-lg font-bold md:text-xl">My Profile</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                  className="ml-4 flex-shrink-0"
+                >
+                  Close
+                </Button>
+              </div>
+              <div className="flex flex-1 items-center justify-center py-8">
+                <div className="text-center text-muted-foreground">
+                  {!user ? 'Sign in to edit your profile.' : 'Loading profile…'}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="flex flex-col sm:flex-row justify-center gap-2 py-4">
-          <Button onClick={handleStartEdit} className="flex items-center gap-2">
-            <Edit3 className="w-4 h-4" />
-            Edit Profile
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShowAchievements(true)}
-            className="flex items-center gap-2"
-          >
-            <Trophy className="w-4 h-4" />
-            My Achievements
-          </Button>
-        </div>
-      </div>;
-  };
-  if (isLoading) {
-    return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-        <div className="flex flex-col h-full overflow-hidden">
-        <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
-          <h2 className="text-lg md:text-xl font-bold">My Profile</h2>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => onOpenChange(false)} 
-            className="ml-4 flex-shrink-0"
-          >
-            Close
-          </Button>
-        </div>
-          <div className="flex items-center justify-center py-8 flex-1">
-            <div className="text-center">Loading profile...</div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>;
-  }
-  return <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-          <div className="flex flex-col h-full overflow-hidden">
-          {/* Header with close button */}
-          <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
-            <h2 className="text-lg md:text-xl font-bold">My Profile</h2>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => onOpenChange(false)} 
-              className="ml-4 flex-shrink-0"
-            >
-              Close
-            </Button>
-          </div>
-          
-            {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto px-4 py-6">
-              {renderProfileView()}
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={showAchievements} onOpenChange={setShowAchievements}>
+          <DialogContent className="flex h-screen max-h-full w-full max-w-full flex-col overflow-hidden p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
+            <div className="flex h-full flex-col overflow-hidden">
+              <div className="flex flex-shrink-0 items-center justify-between border-b px-4 py-4 md:px-6">
+                <h2 className="text-lg font-bold md:text-xl">My Achievements</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAchievements(false)}
+                  className="ml-4 flex-shrink-0"
+                >
+                  Close
+                </Button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-4 py-6">
+                <AchievementsSection />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <DIYSurveyPopup
+        open={open}
+        onOpenChange={(next) => {
+          if (!next) {
+            onOpenChange(false);
+          }
+        }}
+        mode="new"
+        enableProgressSave
+        onProfileSaved={() => void loadExistingProfile(true)}
+        onOpenAchievements={() => setShowAchievements(true)}
+        initialData={{
+          skillLevel: existingProfile?.skill_level || "",
+          physicalCapability: existingProfile?.physical_capability || "",
+          homeOwnership: existingProfile?.home_ownership || "",
+          homeBuildYear: existingProfile?.home_build_year || "",
+          homeState: existingProfile?.home_state || "",
+          preferredLearningMethods: existingProfile?.preferred_learning_methods || [],
+          projectFocus: (existingProfile?.project_focus as PMFocus | null | undefined) ?? undefined,
+          ownedTools: existingProfile?.owned_tools || [],
+          fullName: existingProfile?.full_name || "",
+          nickname: existingProfile?.nickname || "",
+          projectSkills: existingProfile?.project_skills ?? null,
+          avoidProjects: existingProfile?.avoid_projects ?? null,
+        }}
+      />
 
       <Dialog open={showAchievements} onOpenChange={setShowAchievements}>
-        <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-          <div className="flex flex-col h-full overflow-hidden">
-            <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
-              <h2 className="text-lg md:text-xl font-bold">My Achievements</h2>
+        <DialogContent className="flex h-screen max-h-full w-full max-w-full flex-col overflow-hidden p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
+          <div className="flex h-full flex-col overflow-hidden">
+            <div className="flex flex-shrink-0 items-center justify-between border-b px-4 py-4 md:px-6">
+              <h2 className="text-lg font-bold md:text-xl">My Achievements</h2>
               <Button
                 variant="outline"
                 size="sm"
@@ -273,25 +212,6 @@ export default function ProfileManager({
           </div>
         </DialogContent>
       </Dialog>
-
-      <DIYSurveyPopup open={showSurveyEditor} onOpenChange={open => {
-      setShowSurveyEditor(open);
-      if (!open) {
-        handleSurveyComplete();
-      }
-    }} mode="new" initialData={{
-      skillLevel: existingProfile?.skill_level || "",
-      physicalCapability: existingProfile?.physical_capability || "",
-      homeOwnership: existingProfile?.home_ownership || "",
-      homeBuildYear: existingProfile?.home_build_year || "",
-      homeState: existingProfile?.home_state || "",
-      preferredLearningMethods: existingProfile?.preferred_learning_methods || [],
-      projectFocus: existingProfile?.project_focus ?? undefined,
-      ownedTools: existingProfile?.owned_tools || [],
-      fullName: existingProfile?.full_name || "",
-      nickname: existingProfile?.nickname || "",
-      projectSkills: existingProfile?.project_skills ?? null,
-      avoidProjects: existingProfile?.avoid_projects ?? null,
-    }} />
-    </>;
+    </>
+  );
 }
