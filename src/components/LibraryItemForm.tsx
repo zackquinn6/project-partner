@@ -49,13 +49,40 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
     setInstructions(parseInstructions(item?.instructions));
   }, [item?.id, item?.instructions]);
 
+  const allowedImageTypes = new Set([
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+  ]);
+
+  const extensionForImageFile = (file: File): string => {
+    const t = file.type.toLowerCase();
+    if (t === 'image/png') return 'png';
+    if (t === 'image/webp') return 'webp';
+    if (t === 'image/gif') return 'gif';
+    if (t === 'image/jpeg' || t === 'image/jpg') return 'jpg';
+    const fromName = file.name.split('.').pop()?.toLowerCase();
+    if (fromName && ['png', 'webp', 'gif', 'jpg', 'jpeg'].includes(fromName)) {
+      return fromName === 'jpeg' ? 'jpg' : fromName;
+    }
+    return 'jpg';
+  };
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/jpeg') && !file.type.startsWith('image/png')) {
-      toast.error('Please select a JPG or PNG image');
+    const type = file.type.toLowerCase();
+    const extFromName = file.name.match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase();
+    const typeOk =
+      allowedImageTypes.has(type) ||
+      (type === '' &&
+        extFromName != null &&
+        ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extFromName));
+    if (!typeOk) {
+      toast.error('Please select an image (JPEG, PNG, WebP, or GIF)');
       return;
     }
 
@@ -75,19 +102,22 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
         toast.error('You must be logged in to upload photos');
         return null;
       }
-      const fileExt = file.name.split('.').pop();
-      // Use flat object keys (no folder prefix) to match existing working library upload pattern.
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('library-photos')
-        .upload(fileName, file);
+      const ext = extensionForImageFile(file);
+      const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      const kind = type === 'tools' ? 'tools' : 'materials';
+      const idPart = item?.id != null ? String(item.id) : 'new';
+      // Match user library uploads: first path segment must be auth uid for library-photos RLS.
+      const filePath = `${user.id}/admin-${kind}/${idPart}/${unique}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage.from('library-photos').upload(filePath, file, {
+        upsert: true,
+        contentType: file.type || (ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : ext === 'gif' ? 'image/gif' : 'image/jpeg'),
+        cacheControl: '3600',
+      });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('library-photos')
-        .getPublicUrl(fileName);
+      const { data: { publicUrl } } = supabase.storage.from('library-photos').getPublicUrl(filePath);
 
       return publicUrl;
     } catch (error) {
@@ -272,7 +302,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/jpeg,image/png"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
                   onChange={handleFileSelect}
                   className="hidden"
                 />
@@ -286,7 +316,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
                   {photoUrl ? 'Change Photo' : 'Upload Photo'}
                 </Button>
                 <p className="text-xs text-muted-foreground mt-1">
-                  JPG or PNG, max 5MB
+                  JPEG, PNG, WebP, or GIF, max 5MB
                 </p>
               </div>
             </div>
