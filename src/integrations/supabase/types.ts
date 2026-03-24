@@ -2111,6 +2111,7 @@ export type Database = {
           id: string
           impact: string | null
           likelihood: string | null
+          mitigation_actions: Json | null
           mitigation_cost: number | null
           mitigation_strategy: string | null
           project_run_id: string
@@ -2133,6 +2134,7 @@ export type Database = {
           id?: string
           impact?: string | null
           likelihood?: string | null
+          mitigation_actions?: Json | null
           mitigation_cost?: number | null
           mitigation_strategy?: string | null
           project_run_id: string
@@ -2155,6 +2157,7 @@ export type Database = {
           id?: string
           impact?: string | null
           likelihood?: string | null
+          mitigation_actions?: Json | null
           mitigation_cost?: number | null
           mitigation_strategy?: string | null
           project_run_id?: string
@@ -2164,6 +2167,7 @@ export type Database = {
           schedule_impact_high_days?: number | null
           schedule_impact_low_days?: number | null
           status?: string | null
+          severity?: string | null
           template_risk_id?: string | null
           updated_at?: string | null
         }
