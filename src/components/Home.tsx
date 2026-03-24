@@ -355,7 +355,7 @@ export default function Home({
                     <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.riskFocus} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                       <Crosshair className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                     </div>
-                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Risk Focus</span>
+                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Risk-Less</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs text-center">

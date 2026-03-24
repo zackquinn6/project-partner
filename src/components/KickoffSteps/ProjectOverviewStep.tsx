@@ -6,7 +6,22 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Edit3, Save, X, Target, XCircle, AlertTriangle, Eye, ArrowUp, ArrowDown, HelpCircle, Ban, CircleCheckBig } from 'lucide-react';
+import {
+  AlertCircle,
+  CheckCircle,
+  CircleCheckBig,
+  Edit3,
+  Save,
+  X,
+  Target,
+  XCircle,
+  AlertTriangle,
+  Eye,
+  ArrowUp,
+  ArrowDown,
+  HelpCircle,
+  Ban,
+} from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProject } from '@/contexts/ProjectContext';
@@ -19,8 +34,42 @@ import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import {
   computeProjectMatchExplanation,
   physicalCapabilityToEffortSegment,
+  type MatchAxisSentiment,
   type ProjectMatchRecommendationTier,
 } from '@/utils/projectMatchRecommendation';
+
+function MatchReasonRow({ axis, text }: { axis: MatchAxisSentiment | null; text: string }) {
+  const icon =
+    axis === 'positive' ? (
+      <CheckCircle
+        className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-500"
+        aria-hidden
+      />
+    ) : axis === 'negative' ? (
+      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-500" aria-hidden />
+    ) : (
+      <AlertCircle
+        className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-500"
+        aria-hidden
+      />
+    );
+  const label =
+    axis === 'positive'
+      ? 'Positive signal'
+      : axis === 'negative'
+        ? 'Needs attention'
+        : axis === 'neutral'
+          ? 'Mixed or matched signal'
+          : 'Incomplete comparison';
+  return (
+    <li className="flex gap-2.5">
+      <span className="inline-flex shrink-0" title={label}>
+        {icon}
+      </span>
+      <span className="min-w-0 leading-relaxed">{text}</span>
+    </li>
+  );
+}
 
 export type { ProjectMatchRecommendationTier } from '@/utils/projectMatchRecommendation';
 
@@ -583,9 +632,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Why this recommendation
                 </p>
-                <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1.5 leading-relaxed">
-                  <li>{matchExplanation.reasonSkill}</li>
-                  <li>{matchExplanation.reasonEffort}</li>
+                <ul className="list-none space-y-2.5 pl-0 text-sm text-muted-foreground">
+                  <MatchReasonRow axis={matchExplanation.skillAxis} text={matchExplanation.reasonSkill} />
+                  <MatchReasonRow axis={matchExplanation.effortAxis} text={matchExplanation.reasonEffort} />
                 </ul>
               </div>
             </div>

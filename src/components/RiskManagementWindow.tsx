@@ -1,7 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useState, useEffect, useMemo } from 'react';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -14,6 +21,28 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { useProject } from '@/contexts/ProjectContext';
+
+const RISK_FOCUS_PROGRESS_STOPS = [0, 25, 50, 75, 100] as const;
+
+/** Map stored progress to the nearest preset so the select always matches an item. */
+function riskFocusProgressSelectValue(progress: number | null | undefined): string {
+  if (progress == null || !Number.isFinite(progress)) {
+    return String(RISK_FOCUS_PROGRESS_STOPS[0]);
+  }
+  const x = Math.round(Math.min(100, Math.max(0, progress)));
+  let best = RISK_FOCUS_PROGRESS_STOPS[0];
+  let bestDiff = Math.abs(x - best);
+  for (const v of RISK_FOCUS_PROGRESS_STOPS) {
+    const d = Math.abs(x - v);
+    if (d < bestDiff) {
+      best = v;
+      bestDiff = d;
+    }
+  }
+  return String(best);
+}
 
 interface Risk {
   id: string;
@@ -40,6 +69,114 @@ interface Risk {
   impact?: string;
 }
 
+function scheduleBudgetParts(risk: Risk): { schedule: string | null; budget: string | null } {
+  const s = risk.schedule_impact_days;
+  const b = risk.budget_impact_dollars;
+  const schedule =
+    s != null && Number(s) > 0
+      ? `${s} day${Number(s) === 1 ? '' : 's'} delay`
+      : null;
+  const budget =
+    b != null && Number(b) > 0 ? `$${Number(b).toLocaleString()} budget impact` : null;
+  return { schedule, budget };
+}
+
+function ImpactIfItDoesContent({ risk }: { risk: Risk }) {
+  const { schedule, budget } = scheduleBudgetParts(risk);
+  if (!schedule && !budget) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  return (
+    <div className="space-y-1 text-sm">
+      {schedule ? <div>{schedule}</div> : null}
+      {budget ? <div>{budget}</div> : null}
+    </div>
+  );
+}
+
+function riskFocusSeverityCounts(risks: Risk[]) {
+  let high = 0;
+  let medium = 0;
+  let low = 0;
+  let unset = 0;
+  for (const r of risks) {
+    const s = r.severity?.toLowerCase();
+    if (s === 'high') high += 1;
+    else if (s === 'medium') medium += 1;
+    else if (s === 'low') low += 1;
+    else unset += 1;
+  }
+  return { high, medium, low, unset, total: risks.length };
+}
+
+function riskFocusLevelValue(risk: Risk): 'low' | 'medium' | 'high' {
+  const s = risk.severity?.toLowerCase();
+  if (s === 'high' || s === 'low' || s === 'medium') return s;
+  return 'medium';
+}
+
+function currentRiskLevelBadgeClass(level: 'low' | 'medium' | 'high') {
+  switch (level) {
+    case 'high':
+      return 'bg-red-100 text-red-800 border-red-300';
+    case 'low':
+      return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+    default:
+      return 'bg-amber-100 text-amber-900 border-amber-300';
+  }
+}
+
+function RiskFocusDashboard({ risks }: { risks: Risk[] }) {
+  const { high, medium, low, unset, total } = riskFocusSeverityCounts(risks);
+  return (
+    <div className="shrink-0 border-b bg-muted/30 px-3 pb-1.5 pt-1 md:px-6 md:pb-2 md:pt-1">
+      <div className="mb-0.5 shrink-0 border-b pb-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Current Risk Summary
+      </div>
+      <Card className="min-w-0 overflow-hidden">
+        <CardContent className="flex flex-row flex-wrap items-center gap-y-2 px-2 py-1.5">
+          <div className="flex min-w-0 flex-row flex-wrap items-center gap-x-3 gap-y-1 sm:gap-x-4">
+            <div className="flex flex-row items-baseline gap-2.5">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                High
+              </span>
+              <span className="text-lg font-bold tabular-nums text-destructive sm:text-xl">{high}</span>
+            </div>
+            <div className="flex flex-row items-baseline gap-2.5 border-l border-foreground/20 pl-3 dark:border-foreground/30 sm:pl-4">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Med
+              </span>
+              <span className="text-lg font-bold tabular-nums text-amber-600 sm:text-xl">{medium}</span>
+            </div>
+            <div className="flex flex-row items-baseline gap-2.5 border-l border-foreground/20 pl-3 dark:border-foreground/30 sm:pl-4">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Low
+              </span>
+              <span className="text-lg font-bold tabular-nums text-emerald-600 sm:text-xl">{low}</span>
+            </div>
+            <div
+              className="mx-1 h-7 w-px shrink-0 self-center bg-foreground/45 dark:bg-foreground/55 sm:mx-2"
+              aria-hidden
+              role="presentation"
+            />
+            <div className="flex flex-row items-baseline gap-2.5">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Total
+              </span>
+              <span className="text-lg font-bold tabular-nums sm:text-xl">{total}</span>
+            </div>
+          </div>
+        </CardContent>
+        {unset > 0 ? (
+          <div className="border-t border-border/50 px-2 py-0.5 text-center text-[10px] text-muted-foreground">
+            Not set: {unset}
+          </div>
+        ) : null}
+      </Card>
+    </div>
+  );
+}
+
 interface RiskManagementWindowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -61,11 +198,21 @@ export function RiskManagementWindow({
 }: RiskManagementWindowProps) {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
+  const { projectRuns, updateProjectRun } = useProject();
+  const riskFocusRunForProgress = useMemo(
+    () => (projectRunId ? projectRuns.find((r) => r.id === projectRunId) : undefined),
+    [projectRuns, projectRunId]
+  );
+  const showRiskFocusProgressRow =
+    variant === 'risk-focus' && mode === 'run' && Boolean(projectRunId && riskFocusRunForProgress);
+  const showAddRiskRow =
+    !readOnly && (mode === 'template' || (mode === 'run' && projectRunId));
   const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingRisk, setEditingRisk] = useState<Risk | null>(null);
   const [templateProjectIdForRisks, setTemplateProjectIdForRisks] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [detailsRisk, setDetailsRisk] = useState<Risk | null>(null);
   const [formData, setFormData] = useState({
     risk: '',
     likelihood: 'medium' as 'low' | 'medium' | 'high',
@@ -305,9 +452,7 @@ export function RiskManagementWindow({
       } else if (mode === 'run' && projectRunId) {
         // Save run risk
         if (editingRisk) {
-          const { error } = await supabase
-            .from('project_run_risks')
-            .update({
+          const baseUpdate = {
               risk_title: formData.risk.trim(),
               risk_description: formData.notes.trim() || null,
               likelihood: formData.likelihood,
@@ -320,8 +465,14 @@ export function RiskManagementWindow({
               mitigation_actions: formData.mitigation_actions && formData.mitigation_actions.length > 0
                 ? formData.mitigation_actions
                 : null,
-              status: formData.status
-            })
+          };
+          const { error } = await supabase
+            .from('project_run_risks')
+            .update(
+              variant === 'risk-focus'
+                ? baseUpdate
+                : { ...baseUpdate, status: formData.status }
+            )
             .eq('id', editingRisk.id);
 
           if (error) throw error;
@@ -372,6 +523,7 @@ export function RiskManagementWindow({
         schedule_impact_days: 0,
         budget_impact_dollars: 0,
         mitigation: '',
+        mitigation_actions: [],
         notes: '',
         status: 'open'
       });
@@ -459,6 +611,25 @@ export function RiskManagementWindow({
     }
   };
 
+  const handleUpdateCurrentRiskLevel = async (risk: Risk, newLevel: 'low' | 'medium' | 'high') => {
+    if (mode !== 'run' || !projectRunId || variant !== 'risk-focus') return;
+
+    try {
+      const { error } = await supabase
+        .from('project_run_risks')
+        .update({ severity: newLevel })
+        .eq('id', risk.id);
+
+      if (error) throw error;
+      toast.success('Risk level updated');
+      fetchRisks();
+      window.dispatchEvent(new CustomEvent('risks-updated'));
+    } catch (error) {
+      console.error('Error updating risk level:', error);
+      toast.error('Failed to update risk level');
+    }
+  };
+
   const getRiskLevelColor = (likelihood: string, scheduleImpact: number | null, budgetImpact: number | null) => {
     const likelihoodScore = likelihood === 'high' ? 3 : likelihood === 'medium' ? 2 : 1;
     const scheduleScore = (scheduleImpact || 0) > 7 ? 3 : (scheduleImpact || 0) > 3 ? 2 : 1;
@@ -481,9 +652,17 @@ export function RiskManagementWindow({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-        <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <DialogContent
+        className={cn(
+          'flex flex-col overflow-hidden p-0 [&>button]:hidden',
+          variant === 'risk-focus'
+            ? 'flex h-screen max-h-full w-full max-w-[90vw] flex-col overflow-hidden p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg md:p-0 [&>button]:hidden'
+            : 'h-screen max-h-full w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg'
+        )}
+      >
+        <DialogHeader className="flex-shrink-0 border-b bg-background/95 px-2 pb-2 pt-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-4 md:pb-3 md:pt-6">
           <div className="flex items-center justify-between gap-2">
             <div>
               <DialogTitle className="text-lg md:text-xl font-bold flex items-center gap-2">
@@ -492,7 +671,7 @@ export function RiskManagementWindow({
                 ) : (
                   <Shield className="w-5 h-5" />
                 )}
-                {variant === 'risk-focus' ? 'Risk Focus' : 'Risk Management'}
+                {variant === 'risk-focus' ? 'Risk-Less' : 'Risk Management'}
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -514,7 +693,7 @@ export function RiskManagementWindow({
               </DialogTitle>
               {variant === 'risk-focus' ? (
                 <p className="mt-0.5 max-w-3xl text-sm font-normal leading-snug text-muted-foreground">
-                  {`spot what could go wrong, decide how much it matters, and plan how you'll handle it`}
+                  {`Spot what could go wrong, decide how much it matters, and plan how you'll handle it`}
                 </p>
               ) : null}
             </div>
@@ -529,42 +708,100 @@ export function RiskManagementWindow({
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+        {variant === 'risk-focus' && mode === 'run' ? <RiskFocusDashboard risks={risks} /> : null}
+
+        <div
+          className={cn(
+            'flex min-h-0 flex-1 flex-col px-2 md:px-4',
+            variant === 'risk-focus'
+              ? 'gap-2 pb-2 pt-1 md:gap-2 md:pb-3 md:pt-1.5'
+              : 'gap-3 py-2 md:py-3'
+          )}
+        >
           {loading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex flex-1 items-center justify-center py-12">
               <div className="text-muted-foreground">Loading risks...</div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {!readOnly && (mode === 'template' || (mode === 'run' && projectRunId)) && (
-                <div className="flex justify-end">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => {
-                      setEditingRisk(null);
-                      setFormData({
-                        risk: '',
-                        likelihood: 'medium',
-                        severity: 'medium',
-                        schedule_impact_days: 0,
-                        budget_impact_dollars: 0,
-                        mitigation: '',
-                        mitigation_actions: [],
-                        notes: '',
-                        status: 'open'
-                      });
-                      setShowAddForm(true);
-                    }}
-                    className="h-8 px-4 text-sm"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Risk
-                  </Button>
+            <div className="flex min-h-0 flex-1 flex-col gap-3">
+              {showRiskFocusProgressRow || showAddRiskRow ? (
+                <div
+                  className={cn(
+                    'flex shrink-0 flex-col sm:flex-row sm:items-center',
+                    variant === 'risk-focus' ? 'gap-1.5' : 'gap-2',
+                    showRiskFocusProgressRow && showAddRiskRow
+                      ? 'sm:justify-between'
+                      : showRiskFocusProgressRow
+                        ? 'sm:justify-start'
+                        : 'sm:justify-end'
+                  )}
+                >
+                  {showRiskFocusProgressRow && riskFocusRunForProgress ? (
+                    <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-1.5">
+                      <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Project progress
+                      </span>
+                      <Select
+                        disabled={readOnly}
+                        value={riskFocusProgressSelectValue(riskFocusRunForProgress.progress)}
+                        onValueChange={(value) => {
+                          const progress = Number.parseInt(value, 10);
+                          if (
+                            !Number.isFinite(progress) ||
+                            !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
+                          ) {
+                            return;
+                          }
+                          void updateProjectRun({ ...riskFocusRunForProgress, progress });
+                        }}
+                      >
+                        <SelectTrigger
+                          className="h-7 w-full text-xs sm:w-[160px]"
+                          aria-label="Project progress"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">0%</SelectItem>
+                          <SelectItem value="25">25%</SelectItem>
+                          <SelectItem value="50">50%</SelectItem>
+                          <SelectItem value="75">75%</SelectItem>
+                          <SelectItem value="100">Complete</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : null}
+                  {showAddRiskRow ? (
+                    <div className="flex shrink-0 justify-end">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => {
+                          setEditingRisk(null);
+                          setFormData({
+                            risk: '',
+                            likelihood: 'medium',
+                            severity: 'medium',
+                            schedule_impact_days: 0,
+                            budget_impact_dollars: 0,
+                            mitigation: '',
+                            mitigation_actions: [],
+                            notes: '',
+                            status: 'open'
+                          });
+                          setShowAddForm(true);
+                        }}
+                        className="h-7 gap-1 px-3 text-xs font-medium"
+                      >
+                        <Plus className="h-3.5 w-3.5 shrink-0" />
+                        Add Risk
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
-              )}
+              ) : null}
               {risks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="flex flex-1 flex-col items-center justify-center py-12 text-center">
                   <AlertTriangle className="w-12 h-12 text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">No risks defined yet</p>
                   <p className="text-sm text-muted-foreground mt-2">
@@ -576,12 +813,15 @@ export function RiskManagementWindow({
               ) : (
                 <>
                   {/* Mobile: Card Layout */}
-                  <div className="md:hidden space-y-3">
+                  <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain md:hidden">
                     {risks.map((risk) => (
                       <Card key={risk.id} className="p-4">
                         <div className="space-y-3">
                           <div className="flex items-start justify-between gap-2">
-                            <h3 className="font-semibold text-sm flex-1">{risk.risk}</h3>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs text-muted-foreground mb-1">What could go wrong?</div>
+                              <h3 className="font-semibold text-sm leading-snug">{risk.risk}</h3>
+                            </div>
                             {!readOnly && (
                               <div className="flex gap-1 flex-shrink-0">
                                 <Button
@@ -605,27 +845,49 @@ export function RiskManagementWindow({
                               </div>
                             )}
                           </div>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-3">
                             <div>
-                              <div className="text-xs text-muted-foreground mb-1">Likelihood</div>
+                              <div className="text-xs text-muted-foreground mb-1">How likely?</div>
                               <Badge className={getRiskLevelColor(risk.likelihood, risk.schedule_impact_days, risk.budget_impact_dollars)}>
                                 {risk.likelihood}
                               </Badge>
                             </div>
                             <div>
-                              <div className="text-xs text-muted-foreground mb-1">Schedule Impact</div>
-                              <div className="text-sm font-medium">
-                                {risk.schedule_impact_days ? `${risk.schedule_impact_days} days` : '-'}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-xs text-muted-foreground mb-1">Budget Impact</div>
-                              <div className="text-sm font-medium">
-                                {risk.budget_impact_dollars ? `$${risk.budget_impact_dollars.toLocaleString()}` : '-'}
-                              </div>
+                              <div className="text-xs text-muted-foreground mb-1">What happens if it does?</div>
+                              <ImpactIfItDoesContent risk={risk} />
                             </div>
                           </div>
-                          {mode === 'run' && (
+                          {mode === 'run' && variant === 'risk-focus' && (
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Whats the new status?</div>
+                              {readOnly ? (
+                                <Badge className={currentRiskLevelBadgeClass(riskFocusLevelValue(risk))}>
+                                  {riskFocusLevelValue(risk) === 'high'
+                                    ? 'High'
+                                    : riskFocusLevelValue(risk) === 'low'
+                                      ? 'Low'
+                                      : 'Med'}
+                                </Badge>
+                              ) : (
+                                <Select
+                                  value={riskFocusLevelValue(risk)}
+                                  onValueChange={(value) =>
+                                    handleUpdateCurrentRiskLevel(risk, value as 'low' | 'medium' | 'high')
+                                  }
+                                >
+                                  <SelectTrigger className="h-11 text-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="high">High</SelectItem>
+                                    <SelectItem value="medium">Med</SelectItem>
+                                    <SelectItem value="low">Low</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            </div>
+                          )}
+                          {mode === 'run' && variant !== 'risk-focus' && (
                             <div>
                               <div className="text-xs text-muted-foreground mb-1">Status</div>
                               {readOnly ? (
@@ -652,7 +914,7 @@ export function RiskManagementWindow({
                           )}
                           {(risk.mitigation_actions && risk.mitigation_actions.length > 0) && (
                             <div>
-                              <div className="text-xs text-muted-foreground mb-1">Mitigation</div>
+                              <div className="text-xs text-muted-foreground mb-1">What can we do to prevent it?</div>
                               <ul className="text-sm list-disc list-inside space-y-1">
                                 {risk.mitigation_actions.map((ma, idx) => (
                                   <li key={idx}>
@@ -667,34 +929,44 @@ export function RiskManagementWindow({
                           )}
                           {!risk.mitigation_actions?.length && risk.mitigation && (
                             <div>
-                              <div className="text-xs text-muted-foreground mb-1">Mitigation</div>
+                              <div className="text-xs text-muted-foreground mb-1">What can we do to prevent it?</div>
                               <p className="text-sm">{risk.mitigation}</p>
                             </div>
                           )}
-                          {risk.notes && (
-                            <div>
-                              <div className="text-xs text-muted-foreground mb-1">Notes</div>
-                              <p className="text-sm break-words">{risk.notes}</p>
-                            </div>
-                          )}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => setDetailsRisk(risk)}
+                          >
+                            <Info className="w-4 h-4 mr-2" />
+                            More details
+                          </Button>
                         </div>
                       </Card>
                     ))}
                   </div>
 
-                  {/* Desktop: Table Layout */}
-                  <div className="hidden md:block overflow-x-auto">
-                    <Table>
+                  {/* Desktop: Table Layout — fills remaining height */}
+                  <div className="hidden min-h-0 flex-1 flex-col overflow-hidden md:flex">
+                    <div className="min-h-0 flex-1 overflow-auto rounded-md border border-border/60">
+                      <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-[200px]">Risk</TableHead>
-                          <TableHead className="w-[100px]">Likelihood</TableHead>
-                          <TableHead className="w-[120px]">Schedule Impact</TableHead>
-                          <TableHead className="w-[120px]">Budget Impact</TableHead>
-                          <TableHead className="w-[200px]">Mitigation</TableHead>
-                          <TableHead className="w-[200px]">Notes</TableHead>
-                          {mode === 'run' && <TableHead className="w-[120px]">Status</TableHead>}
-                          <TableHead className="w-[100px]">Actions</TableHead>
+                          <TableHead className="min-w-[180px] max-w-[240px]">What could go wrong?</TableHead>
+                          <TableHead className="w-[100px]">How likely?</TableHead>
+                          <TableHead className="min-w-[140px] max-w-[200px]">What happens if it does?</TableHead>
+                          <TableHead className="min-w-[200px]">What can we do to prevent it?</TableHead>
+                          {mode === 'run' && variant === 'risk-focus' ? (
+                            <TableHead className="min-w-[100px] max-w-[140px] leading-tight">
+                              Whats the new status?
+                            </TableHead>
+                          ) : null}
+                          {mode === 'run' && variant !== 'risk-focus' ? (
+                            <TableHead className="w-[120px]">Status</TableHead>
+                          ) : null}
+                          <TableHead className="w-[120px]">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -708,13 +980,10 @@ export function RiskManagementWindow({
                                 {risk.likelihood}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-sm">
-                              {risk.schedule_impact_days ? `${risk.schedule_impact_days} days` : '-'}
+                            <TableCell className="text-sm align-top">
+                              <ImpactIfItDoesContent risk={risk} />
                             </TableCell>
-                            <TableCell className="text-sm">
-                              {risk.budget_impact_dollars ? `$${risk.budget_impact_dollars.toLocaleString()}` : '-'}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
+                            <TableCell className="text-sm text-muted-foreground align-top">
                               {risk.mitigation_actions && risk.mitigation_actions.length > 0 ? (
                                 <div className="space-y-1">
                                   {risk.mitigation_actions.map((ma, idx) => (
@@ -730,10 +999,36 @@ export function RiskManagementWindow({
                                 risk.mitigation || '-'
                               )}
                             </TableCell>
-                            <TableCell className="text-sm text-muted-foreground break-words max-w-[200px]">
-                              {risk.notes || '-'}
-                            </TableCell>
-                            {mode === 'run' && (
+                            {mode === 'run' && variant === 'risk-focus' && (
+                              <TableCell className="align-top">
+                                {readOnly ? (
+                                  <Badge className={currentRiskLevelBadgeClass(riskFocusLevelValue(risk))}>
+                                    {riskFocusLevelValue(risk) === 'high'
+                                      ? 'High'
+                                      : riskFocusLevelValue(risk) === 'low'
+                                        ? 'Low'
+                                        : 'Med'}
+                                  </Badge>
+                                ) : (
+                                  <Select
+                                    value={riskFocusLevelValue(risk)}
+                                    onValueChange={(value) =>
+                                      handleUpdateCurrentRiskLevel(risk, value as 'low' | 'medium' | 'high')
+                                    }
+                                  >
+                                    <SelectTrigger className="h-8 text-xs">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="high">High</SelectItem>
+                                      <SelectItem value="medium">Med</SelectItem>
+                                      <SelectItem value="low">Low</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              </TableCell>
+                            )}
+                            {mode === 'run' && variant !== 'risk-focus' && (
                               <TableCell>
                                 {readOnly ? (
                                   <Badge className={getStatusColor(risk.status || 'open')}>
@@ -757,34 +1052,46 @@ export function RiskManagementWindow({
                                 )}
                               </TableCell>
                             )}
-                            <TableCell>
-                              {!readOnly && (
-                                <div className="flex gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditRisk(risk)}
-                                    className="h-7 w-7 p-0"
-                                  >
-                                    <Edit className="w-3.5 h-3.5" />
-                                  </Button>
-                                  {!(mode === 'run' && risk.is_template_risk) && (
+                            <TableCell className="align-top">
+                              <div className="flex flex-wrap gap-1">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setDetailsRisk(risk)}
+                                  className="h-7 px-2 text-[10px]"
+                                >
+                                  Details
+                                </Button>
+                                {!readOnly && (
+                                  <>
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => handleDeleteRisk(risk)}
-                                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                      onClick={() => handleEditRisk(risk)}
+                                      className="h-7 w-7 p-0"
                                     >
-                                      <Trash2 className="w-3.5 h-3.5" />
+                                      <Edit className="w-3.5 h-3.5" />
                                     </Button>
-                                  )}
-                                </div>
-                              )}
+                                    {!(mode === 'run' && risk.is_template_risk) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteRisk(risk)}
+                                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </Button>
+                                    )}
+                                  </>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
+                    </div>
                   </div>
                 </>
               )}
@@ -792,27 +1099,33 @@ export function RiskManagementWindow({
           )}
         </div>
 
-        {/* Add/Edit Form Dialog */}
+        {/* Add/Edit Form Dialog — scrollable body + fixed footer so it fits inside Risk-Less */}
         <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{editingRisk ? 'Edit Risk' : 'Add Risk'}</DialogTitle>
+          <DialogContent
+            className={cn(
+              'z-[200] flex max-h-[min(90dvh,880px)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl',
+              'border bg-background shadow-xl'
+            )}
+          >
+            <DialogHeader className="shrink-0 space-y-1 border-b px-4 py-3 text-left sm:px-5 sm:py-4">
+              <DialogTitle>{editingRisk ? 'Edit risk' : 'Add risk'}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">
+            <div className="space-y-4">
               <div>
-                <Label htmlFor="risk">Risk Description *</Label>
+                <Label htmlFor="risk">What could go wrong? *</Label>
                 <Textarea
                   id="risk"
                   value={formData.risk}
                   onChange={(e) => setFormData({ ...formData, risk: e.target.value })}
-                  placeholder="Describe the risk..."
+                  placeholder="Describe what could go wrong…"
                   rows={3}
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="likelihood">Likelihood</Label>
+                  <Label htmlFor="likelihood">How likely?</Label>
                   <Select
                     value={formData.likelihood}
                     onValueChange={(value: any) => setFormData({ ...formData, likelihood: value })}
@@ -848,7 +1161,11 @@ export function RiskManagementWindow({
                 </div>
 
                 <div>
-                  <Label htmlFor="severity">Severity</Label>
+                  <Label htmlFor="severity">
+                    {variant === 'risk-focus' && mode === 'run'
+                      ? `Whats the new status?`
+                      : 'Severity'}
+                  </Label>
                   <Select
                     value={formData.severity}
                     onValueChange={(value: any) => setFormData({ ...formData, severity: value })}
@@ -856,7 +1173,8 @@ export function RiskManagementWindow({
                     <SelectTrigger>
                       <SelectValue>
                         {formData.severity === 'low' && 'Low'}
-                        {formData.severity === 'medium' && 'Medium'}
+                        {formData.severity === 'medium' &&
+                          (variant === 'risk-focus' && mode === 'run' ? 'Med' : 'Medium')}
                         {formData.severity === 'high' && 'High'}
                       </SelectValue>
                     </SelectTrigger>
@@ -869,7 +1187,9 @@ export function RiskManagementWindow({
                       </SelectItem>
                       <SelectItem value="medium">
                         <div className="flex flex-col">
-                          <span className="font-medium">Medium</span>
+                          <span className="font-medium">
+                            {variant === 'risk-focus' && mode === 'run' ? 'Med' : 'Medium'}
+                          </span>
                           <span className="text-xs text-muted-foreground">Noticeable impact requiring management</span>
                         </div>
                       </SelectItem>
@@ -884,47 +1204,51 @@ export function RiskManagementWindow({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="schedule_impact">Potential Schedule Impact (days)</Label>
-                  <Input
-                    id="schedule_impact"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.schedule_impact_days}
-                    onChange={(e) => setFormData({ ...formData, schedule_impact_days: parseFloat(e.target.value) || 0 })}
-                    placeholder="0.00"
-                  />
-                </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">What happens if it does?</p>
+                <p className="text-xs text-muted-foreground">Estimate schedule and budget impact if the risk occurs.</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="schedule_impact">Schedule (days)</Label>
+                    <Input
+                      id="schedule_impact"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.schedule_impact_days}
+                      onChange={(e) => setFormData({ ...formData, schedule_impact_days: parseFloat(e.target.value) || 0 })}
+                      placeholder="0.00"
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="budget_impact">Potential Budget Impact ($)</Label>
-                  <Input
-                    id="budget_impact"
-                    type="number"
-                    step="1"
-                    min="0"
-                    value={formData.budget_impact_dollars}
-                    onChange={(e) => setFormData({ ...formData, budget_impact_dollars: parseInt(e.target.value) || 0 })}
-                    placeholder="0"
-                  />
+                  <div>
+                    <Label htmlFor="budget_impact">Budget ($)</Label>
+                    <Input
+                      id="budget_impact"
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={formData.budget_impact_dollars}
+                      onChange={(e) => setFormData({ ...formData, budget_impact_dollars: parseInt(e.target.value) || 0 })}
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="mitigation">Mitigation Strategy</Label>
+                <Label htmlFor="mitigation">What can we do to prevent it?</Label>
                 <Textarea
                   id="mitigation"
                   value={formData.mitigation}
                   onChange={(e) => setFormData({ ...formData, mitigation: e.target.value })}
-                  placeholder="High-level mitigation approach for this risk..."
+                  placeholder="How you can prevent it or reduce the chance it happens…"
                   rows={2}
                 />
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
-                      Mitigation actions
+                      Action steps
                     </span>
                     <Button
                       type="button"
@@ -993,7 +1317,7 @@ export function RiskManagementWindow({
                 />
               </div>
 
-              {mode === 'run' && (
+              {mode === 'run' && variant !== 'risk-focus' && (
                 <div>
                   <Label htmlFor="status">Status</Label>
                   <Select
@@ -1013,13 +1337,18 @@ export function RiskManagementWindow({
                 </div>
               )}
 
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => {
+            </div>
+            </div>
+            <DialogFooter className="shrink-0 gap-2 border-t bg-background px-4 py-3 sm:px-5 sm:py-4">
+              <Button
+                variant="outline"
+                onClick={() => {
                   setShowAddForm(false);
                   setEditingRisk(null);
                   setFormData({
                     risk: '',
                     likelihood: 'medium',
+                    severity: 'medium',
                     schedule_impact_days: 0,
                     budget_impact_dollars: 0,
                     mitigation: '',
@@ -1027,19 +1356,62 @@ export function RiskManagementWindow({
                     notes: '',
                     status: 'open'
                   });
-                }}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSaveRisk}>
-                  <Save className="w-4 h-4 mr-2" />
-                  {editingRisk ? 'Update' : 'Add'} Risk
-                </Button>
-              </div>
-            </div>
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSaveRisk}>
+                <Save className="w-4 h-4 mr-2" />
+                {editingRisk ? 'Update' : 'Add'} Risk
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </DialogContent>
     </Dialog>
+
+    <Sheet
+      open={detailsRisk !== null}
+      onOpenChange={(next) => {
+        if (!next) setDetailsRisk(null);
+      }}
+    >
+      <SheetContent side="right" className="z-[220] flex w-full flex-col gap-0 overflow-y-auto sm:max-w-md">
+        {detailsRisk ? (
+          <>
+            <SheetHeader className="space-y-1 pr-6 text-left">
+              <SheetTitle>More details</SheetTitle>
+              <SheetDescription>
+                Notes and impact breakdown for this risk.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="mt-6 flex-1 space-y-5">
+              <section>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  What could go wrong?
+                </h4>
+                <p className="mt-1.5 text-sm leading-relaxed">{detailsRisk.risk}</p>
+              </section>
+              <section>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  What happens if it does?
+                </h4>
+                <div className="mt-1.5">
+                  <ImpactIfItDoesContent risk={detailsRisk} />
+                </div>
+              </section>
+              <section>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes</h4>
+                <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed">
+                  {detailsRisk.notes?.trim() ? detailsRisk.notes : '—'}
+                </p>
+              </section>
+            </div>
+          </>
+        ) : null}
+      </SheetContent>
+    </Sheet>
+    </>
   );
 }
 

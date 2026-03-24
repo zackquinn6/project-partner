@@ -75,7 +75,7 @@ const Index = () => {
   const [isToolsLibraryGridOpen, setIsToolsLibraryGridOpen] = useState(false);
   const [isHomeTaskListOpen, setIsHomeTaskListOpen] = useState(false);
   const [isRiskFocusLauncherOpen, setIsRiskFocusLauncherOpen] = useState(false);
-  /** Risk Focus: full-screen register only (no workflow); set after Start from launcher. */
+  /** Risk-Less: full-screen register only (no workflow); set after Start from launcher. */
   const [riskFocusRegisterRunId, setRiskFocusRegisterRunId] = useState<string | null>(null);
 
   // CRITICAL: All hooks must be at the top - before any conditional logic
@@ -577,19 +577,21 @@ const Index = () => {
           );
         case 'workflow':
           return (
-            <div className="h-screen flex flex-col">
-              <UserView 
-                resetToListing={resetUserView && !currentProjectRun} 
-                forceListingMode={forceListingMode}
-                onProjectSelected={() => {
-                  console.log('🎯 Index: Mobile workflow - onProjectSelected called');
-                  setForceListingMode(false);
-                  setResetUserView(false);
-                  setMobileView('workflow');
-                }} 
-                projectRunId={location.state?.projectRunId}
-                showProfile={location.state?.showProfile}
-              />
+            <div className="flex h-[100dvh] min-h-0 flex-col">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <UserView
+                  resetToListing={resetUserView && !currentProjectRun}
+                  forceListingMode={forceListingMode}
+                  onProjectSelected={() => {
+                    console.log('🎯 Index: Mobile workflow - onProjectSelected called');
+                    setForceListingMode(false);
+                    setResetUserView(false);
+                    setMobileView('workflow');
+                  }}
+                  projectRunId={location.state?.projectRunId}
+                  showProfile={location.state?.showProfile}
+                />
+              </div>
               <MobileBottomNav
                 currentView={mobileNavCurrentView}
                 onViewChange={handleMobileNavigation}

@@ -40,7 +40,7 @@ function RiskFocusStartControls({
   onSessionStarted,
   className,
 }: {
-  /** Called with the new project run id after a Risk Focus run is created (stay on current page; open register in parent). */
+  /** Called with the new project run id after a Risk-Less run is created (stay on current page; open register in parent). */
   onSessionStarted?: (projectRunId: string) => void;
   className?: string;
 }) {
@@ -65,7 +65,7 @@ function RiskFocusStartControls({
       return;
     }
     if (!canAccessApp('risk-focus')) {
-      toast.error('A subscription or trial is required to use Risk Focus.');
+      toast.error('A subscription or trial is required to use Risk-Less.');
       return;
     }
     const project = projects.find((p) => p.id === selectedId);
@@ -83,7 +83,7 @@ function RiskFocusStartControls({
         { riskFocusSession: true }
       );
       if (runId) {
-        toast.success('Risk Focus session started.');
+        toast.success('Risk-Less session started.');
         onSessionStarted?.(runId);
       }
     } catch {
@@ -159,13 +159,13 @@ export function RiskFocusLauncherDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Crosshair className="h-5 w-5" />
-            Risk Focus
+            Risk-Less
           </DialogTitle>
           <p className="text-sm font-normal leading-snug text-muted-foreground">
-            {`spot what could go wrong, decide how much it matters, and plan how you'll handle it`}
+            {`Spot what could go wrong, decide how much it matters, and plan how you'll handle it`}
           </p>
           <DialogDescription>
-            {`Choose a project and focus only on controlling for "what could go wrong". This is perfect for those who are following other content and want help to assure the project goes well.`}
+            Choose a project to get started
           </DialogDescription>
         </DialogHeader>
         <RiskFocusStartControls

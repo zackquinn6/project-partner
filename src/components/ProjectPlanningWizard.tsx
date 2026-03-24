@@ -235,40 +235,40 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[95vw] md:h-[95vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-full max-w-full flex-col gap-0 overflow-hidden border-0 p-0 md:h-[min(95vh,56rem)] md:max-h-[95vh] md:max-w-[95vw] md:rounded-lg md:border [&>button]:hidden">
         {/* Accessibility: DialogTitle and DialogDescription required */}
         <DialogTitle className="sr-only">Project Planning Workflow</DialogTitle>
         <DialogDescription className="sr-only">Plan and customize your project workflow</DialogDescription>
-        
-        {/* Close button - matches other windows */}
-        <div className="absolute right-4 top-4 z-10">
+
+        <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 sm:right-4 sm:top-4">
           <Button
             variant="outline"
             size="sm"
             onClick={() => onOpenChange(false)}
-            className="text-xs sm:text-sm"
+            className="min-h-10 text-xs sm:min-h-9 sm:text-sm"
           >
             Close
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-6xl mx-auto p-2 sm:p-4 md:p-6 space-y-2 sm:space-y-4 md:space-y-6 pb-20 sm:pb-6">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] px-2 pb-2 pt-14 sm:px-4 sm:pb-4 sm:pt-16 md:px-6 md:pb-6 md:pt-16">
+            <div className="mx-auto max-w-6xl space-y-2 sm:space-y-4 md:space-y-6">
             {/* Progress Header */}
             <Card>
           <CardHeader className="p-3 sm:p-4 md:p-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 flex-1">
                 <CardTitle className="text-lg sm:text-xl md:text-2xl flex items-center gap-2">
                   Project Planning Workflow
                   {allStepsComplete && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-green-500 flex-shrink-0" />}
                 </CardTitle>
                 <p className="text-base sm:text-lg font-semibold mt-2 text-foreground">Build your complete project plan</p>
               </div>
-              <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+              <div className="flex w-full flex-shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                    <Button variant="outline" size="sm" className="w-full text-xs sm:w-auto sm:text-sm">
                       <Settings2 className="w-4 h-4 mr-1.5" />
                       Change planning tools
                     </Button>
@@ -312,11 +312,12 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8 sm:hidden flex-shrink-0"
+                  className="h-11 w-11 shrink-0 sm:hidden"
                   onClick={() => scrollStepNav('left')}
                   disabled={wizardSteps.length <= 4}
+                  aria-label="Scroll steps left"
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="h-5 w-5" />
                 </Button>
                 <div
                   ref={stepNavRef}
@@ -349,11 +350,12 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8 sm:hidden flex-shrink-0"
+                  className="h-11 w-11 shrink-0 sm:hidden"
                   onClick={() => scrollStepNav('right')}
                   disabled={wizardSteps.length <= 4}
+                  aria-label="Scroll steps right"
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="h-5 w-5" />
                 </Button>
               </div>
 
@@ -373,18 +375,16 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
           </CardContent>
         </Card>
 
-        {/* Current Step Content */}
-        <div className="flex flex-col" style={{ minHeight: '400px' }}>
-          <div className="flex-1 overflow-y-auto -mx-2 sm:mx-0 px-2 sm:px-0 pb-4">
-            {renderCurrentStep()}
+              {/* Current step */}
+              <div className="min-w-0">{renderCurrentStep()}</div>
+            </div>
           </div>
-          
-          {/* Fixed Button Area */}
-          <div className="flex-shrink-0 bg-background border-t pt-4 pb-2 mt-4 -mx-2 sm:mx-0 px-2 sm:px-0">
-            <Card>
+
+          <div className="shrink-0 border-t bg-background px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-4 sm:pb-3">
+            <Card className="mx-auto max-w-6xl border-0 shadow-none sm:border sm:shadow-sm">
               <CardContent className="p-3 sm:p-4">
                 {allStepsComplete ? (
-                  <Button 
+                  <Button
                     onClick={async () => {
                       const isNoToolsPlaceholder =
                         wizardSteps.length === 1 && wizardSteps[0].toolId === null;
@@ -394,20 +394,18 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                       }
                       onOpenChange(false);
                     }}
-                    className="w-full bg-green-600 hover:bg-green-700"
+                    className="min-h-11 w-full bg-green-600 hover:bg-green-700"
                   >
-                    <CheckCircle className="w-4 h-4 mr-2" />
+                    <CheckCircle className="mr-2 h-4 w-4" />
                     Complete Planning
                   </Button>
                 ) : (
-                  <div className="text-center p-2 text-sm text-muted-foreground">
+                  <div className="p-2 text-center text-sm text-muted-foreground">
                     Complete all steps to finish planning
                   </div>
                 )}
               </CardContent>
             </Card>
-          </div>
-        </div>
           </div>
         </div>
       </DialogContent>

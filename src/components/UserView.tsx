@@ -2474,6 +2474,7 @@ export default function UserView({
     }
     
     return (
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden md:h-auto md:min-h-0 md:flex-none md:overflow-visible">
       <KickoffWorkflow 
         onKickoffComplete={async () => {
           console.log("🎯 onKickoffComplete called - closing kickoff and switching to workflow");
@@ -2779,6 +2780,7 @@ export default function UserView({
           setProjectPlanningWizardOpen(true);
         }}
       />
+      </div>
     );
   }
   

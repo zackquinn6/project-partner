@@ -36,7 +36,7 @@ async function applyRiskFocusSessionToRun(runId: string): Promise<void> {
     .single();
 
   if (error) throw error;
-  if (!row) throw new Error('Project run not found for risk focus finalize');
+  if (!row) throw new Error('Project run not found for Risk-Less finalize');
 
   const existingSteps = parseCompletedStepsColumn(row.completed_steps);
   const mergedSteps = [...new Set([...existingSteps, ...KICKOFF_UI_STEP_IDS])];
@@ -572,7 +572,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         try {
           await applyRiskFocusSessionToRun(data);
         } catch (riskFocusFinalizeError) {
-          console.error('❌ Risk focus finalize failed; deleting created run:', riskFocusFinalizeError);
+          console.error('❌ Risk-Less finalize failed; deleting created run:', riskFocusFinalizeError);
           await supabase.from('project_runs').delete().eq('id', data);
           throw riskFocusFinalizeError;
         }

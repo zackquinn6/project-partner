@@ -395,9 +395,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     );
   }
 
-  return <div className="max-w-6xl mx-auto p-2 sm:p-3 space-y-2 sm:space-y-3 pb-20 sm:pb-4">
+  return (
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-auto md:overflow-visible">
       {/* Progress Header */}
-      <Card>
+      <Card className="shrink-0">
         <CardHeader className="p-2 sm:p-3">
           <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <div className="flex-1 min-w-0">
@@ -420,7 +421,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       </Card>
 
       {/* Step Navigation */}
-      <Card>
+      <Card className="shrink-0">
         <CardContent className="p-2 sm:p-3 md:p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="flex items-center space-x-2 sm:space-x-2 md:space-x-4 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 -mx-2 sm:mx-0 px-2 sm:px-0 scrollbar-hide">
@@ -458,9 +459,9 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
       {/* Step Purpose Sub-header - white box like project kickoff header */}
       {currentStepPurpose && (
-        <Card>
+        <Card className="shrink-0">
           <CardContent className="p-2 sm:p-3 flex flex-row items-center justify-between gap-2">
-            <h2 className="text-base sm:text-lg font-semibold">
+            <h2 className="min-w-0 flex-1 break-words pr-2 text-base font-semibold sm:text-lg">
               {currentStepPurpose}
             </h2>
             {currentStepId === 'kickoff-step-1' && (
@@ -485,13 +486,12 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         </Card>
       )}
 
-      {/* Current Step Content - Scrollable with Fixed Button */}
-      <div className="flex flex-col min-h-0 flex-1 sm:min-h-[500px]" style={{ minHeight: 'min(500px, 55dvh)' }}>
-        <div className="flex-1 overflow-y-auto -mx-2 sm:mx-0 px-2 sm:px-0 pb-4 min-h-0">
+      {/* Step body: mobile = internal scroll + pinned actions; desktop = page scroll */}
+      <div className="flex min-h-0 flex-1 flex-col md:min-h-[min(520px,70vh)]">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] -mx-2 px-2 pb-2 sm:mx-0 sm:px-0 sm:pb-4 md:flex-none md:overflow-visible md:pb-0">
           {renderCurrentStep()}
         </div>
-        {/* Fixed Button Area - Always Visible */}
-        <div className="flex-shrink-0 bg-background border-t pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pt-4 sm:pb-2 mt-2 sm:mt-4 -mx-2 sm:mx-0 px-2 sm:px-0">
+        <div className="mt-2 shrink-0 border-t bg-background px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:mt-4 sm:px-0 sm:pb-2 sm:pt-4">
           <Card>
             <CardContent className="p-2.5 sm:p-4">
               {!isStepCompleted(currentKickoffStep) ? (
@@ -588,5 +588,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
           </Card>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };

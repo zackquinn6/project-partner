@@ -1,5 +1,6 @@
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { WorkflowStep } from '@/interfaces/Project';
+import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 
 /**
  * STEP WEIGHT CONSTANTS
@@ -155,6 +156,14 @@ export function calculateProjectProgress(
   }
   if (projectRun.isManualEntry) {
     return projectRun.progress ?? 0;
+  }
+
+  if (isRiskFocusRun(projectRun)) {
+    const p = projectRun.progress;
+    if (typeof p === 'number' && Number.isFinite(p)) {
+      return Math.round(Math.min(100, Math.max(0, p)));
+    }
+    return 0;
   }
 
   if (!projectRun.phases || projectRun.phases.length === 0) {

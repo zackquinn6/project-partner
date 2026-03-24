@@ -99,7 +99,7 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     displayOrder: 10
   },
   'risk-focus': {
-    appName: 'Risk Focus',
+    appName: 'Risk-Less',
     appType: 'native',
     icon: 'Crosshair',
     description: 'Start a project run dedicated to tracking risks for a template',
