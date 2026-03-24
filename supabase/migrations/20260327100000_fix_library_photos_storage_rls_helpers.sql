@@ -1,7 +1,13 @@
--- Admin catalog (tools / materials) photos use catalog row UUIDs, not user_tools / user_materials
--- row ids. Paths: {auth_uid}/core-tool-{id}_.... or core-material-....
--- Use storage.foldername / storage.filename (Supabase docs). UPDATE includes WITH CHECK for upsert.
+-- Fix library-photos RLS for catalog tool/material uploads (LibraryItemForm).
+-- Prefer storage.foldername / storage.filename (Supabase docs) over split_part(name, '/').
+-- UPDATE needs WITH CHECK so upsert/overwrites are allowed after INSERT policies pass.
 
+DROP POLICY IF EXISTS "library_photos_core_tool_select" ON storage.objects;
+DROP POLICY IF EXISTS "library_photos_core_tool_insert" ON storage.objects;
+DROP POLICY IF EXISTS "library_photos_core_tool_update" ON storage.objects;
+DROP POLICY IF EXISTS "library_photos_core_tool_delete" ON storage.objects;
+
+-- Upsert / existence checks may read object metadata under the same RLS rules.
 CREATE POLICY "library_photos_core_tool_select"
 ON storage.objects
 FOR SELECT
