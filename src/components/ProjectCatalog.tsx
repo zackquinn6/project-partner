@@ -176,7 +176,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   useEffect(() => {
     if (!user && !isAdminMode) {
       const fetchPublicProjects = async () => {
-      console.log('🔍 Fetching public projects...');
       const { data, error } = await supabase
         .from('projects')
         .select('*')
@@ -184,9 +183,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         .neq('id', '00000000-0000-0000-0000-000000000000')
         .neq('id', '00000000-0000-0000-0000-000000000001')
         .order('updated_at', { ascending: false });
-      
-      console.log('📦 Public projects fetch result:', { dataCount: data?.length || 0, error });
-      
+
       if (data && !error) {
         setPublicProjects(data);
       } else if (error) {
@@ -196,46 +193,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       
       fetchPublicProjects();
     } else if (user && !isAdminMode) {
-      // Refresh projects when catalog is opened to ensure latest revisions
-      console.log('🔄 User authenticated, fetching projects via context...');
       fetchProjects();
     }
   }, [user, isAdminMode, fetchProjects]);
 
   // Use appropriate projects based on authentication status
   const availableProjects = user ? projects : publicProjects;
-  
-  // Debug logging for projects
-  useEffect(() => {
-    console.log('🔍 ProjectCatalog Debug:', {
-      user: !!user,
-      isAdminMode,
-      projectsCount: projects.length,
-      publicProjectsCount: publicProjects.length,
-      projects: projects.map(p => ({ 
-        id: p.id, 
-        name: p.name, 
-        publishStatus: p.publishStatus
-      })),
-      publicProjects: publicProjects.map(p => ({
-        id: p.id,
-        name: p.name,
-        publish_status: p.publish_status
-      }))
-    });
-    
-    // Also try a direct query to projects table to see if data exists
-    if (projects.length === 0 && user) {
-      console.log('⚠️ No projects from context, trying direct projects query...');
-      supabase
-        .from('projects')
-        .select('id, name, publish_status, revision_number')
-        .limit(10)
-        .then(({ data, error }) => {
-          console.log('🔍 Direct projects query result:', { dataCount: data?.length || 0, error, sample: data?.[0] });
-        });
-    }
-  }, [projects, publicProjects, user, isAdminMode]);
 
   // Filter projects to show published, beta, and coming-soon projects or all projects in admin mode
   const publishedProjects = useMemo(() => {
@@ -270,20 +233,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           
           // Include if: visible (not hidden) AND (published/beta OR coming-soon OR admin mode) AND not manual template AND not standard foundation
           const shouldInclude = isValidStatus && isNotManualTemplate && isNotStandardFoundation;
-          
-          if (!shouldInclude) {
-            console.log('🚫 Filtered out project:', {
-              name: project.name,
-              publishStatus,
-              visibility,
-              isAdminMode,
-              isHidden,
-              isNotManualTemplate,
-              isNotStandardFoundation,
-              is_standard: (project as any).is_standard
-            });
-          }
-          
+
           return shouldInclude;
         })
       : publicProjects.filter(project => {
@@ -338,18 +288,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     }
 
     // Always sort alphabetically by project name for stable catalog ordering
-    finalProjects = [...finalProjects].sort((a, b) => 
+    finalProjects = [...finalProjects].sort((a, b) =>
       (a.name || '').localeCompare(b.name || '')
     );
 
-    console.log('✅ publishedProjects:', {
-      count: finalProjects.length,
-      projects: finalProjects.map(p => ({
-        name: p.name,
-        publishStatus: p.publishStatus || (p as any).publish_status,
-      })),
-    });
-    
     return finalProjects;
   }, [projects, user, isAdminMode, publicProjects]);
 
@@ -495,9 +437,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   }, []);
   const handleSelectProject = async (project: any) => {
     try {
-      console.log('🎯 ENTER handleSelectProject - Project:', project?.name || 'UNDEFINED');
-      console.log('🎯 Admin mode:', isAdminMode, 'User exists:', !!user);
-      
       if (!project) {
         console.error('❌ No project provided to handleSelectProject');
         return;
@@ -536,11 +475,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         return;
       }
 
-      // User mode - always create a new project run regardless of existing runs
-      console.log('👤 USER MODE - Creating new project run for:', project.name);
-      
       if (!user) {
-        console.log('❌ No user found - redirecting to auth');
         navigate('/auth?return=projects');
         return;
       }
@@ -559,15 +494,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
       // Check if project is beta and show warning first
       if (project.publishStatus === 'beta-testing') {
-        console.log('⚠️ Beta project detected, showing warning');
         setSelectedTemplate(project);
         setIsBetaWarningOpen(true);
         return;
       }
 
-      // Always create a new project run - user expects a fresh start
       setSelectedTemplate(project);
-      console.log('✅ Creating new project run for:', project.name);
       await proceedToNewProject(project);
       
     } catch (error) {
@@ -578,21 +510,15 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   };
 
   const handleDIYSurveyComplete = (surveyCompleted: boolean = true) => {
-    console.log('handleDIYSurveyComplete called with:', surveyCompleted);
     setIsDIYSurveyOpen(false);
     if (surveyCompleted) {
-      // After DIY survey completion, proceed to workflow
-      console.log('Survey completed - proceeding to workflow');
       proceedToWorkflow();
     } else {
-      // If survey was cancelled, reset everything
-      console.log('Survey cancelled - resetting');
       resetProjectState();
     }
   };
 
   const handleProfileManagerComplete = () => {
-    console.log('ProfileManager completed - proceeding to workflow');
     setIsProfileManagerOpen(false);
     proceedToWorkflow();
   };
@@ -628,7 +554,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     
     // Pass navigation callback to addProjectRun
     addProjectRun(newProjectRun, (projectRunId: string) => {
-      console.log("🎯 ProjectCatalog: Project run created, navigating to kickoff with ID:", projectRunId);
       resetProjectState();
       navigate('/', {
         state: {
@@ -679,7 +604,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const handleProjectSetupComplete = async () => {
     // Prevent this from running during new project creation
     if (isCreatingNewProject) {
-      console.log('🚫 handleProjectSetupComplete: Blocked during new project creation');
       return;
     }
     
@@ -736,11 +660,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       }
     }
 
-    console.log('🎯 proceedToNewProject: Starting new project creation for:', projectTemplate.name);
-    
-    // Set flag to prevent double-clicks during creation
     if (isCreatingNewProject) {
-      console.log('🚫 Already creating project, aborting');
       return;
     }
     setIsCreatingNewProject(true);
@@ -817,24 +737,14 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         diyLengthChallenges: projectTemplate.diyLengthChallenges
       };
       
-      console.log('📦 Created project run data:', {
-        templateId: newProjectRun.templateId,
-        name: newProjectRun.name,
-        hasPhases: !!newProjectRun.phases && Array.isArray(newProjectRun.phases),
-        phaseCount: newProjectRun.phases?.length || 0
-      });
-      
-      // Set timeout to reset flag if creation doesn't complete
       const resetTimeout = setTimeout(() => {
-        console.log('⏱️ Project creation timeout - resetting flag');
         setIsCreatingNewProject(false);
-      }, 10000); // Increased timeout to 10 seconds
+      }, 10000);
       
       // Pass navigation callback to addProjectRun
       await addProjectRun(newProjectRun, (projectRunId: string) => {
         clearTimeout(resetTimeout);
-        console.log("🎯 ProjectCatalog: Project run created (new project), navigating to kickoff with ID:", projectRunId);
-        
+
         // Reset state immediately
         setSelectedTemplate(null);
         setIsCreatingNewProject(false);
@@ -901,8 +811,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     
     // Pass navigation callback to addProjectRun
     addProjectRun(newProjectRun, (projectRunId: string) => {
-      console.log("🎯 ProjectCatalog: Project run created (skip setup), navigating to kickoff with ID:", projectRunId);
-      
       // Reset form and close dialog
       setProjectSetupForm({
         customProjectName: '',
@@ -933,8 +841,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       selectedTemplate.phases.length > 0;
     
     if (hasPhases) {
-      // Template has phases - proceed directly to project creation without setup window
-      console.log('✅ Template has phases, proceeding directly to project creation');
       proceedToNewProject(selectedTemplate);
       return;
     }
@@ -959,8 +865,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       if (kickoffComplete && !hasPhases) {
         setIsProjectSetupOpen(true);
       } else {
-        // Kickoff not complete, navigate to continue the existing project run
-        console.log('ProjectCatalog: Kickoff not complete after beta accept, continuing existing project run:', existingRun.id);
         navigate('/', {
           state: {
             view: 'user',
@@ -971,12 +875,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     } else {
       // New project run - if no phases, show setup window; otherwise proceed directly
       if (!hasPhases) {
-        // No phases - show setup window (legacy flow for projects without phases)
-        console.log('⚠️ Template has no phases, showing setup window');
         setIsProjectSetupOpen(true);
       } else {
-        // Has phases - proceed directly to kickoff
-        console.log('🚀 ProjectCatalog: New project with phases after beta accept, proceeding directly to kickoff');
         proceedToNewProject(selectedTemplate);
       }
     }
@@ -987,8 +887,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               <Button
                 variant="ghost"
                 onClick={() => {
-                  console.log('ProjectCatalog: Go to My Workshop button clicked (desktop)');
-                  navigate('/'); // Navigate to home/workshop
+                  navigate('/');
                 }}
                 className="flex items-center gap-2"
               >
@@ -1012,12 +911,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             variant="ghost" 
             size="sm"
             onClick={() => {
-              console.log('📱 ProjectCatalog: Go to My Workshop button clicked');
               if (onClose) {
-                console.log('📱 ProjectCatalog: Using onClose callback');
                 onClose();
               } else {
-                console.log('📱 ProjectCatalog: Using navigate to workshop');
                 navigate('/');
               }
             }}
@@ -1406,7 +1302,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      console.log('🖱️ MOBILE CARD CLICK - Project:', project.name);
                       try {
                         handleSelectProject(project);
                       } catch (error) {
@@ -1463,7 +1358,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      console.log('🖱️ DESKTOP CARD CLICK - Project:', project.name);
                       try {
                         handleSelectProject(project);
                       } catch (error) {
@@ -1512,8 +1406,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                             display: 'block'
                           }}
                           onError={(e) => {
-                            // If image fails to load, hide it and show gradient background
-                            console.log('❌ Image failed to load:', imageUrl, 'for project:', project.name);
                             const img = e.target as HTMLImageElement;
                             img.style.display = 'none';
                             // Show the gradient background
@@ -1523,8 +1415,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                             }
                           }}
                           onLoad={(e) => {
-                            // Hide gradient when image loads successfully
-                            console.log('✅ Image loaded successfully:', imageUrl, 'for project:', project.name);
                             const img = e.target as HTMLImageElement;
                             const gradientDiv = img.parentElement?.querySelector('.gradient-background') as HTMLElement;
                             if (gradientDiv) {
@@ -1714,7 +1604,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           <DIYSurveyPopup 
             open={isDIYSurveyOpen} 
             onOpenChange={(open) => {
-              console.log('DIYSurveyPopup onOpenChange called with:', open);
               if (!open) {
                 handleDIYSurveyComplete(true);
               }

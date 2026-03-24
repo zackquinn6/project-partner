@@ -31,6 +31,18 @@ export const PLANNING_TOOLS: { id: (typeof PLANNING_TOOL_IDS)[number]; label: st
 
 export type PlanningToolId = (typeof PLANNING_TOOL_IDS)[number];
 
+/** Kickoff step 4 grid: budget & tool rentals last; partner-gated tools still omitted when disabled. */
+const KICKOFF_TOOLS_GRID_ORDER: PlanningToolId[] = [
+  'scope',
+  'schedule',
+  'risk',
+  'shopping_list',
+  'quality_control',
+  'budget',
+  'tool_rentals',
+  'expert_support',
+];
+
 const DEFAULT_SELECTED: PlanningToolId[] = ['scope', 'risk'];
 
 /** Preset tool sets by project focus. Scope is always included. */
@@ -49,14 +61,23 @@ interface ProjectToolsStepProps {
 
 function filterByPartnerAvailability(
   ids: PlanningToolId[],
+  partnerAppsEnabled: boolean,
   expertSupportEnabled: boolean,
   toolRentalsEnabled: boolean
 ): PlanningToolId[] {
   return ids.filter(id => {
+    if (!partnerAppsEnabled && (id === 'expert_support' || id === 'tool_rentals')) return false;
     if (id === 'expert_support' && !expertSupportEnabled) return false;
     if (id === 'tool_rentals' && !toolRentalsEnabled) return false;
     return true;
   });
+}
+
+function sortToolsForKickoffGrid(
+  tools: (typeof PLANNING_TOOLS)[number][]
+): (typeof PLANNING_TOOLS)[number][] {
+  const order = new Map(KICKOFF_TOOLS_GRID_ORDER.map((id, i) => [id, i]));
+  return [...tools].sort((a, b) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99));
 }
 
 export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
@@ -66,22 +87,27 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   onSelectionChange
 }) => {
   const { user } = useAuth();
-  const { expertSupportEnabled, toolRentalsEnabled } = usePartnerAppSettings();
+  const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled } = usePartnerAppSettings();
   const [projectFocus, setProjectFocus] = useState<string | null>(null);
 
-  const toolsToShow = React.useMemo(
-    () =>
-      PLANNING_TOOLS.filter(t => {
-        if (t.id === 'expert_support' && !expertSupportEnabled) return false;
-        if (t.id === 'tool_rentals' && !toolRentalsEnabled) return false;
-        return true;
-      }),
-    [expertSupportEnabled, toolRentalsEnabled]
-  );
+  const toolsToShow = React.useMemo(() => {
+    const filtered = PLANNING_TOOLS.filter(t => {
+      if (!partnerAppsEnabled && (t.id === 'expert_support' || t.id === 'tool_rentals')) return false;
+      if (t.id === 'expert_support' && !expertSupportEnabled) return false;
+      if (t.id === 'tool_rentals' && !toolRentalsEnabled) return false;
+      return true;
+    });
+    return sortToolsForKickoffGrid(filtered);
+  }, [partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled]);
 
   const [selected, setSelected] = useState<Set<PlanningToolId>>(() => {
     const initial = initialSelected.length > 0 ? initialSelected : DEFAULT_SELECTED;
-    const filtered = filterByPartnerAvailability(initial, expertSupportEnabled, toolRentalsEnabled);
+    const filtered = filterByPartnerAvailability(
+      initial,
+      partnerAppsEnabled,
+      expertSupportEnabled,
+      toolRentalsEnabled
+    );
     return new Set(filtered as PlanningToolId[]);
   });
 
@@ -103,6 +129,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     const fromPersisted = initialSelected.length > 0 ? initialSelected : DEFAULT_SELECTED;
     const next = filterByPartnerAvailability(
       fromPersisted as PlanningToolId[],
+      partnerAppsEnabled,
       expertSupportEnabled,
       toolRentalsEnabled
     );
@@ -113,14 +140,25 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     if (initialSelected.length > 0) {
       onSelectionChange?.(next);
     }
-  }, [initialSelected.join(','), expertSupportEnabled, toolRentalsEnabled, onSelectionChange]);
+  }, [
+    initialSelected.join(','),
+    partnerAppsEnabled,
+    expertSupportEnabled,
+    toolRentalsEnabled,
+    onSelectionChange,
+  ]);
 
   const notifySelection = (next: Set<PlanningToolId>) => {
     const validToolIds = new Set(PLANNING_TOOL_IDS as unknown as string[]);
     const withScope = new Set(next);
     withScope.add('scope');
-    if (!expertSupportEnabled) withScope.delete('expert_support');
-    if (!toolRentalsEnabled) withScope.delete('tool_rentals');
+    if (!partnerAppsEnabled) {
+      withScope.delete('expert_support');
+      withScope.delete('tool_rentals');
+    } else {
+      if (!expertSupportEnabled) withScope.delete('expert_support');
+      if (!toolRentalsEnabled) withScope.delete('tool_rentals');
+    }
     const cleaned = Array.from(withScope).filter(id => validToolIds.has(id as any)) as PlanningToolId[];
     onSelectionChange?.(cleaned);
   };
@@ -139,6 +177,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   const handleSelectAll = () => {
     const all = new Set(
       PLANNING_TOOL_IDS.filter(id => {
+        if (!partnerAppsEnabled && (id === 'expert_support' || id === 'tool_rentals')) return false;
         if (id === 'expert_support' && !expertSupportEnabled) return false;
         if (id === 'tool_rentals' && !toolRentalsEnabled) return false;
         return true;
@@ -149,7 +188,12 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   };
 
   const handleFocusPreset = (focusKey: 'savings' | 'quality' | 'schedule') => {
-    const ids = filterByPartnerAvailability(FOCUS_PRESETS[focusKey], expertSupportEnabled, toolRentalsEnabled);
+    const ids = filterByPartnerAvailability(
+      FOCUS_PRESETS[focusKey],
+      partnerAppsEnabled,
+      expertSupportEnabled,
+      toolRentalsEnabled
+    );
     const next = new Set(ids as PlanningToolId[]);
     setSelected(next);
     notifySelection(next);
@@ -178,10 +222,10 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
             type="button"
             variant="outline"
             size="lg"
-            className="w-full justify-start gap-3 h-12 text-left"
+            className="w-full h-12 justify-center text-center gap-2 border-blue-600 text-blue-700 bg-blue-50/60 hover:bg-blue-100/80 hover:text-blue-800 dark:border-blue-500 dark:text-blue-300 dark:bg-blue-950/35 dark:hover:bg-blue-950/55 dark:hover:text-blue-200"
             onClick={handleSelectAll}
           >
-            <FolderKanban className="h-5 w-5 shrink-0 text-muted-foreground" />
+            <FolderKanban className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />
             <span>Select all – best for optimized project</span>
           </Button>
         </div>
@@ -202,7 +246,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
                 type="button"
                 variant="outline"
                 size="default"
-                className="w-full justify-start gap-2"
+                className="w-full justify-center text-center gap-2"
                 onClick={() => handleFocusPreset(key)}
               >
                 <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -238,15 +282,8 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
                     disabled={isScope}
                   />
                   <div className="space-y-0.5 min-w-0">
-                    <CardTitle className="text-base font-medium">
-                      {id === 'risk' ? (
-                        <>
-                          Risk/
-                          <span className="block">Uncertainty</span>
-                        </>
-                      ) : (
-                        label
-                      )}
+                    <CardTitle className="text-base font-medium whitespace-normal">
+                      {id === 'risk' ? 'Risk/Uncertainty' : label}
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">{benefit}</p>
                   </div>
@@ -258,7 +295,12 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-2">
-        <Button variant="outline" size="sm" onClick={handleSelectAll}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-blue-600 text-blue-700 bg-blue-50/60 hover:bg-blue-100/80 dark:border-blue-500 dark:text-blue-300 dark:bg-blue-950/35"
+          onClick={handleSelectAll}
+        >
           Select all
         </Button>
         {selected.size > 1 && (

@@ -110,25 +110,16 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     if (!kickoffOrderResolved) return;
     // Don't overwrite state during step completion
     if (isCompletingStepRef.current) {
-      console.log("⏸️ KickoffWorkflow: Skipping initialization during step completion");
       return;
     }
     if (currentProjectRun?.completedSteps) {
       const completedIndices = new Set<number>();
       const stepIdsInDisplayOrder = kickoffSteps.map((s) => s.id);
-      console.log("KickoffWorkflow - Initializing from project run:", {
-        completedSteps: currentProjectRun.completedSteps,
-        stepIdsInDisplayOrder,
-        kickoffStepOrder,
-      });
 
       stepIdsInDisplayOrder.forEach((stepId, index) => {
         const isKickoffStepComplete = currentProjectRun.completedSteps.includes(stepId);
         if (isKickoffStepComplete) {
           completedIndices.add(index);
-          console.log(`KickoffWorkflow - Display step ${index} (${stepId}) is complete`);
-        } else {
-          console.log(`KickoffWorkflow - Display step ${index} (${stepId}) is NOT complete`);
         }
       });
       setCompletedKickoffSteps(completedIndices);
@@ -136,7 +127,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       if (completedIndices.size < kickoffSteps.length) {
         const firstIncomplete = kickoffSteps.findIndex((_, index) => !completedIndices.has(index));
         if (firstIncomplete !== -1) {
-          console.log("KickoffWorkflow - Setting current step to first incomplete:", firstIncomplete);
           setCurrentKickoffStep(firstIncomplete);
         }
       }
@@ -144,7 +134,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   }, [currentProjectRun?.id, kickoffOrderResolved, kickoffSteps, kickoffStepOrder]);
 
   const handleStepComplete = async (stepIndex: number, selectedTools?: PlanningToolId[]) => {
-    console.log("🎯 handleStepComplete called with stepIndex:", stepIndex);
     if (!currentProjectRun) {
       console.error("❌ handleStepComplete: currentProjectRun is null/undefined!");
       return;
@@ -155,12 +144,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     try {
       const stepId = kickoffSteps[stepIndex].id;
       const newCompletedSteps = [...(currentProjectRun.completedSteps || [])];
-      console.log("KickoffWorkflow - Completing step:", {
-        stepIndex,
-        stepId,
-        currentCompletedSteps: currentProjectRun.completedSteps,
-        alreadyCompleted: newCompletedSteps.includes(stepId)
-      });
 
       // Resolve workflow step by stable kickoff id (display order may swap steps 1 and 2)
       const kickoffPhase = currentProjectRun.phases.find(p => p.name === 'Kickoff');
@@ -170,7 +153,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         const matched = allKickoffSteps.find(s => s.id === stepId);
         if (matched) {
           actualStepId = matched.id;
-          console.log("KickoffWorkflow - Resolved workflow step ID:", actualStepId);
         }
       }
 
@@ -180,14 +162,12 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       }
       if (actualStepId !== stepId && !newCompletedSteps.includes(actualStepId)) {
         newCompletedSteps.push(actualStepId);
-        console.log("KickoffWorkflow - Also marking actual step as complete:", actualStepId);
       }
 
       // Update completed kickoff steps state immediately
       const newCompletedKickoffSteps = new Set(completedKickoffSteps);
       newCompletedKickoffSteps.add(stepIndex);
       setCompletedKickoffSteps(newCompletedKickoffSteps);
-      console.log("KickoffWorkflow - Updating project run with steps:", newCompletedSteps);
 
       // CRITICAL: Fetch initial_budget, initial_timeline, initial_sizing directly from database
       // This ensures we get the latest values that were just saved by ProjectProfileStep
@@ -201,25 +181,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       const preservedBudget = freshRun?.initial_budget ?? (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
       const preservedTimeline = freshRun?.initial_timeline ?? (currentProjectRun as any)?.initial_timeline ?? (currentProjectRun as any)?.initialTimeline ?? null;
       const preservedSizing = freshRun?.initial_sizing ?? (currentProjectRun as any)?.initial_sizing ?? (currentProjectRun as any)?.initialSizing ?? null;
-      
-      console.log('💾 KickoffWorkflow handleStepComplete: Fetched budget fields from database:', {
-        fromDatabase: {
-          initial_budget: freshRun?.initial_budget,
-          initial_timeline: freshRun?.initial_timeline,
-          initial_sizing: freshRun?.initial_sizing
-        },
-        fromContext: {
-          initial_budget: (currentProjectRun as any)?.initial_budget,
-          initial_timeline: (currentProjectRun as any)?.initial_timeline,
-          initial_sizing: (currentProjectRun as any)?.initial_sizing
-        },
-        final: {
-          initial_budget: preservedBudget,
-          initial_timeline: preservedTimeline,
-          initial_sizing: preservedSizing
-        }
-      });
-      
+
       // For step 4 (tools), merge selected_planning_tools into customization_decisions
       const existingDecisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
       const customization_decisions =
@@ -242,18 +204,9 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
       // Wait for database update to complete
       await updateProjectRun(updatedProjectRun);
-      console.log("✅ Kickoff step completion persisted to database");
-      console.log("KickoffWorkflow - Checking if all kickoff complete:", {
-        completedKickoffStepsSize: newCompletedKickoffSteps.size,
-        totalKickoffSteps: kickoffSteps.length,
-        allComplete: newCompletedKickoffSteps.size === kickoffSteps.length,
-        actualCompletedSteps: newCompletedSteps
-      });
 
       // Check if all kickoff steps are complete
       if (newCompletedKickoffSteps.size === kickoffSteps.length) {
-        console.log("🎉 KickoffWorkflow - All steps complete, calling onKickoffComplete");
-
         // DEFENSIVE CHECK: Verify all 4 UI kickoff step IDs are in database
         const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
         const allIdsPresent = kickoffStepIds.every(id => newCompletedSteps.includes(id));
@@ -273,7 +226,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
           onKickoffComplete();
         }, 200);
       } else {
-        console.log("KickoffWorkflow - Moving to next step");
         // Move to next step if not already there
         if (stepIndex === currentKickoffStep && stepIndex < kickoffSteps.length - 1) {
           setCurrentKickoffStep(stepIndex + 1);
@@ -344,7 +296,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     const stepIndex = currentKickoffStep;
     const stepProps = {
       onComplete: () => {
-        console.log("🎯 Step onComplete callback triggered for step:", stepIndex);
         handleStepComplete(stepIndex);
       },
       isCompleted: isStepCompleted(currentKickoffStep),
@@ -398,6 +349,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   return (
     <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-auto md:overflow-visible">
       <ProjectPlanningCountdownBanner
+        minimal
         projectCreatedAt={currentProjectRun.createdAt}
         className="shrink-0"
       />
@@ -491,10 +443,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                   {/* Primary action first on mobile (thumb reach); secondary full width below */}
                   <Button 
                     onClick={async () => {
-                      console.log('🎯 KickoffWorkflow: Step complete button clicked for step:', currentKickoffStep);
-                      
                       if (currentStepId === 'kickoff-step-3' && (window as any).__projectProfileStepSave) {
-                        console.log('💾 KickoffWorkflow: Calling ProjectProfileStep save function...');
                         try {
                           await (window as any).__projectProfileStepSave();
                           await new Promise(resolve => setTimeout(resolve, 100));

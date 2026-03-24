@@ -14,6 +14,8 @@ export interface ProjectPlanningCountdownBannerProps {
   /** When the project run was first created (`project_runs.created_at`). */
   projectCreatedAt: Date;
   className?: string;
+  /** Kickoff: smaller, centered, no border/fill (planning wizard keeps default card styling). */
+  minimal?: boolean;
 }
 
 /**
@@ -23,6 +25,7 @@ export interface ProjectPlanningCountdownBannerProps {
 export function ProjectPlanningCountdownBanner({
   projectCreatedAt,
   className,
+  minimal = false,
 }: ProjectPlanningCountdownBannerProps) {
   const createdMs = projectCreatedAt.getTime();
 
@@ -43,12 +46,41 @@ export function ProjectPlanningCountdownBanner({
 
   if (Number.isNaN(createdMs)) return null;
 
+  const ariaLabel = `Time remaining to plan within thirty minutes of project start: ${formatMmSs(remainingMs)}`;
+
+  if (minimal) {
+    return (
+      <div
+        role="timer"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label={ariaLabel}
+        className={cn(
+          'flex flex-col items-center justify-center gap-0.5 px-2 py-1 text-center',
+          className
+        )}
+      >
+        <p className="text-[11px] sm:text-xs text-muted-foreground leading-tight">
+          Project planned in 30 min or less
+        </p>
+        <p
+          className={cn(
+            'font-mono text-sm font-semibold tabular-nums leading-none',
+            remainingMs === 0 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'
+          )}
+        >
+          {formatMmSs(remainingMs)}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       role="timer"
       aria-live="polite"
       aria-atomic="true"
-      aria-label={`Time remaining to plan within thirty minutes of project start: ${formatMmSs(remainingMs)}`}
+      aria-label={ariaLabel}
       className={cn(
         'flex flex-col gap-1 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4',
         remainingMs === 0 && 'border-amber-500/50 bg-amber-500/10',

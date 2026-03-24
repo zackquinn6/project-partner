@@ -291,18 +291,48 @@ async function syncFoundationAndTemplateRisksToProjectRun(
     };
   });
 
-  for (let i = 0; i < insertRows.length; i++) {
-    try {
-      await upsertProjectRunRiskRow(insertRows[i]);
-    } catch (rowErr) {
-      console.error('❌ project_run_risks row sync failed:', rowErr, {
-        projectRunId,
-        index: i,
-        risk_title: insertRows[i].risk_title,
-        template_risk_id: insertRows[i].template_risk_id,
-      });
-      throw rowErr;
+  const { data: existingForRun, error: existingErr } = await supabase
+    .from('project_run_risks')
+    .select('template_risk_id')
+    .eq('project_run_id', projectRunId);
+
+  if (existingErr) {
+    throw existingErr;
+  }
+
+  const existingTemplateIds = new Set(
+    (existingForRun ?? [])
+      .map((r) => r.template_risk_id)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0)
+  );
+
+  const toBulkInsert = insertRows.filter(
+    (r) => r.template_risk_id != null && !existingTemplateIds.has(r.template_risk_id)
+  );
+  const toUpsert = insertRows.filter(
+    (r) => r.template_risk_id != null && existingTemplateIds.has(r.template_risk_id)
+  );
+
+  if (toBulkInsert.length > 0) {
+    const { error: bulkInsertError } = await supabase.from('project_run_risks').insert(toBulkInsert);
+    if (bulkInsertError) {
+      throw bulkInsertError;
     }
+  }
+
+  if (toUpsert.length > 0) {
+    await Promise.all(
+      toUpsert.map((row) =>
+        upsertProjectRunRiskRow(row).catch((rowErr) => {
+          console.error('❌ project_run_risks row sync failed:', rowErr, {
+            projectRunId,
+            risk_title: row.risk_title,
+            template_risk_id: row.template_risk_id,
+          });
+          throw rowErr;
+        })
+      )
+    );
   }
 }
 
@@ -401,13 +431,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
   const lastUpdateRef = useRef<string>('');
 
   const addProject = useCallback(async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
-    console.log('🚀 addProject CALLED:', {
-      projectName: projectData.name,
-      hasUser: !!user,
-      isAdmin,
-      timestamp: new Date().toISOString()
-    });
-    
     if (!user || !isAdmin) {
       toast({
         title: "Error",
@@ -487,7 +510,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         }
       }
 
-      console.log('✅ Project created with standard foundation:', projectId);
 
       // Refetch projects so new template appears in context
       await refetchProjects();
@@ -527,33 +549,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     }
 
     try {
-      // Count incorporated phases in template
-      const incorporatedPhasesCount = (project.phases || []).filter(p => p.isLinked === true).length;
-      const standardPhasesCount = (project.phases || []).filter(p => p.isStandard === true && !p.isLinked).length;
-      const customPhasesCount = (project.phases || []).filter(p => !p.isStandard && !p.isLinked).length;
-      
-      console.log('✅ Template validation passed - creating project run:', {
-        templateId: project.id,
-        templateName: project.name,
-        totalPhasesCount: project.phases?.length || 0,
-        standardPhasesCount,
-        incorporatedPhasesCount,
-        customPhasesCount,
-        incorporatedPhaseNames: (project.phases || []).filter(p => p.isLinked === true).map(p => p.name)
-      });
-
-      // Use database function to create project run snapshot with properly built phases
-      // This ensures phases include operations and steps from the template
-      console.log('🔄 Calling create_project_run_snapshot_v2 with:', {
-        templateId: project.id,
-        templateName: project.name,
-        templatePhasesCount: project.phases?.length || 0,
-        templatePhases: project.phases ? (Array.isArray(project.phases) ? `${project.phases.length} phases` : typeof project.phases) : 'null/undefined',
-        userId: user.id,
-        runName: customName || project.name,
-        CRITICAL_NOTE: 'Function MUST copy ALL phases including incorporated phases (isLinked: true)'
-      });
-
       const { data, error } = await supabase.rpc('create_project_run_snapshot_v2', {
         p_template_id: project.id,
         p_user_id: user.id,
@@ -586,11 +581,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         throw new Error('Project run creation returned no ID');
       }
 
-      console.log('✅ create_project_run_snapshot_v2 returned run ID:', data);
-
-      // CRITICAL: Verify that phases were copied to the project run
-      // Project runs MUST be immutable snapshots with their own copy of phases
-      console.log('🔍 Fetching created project run to verify phases...');
+      // Verify that phases were copied to the project run (immutable snapshot)
       const { data: createdRun, error: fetchError } = await supabase
         .from('project_runs')
         .select('id, phases, template_id, name')
@@ -602,16 +593,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         throw fetchError;
       }
 
-      console.log('📋 Created project run data:', {
-        runId: createdRun.id,
-        runName: createdRun.name,
-        hasPhases: !!createdRun.phases,
-        phasesType: typeof createdRun.phases,
-        phasesIsArray: Array.isArray(createdRun.phases),
-        phasesValue: createdRun.phases ? (Array.isArray(createdRun.phases) ? `${createdRun.phases.length} phases` : String(createdRun.phases).substring(0, 100)) : 'null/undefined'
-      });
-
-      // CRITICAL: Validate phases exist AND match template phase count
+      // Validate phases exist AND match template phase count
       let parsedPhases: any[] = [];
       let phasesExist = false;
       
@@ -703,18 +685,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         throw new Error(`Project run is missing ${templateIncorporatedCount - runIncorporatedCount} incorporated phases. The create_project_run_snapshot database function failed to copy incorporated phases. This is a critical error - project runs must be complete immutable snapshots.`);
       }
 
-      console.log('✅ Project run created successfully with ALL phases including incorporated:', {
-        runId: data,
-        templateId: project.id,
-        totalPhases: runPhasesCount,
-        standardPhases: parsedPhases.filter(p => p.isStandard === true && !p.isLinked).length,
-        incorporatedPhases: runIncorporatedCount,
-        customPhases: parsedPhases.filter(p => !p.isStandard && !p.isLinked).length,
-        incorporatedPhaseNames: parsedPhases.filter(p => p.isLinked === true).map(p => p.name),
-        phasesMatch: runPhasesCount === templatePhasesCount,
-        incorporatedPhasesMatch: runIncorporatedCount === templateIncorporatedCount
-      });
-      
       // Verify spaces were created
       const { data: spacesData, error: spacesError } = await supabase
         .from('project_run_spaces')
@@ -724,12 +694,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       if (spacesError) {
         console.warn('⚠️ Error checking spaces for new project run:', spacesError);
       } else {
-        console.log('✅ Verified spaces created for project run:', {
-          runId: data,
-          spacesCount: spacesData?.length || 0,
-          spaces: spacesData?.map(s => s.space_name) || []
-        });
-        
         if (!spacesData || spacesData.length === 0) {
           console.error('❌ CRITICAL: No spaces created for project run! Default "Room 1" should have been created.');
         }
@@ -823,8 +787,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
       let defaultHomeId: string | null = null;
       if (!existingHomes || existingHomes.length === 0) {
-        // Create default home for new user
-        console.log('🏠 No homes found - creating default home for user');
         const { data: newHome, error: homeCreateError } = await supabase
           .from('homes')
           .insert({ user_id: user.id, name: 'My Home', is_primary: true })
@@ -836,7 +798,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         }
         defaultHomeId = newHome.id;
         await supabase.from('home_details').insert({ home_id: defaultHomeId, home_ownership: 'own' });
-        console.log('✅ Default home created:', defaultHomeId);
       }
 
       // Use new RPC function to create immutable project run snapshot
@@ -904,9 +865,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         
         if (updateError) {
           console.error('⚠️ Error updating project run metadata:', updateError);
-          // Don't throw - project run was created successfully, just metadata update failed
-        } else {
-          console.log('✅ Project run metadata updated:', Object.keys(updateFields).filter(k => k !== 'updated_at'));
         }
       }
 
@@ -915,10 +873,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       
       // Call success callback with the new ID
       if (newProjectRunId && onSuccess) {
-        console.log("🎯 ProjectActions: Project run created with ID:", newProjectRunId);
         onSuccess(newProjectRunId);
       } else if (newProjectRunId) {
-        console.log("🎯 ProjectActions: Dispatching navigation event for Index.tsx");
         window.dispatchEvent(new CustomEvent('navigate-to-kickoff', { 
           detail: { projectRunId: newProjectRunId } 
         }));
