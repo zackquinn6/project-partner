@@ -1769,42 +1769,50 @@ export default function EditWorkflowView({
 
       <div className="w-full px-6 py-8">
         {!editMode && (
-          <Card className="mb-6 border-border/80">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Instruction data sources</CardTitle>
-              <CardDescription>
-                Document where this project&apos;s step instructions come from (manuals, codes, internal references,
-                SMEs, etc.). One field for the whole template.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Textarea
-                value={instructionsDataSourcesDraft}
-                onChange={(e) => setInstructionsDataSourcesDraft(e.target.value)}
-                placeholder="e.g. IRC 2021 Chapter 3; manufacturer installation guide SKU 123; in-house playbook v2"
-                rows={4}
-                className="text-sm"
-                disabled={savingInstructionsDataSources}
-              />
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleSaveInstructionsDataSources}
-                disabled={savingInstructionsDataSources}
-              >
-                {savingInstructionsDataSources ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Saving…
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save data sources
-                  </>
-                )}
-              </Button>
-            </CardContent>
+          <Card className="mb-6 border-border/80 p-0 overflow-hidden">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="instruction-data-sources" className="border-0">
+                <AccordionTrigger className="px-6 py-4 hover:no-underline [&[data-state=open]]:border-b border-border/80">
+                  <div className="flex flex-col items-start gap-1 text-left pr-2">
+                    <span className="text-base font-semibold">Instruction data sources</span>
+                    <span className="text-sm font-normal text-muted-foreground">
+                      Document where this project&apos;s step instructions come from (manuals, codes, internal
+                      references, SMEs, etc.). One field for the whole template.
+                    </span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-3 px-6 pb-6 pt-2">
+                    <Textarea
+                      value={instructionsDataSourcesDraft}
+                      onChange={(e) => setInstructionsDataSourcesDraft(e.target.value)}
+                      placeholder="e.g. IRC 2021 Chapter 3; manufacturer installation guide SKU 123; in-house playbook v2"
+                      rows={4}
+                      className="text-sm"
+                      disabled={savingInstructionsDataSources}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleSaveInstructionsDataSources}
+                      disabled={savingInstructionsDataSources}
+                    >
+                      {savingInstructionsDataSources ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Saving…
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save data sources
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </Card>
         )}
 
