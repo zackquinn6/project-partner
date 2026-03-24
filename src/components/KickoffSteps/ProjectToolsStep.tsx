@@ -295,7 +295,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
       </div>
 
       {selected.size > 1 && (
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <Button variant="ghost" size="sm" onClick={handleClearAll}>
             Clear
           </Button>

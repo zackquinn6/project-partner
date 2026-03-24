@@ -19,6 +19,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HomeManager } from '../HomeManager';
 import { useProjectData } from '@/contexts/ProjectDataContext';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 interface ProjectProfileStepProps {
   onComplete: () => void;
@@ -847,7 +853,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             <div className="flex-1 min-w-0">
               <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
                 <Home className="w-4 h-4 flex-shrink-0" />
-                <span className="truncate">Scope & Specs</span>
+                <span className="truncate">Goals</span>
                 {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">
@@ -939,47 +945,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             </div>
 
             <div className="hidden md:block">{renderGoalFieldsGrid()}</div>
-
-            {/* Primary home selection - show whenever user has at least one home (Scope & Specs step) */}
-            {homes.length >= 1 && (
-              <div>
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-[10px] text-muted-foreground">3 of 3</span>
-                  <label className="text-xs font-medium">Home...</label>
-                </div>
-                {loading ? (
-                  <div className="text-xs sm:text-sm text-muted-foreground">Loading homes...</div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
-                      <SelectTrigger className="text-xs h-9">
-                        <SelectValue placeholder="Select a home for this project" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {homes.map((home) => (
-                          <SelectItem key={home.id} value={home.id} className="text-xs">
-                            <div className="flex items-center gap-2">
-                              <span className="truncate">{home.name}</span>
-                              {home.is_primary && (
-                                <Badge variant="secondary" className="text-[10px] flex-shrink-0">Primary</Badge>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={() => setShowHomeManager(true)}
-                      className="h-9 w-9 flex-shrink-0"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
         </CardContent>

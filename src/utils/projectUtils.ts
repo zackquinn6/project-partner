@@ -35,15 +35,15 @@ export const createKickoffPhase = (): Phase => {
     },
     {
       id: 'kickoff-step-3',
-      step: 'Scope & Specs',
-      description: 'Set up your project team, home selection, and customization',
+      step: 'Goals',
+      description: 'Project name, home, and initial sizing, timeline, and budget',
       contentType: 'text' as const,
-      content: 'Configure your project profile including project name, team members, home selection, and any project-specific customizations.',
+      content: 'Configure your project profile including project name, home selection, and initial goals.',
       materials: [],
       tools: [],
       outputs: [{
         id: 'project-profile-output',
-        name: 'Scope & Specs Complete',
+        name: 'Goals Complete',
         description: 'Project profile configured and saved',
         type: 'none' as const
       }]

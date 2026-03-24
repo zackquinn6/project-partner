@@ -40,8 +40,8 @@ const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string
   },
   {
     id: 'kickoff-step-3',
-    title: 'Scope & Specs',
-    description: 'Set up your project team and home selection',
+    title: 'Goals',
+    description: 'Set your project name, home, and initial goals',
   },
   {
     id: 'kickoff-step-4',
@@ -474,8 +474,41 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
           <Card>
             <CardContent className="p-2.5 sm:p-4">
               {!isStepCompleted(currentKickoffStep) ? (
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
-                  {/* Primary action first on mobile (thumb reach); secondary full width below */}
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:items-stretch sm:gap-3">
+                  {/* Row 1 / left col: secondary; row 2 / right col: Continue — same slot every step */}
+                  <div className="flex flex-col sm:col-start-1 sm:row-start-1">
+                    {currentStepId === 'kickoff-step-1' ? (
+                      <Button 
+                        onClick={async () => {
+                          if (currentProjectRun) {
+                            await deleteProjectRun(currentProjectRun.id);
+                            toast.success('Project removed');
+                            if (onExit) onExit();
+                          }
+                        }} 
+                        variant="outline"
+                        size="lg"
+                        className="w-full min-h-[48px] border-red-300 text-red-700 hover:bg-red-50 text-xs sm:text-sm px-2"
+                      >
+                        <ArrowLeft className="w-4 h-4 mr-1.5 sm:mr-2 shrink-0" />
+                        <span className="hidden sm:inline sm:text-left sm:leading-tight">Not a match -<br />take me back to catalog</span>
+                        <span className="sm:hidden">Not a match — back</span>
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        className="w-full min-h-[48px] border-muted-foreground/40 text-muted-foreground hover:bg-muted/40 text-xs sm:text-sm px-2"
+                        onClick={() => {
+                          onKickoffComplete();
+                        }}
+                      >
+                        <span className="hidden sm:inline">Skip direct to project workflow</span>
+                        <span className="sm:hidden">Skip to workflow</span>
+                      </Button>
+                    )}
+                  </div>
                   <Button 
                     onClick={async () => {
                       if (currentStepId === 'kickoff-step-3' && (window as any).__projectProfileStepSave) {
@@ -502,7 +535,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       handleStepComplete(currentKickoffStep);
                     }} 
                     size="lg"
-                    className="order-1 w-full sm:order-2 sm:flex-1 min-h-[48px] bg-green-600 hover:bg-green-700 text-sm px-3"
+                    className="w-full min-h-[48px] bg-green-600 hover:bg-green-700 text-sm px-3 sm:col-start-2 sm:row-start-1"
                   >
                     <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 shrink-0" />
                     {currentStepId === 'kickoff-step-3' ? (
@@ -522,38 +555,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       </>
                     )}
                   </Button>
-
-                  {currentStepId === 'kickoff-step-1' ? (
-                    <Button 
-                      onClick={async () => {
-                        if (currentProjectRun) {
-                          await deleteProjectRun(currentProjectRun.id);
-                          toast.success('Project removed');
-                          if (onExit) onExit();
-                        }
-                      }} 
-                      variant="outline"
-                      size="lg"
-                      className="order-2 w-full sm:order-1 sm:w-auto sm:max-w-[42%] sm:shrink-0 min-h-[44px] border-red-300 text-red-700 hover:bg-red-50 text-xs sm:text-sm px-2"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-1.5 sm:mr-2 shrink-0" />
-                      <span className="hidden sm:inline sm:text-left sm:leading-tight">Not a match -<br />take me back to catalog</span>
-                      <span className="sm:hidden">Not a match — back</span>
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="lg"
-                      className="order-2 w-full sm:order-1 sm:w-auto sm:max-w-[42%] sm:shrink-0 min-h-[44px] border-muted-foreground/40 text-muted-foreground hover:bg-muted/40 text-xs sm:text-sm px-2"
-                      onClick={() => {
-                        onKickoffComplete();
-                      }}
-                    >
-                      <span className="hidden sm:inline">Skip direct to project workflow</span>
-                      <span className="sm:hidden">Skip to workflow</span>
-                    </Button>
-                  )}
                 </div>
               ) : (
                 <div className="w-full p-2 bg-green-50 border border-green-200 rounded-lg text-center">
