@@ -298,12 +298,13 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-full max-w-full flex-col gap-0 overflow-hidden border-0 p-0 md:h-[min(95vh,56rem)] md:max-h-[95vh] md:max-w-[95vw] md:rounded-lg md:border [&>button]:hidden">
+      {/* Match project kickoff shell: max-w-6xl, p-2 sm:p-3 gutters, same max height band as kickoff desktop column */}
+      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-[calc(100vw-1rem)] max-w-6xl flex-col gap-0 overflow-hidden border-0 p-0 sm:w-full md:h-[min(100dvh,56rem)] md:max-h-[min(100dvh,56rem)] md:max-w-6xl md:rounded-lg md:border [&>button]:hidden">
         {/* Accessibility: DialogTitle and DialogDescription required */}
         <DialogTitle className="sr-only">Project Planning Workflow</DialogTitle>
         <DialogDescription className="sr-only">Plan and customize your project workflow</DialogDescription>
 
-        <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 sm:right-4 sm:top-4">
+        <div className="absolute right-2 top-[max(0.5rem,env(safe-area-inset-top))] z-10 sm:right-3 sm:top-3">
           <Button
             variant="outline"
             size="sm"
@@ -315,17 +316,18 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] px-2 pb-2 pt-12 sm:px-3 sm:pb-3 sm:pt-14 md:px-5 md:pb-5 md:pt-16">
-            <div className="mx-auto max-w-6xl space-y-2 sm:space-y-3 md:space-y-5">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] px-2 pb-2 pt-11 sm:px-3 sm:pb-3 sm:pt-12 md:pt-12">
+            <div className="mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-2 sm:gap-3">
             {open && currentProjectRun ? (
               <ProjectPlanningCountdownBanner
+                minimal
                 projectCreatedAt={currentProjectRun.createdAt}
                 className="shrink-0"
               />
             ) : null}
             {/* Progress Header */}
             <Card>
-          <CardHeader className="p-2 sm:p-3 md:p-4">
+          <CardHeader className="p-2 sm:p-3">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div className="min-w-0 flex-1">
                 <CardTitle className="text-lg sm:text-xl md:text-2xl flex items-center gap-2">
@@ -372,10 +374,10 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
           </CardHeader>
         </Card>
 
-        {/* Step Navigation — mobile: scroll; sm+: flex-1 track fills space up to Prev/Next */}
+        {/* Step Navigation — align with kickoff step nav card padding */}
         <Card>
-        <CardContent className="p-3 sm:p-4 md:p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <CardContent className="p-1.5 sm:p-2 md:p-2.5">
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
               <div className="flex min-w-0 flex-1 items-start gap-1">
                 <Button
                   type="button"
@@ -462,8 +464,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
             </div>
           </div>
 
-          <div className="shrink-0 border-t bg-background px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:px-3 sm:pb-3">
-            <Card className="mx-auto max-w-6xl border-0 shadow-none sm:border sm:shadow-sm">
+          <div className="shrink-0 border-t bg-background px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:px-3 sm:pb-3 md:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <Card className="mx-auto w-full max-w-6xl border-0 shadow-none sm:border sm:shadow-sm">
               <CardContent className="p-2 sm:p-3">
                 {allStepsComplete ? (
                   <Button
