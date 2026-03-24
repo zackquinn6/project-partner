@@ -126,12 +126,15 @@ interface ProjectOverviewStepProps {
   isCompleted: boolean;
   checkedOutputs?: Set<string>;
   onOutputToggle?: (outputId: string) => void;
+  /** `kickoff`: recommendation block + nested "Project details" accordion. `workflow`: details fields only (single accordion lives on the workflow overview page). */
+  mode?: 'kickoff' | 'workflow';
 }
 export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   onComplete,
   isCompleted,
   checkedOutputs = new Set(),
-  onOutputToggle
+  onOutputToggle,
+  mode = 'kickoff',
 }) => {
   const {
     currentProjectRun,
@@ -251,7 +254,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
 
   const matchExplanation = useMemo(
     () =>
-      currentProjectRun
+      mode === 'kickoff' && currentProjectRun
         ? computeProjectMatchExplanation({
             projectSkillLevel: displaySkillLevel,
             userSkillLevel: userProfile?.skill_level,
@@ -261,6 +264,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           })
         : null,
     [
+      mode,
       currentProjectRun?.id,
       displaySkillLevel,
       userProfile?.skill_level,
@@ -551,7 +555,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     });
     setIsEditing(false);
   };
-  if (!currentProjectRun || !matchExplanation) {
+  if (!currentProjectRun) {
     return <div>No project selected</div>;
   }
   const skillComparison = getSkillLevelComparison();
@@ -561,9 +565,6 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   // Format scaling unit, using item_type if scaling unit is "per item"
   // Priority: templateProject > fetchedProjectInfo > currentProjectRun
   const itemType = (templateProject as any)?.item_type ?? (templateProject as any)?.itemType ?? fetchedProjectInfo?.itemType ?? (currentProjectRun as any)?.itemType;
-  
-  const tierVisual = MATCH_TIER_COPY[matchExplanation.tier];
-  const TierIcon = tierVisual.Icon;
 
   const formattedScalingUnit = displayScalingUnit ? (() => {
     const scalingUnitToUse = displayScalingUnit;
@@ -581,73 +582,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     // Remove "per " prefix if present, return lowercase unit
     return normalizedScalingUnit.startsWith('per ') ? normalizedScalingUnit.replace('per ', '') : normalizedScalingUnit;
   })() : null;
-  return <div className="space-y-2">
-      <Card>
-        <CardHeader className="p-2 sm:p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-              Project Match: {currentProjectRun.name}
-              {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
-            </CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4 p-2 sm:p-3">
-          <section className="space-y-4" aria-label="Project fit recommendation">
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground text-center">
-              Recommendation
-            </h2>
-            <div className="flex justify-center w-full">
-              <div
-                className={`flex w-full max-w-md flex-col items-center text-center rounded-xl border-2 px-5 py-6 gap-3 shadow-sm ${tierVisual.cardClass}`}
-              >
-                <div
-                  className={`flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full ${tierVisual.iconWrapClass}`}
-                  aria-hidden
-                >
-                  <TierIcon className="h-7 w-7 sm:h-8 sm:w-8 stroke-[2.5]" />
-                </div>
-                <div className="space-y-1 min-w-0">
-                  <p
-                    className={`text-base sm:text-lg font-semibold leading-snug ${tierVisual.titleClass}`}
-                  >
-                    {tierVisual.title}
-                  </p>
-                  <p className={`text-xs ${tierVisual.subtitleClass}`}>
-                    {tierVisual.subtitle}
-                  </p>
-                </div>
-              </div>
-            </div>
 
-            <div className="rounded-lg border bg-muted/20 px-4 py-4 text-left space-y-4">
-              <h3 className="text-sm font-semibold text-foreground sm:text-base">Summary</h3>
-              <p className="text-sm text-foreground leading-relaxed">{matchExplanation.summary}</p>
-              <div className="space-y-1.5">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Project challenges
-                </p>
-                <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-                  {matchExplanation.challengesParagraph}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Why this recommendation
-                </p>
-                <ul className="list-none space-y-2.5 pl-0 text-sm text-muted-foreground">
-                  <MatchReasonRow axis={matchExplanation.skillAxis} text={matchExplanation.reasonSkill} />
-                  <MatchReasonRow axis={matchExplanation.effortAxis} text={matchExplanation.reasonEffort} />
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          <Accordion type="single" collapsible className="w-full rounded-lg border bg-muted/20 px-2 sm:px-3">
-            <AccordionItem value="project-details" className="border-none">
-              <AccordionTrigger className="text-sm sm:text-base font-semibold py-3 hover:no-underline">
-                Project details
-              </AccordionTrigger>
-              <AccordionContent className="pb-4 pt-0">
+  const projectDetailsFields = (
+    <>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             <div className="flex-1 min-w-0">
               <Label className="text-xs">Description</Label>
@@ -833,14 +770,106 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               </div>
             </div>
           </div>
-              </AccordionContent>
+    </>
+  );
+
+  if (mode === 'workflow') {
+    return (
+      <div className="space-y-2">
+        {projectDetailsFields}
+        {templateProject && (
+          <RiskManagementWindow
+            open={riskManagementOpen}
+            onOpenChange={setRiskManagementOpen}
+            projectId={templateProject.id}
+            mode="template"
+            readOnly={true}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (!matchExplanation) {
+    return <div>No project selected</div>;
+  }
+
+  const tierVisual = MATCH_TIER_COPY[matchExplanation.tier];
+  const TierIcon = tierVisual.Icon;
+
+  return (
+    <div className="space-y-2">
+      <Card>
+        <CardHeader className="p-2 sm:p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+              Project Match: {currentProjectRun.name}
+              {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4 p-2 sm:p-3">
+          <section className="space-y-4" aria-label="Project fit recommendation">
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground text-center">
+              Recommendation
+            </h2>
+            <div className="flex justify-center w-full">
+              <div
+                className={`flex w-full max-w-md flex-col items-center text-center rounded-xl border-2 px-5 py-6 gap-3 shadow-sm ${tierVisual.cardClass}`}
+              >
+                <div
+                  className={`flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full ${tierVisual.iconWrapClass}`}
+                  aria-hidden
+                >
+                  <TierIcon className="h-7 w-7 sm:h-8 sm:w-8 stroke-[2.5]" />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <p
+                    className={`text-base sm:text-lg font-semibold leading-snug ${tierVisual.titleClass}`}
+                  >
+                    {tierVisual.title}
+                  </p>
+                  <p className={`text-xs ${tierVisual.subtitleClass}`}>
+                    {tierVisual.subtitle}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-muted/20 px-4 py-4 text-left space-y-4">
+              <h3 className="text-sm font-semibold text-foreground sm:text-base">Summary</h3>
+              <p className="text-sm text-foreground leading-relaxed">{matchExplanation.summary}</p>
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Project challenges
+                </p>
+                <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
+                  {matchExplanation.challengesParagraph}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Why this recommendation
+                </p>
+                <ul className="list-none space-y-2.5 pl-0 text-sm text-muted-foreground">
+                  <MatchReasonRow axis={matchExplanation.skillAxis} text={matchExplanation.reasonSkill} />
+                  <MatchReasonRow axis={matchExplanation.effortAxis} text={matchExplanation.reasonEffort} />
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <Accordion type="single" collapsible className="w-full rounded-lg border bg-muted/20 px-2 sm:px-3">
+            <AccordionItem value="project-details" className="border-none">
+              <AccordionTrigger className="text-sm sm:text-base font-semibold py-3 hover:no-underline">
+                Project details
+              </AccordionTrigger>
+              <AccordionContent className="pb-4 pt-0">{projectDetailsFields}</AccordionContent>
             </AccordionItem>
           </Accordion>
-
         </CardContent>
       </Card>
 
-      {/* Risk Management Window - Read Only */}
       {templateProject && (
         <RiskManagementWindow
           open={riskManagementOpen}
@@ -850,6 +879,6 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           readOnly={true}
         />
       )}
-
-    </div>;
+    </div>
+  );
 };

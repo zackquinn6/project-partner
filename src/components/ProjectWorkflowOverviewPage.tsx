@@ -63,6 +63,7 @@ export function ProjectWorkflowOverviewPage({
           </AccordionTrigger>
           <AccordionContent>
             <ProjectOverviewStep
+              mode="workflow"
               onComplete={() => {}}
               isCompleted={isKickoffStep1Completed}
             />
