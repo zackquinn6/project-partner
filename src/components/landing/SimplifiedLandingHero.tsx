@@ -12,32 +12,50 @@ export function SimplifiedLandingHero({ onLearnMore }: SimplifiedLandingHeroProp
 
   return (
     <>
-      <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-gradient-to-br from-background via-background to-muted pt-24 pb-16 px-4">
-        <div className="container mx-auto max-w-2xl text-center space-y-8 relative z-10">
-          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-foreground leading-tight">
-            Project Management, Pre-Built for Home Improvement.
+      <section
+        className="relative flex min-h-[85dvh] flex-col justify-center overflow-hidden px-6 py-28 md:px-8 md:py-32"
+        aria-labelledby="simplified-hero-heading"
+      >
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-muted/30 via-background to-background"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute left-1/2 top-0 h-[28rem] w-[min(100%,48rem)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/[0.06] blur-3xl"
+          aria-hidden
+        />
+
+        <div className="relative mx-auto w-full max-w-2xl text-center">
+          <h1
+            id="simplified-hero-heading"
+            className="font-display text-[2rem] font-semibold leading-[1.15] tracking-tight text-foreground sm:text-4xl md:text-5xl"
+          >
+            Project Management,
+            <br />
+            Pre-Built for Home Improvement.
           </h1>
-          <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
-            One great project not a career.
+
+          <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
+            Helping you run one great project.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4">
+          <div className="mt-10 flex flex-col items-center gap-5 sm:mt-12">
             <Button
-              size="xl"
-              className="bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto min-h-[48px]"
+              size="lg"
+              variant="default"
+              className="h-12 w-full min-h-[48px] px-8 text-base shadow-md transition-shadow hover:shadow-lg sm:w-auto sm:min-w-[200px]"
               onClick={() => setIsOnboardingOpen(true)}
             >
               Get started
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <ArrowRight className="h-4 w-4" aria-hidden />
             </Button>
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground w-full sm:w-auto"
+              variant="link"
+              className="h-auto p-0 text-sm font-medium text-muted-foreground hover:text-foreground"
               onClick={onLearnMore}
             >
-              Learn more
+              Learn how it works
             </Button>
           </div>
         </div>
