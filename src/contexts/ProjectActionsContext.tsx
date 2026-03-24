@@ -10,6 +10,7 @@ import { toast } from '@/components/ui/use-toast';
 import { ensureStandardPhasesForNewProject, isKickoffPhaseComplete, KICKOFF_UI_STEP_IDS } from '@/utils/projectUtils';
 import { useOptimizedState } from '@/hooks/useOptimizedState';
 import { mergeQualityControlSettings, parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
+import type { Json } from '@/integrations/supabase/types';
 
 function parseCompletedStepsColumn(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -26,6 +27,51 @@ function parseCompletedStepsColumn(value: unknown): string[] {
     }
   }
   return [];
+}
+
+function optionalDbText(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value !== 'string') {
+    throw new Error('Risk row text field from database is not a string');
+  }
+  const t = value.trim();
+  return t.length > 0 ? t : null;
+}
+
+function numberOrNullForRunRisk(value: unknown, field: string): number | null {
+  if (value == null || value === '') return null;
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) throw new Error(`${field} must be a finite number`);
+    return value;
+  }
+  if (typeof value === 'string') {
+    const n = Number(value.trim());
+    if (!Number.isFinite(n)) throw new Error(`${field} must be a valid number`);
+    return n;
+  }
+  throw new Error(`${field} has invalid type`);
+}
+
+function normalizeMitigationActionsForRunRisk(value: unknown): Json | null {
+  if (value == null) return null;
+  if (Array.isArray(value)) return value as Json;
+  if (typeof value === 'string') {
+    const t = value.trim();
+    if (!t) return null;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(t);
+    } catch {
+      throw new Error('mitigation_actions is not valid JSON');
+    }
+    if (parsed == null) return null;
+    if (Array.isArray(parsed) || (typeof parsed === 'object' && !Array.isArray(parsed))) {
+      return parsed as Json;
+    }
+    throw new Error('mitigation_actions JSON must be an object or array');
+  }
+  if (typeof value === 'object' && !Array.isArray(value)) return value as Json;
+  throw new Error('mitigation_actions has invalid type');
 }
 
 async function applyRiskFocusSessionToRun(runId: string): Promise<void> {
@@ -458,6 +504,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       // - Foundation risks + project risks are assembled ONLY at project run creation.
       // - Mitigation/action tracking is maintained at `project_run_risks` level.
       // - Run-specific risks (user-added later) have `template_risk_id = null` and must not be modified.
+      // - Replace any run risks created inside `create_project_run_snapshot_v2` with the merged foundation
+      //   + template copy so the snapshot matches `project_risks` (avoids duplicate rows / partial seeds).
       const templateProjectIdForRisks = project.parent_project_id ?? project.id;
 
       const riskAccessErrorMessage = 'Cannot contact database to access risks. Contact administrator';
@@ -469,7 +517,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           .single();
 
         if (standardProjectError) throw standardProjectError;
-        if (!standardProject?.id) throw new Error('Standard project foundation not found (is_standard = true).');
+        if (!standardProject?.id) {
+          throw new Error('Standard project foundation not found (is_standard = true).');
+        }
 
         const { data: foundationRisksRes, error: foundationRisksError } = await supabase
           .from('project_risks')
@@ -492,102 +542,77 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         }
 
         const foundationRisks = foundationRisksRes || [];
+        const sourceRisksOrdered = [...foundationRisks, ...projectRisks];
 
-        // Only insert template-derived risks that are missing in this run.
-        const { data: existingRunTemplateRisks, error: existingRunTemplateRisksError } = await supabase
-          .from('project_run_risks')
-          .select('template_risk_id, risk_title, display_order')
-          .eq('project_run_id', data);
+        if (sourceRisksOrdered.length === 0) {
+          throw new Error(riskAccessErrorMessage);
+        }
 
-        if (existingRunTemplateRisksError) throw existingRunTemplateRisksError;
+        const seenNormalizedTitles = new Set<string>();
+        const mergedForInsert = sourceRisksOrdered.filter((risk: any) => {
+          const title = typeof risk?.risk_title === 'string' ? risk.risk_title.trim() : '';
+          if (!title) return false;
+          const key = title.toLowerCase();
+          if (seenNormalizedTitles.has(key)) return false;
+          seenNormalizedTitles.add(key);
+          return true;
+        });
 
-        const existingTemplateRiskIds = new Set(
-          (existingRunTemplateRisks || [])
-            .map(r => r.template_risk_id)
-            .filter((id): id is string => id != null)
-        );
+        if (mergedForInsert.length === 0) {
+          throw new Error(riskAccessErrorMessage);
+        }
 
-        const existingTemplateDisplayOrders = (existingRunTemplateRisks || [])
-          .filter(r => r.template_risk_id != null)
-          .map(r => (typeof r.display_order === 'number' ? r.display_order : null))
-          .filter((v): v is number => v != null);
-
-        const existingRunRiskTitles = new Set(
-          (existingRunTemplateRisks || [])
-            .map(r => (typeof r.risk_title === 'string' ? r.risk_title.trim().toLowerCase() : ''))
-            .filter((title): title is string => title.length > 0)
-        );
-
-        const nextDisplayOrder = existingTemplateDisplayOrders.length > 0
-          ? Math.max(...existingTemplateDisplayOrders) + 1
-          : 0;
-
-        const sourceRisks = [...(foundationRisks || []), ...(projectRisks || [])];
-        const risksToInsert = sourceRisks.filter(r => !existingTemplateRiskIds.has(r.id));
-
-        if (risksToInsert.length > 0) {
-          const validRisks = risksToInsert.filter((risk: any) => {
-            const title = typeof risk?.risk_title === 'string' ? risk.risk_title.trim() : '';
-            return title.length > 0;
-          });
-
-          if (validRisks.length === 0) {
-            throw new Error(riskAccessErrorMessage);
+        const insertRows = mergedForInsert.map((risk: any, idx: number) => {
+          if (typeof risk?.id !== 'string' || risk.id.length === 0) {
+            throw new Error('Risk row from database is missing id');
           }
-
-          // Avoid duplicate inserts when foundation + project risks share titles.
-          const seenTitles = new Set<string>();
-          const dedupedRisks = validRisks.filter((risk: any) => {
-            const normalizedTitle = risk.risk_title.trim().toLowerCase();
-            if (seenTitles.has(normalizedTitle)) return false;
-            if (existingRunRiskTitles.has(normalizedTitle)) return false;
-            seenTitles.add(normalizedTitle);
-            return true;
-          });
-
-          const insertRows = dedupedRisks.map((risk: any, idx: number) => ({
+          return {
             project_run_id: data,
             template_risk_id: risk.id,
             risk_title: risk.risk_title.trim(),
-            risk_description: risk.risk_description,
-            likelihood: risk.likelihood,
-            severity: risk.severity,
-            schedule_impact_low_days: risk.schedule_impact_low_days,
-            schedule_impact_high_days: risk.schedule_impact_high_days,
-            budget_impact_low: risk.budget_impact_low,
-            budget_impact_high: risk.budget_impact_high,
-            mitigation_strategy: risk.mitigation_strategy,
-            mitigation_actions: risk.mitigation_actions,
-            mitigation_cost: risk.mitigation_cost,
-            recommendation: risk.recommendation,
-            impact: risk.impact,
-            benefit: risk.benefit,
-            display_order: nextDisplayOrder + idx,
-          }));
+            risk_description: optionalDbText(risk.risk_description),
+            likelihood: optionalDbText(risk.likelihood),
+            severity: optionalDbText(risk.severity),
+            schedule_impact_low_days: numberOrNullForRunRisk(
+              risk.schedule_impact_low_days,
+              'schedule_impact_low_days'
+            ),
+            schedule_impact_high_days: numberOrNullForRunRisk(
+              risk.schedule_impact_high_days,
+              'schedule_impact_high_days'
+            ),
+            budget_impact_low: numberOrNullForRunRisk(risk.budget_impact_low, 'budget_impact_low'),
+            budget_impact_high: numberOrNullForRunRisk(risk.budget_impact_high, 'budget_impact_high'),
+            mitigation_strategy: optionalDbText(risk.mitigation_strategy),
+            mitigation_actions: normalizeMitigationActionsForRunRisk(risk.mitigation_actions),
+            mitigation_cost: numberOrNullForRunRisk(risk.mitigation_cost, 'mitigation_cost'),
+            recommendation: optionalDbText(risk.recommendation),
+            impact: optionalDbText(risk.impact),
+            benefit: optionalDbText(risk.benefit),
+            display_order: idx,
+          };
+        });
 
-          if (insertRows.length > 0) {
-            const { error: insertError } = await supabase
-              .from('project_run_risks')
-              .insert(insertRows);
+        const { error: deleteRisksError } = await supabase
+          .from('project_run_risks')
+          .delete()
+          .eq('project_run_id', data);
 
-            if (insertError) {
-              console.error('❌ project_run_risks insert failed:', insertError, {
-                runId: data,
-                insertRowsCount: insertRows.length,
-                firstInsertRow: insertRows[0],
-              });
-              throw new Error(riskAccessErrorMessage);
-            }
-          }
-        } else if (sourceRisks.length === 0) {
+        if (deleteRisksError) throw deleteRisksError;
+
+        const { error: insertError } = await supabase.from('project_run_risks').insert(insertRows);
+
+        if (insertError) {
+          console.error('❌ project_run_risks insert failed:', insertError, {
+            runId: data,
+            insertRowsCount: insertRows.length,
+            firstInsertRow: insertRows[0],
+          });
           throw new Error(riskAccessErrorMessage);
         }
       } catch (riskAssemblyError) {
         console.error('❌ Risk assembly failed; deleting created run for consistency:', riskAssemblyError);
-        await supabase
-          .from('project_runs')
-          .delete()
-          .eq('id', data);
+        await supabase.from('project_runs').delete().eq('id', data);
         throw new Error(riskAccessErrorMessage);
       }
 
