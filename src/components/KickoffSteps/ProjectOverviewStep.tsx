@@ -341,7 +341,16 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     /** When set (0–2), positions the “Your level” arrow on that segment (e.g. physical_capability vs Low/Medium/High). */
     userLevelSegmentOverride?: number | null
   ) => {
-    const position = getLevelPosition(currentLevel, levels);
+    const rawProjectPos = getLevelPosition(currentLevel, levels);
+    const position =
+      rawProjectPos >= 0
+        ? rawProjectPos
+        : (() => {
+            const pi = projectSkillLevelToIndex(currentLevel);
+            if (pi === null) return -1;
+            const maxSeg = Math.max(0, levels.length - 1);
+            return Math.min(pi, maxSeg);
+          })();
     const hasValue = position >= 0;
 
     // Map position to center of section: 0 -> 16.66%, 1 -> 50%, 2 -> 83.33%
