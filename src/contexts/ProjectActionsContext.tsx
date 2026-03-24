@@ -460,6 +460,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       // - Run-specific risks (user-added later) have `template_risk_id = null` and must not be modified.
       const templateProjectIdForRisks = project.parent_project_id ?? project.id;
 
+      const riskAccessErrorMessage = 'Cannot contact database to access risks. Contact adminstrator';
       try {
         const { data: standardProject, error: standardProjectError } = await supabase
           .from('projects')
@@ -519,10 +520,19 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         const risksToInsert = sourceRisks.filter(r => !existingTemplateRiskIds.has(r.id));
 
         if (risksToInsert.length > 0) {
-          const insertRows = risksToInsert.map((risk: any, idx: number) => ({
+          const validRisks = risksToInsert.filter((risk: any) => {
+            const title = typeof risk?.risk_title === 'string' ? risk.risk_title.trim() : '';
+            return title.length > 0;
+          });
+
+          if (validRisks.length === 0) {
+            throw new Error(riskAccessErrorMessage);
+          }
+
+          const insertRows = validRisks.map((risk: any, idx: number) => ({
             project_run_id: data,
             template_risk_id: risk.id,
-            risk_title: risk.risk_title,
+            risk_title: risk.risk_title.trim(),
             risk_description: risk.risk_description,
             likelihood: risk.likelihood,
             severity: risk.severity,
@@ -536,15 +546,18 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             recommendation: risk.recommendation,
             impact: risk.impact,
             benefit: risk.benefit,
-            status: 'open',
             display_order: nextDisplayOrder + idx,
           }));
 
-          const { error: insertError } = await supabase
-            .from('project_run_risks')
-            .insert(insertRows);
+          if (insertRows.length > 0) {
+            const { error: insertError } = await supabase
+              .from('project_run_risks')
+              .insert(insertRows);
 
-          if (insertError) throw insertError;
+            if (insertError) throw new Error(riskAccessErrorMessage);
+          }
+        } else if (sourceRisks.length === 0) {
+          throw new Error(riskAccessErrorMessage);
         }
       } catch (riskAssemblyError) {
         console.error('❌ Risk assembly failed; deleting created run for consistency:', riskAssemblyError);
@@ -552,7 +565,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           .from('project_runs')
           .delete()
           .eq('id', data);
-        throw riskAssemblyError;
+        throw new Error(riskAccessErrorMessage);
       }
 
       // Update additional fields that the function doesn't handle
