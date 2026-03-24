@@ -63,11 +63,11 @@ export function ToolsMaterialsWindow({ open, onOpenChange }: ToolsMaterialsWindo
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
           <Tabs defaultValue="tools" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="tools" className="text-xs md:text-sm">
+            <TabsList className="mb-4 grid h-11 w-full grid-cols-[2fr_1fr] md:h-12">
+              <TabsTrigger value="tools" className="w-full text-xs md:text-sm">
                 {isAdmin ? "Tools Library" : "My Tools"}
               </TabsTrigger>
-              <TabsTrigger value="materials" className="text-xs md:text-sm">
+              <TabsTrigger value="materials" className="w-full text-xs md:text-sm">
                 {isAdmin ? "Materials Library" : "My Materials"}
               </TabsTrigger>
             </TabsList>

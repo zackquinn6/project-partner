@@ -409,9 +409,13 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
               </div>
 
               <Tabs defaultValue="tools" className="flex-1">
-                <TabsList className="grid w-full grid-cols-2 h-12">
-                  <TabsTrigger value="tools" className="text-sm px-2 py-2">Tools ({userTools.length})</TabsTrigger>
-                  <TabsTrigger value="materials" className="text-sm px-2 py-2">Materials ({userMaterials.length})</TabsTrigger>
+                <TabsList className="grid h-12 w-full grid-cols-[2fr_1fr]">
+                  <TabsTrigger value="tools" className="w-full text-sm px-2 py-2">
+                    Tools ({userTools.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="materials" className="w-full text-sm px-2 py-2">
+                    Materials ({userMaterials.length})
+                  </TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="tools" className="space-y-4 mt-4 max-h-[50vh] overflow-y-auto">
@@ -671,9 +675,13 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
           ) : (
             <div className="p-4 sm:p-6">
               <Tabs defaultValue="tools" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4 h-12">
-                  <TabsTrigger value="tools" className="text-sm px-3 py-2">Tools</TabsTrigger>
-                  <TabsTrigger value="materials" className="text-sm px-3 py-2">Materials</TabsTrigger>
+                <TabsList className="mb-4 grid h-12 w-full grid-cols-[2fr_1fr]">
+                  <TabsTrigger value="tools" className="w-full text-sm px-3 py-2">
+                    Tools
+                  </TabsTrigger>
+                  <TabsTrigger value="materials" className="w-full text-sm px-3 py-2">
+                    Materials
+                  </TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="tools">
