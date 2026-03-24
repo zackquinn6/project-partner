@@ -32,24 +32,23 @@ export const QualityControlStep: React.FC<QualityControlStepProps> = ({
         <CardContent className="space-y-3 p-2 sm:p-3">
           <div className="text-center space-y-3 py-4 sm:py-5">
             <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
-              Open Quality to review outputs, adjust project settings, and export a PDF. You can also mark this planning step as reviewed when you&apos;re done.
+              Open Quality Control to review outputs, adjust project settings, and export a PDF. This also continues the planning workflow.
             </p>
-            {onOpenQualityControlApp && (
+            {!isCompleted && (
               <Button
                 type="button"
                 variant="default"
                 size="lg"
-                className="w-full max-w-md"
-                onClick={() => onOpenQualityControlApp()}
+                className="w-full max-w-md min-h-14 text-base font-semibold whitespace-normal leading-snug px-3 py-3"
+                onClick={() => {
+                  onOpenQualityControlApp?.();
+                  onComplete();
+                }}
               >
-                <ClipboardCheck className="w-5 h-5 mr-2" />
-                Open Quality
+                <ClipboardCheck className="mr-2 h-5 w-5 shrink-0" />
+                Open Quality Control
               </Button>
             )}
-            <Button type="button" onClick={onComplete} variant="outline" size="lg" className="w-full max-w-md">
-              <ClipboardCheck className="w-5 h-5 mr-2" />
-              Mark as reviewed
-            </Button>
             {isCompleted && (
               <p className="text-xs sm:text-sm text-green-600 font-medium">
                 ✓ Quality reviewed

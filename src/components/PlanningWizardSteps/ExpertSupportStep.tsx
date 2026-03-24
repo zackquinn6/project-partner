@@ -26,27 +26,27 @@ export const ExpertSupportStep: React.FC<ExpertSupportStepProps> = ({
       <Card>
         <CardHeader className="p-2 sm:p-3">
           <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
-            Support
+            Expert support
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm mt-0.5">
-            Get help from trades professionals when you need it
+            Connect with our expert support partners when you need help
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 p-2 sm:p-3">
           <div className="text-center space-y-3 py-4 sm:py-5">
             <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
-              Set up an account with Call the Trades to connect with expert tradespeople for support during your project.
+              Make an account with our expert support partners to get professional guidance during your project.
             </p>
             <Button
               type="button"
               variant="default"
               size="lg"
-              className="w-full max-w-md h-16 text-lg font-semibold"
+              className="w-full max-w-md min-h-16 whitespace-normal px-3 py-3 text-base font-semibold leading-snug"
               onClick={handleOpenLink}
             >
-              <ExternalLink className="w-6 h-6 mr-3" />
-              Setup an account with Call the Trades
+              <ExternalLink className="mr-2 h-6 w-6 shrink-0" />
+              Make an account with our expert support partners
             </Button>
             <p className="text-xs text-muted-foreground">
               <a href={CALL_THE_TRADES_URL} target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80">
@@ -55,7 +55,7 @@ export const ExpertSupportStep: React.FC<ExpertSupportStepProps> = ({
             </p>
             {isCompleted && (
               <p className="text-xs sm:text-sm text-green-600 font-medium">
-                ✓ Support option reviewed
+                ✓ Expert support reviewed
               </p>
             )}
           </div>

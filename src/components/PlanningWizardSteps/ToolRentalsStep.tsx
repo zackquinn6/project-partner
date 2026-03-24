@@ -32,32 +32,32 @@ export const ToolRentalsStep: React.FC<ToolRentalsStepProps> = ({
         <CardHeader className="p-3 sm:p-4">
           <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
             <Hammer className="w-5 h-5" />
-            Tool rentals
+            Tool rental partners
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm mt-0.5">
-            Find rental locations and plan tool access for this project
+            Connect with our tool rental partners for this project
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 p-3 sm:p-4">
           <div className="text-center space-y-4 py-6">
             <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
-              Open Tool Access to browse rental options and resources matched to your area.
+              Make an account with our tool rental partners to browse rental options and resources matched to your area.
             </p>
 
             <Button
               type="button"
               onClick={handleOpen}
               size="lg"
-              className="w-full max-w-md h-16 text-lg font-semibold"
+              className="w-full max-w-md min-h-16 whitespace-normal px-3 py-3 text-base font-semibold leading-snug"
             >
-              <Hammer className="w-6 h-6 mr-3" />
-              Open Tool Access
+              <Hammer className="mr-2 h-6 w-6 shrink-0" />
+              Make an account with our tool rental partners
             </Button>
 
             {isCompleted && (
               <p className="text-xs sm:text-sm text-green-600 font-medium">
-                ✓ Tool rentals step completed
+                ✓ Tool rental partners reviewed
               </p>
             )}
           </div>
