@@ -354,7 +354,16 @@ export function ToolsLibrary() {
             <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
               {editingTool && (
                 <div className="space-y-4">
-                  <div className="flex justify-end">
+                  <LibraryItemForm
+                    type="tools"
+                    item={{...editingTool, name: editingTool.item}}
+                    onSave={handleSave}
+                    onCancel={() => {
+                      setShowEditDialog(false);
+                      setEditingTool(null);
+                    }}
+                  />
+                  <div className="flex justify-end border-t border-border pt-4 pb-1">
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="destructive" size="sm">
@@ -383,15 +392,6 @@ export function ToolsLibrary() {
                       </AlertDialogContent>
                     </AlertDialog>
                   </div>
-                  <LibraryItemForm
-                    type="tools"
-                    item={{...editingTool, name: editingTool.item}}
-                    onSave={handleSave}
-                    onCancel={() => {
-                      setShowEditDialog(false);
-                      setEditingTool(null);
-                    }}
-                  />
                 </div>
               )}
             </div>
