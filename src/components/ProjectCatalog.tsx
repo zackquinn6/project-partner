@@ -1042,106 +1042,30 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               />
             </div>
 
-            {/* Compact filter row */}
-            <div className="flex gap-1.5 flex-wrap">
-              {/* Category Filter */}
-              <div className="flex-1 min-w-[80px]">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-[10px] h-7 px-2 relative">
-                      <Filter className="w-2.5 h-2.5 mr-0.5" />
-                      <span className="truncate">Category{selectedCategories.length > 0 && ` (${selectedCategories.length})`}</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-52">
-                    <FilterMenuHeader label="Category" description={FILTER_DESCRIPTIONS.category} />
-                    {availableCategories.map((category) => (
-                      <DropdownMenuCheckboxItem
-                        key={category}
-                        checked={selectedCategories.includes(category)}
-                        onCheckedChange={() => handleCategoryToggle(category)}
-                        onSelect={(event) => event.preventDefault()}
-                      >
-                        {category}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* Skill Level Filter */}
-              <div className="flex-1 min-w-[80px]">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-xs md:text-[10px] h-11 md:h-7 px-2 relative">
-                      <Filter className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 md:mr-0.5" />
-                      <span className="truncate">Skill{selectedDifficulties.length > 0 && ` (${selectedDifficulties.length})`}</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-52">
-                    <FilterMenuHeader label="Skill" description={FILTER_DESCRIPTIONS.skill} />
-                    {availableDifficulties.map((difficulty) => (
-                      <DropdownMenuCheckboxItem
-                        key={difficulty}
-                        checked={selectedDifficulties.includes(difficulty)}
-                        onCheckedChange={() => handleDifficultyToggle(difficulty)}
-                        onSelect={(event) => event.preventDefault()}
-                      >
-                        {difficulty}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* Effort Level Filter */}
-              <div className="flex-1 min-w-[80px]">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-xs md:text-[10px] h-11 md:h-7 px-2 relative">
-                      <Filter className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 md:mr-0.5" />
-                      <span className="truncate">Effort{selectedEffortLevels.length > 0 && ` (${selectedEffortLevels.length})`}</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-52">
-                    <FilterMenuHeader label="Effort" description={FILTER_DESCRIPTIONS.effort} />
-                    {availableEffortLevels.map((effortLevel) => (
-                      <DropdownMenuCheckboxItem
-                        key={effortLevel}
-                        checked={selectedEffortLevels.includes(effortLevel)}
-                        onCheckedChange={() => handleEffortLevelToggle(effortLevel)}
-                        onSelect={(event) => event.preventDefault()}
-                      >
-                        {effortLevel}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* Project Type Filter */}
-              <div className="flex-1 min-w-[100px]">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-xs md:text-[10px] h-11 md:h-7 px-2 relative">
-                      <Filter className="w-3 h-3 md:w-2.5 md:h-2.5 mr-1 md:mr-0.5" />
-                      <span className="truncate">Type{projectTypeLabel && ` (${projectTypeLabel})`}</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-52 space-y-1">
-                    <FilterMenuHeader label="Type" description={FILTER_DESCRIPTIONS.projectType} />
-                    <DropdownMenuRadioGroup value={projectTypeFilter} onValueChange={(value) => setProjectTypeFilter(value as 'all' | 'primary' | 'secondary')}>
-                      <DropdownMenuRadioItem value="all">All project types</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="primary">Primary</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="secondary">Secondary</DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+            {/* Mobile: category filter only (skill / effort / type on md+ below) */}
+            <div className="w-full">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full text-[10px] h-7 px-2 relative">
+                    <Filter className="w-2.5 h-2.5 mr-0.5" />
+                    <span className="truncate">Category{selectedCategories.length > 0 && ` (${selectedCategories.length})`}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-52">
+                  <FilterMenuHeader label="Category" description={FILTER_DESCRIPTIONS.category} />
+                  {availableCategories.map((category) => (
+                    <DropdownMenuCheckboxItem
+                      key={category}
+                      checked={selectedCategories.includes(category)}
+                      onCheckedChange={() => handleCategoryToggle(category)}
+                      onSelect={(event) => event.preventDefault()}
+                    >
+                      {category}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-
-            {/* Project Type Filter */}
-           
 
             {/* Clear Filters */}
             {(searchTerm || selectedCategories.length > 0 || selectedDifficulties.length > 0 || selectedEffortLevels.length > 0 || projectTypeFilter !== 'all') && (
