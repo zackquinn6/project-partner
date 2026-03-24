@@ -59,8 +59,8 @@ export function ProjectCompletionHandler({
     if (!user || !projectRunId || !status) return;
 
     const handleProjectCompletion = async () => {
-      if (status === 'completed' && lastProjectStatusRef.current !== 'completed') {
-        lastProjectStatusRef.current = 'completed';
+      if (status === 'complete' && lastProjectStatusRef.current !== 'complete') {
+        lastProjectStatusRef.current = 'complete';
 
         // Fetch project data
         const { data: projectRun } = await supabase

@@ -34,7 +34,7 @@ export const SecurityHeadersProvider: React.FC<{ children: React.ReactNode }> = 
         "img-src 'self' data: https: blob:",
         "font-src 'self' data: https://fonts.gstatic.com",
         "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://api.open-meteo.com",
-        "frame-ancestors 'none'", // Prevents embedding in malicious iframes
+        // frame-ancestors is ignored in <meta> CSP; use HTTP headers in production. X-Frame-Options is set below when applicable.
         "base-uri 'self'",
         "form-action 'self'",
         "upgrade-insecure-requests", // Force HTTPS
