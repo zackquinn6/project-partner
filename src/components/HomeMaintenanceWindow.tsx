@@ -761,7 +761,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 className="shrink-0 p-0 h-8 w-8 md:h-8 md:w-auto md:px-3 md:py-2"
               >
                 <ImageIcon className="h-4 w-4 text-primary" />
-                <span className="hidden md:inline ml-1.5 text-xs md:text-sm">View Photos</span>
+                <span className="hidden md:inline ml-1.5 text-xs">View Photos</span>
               </Button>
               {selectedHomeId && tasks.length > 0 && (
                 <MaintenancePdfPrinter
@@ -858,7 +858,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             onClick={() => setShowMaintenancePlanComingSoon(true)}
                             disabled={!selectedHomeId}
                             title="Guided workflow to create your maintenance plan"
-                            className="hidden md:inline-flex h-8 min-h-8 px-3 py-2 shrink-0 text-xs md:text-sm rounded-md gap-1.5"
+                            className="hidden md:inline-flex h-8 min-h-8 px-3 py-2 shrink-0 text-xs rounded-md gap-1.5"
                           >
                             <ClipboardList className="h-4 w-4 text-primary shrink-0" />
                             <span>Generate Plan</span>
@@ -869,7 +869,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             onClick={() => setShowMaintenanceCalendar(true)}
                             disabled={!selectedHomeId}
                             title="Plan and level-load maintenance across the year"
-                            className="hidden md:inline-flex h-8 min-h-8 px-3 py-2 shrink-0 text-xs md:text-sm rounded-md gap-1.5"
+                            className="hidden md:inline-flex h-8 min-h-8 px-3 py-2 shrink-0 text-xs rounded-md gap-1.5"
                           >
                             <Calendar className="h-4 w-4 text-primary shrink-0" />
                             <span>Calendar</span>

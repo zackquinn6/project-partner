@@ -308,7 +308,7 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
             }}
             className="text-xs px-3 py-1 h-7"
           >
-            Back to My Materials
+            Back to My Library
           </Button>
         </div>
         

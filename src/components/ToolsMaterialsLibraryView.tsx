@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Camera, Wrench, Package, Eye, Save, Trash2, X, ArrowLeft } from "lucide-react";
+import { Search, Plus, Camera, Wrench, Package, RefreshCw, Trash2, X, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserToolsEditor } from "./UserToolsEditor";
@@ -71,7 +71,6 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItem, setSelectedItem] = useState<UserOwnedTool | UserOwnedMaterial | null>(null);
   const [selectedType, setSelectedType] = useState<'tool' | 'material'>('tool');
-  const [isLoading, setIsLoading] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'library' | 'add'>('library');
   const { user } = useAuth();
@@ -395,26 +394,17 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                   }}
                   title="Refresh Library"
                 >
-                  <Eye className="w-4 h-4" />
-                </Button>
-                <Button 
-                  size="icon" 
-                  variant="outline"
-                  onClick={saveItems} 
-                  disabled={isLoading}
-                  title="Save Library"
-                >
-                  <Save className="w-4 h-4" />
+                  <RefreshCw className="w-4 h-4" />
                 </Button>
               </div>
 
               <Tabs defaultValue="tools" className="flex-1">
                 <TabsList className="grid h-12 w-full grid-cols-[2fr_1fr]">
                   <TabsTrigger value="tools" className="w-full text-sm px-2 py-2">
-                    Tools ({userTools.length})
+                    Tools
                   </TabsTrigger>
                   <TabsTrigger value="materials" className="w-full text-sm px-2 py-2">
-                    Materials ({userMaterials.length})
+                    Materials
                   </TabsTrigger>
                 </TabsList>
                 

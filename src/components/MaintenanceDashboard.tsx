@@ -250,7 +250,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
     >
       <TooltipProvider delayDuration={300}>
         {/* Desktop: all four metrics in one row */}
-        <div className="hidden md:grid md:grid-cols-[0.525fr_0.375fr_1.5fr_0.45fr] gap-2 lg:gap-3 items-stretch max-w-full mb-0">
+        <div className="hidden md:grid md:grid-cols-[0.55fr_0.4fr_minmax(0,1.65fr)] xl:grid-cols-[0.525fr_0.375fr_1.5fr_0.45fr] gap-2 lg:gap-3 items-stretch max-w-full mb-0">
           {/* 1. Home Health */}
           <div className="space-y-0 min-w-0 flex flex-col min-h-0">
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b pb-1 mb-1 shrink-0">
@@ -259,7 +259,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
             <Tooltip>
               <TooltipTrigger asChild>
                 <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
-                  <CardContent className="p-1.5 flex flex-row items-center flex-1 min-h-0 gap-1">
+                  <CardContent className="py-1.5 pl-1.5 pr-2.5 md:pr-3 flex flex-row items-center flex-1 min-h-0 gap-1">
                     <div className="relative flex-1 min-h-0 flex items-center justify-center min-w-0">
                       <svg
                         viewBox="0 0 120 70"
@@ -356,8 +356,8 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
           </div>
           {/* 3. System status */}
           {systemStatusCard}
-          {/* 4. Benefits */}
-          {benefitsCard}
+          {/* 4. Benefits — wide screens only (hidden tablet / narrow desktop) */}
+          <div className="hidden xl:block min-w-0">{benefitsCard}</div>
         </div>
 
         {/* Mobile: Health + Tasks + metrics trigger in one row; accordion content below */}
@@ -373,7 +373,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Card className="w-full min-w-0 flex flex-col cursor-help border-dashed h-full min-h-[var(--card-min-h)] max-h-[var(--card-max-h)] overflow-hidden">
-                    <CardContent className="p-1 flex flex-row items-center flex-1 min-h-0 gap-0.5 sm:p-2 sm:gap-1">
+                    <CardContent className="py-1 pl-1 pr-2 sm:py-2 sm:pl-2 sm:pr-3 flex flex-row items-center flex-1 min-h-0 gap-0.5 sm:gap-1">
                       <div className="relative flex-1 min-h-0 flex items-center justify-center min-w-0">
                         <svg
                           viewBox="0 0 120 70"

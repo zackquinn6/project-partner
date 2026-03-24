@@ -987,13 +987,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               <Button
                 variant="ghost"
                 onClick={() => {
-                  console.log('ProjectCatalog: Go To My Workspace button clicked (desktop)');
-                  navigate('/'); // Navigate to home/workspace
+                  console.log('ProjectCatalog: Go to My Workshop button clicked (desktop)');
+                  navigate('/'); // Navigate to home/workshop
                 }}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Go To My Workspace
+                Go to My Workshop
               </Button>
             </div>
 
@@ -1012,18 +1012,18 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             variant="ghost" 
             size="sm"
             onClick={() => {
-              console.log('📱 ProjectCatalog: Go to my workspace button clicked');
+              console.log('📱 ProjectCatalog: Go to My Workshop button clicked');
               if (onClose) {
                 console.log('📱 ProjectCatalog: Using onClose callback');
                 onClose();
               } else {
-                console.log('📱 ProjectCatalog: Using navigate to workspace');
+                console.log('📱 ProjectCatalog: Using navigate to workshop');
                 navigate('/');
               }
             }}
             className="text-sm"
           >
-            Go to my workspace
+            Go to My Workshop
           </Button>
         </div>
 
@@ -1258,15 +1258,15 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             <h2 className="text-lg font-semibold mb-4">Popular projects</h2>
             <Carousel
               opts={{ align: 'start', loop: false }}
-              className="w-full"
+              className="w-full px-11 sm:px-12 md:px-14"
             >
-              <CarouselContent className="-ml-2 md:-ml-4">
+              <CarouselContent className="-ml-2 md:-ml-3">
                 {popularProjects.map((project) => {
                   const projectCategories = Array.isArray(project.category) ? project.category : (project.category ? [project.category] : []);
                   const IconComponent = getIconForCategory(projectCategories[0] || '');
                   const imageUrl = (project as any).cover_image || project.image || (project as any).images?.[0];
                   return (
-                    <CarouselItem key={project.id} className="pl-2 md:pl-4 basis-[140px] sm:basis-[160px] md:basis-[180px]">
+                    <CarouselItem key={project.id} className="pl-2 md:pl-3 basis-[140px] sm:basis-[160px] md:basis-[180px]">
                       <div
                         role="button"
                         tabIndex={0}
@@ -1307,8 +1307,14 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                   );
                 })}
               </CarouselContent>
-              <CarouselPrevious className="-left-2 md:-left-4 top-1/2 -translate-y-1/2" />
-              <CarouselNext className="-right-2 md:-right-4 top-1/2 -translate-y-1/2" />
+              <CarouselPrevious
+                variant="default"
+                className="left-1 sm:left-2 top-1/2 z-10 h-9 w-9 -translate-y-1/2 border-0 bg-primary text-primary-foreground shadow-md hover:bg-primary/90 disabled:opacity-40"
+              />
+              <CarouselNext
+                variant="default"
+                className="right-1 sm:right-2 top-1/2 z-10 h-9 w-9 -translate-y-1/2 border-0 bg-primary text-primary-foreground shadow-md hover:bg-primary/90 disabled:opacity-40"
+              />
             </Carousel>
           </div>
         )}

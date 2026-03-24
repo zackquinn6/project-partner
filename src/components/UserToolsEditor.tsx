@@ -123,31 +123,63 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
 
   const fetchUserTools = async () => {
     if (!user) return;
-    
+
     try {
-      console.log('🔧 UserToolsEditor - Fetching tools for user (user_tools):', {
-        userId: user.id,
-        userEmail: user.email
-      });
-      
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('owned_tools')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('UserToolsEditor: owned_tools fetch', profileError);
+      }
+
+      const fromProfileRaw = profile?.owned_tools;
+      const fromProfile: UserOwnedTool[] = Array.isArray(fromProfileRaw)
+        ? (fromProfileRaw as UserOwnedTool[]).map((t) => ({
+            ...t,
+            item: t.item ?? t.name ?? '',
+          }))
+        : [];
+
       const { data, error } = await supabase
         .from('user_tools')
         .select('id, tool_id, name, description, model_name, quantity, user_photo_url')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
-      
-      const tools: UserOwnedTool[] = ((data as UserOwnedTool[]) || []).map((row) => ({
+
+      const fromTable: UserOwnedTool[] = ((data as UserOwnedTool[]) || []).map((row) => ({
         ...row,
-        item: row.item ?? row.name,
+        item: row.item ?? row.name ?? '',
       }));
-      console.log('✅ UserToolsEditor - Fetched tools from user_tools:', {
-        count: tools.length,
-        toolNames: tools.slice(0, 5).map(t => t.name)
+
+      // Variation picks are stored on owned_tools with variation id; user_tools rows use row UUID.
+      // Merge by id so the add-list can see every owned variation and core rows from user_tools.
+      const byId = new Map<string, UserOwnedTool>();
+      for (const t of fromProfile) {
+        if (t?.id != null && String(t.id).length > 0) {
+          byId.set(String(t.id), t);
+        }
+      }
+      for (const t of fromTable) {
+        if (t?.id != null && String(t.id).length > 0) {
+          const k = String(t.id);
+          const prev = byId.get(k);
+          byId.set(k, { ...prev, ...t, item: t.item ?? t.name ?? '', tool_id: t.tool_id });
+        }
+      }
+
+      const merged = Array.from(byId.values());
+      console.log('✅ UserToolsEditor - Merged library tools:', {
+        count: merged.length,
+        fromProfile: fromProfile.length,
+        fromTable: fromTable.length,
       });
-      
-      setUserTools(tools);
+
+      setUserTools(merged);
     } catch (error) {
       console.error('❌ UserToolsEditor - Error fetching user tools:', error);
     }
@@ -181,99 +213,50 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
     fetchToolVariations();
   }, [availableTools]);
 
-  // Track when variations have been checked for all tools
-  const [variationsChecked, setVariationsChecked] = useState(false);
-  
-  useEffect(() => {
-    // Mark variations as checked once we have tools and the variations map is populated
-    // (even if empty, it means we've checked)
-    if (availableTools.length > 0) {
-      // Check if we've attempted to fetch variations (toolVariations object exists)
-      // We consider it "checked" if we have the same number of tool IDs in variations map
-      // OR if we've waited long enough for the async fetch to complete
-      const hasCheckedAllTools = availableTools.every(tool => 
-        toolVariations.hasOwnProperty(tool.id)
-      );
-      
-      if (hasCheckedAllTools || Object.keys(toolVariations).length > 0) {
-        setVariationsChecked(true);
-      } else {
-        // Fallback: mark as checked after a reasonable delay
-        const timer = setTimeout(() => {
-          setVariationsChecked(true);
-        }, 1000);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [availableTools, toolVariations]);
-  
-  /** True if the user already owns this catalog tool (user_tools.tool_id or legacy id match). */
+  /** Catalog core tool already in library (user_tools.tool_id or legacy id on profile JSON). */
   const userOwnsCatalogTool = useCallback(
     (catalogToolId: string) =>
       userTools.some((ut) => ut.tool_id === catalogToolId || ut.id === catalogToolId),
     [userTools]
   );
 
+  /** Specific tool_variations row already in library (owned_tools uses variation id as entry id). */
+  const userOwnsVariationId = useCallback(
+    (variationId: string) => userTools.some((ut) => ut.id === variationId),
+    [userTools]
+  );
+
   const filteredTools = useMemo(() => {
-    // If variations haven't been checked yet and we have tools, show all tools that match search
-    // This prevents filtering out tools before we know if they have variations
-    if (!variationsChecked && availableTools.length > 0) {
-      return availableTools
-        .filter(tool => {
-          const toolName = tool.item || tool.name || '';
-          const matchesSearch = toolName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                               (tool.description && tool.description.toLowerCase().includes(searchTerm.toLowerCase()));
-          return matchesSearch;
-        })
-        .sort((a, b) => {
-          const aName = a.item || a.name || '';
-          const bName = b.item || b.name || '';
-          return aName.localeCompare(bName);
-        });
-    }
-    
-    // Once variations are loaded, apply full filtering logic
     return availableTools
-      .filter(tool => {
+      .filter((tool) => {
         const toolName = tool.item || tool.name || '';
-        const matchesSearch = toolName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             (tool.description && tool.description.toLowerCase().includes(searchTerm.toLowerCase()));
-        
+        const matchesSearch =
+          toolName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (tool.description && tool.description.toLowerCase().includes(searchTerm.toLowerCase()));
+
         if (!matchesSearch) return false;
 
-        // Get all variations for this core tool
+        // Variation map not loaded yet for this catalog id — avoid duplicate core adds only
+        if (!Object.prototype.hasOwnProperty.call(toolVariations, tool.id)) {
+          return !userOwnsCatalogTool(tool.id);
+        }
+
         const variations = toolVariations[tool.id] || [];
-        
-        // If tool has no variations, check if core tool itself is owned
+
         if (variations.length === 0) {
           return !userOwnsCatalogTool(tool.id);
         }
-        
-        // If tool has variations, check if ALL variations are owned
-        // Create a fresh set each time to ensure we have the latest userTools state
-        const ownedVariationIds = new Set<string>();
-        for (const ut of userTools) {
-          ownedVariationIds.add(ut.id);
-          if (ut.tool_id) ownedVariationIds.add(ut.tool_id);
-        }
-        const allVariationsOwned = variations.every(variation => 
-          ownedVariationIds.has(variation.id)
-        );
-        
-        // Also check if the core tool itself is owned (for tools that have both core and variations)
-        const coreToolOwned = userOwnsCatalogTool(tool.id);
-        
-        // Show tool only if:
-        // 1. Not all variations are owned AND
-        // 2. The core tool itself is not owned
-        return !allVariationsOwned && !coreToolOwned;
+
+        // Keep in add list until every variation has been added (by variation row id).
+        const allVariationsOwned = variations.every((v) => userOwnsVariationId(v.id));
+        return !allVariationsOwned;
       })
       .sort((a, b) => {
         const aName = a.item || a.name || '';
         const bName = b.item || b.name || '';
         return aName.localeCompare(bName);
       });
-  }, [availableTools, searchTerm, toolVariations, userTools, variationsChecked, userOwnsCatalogTool]);
+  }, [availableTools, searchTerm, toolVariations, userTools, userOwnsCatalogTool, userOwnsVariationId]);
 
   const { commonTools, otherTools } = useMemo(() => {
     const scale = (t: Tool) => t.specialty_scale ?? 2;
@@ -492,7 +475,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
           <Button 
             variant="outline" 
             onClick={async () => {
-              console.log('Back to My Tools clicked');
+              console.log('Back to My Library clicked');
               // Save tools before closing
               if (user && userTools.length > 0) {
                 try {
@@ -520,7 +503,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
               }
             }}
           >
-            Back to My Tools
+            Back to My Library
           </Button>
         </div>
           
@@ -651,15 +634,14 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
               coreItemName={checkingVariations.item}
               itemType="tools"
               onVariationSelect={(variation) => {
-                // Check if this variation is already in the user's tools
-                const isDuplicate = userTools.some(userTool => userTool.id === variation.id);
-                if (isDuplicate) {
+                if (userOwnsVariationId(variation.id)) {
                   return;
                 }
-                
-                // Create a new tool based on the selected variation
+
+                const coreId = checkingVariations.id;
                 const newUserTool: UserOwnedTool = {
                   id: variation.id,
+                  tool_id: coreId,
                   name: variation.name,
                   item: variation.name,
                   description: variation.description,
@@ -818,7 +800,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
               }
             }}
           >
-            Back to My Tools
+            Back to My Library
           </Button>
       </div>
       
