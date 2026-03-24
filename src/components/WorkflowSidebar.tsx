@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, Shield, DollarSign, ShoppingCart, ClipboardCheck } from "lucide-react";
+import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, Shield, DollarSign, ShoppingCart, ClipboardCheck, Handshake } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { WorkflowThemeSelector } from './WorkflowThemeSelector';
@@ -596,24 +596,45 @@ export function WorkflowSidebar({
                       <DropdownMenuContent align="start" className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] max-w-[min(100%,14rem)]">
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"
-                          onClick={() => openAppByActionKey('risk-management')}
-                        >
-                          <Shield className="h-3.5 w-3.5 shrink-0" />
-                          Risk management
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-xs gap-2 cursor-pointer"
                           onClick={() => openAppByActionKey('project-budgeting')}
                         >
                           <DollarSign className="h-3.5 w-3.5 shrink-0" />
                           Budget
                         </DropdownMenuItem>
+                        {(expertSupportEnabled || (toolRentalsEnabled && onToolRentalsClick)) && (
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger className="text-xs gap-2 cursor-pointer px-2 py-1.5">
+                              <Handshake className="h-3.5 w-3.5 shrink-0" />
+                              Partner Tools
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent className="min-w-[10rem]">
+                              {expertSupportEnabled && (
+                                <DropdownMenuItem
+                                  className="text-xs gap-2 cursor-pointer"
+                                  onClick={onHelpClick}
+                                >
+                                  <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                                  Expert Support
+                                </DropdownMenuItem>
+                              )}
+                              {toolRentalsEnabled && onToolRentalsClick && (
+                                <DropdownMenuItem
+                                  className="text-xs gap-2 cursor-pointer"
+                                  onClick={onToolRentalsClick}
+                                >
+                                  <Wrench className="h-3.5 w-3.5 shrink-0" />
+                                  Tool Rentals
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuSub>
+                        )}
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"
-                          onClick={() => openAppByActionKey('shopping-checklist')}
+                          onClick={() => (onProgressViewsClick ?? (() => {}))()}
                         >
-                          <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
-                          Shopping List
+                          <BarChart3 className="h-3.5 w-3.5 shrink-0" />
+                          Progress
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"
@@ -624,6 +645,13 @@ export function WorkflowSidebar({
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"
+                          onClick={() => openAppByActionKey('risk-management')}
+                        >
+                          <Shield className="h-3.5 w-3.5 shrink-0" />
+                          Risk management
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-xs gap-2 cursor-pointer"
                           onClick={onViewScheduleClick}
                         >
                           <Calendar className="h-3.5 w-3.5 shrink-0" />
@@ -631,29 +659,11 @@ export function WorkflowSidebar({
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"
-                          onClick={() => (onProgressViewsClick ?? (() => {}))()}
+                          onClick={() => openAppByActionKey('shopping-checklist')}
                         >
-                          <BarChart3 className="h-3.5 w-3.5 shrink-0" />
-                          Progress
+                          <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
+                          Shopping List
                         </DropdownMenuItem>
-                        {expertSupportEnabled && (
-                          <DropdownMenuItem
-                            className="text-xs gap-2 cursor-pointer"
-                            onClick={onHelpClick}
-                          >
-                            <MessageCircle className="h-3.5 w-3.5 shrink-0" />
-                            Experts
-                          </DropdownMenuItem>
-                        )}
-                        {toolRentalsEnabled && onToolRentalsClick && (
-                          <DropdownMenuItem
-                            className="text-xs gap-2 cursor-pointer"
-                            onClick={onToolRentalsClick}
-                          >
-                            <Wrench className="h-3.5 w-3.5 shrink-0" />
-                            Tool Rentals
-                          </DropdownMenuItem>
-                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
