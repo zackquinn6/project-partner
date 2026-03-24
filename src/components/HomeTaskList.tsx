@@ -25,6 +25,7 @@ import { useIsMobile } from "@/hooks/useResponsive";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ProjectPortfolioRemindersDialog } from "@/components/ProjectPortfolioRemindersDialog";
+import { useNavigate } from "react-router-dom";
 
 interface HomeTask {
   id: string;
@@ -69,6 +70,7 @@ export function HomeTaskList({
   const { user } = useAuth();
   const { canAccessPaidFeatures } = useMembership();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<HomeTask[]>([]);
   const [homes, setHomes] = useState<Home[]>([]);
   const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
@@ -266,7 +268,8 @@ export function HomeTaskList({
             task_id: editingTask.id,
             user_id: user.id,
             material_name: m.material_name,
-            quantity: m.quantity || 1
+            quantity: m.quantity || 1,
+            completed: false
           }));
           
           if (materialsToInsert.length > 0) {
@@ -311,7 +314,8 @@ export function HomeTaskList({
             task_id: newTask.id,
             user_id: user.id,
             material_name: m.material_name,
-            quantity: m.quantity || 1
+            quantity: m.quantity || 1,
+            completed: false
           }));
           
           if (materialsToInsert.length > 0) {
@@ -1009,6 +1013,13 @@ export function HomeTaskList({
                         </div>
 
                          <div className="flex gap-2 justify-end flex-wrap">
+                          {editingTask?.project_run_id && (
+                            <div className="w-full flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">
+                                Linked project: <span className="font-medium text-foreground">{editingTask.project_run_id}</span>
+                              </span>
+                            </div>
+                          )}
                           <Button
                             type="button"
                             variant="outline"
@@ -1028,8 +1039,22 @@ export function HomeTaskList({
                             disabled={!formData.title.trim() || !selectedHomeId || selectedHomeId === 'all'}
                           >
                             <Link2 className="h-3 w-3 mr-1" />
-                            Link task to project
+                            {editingTask?.project_run_id ? 'Edit linking' : 'Link task to project'}
                           </Button>
+                          {editingTask?.project_run_id && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                navigate('/', { state: { view: 'user', projectRunId: editingTask.project_run_id } });
+                                onOpenChange(false);
+                              }}
+                            >
+                              Open project
+                            </Button>
+                          )}
                           <Button variant="outline" onClick={resetForm} size="sm" className="h-8 text-xs">
                             Cancel
                           </Button>

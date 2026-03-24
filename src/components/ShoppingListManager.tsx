@@ -12,6 +12,7 @@ interface ShoppingListItem {
   completed: boolean;
   task_id: string;
   task_title: string;
+  task_status: string;
 }
 
 type SortField = 'material_name' | 'task_title';
@@ -49,20 +50,26 @@ export function ShoppingListManager() {
 
       if (error) throw error;
 
-      // Fetch task details for each item
+      // Fetch task details for each item and exclude materials from closed tasks.
       if (shoppingData && shoppingData.length > 0) {
         const taskIds = [...new Set(shoppingData.map(item => item.task_id))];
         const { data: tasksData } = await supabase
           .from('home_tasks')
-          .select('id, title')
+          .select('id, title, status')
           .in('id', taskIds);
 
-        const taskMap = new Map(tasksData?.map(task => [task.id, task.title]) || []);
+        const taskMap = new Map(tasksData?.map(task => [task.id, task]) || []);
 
-        const enrichedItems: ShoppingListItem[] = shoppingData.map(item => ({
-          ...item,
-          task_title: taskMap.get(item.task_id) || 'Unknown Task'
-        }));
+        const enrichedItems: ShoppingListItem[] = shoppingData
+          .map(item => {
+            const task = taskMap.get(item.task_id);
+            return {
+              ...item,
+              task_title: task?.title || 'Unknown Task',
+              task_status: task?.status || 'open'
+            };
+          })
+          .filter(item => item.task_status !== 'closed');
 
         setItems(enrichedItems);
       } else {
