@@ -25,10 +25,10 @@ export const CustomizationStep: React.FC<CustomizationStepProps> = ({
   return (
     <div className="space-y-3">
       <Card>
-        <CardHeader className="p-3 sm:p-4">
+        <CardHeader className="p-2 sm:p-3">
           <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
             <Settings className="w-5 h-5" />
-            Customization
+            Customize
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm mt-0.5">
@@ -47,12 +47,12 @@ export const CustomizationStep: React.FC<CustomizationStepProps> = ({
               className="w-full max-w-md h-16 text-lg font-semibold"
             >
               <Settings className="w-6 h-6 mr-3" />
-              Open Project Customizer
+              Open Customize
             </Button>
 
             {isCompleted && (
               <p className="text-xs sm:text-sm text-green-600 font-medium">
-                ✓ Customization completed
+                ✓ Customize completed
               </p>
             )}
           </div>

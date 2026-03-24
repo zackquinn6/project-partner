@@ -38,7 +38,7 @@ export function ProjectWorkflowOverviewPage({
         </CardHeader>
 
         {coverImageUrl ? (
-          <div className="w-full aspect-[4/3] overflow-hidden bg-muted">
+          <div className="mx-auto w-full max-w-[75%] aspect-[4/3] overflow-hidden rounded-md bg-muted">
             <img
               src={coverImageUrl}
               alt={projectName ? `${projectName} cover` : 'Project cover'}

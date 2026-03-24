@@ -18,13 +18,13 @@ export const PLANNING_TOOL_IDS = [
 ] as const;
 
 export const PLANNING_TOOLS: { id: (typeof PLANNING_TOOL_IDS)[number]; label: string; benefit: string }[] = [
-  { id: 'scope', label: 'Project Customizer (Scope)', benefit: 'Shape the work to fit your situation' },
+  { id: 'scope', label: 'Customize', benefit: 'Shape the work to fit your situation' },
   { id: 'schedule', label: 'Schedule', benefit: 'Set a realistic timeline' },
   { id: 'risk', label: 'Risk/Uncertainty', benefit: 'Proactively avoid issues' },
   { id: 'budget', label: 'Budget', benefit: 'Spend what you want' },
   { id: 'shopping_list', label: 'Shopping List', benefit: 'Track tool & material shopping' },
-  { id: 'quality_control', label: 'Quality Control', benefit: 'Document results for future inspections' },
-  { id: 'expert_support', label: 'Expert Support', benefit: 'Get help when you\'re stuck' }
+  { id: 'quality_control', label: 'Quality', benefit: 'Document results for future inspections' },
+  { id: 'expert_support', label: 'Support', benefit: 'Get help when you\'re stuck' }
 ];
 
 export type PlanningToolId = (typeof PLANNING_TOOL_IDS)[number];

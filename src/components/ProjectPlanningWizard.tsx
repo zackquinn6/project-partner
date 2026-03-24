@@ -252,11 +252,11 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] px-2 pb-2 pt-14 sm:px-4 sm:pb-4 sm:pt-16 md:px-6 md:pb-6 md:pt-16">
-            <div className="mx-auto max-w-6xl space-y-2 sm:space-y-4 md:space-y-6">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] px-2 pb-2 pt-12 sm:px-3 sm:pb-3 sm:pt-14 md:px-5 md:pb-5 md:pt-16">
+            <div className="mx-auto max-w-6xl space-y-2 sm:space-y-3 md:space-y-5">
             {/* Progress Header */}
             <Card>
-          <CardHeader className="p-3 sm:p-4 md:p-6">
+          <CardHeader className="p-2 sm:p-3 md:p-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div className="min-w-0 flex-1">
                 <CardTitle className="text-lg sm:text-xl md:text-2xl flex items-center gap-2">
@@ -303,59 +303,72 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
           </CardHeader>
         </Card>
 
-        {/* Step Navigation */}
+        {/* Step Navigation — labels under number circles for narrow horizontal fit */}
         <Card>
-        <CardContent className="p-1 sm:p-2 md:p-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <div className="flex items-center gap-2 w-full sm:w-auto">
+        <CardContent className="p-1 sm:p-1.5 md:p-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+              <div className="flex items-start gap-1 w-full sm:w-auto min-w-0">
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="h-11 w-11 shrink-0 sm:hidden"
+                  className="h-9 w-9 shrink-0 sm:hidden mt-0.5"
                   onClick={() => scrollStepNav('left')}
                   disabled={wizardSteps.length <= 4}
                   aria-label="Scroll steps left"
                 >
-                  <ChevronLeft className="h-5 w-5" />
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <div
                   ref={stepNavRef}
-                  className="flex items-center space-x-2 sm:space-x-2 md:space-x-4 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 -mx-2 sm:mx-0 px-2 sm:px-0 scrollbar-hide whitespace-nowrap"
+                  className="flex items-start gap-x-0.5 sm:gap-x-1 overflow-x-auto w-full min-w-0 pb-0.5 sm:pb-0 px-0.5 sm:px-0 scrollbar-hide"
                 >
                   {wizardSteps.map((step, index) => (
-                    <div key={step.id} className="flex items-center flex-shrink-0">
-                      <div className={`
-                        flex items-center justify-center w-8 h-8 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full border-2 transition-colors flex-shrink-0
-                        ${index === currentStep ? 'border-primary bg-primary text-primary-foreground' : isStepCompleted(index) ? 'border-green-500 bg-green-500 text-white' : 'border-muted-foreground bg-background'}
-                      `}>
-                        {isStepCompleted(index) ? (
-                          <CheckCircle className="w-4 h-4 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" />
-                        ) : (
-                          <span className="text-xs sm:text-xs md:text-sm font-medium">{index + 1}</span>
-                        )}
-                      </div>
-                      <div className="ml-1.5 sm:ml-1.5 md:ml-2 hidden sm:block">
-                        <p className={`text-xs sm:text-sm font-medium whitespace-nowrap ${index === currentStep ? 'text-primary' : isStepCompleted(index) ? 'text-green-700' : 'text-muted-foreground'}`}>
+                    <React.Fragment key={step.id}>
+                      <div className="flex flex-col items-center flex-shrink-0 w-11 sm:w-14 md:w-[4.25rem] px-0.5">
+                        <div
+                          className={`
+                          flex items-center justify-center w-7 h-7 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full border-2 transition-colors flex-shrink-0
+                          ${index === currentStep ? 'border-primary bg-primary text-primary-foreground' : isStepCompleted(index) ? 'border-green-500 bg-green-500 text-white' : 'border-muted-foreground bg-background'}
+                        `}
+                        >
+                          {isStepCompleted(index) ? (
+                            <CheckCircle className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" />
+                          ) : (
+                            <span className="text-[11px] sm:text-xs md:text-sm font-medium">{index + 1}</span>
+                          )}
+                        </div>
+                        <p
+                          className={`mt-1 w-full text-center text-[9px] sm:text-[10px] md:text-xs font-medium leading-[1.15] line-clamp-3 break-words hyphens-auto ${
+                            index === currentStep
+                              ? 'text-primary'
+                              : isStepCompleted(index)
+                                ? 'text-green-700 dark:text-green-400'
+                                : 'text-muted-foreground'
+                          }`}
+                        >
                           {step.title}
                         </p>
                       </div>
                       {index < wizardSteps.length - 1 && (
-                        <div className="mx-2 sm:mx-2 md:mx-4 w-4 sm:w-4 md:w-8 h-0.5 bg-muted-foreground/20 flex-shrink-0" />
+                        <div
+                          className="h-0.5 w-2 sm:w-3 md:w-5 bg-muted-foreground/25 flex-shrink-0 mt-[13px] sm:mt-[13px] md:mt-[15px] self-start"
+                          aria-hidden
+                        />
                       )}
-                    </div>
+                    </React.Fragment>
                   ))}
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="h-11 w-11 shrink-0 sm:hidden"
+                  className="h-9 w-9 shrink-0 sm:hidden mt-0.5"
                   onClick={() => scrollStepNav('right')}
                   disabled={wizardSteps.length <= 4}
                   aria-label="Scroll steps right"
                 >
-                  <ChevronRight className="h-5 w-5" />
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
 
@@ -380,9 +393,9 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
             </div>
           </div>
 
-          <div className="shrink-0 border-t bg-background px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-4 sm:pb-3">
+          <div className="shrink-0 border-t bg-background px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:px-3 sm:pb-3">
             <Card className="mx-auto max-w-6xl border-0 shadow-none sm:border sm:shadow-sm">
-              <CardContent className="p-3 sm:p-4">
+              <CardContent className="p-2 sm:p-3">
                 {allStepsComplete ? (
                   <Button
                     onClick={async () => {

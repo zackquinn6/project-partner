@@ -24,17 +24,17 @@ export const ExpertSupportStep: React.FC<ExpertSupportStepProps> = ({
   return (
     <div className="space-y-3">
       <Card>
-        <CardHeader className="p-3 sm:p-4">
+        <CardHeader className="p-2 sm:p-3">
           <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
-            Expert support
+            Support
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm mt-0.5">
             Get help from trades professionals when you need it
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4 p-3 sm:p-4">
-          <div className="text-center space-y-4 py-6">
+        <CardContent className="space-y-3 p-2 sm:p-3">
+          <div className="text-center space-y-3 py-4 sm:py-5">
             <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
               Set up an account with Call the Trades to connect with expert tradespeople for support during your project.
             </p>
@@ -55,7 +55,7 @@ export const ExpertSupportStep: React.FC<ExpertSupportStepProps> = ({
             </p>
             {isCompleted && (
               <p className="text-xs sm:text-sm text-green-600 font-medium">
-                ✓ Expert support option reviewed
+                ✓ Support option reviewed
               </p>
             )}
           </div>
