@@ -159,27 +159,35 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   } | null>(null);
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
 
-  // Load user profile for comparison
+  // General DIY skill + physical capability from user_profiles.skill_level / physical_capability
+  // (Profile manager, DIY survey, onboarding — same fields the recommendation logic uses).
   useEffect(() => {
-    if (user) {
-      loadUserProfile();
+    if (!user?.id) {
+      setUserProfile(null);
+      return;
     }
-  }, [user]);
-  const loadUserProfile = async () => {
-    try {
-      const {
-        data,
-        error
-      } = await supabase.from('user_profiles').select('skill_level, physical_capability').eq('user_id', user?.id).maybeSingle();
-      if (error) {
-        console.error('Error loading user profile:', error);
-        return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('skill_level, physical_capability')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        if (error) {
+          console.error('Error loading user profile:', error);
+          return;
+        }
+        setUserProfile(data || null);
+      } catch (error) {
+        if (!cancelled) console.error('Error loading user profile:', error);
       }
-      setUserProfile(data || null);
-    } catch (error) {
-      console.error('Error loading user profile:', error);
-    }
-  };
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
   const templateProject = currentProject || projects.find(project => project.id === currentProjectRun?.templateId) || null;
   
   // Fetch from database as backup if templateProject doesn't have the fields
@@ -344,11 +352,19 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       return 50; // Default to middle
     };
 
+    // Use the same canonical scale as computeProjectMatchExplanation / userSkillLevelToIndex so
+    // profile values (newbie | confident | hero from survey, Beginner | … from onboarding) align
+    // with the three-track UI (clamp professional → advanced segment).
     const userLevelIndex =
       userLevelSegmentOverride !== undefined && userLevelSegmentOverride !== null && userLevelSegmentOverride >= 0
         ? userLevelSegmentOverride
         : userLevel
-          ? getLevelPosition(userLevel, levels.map((l) => l.toLowerCase()))
+          ? (() => {
+              const idx = userSkillLevelToIndex(userLevel);
+              if (idx === null) return -1;
+              const maxSeg = Math.max(0, levels.length - 1);
+              return Math.min(idx, maxSeg);
+            })()
           : -1;
 
     return (

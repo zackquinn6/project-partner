@@ -31,10 +31,15 @@ export function ProjectWorkflowOverviewPage({
   return (
     <div className="space-y-6">
       <Card className="gradient-card border-0 shadow-card overflow-hidden">
-        <CardHeader className="pb-5">
+        <CardHeader className={projectDescription ? 'pb-3' : 'pb-5'}>
           <CardTitle className="font-bold" style={{ fontSize: '3em', lineHeight: 1.05 }}>
             {projectName}
           </CardTitle>
+          {projectDescription ? (
+            <CardDescription className="text-sm sm:text-base leading-relaxed pt-3 text-foreground/90">
+              {projectDescription}
+            </CardDescription>
+          ) : null}
         </CardHeader>
 
         {coverImageUrl ? (
@@ -44,14 +49,6 @@ export function ProjectWorkflowOverviewPage({
               alt={projectName ? `${projectName} cover` : 'Project cover'}
               className="w-full h-full object-cover object-left"
             />
-          </div>
-        ) : null}
-
-        {projectDescription ? (
-          <div className="px-6 pt-4 pb-6">
-            <CardDescription className="text-sm leading-relaxed">
-              {projectDescription}
-            </CardDescription>
           </div>
         ) : null}
       </Card>
