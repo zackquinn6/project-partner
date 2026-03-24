@@ -179,18 +179,30 @@ function RiskFocusDashboard({
   const name = projectDisplayName?.trim() || null;
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 pb-1.5 pt-1 md:px-6 md:pb-2 md:pt-1">
-      {/* Same row: centered project name + summary label, vertically centered; summary sits above metrics card */}
-      <div className="mb-2 flex flex-row flex-wrap items-center justify-center gap-x-6 gap-y-2 sm:gap-x-10 md:gap-x-14">
+      {/* Project name left, vertically centered vs summary + metrics card on the right */}
+      <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-stretch sm:gap-4 md:gap-6">
         {name ? (
-          <h2 className="max-w-[min(100%,28rem)] text-center text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl md:text-3xl lg:text-4xl">
-            {name}
-          </h2>
+          <div className="flex min-w-0 flex-col justify-center sm:max-w-[min(100%,24rem)] md:max-w-md md:flex-none">
+            <h2 className="text-left text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl md:text-3xl lg:text-4xl">
+              {name}
+            </h2>
+          </div>
         ) : null}
-        <div className="border-b border-border/60 pb-1 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Current Risk Summary
-        </div>
-      </div>
-      <div className="flex w-full justify-center">
+        <div
+          className={cn(
+            'flex min-w-0 flex-1 flex-col',
+            name ? 'sm:items-end' : 'sm:items-center'
+          )}
+        >
+          <div
+            className={cn(
+              'mb-1.5 w-full border-b border-border/60 pb-1 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground',
+              name ? 'sm:w-auto sm:self-end sm:text-right' : ''
+            )}
+          >
+            Current Risk Summary
+          </div>
+          <div className="flex w-full justify-center sm:justify-end">
         <Card className="min-w-0 w-full max-w-xl overflow-hidden">
           <CardContent className="flex flex-row flex-wrap items-center justify-center gap-y-2 px-2 py-1.5">
             <div className="flex min-w-0 flex-row flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:gap-x-4">
@@ -231,6 +243,8 @@ function RiskFocusDashboard({
             </div>
           ) : null}
         </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -275,6 +289,7 @@ export function RiskManagementWindow({
   const [detailsRisk, setDetailsRisk] = useState<Risk | null>(null);
   const [showHiddenRisks, setShowHiddenRisks] = useState(false);
   const [riskListSort, setRiskListSort] = useState<'alpha' | 'severity-desc'>('alpha');
+  const showRiskFocusHiddenToggle = riskFocusRun && risks.length > 0;
   const [formData, setFormData] = useState({
     risk: '',
     likelihood: 'medium' as 'low' | 'medium' | 'high',
@@ -882,12 +897,12 @@ export function RiskManagementWindow({
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 flex-col gap-3">
-              {showRiskFocusProgressRow || showAddRiskRow ? (
+              {showRiskFocusProgressRow || showAddRiskRow || showRiskFocusHiddenToggle ? (
                 <div
                   className={cn(
                     'flex shrink-0 flex-col sm:flex-row sm:items-center',
                     variant === 'risk-focus' ? 'gap-1.5' : 'gap-2',
-                    showRiskFocusProgressRow && showAddRiskRow
+                    showRiskFocusProgressRow && (showAddRiskRow || showRiskFocusHiddenToggle)
                       ? 'sm:justify-between'
                       : showRiskFocusProgressRow
                         ? 'sm:justify-start'
@@ -930,7 +945,22 @@ export function RiskManagementWindow({
                     </div>
                   ) : null}
                   {showAddRiskRow ? (
-                    <div className="flex shrink-0 justify-end">
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+                      {showRiskFocusHiddenToggle ? (
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="show-hidden-risks-toolbar"
+                            checked={showHiddenRisks}
+                            onCheckedChange={(c) => setShowHiddenRisks(c === true)}
+                          />
+                          <Label
+                            htmlFor="show-hidden-risks-toolbar"
+                            className="cursor-pointer text-xs font-normal sm:text-sm"
+                          >
+                            Show hidden risks
+                          </Label>
+                        </div>
+                      ) : null}
                       <Button
                         variant="default"
                         size="sm"
@@ -954,6 +984,22 @@ export function RiskManagementWindow({
                         <Plus className="h-3.5 w-3.5 shrink-0" />
                         Add Risk
                       </Button>
+                    </div>
+                  ) : showRiskFocusHiddenToggle ? (
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="show-hidden-risks-toolbar"
+                          checked={showHiddenRisks}
+                          onCheckedChange={(c) => setShowHiddenRisks(c === true)}
+                        />
+                        <Label
+                          htmlFor="show-hidden-risks-toolbar"
+                          className="cursor-pointer text-xs font-normal sm:text-sm"
+                        >
+                          Show hidden risks
+                        </Label>
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -1000,8 +1046,8 @@ export function RiskManagementWindow({
                   {displayRisks.length === 0 ? (
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 py-12 text-center">
                       <p className="text-muted-foreground text-sm">
-                        All predefined risks are hidden. Turn on <span className="font-medium">Show hidden</span> below
-                        to see them.
+                        All predefined risks are hidden. Turn on <span className="font-medium">Show hidden risks</span>{' '}
+                        next to Add Risk to see them.
                       </p>
                     </div>
                   ) : null}
@@ -1035,8 +1081,8 @@ export function RiskManagementWindow({
                           }
                         >
                           <div className="space-y-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
+                            <div className="flex items-start gap-2">
+                              <div className="min-w-0 flex-1">
                                 <div className="text-xs text-muted-foreground mb-1">What could go wrong?</div>
                                 <div className="flex flex-wrap items-center gap-2">
                                   <h3 className="font-semibold text-sm leading-snug">{risk.risk}</h3>
@@ -1047,9 +1093,9 @@ export function RiskManagementWindow({
                                   ) : null}
                                 </div>
                               </div>
-                              {!readOnly && (
+                              {!readOnly && !riskFocusRun ? (
                                 <div
-                                  className="flex gap-1 flex-shrink-0"
+                                  className="flex shrink-0 gap-1"
                                   onClick={(e) => e.stopPropagation()}
                                   onKeyDown={(e) => e.stopPropagation()}
                                 >
@@ -1061,32 +1107,7 @@ export function RiskManagementWindow({
                                   >
                                     <Edit className="w-4 h-4" />
                                   </Button>
-                                  {riskFocusRun && risk.is_template_risk ? (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => void handleSetRiskHiddenFromRegister(risk, !risk.hidden_from_register)}
-                                      className="h-11 w-11 p-0"
-                                      title={risk.hidden_from_register ? 'Show in register' : 'Hide from register'}
-                                    >
-                                      {risk.hidden_from_register ? (
-                                        <Eye className="w-4 h-4" />
-                                      ) : (
-                                        <EyeOff className="w-4 h-4" />
-                                      )}
-                                    </Button>
-                                  ) : null}
-                                  {riskFocusRun && !risk.is_template_risk ? (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDeleteRisk(risk)}
-                                      className="h-11 w-11 p-0 text-destructive hover:text-destructive"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  ) : null}
-                                  {!riskFocusRun && !(mode === 'run' && risk.is_template_risk) ? (
+                                  {!(mode === 'run' && risk.is_template_risk) ? (
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -1097,7 +1118,7 @@ export function RiskManagementWindow({
                                     </Button>
                                   ) : null}
                                 </div>
-                              )}
+                              ) : null}
                             </div>
                             <div className="space-y-3">
                               <div>
@@ -1300,7 +1321,7 @@ export function RiskManagementWindow({
                           {mode === 'run' && variant !== 'risk-focus' ? (
                             <TableHead className="w-[120px]">Status</TableHead>
                           ) : null}
-                          <TableHead className="w-[120px]">Actions</TableHead>
+                          {!riskFocusRun ? <TableHead className="w-[120px]">Actions</TableHead> : null}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1427,89 +1448,52 @@ export function RiskManagementWindow({
                                 )}
                               </TableCell>
                             )}
-                            <TableCell
-                              className="align-top"
-                              onClick={riskFocusRun ? (e) => e.stopPropagation() : undefined}
-                            >
-                              <div className="flex flex-wrap gap-1">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setDetailsRisk(risk)}
-                                  className="h-7 px-2 text-[10px]"
-                                >
-                                  Details
-                                </Button>
-                                {!readOnly && (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleEditRisk(risk)}
-                                      className="h-7 w-7 p-0"
-                                    >
-                                      <Edit className="w-3.5 h-3.5" />
-                                    </Button>
-                                    {riskFocusRun && risk.is_template_risk ? (
+                            {!riskFocusRun ? (
+                              <TableCell
+                                className="align-top"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="flex flex-wrap gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setDetailsRisk(risk)}
+                                    className="h-7 px-2 text-[10px]"
+                                  >
+                                    Details
+                                  </Button>
+                                  {!readOnly && (
+                                    <>
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() =>
-                                          void handleSetRiskHiddenFromRegister(risk, !risk.hidden_from_register)
-                                        }
+                                        onClick={() => handleEditRisk(risk)}
                                         className="h-7 w-7 p-0"
-                                        title={risk.hidden_from_register ? 'Show in register' : 'Hide from register'}
                                       >
-                                        {risk.hidden_from_register ? (
-                                          <Eye className="w-3.5 h-3.5" />
-                                        ) : (
-                                          <EyeOff className="w-3.5 h-3.5" />
-                                        )}
+                                        <Edit className="w-3.5 h-3.5" />
                                       </Button>
-                                    ) : null}
-                                    {riskFocusRun && !risk.is_template_risk ? (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleDeleteRisk(risk)}
-                                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </Button>
-                                    ) : null}
-                                    {!riskFocusRun && !(mode === 'run' && risk.is_template_risk) ? (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleDeleteRisk(risk)}
-                                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </Button>
-                                    ) : null}
-                                  </>
-                                )}
-                              </div>
-                            </TableCell>
+                                      {!(mode === 'run' && risk.is_template_risk) ? (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleDeleteRisk(risk)}
+                                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </Button>
+                                      ) : null}
+                                    </>
+                                  )}
+                                </div>
+                              </TableCell>
+                            ) : null}
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                     </div>
                   </div>
-                  {riskFocusRun && risks.length > 0 ? (
-                    <div className="flex shrink-0 items-center gap-2 border-t border-border/60 px-1 py-2 md:px-0">
-                      <Checkbox
-                        id="show-hidden-risks"
-                        checked={showHiddenRisks}
-                        onCheckedChange={(c) => setShowHiddenRisks(c === true)}
-                      />
-                      <Label htmlFor="show-hidden-risks" className="cursor-pointer text-sm font-normal">
-                        Show hidden risks
-                      </Label>
-                    </div>
-                  ) : null}
                 </>
               )}
             </div>
