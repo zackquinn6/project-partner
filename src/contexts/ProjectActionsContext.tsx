@@ -460,7 +460,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       // - Run-specific risks (user-added later) have `template_risk_id = null` and must not be modified.
       const templateProjectIdForRisks = project.parent_project_id ?? project.id;
 
-      const riskAccessErrorMessage = 'Cannot contact database to access risks. Contact adminstrator';
+      const riskAccessErrorMessage = 'Cannot contact database to access risks. Contact administrator';
       try {
         const { data: standardProject, error: standardProjectError } = await supabase
           .from('projects')
@@ -529,7 +529,16 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             throw new Error(riskAccessErrorMessage);
           }
 
-          const insertRows = validRisks.map((risk: any, idx: number) => ({
+          // Avoid duplicate inserts when foundation + project risks share titles.
+          const seenTitles = new Set<string>();
+          const dedupedRisks = validRisks.filter((risk: any) => {
+            const normalizedTitle = risk.risk_title.trim().toLowerCase();
+            if (seenTitles.has(normalizedTitle)) return false;
+            seenTitles.add(normalizedTitle);
+            return true;
+          });
+
+          const insertRows = dedupedRisks.map((risk: any, idx: number) => ({
             project_run_id: data,
             template_risk_id: risk.id,
             risk_title: risk.risk_title.trim(),
@@ -554,7 +563,14 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
               .from('project_run_risks')
               .insert(insertRows);
 
-            if (insertError) throw new Error(riskAccessErrorMessage);
+            if (insertError) {
+              console.error('❌ project_run_risks insert failed:', insertError, {
+                runId: data,
+                insertRowsCount: insertRows.length,
+                firstInsertRow: insertRows[0],
+              });
+              throw new Error(riskAccessErrorMessage);
+            }
           }
         } else if (sourceRisks.length === 0) {
           throw new Error(riskAccessErrorMessage);
