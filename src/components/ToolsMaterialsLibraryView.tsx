@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -149,6 +149,16 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
     const nameMatch = tool.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
     return itemMatch || descriptionMatch || nameMatch;
   });
+
+  const sortedFilteredTools = useMemo(
+    () =>
+      [...filteredTools].sort((a, b) => {
+        const ka = (a.item?.trim() || a.name?.trim() || '').toLowerCase();
+        const kb = (b.item?.trim() || b.name?.trim() || '').toLowerCase();
+        return ka.localeCompare(kb, undefined, { sensitivity: 'base' });
+      }),
+    [filteredTools]
+  );
 
   const filteredMaterials = userMaterials.filter(material => {
     const itemMatch = material.item?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
@@ -409,14 +419,14 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                 </TabsList>
                 
                 <TabsContent value="tools" className="space-y-4 mt-4 max-h-[50vh] overflow-y-auto">
-                  {filteredTools.length === 0 ? (
+                  {sortedFilteredTools.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Wrench className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
                       <p>No tools in your library yet</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
-                      {filteredTools.map((tool) => (
+                      {sortedFilteredTools.map((tool) => (
                         <Card 
                           key={tool.id} 
                           className="cursor-pointer hover:shadow-md transition-shadow p-3 relative"

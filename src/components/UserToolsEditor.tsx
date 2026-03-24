@@ -328,6 +328,16 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
     return { commonTools: common, otherTools: other };
   }, [filteredTools]);
 
+  const libraryToolsSorted = useMemo(
+    () =>
+      [...userTools].sort((a, b) => {
+        const ka = (a.item?.trim() || a.name?.trim() || '').toLowerCase();
+        const kb = (b.item?.trim() || b.name?.trim() || '').toLowerCase();
+        return ka.localeCompare(kb, undefined, { sensitivity: 'base' });
+      }),
+    [userTools]
+  );
+
   const handleAddTool = async (tool: Tool) => {
     // Set loading state for this specific tool
     setAddingToolId(tool.id);
@@ -779,7 +789,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
               <p className="text-sm mt-2">Click "Add Tools" to get started!</p>
             </div>
           ) : (
-            userTools.map((tool) => (
+            libraryToolsSorted.map((tool) => (
               <Card key={tool.id} className="p-4">
                 <div className="flex justify-between items-start gap-3">
                   <div className="flex-1 min-w-0">
