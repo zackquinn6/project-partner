@@ -769,6 +769,59 @@ export function RiskManagementWindow({
     }
   };
 
+  const handleAppendMitigationAction = async (risk: Risk) => {
+    if (mode !== 'run' || !projectRunId || variant !== 'risk-focus' || readOnly) return;
+    const actions = parseMitigationActionsFromDb(risk.mitigation_actions);
+    const next = [...actions, { action: '', benefit: '', completed: false }];
+    try {
+      const { error } = await supabase
+        .from('project_run_risks')
+        .update({ mitigation_actions: next })
+        .eq('id', risk.id);
+      if (error) throw error;
+      fetchRisks();
+      window.dispatchEvent(new CustomEvent('risks-updated'));
+    } catch (error) {
+      console.error('Error adding mitigation action:', error);
+      toast.error('Failed to add mitigation');
+    }
+  };
+
+  const handleMitigationActionTextBlur = async (risk: Risk, actionIndex: number, raw: string) => {
+    if (mode !== 'run' || !projectRunId || variant !== 'risk-focus' || readOnly) return;
+    const actions = parseMitigationActionsFromDb(risk.mitigation_actions);
+    if (actionIndex < 0 || actionIndex >= actions.length) return;
+    const trimmed = raw.trim();
+    const prev = (actions[actionIndex].action || '').trim();
+    if (trimmed === prev) return;
+    let next: { action: string; benefit?: string | null; completed?: boolean }[];
+    if (!trimmed) {
+      next = actions.filter((_, i) => i !== actionIndex);
+    } else {
+      next = actions.map((a, i) => (i === actionIndex ? { ...a, action: trimmed } : a));
+    }
+    try {
+      const { error } = await supabase
+        .from('project_run_risks')
+        .update({ mitigation_actions: next.length > 0 ? next : null })
+        .eq('id', risk.id);
+      if (error) throw error;
+      fetchRisks();
+      window.dispatchEvent(new CustomEvent('risks-updated'));
+    } catch (error) {
+      console.error('Error updating mitigation text:', error);
+      toast.error('Failed to save mitigation');
+    }
+  };
+
+  useEffect(() => {
+    setDetailsRisk((prev) => {
+      if (!prev) return prev;
+      const next = risks.find((r) => r.id === prev.id);
+      return next ?? null;
+    });
+  }, [risks]);
+
   const handleSetRiskHiddenFromRegister = async (risk: Risk, hidden: boolean) => {
     if (mode !== 'run' || !projectRunId || variant !== 'risk-focus') return;
     if (!risk.is_template_risk) {
@@ -1196,7 +1249,7 @@ export function RiskManagementWindow({
                                 )}
                               </div>
                             )}
-                            {(risk.mitigation_actions && risk.mitigation_actions.length > 0) && (
+                            {riskFocusRun ? (
                               <div
                                 onClick={(e) => e.stopPropagation()}
                                 onKeyDown={(e) => e.stopPropagation()}
@@ -1204,35 +1257,93 @@ export function RiskManagementWindow({
                                 <div className="text-xs text-muted-foreground mb-1">
                                   What can we do to prevent it?
                                 </div>
-                                <ul className="space-y-2 text-sm">
-                                  {risk.mitigation_actions.map((ma, idx) => (
-                                    <li key={idx} className="flex items-start gap-2">
-                                      {riskFocusRun && !readOnly ? (
-                                        <Checkbox
-                                          className="mt-0.5"
-                                          checked={Boolean(ma.completed)}
-                                          onCheckedChange={() => void handleMitigationActionCompletedToggle(risk, idx)}
-                                          aria-label={`Done: ${ma.action}`}
-                                        />
-                                      ) : null}
-                                      <span>
-                                        <span className="font-medium">{ma.action}</span>
-                                        {ma.benefit ? (
-                                          <span className="text-muted-foreground"> – {ma.benefit}</span>
+                                {(risk.mitigation_actions?.length ?? 0) > 0 ? (
+                                  <ul className="space-y-2 text-sm">
+                                    {risk.mitigation_actions!.map((ma, idx) => (
+                                      <li key={idx} className="flex items-start gap-2">
+                                        {!readOnly && String(ma.action).trim() ? (
+                                          <Checkbox
+                                            className="mt-0.5"
+                                            checked={Boolean(ma.completed)}
+                                            onCheckedChange={() => void handleMitigationActionCompletedToggle(risk, idx)}
+                                            aria-label={`Done: ${ma.action}`}
+                                          />
                                         ) : null}
-                                      </span>
-                                    </li>
-                                  ))}
-                                </ul>
+                                        <div className="min-w-0 flex-1">
+                                          {!readOnly && !String(ma.action).trim() ? (
+                                            <Input
+                                              className="h-9 text-sm"
+                                              placeholder="Describe this mitigation"
+                                              defaultValue=""
+                                              onBlur={(e) => void handleMitigationActionTextBlur(risk, idx, e.target.value)}
+                                              onClick={(e) => e.stopPropagation()}
+                                              onKeyDown={(e) => e.stopPropagation()}
+                                            />
+                                          ) : (
+                                            <span>
+                                              <span className="font-medium">{ma.action}</span>
+                                              {ma.benefit ? (
+                                                <span className="text-muted-foreground"> – {ma.benefit}</span>
+                                              ) : null}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : risk.mitigation ? (
+                                  <p className="text-sm">{risk.mitigation}</p>
+                                ) : (
+                                  <p className="text-sm text-muted-foreground">No mitigation steps yet.</p>
+                                )}
+                                {!readOnly ? (
+                                  <div className="mt-2 flex justify-center">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                                      aria-label="Add mitigation"
+                                      onClick={() => void handleAppendMitigationAction(risk)}
+                                    >
+                                      <Plus className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ) : null}
                               </div>
-                            )}
-                            {!risk.mitigation_actions?.length && risk.mitigation && (
-                              <div>
-                                <div className="text-xs text-muted-foreground mb-1">
-                                  What can we do to prevent it?
-                                </div>
-                                <p className="text-sm">{risk.mitigation}</p>
-                              </div>
+                            ) : (
+                              <>
+                                {(risk.mitigation_actions && risk.mitigation_actions.length > 0) && (
+                                  <div
+                                    onClick={(e) => e.stopPropagation()}
+                                    onKeyDown={(e) => e.stopPropagation()}
+                                  >
+                                    <div className="text-xs text-muted-foreground mb-1">
+                                      What can we do to prevent it?
+                                    </div>
+                                    <ul className="space-y-2 text-sm">
+                                      {risk.mitigation_actions.map((ma, idx) => (
+                                        <li key={idx} className="flex items-start gap-2">
+                                          <span>
+                                            <span className="font-medium">{ma.action}</span>
+                                            {ma.benefit ? (
+                                              <span className="text-muted-foreground"> – {ma.benefit}</span>
+                                            ) : null}
+                                          </span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {!risk.mitigation_actions?.length && risk.mitigation && (
+                                  <div>
+                                    <div className="text-xs text-muted-foreground mb-1">
+                                      What can we do to prevent it?
+                                    </div>
+                                    <p className="text-sm">{risk.mitigation}</p>
+                                  </div>
+                                )}
+                              </>
                             )}
                             {!(mode === 'run' && variant === 'risk-focus') ? (
                               <Button
@@ -1367,18 +1478,64 @@ export function RiskManagementWindow({
                               className="text-sm text-muted-foreground align-top"
                               onClick={riskFocusRun ? (e) => e.stopPropagation() : undefined}
                             >
-                              {risk.mitigation_actions && risk.mitigation_actions.length > 0 ? (
+                              {riskFocusRun ? (
+                                <div className="space-y-2">
+                                  {(risk.mitigation_actions?.length ?? 0) > 0 ? (
+                                    risk.mitigation_actions!.map((ma, idx) => (
+                                      <div key={idx} className="flex items-start gap-2">
+                                        {!readOnly && String(ma.action).trim() ? (
+                                          <Checkbox
+                                            className="mt-0.5"
+                                            checked={Boolean(ma.completed)}
+                                            onCheckedChange={() => void handleMitigationActionCompletedToggle(risk, idx)}
+                                            aria-label={`Done: ${ma.action}`}
+                                          />
+                                        ) : null}
+                                        <div className="flex min-w-0 flex-1 flex-col">
+                                          {!readOnly && !String(ma.action).trim() ? (
+                                            <Input
+                                              className="h-8 text-xs"
+                                              placeholder="Describe this mitigation"
+                                              defaultValue=""
+                                              onBlur={(e) => void handleMitigationActionTextBlur(risk, idx, e.target.value)}
+                                              onClick={(e) => e.stopPropagation()}
+                                              onKeyDown={(e) => e.stopPropagation()}
+                                            />
+                                          ) : (
+                                            <>
+                                              <span className="font-medium">{ma.action}</span>
+                                              {ma.benefit ? (
+                                                <span className="text-xs text-muted-foreground">{ma.benefit}</span>
+                                              ) : null}
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : risk.mitigation ? (
+                                    <p className="text-sm">{risk.mitigation}</p>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                  {!readOnly ? (
+                                    <div className="flex justify-center pt-0.5">
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+                                        aria-label="Add mitigation"
+                                        onClick={() => void handleAppendMitigationAction(risk)}
+                                      >
+                                        <Plus className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ) : risk.mitigation_actions && risk.mitigation_actions.length > 0 ? (
                                 <div className="space-y-2">
                                   {risk.mitigation_actions.map((ma, idx) => (
                                     <div key={idx} className="flex items-start gap-2">
-                                      {riskFocusRun && !readOnly ? (
-                                        <Checkbox
-                                          className="mt-0.5"
-                                          checked={Boolean(ma.completed)}
-                                          onCheckedChange={() => void handleMitigationActionCompletedToggle(risk, idx)}
-                                          aria-label={`Done: ${ma.action}`}
-                                        />
-                                      ) : null}
                                       <div className="flex min-w-0 flex-col">
                                         <span className="font-medium">{ma.action}</span>
                                         {ma.benefit ? (
@@ -1835,6 +1992,72 @@ export function RiskManagementWindow({
                 </h4>
                 <div className="mt-1.5">
                   <ImpactIfItDoesContent risk={detailsRisk} />
+                </div>
+              </section>
+              <section>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  What can we do to prevent it?
+                </h4>
+                <div className="mt-1.5 space-y-3">
+                  {detailsRisk.mitigation_strategy || detailsRisk.mitigation ? (
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                      {detailsRisk.mitigation_strategy || detailsRisk.mitigation}
+                    </p>
+                  ) : null}
+                  {(detailsRisk.mitigation_actions?.length ?? 0) > 0 ? (
+                    <ul className="space-y-2 text-sm">
+                      {detailsRisk.mitigation_actions!.map((ma, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          {riskFocusRun && !readOnly && String(ma.action).trim() ? (
+                            <Checkbox
+                              className="mt-0.5"
+                              checked={Boolean(ma.completed)}
+                              onCheckedChange={() => void handleMitigationActionCompletedToggle(detailsRisk, idx)}
+                              aria-label={`Done: ${ma.action}`}
+                            />
+                          ) : null}
+                          <div className="min-w-0 flex-1">
+                            {riskFocusRun && !readOnly && !String(ma.action).trim() ? (
+                              <Input
+                                className="h-9 text-sm"
+                                placeholder="Describe this mitigation"
+                                defaultValue=""
+                                onBlur={(e) => void handleMitigationActionTextBlur(detailsRisk, idx, e.target.value)}
+                              />
+                            ) : readOnly && !String(ma.action).trim() ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : (
+                              <span>
+                                <span className="font-medium">{ma.action}</span>
+                                {ma.benefit ? (
+                                  <span className="text-muted-foreground"> – {ma.benefit}</span>
+                                ) : null}
+                              </span>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {!detailsRisk.mitigation_strategy &&
+                  !detailsRisk.mitigation &&
+                  !(detailsRisk.mitigation_actions?.length) ? (
+                    <p className="text-sm text-muted-foreground">No mitigation steps recorded.</p>
+                  ) : null}
+                  {riskFocusRun && !readOnly ? (
+                    <div className="flex justify-center border-t border-border/40 pt-3">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        aria-label="Add mitigation"
+                        onClick={() => void handleAppendMitigationAction(detailsRisk)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
               </section>
               {!readOnly ? (
