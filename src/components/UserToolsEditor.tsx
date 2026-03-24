@@ -10,6 +10,7 @@ import { Search, Plus, X, Upload, Camera, Eye, ShoppingCart, Save, Trash2, Loade
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { VariationViewer } from "./VariationViewer";
 
@@ -23,14 +24,17 @@ interface Tool {
 }
 
 interface UserOwnedTool {
-  id: string;           // user_tools row id
+  id: string;           // user_tools row id (or legacy: catalog / variation id in owned_tools JSON)
   tool_id: string;      // core tools.id
   name: string;
+  /** Display label — synced with name when loaded from user_tools */
+  item?: string;
   description?: string;
   custom_description?: string;
   quantity: number;
   model_name?: string;
   user_photo_url?: string;
+  photo_url?: string;
 }
 
 interface UserToolsEditorProps {
@@ -134,7 +138,10 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
       
       if (error) throw error;
       
-      const tools = (data as UserOwnedTool[]) || [];
+      const tools: UserOwnedTool[] = ((data as UserOwnedTool[]) || []).map((row) => ({
+        ...row,
+        item: row.item ?? row.name,
+      }));
       console.log('✅ UserToolsEditor - Fetched tools from user_tools:', {
         count: tools.length,
         toolNames: tools.slice(0, 5).map(t => t.name)
@@ -200,6 +207,13 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
     }
   }, [availableTools, toolVariations]);
   
+  /** True if the user already owns this catalog tool (user_tools.tool_id or legacy id match). */
+  const userOwnsCatalogTool = useCallback(
+    (catalogToolId: string) =>
+      userTools.some((ut) => ut.tool_id === catalogToolId || ut.id === catalogToolId),
+    [userTools]
+  );
+
   const filteredTools = useMemo(() => {
     // If variations haven't been checked yet and we have tools, show all tools that match search
     // This prevents filtering out tools before we know if they have variations
@@ -232,19 +246,22 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
         
         // If tool has no variations, check if core tool itself is owned
         if (variations.length === 0) {
-          const coreToolOwned = userTools.some(userTool => userTool.id === tool.id);
-          return !coreToolOwned;
+          return !userOwnsCatalogTool(tool.id);
         }
         
         // If tool has variations, check if ALL variations are owned
         // Create a fresh set each time to ensure we have the latest userTools state
-        const ownedVariationIds = new Set(userTools.map(userTool => userTool.id));
+        const ownedVariationIds = new Set<string>();
+        for (const ut of userTools) {
+          ownedVariationIds.add(ut.id);
+          if (ut.tool_id) ownedVariationIds.add(ut.tool_id);
+        }
         const allVariationsOwned = variations.every(variation => 
           ownedVariationIds.has(variation.id)
         );
         
         // Also check if the core tool itself is owned (for tools that have both core and variations)
-        const coreToolOwned = ownedVariationIds.has(tool.id);
+        const coreToolOwned = userOwnsCatalogTool(tool.id);
         
         // Show tool only if:
         // 1. Not all variations are owned AND
@@ -256,7 +273,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
         const bName = b.item || b.name || '';
         return aName.localeCompare(bName);
       });
-  }, [availableTools, searchTerm, toolVariations, userTools, variationsChecked]);
+  }, [availableTools, searchTerm, toolVariations, userTools, variationsChecked, userOwnsCatalogTool]);
 
   const { commonTools, otherTools } = useMemo(() => {
     const scale = (t: Tool) => t.specialty_scale ?? 2;
@@ -321,20 +338,65 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
 
       if (error) {
         console.error('❌ Failed to save tool to user_tools:', error);
+        toast.error(error.message || 'Could not add tool to your library.');
         return;
       }
 
-      const newUserTool = data as UserOwnedTool;
+      const row = data as UserOwnedTool;
+      const newUserTool: UserOwnedTool = {
+        ...row,
+        item: row.name,
+        photo_url: tool.photo_url,
+      };
       const updatedTools = [...userTools, newUserTool];
       setUserTools(updatedTools);
+
+      // ToolsMaterialsLibraryView and other UIs read owned_tools on user_profiles — keep in sync.
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({ owned_tools: updatedTools as any })
+        .eq('user_id', user.id);
+
+      if (profileError) {
+        console.error('❌ Failed to sync owned_tools after user_tools insert:', profileError);
+        toast.error(profileError.message || 'Tool saved but profile library sync failed.');
+      }
+
       window.dispatchEvent(new CustomEvent('tools-library-updated'));
     } catch (error) {
       console.error('❌ Error saving tool to user_tools:', error);
+      toast.error('Could not add tool to your library.');
     }
   };
 
-  const removeTool = (toolId: string) => {
-    setUserTools(userTools.filter(tool => tool.id !== toolId));
+  const removeTool = async (rowId: string) => {
+    if (!user) return;
+    const next = userTools.filter((tool) => tool.id !== rowId);
+    const { error: delError } = await supabase
+      .from('user_tools')
+      .delete()
+      .eq('id', rowId)
+      .eq('user_id', user.id);
+
+    if (delError) {
+      console.error('Failed to remove tool from user_tools:', delError);
+      toast.error(delError.message || 'Could not remove tool.');
+      return;
+    }
+
+    setUserTools(next);
+
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .update({ owned_tools: next as any })
+      .eq('user_id', user.id);
+
+    if (profileError) {
+      console.error('Failed to sync owned_tools after remove:', profileError);
+      toast.error(profileError.message || 'Removed tool but profile sync failed.');
+    }
+
+    window.dispatchEvent(new CustomEvent('tools-library-updated'));
   };
 
   // Immediate save on field changes
