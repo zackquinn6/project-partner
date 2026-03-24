@@ -899,7 +899,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           <Accordion type="single" collapsible className="w-full rounded-lg border bg-muted/20 px-2 sm:px-3">
             <AccordionItem value="project-details" className="border-none">
               <AccordionTrigger className="text-sm sm:text-base font-semibold py-3 hover:no-underline">
-                Project details
+                More Project Details
               </AccordionTrigger>
               <AccordionContent className="pb-4 pt-0">{projectDetailsFields}</AccordionContent>
             </AccordionItem>

@@ -23,6 +23,7 @@ interface Material {
 
 interface UserOwnedMaterial {
   id: string;
+  material_id?: string;
   name: string;
   description?: string;
   custom_description?: string;
@@ -113,7 +114,57 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
       if (error) throw error;
       
       const rawMaterials = (data as UserOwnedMaterial[]) || [];
-      setUserMaterials(rawMaterials);
+
+      // Link to canonical photos (core + variation) instead of copying image data.
+      const materialIds = Array.from(new Set(rawMaterials.map(m => m.material_id).filter(Boolean))) as string[];
+      const [corePhotosRes, variationPhotosRes] = await Promise.all([
+        materialIds.length > 0
+          ? supabase
+              .from('materials')
+              .select('id, photo_url')
+              .in('id', materialIds)
+          : Promise.resolve({ data: [], error: null } as any),
+        materialIds.length > 0
+          ? supabase
+              .from('tool_variations')
+              .select('core_item_id, name, sku, photo_url')
+              .eq('item_type', 'materials')
+              .in('core_item_id', materialIds)
+          : Promise.resolve({ data: [], error: null } as any),
+      ]);
+
+      if (corePhotosRes.error) throw corePhotosRes.error;
+      if (variationPhotosRes.error) throw variationPhotosRes.error;
+
+      const corePhotoById = new Map<string, string | null>(
+        (corePhotosRes.data || []).map((r: any) => [r.id, r.photo_url || null])
+      );
+      const variationsByCore = new Map<string, any[]>();
+      for (const v of variationPhotosRes.data || []) {
+        const list = variationsByCore.get(v.core_item_id) || [];
+        list.push(v);
+        variationsByCore.set(v.core_item_id, list);
+      }
+
+      const enriched = rawMaterials.map((material) => {
+        if (material.user_photo_url) return material;
+        const coreId = material.material_id;
+        if (!coreId) return material;
+
+        const variations = variationsByCore.get(coreId) || [];
+        const matchedVariation = variations.find((v: any) =>
+          (material.brand && v.sku && material.brand.toLowerCase().trim() === String(v.sku).toLowerCase().trim()) ||
+          (material.name && v.name && material.name.toLowerCase().trim() === String(v.name).toLowerCase().trim())
+        );
+        const linkedPhotoUrl = matchedVariation?.photo_url || corePhotoById.get(coreId) || null;
+
+        return {
+          ...material,
+          photo_url: linkedPhotoUrl || material.photo_url,
+        };
+      });
+
+      setUserMaterials(enriched);
     } catch (error) {
       console.error('Error fetching user materials:', error);
     }

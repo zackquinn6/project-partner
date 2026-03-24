@@ -76,7 +76,8 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
         return null;
       }
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      // Use flat object keys (no folder prefix) to match existing working library upload pattern.
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('library-photos')
@@ -91,7 +92,11 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
       return publicUrl;
     } catch (error) {
       console.error('Error uploading photo:', error);
-      toast.error('Failed to upload photo');
+      const message =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as any).message)
+          : 'Failed to upload photo';
+      toast.error(message);
       return null;
     }
   };
@@ -293,8 +298,6 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
                 {type === 'tools' ? (
                   <>
                     <SelectItem value="PPE">PPE</SelectItem>
-                    <SelectItem value="Hardware">Hardware</SelectItem>
-                    <SelectItem value="Software">Software</SelectItem>
                     <SelectItem value="Hand Tool">Hand Tool</SelectItem>
                     <SelectItem value="Power Tool">Power Tool</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>
