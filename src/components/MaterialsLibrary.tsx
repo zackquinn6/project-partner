@@ -270,7 +270,7 @@ export function MaterialsLibrary() {
                   {getSortIcon('unit_size')}
                 </Button>
               </TableHead>
-              <TableHead className="w-32 text-right">Actions</TableHead>
+              <TableHead className="w-20 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -316,27 +316,6 @@ export function MaterialsLibrary() {
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Material</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete "{material.item}"? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(material.id)}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
                   </div>
                 </TableCell>
               </TableRow>
@@ -360,15 +339,46 @@ export function MaterialsLibrary() {
             </DialogHeader>
             <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
               {editingMaterial && (
-                <LibraryItemForm
-                  type="materials"
-                  item={{...editingMaterial, name: editingMaterial.item}}
-                  onSave={handleSave}
-                  onCancel={() => {
-                    setShowEditDialog(false);
-                    setEditingMaterial(null);
-                  }}
-                />
+                <div className="space-y-4">
+                  <div className="flex justify-end">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          Delete Material
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Material</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete "{editingMaterial.item}"? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={async () => {
+                              await handleDelete(editingMaterial.id);
+                              setShowEditDialog(false);
+                              setEditingMaterial(null);
+                            }}
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                  <LibraryItemForm
+                    type="materials"
+                    item={{...editingMaterial, name: editingMaterial.item}}
+                    onSave={handleSave}
+                    onCancel={() => {
+                      setShowEditDialog(false);
+                      setEditingMaterial(null);
+                    }}
+                  />
+                </div>
               )}
             </div>
           </DialogContent>

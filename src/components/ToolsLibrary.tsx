@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Plus, Edit, Trash2, Image, ArrowUpDown } from "lucide-react";
+import { Search, Plus, Edit, Image, ArrowUpDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { LibraryItemForm } from "./LibraryItemForm";
@@ -266,7 +266,7 @@ export function ToolsLibrary() {
                     {getSortIcon('variations')}
                   </Button>
                 </TableHead>
-                <TableHead className="w-32 text-right bg-background sticky top-0 z-20">Actions</TableHead>
+                <TableHead className="w-20 text-right bg-background sticky top-0 z-20">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -329,27 +329,6 @@ export function ToolsLibrary() {
                     >
                       <Edit className="w-3 h-3" />
                     </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="w-8 h-8 p-0" title="Delete Tool">
-                          <Trash2 className="w-3 h-3 text-destructive" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Tool</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete "{tool.item}"? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(tool.id)}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
                   </div>
                 </TableCell>
               </TableRow>
@@ -374,15 +353,46 @@ export function ToolsLibrary() {
             </DialogHeader>
             <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
               {editingTool && (
-                <LibraryItemForm
-                  type="tools"
-                  item={{...editingTool, name: editingTool.item}}
-                  onSave={handleSave}
-                  onCancel={() => {
-                    setShowEditDialog(false);
-                    setEditingTool(null);
-                  }}
-                />
+                <div className="space-y-4">
+                  <div className="flex justify-end">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          Delete Tool
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Tool</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete "{editingTool.item}"? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={async () => {
+                              await handleDelete(editingTool.id);
+                              setShowEditDialog(false);
+                              setEditingTool(null);
+                            }}
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                  <LibraryItemForm
+                    type="tools"
+                    item={{...editingTool, name: editingTool.item}}
+                    onSave={handleSave}
+                    onCancel={() => {
+                      setShowEditDialog(false);
+                      setEditingTool(null);
+                    }}
+                  />
+                </div>
               )}
             </div>
           </DialogContent>
