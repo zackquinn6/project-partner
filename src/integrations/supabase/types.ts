@@ -2108,6 +2108,7 @@ export type Database = {
           budget_impact_low: number | null
           created_at: string | null
           display_order: number | null
+          hidden_from_register: boolean
           id: string
           impact: string | null
           likelihood: string | null
@@ -2131,6 +2132,7 @@ export type Database = {
           budget_impact_low?: number | null
           created_at?: string | null
           display_order?: number | null
+          hidden_from_register?: boolean
           id?: string
           impact?: string | null
           likelihood?: string | null
@@ -2154,6 +2156,7 @@ export type Database = {
           budget_impact_low?: number | null
           created_at?: string | null
           display_order?: number | null
+          hidden_from_register?: boolean
           id?: string
           impact?: string | null
           likelihood?: string | null

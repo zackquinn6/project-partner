@@ -14,9 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Edit, Trash2, Save, X, AlertTriangle, Shield, Crosshair, Info } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, AlertTriangle, Shield, Crosshair, Info, EyeOff, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -59,7 +60,7 @@ interface Risk {
   budget_impact_high?: number | null; // Database field
   mitigation: string | null; // Legacy text field
   mitigation_strategy?: string | null; // Database field
-  mitigation_actions?: { action: string; benefit?: string | null }[] | null;
+  mitigation_actions?: { action: string; benefit?: string | null; completed?: boolean }[] | null;
   notes?: string | null;
   status?: 'open' | 'mitigated' | 'closed' | 'monitoring';
   is_template_risk?: boolean;
@@ -67,6 +68,9 @@ interface Risk {
   display_order?: number;
   // Legacy fields for backward compatibility
   impact?: string;
+  /** Narrative “what happens if it does?” (DB `benefit`); migrated from former notes in `risk_description`. */
+  benefit?: string | null;
+  hidden_from_register?: boolean;
 }
 
 function scheduleBudgetParts(risk: Risk): { schedule: string | null; budget: string | null } {
@@ -83,15 +87,39 @@ function scheduleBudgetParts(risk: Risk): { schedule: string | null; budget: str
 
 function ImpactIfItDoesContent({ risk }: { risk: Risk }) {
   const { schedule, budget } = scheduleBudgetParts(risk);
-  if (!schedule && !budget) {
+  const narrative = typeof risk.benefit === 'string' ? risk.benefit.trim() : '';
+  if (!narrative && !schedule && !budget) {
     return <span className="text-muted-foreground">—</span>;
   }
   return (
     <div className="space-y-1 text-sm">
+      {narrative ? <p className="whitespace-pre-wrap break-words leading-relaxed">{narrative}</p> : null}
       {schedule ? <div>{schedule}</div> : null}
       {budget ? <div>{budget}</div> : null}
     </div>
   );
+}
+
+function parseMitigationActionsFromDb(raw: unknown): { action: string; benefit?: string | null; completed?: boolean }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null;
+      const o = item as Record<string, unknown>;
+      const action = typeof o.action === 'string' ? o.action : '';
+      const benefit = typeof o.benefit === 'string' ? o.benefit : null;
+      const completed = o.completed === true;
+      return { action, benefit, completed };
+    })
+    .filter((x): x is { action: string; benefit?: string | null; completed?: boolean } => x != null);
+}
+
+function severitySortRank(severity: string | null | undefined): number {
+  const s = (severity || '').toLowerCase();
+  if (s === 'high') return 3;
+  if (s === 'medium') return 2;
+  if (s === 'low') return 1;
+  return 0;
 }
 
 function riskFocusSeverityCounts(risks: Risk[]) {
@@ -126,12 +154,38 @@ function currentRiskLevelBadgeClass(level: 'low' | 'medium' | 'high') {
   }
 }
 
-function RiskFocusDashboard({ risks }: { risks: Risk[] }) {
+function RiskFocusDashboard({
+  risks,
+  projectDisplayName
+}: {
+  risks: Risk[];
+  projectDisplayName?: string | null;
+}) {
   const { high, medium, low, unset, total } = riskFocusSeverityCounts(risks);
+  const name = projectDisplayName?.trim() || null;
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 pb-1.5 pt-1 md:px-6 md:pb-2 md:pt-1">
-      <div className="mb-0.5 shrink-0 border-b pb-0.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Current Risk Summary
+      <div
+        className={cn(
+          'mb-2 flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4',
+          !name && 'sm:block'
+        )}
+      >
+        {name ? (
+          <h2 className="min-w-0 text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
+            {name}
+          </h2>
+        ) : null}
+        <div
+          className={cn(
+            'shrink-0 border-b pb-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground',
+            name
+              ? 'border-transparent text-left sm:border-border/60 sm:text-right'
+              : 'w-full border-border/60 text-center'
+          )}
+        >
+          Current Risk Summary
+        </div>
       </div>
       <div className="flex w-full justify-center">
         <Card className="min-w-0 w-full max-w-xl overflow-hidden">
@@ -207,6 +261,7 @@ export function RiskManagementWindow({
   );
   const showRiskFocusProgressRow =
     variant === 'risk-focus' && mode === 'run' && Boolean(projectRunId && riskFocusRunForProgress);
+  const riskFocusRun = variant === 'risk-focus' && mode === 'run';
   const showAddRiskRow =
     !readOnly && (mode === 'template' || (mode === 'run' && projectRunId));
   const [risks, setRisks] = useState<Risk[]>([]);
@@ -215,6 +270,8 @@ export function RiskManagementWindow({
   const [templateProjectIdForRisks, setTemplateProjectIdForRisks] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [detailsRisk, setDetailsRisk] = useState<Risk | null>(null);
+  const [showHiddenRisks, setShowHiddenRisks] = useState(false);
+  const [riskListSort, setRiskListSort] = useState<'alpha' | 'severity-desc'>('alpha');
   const [formData, setFormData] = useState({
     risk: '',
     likelihood: 'medium' as 'low' | 'medium' | 'high',
@@ -222,10 +279,32 @@ export function RiskManagementWindow({
     schedule_impact_days: 0,
     budget_impact_dollars: 0,
     mitigation: '',
-    mitigation_actions: [] as { action: string; benefit?: string | null }[],
+    mitigation_actions: [] as { action: string; benefit?: string | null; completed?: boolean }[],
     notes: '',
     status: 'open' as 'open' | 'mitigated' | 'closed' | 'monitoring'
   });
+
+  const displayRisks = useMemo(() => {
+    let list =
+      variant === 'risk-focus' && mode === 'run'
+        ? showHiddenRisks
+          ? risks
+          : risks.filter((r) => !r.hidden_from_register)
+        : risks;
+    const sorted = [...list];
+    if (variant === 'risk-focus' && mode === 'run') {
+      if (riskListSort === 'alpha') {
+        sorted.sort((a, b) => (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' }));
+      } else {
+        sorted.sort(
+          (a, b) =>
+            severitySortRank(b.severity) - severitySortRank(a.severity) ||
+            (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' })
+        );
+      }
+    }
+    return sorted;
+  }, [risks, variant, mode, showHiddenRisks, riskListSort]);
 
   useEffect(() => {
     if (open) {
@@ -319,8 +398,9 @@ export function RiskManagementWindow({
           budget_impact_high: risk.budget_impact_high,
           mitigation: risk.mitigation_strategy || null,
           mitigation_strategy: risk.mitigation_strategy,
-          mitigation_actions: Array.isArray(risk.mitigation_actions) ? risk.mitigation_actions : [],
-          notes: risk.risk_description || null,
+          mitigation_actions: parseMitigationActionsFromDb(risk.mitigation_actions),
+          notes: risk.benefit || risk.risk_description || null,
+          benefit: typeof risk.benefit === 'string' ? risk.benefit : null,
           status: 'open' as const,
           display_order: risk.display_order,
           impact: risk.impact
@@ -353,13 +433,15 @@ export function RiskManagementWindow({
           budget_impact_high: risk.budget_impact_high,
           mitigation: risk.mitigation_strategy || null,
           mitigation_strategy: risk.mitigation_strategy,
-          mitigation_actions: Array.isArray(risk.mitigation_actions) ? risk.mitigation_actions : [],
-          notes: risk.risk_description || null,
+          mitigation_actions: parseMitigationActionsFromDb(risk.mitigation_actions),
+          notes: risk.benefit || risk.risk_description || null,
+          benefit: typeof risk.benefit === 'string' ? risk.benefit : null,
           status: risk.status || 'open',
           is_template_risk: !!risk.template_risk_id,
           template_risk_id: risk.template_risk_id,
           display_order: risk.display_order,
-          impact: risk.impact
+          impact: risk.impact,
+          hidden_from_register: risk.hidden_from_register === true
         }));
         
         setRisks(mappedRisks);
@@ -401,7 +483,8 @@ export function RiskManagementWindow({
             .from('project_risks')
             .update({
               risk_title: formData.risk.trim(),
-              risk_description: formData.notes.trim() || null,
+              risk_description: null,
+              benefit: formData.notes.trim() || null,
               likelihood: formData.likelihood,
               severity: formData.severity,
               schedule_impact_low_days: formData.schedule_impact_days || null,
@@ -434,7 +517,8 @@ export function RiskManagementWindow({
             .insert({
               project_id: templateProjectIdForRisks,
               risk_title: formData.risk.trim(),
-              risk_description: formData.notes.trim() || null,
+              risk_description: null,
+              benefit: formData.notes.trim() || null,
               likelihood: formData.likelihood,
               severity: formData.severity,
               schedule_impact_low_days: formData.schedule_impact_days || null,
@@ -456,7 +540,8 @@ export function RiskManagementWindow({
         if (editingRisk) {
           const baseUpdate = {
               risk_title: formData.risk.trim(),
-              risk_description: formData.notes.trim() || null,
+              risk_description: null,
+              benefit: formData.notes.trim() || null,
               likelihood: formData.likelihood,
               severity: formData.severity,
               schedule_impact_low_days: formData.schedule_impact_days || null,
@@ -496,7 +581,8 @@ export function RiskManagementWindow({
             .insert({
               project_run_id: projectRunId,
               risk_title: formData.risk.trim(),
-              risk_description: formData.notes.trim() || null,
+              risk_description: null,
+              benefit: formData.notes.trim() || null,
               likelihood: formData.likelihood,
               severity: formData.severity,
               schedule_impact_low_days: formData.schedule_impact_days || null,
@@ -508,7 +594,8 @@ export function RiskManagementWindow({
                 ? formData.mitigation_actions
                 : null,
               status: formData.status,
-              display_order: nextOrder
+              display_order: nextOrder,
+              hidden_from_register: false
             });
 
           if (error) throw error;
@@ -541,6 +628,13 @@ export function RiskManagementWindow({
 
   const handleEditRisk = (risk: Risk) => {
     setEditingRisk(risk);
+    const narrative =
+      (typeof risk.benefit === 'string' && risk.benefit.trim() !== ''
+        ? risk.benefit
+        : null) ||
+      risk.notes ||
+      risk.risk_description ||
+      '';
     setFormData({
       risk: risk.risk || risk.risk_title || '',
       likelihood: risk.likelihood,
@@ -548,7 +642,8 @@ export function RiskManagementWindow({
       schedule_impact_days: risk.schedule_impact_days || risk.schedule_impact_high_days || risk.schedule_impact_low_days || 0,
       budget_impact_dollars: risk.budget_impact_dollars || risk.budget_impact_high || risk.budget_impact_low || 0,
       mitigation: risk.mitigation || risk.mitigation_strategy || '',
-      notes: risk.notes || risk.risk_description || '',
+      mitigation_actions: risk.mitigation_actions ? [...risk.mitigation_actions] : [],
+      notes: narrative,
       status: risk.status || 'open'
     });
     setShowAddForm(true);
@@ -559,7 +654,7 @@ export function RiskManagementWindow({
 
     // Prevent deletion of template risks by users
     if (mode === 'run' && risk.is_template_risk) {
-      toast.error('Template risks cannot be deleted. You can only change their status.');
+      toast.error('Predefined risks cannot be deleted. Hide them from the register instead.');
       return;
     }
 
@@ -585,6 +680,7 @@ export function RiskManagementWindow({
       fetchRisks();
       setShowAddForm(false);
       setEditingRisk(null);
+      setDetailsRisk((prev) => (prev?.id === risk.id ? null : prev));
 
       // Notify scheduler that risks have been updated
       window.dispatchEvent(new CustomEvent('risks-updated'));
@@ -631,6 +727,50 @@ export function RiskManagementWindow({
     } catch (error) {
       console.error('Error updating risk level:', error);
       toast.error('Failed to update risk level');
+    }
+  };
+
+  const handleMitigationActionCompletedToggle = async (risk: Risk, actionIndex: number) => {
+    if (mode !== 'run' || !projectRunId || variant !== 'risk-focus' || readOnly) return;
+    const actions = parseMitigationActionsFromDb(risk.mitigation_actions);
+    if (actionIndex < 0 || actionIndex >= actions.length) return;
+    const next = actions.map((a, i) =>
+      i === actionIndex ? { ...a, completed: !a.completed } : a
+    );
+    try {
+      const { error } = await supabase
+        .from('project_run_risks')
+        .update({ mitigation_actions: next.length > 0 ? next : null })
+        .eq('id', risk.id);
+      if (error) throw error;
+      fetchRisks();
+      window.dispatchEvent(new CustomEvent('risks-updated'));
+    } catch (error) {
+      console.error('Error updating mitigation action:', error);
+      toast.error('Failed to update mitigation action');
+    }
+  };
+
+  const handleSetRiskHiddenFromRegister = async (risk: Risk, hidden: boolean) => {
+    if (mode !== 'run' || !projectRunId || variant !== 'risk-focus') return;
+    if (!risk.is_template_risk) {
+      toast.error('Only predefined risks can be hidden. Use delete for risks you added.');
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('project_run_risks')
+        .update({ hidden_from_register: hidden })
+        .eq('id', risk.id);
+      if (error) throw error;
+      toast.success(hidden ? 'Risk hidden from register' : 'Risk shown in register again');
+      fetchRisks();
+      setDetailsRisk((prev) => (prev?.id === risk.id ? { ...prev, hidden_from_register: hidden } : prev));
+      setEditingRisk((prev) => (prev?.id === risk.id ? { ...prev, hidden_from_register: hidden } : prev));
+      window.dispatchEvent(new CustomEvent('risks-updated'));
+    } catch (error) {
+      console.error('Error updating risk visibility:', error);
+      toast.error('Failed to update risk visibility');
     }
   };
 
@@ -712,7 +852,18 @@ export function RiskManagementWindow({
           </div>
         </DialogHeader>
 
-        {variant === 'risk-focus' && mode === 'run' ? <RiskFocusDashboard risks={risks} /> : null}
+        {variant === 'risk-focus' && mode === 'run' ? (
+          <RiskFocusDashboard
+            risks={risks.filter((r) => !r.hidden_from_register)}
+            projectDisplayName={
+              riskFocusRunForProgress
+                ? riskFocusRunForProgress.customProjectName?.trim() ||
+                  riskFocusRunForProgress.name?.trim() ||
+                  null
+                : null
+            }
+          />
+        ) : null}
 
         <div
           className={cn(
@@ -804,6 +955,25 @@ export function RiskManagementWindow({
                   ) : null}
                 </div>
               ) : null}
+              {variant === 'risk-focus' && mode === 'run' ? (
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Sort
+                  </span>
+                  <Select
+                    value={riskListSort}
+                    onValueChange={(v) => setRiskListSort(v as 'alpha' | 'severity-desc')}
+                  >
+                    <SelectTrigger className="h-7 w-full max-w-[280px] text-xs sm:max-w-xs" aria-label="Sort risks">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="alpha">Alphabetical (what could go wrong)</SelectItem>
+                      <SelectItem value="severity-desc">Current risk level (high to low)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
               {risks.length === 0 ? (
                 <div className="flex flex-1 flex-col items-center justify-center py-12 text-center">
                   <AlertTriangle className="w-12 h-12 text-muted-foreground mb-4" />
@@ -816,10 +986,22 @@ export function RiskManagementWindow({
                 </div>
               ) : (
                 <>
+                  {displayRisks.length === 0 ? (
+                    <div className="flex flex-1 flex-col items-center justify-center gap-3 py-12 text-center">
+                      <p className="text-muted-foreground text-sm">
+                        All predefined risks are hidden. Turn on <span className="font-medium">Show hidden</span> below
+                        to see them.
+                      </p>
+                    </div>
+                  ) : null}
                   {/* Mobile: Card Layout */}
-                  <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain md:hidden">
-                    {risks.map((risk) => {
-                      const riskFocusRun = mode === 'run' && variant === 'risk-focus';
+                  <div
+                    className={cn(
+                      'min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain md:hidden',
+                      displayRisks.length === 0 ? 'hidden' : ''
+                    )}
+                  >
+                    {displayRisks.map((risk) => {
                       return (
                         <Card
                           key={risk.id}
@@ -845,7 +1027,14 @@ export function RiskManagementWindow({
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <div className="text-xs text-muted-foreground mb-1">What could go wrong?</div>
-                                <h3 className="font-semibold text-sm leading-snug">{risk.risk}</h3>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h3 className="font-semibold text-sm leading-snug">{risk.risk}</h3>
+                                  {riskFocusRun && risk.hidden_from_register ? (
+                                    <Badge variant="secondary" className="text-[10px]">
+                                      Hidden
+                                    </Badge>
+                                  ) : null}
+                                </div>
                               </div>
                               {!readOnly && (
                                 <div
@@ -861,17 +1050,41 @@ export function RiskManagementWindow({
                                   >
                                     <Edit className="w-4 h-4" />
                                   </Button>
-                                  {!(mode === 'run' && risk.is_template_risk) &&
-                                    !(mode === 'run' && variant === 'risk-focus') && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleDeleteRisk(risk)}
-                                        className="h-11 w-11 p-0 text-destructive hover:text-destructive"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </Button>
-                                    )}
+                                  {riskFocusRun && risk.is_template_risk ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => void handleSetRiskHiddenFromRegister(risk, !risk.hidden_from_register)}
+                                      className="h-11 w-11 p-0"
+                                      title={risk.hidden_from_register ? 'Show in register' : 'Hide from register'}
+                                    >
+                                      {risk.hidden_from_register ? (
+                                        <Eye className="w-4 h-4" />
+                                      ) : (
+                                        <EyeOff className="w-4 h-4" />
+                                      )}
+                                    </Button>
+                                  ) : null}
+                                  {riskFocusRun && !risk.is_template_risk ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDeleteRisk(risk)}
+                                      className="h-11 w-11 p-0 text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  ) : null}
+                                  {!riskFocusRun && !(mode === 'run' && risk.is_template_risk) ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDeleteRisk(risk)}
+                                      className="h-11 w-11 p-0 text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  ) : null}
                                 </div>
                               )}
                             </div>
@@ -952,17 +1165,30 @@ export function RiskManagementWindow({
                               </div>
                             )}
                             {(risk.mitigation_actions && risk.mitigation_actions.length > 0) && (
-                              <div>
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => e.stopPropagation()}
+                              >
                                 <div className="text-xs text-muted-foreground mb-1">
                                   What can we do to prevent it?
                                 </div>
-                                <ul className="text-sm list-disc list-inside space-y-1">
+                                <ul className="space-y-2 text-sm">
                                   {risk.mitigation_actions.map((ma, idx) => (
-                                    <li key={idx}>
-                                      <span className="font-medium">{ma.action}</span>
-                                      {ma.benefit && (
-                                        <span className="text-muted-foreground"> – {ma.benefit}</span>
-                                      )}
+                                    <li key={idx} className="flex items-start gap-2">
+                                      {riskFocusRun && !readOnly ? (
+                                        <Checkbox
+                                          className="mt-0.5"
+                                          checked={Boolean(ma.completed)}
+                                          onCheckedChange={() => void handleMitigationActionCompletedToggle(risk, idx)}
+                                          aria-label={`Done: ${ma.action}`}
+                                        />
+                                      ) : null}
+                                      <span>
+                                        <span className="font-medium">{ma.action}</span>
+                                        {ma.benefit ? (
+                                          <span className="text-muted-foreground"> – {ma.benefit}</span>
+                                        ) : null}
+                                      </span>
                                     </li>
                                   ))}
                                 </ul>
@@ -995,7 +1221,12 @@ export function RiskManagementWindow({
                   </div>
 
                   {/* Desktop: Table Layout — fills remaining height */}
-                  <div className="hidden min-h-0 flex-1 flex-col overflow-hidden md:flex">
+                  <div
+                    className={cn(
+                      'hidden min-h-0 flex-1 flex-col overflow-hidden md:flex',
+                      displayRisks.length === 0 ? 'md:hidden' : ''
+                    )}
+                  >
                     <div className="min-h-0 flex-1 overflow-auto rounded-md border border-border/60">
                       <Table>
                       <TableHeader>
@@ -1016,19 +1247,17 @@ export function RiskManagementWindow({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {risks.map((risk) => {
-                          const riskFocusRunRow = mode === 'run' && variant === 'risk-focus';
-                          return (
+                        {displayRisks.map((risk) => (
                           <TableRow
                             key={risk.id}
                             className={cn(
-                              riskFocusRunRow &&
+                              riskFocusRun &&
                                 'cursor-pointer hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
                             )}
-                            tabIndex={riskFocusRunRow ? 0 : undefined}
-                            onClick={riskFocusRunRow ? () => setDetailsRisk(risk) : undefined}
+                            tabIndex={riskFocusRun ? 0 : undefined}
+                            onClick={riskFocusRun ? () => setDetailsRisk(risk) : undefined}
                             onKeyDown={
-                              riskFocusRunRow
+                              riskFocusRun
                                 ? (e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                       e.preventDefault();
@@ -1039,7 +1268,14 @@ export function RiskManagementWindow({
                             }
                           >
                             <TableCell className="font-medium">
-                              {risk.risk}
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span>{risk.risk}</span>
+                                {riskFocusRun && risk.hidden_from_register ? (
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    Hidden
+                                  </Badge>
+                                ) : null}
+                              </div>
                             </TableCell>
                             <TableCell>
                               <Badge className={getRiskLevelColor(risk.likelihood, risk.schedule_impact_days, risk.budget_impact_dollars)}>
@@ -1049,15 +1285,28 @@ export function RiskManagementWindow({
                             <TableCell className="text-sm align-top">
                               <ImpactIfItDoesContent risk={risk} />
                             </TableCell>
-                            <TableCell className="text-sm text-muted-foreground align-top">
+                            <TableCell
+                              className="text-sm text-muted-foreground align-top"
+                              onClick={riskFocusRun ? (e) => e.stopPropagation() : undefined}
+                            >
                               {risk.mitigation_actions && risk.mitigation_actions.length > 0 ? (
-                                <div className="space-y-1">
+                                <div className="space-y-2">
                                   {risk.mitigation_actions.map((ma, idx) => (
-                                    <div key={idx} className="flex flex-col">
-                                      <span className="font-medium">{ma.action}</span>
-                                      {ma.benefit && (
-                                        <span className="text-xs text-muted-foreground">{ma.benefit}</span>
-                                      )}
+                                    <div key={idx} className="flex items-start gap-2">
+                                      {riskFocusRun && !readOnly ? (
+                                        <Checkbox
+                                          className="mt-0.5"
+                                          checked={Boolean(ma.completed)}
+                                          onCheckedChange={() => void handleMitigationActionCompletedToggle(risk, idx)}
+                                          aria-label={`Done: ${ma.action}`}
+                                        />
+                                      ) : null}
+                                      <div className="flex min-w-0 flex-col">
+                                        <span className="font-medium">{ma.action}</span>
+                                        {ma.benefit ? (
+                                          <span className="text-xs text-muted-foreground">{ma.benefit}</span>
+                                        ) : null}
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -1123,20 +1372,18 @@ export function RiskManagementWindow({
                             )}
                             <TableCell
                               className="align-top"
-                              onClick={riskFocusRunRow ? (e) => e.stopPropagation() : undefined}
+                              onClick={riskFocusRun ? (e) => e.stopPropagation() : undefined}
                             >
                               <div className="flex flex-wrap gap-1">
-                                {!riskFocusRunRow && (
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setDetailsRisk(risk)}
-                                    className="h-7 px-2 text-[10px]"
-                                  >
-                                    Details
-                                  </Button>
-                                )}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setDetailsRisk(risk)}
+                                  className="h-7 px-2 text-[10px]"
+                                >
+                                  Details
+                                </Button>
                                 {!readOnly && (
                                   <>
                                     <Button
@@ -1147,7 +1394,24 @@ export function RiskManagementWindow({
                                     >
                                       <Edit className="w-3.5 h-3.5" />
                                     </Button>
-                                    {!(mode === 'run' && risk.is_template_risk) && !riskFocusRunRow && (
+                                    {riskFocusRun && risk.is_template_risk ? (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          void handleSetRiskHiddenFromRegister(risk, !risk.hidden_from_register)
+                                        }
+                                        className="h-7 w-7 p-0"
+                                        title={risk.hidden_from_register ? 'Show in register' : 'Hide from register'}
+                                      >
+                                        {risk.hidden_from_register ? (
+                                          <Eye className="w-3.5 h-3.5" />
+                                        ) : (
+                                          <EyeOff className="w-3.5 h-3.5" />
+                                        )}
+                                      </Button>
+                                    ) : null}
+                                    {riskFocusRun && !risk.is_template_risk ? (
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1156,18 +1420,39 @@ export function RiskManagementWindow({
                                       >
                                         <Trash2 className="w-3.5 h-3.5" />
                                       </Button>
-                                    )}
+                                    ) : null}
+                                    {!riskFocusRun && !(mode === 'run' && risk.is_template_risk) ? (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteRisk(risk)}
+                                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </Button>
+                                    ) : null}
                                   </>
                                 )}
                               </div>
                             </TableCell>
                           </TableRow>
-                        );
-                        })}
+                        ))}
                       </TableBody>
                     </Table>
                     </div>
                   </div>
+                  {riskFocusRun && risks.length > 0 ? (
+                    <div className="flex shrink-0 items-center gap-2 border-t border-border/60 px-1 py-2 md:px-0">
+                      <Checkbox
+                        id="show-hidden-risks"
+                        checked={showHiddenRisks}
+                        onCheckedChange={(c) => setShowHiddenRisks(c === true)}
+                      />
+                      <Label htmlFor="show-hidden-risks" className="cursor-pointer text-sm font-normal">
+                        Show hidden risks
+                      </Label>
+                    </div>
+                  ) : null}
                 </>
               )}
             </div>
@@ -1309,6 +1594,16 @@ export function RiskManagementWindow({
                     />
                   </div>
                 </div>
+                <div>
+                  <Label htmlFor="impact_narrative">Narrative — what happens if it does?</Label>
+                  <Textarea
+                    id="impact_narrative"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Describe the impact in words (schedule, quality, scope, etc.)…"
+                    rows={3}
+                  />
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -1330,12 +1625,12 @@ export function RiskManagementWindow({
                       variant="outline"
                       size="xs"
                       onClick={() =>
-                        setFormData(prev => ({
+                        setFormData((prev) => ({
                           ...prev,
                           mitigation_actions: [
                             ...(prev.mitigation_actions || []),
-                            { action: '', benefit: '' }
-                          ]
+                            { action: '', benefit: '', completed: false },
+                          ],
                         }))
                       }
                     >
@@ -1381,17 +1676,6 @@ export function RiskManagementWindow({
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Additional notes about this risk..."
-                  rows={3}
-                />
-              </div>
-
               {mode === 'run' && variant !== 'risk-focus' && (
                 <div>
                   <Label htmlFor="status">Status</Label>
@@ -1416,6 +1700,26 @@ export function RiskManagementWindow({
             </div>
             <DialogFooter className="shrink-0 flex-col gap-3 border-t bg-background px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
               <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                {editingRisk && mode === 'run' && variant === 'risk-focus' && !readOnly && editingRisk.is_template_risk ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={() => void handleSetRiskHiddenFromRegister(editingRisk, !editingRisk.hidden_from_register)}
+                  >
+                    {editingRisk.hidden_from_register ? (
+                      <>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Show in register
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="mr-2 h-4 w-4" />
+                        Hide from register
+                      </>
+                    )}
+                  </Button>
+                ) : null}
                 {editingRisk &&
                 mode === 'run' &&
                 variant === 'risk-focus' &&
@@ -1475,9 +1779,7 @@ export function RiskManagementWindow({
           <>
             <SheetHeader className="space-y-1 pr-6 text-left">
               <SheetTitle>More details</SheetTitle>
-              <SheetDescription>
-                Notes and impact breakdown for this risk.
-              </SheetDescription>
+              <SheetDescription>Impact breakdown and actions for this risk.</SheetDescription>
             </SheetHeader>
             <div className="mt-6 flex-1 space-y-5">
               <section>
@@ -1494,12 +1796,65 @@ export function RiskManagementWindow({
                   <ImpactIfItDoesContent risk={detailsRisk} />
                 </div>
               </section>
-              <section>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes</h4>
-                <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed">
-                  {detailsRisk.notes?.trim() ? detailsRisk.notes : '—'}
-                </p>
-              </section>
+              {!readOnly ? (
+                <div className="flex flex-wrap gap-2 border-t border-border/60 pt-4">
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      const r = detailsRisk;
+                      setDetailsRisk(null);
+                      handleEditRisk(r);
+                    }}
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit risk
+                  </Button>
+                  {riskFocusRun && detailsRisk.is_template_risk ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void handleSetRiskHiddenFromRegister(detailsRisk, !detailsRisk.hidden_from_register)}
+                    >
+                      {detailsRisk.hidden_from_register ? (
+                        <>
+                          <Eye className="mr-2 h-4 w-4" />
+                          Show in register
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="mr-2 h-4 w-4" />
+                          Hide from register
+                        </>
+                      )}
+                    </Button>
+                  ) : null}
+                  {riskFocusRun && !detailsRisk.is_template_risk ? (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => void handleDeleteRisk(detailsRisk)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete risk
+                    </Button>
+                  ) : null}
+                  {!riskFocusRun && !(mode === 'run' && detailsRisk.is_template_risk) ? (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => void handleDeleteRisk(detailsRisk)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete risk
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </>
         ) : null}
