@@ -103,12 +103,12 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
         return null;
       }
       const ext = extensionForImageFile(file);
-      const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-      const kind = type === 'tools' ? 'tool' : 'material';
+      const kindPrefix = type === 'tools' ? 'core-tool' : 'core-material';
       const idPart = item?.id != null ? String(item.id) : 'new';
-      // RLS on library-photos allows a single object name under auth.uid() (see UserMaterialsEditor:
-      // `${user.id}/${materialId}_${Date.now()}.ext`). Nested folders under the uid are rejected.
-      const filePath = `${user.id}/catalog-${kind}-${idPart}-${unique}.${ext}`;
+      // Same depth as user library (`uid/filename`) but filename must use core-tool- / core-material-
+      // prefix so storage RLS can allow catalog IDs (not user_tools / user_materials row ids).
+      const uniq = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const filePath = `${user.id}/${kindPrefix}-${idPart}_${uniq}.${ext}`;
 
       const { error: uploadError } = await supabase.storage.from('library-photos').upload(filePath, file, {
         upsert: true,
