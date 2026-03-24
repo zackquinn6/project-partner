@@ -496,7 +496,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         // Only insert template-derived risks that are missing in this run.
         const { data: existingRunTemplateRisks, error: existingRunTemplateRisksError } = await supabase
           .from('project_run_risks')
-          .select('template_risk_id, display_order')
+          .select('template_risk_id, risk_title, display_order')
           .eq('project_run_id', data);
 
         if (existingRunTemplateRisksError) throw existingRunTemplateRisksError;
@@ -511,6 +511,12 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           .filter(r => r.template_risk_id != null)
           .map(r => (typeof r.display_order === 'number' ? r.display_order : null))
           .filter((v): v is number => v != null);
+
+        const existingRunRiskTitles = new Set(
+          (existingRunTemplateRisks || [])
+            .map(r => (typeof r.risk_title === 'string' ? r.risk_title.trim().toLowerCase() : ''))
+            .filter((title): title is string => title.length > 0)
+        );
 
         const nextDisplayOrder = existingTemplateDisplayOrders.length > 0
           ? Math.max(...existingTemplateDisplayOrders) + 1
@@ -534,6 +540,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           const dedupedRisks = validRisks.filter((risk: any) => {
             const normalizedTitle = risk.risk_title.trim().toLowerCase();
             if (seenTitles.has(normalizedTitle)) return false;
+            if (existingRunRiskTitles.has(normalizedTitle)) return false;
             seenTitles.add(normalizedTitle);
             return true;
           });
