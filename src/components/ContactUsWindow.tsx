@@ -7,13 +7,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Mail, Phone, Send } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { sanitizeInput } from '@/utils/inputSanitization';
 import { toast } from 'sonner';
 
 const SUPPORT_PHONE_DISPLAY = '(617) 545-3367';
@@ -26,12 +24,10 @@ interface ContactUsWindowProps {
 
 export function ContactUsWindow({ open, onOpenChange }: ContactUsWindowProps) {
   const { user } = useAuth();
-  const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const resetForm = () => {
-    setSubject('');
     setMessage('');
   };
 
@@ -42,10 +38,9 @@ export function ContactUsWindow({ open, onOpenChange }: ContactUsWindowProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedSubject = sanitizeInput(subject.trim());
     const trimmedMessage = message.trim();
-    if (!trimmedSubject || !trimmedMessage) {
-      toast.error('Please enter a subject and message.');
+    if (!trimmedMessage) {
+      toast.error('Please enter a message.');
       return;
     }
     if (!user?.email) {
@@ -57,8 +52,6 @@ export function ContactUsWindow({ open, onOpenChange }: ContactUsWindowProps) {
     try {
       const { data, error } = await supabase.functions.invoke('send-contact', {
         body: {
-          userEmail: user.email,
-          subject: trimmedSubject,
           message: trimmedMessage,
           currentUrl: window.location.href,
         },
@@ -89,8 +82,7 @@ export function ContactUsWindow({ open, onOpenChange }: ContactUsWindowProps) {
             Contact Us
           </DialogTitle>
           <DialogDescription>
-            Call or text us, or send a message using the form below. You must be signed in to email
-            through the app.
+            Call or text us, or send a message using the form below.
           </DialogDescription>
         </DialogHeader>
 
@@ -153,7 +145,7 @@ export function ContactUsWindow({ open, onOpenChange }: ContactUsWindowProps) {
               <Button
                 type="submit"
                 className="flex-1"
-                disabled={isSubmitting || !subject.trim() || !message.trim()}
+                disabled={isSubmitting || !message.trim()}
               >
                 {isSubmitting ? (
                   'Sending…'

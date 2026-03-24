@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
-import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { z, ZodError } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { verifyAuth, getRequiredSecret } from "../_shared/auth.ts";
 import { sanitizeInput, escapeHtml } from "../_shared/validation.ts";
 
@@ -24,11 +24,13 @@ const corsHeaders = {
 /** Inbound contact form messages from the app (authenticated users only). */
 const CONTACT_INBOX = "zackquinn6@gmail.com";
 
+/** Fixed subject line (not collected from the client). */
+const MAIL_SUBJECT_LABEL = "User Message";
+
 const requestSchema = z.object({
-  userEmail: z.string().email().max(255),
-  subject: z.string().min(1).max(200),
   message: z.string().min(1).max(5000),
-  currentUrl: z.string().url().max(500).optional(),
+  /** Do not use z.string().url() — preview / in-app URLs can fail strict parsing. */
+  currentUrl: z.string().max(500).optional(),
 });
 
 const handler = async (req: Request): Promise<Response> => {
@@ -38,34 +40,50 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const user = await verifyAuth(req);
+    const senderEmail = user.email?.trim();
+    if (!senderEmail) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Your account has no email on file. Please call or text us instead.",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
+    }
+
     const RESEND_API_KEY = getRequiredSecret("RESEND_API_KEY");
     const resend = new Resend(RESEND_API_KEY);
 
-    const body = await req.json();
-    const validatedData = requestSchema.parse(body);
+    const raw = await req.json();
+    const validatedData = requestSchema.parse({
+      message: raw.message,
+      currentUrl:
+        typeof raw.currentUrl === "string" && raw.currentUrl.length > 0
+          ? raw.currentUrl.slice(0, 500)
+          : undefined,
+    });
 
-    if (validatedData.userEmail !== user.email) {
-      throw new Error("Email mismatch with authenticated user");
-    }
-
-    const sanitizedSubject = sanitizeInput(validatedData.subject);
+    const sanitizedSubject = sanitizeInput(MAIL_SUBJECT_LABEL);
     const sanitizedMessage = sanitizeMultiline(validatedData.message);
     if (!sanitizedSubject || !sanitizedMessage) {
-      return new Response(JSON.stringify({ error: "Subject and message are required" }), {
+      return new Response(JSON.stringify({ error: "Message is required" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    await resend.emails.send({
+    const { error: resendError } = await resend.emails.send({
       from: "Project Partner Contact <onboarding@resend.dev>",
       to: [CONTACT_INBOX],
-      replyTo: validatedData.userEmail,
-      subject: `Contact: ${escapeHtml(sanitizedSubject)}`,
+      replyTo: senderEmail,
+      subject: `Contact: ${sanitizedSubject}`,
       html: `
         <h2>Contact form message</h2>
         <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <p><strong>From:</strong> ${escapeHtml(validatedData.userEmail)}</p>
+          <p><strong>From:</strong> ${escapeHtml(senderEmail)}</p>
           ${validatedData.currentUrl ? `<p><strong>Page:</strong> ${escapeHtml(validatedData.currentUrl)}</p>` : ""}
           <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
         </div>
@@ -76,6 +94,20 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
+    if (resendError) {
+      console.error("Resend send-contact error:", resendError);
+      return new Response(
+        JSON.stringify({
+          error:
+            "Email could not be sent. If this continues, use the phone number in Contact Us.",
+        }),
+        {
+          status: 502,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
+    }
+
     return new Response(
       JSON.stringify({ success: true, message: "Message sent." }),
       {
@@ -84,6 +116,14 @@ const handler = async (req: Request): Promise<Response> => {
       },
     );
   } catch (error: unknown) {
+    if (error instanceof ZodError) {
+      console.error("send-contact validation:", error.flatten());
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     console.error("Error in send-contact function:", error);
     const msg = error instanceof Error ? error.message : String(error);
     const statusCode =
