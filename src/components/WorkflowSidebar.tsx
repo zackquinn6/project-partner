@@ -587,7 +587,7 @@ export function WorkflowSidebar({
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="h-7 px-2 text-[11px] w-full min-w-0 justify-between gap-1 font-normal"
+                          className="h-7 px-2 text-[11px] w-full min-w-0 justify-between gap-1 font-normal bg-sky-100 border-sky-300 text-sky-950 hover:bg-sky-200/80 hover:text-sky-950 dark:bg-sky-950/50 dark:border-sky-700 dark:text-sky-100 dark:hover:bg-sky-900/60"
                         >
                           <span className="truncate">More project tools</span>
                           <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" />

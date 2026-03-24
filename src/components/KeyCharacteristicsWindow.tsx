@@ -1,11 +1,11 @@
 import { useState } from "react";
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, AlertTriangle, Star, Shield, HelpCircle, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, AlertTriangle, Star, Shield, HelpCircle } from "lucide-react";
 import { Operation, Output } from "@/interfaces/Project";
 import { KeyCharacteristicsExplainer } from "./KeyCharacteristicsExplainer";
 
@@ -124,15 +124,6 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
                   <span className="hidden sm:inline">What are Critical Points?</span>
                   <span className="sm:hidden">Help</span>
                 </Button>
-                <DialogClose asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </DialogClose>
               </div>
             </div>
           </DialogHeader>
@@ -253,6 +244,12 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
               </div>
             )}
           </div>
+
+          <DialogFooter className="flex-shrink-0 border-t pt-4 mt-2 sm:mt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
