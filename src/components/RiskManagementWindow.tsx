@@ -17,7 +17,21 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Edit, Trash2, Save, X, AlertTriangle, Shield, Crosshair, Info, EyeOff, Eye } from 'lucide-react';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Save,
+  X,
+  AlertTriangle,
+  Shield,
+  Crosshair,
+  Info,
+  EyeOff,
+  Eye,
+  ArrowDownAZ,
+  ArrowDownWideNarrow,
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -165,25 +179,14 @@ function RiskFocusDashboard({
   const name = projectDisplayName?.trim() || null;
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 pb-1.5 pt-1 md:px-6 md:pb-2 md:pt-1">
-      <div
-        className={cn(
-          'mb-2 flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4',
-          !name && 'sm:block'
-        )}
-      >
+      {/* Same row: centered project name + summary label, vertically centered; summary sits above metrics card */}
+      <div className="mb-2 flex flex-row flex-wrap items-center justify-center gap-x-6 gap-y-2 sm:gap-x-10 md:gap-x-14">
         {name ? (
-          <h2 className="min-w-0 text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
+          <h2 className="max-w-[min(100%,28rem)] text-center text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl md:text-3xl lg:text-4xl">
             {name}
           </h2>
         ) : null}
-        <div
-          className={cn(
-            'shrink-0 border-b pb-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground',
-            name
-              ? 'border-transparent text-left sm:border-border/60 sm:text-right'
-              : 'w-full border-border/60 text-center'
-          )}
-        >
+        <div className="border-b border-border/60 pb-1 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Current Risk Summary
         </div>
       </div>
@@ -955,23 +958,31 @@ export function RiskManagementWindow({
                   ) : null}
                 </div>
               ) : null}
-              {variant === 'risk-focus' && mode === 'run' ? (
-                <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {variant === 'risk-focus' && mode === 'run' && risks.length > 0 ? (
+                <div className="flex shrink-0 flex-wrap items-center justify-center gap-2 md:hidden">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Sort
                   </span>
-                  <Select
-                    value={riskListSort}
-                    onValueChange={(v) => setRiskListSort(v as 'alpha' | 'severity-desc')}
+                  <Button
+                    type="button"
+                    variant={riskListSort === 'alpha' ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="h-8 gap-1 text-xs"
+                    onClick={() => setRiskListSort('alpha')}
                   >
-                    <SelectTrigger className="h-7 w-full max-w-[280px] text-xs sm:max-w-xs" aria-label="Sort risks">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="alpha">Alphabetical (what could go wrong)</SelectItem>
-                      <SelectItem value="severity-desc">Current risk level (high to low)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <ArrowDownAZ className="h-3.5 w-3.5" />
+                    A–Z
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={riskListSort === 'severity-desc' ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="h-8 gap-1 text-xs"
+                    onClick={() => setRiskListSort('severity-desc')}
+                  >
+                    <ArrowDownWideNarrow className="h-3.5 w-3.5" />
+                    Risk level
+                  </Button>
                 </div>
               ) : null}
               {risks.length === 0 ? (
@@ -1231,13 +1242,59 @@ export function RiskManagementWindow({
                       <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="min-w-[180px] max-w-[240px]">What could go wrong?</TableHead>
+                          <TableHead className="min-w-[180px] max-w-[240px]">
+                            {riskFocusRun ? (
+                              <button
+                                type="button"
+                                className={cn(
+                                  '-mx-1 inline-flex max-w-full items-center gap-1 rounded-md px-1 py-1 text-left text-sm font-semibold transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                  riskListSort === 'alpha' ? 'text-primary' : 'text-foreground'
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRiskListSort('alpha');
+                                }}
+                                aria-pressed={riskListSort === 'alpha'}
+                              >
+                                <span className="min-w-0 leading-snug">What could go wrong?</span>
+                                <ArrowDownAZ
+                                  className={cn(
+                                    'h-3.5 w-3.5 shrink-0',
+                                    riskListSort === 'alpha' ? 'opacity-100' : 'opacity-35'
+                                  )}
+                                  aria-hidden
+                                />
+                              </button>
+                            ) : (
+                              'What could go wrong?'
+                            )}
+                          </TableHead>
                           <TableHead className="w-[100px]">How likely?</TableHead>
                           <TableHead className="min-w-[140px] max-w-[200px]">What happens if it does?</TableHead>
                           <TableHead className="min-w-[200px]">What can we do to prevent it?</TableHead>
                           {mode === 'run' && variant === 'risk-focus' ? (
                             <TableHead className="min-w-[100px] max-w-[140px] leading-tight">
-                              Whats the new status?
+                              <button
+                                type="button"
+                                className={cn(
+                                  '-mx-1 inline-flex max-w-full items-center gap-1 rounded-md px-1 py-1 text-left text-sm font-semibold transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                  riskListSort === 'severity-desc' ? 'text-primary' : 'text-foreground'
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRiskListSort('severity-desc');
+                                }}
+                                aria-pressed={riskListSort === 'severity-desc'}
+                              >
+                                <span className="min-w-0 leading-tight">Whats the new status?</span>
+                                <ArrowDownWideNarrow
+                                  className={cn(
+                                    'h-3.5 w-3.5 shrink-0',
+                                    riskListSort === 'severity-desc' ? 'opacity-100' : 'opacity-35'
+                                  )}
+                                  aria-hidden
+                                />
+                              </button>
                             </TableHead>
                           ) : null}
                           {mode === 'run' && variant !== 'risk-focus' ? (
