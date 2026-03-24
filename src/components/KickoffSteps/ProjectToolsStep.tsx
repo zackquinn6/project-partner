@@ -85,12 +85,17 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   }, [user?.id]);
 
   useEffect(() => {
-    let initial = initialSelected.length > 0 ? initialSelected : DEFAULT_SELECTED;
-    if (!expertSupportEnabled) initial = initial.filter(id => id !== 'expert_support');
-    const next = initial as PlanningToolId[];
+    const fromPersisted = initialSelected.length > 0 ? initialSelected : DEFAULT_SELECTED;
+    const next = (
+      expertSupportEnabled ? fromPersisted : fromPersisted.filter(id => id !== 'expert_support')
+    ) as PlanningToolId[];
     setSelected(new Set(next));
-    // Always sync parent — otherwise completing kickoff can persist [] / stale tools while the UI shows the right checkboxes.
-    onSelectionChange?.(next);
+    // Only push to parent when we have saved tools from the run. If initialSelected is empty,
+    // the parent may already hold the user's in-progress selection; calling onSelectionChange
+    // with DEFAULT_SELECTED would overwrite "select all" before kickoff completes.
+    if (initialSelected.length > 0) {
+      onSelectionChange?.(next);
+    }
   }, [initialSelected.join(','), expertSupportEnabled, onSelectionChange]);
 
   const notifySelection = (next: Set<PlanningToolId>) => {

@@ -11,6 +11,7 @@ import { ProjectToolsStep, PLANNING_TOOLS, type PlanningToolId } from './Kickoff
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 
 const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string }[] = [
   {
@@ -219,7 +220,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       });
       
       // For step 4 (tools), merge selected_planning_tools into customization_decisions
-      const existingDecisions = (currentProjectRun.customization_decisions || {}) as Record<string, unknown>;
+      const existingDecisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
       const customization_decisions =
         stepId === 'kickoff-step-4' && Array.isArray(selectedTools)
           ? { ...existingDecisions, selected_planning_tools: selectedTools }
@@ -349,8 +350,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       checkedOutputs: checkedOutputs[kickoffSteps[currentKickoffStep].id] || new Set(),
       onOutputToggle: (outputId: string) => handleOutputToggle(kickoffSteps[currentKickoffStep].id, outputId)
     };
-    const existingDecisions = currentProjectRun?.customization_decisions as Record<string, unknown> | undefined;
-    const initialTools = (existingDecisions?.selected_planning_tools as PlanningToolId[] | undefined) || [];
+    const existingDecisions = parseCustomizationDecisions(currentProjectRun?.customization_decisions);
+    const initialTools = (existingDecisions.selected_planning_tools as PlanningToolId[] | undefined) || [];
 
     switch (kickoffSteps[currentKickoffStep]?.id) {
       case 'kickoff-step-1':

@@ -22,6 +22,7 @@ import { ShoppingStep } from './PlanningWizardSteps/ShoppingStep';
 import { QualityControlStep } from './PlanningWizardSteps/QualityControlStep';
 import { ExpertSupportStep } from './PlanningWizardSteps/ExpertSupportStep';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
+import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 
 const WIZARD_TOOL_ORDER: PlanningToolId[] = [
   'scope', 'schedule', 'risk', 'budget', 'shopping_list',
@@ -61,8 +62,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const [localSelectedTools, setLocalSelectedTools] = useState<PlanningToolId[] | null>(null);
 
   const selectedToolsFromContext = useMemo(() => {
-    const decisions = currentProjectRun?.customization_decisions as Record<string, unknown> | undefined;
-    const rawSelected = (decisions?.selected_planning_tools as unknown as string[] | undefined) ?? [];
+    const decisions = parseCustomizationDecisions(currentProjectRun?.customization_decisions);
+    const rawSelected = (decisions.selected_planning_tools as unknown as string[] | undefined) ?? [];
     const normalized = rawSelected.filter((id): id is PlanningToolId => validToolIds.has(id as any));
     return expertSupportEnabled ? normalized : normalized.filter(id => id !== 'expert_support');
   }, [currentProjectRun?.id, currentProjectRun?.customization_decisions, expertSupportEnabled, validToolIds]);
@@ -98,6 +99,10 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     if (open) {
       setCurrentStep(0);
       setCompletedSteps(new Set());
+      // Do not clear localSelectedTools here: a stale full array from a prior open would paint
+      // every step for one frame, then this effect nulls local state and empty context would
+      // collapse the wizard. Local overrides are cleared when the dialog closes instead.
+    } else {
       setLocalSelectedTools(null);
     }
   }, [open]);
@@ -154,7 +159,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const handlePlanningToolToggle = useCallback(
     (toolId: PlanningToolId, checked: boolean) => {
       if (!currentProjectRun || toolId === 'scope') return;
-      const decisions = (currentProjectRun.customization_decisions || {}) as Record<string, unknown>;
+      const decisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
       // Use effective selection (local + context) so rapid toggles don't overwrite with stale context
       const effectiveSelected = localSelectedTools ?? selectedToolsFromContext;
       const currentSet = new Set(
