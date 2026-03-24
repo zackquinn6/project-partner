@@ -181,6 +181,131 @@ async function upsertProjectRunRiskRow(row: ProjectRunRiskInsertRow): Promise<vo
   throw insertError;
 }
 
+const RISK_ASSEMBLY_ACCESS_MESSAGE =
+  'Cannot contact database to access risks. Contact administrator';
+
+/** Root template id for `project_risks` (revision rows use `parent_project_id` when set). */
+async function resolveTemplateRootIdForRisks(templateId: string): Promise<string> {
+  const { data, error } = await supabase
+    .from('projects')
+    .select('id, parent_project_id')
+    .eq('id', templateId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data?.id) throw new Error('Template not found for risk assembly');
+  const parent = data.parent_project_id as string | null | undefined;
+  return parent && parent.length > 0 ? parent : data.id;
+}
+
+/**
+ * Merge Standard Project Foundation `project_risks` + template `project_risks` onto `project_run_risks`.
+ * Same rules as Risk-Less / createProjectRun — must run for catalog starts (`addProjectRun`) too.
+ */
+async function syncFoundationAndTemplateRisksToProjectRun(
+  projectRunId: string,
+  templateRootIdForRisks: string
+): Promise<void> {
+  const { data: standardProject, error: standardProjectError } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('is_standard', true)
+    .single();
+
+  if (standardProjectError) throw standardProjectError;
+  if (!standardProject?.id) {
+    throw new Error('Standard project foundation not found (is_standard = true).');
+  }
+
+  const { data: foundationRisksRes, error: foundationRisksError } = await supabase
+    .from('project_risks')
+    .select('*')
+    .eq('project_id', standardProject.id)
+    .order('display_order', { ascending: true });
+
+  if (foundationRisksError) throw foundationRisksError;
+
+  let projectRisks: any[] = [];
+  if (standardProject.id !== templateRootIdForRisks) {
+    const { data: projectRisksRes, error: projectRisksError } = await supabase
+      .from('project_risks')
+      .select('*')
+      .eq('project_id', templateRootIdForRisks)
+      .order('display_order', { ascending: true });
+
+    if (projectRisksError) throw projectRisksError;
+    projectRisks = projectRisksRes || [];
+  }
+
+  const foundationRisks = foundationRisksRes || [];
+  const sourceRisksOrdered = [...foundationRisks, ...projectRisks];
+
+  if (sourceRisksOrdered.length === 0) {
+    throw new Error(RISK_ASSEMBLY_ACCESS_MESSAGE);
+  }
+
+  const seenNormalizedTitles = new Set<string>();
+  const mergedForInsert = sourceRisksOrdered.filter((risk: any) => {
+    const title = typeof risk?.risk_title === 'string' ? risk.risk_title.trim() : '';
+    if (!title) return false;
+    const key = title.toLowerCase();
+    if (seenNormalizedTitles.has(key)) return false;
+    seenNormalizedTitles.add(key);
+    return true;
+  });
+
+  if (mergedForInsert.length === 0) {
+    throw new Error(RISK_ASSEMBLY_ACCESS_MESSAGE);
+  }
+
+  const insertRows: ProjectRunRiskInsertRow[] = mergedForInsert.map((risk: any, idx: number) => {
+    const templateRiskId =
+      typeof risk?.id === 'string' && risk.id.length > 0
+        ? risk.id
+        : risk?.id != null && String(risk.id).length > 0
+          ? String(risk.id)
+          : null;
+    if (!templateRiskId) {
+      throw new Error('Risk row from database is missing id');
+    }
+    return {
+      project_run_id: projectRunId,
+      template_risk_id: templateRiskId,
+      risk_title: risk.risk_title.trim(),
+      risk_description: optionalDbTextForRiskCopy(risk.risk_description),
+      likelihood: optionalDbTextForRiskCopy(risk.likelihood),
+      severity: optionalDbTextForRiskCopy(risk.severity),
+      schedule_impact_low_days: numberOrNullForRunRisk(risk.schedule_impact_low_days, 'schedule_impact_low_days'),
+      schedule_impact_high_days: numberOrNullForRunRisk(
+        risk.schedule_impact_high_days,
+        'schedule_impact_high_days'
+      ),
+      budget_impact_low: numberOrNullForRunRisk(risk.budget_impact_low, 'budget_impact_low'),
+      budget_impact_high: numberOrNullForRunRisk(risk.budget_impact_high, 'budget_impact_high'),
+      mitigation_strategy: optionalDbTextForRiskCopy(risk.mitigation_strategy),
+      mitigation_actions: sanitizeMitigationActionsForInsert(risk.mitigation_actions),
+      mitigation_cost: numberOrNullForRunRisk(risk.mitigation_cost, 'mitigation_cost'),
+      recommendation: optionalDbTextForRiskCopy(risk.recommendation),
+      impact: optionalDbTextForRiskCopy(risk.impact),
+      benefit: optionalDbTextForRiskCopy(risk.benefit),
+      display_order: idx,
+    };
+  });
+
+  for (let i = 0; i < insertRows.length; i++) {
+    try {
+      await upsertProjectRunRiskRow(insertRows[i]);
+    } catch (rowErr) {
+      console.error('❌ project_run_risks row sync failed:', rowErr, {
+        projectRunId,
+        index: i,
+        risk_title: insertRows[i].risk_title,
+        template_risk_id: insertRows[i].template_risk_id,
+      });
+      throw rowErr;
+    }
+  }
+}
+
 async function applyRiskFocusSessionToRun(runId: string): Promise<void> {
   const { data: row, error } = await supabase
     .from('project_runs')
@@ -616,118 +741,13 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       // - Run-specific risks (user-added later) have `template_risk_id = null` and must not be modified.
       // - Sync merged foundation + template `project_risks` onto `project_run_risks` via per-row upsert
       //   (RPC may pre-seed rows; bulk delete is avoided so RLS/policy quirks cannot block launch).
-      const templateProjectIdForRisks = project.parent_project_id ?? project.id;
-
-      const riskAccessErrorMessage = 'Cannot contact database to access risks. Contact administrator';
       try {
-        const { data: standardProject, error: standardProjectError } = await supabase
-          .from('projects')
-          .select('id')
-          .eq('is_standard', true)
-          .single();
-
-        if (standardProjectError) throw standardProjectError;
-        if (!standardProject?.id) {
-          throw new Error('Standard project foundation not found (is_standard = true).');
-        }
-
-        const { data: foundationRisksRes, error: foundationRisksError } = await supabase
-          .from('project_risks')
-          .select('*')
-          .eq('project_id', standardProject.id)
-          .order('display_order', { ascending: true });
-
-        if (foundationRisksError) throw foundationRisksError;
-
-        let projectRisks: any[] = [];
-        if (standardProject.id !== templateProjectIdForRisks) {
-          const { data: projectRisksRes, error: projectRisksError } = await supabase
-            .from('project_risks')
-            .select('*')
-            .eq('project_id', templateProjectIdForRisks)
-            .order('display_order', { ascending: true });
-
-          if (projectRisksError) throw projectRisksError;
-          projectRisks = projectRisksRes || [];
-        }
-
-        const foundationRisks = foundationRisksRes || [];
-        const sourceRisksOrdered = [...foundationRisks, ...projectRisks];
-
-        if (sourceRisksOrdered.length === 0) {
-          throw new Error(riskAccessErrorMessage);
-        }
-
-        const seenNormalizedTitles = new Set<string>();
-        const mergedForInsert = sourceRisksOrdered.filter((risk: any) => {
-          const title = typeof risk?.risk_title === 'string' ? risk.risk_title.trim() : '';
-          if (!title) return false;
-          const key = title.toLowerCase();
-          if (seenNormalizedTitles.has(key)) return false;
-          seenNormalizedTitles.add(key);
-          return true;
-        });
-
-        if (mergedForInsert.length === 0) {
-          throw new Error(riskAccessErrorMessage);
-        }
-
-        const insertRows: ProjectRunRiskInsertRow[] = mergedForInsert.map((risk: any, idx: number) => {
-          const templateRiskId =
-            typeof risk?.id === 'string' && risk.id.length > 0
-              ? risk.id
-              : risk?.id != null && String(risk.id).length > 0
-                ? String(risk.id)
-                : null;
-          if (!templateRiskId) {
-            throw new Error('Risk row from database is missing id');
-          }
-          return {
-            project_run_id: data,
-            template_risk_id: templateRiskId,
-            risk_title: risk.risk_title.trim(),
-            risk_description: optionalDbTextForRiskCopy(risk.risk_description),
-            likelihood: optionalDbTextForRiskCopy(risk.likelihood),
-            severity: optionalDbTextForRiskCopy(risk.severity),
-            schedule_impact_low_days: numberOrNullForRunRisk(
-              risk.schedule_impact_low_days,
-              'schedule_impact_low_days'
-            ),
-            schedule_impact_high_days: numberOrNullForRunRisk(
-              risk.schedule_impact_high_days,
-              'schedule_impact_high_days'
-            ),
-            budget_impact_low: numberOrNullForRunRisk(risk.budget_impact_low, 'budget_impact_low'),
-            budget_impact_high: numberOrNullForRunRisk(risk.budget_impact_high, 'budget_impact_high'),
-            mitigation_strategy: optionalDbTextForRiskCopy(risk.mitigation_strategy),
-            mitigation_actions: sanitizeMitigationActionsForInsert(risk.mitigation_actions),
-            mitigation_cost: numberOrNullForRunRisk(risk.mitigation_cost, 'mitigation_cost'),
-            recommendation: optionalDbTextForRiskCopy(risk.recommendation),
-            impact: optionalDbTextForRiskCopy(risk.impact),
-            benefit: optionalDbTextForRiskCopy(risk.benefit),
-            display_order: idx,
-          };
-        });
-
-        // Do not bulk-delete here: RLS or RPC-seeded rows can make delete a no-op while insert then
-        // conflicts. Per-row upsert (update → insert → update on unique violation) reconciles state.
-        for (let i = 0; i < insertRows.length; i++) {
-          try {
-            await upsertProjectRunRiskRow(insertRows[i]);
-          } catch (rowErr) {
-            console.error('❌ project_run_risks row sync failed:', rowErr, {
-              runId: data,
-              index: i,
-              risk_title: insertRows[i].risk_title,
-              template_risk_id: insertRows[i].template_risk_id,
-            });
-            throw rowErr;
-          }
-        }
+        const templateRootIdForRisks = await resolveTemplateRootIdForRisks(project.id);
+        await syncFoundationAndTemplateRisksToProjectRun(data, templateRootIdForRisks);
       } catch (riskAssemblyError) {
         console.error('❌ Risk assembly failed; deleting created run for consistency:', riskAssemblyError);
         await supabase.from('project_runs').delete().eq('id', data);
-        throw new Error(riskAccessErrorMessage);
+        throw new Error(RISK_ASSEMBLY_ACCESS_MESSAGE);
       }
 
       // Update additional fields that the function doesn't handle
@@ -831,6 +851,23 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         });
 
       if (error) throw error;
+
+      // Same foundation + template risk merge as createProjectRun / Risk-Less (catalog uses addProjectRun only).
+      if (newProjectRunId) {
+        try {
+          const templateRootIdForRisks = await resolveTemplateRootIdForRisks(projectRunData.templateId);
+          await syncFoundationAndTemplateRisksToProjectRun(newProjectRunId, templateRootIdForRisks);
+        } catch (riskAssemblyError) {
+          console.error('❌ Risk assembly failed; deleting created run:', riskAssemblyError);
+          await supabase.from('project_runs').delete().eq('id', newProjectRunId);
+          toast({
+            title: 'Error',
+            description: RISK_ASSEMBLY_ACCESS_MESSAGE,
+            variant: 'destructive',
+          });
+          throw riskAssemblyError;
+        }
+      }
 
       // Update project run with additional fields that aren't copied by the RPC function
       // The RPC function only copies phases, so we need to update description and other metadata
