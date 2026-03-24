@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Sheet,
@@ -178,73 +178,58 @@ function RiskFocusDashboard({
   const { high, medium, low, unset, total } = riskFocusSeverityCounts(risks);
   const name = projectDisplayName?.trim() || null;
   return (
-    <div className="shrink-0 border-b bg-muted/30 px-3 pb-1.5 pt-1 md:px-6 md:pb-2 md:pt-1">
-      {/* Project name left, vertically centered vs summary + metrics card on the right */}
-      <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-stretch sm:gap-4 md:gap-6">
-        {name ? (
-          <div className="flex min-w-0 flex-col justify-center sm:max-w-[min(100%,24rem)] md:max-w-md md:flex-none">
-            <h2 className="text-left text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl md:text-3xl lg:text-4xl">
-              {name}
-            </h2>
-          </div>
-        ) : null}
-        <div
-          className={cn(
-            'flex min-w-0 flex-1 flex-col',
-            name ? 'sm:items-end' : 'sm:items-center'
-          )}
-        >
-          <div
-            className={cn(
-              'mb-1.5 w-full border-b border-border/60 pb-1 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground',
-              name ? 'sm:w-auto sm:self-end sm:text-right' : ''
-            )}
-          >
-            Current Risk Summary
-          </div>
-          <div className="flex w-full justify-center sm:justify-end">
-        <Card className="min-w-0 w-full max-w-xl overflow-hidden">
-          <CardContent className="flex flex-row flex-wrap items-center justify-center gap-y-2 px-2 py-1.5">
-            <div className="flex min-w-0 flex-row flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:gap-x-4">
-              <div className="flex flex-row items-baseline gap-2.5">
+    <div className="shrink-0 border-b bg-muted/30 px-3 pb-1.5 pt-1 md:px-4 md:pb-2 md:pt-1.5">
+      {name ? (
+        <div className="mb-2 min-w-0">
+          <h2 className="text-left text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl md:text-3xl">
+            {name}
+          </h2>
+        </div>
+      ) : null}
+      <div className="mb-1 w-full border-b border-border/60 pb-1 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Current Risk Summary
+      </div>
+      <div className="flex w-full justify-center">
+        <Card className="min-w-0 w-full max-w-md overflow-hidden">
+          <CardContent className="flex flex-row flex-wrap items-center justify-center gap-y-1 px-1.5 py-1 sm:px-2 sm:py-1">
+            <div className="flex min-w-0 flex-row flex-wrap items-center justify-center gap-x-2 gap-y-0.5 sm:gap-x-3">
+              <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
                 <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   High
                 </span>
-                <span className="text-lg font-bold tabular-nums text-destructive sm:text-xl">{high}</span>
+                <span className="text-base font-bold tabular-nums text-destructive sm:text-lg">{high}</span>
               </div>
-              <div className="flex flex-row items-baseline gap-2.5 border-l border-foreground/20 pl-3 dark:border-foreground/30 sm:pl-4">
+              <div className="flex flex-row items-baseline gap-1.5 border-l border-foreground/20 pl-2 dark:border-foreground/30 sm:gap-2 sm:pl-3">
                 <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   Med
                 </span>
-                <span className="text-lg font-bold tabular-nums text-amber-600 sm:text-xl">{medium}</span>
+                <span className="text-base font-bold tabular-nums text-amber-600 sm:text-lg">{medium}</span>
               </div>
-              <div className="flex flex-row items-baseline gap-2.5 border-l border-foreground/20 pl-3 dark:border-foreground/30 sm:pl-4">
+              <div className="flex flex-row items-baseline gap-1.5 border-l border-foreground/20 pl-2 dark:border-foreground/30 sm:gap-2 sm:pl-3">
                 <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   Low
                 </span>
-                <span className="text-lg font-bold tabular-nums text-emerald-600 sm:text-xl">{low}</span>
+                <span className="text-base font-bold tabular-nums text-emerald-600 sm:text-lg">{low}</span>
               </div>
               <div
-                className="mx-1 h-7 w-px shrink-0 self-center bg-foreground/45 dark:bg-foreground/55 sm:mx-2"
+                className="mx-0.5 h-6 w-px shrink-0 self-center bg-foreground/45 dark:bg-foreground/55 sm:mx-1.5"
                 aria-hidden
                 role="presentation"
               />
-              <div className="flex flex-row items-baseline gap-2.5">
+              <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
                 <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   Total
                 </span>
-                <span className="text-lg font-bold tabular-nums sm:text-xl">{total}</span>
+                <span className="text-base font-bold tabular-nums sm:text-lg">{total}</span>
               </div>
             </div>
           </CardContent>
           {unset > 0 ? (
-            <div className="border-t border-border/50 px-2 py-0.5 text-center text-[10px] text-muted-foreground">
+            <div className="border-t border-border/50 px-1.5 py-0.5 text-center text-[10px] text-muted-foreground">
               Not set: {unset}
             </div>
           ) : null}
         </Card>
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -290,6 +275,27 @@ export function RiskManagementWindow({
   const [showHiddenRisks, setShowHiddenRisks] = useState(false);
   const [riskListSort, setRiskListSort] = useState<'alpha' | 'severity-desc'>('alpha');
   const showRiskFocusHiddenToggle = riskFocusRun && risks.length > 0;
+
+  /** Keep scroll position in Risk-Less: avoid full fetchRisks() after small mitigation edits. */
+  const patchRunRiskMitigationActions = useCallback(
+    (riskId: string, mitigation_actions: NonNullable<Risk['mitigation_actions']> | null) => {
+      setRisks((prev) =>
+        prev.map((r) =>
+          r.id === riskId
+            ? {
+                ...r,
+                mitigation_actions:
+                  mitigation_actions && mitigation_actions.length > 0
+                    ? mitigation_actions.map((a) => ({ ...a }))
+                    : null,
+              }
+            : r
+        )
+      );
+    },
+    []
+  );
+
   const [formData, setFormData] = useState({
     risk: '',
     likelihood: 'medium' as 'low' | 'medium' | 'high',
@@ -761,7 +767,7 @@ export function RiskManagementWindow({
         .update({ mitigation_actions: next.length > 0 ? next : null })
         .eq('id', risk.id);
       if (error) throw error;
-      fetchRisks();
+      patchRunRiskMitigationActions(risk.id, next);
       window.dispatchEvent(new CustomEvent('risks-updated'));
     } catch (error) {
       console.error('Error updating mitigation action:', error);
@@ -779,7 +785,7 @@ export function RiskManagementWindow({
         .update({ mitigation_actions: next })
         .eq('id', risk.id);
       if (error) throw error;
-      fetchRisks();
+      patchRunRiskMitigationActions(risk.id, next);
       window.dispatchEvent(new CustomEvent('risks-updated'));
     } catch (error) {
       console.error('Error adding mitigation action:', error);
@@ -806,7 +812,7 @@ export function RiskManagementWindow({
         .update({ mitigation_actions: next.length > 0 ? next : null })
         .eq('id', risk.id);
       if (error) throw error;
-      fetchRisks();
+      patchRunRiskMitigationActions(risk.id, next.length > 0 ? next : null);
       window.dispatchEvent(new CustomEvent('risks-updated'));
     } catch (error) {
       console.error('Error updating mitigation text:', error);
@@ -1402,8 +1408,22 @@ export function RiskManagementWindow({
                             )}
                           </TableHead>
                           <TableHead className="w-[100px]">How likely?</TableHead>
-                          <TableHead className="min-w-[140px] max-w-[200px]">What happens if it does?</TableHead>
-                          <TableHead className="min-w-[200px]">What can we do to prevent it?</TableHead>
+                          <TableHead
+                            className={cn(
+                              'align-top',
+                              riskFocusRun ? 'w-[14%] min-w-[7rem] max-w-[10rem]' : 'min-w-[140px] max-w-[200px]'
+                            )}
+                          >
+                            What happens if it does?
+                          </TableHead>
+                          <TableHead
+                            className={cn(
+                              'align-top',
+                              riskFocusRun ? 'min-w-[16rem] w-[36%]' : 'min-w-[200px]'
+                            )}
+                          >
+                            What can we do to prevent it?
+                          </TableHead>
                           {mode === 'run' && variant === 'risk-focus' ? (
                             <TableHead className="min-w-[100px] max-w-[140px] leading-tight">
                               <button
@@ -1471,11 +1491,19 @@ export function RiskManagementWindow({
                                 {risk.likelihood}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-sm align-top">
+                            <TableCell
+                              className={cn(
+                                'text-sm align-top',
+                                riskFocusRun && 'max-w-[10rem]'
+                              )}
+                            >
                               <ImpactIfItDoesContent risk={risk} />
                             </TableCell>
                             <TableCell
-                              className="text-sm text-muted-foreground align-top"
+                              className={cn(
+                                'text-sm text-muted-foreground align-top',
+                                riskFocusRun && 'min-w-[14rem]'
+                              )}
                               onClick={riskFocusRun ? (e) => e.stopPropagation() : undefined}
                             >
                               {riskFocusRun ? (
