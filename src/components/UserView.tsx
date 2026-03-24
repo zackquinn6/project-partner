@@ -2477,7 +2477,7 @@ export default function UserView({
     return (
       <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden md:h-auto md:min-h-0 md:flex-none md:overflow-visible">
       <KickoffWorkflow 
-        onKickoffComplete={async () => {
+        onKickoffComplete={async persist => {
           console.log("🎯 onKickoffComplete called - closing kickoff and switching to workflow");
           
             if (currentProjectRun && updateProjectRun) {
@@ -2616,6 +2616,10 @@ export default function UserView({
                 completedSteps: uniqueSteps,
                 status: 'in-progress',
                 phase_ratings: updatedPhaseRatings,
+                // KickoffWorkflow passes fresh decisions from step 4; closure currentProjectRun is often stale here.
+                ...(persist?.customization_decisions !== undefined
+                  ? { customization_decisions: persist.customization_decisions }
+                  : {}),
                 // CRITICAL: Explicitly preserve initial_budget, initial_timeline, initial_sizing
                 ...(preservedBudget !== null && { initial_budget: preservedBudget }),
                 ...(preservedTimeline !== null && { initial_timeline: preservedTimeline }),
@@ -2670,6 +2674,9 @@ export default function UserView({
                 ...currentProjectRun,
                 completedSteps: uniqueSteps,
                 status: 'in-progress',
+                ...(persist?.customization_decisions !== undefined
+                  ? { customization_decisions: persist.customization_decisions }
+                  : {}),
                 progress: Math.round((uniqueSteps.length / (currentProjectRun.phases.reduce((total, phase) => {
                   return total + phase.operations.reduce((opTotal, operation) => {
                     return opTotal + operation.steps.length;

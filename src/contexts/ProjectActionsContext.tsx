@@ -10,6 +10,7 @@ import { toast } from '@/components/ui/use-toast';
 import { ensureStandardPhasesForNewProject, isKickoffPhaseComplete, KICKOFF_UI_STEP_IDS } from '@/utils/projectUtils';
 import { useOptimizedState } from '@/hooks/useOptimizedState';
 import { mergeQualityControlSettings, parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
+import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import type { Json } from '@/integrations/supabase/types';
 
 function parseCompletedStepsColumn(value: unknown): string[] {
@@ -1112,6 +1113,14 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       qcIncoming !== undefined &&
       JSON.stringify(mergeQualityControlSettings(qcIncoming)) !==
         JSON.stringify(mergeQualityControlSettings(currentProjectRun?.quality_control_settings ?? null));
+    const planningToolsSignature = (raw: unknown) => {
+      const d = parseCustomizationDecisions(raw);
+      const tools = d.selected_planning_tools;
+      return JSON.stringify(Array.isArray(tools) ? tools : []);
+    };
+    const isSelectedPlanningToolsChange =
+      planningToolsSignature(currentProjectRun?.customization_decisions) !==
+      planningToolsSignature(projectRun.customization_decisions);
     const requiresImmediateSave =
       isBudgetDataUpdate ||
       isIssueReportsUpdate ||
@@ -1120,7 +1129,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       isInitialTimelineUpdate ||
       isInitialSizingUpdate ||
       isKickoffCompletion ||
-      isQualityControlSettingsUpdate;
+      isQualityControlSettingsUpdate ||
+      isSelectedPlanningToolsChange;
     
     // For immediate saves (budget, issues, time tracking), execute right away
     // For other updates, debounce to avoid excessive database writes

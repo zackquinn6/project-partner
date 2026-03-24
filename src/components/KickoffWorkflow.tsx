@@ -20,6 +20,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
+import type { ProjectRun } from '@/interfaces/ProjectRun';
+
+/** Passed when finishing kickoff on step 4 so UserView does not use a stale customization_decisions closure. */
+export type KickoffCompletePersist = {
+  customization_decisions: ProjectRun['customization_decisions'];
+};
 
 const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string }[] = [
   {
@@ -45,7 +51,7 @@ const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string
 ];
 
 interface KickoffWorkflowProps {
-  onKickoffComplete: () => void | Promise<void>;
+  onKickoffComplete: (persist?: KickoffCompletePersist) => void | Promise<void>;
   onExit?: () => void; // Add optional exit handler
   onPlanningWizard?: () => void; // Handler to open planning wizard
 }
@@ -244,7 +250,15 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
           return;
         }
 
-        await Promise.resolve(onKickoffComplete());
+        await Promise.resolve(
+          onKickoffComplete(
+            stepId === 'kickoff-step-4'
+              ? {
+                  customization_decisions: customization_decisions as ProjectRun['customization_decisions'],
+                }
+              : undefined
+          )
+        );
         isCompletingStepRef.current = false;
       } else {
         // Move to next step if not already there
