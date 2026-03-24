@@ -361,7 +361,7 @@ export function ToolsLibrary() {
                           Delete Tool
                         </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent>
+                      <AlertDialogContent className="z-[220]">
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Tool</AlertDialogTitle>
                           <AlertDialogDescription>

@@ -185,7 +185,7 @@ export function MaterialsLibrary() {
               <Trash2 className="w-4 h-4" />
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent>
+          <AlertDialogContent className="z-[220]">
             <AlertDialogHeader>
               <AlertDialogTitle>Delete All Materials</AlertDialogTitle>
               <AlertDialogDescription>
@@ -347,7 +347,7 @@ export function MaterialsLibrary() {
                           Delete Material
                         </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent>
+                      <AlertDialogContent className="z-[220]">
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Material</AlertDialogTitle>
                           <AlertDialogDescription>
