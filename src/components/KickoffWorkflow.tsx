@@ -45,7 +45,7 @@ const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string
 ];
 
 interface KickoffWorkflowProps {
-  onKickoffComplete: () => void;
+  onKickoffComplete: () => void | Promise<void>;
   onExit?: () => void; // Add optional exit handler
   onPlanningWizard?: () => void; // Handler to open planning wizard
 }
@@ -244,11 +244,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
           return;
         }
 
-        // Delay clearing flag and calling complete to ensure database update finishes
-        setTimeout(() => {
-          isCompletingStepRef.current = false;
-          onKickoffComplete();
-        }, 200);
+        await Promise.resolve(onKickoffComplete());
+        isCompletingStepRef.current = false;
       } else {
         // Move to next step if not already there
         if (stepIndex === currentKickoffStep && stepIndex < kickoffSteps.length - 1) {

@@ -106,6 +106,7 @@ import {
   autoRegenerateSchedule
 } from '@/utils/autoScheduleRegeneration';
 import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
+import { projectRunFromSupabaseRow } from '@/utils/projectRunFromSupabaseRow';
 interface UserViewProps {
   resetToListing?: boolean;
   forceListingMode?: boolean;
@@ -2646,28 +2647,16 @@ export default function UserView({
                 if (refreshError) {
                   console.error('❌ Error refreshing project run:', refreshError);
                 } else if (refreshedRun) {
-                  // Transform and update currentProjectRun with fresh data
-                  const transformedRun = {
-                    ...refreshedRun,
-                    completedSteps: Array.isArray(refreshedRun.completed_steps) 
-                      ? refreshedRun.completed_steps 
-                      : (typeof refreshedRun.completed_steps === 'string' 
-                          ? JSON.parse(refreshedRun.completed_steps || '[]') 
-                          : []),
-                    phases: Array.isArray(refreshedRun.phases)
-                      ? refreshedRun.phases
-                      : (typeof refreshedRun.phases === 'string'
-                          ? JSON.parse(refreshedRun.phases || '[]')
-                          : []),
-                    startDate: new Date(refreshedRun.start_date),
-                    planEndDate: new Date(refreshedRun.plan_end_date),
-                    endDate: refreshedRun.end_date ? new Date(refreshedRun.end_date) : undefined,
-                    updatedAt: new Date(refreshedRun.updated_at)
-                  } as ProjectRun;
-                  
-                  setCurrentProjectRun(transformedRun);
-                  console.log("✅ Refreshed currentProjectRun from database with completedSteps:", transformedRun.completedSteps);
-                  console.log("✅ isKickoffComplete should now be:", isKickoffPhaseComplete(transformedRun.completedSteps));
+                  const transformedRun = projectRunFromSupabaseRow(
+                    refreshedRun as unknown as Record<string, unknown>
+                  );
+                  if (!transformedRun) {
+                    console.error('❌ Kickoff refresh: could not map project run row', refreshedRun?.id);
+                  } else {
+                    setCurrentProjectRun(transformedRun);
+                    console.log("✅ Refreshed currentProjectRun from database with completedSteps:", transformedRun.completedSteps);
+                    console.log("✅ isKickoffComplete should now be:", isKickoffPhaseComplete(transformedRun.completedSteps));
+                  }
                 }
               }
               
@@ -2707,27 +2696,15 @@ export default function UserView({
                 if (refreshError) {
                   console.error('❌ Error refreshing project run:', refreshError);
                 } else if (refreshedRun) {
-                  // Transform and update currentProjectRun with fresh data
-                  const transformedRun = {
-                    ...refreshedRun,
-                    completedSteps: Array.isArray(refreshedRun.completed_steps) 
-                      ? refreshedRun.completed_steps 
-                      : (typeof refreshedRun.completed_steps === 'string' 
-                          ? JSON.parse(refreshedRun.completed_steps || '[]') 
-                          : []),
-                    phases: Array.isArray(refreshedRun.phases)
-                      ? refreshedRun.phases
-                      : (typeof refreshedRun.phases === 'string'
-                          ? JSON.parse(refreshedRun.phases || '[]')
-                          : []),
-                    startDate: new Date(refreshedRun.start_date),
-                    planEndDate: new Date(refreshedRun.plan_end_date),
-                    endDate: refreshedRun.end_date ? new Date(refreshedRun.end_date) : undefined,
-                    updatedAt: new Date(refreshedRun.updated_at)
-                  } as ProjectRun;
-                  
-                  setCurrentProjectRun(transformedRun);
-                  console.log("✅ Refreshed currentProjectRun from database with completedSteps:", transformedRun.completedSteps);
+                  const transformedRun = projectRunFromSupabaseRow(
+                    refreshedRun as unknown as Record<string, unknown>
+                  );
+                  if (!transformedRun) {
+                    console.error('❌ Kickoff refresh: could not map project run row', refreshedRun?.id);
+                  } else {
+                    setCurrentProjectRun(transformedRun);
+                    console.log("✅ Refreshed currentProjectRun from database with completedSteps:", transformedRun.completedSteps);
+                  }
                 }
               }
               

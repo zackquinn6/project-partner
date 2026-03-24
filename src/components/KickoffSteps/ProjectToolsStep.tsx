@@ -294,21 +294,13 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
         })}
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-blue-600 text-blue-700 bg-blue-50/60 hover:bg-blue-100/80 dark:border-blue-500 dark:text-blue-300 dark:bg-blue-950/35"
-          onClick={handleSelectAll}
-        >
-          Select all
-        </Button>
-        {selected.size > 1 && (
+      {selected.size > 1 && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={handleClearAll}>
             Clear
           </Button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
