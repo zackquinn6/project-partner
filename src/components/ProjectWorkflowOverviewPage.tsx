@@ -1,6 +1,6 @@
 import React from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProject } from '@/contexts/ProjectContext';
 import { ProjectOverviewStep } from './KickoffSteps/ProjectOverviewStep';
 
@@ -16,18 +16,21 @@ export function ProjectWorkflowOverviewPage({
   const projectName =
     currentProjectRun?.customProjectName ?? currentProjectRun?.name ?? currentProject?.name;
 
-  const runDescription = currentProjectRun?.description?.trim();
-  const templateDescription = currentProject?.description?.trim();
-  const projectDescription = runDescription && runDescription.length > 0
-    ? runDescription
-    : templateDescription;
-
   // In workflow mode, `currentProject` can be null while `currentProjectRun` is set.
-  // Use the run's template project to source the cover photo.
+  // Resolve template project for description + cover when context project is not loaded.
   const templateProject =
     currentProjectRun && projects
       ? projects.find(p => p.id === currentProjectRun.templateId) || null
       : null;
+
+  const runDescription = currentProjectRun?.description?.trim();
+  const templateDescription = (
+    currentProject?.description ??
+    templateProject?.description ??
+    ''
+  ).trim();
+  const projectDescription =
+    runDescription && runDescription.length > 0 ? runDescription : templateDescription;
 
   const coverImageUrl = currentProject?.cover_image ?? templateProject?.cover_image;
 
@@ -39,9 +42,12 @@ export function ProjectWorkflowOverviewPage({
             {projectName}
           </CardTitle>
           {projectDescription ? (
-            <CardDescription className="text-sm sm:text-base leading-relaxed pt-3 text-foreground/90">
+            <p
+              className="mt-3 max-w-4xl text-base font-normal leading-relaxed text-muted-foreground sm:text-lg"
+              role="doc-subtitle"
+            >
               {projectDescription}
-            </CardDescription>
+            </p>
           ) : null}
         </CardHeader>
 

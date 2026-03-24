@@ -75,7 +75,8 @@ export function QualityCheckWindow({
 }: QualityCheckWindowProps) {
   const [showOnlyIncomplete, setShowOnlyIncomplete] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
-  const [settingsAccordionValue, setSettingsAccordionValue] = useState<string[]>([]);
+  /** Open accordion item values: `qc-settings`, `qc-table` (multiple allowed). */
+  const [accordionOpenValues, setAccordionOpenValues] = useState<string[]>([]);
 
   const settings = useMemo(
     () => mergeQualityControlSettings(projectRun?.quality_control_settings),
@@ -92,7 +93,9 @@ export function QualityCheckWindow({
 
   useEffect(() => {
     if (open) {
-      setSettingsAccordionValue(expandSettingsAccordionWhenOpen ? ['qc-settings'] : []);
+      setAccordionOpenValues(
+        expandSettingsAccordionWhenOpen ? ['qc-settings'] : ['qc-table']
+      );
     }
   }, [open, expandSettingsAccordionWhenOpen]);
 
@@ -289,164 +292,171 @@ export function QualityCheckWindow({
           <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 pt-6 md:pt-8 pb-4 md:pb-6 space-y-4">
             <Accordion
               type="multiple"
-              value={settingsAccordionValue}
-              onValueChange={setSettingsAccordionValue}
-              className="w-full border rounded-lg px-3"
+              value={accordionOpenValues}
+              onValueChange={setAccordionOpenValues}
+              className="w-full space-y-3"
             >
-              <AccordionItem value="qc-settings" className="border-none">
+              <AccordionItem value="qc-settings" className="mb-3 rounded-lg border px-3">
                 <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline">
                   Quality Control Settings
                 </AccordionTrigger>
-                <AccordionContent className="pb-4 space-y-5">
-                  <div className="flex items-start gap-3 rounded-md border bg-muted/30 p-3">
-                    <Checkbox
-                      id="qc-require-photos"
-                      checked={localRequirePhotos}
-                      disabled={savingSettings || !projectRun}
-                      onCheckedChange={(v) => onRequirePhotosChange(v === true)}
-                    />
-                    <div className="space-y-1">
-                      <Label htmlFor="qc-require-photos" className="text-sm font-medium cursor-pointer">
-                        Require photos each step
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Users must upload at least one photo tagged to the current step before marking it complete.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 rounded-md border bg-muted/30 p-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="space-y-1 min-w-0">
-                        <Label htmlFor="qc-all-outputs" className="text-sm font-medium">
-                          Output completion requirement
+                <AccordionContent className="space-y-5 pb-4 pt-0">
+                    <div className="flex items-start gap-3 rounded-md border bg-muted/30 p-3">
+                      <Checkbox
+                        id="qc-require-photos"
+                        checked={localRequirePhotos}
+                        disabled={savingSettings || !projectRun}
+                        onCheckedChange={(v) => onRequirePhotosChange(v === true)}
+                      />
+                      <div className="space-y-1">
+                        <Label htmlFor="qc-require-photos" className="text-sm font-medium cursor-pointer">
+                          Require photos each step
                         </Label>
                         <p className="text-xs text-muted-foreground">
-                          {localRequireAllOutputs
-                            ? 'All outputs on each step must be checked off before the step can be completed.'
-                            : 'Only critical outputs (non–“none” types: aesthetics, performance, safety) are required.'}
+                          Users must upload at least one photo tagged to the current step before marking it complete.
                         </p>
                       </div>
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">Critical only</span>
-                          <Switch
-                            id="qc-all-outputs"
-                            checked={localRequireAllOutputs}
-                            disabled={savingSettings || !projectRun}
-                            onCheckedChange={onRequireAllOutputsChange}
-                          />
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">All outputs</span>
+                    </div>
+
+                    <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="space-y-1 min-w-0">
+                          <Label htmlFor="qc-all-outputs" className="text-sm font-medium">
+                            Output completion requirement
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            {localRequireAllOutputs
+                              ? 'All outputs on each step must be checked off before the step can be completed.'
+                              : 'Only critical outputs (non–“none” types: aesthetics, performance, safety) are required.'}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">Critical only</span>
+                            <Switch
+                              id="qc-all-outputs"
+                              checked={localRequireAllOutputs}
+                              disabled={savingSettings || !projectRun}
+                              onCheckedChange={onRequireAllOutputsChange}
+                            />
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">All outputs</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="qc-table" className="rounded-lg border px-3">
+                <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline">
+                  Output checklist
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pb-4 pt-0">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {incompleteCount} incomplete / {outputRows.length} listed
+                      </Badge>
+                      <Button
+                        type="button"
+                        variant={showOnlyIncomplete ? 'default' : 'outline'}
+                        size="sm"
+                        className="text-xs h-8"
+                        onClick={() => setShowOnlyIncomplete((v) => !v)}
+                      >
+                        Show only incomplete
+                      </Button>
+                    </div>
+
+                    {visibleRows.length === 0 ? (
+                      <div className="p-6 text-center text-sm text-muted-foreground border rounded-lg">
+                        {outputRows.length === 0
+                          ? 'No outputs match the current scope (try requiring all outputs in settings).'
+                          : 'No incomplete outputs — turn off “Show only incomplete” to see every row.'}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border overflow-hidden overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="min-w-[10rem] max-w-[18rem]">Phase &amp; step</TableHead>
+                              <TableHead>Output</TableHead>
+                              <TableHead className="w-32">Type</TableHead>
+                              <TableHead className="w-28">Status</TableHead>
+                              <TableHead className="w-[200px]">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {visibleRows.map((row) => (
+                              <TableRow key={row.key}>
+                                <TableCell className="align-top">
+                                  <div className="text-sm font-medium leading-snug">{row.phaseName || '—'}</div>
+                                  <div className="text-xs text-muted-foreground leading-snug mt-0.5">
+                                    {row.operationStepName}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="align-top text-sm font-medium">{row.outputName}</TableCell>
+                                <TableCell className="align-top">
+                                  <Badge variant="outline" className="text-[10px] capitalize">
+                                    {row.outputType.replace(/-/g, ' ')}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="align-top">
+                                  {row.isComplete ? (
+                                    <Badge className="bg-green-600 text-white text-xs">Complete</Badge>
+                                  ) : (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Incomplete
+                                    </Badge>
+                                  )}
+                                </TableCell>
+                                <TableCell className="align-top">
+                                  {!row.isComplete ? (
+                                    <div className="flex items-center gap-2">
+                                      <TooltipProvider delayDuration={150}>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              size="icon"
+                                              className="h-8 w-8"
+                                              onClick={() => {
+                                                onJumpToStep(row.stepId, row.spaceId ?? null);
+                                                onOpenChange(false);
+                                              }}
+                                              aria-label="Jump to step"
+                                            >
+                                              <Target className="w-4 h-4" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent className="max-w-xs text-xs">
+                                            Open this step in the workflow.
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                      <Button
+                                        type="button"
+                                        variant="default"
+                                        className="bg-green-600 hover:bg-green-700 text-white text-xs h-8"
+                                        onClick={() => onToggleOutputComplete(row.stepId, row.outputId)}
+                                      >
+                                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                                        Mark complete
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">—</span>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
-
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Badge variant="secondary" className="text-xs">
-                {incompleteCount} incomplete / {outputRows.length} listed
-              </Badge>
-              <Button
-                type="button"
-                variant={showOnlyIncomplete ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs h-8"
-                onClick={() => setShowOnlyIncomplete((v) => !v)}
-              >
-                Show only incomplete
-              </Button>
-            </div>
-
-            {visibleRows.length === 0 ? (
-              <div className="p-6 text-center text-sm text-muted-foreground border rounded-lg">
-                {outputRows.length === 0
-                  ? 'No outputs match the current scope (try requiring all outputs in settings).'
-                  : 'No incomplete outputs — turn off “Show only incomplete” to see every row.'}
-              </div>
-            ) : (
-              <div className="rounded-lg border overflow-hidden overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[10rem] max-w-[18rem]">Phase &amp; step</TableHead>
-                      <TableHead>Output</TableHead>
-                      <TableHead className="w-32">Type</TableHead>
-                      <TableHead className="w-28">Status</TableHead>
-                      <TableHead className="w-[200px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {visibleRows.map((row) => (
-                      <TableRow key={row.key}>
-                        <TableCell className="align-top">
-                          <div className="text-sm font-medium leading-snug">{row.phaseName || '—'}</div>
-                          <div className="text-xs text-muted-foreground leading-snug mt-0.5">
-                            {row.operationStepName}
-                          </div>
-                        </TableCell>
-                        <TableCell className="align-top text-sm font-medium">{row.outputName}</TableCell>
-                        <TableCell className="align-top">
-                          <Badge variant="outline" className="text-[10px] capitalize">
-                            {row.outputType.replace(/-/g, ' ')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          {row.isComplete ? (
-                            <Badge className="bg-green-600 text-white text-xs">Complete</Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-xs">
-                              Incomplete
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="align-top">
-                          {!row.isComplete ? (
-                            <div className="flex items-center gap-2">
-                              <TooltipProvider delayDuration={150}>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                      onClick={() => {
-                                        onJumpToStep(row.stepId, row.spaceId ?? null);
-                                        onOpenChange(false);
-                                      }}
-                                      aria-label="Jump to step"
-                                    >
-                                      <Target className="w-4 h-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent className="max-w-xs text-xs">
-                                    Open this step in the workflow.
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                              <Button
-                                type="button"
-                                variant="default"
-                                className="bg-green-600 hover:bg-green-700 text-white text-xs h-8"
-                                onClick={() => onToggleOutputComplete(row.stepId, row.outputId)}
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                                Mark complete
-                              </Button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
           </div>
         </div>
       </DialogPortal>

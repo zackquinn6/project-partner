@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { WorkflowThemeSelector } from './WorkflowThemeSelector';
@@ -580,30 +580,24 @@ export function WorkflowSidebar({
                       </Button>
                     </div>
 
-                    {/* Shopping List & Quality Control live under "More project tools" with Risk, Budget, etc. */}
+                    {/* Partner Tools + Progress first (A–Z); project apps below (A–Z): Budget, Quality Control, Risk Management, Scheduler, Shopping List */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="h-7 px-2 text-[11px] w-full min-w-0 justify-between gap-1 font-normal bg-sky-100 border-sky-300 text-sky-950 hover:bg-sky-200/80 hover:text-sky-950 dark:bg-sky-950/50 dark:border-sky-700 dark:text-sky-100 dark:hover:bg-sky-900/60"
+                          className="relative h-7 w-full min-w-0 justify-center px-7 text-[11px] font-normal bg-sky-100 border-sky-300 text-sky-950 hover:bg-sky-200/80 hover:text-sky-950 dark:bg-sky-950/50 dark:border-sky-700 dark:text-sky-100 dark:hover:bg-sky-900/60"
                         >
-                          <span className="truncate">More project tools</span>
-                          <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                          <span className="truncate text-center">More Project Tools</span>
+                          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 shrink-0 -translate-y-1/2 opacity-70" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="start"
                         className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] max-w-[min(100%,14rem)] bg-sky-50 dark:bg-sky-950/40 border-sky-200/80 dark:border-sky-800"
                       >
-                        <DropdownMenuItem
-                          className="text-xs gap-2 cursor-pointer"
-                          onClick={() => openAppByActionKey('project-budgeting')}
-                        >
-                          <DollarSign className="h-3.5 w-3.5 shrink-0" />
-                          Budget
-                        </DropdownMenuItem>
+                        {/* Non–project-tool entries first, alphabetical: Partner Tools, Progress */}
                         {(expertSupportEnabled || (toolRentalsEnabled && onToolRentalsClick)) && (
                           <DropdownMenuSub>
                             <DropdownMenuSubTrigger className="text-xs gap-2 cursor-pointer px-2 py-1.5">
@@ -639,6 +633,15 @@ export function WorkflowSidebar({
                           <BarChart3 className="h-3.5 w-3.5 shrink-0" />
                           Progress
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-sky-200/80 dark:bg-sky-800" />
+                        {/* Project tools at bottom, alphabetical */}
+                        <DropdownMenuItem
+                          className="text-xs gap-2 cursor-pointer"
+                          onClick={() => openAppByActionKey('project-budgeting')}
+                        >
+                          <DollarSign className="h-3.5 w-3.5 shrink-0" />
+                          Budget
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"
                           onClick={() => openAppByActionKey('quality-check')}
@@ -651,7 +654,7 @@ export function WorkflowSidebar({
                           onClick={() => openAppByActionKey('risk-management')}
                         >
                           <Shield className="h-3.5 w-3.5 shrink-0" />
-                          Risk management
+                          Risk Management
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"

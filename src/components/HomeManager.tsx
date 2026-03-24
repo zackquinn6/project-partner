@@ -198,6 +198,10 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
   };
   const handleDelete = async (homeId: string) => {
     if (!user) return;
+    if (homes.length <= 1) {
+      toast.error('You must keep at least one home on your profile');
+      return;
+    }
     try {
       const {
         error
@@ -513,7 +517,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
       open={showHomeDetails}
       onOpenChange={setShowHomeDetails}
       home={selectedHomeForDetails}
-      onDeleteHome={handleDelete}
+      onDeleteHome={homes.length > 1 ? handleDelete : undefined}
       onEditRequest={handleEdit}
     />
   </>;

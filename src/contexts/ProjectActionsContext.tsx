@@ -12,6 +12,7 @@ import { useOptimizedState } from '@/hooks/useOptimizedState';
 import { mergeQualityControlSettings, parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import type { Json } from '@/integrations/supabase/types';
+import { getDefaultHomeIdForUser } from '@/utils/ensureDefaultHome';
 
 function parseCompletedStepsColumn(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -774,32 +775,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     if (!user) return;
 
     try {
-      // REQUIREMENT 1: Check if user has homes - if not, create default home
-      const { data: existingHomes, error: homesCheckError } = await supabase
-        .from('homes')
-        .select('id')
-        .eq('user_id', user.id)
-        .limit(1);
-
-      if (homesCheckError) {
-        console.error('Error checking homes:', homesCheckError);
-        throw homesCheckError;
-      }
-
-      let defaultHomeId: string | null = null;
-      if (!existingHomes || existingHomes.length === 0) {
-        const { data: newHome, error: homeCreateError } = await supabase
-          .from('homes')
-          .insert({ user_id: user.id, name: 'My Home', is_primary: true })
-          .select('id')
-          .single();
-        if (homeCreateError) {
-          console.error('Error creating default home:', homeCreateError);
-          throw homeCreateError;
-        }
-        defaultHomeId = newHome.id;
-        await supabase.from('home_details').insert({ home_id: defaultHomeId, home_ownership: 'own' });
-      }
+      const defaultHomeId = await getDefaultHomeIdForUser(user.id);
 
       // Use new RPC function to create immutable project run snapshot
       const { data: newProjectRunId, error } = await supabase
@@ -807,7 +783,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           p_template_id: projectRunData.templateId,
           p_user_id: user.id,
           p_run_name: projectRunData.name,
-          p_home_id: defaultHomeId, // Use default home if created, otherwise null (will be set in kickoff step 3)
+          p_home_id: defaultHomeId,
           p_start_date: projectRunData.startDate.toISOString(),
           p_plan_end_date: projectRunData.planEndDate.toISOString()
         });
@@ -1040,6 +1016,10 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       mergeQualityControlSettings((projectRun as any).quality_control_settings ?? null)
     );
 
+    const instructionLevelPreferenceKey = JSON.stringify(
+      (projectRun as any).instruction_level_preference ?? null
+    );
+
     const updateKeyParts = [
       projectRun.id,
       projectRun.progress,
@@ -1052,6 +1032,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       initialSizingKey,
       scheduleOptimizationMethodKey,
       qualityControlSettingsKey,
+      instructionLevelPreferenceKey,
       ...(shouldIncludeProgressReportingStyleKey ? [progressReportingStyleKey] : [])
     ];
 
@@ -1121,6 +1102,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     const isSelectedPlanningToolsChange =
       planningToolsSignature(currentProjectRun?.customization_decisions) !==
       planningToolsSignature(projectRun.customization_decisions);
+    const isInstructionLevelPreferenceUpdate =
+      (projectRun as any).instruction_level_preference !==
+      (currentProjectRun as any)?.instruction_level_preference;
     const requiresImmediateSave =
       isBudgetDataUpdate ||
       isIssueReportsUpdate ||
@@ -1130,7 +1114,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       isInitialSizingUpdate ||
       isKickoffCompletion ||
       isQualityControlSettingsUpdate ||
-      isSelectedPlanningToolsChange;
+      isSelectedPlanningToolsChange ||
+      isInstructionLevelPreferenceUpdate;
     
     // For immediate saves (budget, issues, time tracking), execute right away
     // For other updates, debounce to avoid excessive database writes

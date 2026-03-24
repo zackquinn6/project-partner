@@ -107,6 +107,7 @@ import {
 } from '@/utils/autoScheduleRegeneration';
 import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 import { projectRunFromSupabaseRow } from '@/utils/projectRunFromSupabaseRow';
+import { instructionLevelFromProfileSkill } from '@/utils/instructionLevelFromProfile';
 interface UserViewProps {
   resetToListing?: boolean;
   forceListingMode?: boolean;
@@ -151,6 +152,10 @@ export default function UserView({
   const [viewMode, setViewMode] = useState<'listing' | 'workflow'>('listing');
   const [workflowMainView, setWorkflowMainView] = useState<'overview' | 'steps'>('overview');
   const lastWorkflowProjectRunIdRef = useRef<string | null>(null);
+  /** Run ids for which we already applied profile-based instruction level (no DB preference yet). */
+  const instructionLevelProfileInitRunIdsRef = useRef<Set<string>>(new Set());
+  const currentProjectRunForInstructionRef = useRef(currentProjectRun);
+  currentProjectRunForInstructionRef.current = currentProjectRun;
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [checkedMaterials, setCheckedMaterials] = useState<Record<string, Set<string>>>({});
@@ -271,12 +276,71 @@ export default function UserView({
     false
   );
 
-  // Sync instruction level with project run preference
+  // Sync detail level with project run; seed from user profile when the run has no saved preference yet
   useEffect(() => {
-    if (currentProjectRun?.instruction_level_preference) {
-      setInstructionLevel(currentProjectRun.instruction_level_preference as 'beginner' | 'intermediate' | 'advanced');
+    const run = currentProjectRun;
+    const runId = run?.id;
+    if (!run || !runId || !user?.id) return;
+
+    const pref = run.instruction_level_preference;
+    const validPref =
+      pref === 'beginner' || pref === 'intermediate' || pref === 'advanced';
+
+    if (validPref) {
+      setInstructionLevel(pref);
+      return;
     }
-  }, [currentProjectRun?.instruction_level_preference]);
+
+    if (instructionLevelProfileInitRunIdsRef.current.has(runId)) return;
+    instructionLevelProfileInitRunIdsRef.current.add(runId);
+
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('skill_level')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (cancelled) {
+        instructionLevelProfileInitRunIdsRef.current.delete(runId);
+        return;
+      }
+
+      if (error) {
+        console.error('UserView: could not load profile for instruction level', error);
+        instructionLevelProfileInitRunIdsRef.current.delete(runId);
+        setInstructionLevel('intermediate');
+        return;
+      }
+
+      const mapped = instructionLevelFromProfileSkill(data?.skill_level);
+      const latest = currentProjectRunForInstructionRef.current;
+      if (!latest || latest.id !== runId) {
+        instructionLevelProfileInitRunIdsRef.current.delete(runId);
+        return;
+      }
+
+      if (mapped) {
+        setInstructionLevel(mapped);
+        await updateProjectRun({
+          ...latest,
+          instruction_level_preference: mapped,
+        });
+      } else {
+        setInstructionLevel('intermediate');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    currentProjectRun?.id,
+    currentProjectRun?.instruction_level_preference,
+    user?.id,
+    updateProjectRun,
+  ]);
 
   // Handle instruction level change and save to project run
   const handleInstructionLevelChange = async (level: 'beginner' | 'intermediate' | 'advanced') => {
@@ -2479,6 +2543,9 @@ export default function UserView({
       <KickoffWorkflow 
         onKickoffComplete={async persist => {
           console.log("🎯 onKickoffComplete called - closing kickoff and switching to workflow");
+          if (persist?.customization_decisions !== undefined) {
+            setProjectPlanningWizardOpen(true);
+          }
           
             if (currentProjectRun && updateProjectRun) {
              // Ensure ALL kickoff steps are marked complete (prevent duplicates)
@@ -2759,10 +2826,6 @@ export default function UserView({
           // Clear reset flags
           window.dispatchEvent(new CustomEvent('clear-reset-flags'));
         }}
-        onPlanningWizard={() => {
-          console.log("🎯 Opening Project Planning Wizard after kickoff");
-          setProjectPlanningWizardOpen(true);
-        }}
       />
       </div>
     );
@@ -2904,6 +2967,25 @@ export default function UserView({
           instructionLevel={instructionLevel}
           onInstructionLevelChange={handleInstructionLevelChange}
         />
+      ) : projectPlanningWizardOpen && currentProjectRun ? (
+        <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden md:h-auto md:min-h-0 md:flex-none md:overflow-visible">
+          <ProjectPlanningWizard
+            open={projectPlanningWizardOpen}
+            layout="fullscreen"
+            onOpenChange={setProjectPlanningWizardOpen}
+            onWorkflowFullyComplete={handlePlanningWizardFullyComplete}
+            onGoToWorkflow={() => {
+              setProjectPlanningWizardOpen(false);
+            }}
+            onOpenBudgeting={() => setProjectBudgetingOpen(true)}
+            onOpenRiskManagement={() => setRiskManagementOpen(true)}
+            onOpenQualityControl={() => {
+              setQualityCheckExpandSettingsAccordion(true);
+              setQualityCheckOpen(true);
+            }}
+            onOpenToolRentals={() => setToolRentalsOpen(true)}
+          />
+        </div>
       ) : (
         /* Desktop Workflow View */
         <SidebarProvider>
@@ -3781,24 +3863,25 @@ export default function UserView({
         />
       )}
 
-      {/* Project Planning Wizard */}
-      <ProjectPlanningWizard
-        open={projectPlanningWizardOpen}
-        onOpenChange={setProjectPlanningWizardOpen}
-        onWorkflowFullyComplete={handlePlanningWizardFullyComplete}
-        onGoToWorkflow={() => {
-          console.log("🎯 Planning Wizard: Let's get to work - switching to workflow");
-          setProjectPlanningWizardOpen(false);
-          // User goes directly to workflow
-        }}
-        onOpenBudgeting={() => setProjectBudgetingOpen(true)}
-        onOpenRiskManagement={() => setRiskManagementOpen(true)}
-        onOpenQualityControl={() => {
-          setQualityCheckExpandSettingsAccordion(true);
-          setQualityCheckOpen(true);
-        }}
-        onOpenToolRentals={() => setToolRentalsOpen(true)}
-      />
+      {/* Project Planning Wizard — dialog on mobile only; desktop uses fullscreen shell above */}
+      {isMobile ? (
+        <ProjectPlanningWizard
+          open={projectPlanningWizardOpen}
+          layout="dialog"
+          onOpenChange={setProjectPlanningWizardOpen}
+          onWorkflowFullyComplete={handlePlanningWizardFullyComplete}
+          onGoToWorkflow={() => {
+            setProjectPlanningWizardOpen(false);
+          }}
+          onOpenBudgeting={() => setProjectBudgetingOpen(true)}
+          onOpenRiskManagement={() => setRiskManagementOpen(true)}
+          onOpenQualityControl={() => {
+            setQualityCheckExpandSettingsAccordion(true);
+            setQualityCheckOpen(true);
+          }}
+          onOpenToolRentals={() => setToolRentalsOpen(true)}
+        />
+      ) : null}
       
       {/* Project Completion Popup */}
       {currentProjectRun && (

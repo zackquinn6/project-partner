@@ -16,6 +16,7 @@ import {
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { ensureDefaultHomeForUser } from '@/utils/ensureDefaultHome';
 import { toast } from 'sonner';
 import { HomeManager } from '../HomeManager';
 import { useProjectData } from '@/contexts/ProjectDataContext';
@@ -380,25 +381,29 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       const sizingValue = projectForm.initialSizing?.trim() || '';
       const finalSizingValue = sizingValue === '' ? null : sizingValue;
       
-      // REQUIREMENT 1 & 3: Ensure home exists - use selected home or first home or create default
+      // REQUIREMENT 1 & 3: Every account has at least one home; use selection or first loaded row, else load from DB
+      if (user) {
+        await ensureDefaultHomeForUser(user.id);
+      }
       let homeId = selectedHomeId || homes[0]?.id || null;
-      
-      // If no home exists, create default home
       if (!homeId && user) {
-        const { data: newHome, error: homeCreateError } = await supabase
+        const { data: row, error: pickHomeError } = await supabase
           .from('homes')
-          .insert({ user_id: user.id, name: 'My Home', is_primary: true })
           .select('id')
-          .single();
-        if (homeCreateError) {
-          console.error('Error creating default home:', homeCreateError);
-          toast.error('Failed to create default home');
+          .eq('user_id', user.id)
+          .order('is_primary', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (pickHomeError) {
+          console.error('Error resolving home:', pickHomeError);
+          toast.error('Failed to load your home');
           return;
         }
-        homeId = newHome.id;
-        await supabase.from('home_details').insert({ home_id: homeId, home_ownership: 'own' });
-        setSelectedHomeId(homeId);
-        await fetchHomes();
+        homeId = row?.id ?? null;
+        if (homeId) {
+          setSelectedHomeId(homeId);
+          await fetchHomes();
+        }
       }
 
       // REQUIREMENT 3: Don't proceed without a home

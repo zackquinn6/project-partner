@@ -11,6 +11,7 @@ import {
   cleanupSessionData
 } from '@/utils/sessionSecurity';
 import { useGuest } from './GuestContext';
+import { ensureDefaultHomeForUser } from '@/utils/ensureDefaultHome';
 
 interface AuthContextType {
   user: User | null;
@@ -62,6 +63,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user?.id || loading) return;
+    void ensureDefaultHomeForUser(user.id).catch((err) => {
+      console.error('ensureDefaultHomeForUser failed:', err);
+    });
+  }, [user?.id, loading]);
 
   const signUp = async (email: string, password: string, guestData?: any) => {
     // Sanitize inputs

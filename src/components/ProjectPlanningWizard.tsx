@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -51,6 +51,8 @@ interface ProjectPlanningWizardProps {
   onOpenToolRentals?: () => void;
   /** Persist workflow step completion + outputs when the user finishes every wizard step */
   onWorkflowFullyComplete?: (selectedTools: PlanningToolId[]) => void | Promise<void>;
+  /** `fullscreen` = same shell as project kickoff (desktop). `dialog` = modal (e.g. mobile). */
+  layout?: 'dialog' | 'fullscreen';
 }
 
 export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
@@ -62,6 +64,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   onOpenQualityControl,
   onOpenToolRentals,
   onWorkflowFullyComplete,
+  layout = 'dialog',
 }) => {
   const { currentProjectRun, updateProjectRun } = useProject();
   const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled } = usePartnerAppSettings();
@@ -296,202 +299,238 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* Match project kickoff shell: max-w-6xl, p-2 sm:p-3 gutters, same max height band as kickoff desktop column */}
-      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-[calc(100vw-1rem)] max-w-6xl flex-col gap-0 overflow-hidden border-0 p-0 sm:w-full md:h-[min(100dvh,56rem)] md:max-h-[min(100dvh,56rem)] md:max-w-6xl md:rounded-lg md:border [&>button]:hidden">
-        {/* Accessibility: DialogTitle and DialogDescription required */}
-        <DialogTitle className="sr-only">Project Planning Workflow</DialogTitle>
-        <DialogDescription className="sr-only">Plan and customize your project workflow</DialogDescription>
+  const currentStepPurpose =
+    wizardSteps[currentStep]?.description?.trim() ||
+    wizardSteps[currentStep]?.title ||
+    '';
 
-        <div className="absolute right-2 top-[max(0.5rem,env(safe-area-inset-top))] z-10 sm:right-3 sm:top-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            className="min-h-10 text-xs sm:min-h-9 sm:text-sm"
-          >
-            Close
-          </Button>
-        </div>
+  if (layout === 'fullscreen' && !open) {
+    return null;
+  }
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] px-2 pb-2 pt-11 sm:px-3 sm:pb-3 sm:pt-12 md:pt-12">
-            <div className="mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-2 sm:gap-3">
-            {open && currentProjectRun ? (
-              <ProjectPlanningCountdownBanner
-                minimal
-                projectCreatedAt={currentProjectRun.createdAt}
-                className="shrink-0"
-              />
-            ) : null}
-            {/* Progress Header */}
-            <Card>
-          <CardHeader className="p-2 sm:p-3">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <div className="min-w-0 flex-1">
-                <CardTitle className="text-lg sm:text-xl md:text-2xl flex items-center gap-2">
-                  Project Planning Workflow
-                  {allStepsComplete && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-green-500 flex-shrink-0" />}
-                </CardTitle>
-                <p className="text-base sm:text-lg font-semibold mt-2 text-foreground">Build your complete project plan</p>
-              </div>
-              <div className="flex w-full flex-shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full text-xs sm:w-auto sm:text-sm">
-                      <Settings2 className="w-4 h-4 mr-1.5" />
-                      Change planning tools
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Planning tools for this run</DropdownMenuLabel>
-                    {planningToolsForWizard.map(({ id, label }) => {
-                      const isScope = id === 'scope';
-                      const effectiveSelected = localSelectedTools ?? selectedToolsFromContext;
-                      const checked = effectiveSelected.includes(id);
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={id}
-                          checked={checked}
-                          onCheckedChange={value => handlePlanningToolToggle(id, value === true)}
-                          disabled={isScope}
-                        >
-                          {label}
-                        </DropdownMenuCheckboxItem>
-                      );
-                    })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <div className="text-right">
-                  <div className="text-xs sm:text-sm text-muted-foreground mb-1">
-                    Step {currentStep + 1} of {wizardSteps.length}
-                  </div>
-                  <Progress value={progress} className="w-20 sm:w-24 md:w-32 h-1.5 sm:h-2" />
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
+  const shell = (
+    <div className="relative mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden px-2 pb-2 pt-11 sm:gap-3 sm:px-3 sm:pb-3 sm:pt-12 md:h-auto md:overflow-visible">
+      <div className="pointer-events-none absolute right-2 top-[max(0.5rem,env(safe-area-inset-top))] z-20 sm:right-3 sm:top-3">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onOpenChange(false)}
+          className="pointer-events-auto min-h-10 text-xs sm:min-h-9 sm:text-sm"
+        >
+          Close
+        </Button>
+      </div>
 
-        {/* Step Navigation — align with kickoff step nav card padding */}
-        <Card>
+      {open && currentProjectRun ? (
+        <ProjectPlanningCountdownBanner
+          minimal
+          projectCreatedAt={currentProjectRun.createdAt}
+          className="shrink-0"
+        />
+      ) : null}
+
+      {/* Step navigation — same card padding / layout rhythm as KickoffWorkflow */}
+      <Card className="shrink-0">
         <CardContent className="p-1.5 sm:p-2 md:p-2.5">
-            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-              <div className="flex min-w-0 flex-1 items-start gap-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="mt-0.5 h-9 w-9 shrink-0 sm:hidden"
-                  onClick={() => scrollStepNav('left')}
-                  disabled={wizardSteps.length <= 4}
-                  aria-label="Scroll steps left"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div
-                  ref={stepNavRef}
-                  className="scrollbar-hide flex min-w-0 flex-1 items-start overflow-x-auto px-0.5 pb-1 sm:overflow-visible sm:px-1 sm:pb-0"
-                >
-                  {wizardSteps.map((step, index) => (
-                    <React.Fragment key={step.id}>
-                      {index > 0 ? (
-                        <div
-                          className="mt-[13px] h-0.5 w-2 shrink-0 self-start bg-muted-foreground/25 sm:mt-[15px] sm:min-w-2 sm:flex-1 sm:w-auto"
-                          aria-hidden
-                        />
-                      ) : null}
-                      <div className="flex w-11 shrink-0 flex-col items-center px-0.5 sm:w-14 md:w-[4.25rem]">
-                        <div
-                          className={`
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+            <div className="flex min-w-0 flex-1 items-start gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="mt-0.5 h-9 w-9 shrink-0 sm:hidden"
+                onClick={() => scrollStepNav('left')}
+                disabled={wizardSteps.length <= 4}
+                aria-label="Scroll steps left"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div
+                ref={stepNavRef}
+                className="scrollbar-hide flex min-w-0 flex-1 items-start overflow-x-auto px-0.5 pb-1 sm:overflow-visible sm:px-1 sm:pb-0"
+              >
+                {wizardSteps.map((step, index) => (
+                  <React.Fragment key={step.id}>
+                    {index > 0 ? (
+                      <div
+                        className="mt-[13px] h-0.5 w-2 shrink-0 self-start bg-muted-foreground/25 sm:mt-[15px] sm:min-w-2 sm:flex-1 sm:w-auto"
+                        aria-hidden
+                      />
+                    ) : null}
+                    <div className="flex w-11 shrink-0 flex-col items-center px-0.5 sm:w-14 md:w-[4.25rem]">
+                      <div
+                        className={`
                           flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors sm:h-7 sm:w-7 md:h-8 md:w-8
                           ${index === currentStep ? 'border-primary bg-primary text-primary-foreground' : isStepCompleted(index) ? 'border-green-500 bg-green-500 text-white' : 'border-muted-foreground bg-background'}
                         `}
-                        >
-                          {isStepCompleted(index) ? (
-                            <CheckCircle className="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
-                          ) : (
-                            <span className="text-[11px] font-medium sm:text-xs md:text-sm">{index + 1}</span>
-                          )}
-                        </div>
-                        <p
-                          className={`mt-1 w-full text-center text-[9px] font-medium leading-[1.15] sm:text-[10px] md:text-xs line-clamp-3 break-words hyphens-auto ${
-                            index === currentStep
-                              ? 'text-primary'
-                              : isStepCompleted(index)
-                                ? 'text-green-700 dark:text-green-400'
-                                : 'text-muted-foreground'
-                          }`}
-                        >
-                          {step.title}
-                        </p>
+                      >
+                        {isStepCompleted(index) ? (
+                          <CheckCircle className="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                        ) : (
+                          <span className="text-[11px] font-medium sm:text-xs md:text-sm">{index + 1}</span>
+                        )}
                       </div>
-                    </React.Fragment>
-                  ))}
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="mt-0.5 h-9 w-9 shrink-0 sm:hidden"
-                  onClick={() => scrollStepNav('right')}
-                  disabled={wizardSteps.length <= 4}
-                  aria-label="Scroll steps right"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                      <p
+                        className={`mt-1 w-full text-center text-[9px] font-medium leading-[1.15] sm:text-[10px] md:text-xs line-clamp-3 break-words hyphens-auto ${
+                          index === currentStep
+                            ? 'text-primary'
+                            : isStepCompleted(index)
+                              ? 'text-green-700 dark:text-green-400'
+                              : 'text-muted-foreground'
+                        }`}
+                      >
+                        {step.title}
+                      </p>
+                    </div>
+                  </React.Fragment>
+                ))}
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="mt-0.5 h-9 w-9 shrink-0 sm:hidden"
+                onClick={() => scrollStepNav('right')}
+                disabled={wizardSteps.length <= 4}
+                aria-label="Scroll steps right"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
 
-              <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
-                <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentStep === 0} className="flex-1 sm:flex-initial text-xs h-11 sm:h-9">
-                  <ChevronLeft className="w-4 h-4 sm:w-4 sm:h-4 mr-1" />
+            <div className="flex w-full flex-col gap-2 sm:w-auto">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full text-xs sm:w-auto sm:text-sm">
+                    <Settings2 className="mr-1.5 h-4 w-4" />
+                    Change planning tools
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Planning tools for this run</DropdownMenuLabel>
+                  {planningToolsForWizard.map(({ id, label }) => {
+                    const isScope = id === 'scope';
+                    const effectiveSelected = localSelectedTools ?? selectedToolsFromContext;
+                    const checked = effectiveSelected.includes(id);
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={id}
+                        checked={checked}
+                        onCheckedChange={value => handlePlanningToolToggle(id, value === true)}
+                        disabled={isScope}
+                      >
+                        {label}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <div className="flex w-full items-center justify-center gap-1.5 sm:w-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevious}
+                  disabled={currentStep === 0}
+                  className="h-11 flex-1 text-xs sm:h-9 sm:flex-initial"
+                >
+                  <ChevronLeft className="mr-1 w-4 h-4 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Previous</span>
                   <span className="sm:hidden">Prev</span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleNext} disabled={currentStep === wizardSteps.length - 1} className="flex-1 sm:flex-initial text-xs h-11 sm:h-9">
+                <div className="min-w-[70px] px-1 text-center leading-tight">
+                  <div className="text-[10px] font-medium text-foreground sm:text-xs">Step</div>
+                  <div className="text-[10px] text-muted-foreground sm:text-xs">
+                    {currentStep + 1} of {wizardSteps.length}
+                  </div>
+                  <Progress value={progress} className="mx-auto mt-1 h-1.5 w-16 sm:h-2 sm:w-20" />
+                  {allStepsComplete ? (
+                    <CheckCircle
+                      className="mx-auto mt-0.5 h-3.5 w-3.5 text-green-500"
+                      aria-label="Planning complete"
+                    />
+                  ) : null}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNext}
+                  disabled={currentStep === wizardSteps.length - 1}
+                  className="h-11 flex-1 text-xs sm:h-9 sm:flex-initial"
+                >
                   <span className="hidden sm:inline">Next</span>
                   <span className="sm:hidden">Next</span>
-                  <ChevronRight className="w-4 h-4 sm:w-4 sm:h-4 ml-1" />
+                  <ChevronRight className="ml-1 w-4 h-4 sm:w-4 sm:h-4" />
                 </Button>
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Step purpose — matches KickoffWorkflow purpose card */}
+      {currentStepPurpose ? (
+        <Card className="shrink-0">
+          <CardContent className="flex flex-row items-center justify-between gap-2 p-2 sm:p-3">
+            <h2 className="min-w-0 flex-1 break-words pr-2 text-base font-semibold sm:text-lg">
+              {currentStepPurpose}
+            </h2>
           </CardContent>
         </Card>
+      ) : null}
 
-              {/* Current step */}
-              <div className="min-w-0">{renderCurrentStep()}</div>
-            </div>
-          </div>
-
-          <div className="shrink-0 border-t bg-background px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:px-3 sm:pb-3 md:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <Card className="mx-auto w-full max-w-6xl border-0 shadow-none sm:border sm:shadow-sm">
-              <CardContent className="p-2 sm:p-3">
-                {allStepsComplete ? (
-                  <Button
-                    onClick={async () => {
-                      const isNoToolsPlaceholder =
-                        wizardSteps.length === 1 && wizardSteps[0].toolId === null;
-                      if (!isNoToolsPlaceholder && onWorkflowFullyComplete) {
-                        const tools = localSelectedTools ?? selectedToolsFromContext;
-                        await onWorkflowFullyComplete(tools);
-                      }
-                      onOpenChange(false);
-                    }}
-                    className="min-h-11 w-full bg-green-600 hover:bg-green-700"
-                  >
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Complete Planning
-                  </Button>
-                ) : (
-                  <div className="p-2 text-center text-sm text-muted-foreground">
-                    Complete all steps to finish planning
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+      <div className="flex min-h-0 flex-1 flex-col md:min-h-[min(520px,70vh)]">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] -mx-2 px-2 pb-2 sm:mx-0 sm:px-0 sm:pb-4 md:flex-none md:overflow-visible md:pb-0">
+          <div className="min-w-0">{renderCurrentStep()}</div>
         </div>
+        <div className="mt-2 shrink-0 border-t bg-background px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:mt-4 sm:px-0 sm:pb-2 sm:pt-4">
+          <Card>
+            <CardContent className="p-2.5 sm:p-4">
+              {allStepsComplete ? (
+                <Button
+                  onClick={async () => {
+                    const isNoToolsPlaceholder =
+                      wizardSteps.length === 1 && wizardSteps[0].toolId === null;
+                    if (!isNoToolsPlaceholder && onWorkflowFullyComplete) {
+                      const tools = localSelectedTools ?? selectedToolsFromContext;
+                      await onWorkflowFullyComplete(tools);
+                    }
+                    onOpenChange(false);
+                  }}
+                  size="lg"
+                  className="min-h-[48px] w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:col-start-2 sm:row-start-1"
+                >
+                  <CheckCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Complete planning</span>
+                  <span className="sm:hidden">Complete</span>
+                </Button>
+              ) : (
+                <div className="p-2 text-center text-sm text-muted-foreground">
+                  Complete all steps to finish planning
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (layout === 'fullscreen') {
+    return (
+      <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
+        <span className="sr-only">Project Planning Workflow</span>
+        {shell}
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-[calc(100vw-1rem)] max-w-6xl flex-col gap-0 overflow-hidden border-0 p-0 sm:w-full md:h-[min(100dvh,56rem)] md:max-h-[min(100dvh,56rem)] md:max-w-6xl md:rounded-lg md:border [&>button]:hidden">
+        <DialogTitle className="sr-only">Project Planning Workflow</DialogTitle>
+        <DialogDescription className="sr-only">Plan and customize your project workflow</DialogDescription>
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">{shell}</div>
       </DialogContent>
     </Dialog>
   );

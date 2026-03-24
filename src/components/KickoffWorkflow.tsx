@@ -53,12 +53,10 @@ const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string
 interface KickoffWorkflowProps {
   onKickoffComplete: (persist?: KickoffCompletePersist) => void | Promise<void>;
   onExit?: () => void; // Add optional exit handler
-  onPlanningWizard?: () => void; // Handler to open planning wizard
 }
 export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   onKickoffComplete,
   onExit,
-  onPlanningWizard
 }) => {
   const {
     currentProjectRun,
@@ -526,9 +524,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
                       if (currentStepId === 'kickoff-step-4') {
                         await handleStepComplete(currentKickoffStep, selectedPlanningTools);
-                        if (onPlanningWizard) {
-                          onPlanningWizard();
-                        }
                         return;
                       }
                       
