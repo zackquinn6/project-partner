@@ -512,6 +512,11 @@ export function RiskManagementWindow({
                   </Tooltip>
                 </TooltipProvider>
               </DialogTitle>
+              {variant === 'risk-focus' ? (
+                <p className="mt-0.5 max-w-3xl text-sm font-normal leading-snug text-muted-foreground">
+                  {`spot what could go wrong, decide how much it matters, and plan how you'll handle it`}
+                </p>
+              ) : null}
             </div>
             <Button 
               variant="ghost" 

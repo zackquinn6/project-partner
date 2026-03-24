@@ -115,18 +115,6 @@ export function ContactUsWindow({ open, onOpenChange }: ContactUsWindowProps) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <p className="text-xs text-muted-foreground">Sending as {user.email}</p>
-            <div className="space-y-2">
-              <Label htmlFor="contact-subject">Subject</Label>
-              <Input
-                id="contact-subject"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                required
-                maxLength={200}
-                autoComplete="off"
-              />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="contact-message">Message</Label>
               <Textarea

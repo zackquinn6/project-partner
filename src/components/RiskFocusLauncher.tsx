@@ -161,6 +161,9 @@ export function RiskFocusLauncherDialog({
             <Crosshair className="h-5 w-5" />
             Risk Focus
           </DialogTitle>
+          <p className="text-sm font-normal leading-snug text-muted-foreground">
+            {`spot what could go wrong, decide how much it matters, and plan how you'll handle it`}
+          </p>
           <DialogDescription>
             {`Choose a project and focus only on controlling for "what could go wrong". This is perfect for those who are following other content and want help to assure the project goes well.`}
           </DialogDescription>
