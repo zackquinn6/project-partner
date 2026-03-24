@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, Lock, HelpCircle, BookOpen, MessageCircle, Headphones, Crown, FileText, UserPlus } from "lucide-react";
+import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, Lock, HelpCircle, BookOpen, MessageCircle, Headphones, Crown, FileText, UserPlus, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useProject } from '@/contexts/ProjectContext';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
@@ -13,6 +13,7 @@ import { useMembership } from '@/contexts/MembershipContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useBetaMode } from '@/hooks/useBetaMode';
 import { FeedbackDialog } from './FeedbackDialog';
+import { ContactUsWindow } from './ContactUsWindow';
 import { UpgradePrompt } from './UpgradePrompt';
 import { MembershipWindow } from './MembershipWindow';
 import { useState, useEffect } from "react";
@@ -48,6 +49,7 @@ export default function Navigation({
   const [isToolsLibraryOpen, setIsToolsLibraryOpen] = useState(false);
   const [isExpertHelpOpen, setIsExpertHelpOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [isContactOpen, setIsContactOpen] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
 
@@ -320,12 +322,12 @@ export default function Navigation({
         <div className="flex h-16 items-center px-4 relative">
           {/* Beta release label - centered, visually appealing */}
           {isBetaMode && (
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+            <div className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 xl:block">
               <TooltipProvider delayDuration={150}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-gradient-to-r from-amber-500/90 to-orange-500/90 text-white shadow-md ring-1 ring-white/20 whitespace-nowrap cursor-help pointer-events-auto">
-                      Welcome to the Project Partner Beta Release
+                    <span className="inline-flex cursor-help items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-r from-amber-500/90 to-orange-500/90 px-3 py-1.5 text-xs font-semibold text-white shadow-md ring-1 ring-white/20 pointer-events-auto">
+                      Welcome to the Beta
                     </span>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs text-xs text-left">
@@ -418,12 +420,6 @@ export default function Navigation({
           </div>
 
           <div className="flex items-center space-x-2">
-            {/* Phone Number */}
-            <div className="hidden md:flex flex-col items-end mr-2">
-              <span className="text-[10px] text-muted-foreground">Qs? Call or Text</span>
-              <span className="text-sm font-medium">(617) 545-3367</span>
-            </div>
-            
             {/* Get Expert Help Button - Always visible */}
             
             
@@ -478,6 +474,10 @@ export default function Navigation({
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Send Feedback
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsContactOpen(true)}>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Contact Us
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setIsRoadmapOpen(true)}>
                   <TrendingUp className="h-4 w-4 mr-2" />
                   App Roadmap
@@ -504,6 +504,7 @@ export default function Navigation({
 
       {/* Desktop-only modals */}
       <FeedbackDialog open={showFeedback} onOpenChange={setShowFeedback} />
+      <ContactUsWindow open={isContactOpen} onOpenChange={setIsContactOpen} />
       
       <DataPrivacyManager open={isPrivacyOpen} onOpenChange={setIsPrivacyOpen} />
       

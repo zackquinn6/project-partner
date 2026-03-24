@@ -297,7 +297,7 @@ export default function Home({
               <div className="col-span-2 sm:col-span-4 mb-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button onClick={() => { console.log('Navigating to project catalog'); navigate('/projects'); }} variant="outline" className="w-full h-10 text-sm font-medium border-primary bg-slate-600 hover:bg-slate-500 text-slate-50">
+                    <Button onClick={() => { console.log('Navigating to project catalog'); navigate('/projects'); }} variant="default" className="w-full h-10 text-sm font-medium border border-[#5c0000] bg-[#800000] text-white shadow-card hover:bg-[#6d0000] hover:text-white hover:shadow-elegant">
                       <BookOpen className="w-4 h-4 mr-2" />
                       Explore New Projects
                     </Button>

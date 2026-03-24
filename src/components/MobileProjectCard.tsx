@@ -11,13 +11,19 @@ import {
   DialogTitle,
   DialogFooter 
 } from '@/components/ui/dialog';
-import { ChevronRight, Play, CheckCircle, Clock, AlertTriangle, Trash2 } from 'lucide-react';
+import { ChevronRight, Play, CheckCircle, Clock, Trash2 } from 'lucide-react';
 import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useProject } from '@/contexts/ProjectContext';
 import { useButtonTracker } from '@/hooks/useButtonTracker';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
 import { getRiskFocusAwareDisplayName, isRiskFocusRun } from '@/utils/projectRunRiskFocus';
+import {
+  dashboardStatusBadgeClassName,
+  dashboardStatusBadgeLabel,
+  dashboardStatusFromProgressPercent,
+  type DashboardRunStatus,
+} from '@/utils/projectDashboardStatus';
 
 interface MobileProjectCardProps {
   project: Project | ProjectRun;
@@ -47,7 +53,9 @@ export function MobileProjectCard({ project, onSelect, variant = 'project', onDe
       return 0;
     }
   })();
-  const status = isProjectRun ? getProjectRunStatus(progress) : 'template';
+  const status: DashboardRunStatus | 'template' = isProjectRun
+    ? dashboardStatusFromProgressPercent(progress)
+    : 'template';
   
   // Only allow swipe to delete for project runs (not templates)
   const canDelete = isProjectRun;
@@ -259,49 +267,39 @@ export function MobileProjectCard({ project, onSelect, variant = 'project', onDe
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const statusConfig = {
-    template: { 
-      color: 'bg-muted text-muted-foreground',
-      label: 'Template',
-      icon: null
-    },
-    'not-started': { 
-      color: 'bg-secondary text-secondary-foreground',
-      label: 'Ready',
-      icon: Play
-    },
-    'in-progress': { 
-      color: 'bg-primary/10 text-primary',
-      label: 'Active',
-      icon: Clock
-    },
-    completed: { 
-      color: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400',
-      label: 'Done',
-      icon: CheckCircle
-    },
-    'needs-attention': { 
-      color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400',
-      label: 'Review',
-      icon: AlertTriangle
-    }
-  };
+function StatusBadge({ status }: { status: DashboardRunStatus | 'template' }) {
+  if (status === 'template') {
+    return (
+      <Badge className="bg-muted text-muted-foreground text-xs px-2 py-1 font-medium">
+        Template
+      </Badge>
+    );
+  }
 
-  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.template;
-  const Icon = config.icon;
+  const Icon =
+    status === 'not-started' ? Play : status === 'in-progress' ? Clock : CheckCircle;
 
   return (
-    <Badge className={`${config.color} text-xs px-2 py-1 font-medium`}>
+    <Badge
+      className={`${dashboardStatusBadgeClassName(status)} text-xs px-2 py-1 font-medium border`}
+    >
       <div className="flex items-center gap-1">
-        {Icon && <Icon className="h-3 w-3" />}
-        {config.label}
+        <Icon className="h-3 w-3" />
+        {dashboardStatusBadgeLabel(status)}
       </div>
     </Badge>
   );
 }
 
-function ActionButton({ status, progress, onSelect }: { status: string; progress: number; onSelect: () => void }) {
+function ActionButton({
+  status,
+  progress,
+  onSelect,
+}: {
+  status: DashboardRunStatus | 'template';
+  progress: number;
+  onSelect: () => void;
+}) {
   const [isLoading, setIsLoading] = useState(false);
   
   const handleClick = (e: React.MouseEvent) => {
@@ -318,7 +316,7 @@ function ActionButton({ status, progress, onSelect }: { status: string; progress
     setIsLoading(false);
   };
   
-  if (status === 'completed') {
+  if (status === 'complete') {
     return (
       <Button 
         variant="outline" 
@@ -357,12 +355,6 @@ function ActionButton({ status, progress, onSelect }: { status: string; progress
       {isLoading ? '...' : 'Start'}
     </Button>
   );
-}
-
-function getProjectRunStatus(calculatedProgress: number): string {
-  if (calculatedProgress >= 100) return 'completed';
-  if (calculatedProgress > 0) return 'in-progress';
-  return 'not-started';
 }
 
 function formatDate(date: Date | string): string {

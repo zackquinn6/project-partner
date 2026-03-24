@@ -20,6 +20,11 @@ import { CommunityPostsWindow } from '@/components/CommunityPostsWindow';
 import { ManualProjectDialog } from '@/components/ManualProjectDialog';
 import { ManualProjectEditDialog } from '@/components/ManualProjectEditDialog';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
+import {
+  dashboardStatusBadgeClassName,
+  dashboardStatusBadgeLabel,
+  dashboardStatusFromProgressPercent,
+} from '@/utils/projectDashboardStatus';
 import { PhotoGallery } from '@/components/PhotoGallery';
 import { ProjectPortfolioRemindersDialog } from '@/components/ProjectPortfolioRemindersDialog';
 import { getRiskFocusAwareDisplayName, isRiskFocusRun } from '@/utils/projectRunRiskFocus';
@@ -49,21 +54,6 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
     } catch (error) {
       console.error('Failed to calculate project progress:', error);
       return 0;
-    }
-  };
-
-  const getStatusColor = (status: ProjectRun['status']) => {
-    switch (status) {
-      case 'not-started':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'in-progress':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'complete':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -152,7 +142,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                 Project Dashboard
               </CardTitle>
               <CardDescription className="text-sm">
-                View and manage your project portfolio
+                Manage your projects
               </CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
@@ -182,7 +172,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                 className="w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Start a New Project</span>
+                <span className="hidden sm:inline">Start New Project</span>
                 <span className="sm:hidden">New Project</span>
               </Button>
               )}
@@ -193,8 +183,8 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                 className="w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Add to portfolio</span>
-                <span className="sm:hidden">Add to portfolio</span>
+                <span className="hidden sm:inline">Log Project</span>
+                <span className="sm:hidden">Log Project</span>
               </Button>
             </div>
           </div>
@@ -221,6 +211,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                 .filter(run => run.status !== 'cancelled')
                 .map((projectRun) => {
                 const progress = calculateProgress(projectRun);
+                const dashStatus = dashboardStatusFromProgressPercent(progress);
                 return (
                   <Card key={projectRun.id} className="p-4">
                     <div className="space-y-3">
@@ -240,8 +231,8 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                             )}
                           </div>
                         </div>
-                        <Badge className={getStatusColor(projectRun.status)}>
-                          {projectRun.status.replace('-', ' ')}
+                        <Badge className={dashboardStatusBadgeClassName(dashStatus)}>
+                          {dashboardStatusBadgeLabel(dashStatus)}
                         </Badge>
                       </div>
                       
@@ -252,9 +243,21 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                         </div>
                       </div>
                       
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <div>Started: {formatDate(projectRun.startDate).monthDay}</div>
-                        <div>Due: {formatDate(projectRun.planEndDate).monthDay}</div>
+                      <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                        <div>
+                          <span className="font-medium text-foreground/80">Start</span>{' '}
+                          {formatDate(projectRun.startDate).monthDay}
+                        </div>
+                        <div>
+                          <span className="font-medium text-foreground/80">Plan End</span>{' '}
+                          {formatDate(projectRun.planEndDate).monthDay}
+                        </div>
+                        {projectRun.endDate ? (
+                          <div>
+                            <span className="font-medium text-foreground/80">Actual End</span>{' '}
+                            {formatDate(projectRun.endDate).monthDay}
+                          </div>
+                        ) : null}
                       </div>
                       
                       <div className="flex items-center gap-2 pt-2">
@@ -271,7 +274,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                           </Button>
                         )}
                         
-                        {projectRun.status !== 'complete' && !projectRun.isManualEntry && (
+                        {dashStatus !== 'complete' && !projectRun.isManualEntry && (
                           <Button 
                             size="sm" 
                             onClick={trackClick(`continue-${projectRun.id}`, () => handleOpenProjectRun(projectRun), {
@@ -319,11 +322,11 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
               <TableHeader>
                 <TableRow>
                   <TableHead>Project Name</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>Plan End Date</TableHead>
+                  <TableHead>Start</TableHead>
+                  <TableHead>Plan End</TableHead>
                   <TableHead>Progress</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Actual End Date</TableHead>
+                  <TableHead>Actual End</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -351,7 +354,8 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                   .filter(run => run.status !== 'cancelled')
                   .map((projectRun) => {
                   const progress = calculateProgress(projectRun);
-                  
+                  const dashStatus = dashboardStatusFromProgressPercent(progress);
+
                   return (
                     <TableRow key={projectRun.id}>
                       <TableCell className="font-medium">
@@ -392,8 +396,8 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(projectRun.status)}>
-                          {projectRun.status.replace('-', ' ')}
+                        <Badge className={dashboardStatusBadgeClassName(dashStatus)}>
+                          {dashboardStatusBadgeLabel(dashStatus)}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -423,7 +427,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                             </Button>
                           )}
                           
-                          {projectRun.status !== 'complete' && !projectRun.isManualEntry && (
+                          {dashStatus !== 'complete' && !projectRun.isManualEntry && (
                             <Button 
                               size="sm" 
                               onClick={trackClick(`continue-desktop-${projectRun.id}`, () => handleOpenProjectRun(projectRun), {

@@ -352,8 +352,8 @@ export function MobileOptimizedHome() {
               console.log('📱 Mobile: Navigating to project catalog');
               navigate('/projects');
             }}
-            variant="outline"
-            className="w-full h-10 text-sm font-medium border-primary text-primary hover:bg-primary/10 mb-3"
+            variant="default"
+            className="mb-3 w-full h-10 text-sm font-medium border border-[#5c0000] bg-[#800000] text-white shadow-card hover:bg-[#6d0000] hover:text-white hover:shadow-elegant"
           >
             <BookOpen className="w-4 h-4 mr-2" />
             Explore New Projects
