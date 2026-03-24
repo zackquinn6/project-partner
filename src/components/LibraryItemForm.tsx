@@ -151,11 +151,18 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
         
         if (error) throw error;
       } else {
+        if (!user?.id) {
+          toast.error('You must be logged in to create library items');
+          return;
+        }
         // Create new item
         console.log(`💾 Creating new ${type} item:`, dataToSave);
         const { error } = await supabase
           .from(type)
-          .insert(dataToSave);
+          .insert({
+            ...dataToSave,
+            created_by: user.id
+          });
         
         if (error) {
           console.error(`❌ Error creating ${type}:`, error);
