@@ -7,10 +7,17 @@ import { useProject } from '@/contexts/ProjectContext';
 import { DIYProfileStep } from './KickoffSteps/DIYProfileStep';
 import { ProjectOverviewStep } from './KickoffSteps/ProjectOverviewStep';
 import { ProjectProfileStep } from './KickoffSteps/ProjectProfileStep';
-import { ProjectToolsStep, PLANNING_TOOLS, type PlanningToolId } from './KickoffSteps/ProjectToolsStep';
+import {
+  ProjectToolsStep,
+  PLANNING_TOOLS,
+  type PlanningToolId,
+  filterByPartnerAvailability,
+  DEFAULT_PLANNING_TOOLS_SELECTION,
+} from './KickoffSteps/ProjectToolsStep';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
 
@@ -53,6 +60,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     deleteProjectRun
   } = useProject();
   const { user } = useAuth();
+  const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled } = usePartnerAppSettings();
   const [kickoffOrderResolved, setKickoffOrderResolved] = useState(false);
   const [kickoffStepOrder, setKickoffStepOrder] = useState<'profile_first' | 'match_first'>('match_first');
   const [currentKickoffStep, setCurrentKickoffStep] = useState(0);
@@ -182,12 +190,28 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       const preservedTimeline = freshRun?.initial_timeline ?? (currentProjectRun as any)?.initial_timeline ?? (currentProjectRun as any)?.initialTimeline ?? null;
       const preservedSizing = freshRun?.initial_sizing ?? (currentProjectRun as any)?.initial_sizing ?? (currentProjectRun as any)?.initialSizing ?? null;
 
-      // For step 4 (tools), merge selected_planning_tools into customization_decisions
+      // Step 4: persist planning tools the user sees (parent state can be [] until ProjectToolsStep syncs).
       const existingDecisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
-      const customization_decisions =
-        stepId === 'kickoff-step-4' && Array.isArray(selectedTools)
-          ? { ...existingDecisions, selected_planning_tools: selectedTools }
-          : currentProjectRun.customization_decisions;
+      let customization_decisions: typeof currentProjectRun.customization_decisions =
+        currentProjectRun.customization_decisions;
+      if (stepId === 'kickoff-step-4') {
+        let tools: PlanningToolId[] | undefined = Array.isArray(selectedTools) ? selectedTools : undefined;
+        if (!tools || tools.length === 0) {
+          const persisted = existingDecisions.selected_planning_tools;
+          if (Array.isArray(persisted) && persisted.length > 0) {
+            tools = persisted as PlanningToolId[];
+          } else {
+            tools = [...DEFAULT_PLANNING_TOOLS_SELECTION];
+          }
+        }
+        const normalized = filterByPartnerAvailability(
+          tools,
+          partnerAppsEnabled,
+          expertSupportEnabled,
+          toolRentalsEnabled
+        );
+        customization_decisions = { ...existingDecisions, selected_planning_tools: normalized };
+      }
 
       // Update project run with completed step - WAIT for completion
       const updatedProjectRun = {

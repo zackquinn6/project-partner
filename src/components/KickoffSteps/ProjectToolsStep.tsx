@@ -43,7 +43,7 @@ const KICKOFF_TOOLS_GRID_ORDER: PlanningToolId[] = [
   'expert_support',
 ];
 
-const DEFAULT_SELECTED: PlanningToolId[] = ['scope', 'risk'];
+export const DEFAULT_PLANNING_TOOLS_SELECTION: PlanningToolId[] = ['scope', 'risk'];
 
 /** Preset tool sets by project focus. Scope is always included. */
 const FOCUS_PRESETS: Record<string, PlanningToolId[]> = {
@@ -59,7 +59,8 @@ interface ProjectToolsStepProps {
   onSelectionChange?: (selected: PlanningToolId[]) => void;
 }
 
-function filterByPartnerAvailability(
+/** Exported for kickoff step 4 save when parent state has not received onSelectionChange yet. */
+export function filterByPartnerAvailability(
   ids: PlanningToolId[],
   partnerAppsEnabled: boolean,
   expertSupportEnabled: boolean,
@@ -101,7 +102,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   }, [partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled]);
 
   const [selected, setSelected] = useState<Set<PlanningToolId>>(() => {
-    const initial = initialSelected.length > 0 ? initialSelected : DEFAULT_SELECTED;
+    const initial = initialSelected.length > 0 ? initialSelected : DEFAULT_PLANNING_TOOLS_SELECTION;
     const filtered = filterByPartnerAvailability(
       initial,
       partnerAppsEnabled,
@@ -126,7 +127,8 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   }, [user?.id]);
 
   useEffect(() => {
-    const fromPersisted = initialSelected.length > 0 ? initialSelected : DEFAULT_SELECTED;
+    const fromPersisted =
+      initialSelected.length > 0 ? initialSelected : DEFAULT_PLANNING_TOOLS_SELECTION;
     const next = filterByPartnerAvailability(
       fromPersisted as PlanningToolId[],
       partnerAppsEnabled,
@@ -134,12 +136,10 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
       toolRentalsEnabled
     );
     setSelected(new Set(next));
-    // Only push to parent when we have saved tools from the run. If initialSelected is empty,
-    // the parent may already hold the user's in-progress selection; calling onSelectionChange
-    // with DEFAULT_SELECTED would overwrite "select all" before kickoff completes.
-    if (initialSelected.length > 0) {
-      onSelectionChange?.(next);
-    }
+    // Keep KickoffWorkflow.selectedPlanningTools aligned with what the user sees (defaults
+    // included). Otherwise step 4 complete can save selected_planning_tools: [] and the
+    // planning wizard shows "no tools selected".
+    onSelectionChange?.(next);
   }, [
     initialSelected.join(','),
     partnerAppsEnabled,
