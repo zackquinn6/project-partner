@@ -87,12 +87,11 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   useEffect(() => {
     let initial = initialSelected.length > 0 ? initialSelected : DEFAULT_SELECTED;
     if (!expertSupportEnabled) initial = initial.filter(id => id !== 'expert_support');
-    setSelected(new Set(initial as PlanningToolId[]));
-    if (initialSelected.length === 0) {
-      const defaultFiltered = expertSupportEnabled ? DEFAULT_SELECTED : DEFAULT_SELECTED.filter(id => id !== 'expert_support');
-      onSelectionChange?.(defaultFiltered as PlanningToolId[]);
-    }
-  }, [initialSelected.join(','), expertSupportEnabled]);
+    const next = initial as PlanningToolId[];
+    setSelected(new Set(next));
+    // Always sync parent — otherwise completing kickoff can persist [] / stale tools while the UI shows the right checkboxes.
+    onSelectionChange?.(next);
+  }, [initialSelected.join(','), expertSupportEnabled, onSelectionChange]);
 
   const notifySelection = (next: Set<PlanningToolId>) => {
     const validToolIds = new Set(PLANNING_TOOL_IDS as unknown as string[]);
@@ -210,7 +209,16 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
                     disabled={isScope}
                   />
                   <div className="space-y-0.5 min-w-0">
-                    <CardTitle className="text-base font-medium">{label}</CardTitle>
+                    <CardTitle className="text-base font-medium">
+                      {id === 'risk' ? (
+                        <>
+                          Risk/
+                          <span className="block">Uncertainty</span>
+                        </>
+                      ) : (
+                        label
+                      )}
+                    </CardTitle>
                     <p className="text-sm text-muted-foreground">{benefit}</p>
                   </div>
                 </div>

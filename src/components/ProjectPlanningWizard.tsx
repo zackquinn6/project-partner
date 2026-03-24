@@ -84,10 +84,11 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     }
     return ordered.map(toolId => {
       const meta = PLANNING_TOOLS.find(t => t.id === toolId);
+      const title = toolId === 'risk' ? 'Risk/\nUncertainty' : meta?.label ?? toolId;
       return {
         id: `planning-${toolId}`,
         toolId,
-        title: meta?.label ?? toolId,
+        title,
         description: meta?.benefit ?? ''
       };
     });
@@ -303,16 +304,16 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
           </CardHeader>
         </Card>
 
-        {/* Step Navigation — labels under number circles for narrow horizontal fit */}
+        {/* Step Navigation — mobile: scroll; sm+: flex-1 track fills space up to Prev/Next */}
         <Card>
-        <CardContent className="p-1 sm:p-1.5 md:p-2">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-              <div className="flex items-start gap-1 w-full sm:w-auto min-w-0">
+        <CardContent className="p-3 sm:p-4 md:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <div className="flex min-w-0 flex-1 items-start gap-1">
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9 shrink-0 sm:hidden mt-0.5"
+                  className="mt-0.5 h-9 w-9 shrink-0 sm:hidden"
                   onClick={() => scrollStepNav('left')}
                   disabled={wizardSteps.length <= 4}
                   aria-label="Scroll steps left"
@@ -321,25 +322,33 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                 </Button>
                 <div
                   ref={stepNavRef}
-                  className="flex items-start gap-x-0.5 sm:gap-x-1 overflow-x-auto w-full min-w-0 pb-0.5 sm:pb-0 px-0.5 sm:px-0 scrollbar-hide"
+                  className="scrollbar-hide flex min-w-0 flex-1 items-start overflow-x-auto px-0.5 pb-1 sm:overflow-visible sm:px-1 sm:pb-0"
                 >
                   {wizardSteps.map((step, index) => (
                     <React.Fragment key={step.id}>
-                      <div className="flex flex-col items-center flex-shrink-0 w-11 sm:w-14 md:w-[4.25rem] px-0.5">
+                      {index > 0 ? (
+                        <div
+                          className="mt-[13px] h-0.5 w-2 shrink-0 self-start bg-muted-foreground/25 sm:mt-[15px] sm:min-w-2 sm:flex-1 sm:w-auto"
+                          aria-hidden
+                        />
+                      ) : null}
+                      <div className="flex w-11 shrink-0 flex-col items-center px-0.5 sm:w-14 md:w-[4.25rem]">
                         <div
                           className={`
-                          flex items-center justify-center w-7 h-7 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full border-2 transition-colors flex-shrink-0
+                          flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors sm:h-7 sm:w-7 md:h-8 md:w-8
                           ${index === currentStep ? 'border-primary bg-primary text-primary-foreground' : isStepCompleted(index) ? 'border-green-500 bg-green-500 text-white' : 'border-muted-foreground bg-background'}
                         `}
                         >
                           {isStepCompleted(index) ? (
-                            <CheckCircle className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" />
+                            <CheckCircle className="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
                           ) : (
-                            <span className="text-[11px] sm:text-xs md:text-sm font-medium">{index + 1}</span>
+                            <span className="text-[11px] font-medium sm:text-xs md:text-sm">{index + 1}</span>
                           )}
                         </div>
                         <p
-                          className={`mt-1 w-full text-center text-[9px] sm:text-[10px] md:text-xs font-medium leading-[1.15] line-clamp-3 break-words hyphens-auto ${
+                          className={`mt-1 w-full whitespace-pre-line text-center text-[9px] font-medium leading-[1.15] sm:text-[10px] md:text-xs ${
+                            step.toolId === 'risk' ? 'line-clamp-4' : 'line-clamp-3'
+                          } break-words hyphens-auto ${
                             index === currentStep
                               ? 'text-primary'
                               : isStepCompleted(index)
@@ -350,12 +359,6 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                           {step.title}
                         </p>
                       </div>
-                      {index < wizardSteps.length - 1 && (
-                        <div
-                          className="h-0.5 w-2 sm:w-3 md:w-5 bg-muted-foreground/25 flex-shrink-0 mt-[13px] sm:mt-[13px] md:mt-[15px] self-start"
-                          aria-hidden
-                        />
-                      )}
                     </React.Fragment>
                   ))}
                 </div>
@@ -363,7 +366,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9 shrink-0 sm:hidden mt-0.5"
+                  className="mt-0.5 h-9 w-9 shrink-0 sm:hidden"
                   onClick={() => scrollStepNav('right')}
                   disabled={wizardSteps.length <= 4}
                   aria-label="Scroll steps right"
@@ -372,7 +375,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                 </Button>
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
                 <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentStep === 0} className="flex-1 sm:flex-initial text-xs h-11 sm:h-9">
                   <ChevronLeft className="w-4 h-4 sm:w-4 sm:h-4 mr-1" />
                   <span className="hidden sm:inline">Previous</span>

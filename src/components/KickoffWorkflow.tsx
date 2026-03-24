@@ -221,7 +221,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       // For step 4 (tools), merge selected_planning_tools into customization_decisions
       const existingDecisions = (currentProjectRun.customization_decisions || {}) as Record<string, unknown>;
       const customization_decisions =
-        stepId === 'kickoff-step-4' && selectedTools
+        stepId === 'kickoff-step-4' && Array.isArray(selectedTools)
           ? { ...existingDecisions, selected_planning_tools: selectedTools }
           : currentProjectRun.customization_decisions;
 
