@@ -19,13 +19,15 @@ import { ScheduleStep } from './PlanningWizardSteps/ScheduleStep';
 import { UncertaintyStep } from './PlanningWizardSteps/UncertaintyStep';
 import { BudgetStep } from './PlanningWizardSteps/BudgetStep';
 import { ShoppingStep } from './PlanningWizardSteps/ShoppingStep';
+import { ToolRentalsStep } from './PlanningWizardSteps/ToolRentalsStep';
 import { QualityControlStep } from './PlanningWizardSteps/QualityControlStep';
 import { ExpertSupportStep } from './PlanningWizardSteps/ExpertSupportStep';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
+import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
 
 const WIZARD_TOOL_ORDER: PlanningToolId[] = [
-  'scope', 'schedule', 'risk', 'budget', 'shopping_list',
+  'scope', 'schedule', 'risk', 'budget', 'shopping_list', 'tool_rentals',
   'quality_control', 'expert_support'
 ];
 
@@ -39,6 +41,8 @@ interface ProjectPlanningWizardProps {
   onOpenRiskManagement?: () => void;
   /** Opens Quality Control with settings expanded (planning wizard quality tab). */
   onOpenQualityControl?: () => void;
+  /** Opens Tool Access / rentals at host level (e.g. UserView). */
+  onOpenToolRentals?: () => void;
   /** Persist workflow step completion + outputs when the user finishes every wizard step */
   onWorkflowFullyComplete?: (selectedTools: PlanningToolId[]) => void | Promise<void>;
 }
@@ -50,10 +54,11 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   onOpenBudgeting,
   onOpenRiskManagement,
   onOpenQualityControl,
+  onOpenToolRentals,
   onWorkflowFullyComplete,
 }) => {
   const { currentProjectRun, updateProjectRun } = useProject();
-  const { expertSupportEnabled } = usePartnerAppSettings();
+  const { expertSupportEnabled, toolRentalsEnabled } = usePartnerAppSettings();
   const validToolIds = useMemo(() => new Set(PLANNING_TOOLS.map(t => t.id)), []);
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
@@ -65,15 +70,27 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     const decisions = parseCustomizationDecisions(currentProjectRun?.customization_decisions);
     const rawSelected = (decisions.selected_planning_tools as unknown as string[] | undefined) ?? [];
     const normalized = rawSelected.filter((id): id is PlanningToolId => validToolIds.has(id as any));
-    return expertSupportEnabled ? normalized : normalized.filter(id => id !== 'expert_support');
-  }, [currentProjectRun?.id, currentProjectRun?.customization_decisions, expertSupportEnabled, validToolIds]);
+    return normalized.filter(id => {
+      if (id === 'expert_support' && !expertSupportEnabled) return false;
+      if (id === 'tool_rentals' && !toolRentalsEnabled) return false;
+      return true;
+    });
+  }, [
+    currentProjectRun?.id,
+    currentProjectRun?.customization_decisions,
+    expertSupportEnabled,
+    toolRentalsEnabled,
+    validToolIds,
+  ]);
 
   const wizardSteps = useMemo(() => {
     const selected = localSelectedTools ?? selectedToolsFromContext;
     const selectedSet = new Set(selected);
-    const orderFiltered = expertSupportEnabled
-      ? WIZARD_TOOL_ORDER
-      : WIZARD_TOOL_ORDER.filter(id => id !== 'expert_support');
+    const orderFiltered = WIZARD_TOOL_ORDER.filter(id => {
+      if (id === 'expert_support' && !expertSupportEnabled) return false;
+      if (id === 'tool_rentals' && !toolRentalsEnabled) return false;
+      return true;
+    });
     const ordered = orderFiltered.filter(id => selectedSet.has(id));
     if (ordered.length === 0) {
       return [{
@@ -93,7 +110,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         description: meta?.benefit ?? ''
       };
     });
-  }, [localSelectedTools, selectedToolsFromContext, expertSupportEnabled]);
+  }, [localSelectedTools, selectedToolsFromContext, expertSupportEnabled, toolRentalsEnabled]);
 
   useEffect(() => {
     if (open) {
@@ -150,15 +167,21 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const currentToolId = wizardSteps[currentStep]?.toolId ?? null;
 
   const planningToolsForWizard = useMemo(
-    () => PLANNING_TOOLS.filter(t =>
-      WIZARD_TOOL_ORDER.includes(t.id) && (t.id !== 'expert_support' || expertSupportEnabled)
-    ),
-    [expertSupportEnabled]
+    () =>
+      PLANNING_TOOLS.filter(t => {
+        if (!WIZARD_TOOL_ORDER.includes(t.id)) return false;
+        if (t.id === 'expert_support' && !expertSupportEnabled) return false;
+        if (t.id === 'tool_rentals' && !toolRentalsEnabled) return false;
+        return true;
+      }),
+    [expertSupportEnabled, toolRentalsEnabled]
   );
 
   const handlePlanningToolToggle = useCallback(
     (toolId: PlanningToolId, checked: boolean) => {
       if (!currentProjectRun || toolId === 'scope') return;
+      if (toolId === 'expert_support' && !expertSupportEnabled) return;
+      if (toolId === 'tool_rentals' && !toolRentalsEnabled) return;
       const decisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
       // Use effective selection (local + context) so rapid toggles don't overwrite with stale context
       const effectiveSelected = localSelectedTools ?? selectedToolsFromContext;
@@ -168,6 +191,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       if (checked) currentSet.add(toolId);
       else currentSet.delete(toolId);
       currentSet.add('scope');
+      if (!expertSupportEnabled) currentSet.delete('expert_support');
+      if (!toolRentalsEnabled) currentSet.delete('tool_rentals');
       const next = Array.from(currentSet);
       setLocalSelectedTools(next);
       updateProjectRun({
@@ -176,7 +201,15 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         updatedAt: new Date()
       });
     },
-    [currentProjectRun, updateProjectRun, localSelectedTools, selectedToolsFromContext, validToolIds]
+    [
+      currentProjectRun,
+      updateProjectRun,
+      localSelectedTools,
+      selectedToolsFromContext,
+      validToolIds,
+      expertSupportEnabled,
+      toolRentalsEnabled,
+    ]
   );
 
   const renderCurrentStep = () => {
@@ -217,6 +250,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         return <BudgetStep {...stepProps} onOpenBudgeting={onOpenBudgeting} />;
       case 'shopping_list':
         return <ShoppingStep {...stepProps} />;
+      case 'tool_rentals':
+        return <ToolRentalsStep {...stepProps} onOpenToolRentals={onOpenToolRentals} />;
       case 'quality_control':
         return (
           <QualityControlStep
@@ -260,6 +295,12 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] px-2 pb-2 pt-12 sm:px-3 sm:pb-3 sm:pt-14 md:px-5 md:pb-5 md:pt-16">
             <div className="mx-auto max-w-6xl space-y-2 sm:space-y-3 md:space-y-5">
+            {open && currentProjectRun ? (
+              <ProjectPlanningCountdownBanner
+                projectCreatedAt={currentProjectRun.createdAt}
+                className="shrink-0"
+              />
+            ) : null}
             {/* Progress Header */}
             <Card>
           <CardHeader className="p-2 sm:p-3 md:p-4">

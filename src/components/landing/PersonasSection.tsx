@@ -35,27 +35,34 @@ export const PersonasSection = () => {
   ];
 
   return (
-    <section className="section-spacing bg-background">
+    <section className="py-8 md:py-10 bg-background">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-16 text-foreground">
+        <h2 className="text-xl md:text-2xl font-bold text-center mb-6 md:mb-8 text-foreground">
           Who It&apos;s For
         </h2>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 max-w-3xl mx-auto">
           {personas.map((persona, index) => (
-            <Card key={index} className="p-8 text-center hover:shadow-xl transition-all hover-lift bg-card border-border">
-              <div className={`w-20 h-20 ${persona.bgColor} rounded-full flex items-center justify-center mx-auto mb-6`}>
+            <Card
+              key={index}
+              className="p-2.5 sm:p-3 text-center shadow-sm hover:shadow-md transition-shadow bg-card border-border"
+            >
+              <div
+                className={`w-9 h-9 sm:w-10 sm:h-10 ${persona.bgColor} rounded-full flex items-center justify-center mx-auto mb-2`}
+              >
                 {persona.useIcon && persona.icon ? (
-                  <persona.icon className="w-10 h-10 text-foreground" />
+                  <persona.icon className="w-4 h-4 sm:w-5 sm:h-5 text-foreground" />
                 ) : (
-                  <span className="text-4xl">{persona.emoji}</span>
+                  <span className="text-lg sm:text-xl leading-none" aria-hidden>
+                    {persona.emoji}
+                  </span>
                 )}
               </div>
-              <CardTitle className="text-2xl mb-4 text-foreground">
+              <CardTitle className="text-xs sm:text-sm font-semibold mb-1 text-foreground leading-tight">
                 {persona.title}
               </CardTitle>
-              <CardDescription className="text-base text-muted-foreground leading-relaxed">
-                "{persona.description}"
+              <CardDescription className="text-[11px] sm:text-xs text-muted-foreground leading-snug line-clamp-4">
+                &ldquo;{persona.description}&rdquo;
               </CardDescription>
             </Card>
           ))}

@@ -13,6 +13,7 @@ export const PLANNING_TOOL_IDS = [
   'risk',
   'budget',
   'shopping_list',
+  'tool_rentals',
   'quality_control',
   'expert_support'
 ] as const;
@@ -23,6 +24,7 @@ export const PLANNING_TOOLS: { id: (typeof PLANNING_TOOL_IDS)[number]; label: st
   { id: 'risk', label: 'Risk/Uncertainty', benefit: 'Proactively avoid issues' },
   { id: 'budget', label: 'Budget', benefit: 'Spend what you want' },
   { id: 'shopping_list', label: 'Shopping List', benefit: 'Track tool & material shopping' },
+  { id: 'tool_rentals', label: 'Tool rentals', benefit: 'Find rental options and plan what to borrow or rent' },
   { id: 'quality_control', label: 'Quality', benefit: 'Document results for future inspections' },
   { id: 'expert_support', label: 'Support', benefit: 'Get help when you\'re stuck' }
 ];
@@ -33,7 +35,7 @@ const DEFAULT_SELECTED: PlanningToolId[] = ['scope', 'risk'];
 
 /** Preset tool sets by project focus. Scope is always included. */
 const FOCUS_PRESETS: Record<string, PlanningToolId[]> = {
-  savings: ['scope', 'budget', 'shopping_list', 'risk'],
+  savings: ['scope', 'budget', 'shopping_list', 'tool_rentals', 'risk'],
   quality: ['scope', 'quality_control', 'risk'],
   schedule: ['scope', 'schedule', 'risk'],
 };
@@ -45,8 +47,16 @@ interface ProjectToolsStepProps {
   onSelectionChange?: (selected: PlanningToolId[]) => void;
 }
 
-function filterByExpertSupport(ids: PlanningToolId[], expertSupportEnabled: boolean): PlanningToolId[] {
-  return expertSupportEnabled ? ids : ids.filter(id => id !== 'expert_support');
+function filterByPartnerAvailability(
+  ids: PlanningToolId[],
+  expertSupportEnabled: boolean,
+  toolRentalsEnabled: boolean
+): PlanningToolId[] {
+  return ids.filter(id => {
+    if (id === 'expert_support' && !expertSupportEnabled) return false;
+    if (id === 'tool_rentals' && !toolRentalsEnabled) return false;
+    return true;
+  });
 }
 
 export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
@@ -56,17 +66,22 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   onSelectionChange
 }) => {
   const { user } = useAuth();
-  const { expertSupportEnabled } = usePartnerAppSettings();
+  const { expertSupportEnabled, toolRentalsEnabled } = usePartnerAppSettings();
   const [projectFocus, setProjectFocus] = useState<string | null>(null);
 
   const toolsToShow = React.useMemo(
-    () => expertSupportEnabled ? PLANNING_TOOLS : PLANNING_TOOLS.filter(t => t.id !== 'expert_support'),
-    [expertSupportEnabled]
+    () =>
+      PLANNING_TOOLS.filter(t => {
+        if (t.id === 'expert_support' && !expertSupportEnabled) return false;
+        if (t.id === 'tool_rentals' && !toolRentalsEnabled) return false;
+        return true;
+      }),
+    [expertSupportEnabled, toolRentalsEnabled]
   );
 
   const [selected, setSelected] = useState<Set<PlanningToolId>>(() => {
     const initial = initialSelected.length > 0 ? initialSelected : DEFAULT_SELECTED;
-    const filtered = expertSupportEnabled ? initial : initial.filter(id => id !== 'expert_support');
+    const filtered = filterByPartnerAvailability(initial, expertSupportEnabled, toolRentalsEnabled);
     return new Set(filtered as PlanningToolId[]);
   });
 
@@ -86,9 +101,11 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
 
   useEffect(() => {
     const fromPersisted = initialSelected.length > 0 ? initialSelected : DEFAULT_SELECTED;
-    const next = (
-      expertSupportEnabled ? fromPersisted : fromPersisted.filter(id => id !== 'expert_support')
-    ) as PlanningToolId[];
+    const next = filterByPartnerAvailability(
+      fromPersisted as PlanningToolId[],
+      expertSupportEnabled,
+      toolRentalsEnabled
+    );
     setSelected(new Set(next));
     // Only push to parent when we have saved tools from the run. If initialSelected is empty,
     // the parent may already hold the user's in-progress selection; calling onSelectionChange
@@ -96,13 +113,14 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     if (initialSelected.length > 0) {
       onSelectionChange?.(next);
     }
-  }, [initialSelected.join(','), expertSupportEnabled, onSelectionChange]);
+  }, [initialSelected.join(','), expertSupportEnabled, toolRentalsEnabled, onSelectionChange]);
 
   const notifySelection = (next: Set<PlanningToolId>) => {
     const validToolIds = new Set(PLANNING_TOOL_IDS as unknown as string[]);
     const withScope = new Set(next);
     withScope.add('scope');
     if (!expertSupportEnabled) withScope.delete('expert_support');
+    if (!toolRentalsEnabled) withScope.delete('tool_rentals');
     const cleaned = Array.from(withScope).filter(id => validToolIds.has(id as any)) as PlanningToolId[];
     onSelectionChange?.(cleaned);
   };
@@ -119,13 +137,19 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   };
 
   const handleSelectAll = () => {
-    const all = new Set(PLANNING_TOOL_IDS.filter(id => id !== 'expert_support' || expertSupportEnabled));
+    const all = new Set(
+      PLANNING_TOOL_IDS.filter(id => {
+        if (id === 'expert_support' && !expertSupportEnabled) return false;
+        if (id === 'tool_rentals' && !toolRentalsEnabled) return false;
+        return true;
+      })
+    );
     setSelected(all);
     notifySelection(all);
   };
 
   const handleFocusPreset = (focusKey: 'savings' | 'quality' | 'schedule') => {
-    const ids = filterByExpertSupport(FOCUS_PRESETS[focusKey], expertSupportEnabled);
+    const ids = filterByPartnerAvailability(FOCUS_PRESETS[focusKey], expertSupportEnabled, toolRentalsEnabled);
     const next = new Set(ids as PlanningToolId[]);
     setSelected(next);
     notifySelection(next);

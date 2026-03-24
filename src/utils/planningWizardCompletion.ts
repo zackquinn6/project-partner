@@ -8,6 +8,7 @@ const TOOL_TO_BUTTON_ACTIONS: Record<PlanningToolId, readonly string[]> = {
   risk: ['risk-management', 'risk-focus'],
   budget: ['project-budgeting'],
   shopping_list: ['shopping-checklist'],
+  tool_rentals: ['tool-access'],
   quality_control: ['quality-check'],
   expert_support: [],
 };
@@ -19,6 +20,7 @@ const TOOL_TO_OUTPUT_IDS: Record<PlanningToolId, readonly string[]> = {
   risk: [],
   budget: [],
   shopping_list: ['checklist-output'],
+  tool_rentals: [],
   quality_control: [],
   expert_support: [],
 };

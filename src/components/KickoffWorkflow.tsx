@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
+import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
 
 const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string }[] = [
   {
@@ -396,6 +397,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
   return (
     <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-auto md:overflow-visible">
+      <ProjectPlanningCountdownBanner
+        projectCreatedAt={currentProjectRun.createdAt}
+        className="shrink-0"
+      />
       {/* Step Navigation (no separate project-name header) */}
       <Card className="shrink-0">
         <CardContent className="p-1.5 sm:p-2 md:p-2.5">

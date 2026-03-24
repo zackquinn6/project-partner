@@ -3813,6 +3813,7 @@ export default function UserView({
           setQualityCheckExpandSettingsAccordion(true);
           setQualityCheckOpen(true);
         }}
+        onOpenToolRentals={() => setToolRentalsOpen(true)}
       />
       
       {/* Project Completion Popup */}
