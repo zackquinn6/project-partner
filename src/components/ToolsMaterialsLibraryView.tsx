@@ -10,6 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Plus, Camera, Wrench, Package, RefreshCw, Trash2, X, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  collectOwnedToolCoreIds,
+  enrichOwnedToolsWithCatalogPhotos,
+  fetchOwnedToolsPhotoResolution,
+} from "@/utils/ownedToolsCatalogPhotos";
 import { UserToolsEditor } from "./UserToolsEditor";
 import { UserMaterialsEditor } from "./UserMaterialsEditor";
 
@@ -23,6 +28,8 @@ interface Tool {
 
 interface UserOwnedTool {
   id: string;
+  /** Core catalog row when linked to admin tools library */
+  tool_id?: string;
   name: string;
   description?: string;
   custom_description?: string;
@@ -136,8 +143,15 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
       } else {
         setUserMaterials(uniqueMaterials);
       }
-      
-      setUserTools(uniqueTools);
+
+      const toolCoreIds = collectOwnedToolCoreIds(uniqueTools);
+      const toolMaps = await fetchOwnedToolsPhotoResolution(supabase, toolCoreIds);
+      const toolsWithCatalogPhotos = enrichOwnedToolsWithCatalogPhotos(
+        uniqueTools,
+        toolMaps.corePhotoById,
+        toolMaps.variationsByCore
+      );
+      setUserTools(toolsWithCatalogPhotos);
     } catch (error) {
       console.error('Error fetching user items:', error);
     }

@@ -9,6 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Plus, X, Upload, Camera, Eye, ShoppingCart, Save, Trash2, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  collectOwnedToolCoreIds,
+  enrichOwnedToolsWithCatalogPhotos,
+  fetchOwnedToolsPhotoResolution,
+} from "@/utils/ownedToolsCatalogPhotos";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -156,54 +161,6 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
         item: row.item ?? row.name ?? '',
       }));
 
-      // Resolve default linked photos from canonical tables (do not copy binaries):
-      // - core tools.photo_url by tool_id
-      // - tool_variations.photo_url by core_item_id + model/name match where possible
-      const uniqueToolIds = Array.from(new Set(fromTableRaw.map(r => r.tool_id).filter(Boolean)));
-      const [corePhotosRes, variationPhotosRes] = await Promise.all([
-        uniqueToolIds.length > 0
-          ? supabase
-              .from('tools')
-              .select('id, photo_url')
-              .in('id', uniqueToolIds)
-          : Promise.resolve({ data: [], error: null } as any),
-        uniqueToolIds.length > 0
-          ? supabase
-              .from('tool_variations')
-              .select('core_item_id, name, sku, photo_url')
-              .eq('item_type', 'tools')
-              .in('core_item_id', uniqueToolIds)
-          : Promise.resolve({ data: [], error: null } as any),
-      ]);
-
-      if (corePhotosRes.error) throw corePhotosRes.error;
-      if (variationPhotosRes.error) throw variationPhotosRes.error;
-
-      const corePhotoById = new Map<string, string | null>(
-        (corePhotosRes.data || []).map((r: any) => [r.id, r.photo_url || null])
-      );
-      const variationsByCore = new Map<string, any[]>();
-      for (const v of variationPhotosRes.data || []) {
-        const list = variationsByCore.get(v.core_item_id) || [];
-        list.push(v);
-        variationsByCore.set(v.core_item_id, list);
-      }
-
-      const fromTable: UserOwnedTool[] = fromTableRaw.map((row) => {
-        const variations = variationsByCore.get(row.tool_id) || [];
-        const matchedVariation = variations.find((v: any) =>
-          (row.model_name && v.sku && row.model_name.toLowerCase().trim() === String(v.sku).toLowerCase().trim()) ||
-          (row.name && v.name && row.name.toLowerCase().trim() === String(v.name).toLowerCase().trim())
-        );
-        const linkedPhotoUrl = matchedVariation?.photo_url || corePhotoById.get(row.tool_id) || null;
-
-        return {
-          ...row,
-          // Prefer user override; otherwise use linked canonical photo URL.
-          photo_url: row.user_photo_url ? row.photo_url : linkedPhotoUrl || row.photo_url,
-        };
-      });
-
       // Variation picks are stored on owned_tools with variation id; user_tools rows use row UUID.
       // Merge by id so the add-list can see every owned variation and core rows from user_tools.
       const byId = new Map<string, UserOwnedTool>();
@@ -212,7 +169,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
           byId.set(String(t.id), t);
         }
       }
-      for (const t of fromTable) {
+      for (const t of fromTableRaw) {
         if (t?.id != null && String(t.id).length > 0) {
           const k = String(t.id);
           const prev = byId.get(k);
@@ -220,26 +177,14 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
         }
       }
 
-      const merged = Array.from(byId.values()).map((tool) => {
-        if (tool.user_photo_url) return tool;
-
-        // Ensure profile-only/legacy rows also resolve a linked canonical photo when possible.
-        if (tool.tool_id && !tool.photo_url) {
-          const variations = variationsByCore.get(tool.tool_id) || [];
-          const matchedVariation = variations.find((v: any) =>
-            (tool.model_name && v.sku && tool.model_name.toLowerCase().trim() === String(v.sku).toLowerCase().trim()) ||
-            (tool.name && v.name && tool.name.toLowerCase().trim() === String(v.name).toLowerCase().trim())
-          );
-          const linkedPhotoUrl = matchedVariation?.photo_url || corePhotoById.get(tool.tool_id) || null;
-          return { ...tool, photo_url: linkedPhotoUrl || tool.photo_url };
-        }
-
-        return tool;
-      });
+      let merged = Array.from(byId.values());
+      const coreIds = collectOwnedToolCoreIds(merged);
+      const { corePhotoById, variationsByCore } = await fetchOwnedToolsPhotoResolution(supabase, coreIds);
+      merged = enrichOwnedToolsWithCatalogPhotos(merged, corePhotoById, variationsByCore);
       console.log('✅ UserToolsEditor - Merged library tools:', {
         count: merged.length,
         fromProfile: fromProfile.length,
-        fromTable: fromTable.length,
+        fromTable: fromTableRaw.length,
       });
 
       setUserTools(merged);

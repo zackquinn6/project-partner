@@ -170,6 +170,7 @@ export function ToolsLibrary() {
     setTimeout(() => {
       fetchTools();
     }, 200);
+    window.dispatchEvent(new CustomEvent('tools-library-updated'));
     setShowAddDialog(false);
     setShowEditDialog(false);
     setEditingTool(null);
