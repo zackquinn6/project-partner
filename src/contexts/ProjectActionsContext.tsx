@@ -1195,7 +1195,26 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         if (preservedScheduleOptimizationMethod === undefined) {
           throw new Error('schedule_optimization_method is missing from project run data');
         }
-        
+
+        // New runs from create_project_run_snapshot_v2 may leave these NULL; NOT NULL / CHECK
+        // constraints reject PATCH with null. Use the same defaults as documented migrations.
+        const VALID_PROGRESS_REPORTING_STYLES = new Set(['linear', 'exponential', 'time-based']);
+        const VALID_SCHEDULE_OPTIMIZATION_METHODS = new Set(['single-piece-flow', 'batch-flow']);
+        if (
+          preservedProgressReportingStyle == null ||
+          typeof preservedProgressReportingStyle !== 'string' ||
+          !VALID_PROGRESS_REPORTING_STYLES.has(preservedProgressReportingStyle)
+        ) {
+          preservedProgressReportingStyle = 'linear';
+        }
+        if (
+          preservedScheduleOptimizationMethod == null ||
+          typeof preservedScheduleOptimizationMethod !== 'string' ||
+          !VALID_SCHEDULE_OPTIMIZATION_METHODS.has(preservedScheduleOptimizationMethod)
+        ) {
+          preservedScheduleOptimizationMethod = 'single-piece-flow';
+        }
+
         console.log('💾 ProjectActions - Saving project run to database:', {
           projectRunId: projectRun.id,
           userId: user.id,
@@ -1261,7 +1280,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           .eq('user_id', user.id);
 
         if (error) {
-          console.error('❌ ProjectActions - Database update error:', error);
+          console.error('❌ ProjectActions - Database update error:', error.message, error);
           throw error;
         }
 
