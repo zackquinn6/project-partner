@@ -3,8 +3,45 @@ export type ProjectMatchRecommendationTier = 'not_yet' | 'proceed_mindfully' | '
 /** Internal axis labels matching the decision matrix (not shown in UI). */
 export type MatchAxisSentiment = 'negative' | 'neutral' | 'positive';
 
-const SKILL_ORDER = ['beginner', 'intermediate', 'advanced'] as const;
 const EFFORT_ORDER = ['low', 'medium', 'high'] as const;
+
+/**
+ * Aligns user_profiles.skill_level (DIY survey: newbie | confident | hero) and legacy synonyms
+ * with project difficulty tiers on a single 0–3 scale (beginner → professional).
+ */
+const USER_SKILL_TO_INDEX: Record<string, number> = {
+  newbie: 0,
+  beginner: 0,
+  confident: 1,
+  intermediate: 1,
+  hero: 2,
+  advanced: 2,
+  professional: 3,
+};
+
+/** Project template skill_level labels (Beginner … Professional). */
+const PROJECT_SKILL_TO_INDEX: Record<string, number> = {
+  beginner: 0,
+  intermediate: 1,
+  advanced: 2,
+  professional: 3,
+};
+
+/** Segment index 0–3, or null if missing / not recognized. */
+export function userSkillLevelToIndex(raw: string | null | undefined): number | null {
+  const k = (raw || '').toLowerCase().trim();
+  if (!k) return null;
+  const i = USER_SKILL_TO_INDEX[k];
+  return i === undefined ? null : i;
+}
+
+/** Segment index 0–3, or null if missing / not recognized. */
+export function projectSkillLevelToIndex(raw: string | null | undefined): number | null {
+  const k = (raw || '').toLowerCase().trim();
+  if (!k) return null;
+  const i = PROJECT_SKILL_TO_INDEX[k];
+  return i === undefined ? null : i;
+}
 
 /**
  * Maps user_profiles.physical_capability to the same 0–2 scale as project effort (low/medium/high).
@@ -38,12 +75,9 @@ export function getSkillMatchAxis(
   projectSkillLevel: string | null | undefined,
   userSkillLevel: string | null | undefined
 ): MatchAxisSentiment | null {
-  const p = (projectSkillLevel || '').toLowerCase().trim();
-  const u = (userSkillLevel || '').toLowerCase().trim();
-  if (!p || !u) return null;
-  const pi = SKILL_ORDER.indexOf(p as (typeof SKILL_ORDER)[number]);
-  const ui = SKILL_ORDER.indexOf(u as (typeof SKILL_ORDER)[number]);
-  if (pi < 0 || ui < 0) return null;
+  const pi = projectSkillLevelToIndex(projectSkillLevel);
+  const ui = userSkillLevelToIndex(userSkillLevel);
+  if (pi === null || ui === null) return null;
   if (ui < pi) return 'negative';
   if (ui === pi) return 'neutral';
   return 'positive';

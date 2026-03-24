@@ -34,6 +34,8 @@ import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import {
   computeProjectMatchExplanation,
   physicalCapabilityToEffortSegment,
+  projectSkillLevelToIndex,
+  userSkillLevelToIndex,
   type MatchAxisSentiment,
   type ProjectMatchRecommendationTier,
 } from '@/utils/projectMatchRecommendation';
@@ -422,27 +424,27 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
 
   // Helper function to get skill level comparison
   const getSkillLevelComparison = () => {
-    const projectSkill = (displaySkillLevel || '').toLowerCase();
-    const userSkill = (userProfile?.skill_level || '').toLowerCase();
-    if (!projectSkill || !userSkill) return null;
-    const levels = ['beginner', 'intermediate', 'advanced'];
-    const projectIndex = levels.indexOf(projectSkill);
-    const userIndex = levels.indexOf(userSkill);
-    if (projectIndex === -1 || userIndex === -1) return null;
+    const projectIndex = projectSkillLevelToIndex(displaySkillLevel);
+    const userIndex = userSkillLevelToIndex(userProfile?.skill_level);
+    if (projectIndex === null || userIndex === null) return null;
     if (userIndex >= projectIndex) {
       return {
         type: 'success',
         message: 'Your skill level matches or exceeds the project requirements.'
       };
-    } else if (projectSkill === 'intermediate' && userSkill === 'beginner') {
+    }
+    if (projectIndex === 1 && userIndex === 0) {
       return {
         type: 'warning',
-        message: 'This project requires intermediate skills, but your skill level is beginner. Consider getting help or additional guidance.'
+        message:
+          'This project requires intermediate skills, but your skill level is beginner. Consider getting help or additional guidance.'
       };
-    } else if (projectSkill === 'advanced' && userIndex < projectIndex) {
+    }
+    if (projectIndex >= 2 && userIndex < projectIndex) {
       return {
         type: 'error',
-        message: 'This project requires advanced skills, but your skill level is below this. This project may be too challenging without significant experience or professional help.'
+        message:
+          'This project requires advanced skills, but your skill level is below this. This project may be too challenging without significant experience or professional help.'
       };
     }
     return null;
