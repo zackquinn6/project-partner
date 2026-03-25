@@ -3064,7 +3064,7 @@ export default function UserView({
           />
 
           <main className="flex-1 overflow-auto">
-            <div className="container mx-auto px-6 py-8">
+            <div className="w-full px-6 py-8">
               {workflowMainView === 'overview' ? (
                 <ProjectWorkflowOverviewPage
                   isKickoffStep1Completed={completedSteps.has('kickoff-step-1')}

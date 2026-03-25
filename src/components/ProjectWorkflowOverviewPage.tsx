@@ -43,7 +43,7 @@ export function ProjectWorkflowOverviewPage({
           </CardTitle>
           {projectDescription ? (
             <p
-              className="mt-3 max-w-4xl text-base font-normal leading-relaxed text-muted-foreground sm:text-lg"
+              className="mt-3 text-base font-normal leading-relaxed text-muted-foreground sm:text-lg"
               role="doc-subtitle"
             >
               {projectDescription}
@@ -52,7 +52,7 @@ export function ProjectWorkflowOverviewPage({
         </CardHeader>
 
         {coverImageUrl ? (
-          <div className="mr-auto w-full max-w-[75%] aspect-[4/3] overflow-hidden rounded-md bg-muted">
+          <div className="mr-auto w-full aspect-[4/3] overflow-hidden rounded-md bg-muted">
             <img
               src={coverImageUrl}
               alt={projectName ? `${projectName} cover` : 'Project cover'}

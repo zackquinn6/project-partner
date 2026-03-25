@@ -447,7 +447,7 @@ export default function Navigation({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setIsPrivacyOpen(true)}>
                   <Lock className="h-4 w-4 mr-2" />
-                  Privacy Settings
+                  Password & Privacy
                 </DropdownMenuItem>
                 {showAdminPanel && (
                   <DropdownMenuItem onClick={onAdminAccess}>
