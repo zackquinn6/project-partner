@@ -212,7 +212,6 @@ export function useEnhancedAchievements(userId?: string) {
       (typeof projectData.instruction_level_preference === 'string' &&
         projectData.instruction_level_preference.charAt(0).toUpperCase() +
           projectData.instruction_level_preference.slice(1)) ||
-      (typeof projectData.difficulty_level === 'string' && projectData.difficulty_level) ||
       undefined;
     const difficulty =
       (typeof projectData.difficulty === 'string' && projectData.difficulty) || skillLevel;

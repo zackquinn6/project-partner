@@ -67,59 +67,79 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
     priority_request: 'medium' as const
   });
   useEffect(() => {
-    if (open) {
-      fetchData();
-    }
-  }, [open]);
+    if (!open) return;
+    void fetchData();
+  }, [open, user?.id]);
+
   const fetchData = async () => {
+    setLoading(true);
     try {
-      const [roadmapResponse, requestsResponse, userVotesResponse] = await Promise.all([supabase.from('feature_roadmap').select('*').order('display_order', {
-        ascending: true
-      }), supabase.from('feature_requests').select('*').order('created_at', {
-        ascending: false
-      }), user ? supabase.from('feature_votes').select('item_id, item_type').eq('user_id', user.id) : Promise.resolve({
-        data: [],
-        error: null
-      })]);
+      const roadmapResponse = await supabase
+        .from('feature_roadmap')
+        .select('*')
+        .order('display_order', { ascending: true });
+
       if (roadmapResponse.error) throw roadmapResponse.error;
-      if (requestsResponse.error) throw requestsResponse.error;
-      if (userVotesResponse.error) throw userVotesResponse.error;
+
       const allRoadmapItems = (roadmapResponse.data || []) as RoadmapItem[];
-      
-      // Filter out completed items for user-facing view
+
       const filteredItems = allRoadmapItems.filter(item => item.status !== 'completed');
-      
-      // Sort by target_date (ETA) soonest to latest, items without dates go last
+
       const sortedItems = filteredItems.sort((a, b) => {
-        // Items with dates come first
         if (a.target_date && !b.target_date) return -1;
         if (!a.target_date && b.target_date) return 1;
-        // Both have dates - sort by date
         if (a.target_date && b.target_date) {
           return new Date(a.target_date).getTime() - new Date(b.target_date).getTime();
         }
-        // Neither has date - maintain original order
-        return 0;
+        return (a.display_order ?? 0) - (b.display_order ?? 0);
       });
-      
-      setRoadmapItems(sortedItems);
-      setFeatureRequests((requestsResponse.data || []) as FeatureRequest[]);
 
-      // Set user votes
-      const votes = {
-        roadmap: new Set<string>(),
-        request: new Set<string>()
-      };
-      (userVotesResponse.data || []).forEach(vote => {
-        votes[vote.item_type as 'roadmap' | 'request'].add(vote.item_id);
-      });
-      setUserVotes(votes);
+      setRoadmapItems(sortedItems);
     } catch (error) {
-      console.error('Error fetching data:', error);
-      toast.error('Failed to load roadmap data');
-    } finally {
-      setLoading(false);
+      console.error('Error fetching roadmap items:', error);
+      toast.error('Failed to load roadmap');
+      setRoadmapItems([]);
     }
+
+    try {
+      const requestsResponse = await supabase
+        .from('feature_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (requestsResponse.error) throw requestsResponse.error;
+      setFeatureRequests((requestsResponse.data || []) as FeatureRequest[]);
+    } catch (error) {
+      console.error('Error fetching feature requests:', error);
+      toast.error('Failed to load feature requests');
+      setFeatureRequests([]);
+    }
+
+    const votes = {
+      roadmap: new Set<string>(),
+      request: new Set<string>()
+    };
+    if (user) {
+      try {
+        const userVotesResponse = await supabase
+          .from('feature_votes')
+          .select('item_id, item_type')
+          .eq('user_id', user.id);
+
+        if (userVotesResponse.error) throw userVotesResponse.error;
+        (userVotesResponse.data || []).forEach(vote => {
+          const t = vote.item_type as 'roadmap' | 'request';
+          if (t === 'roadmap' || t === 'request') {
+            votes[t].add(vote.item_id);
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching votes:', error);
+      }
+    }
+    setUserVotes(votes);
+
+    setLoading(false);
   };
   const submitFeatureRequest = async () => {
     if (!requestForm.title.trim() || !requestForm.description.trim()) {
@@ -279,6 +299,11 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
               </div>
 
               <div className="grid gap-4">
+                {roadmapItems.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    No upcoming roadmap items yet. Completed work is hidden here; check back soon.
+                  </p>
+                ) : null}
                 {roadmapItems.map(item => <Card key={item.id} className={`border-l-4 ${getPriorityColor(item.priority)} transition-all hover:shadow-md`}>
                     <CardHeader>
                       <div className="flex items-start justify-between">

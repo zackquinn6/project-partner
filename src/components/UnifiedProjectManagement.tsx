@@ -845,22 +845,23 @@ export function UnifiedProjectManagement({
       : 0;
     const nextRevisionNumber = maxRevisionNumber + 1;
 
-    // Revision notes are optional for draft creation - only required on release
-    // Notes for initial release are handled at publish time, not here
+    // RPC create_project_revision_v2(p_source_project_id, new_name) — name optional in UI; derive from project + rev # when blank
     const notesToUse = revisionNotes.trim();
+    const newName =
+      notesToUse ||
+      `${selectedProject.name} — Rev ${nextRevisionNumber}`;
 
     const loadingToast = toast.loading("Creating revision...");
     try {
-      // Use revision function that properly handles project_phases architecture
       const {
         data,
         error
       } = await supabase.rpc('create_project_revision_v2', {
-        source_project_id: selectedProject.id,
-        revision_notes_text: notesToUse || null
+        p_source_project_id: selectedProject.id,
+        new_name: newName,
       });
       if (error) {
-        console.error('Revision creation error:', error);
+        console.error('Revision creation error:', error.message, error.code, error.details, error.hint);
         throw error;
       }
       const newRevisionId = data;
@@ -920,7 +921,8 @@ export function UnifiedProjectManagement({
     } catch (error: any) {
       console.error('❌ Error creating revision:', error);
       toast.dismiss(loadingToast);
-      toast.error(`Failed to create revision: ${error.message || 'Unknown error'}`);
+      const msg = error?.message ?? error?.details;
+      toast.error(msg ? `Failed to create revision: ${msg}` : 'Failed to create revision');
     }
   };
   const handleDeleteProjectClick = (projectId: string, projectName: string) => {

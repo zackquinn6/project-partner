@@ -2526,7 +2526,6 @@ export type Database = {
           cover_image: string | null
           created_at: string
           description: string | null
-          difficulty_level: string | null
           effort_level: string | null
           estimated_cost: string | null
           estimated_time: string | null
@@ -2536,7 +2535,6 @@ export type Database = {
           images: string[] | null
           instructions_data_sources: string | null
           is_standard: boolean | null
-          is_template: boolean | null
           item_type: string | null
           name: string
           parent_project_id: string | null
@@ -2561,7 +2559,6 @@ export type Database = {
           cover_image?: string | null
           created_at?: string
           description?: string | null
-          difficulty_level?: string | null
           effort_level?: string | null
           estimated_cost?: string | null
           estimated_time?: string | null
@@ -2571,7 +2568,6 @@ export type Database = {
           images?: string[] | null
           instructions_data_sources?: string | null
           is_standard?: boolean | null
-          is_template?: boolean | null
           item_type?: string | null
           name: string
           parent_project_id?: string | null
@@ -2596,7 +2592,6 @@ export type Database = {
           cover_image?: string | null
           created_at?: string
           description?: string | null
-          difficulty_level?: string | null
           effort_level?: string | null
           estimated_cost?: string | null
           estimated_time?: string | null
@@ -2606,7 +2601,6 @@ export type Database = {
           images?: string[] | null
           instructions_data_sources?: string | null
           is_standard?: boolean | null
-          is_template?: boolean | null
           item_type?: string | null
           name?: string
           parent_project_id?: string | null
@@ -3400,7 +3394,7 @@ export type Database = {
         Returns: number
       }
       create_project_revision_v2: {
-        Args: { revision_notes_text?: string; source_project_id: string }
+        Args: { new_name: string; p_source_project_id: string }
         Returns: string
       }
       create_project_run_snapshot_v2: {
@@ -3438,15 +3432,15 @@ export type Database = {
           category: string
           created_at: string
           description: string
-          difficulty_level: string
+          effort_level: string | null
           estimated_cost: string
           estimated_time: string
           icon: string
           id: string
           is_standard: boolean
-          is_template: boolean
           name: string
           phases: Json
+          skill_level: string | null
           tags: string[]
           updated_at: string
           user_id: string

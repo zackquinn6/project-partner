@@ -563,8 +563,6 @@ export function achievementCriteriaMet(
         ? criteria.difficulty_count
         : 1;
     const n = completedProjects.filter((p) => {
-      const d = p.difficulty_level;
-      if (typeof d === 'string' && d === want) return true;
       if (rowSkillLevel(p) === want) return true;
       if (rowEffortLevel(p) === want) return true;
       return false;

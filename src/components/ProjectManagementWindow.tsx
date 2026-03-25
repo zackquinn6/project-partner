@@ -460,16 +460,21 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   const createNewRevision = async () => {
     if (!currentProject) return;
     
-    const revisionNotes = window.prompt('Enter revision notes and summary of changes:');
-    if (revisionNotes === null) return;
-    
+    const revisionName = window.prompt(
+      'Name for the new draft revision (or leave empty to use project name + revision #):'
+    );
+    if (revisionName === null) return;
+
+    const newName =
+      (revisionName && revisionName.trim()) ||
+      `${currentProject.name} — Rev ${(currentProject.revision_number ?? 0) + 1}`;
+
     try {
       console.log('🔄 Creating revision from project:', currentProject.id);
-      
-      // Use revision function that properly handles project_phases architecture
+
       const { data: newRevisionId, error } = await supabase.rpc('create_project_revision_v2', {
-        source_project_id: currentProject.id,
-        revision_notes_text: revisionNotes || null
+        p_source_project_id: currentProject.id,
+        new_name: newName,
       });
       
       if (error) {
