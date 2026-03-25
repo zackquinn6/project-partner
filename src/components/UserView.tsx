@@ -1257,11 +1257,16 @@ export default function UserView({
       }
       const newStatus = calculatedProgress >= 100 ? 'complete' : currentProjectRun.status;
 
+      const orderingPhase = phases.find((p) => p?.name === 'Ordering');
+
       await updateProjectRun({
         ...currentProjectRun,
         completedSteps: uniqueCompleted,
         progress: Math.round(calculatedProgress),
         status: newStatus,
+        planEndDate: new Date(),
+        // Mark Planning complete by advancing current_phase_id to Ordering (when present).
+        currentPhaseId: orderingPhase?.id ?? currentProjectRun.currentPhaseId,
         updatedAt: new Date(),
       });
     },
@@ -2543,9 +2548,8 @@ export default function UserView({
       <KickoffWorkflow 
         onKickoffComplete={async persist => {
           console.log("🎯 onKickoffComplete called - closing kickoff and switching to workflow");
-          if (persist?.customization_decisions !== undefined) {
-            setProjectPlanningWizardOpen(true);
-          }
+          // Open planning workflow immediately after kickoff completion.
+          setProjectPlanningWizardOpen(true);
           
             if (currentProjectRun && updateProjectRun) {
              // Ensure ALL kickoff steps are marked complete (prevent duplicates)
@@ -2678,11 +2682,14 @@ export default function UserView({
               });
               
               // Update project status to in-progress with all steps and phase rating
+              const planningPhase = currentProjectRun.phases.find((p) => p?.name === 'Planning');
               const updatedRun = {
                 ...currentProjectRun,
                 completedSteps: uniqueSteps,
                 status: 'in-progress',
                 phase_ratings: updatedPhaseRatings,
+                // Mark Kickoff phase complete by advancing current_phase_id to Planning.
+                currentPhaseId: planningPhase?.id ?? currentProjectRun.currentPhaseId,
                 // KickoffWorkflow passes fresh decisions from step 4; closure currentProjectRun is often stale here.
                 ...(persist?.customization_decisions !== undefined
                   ? { customization_decisions: persist.customization_decisions }
@@ -2934,8 +2941,28 @@ export default function UserView({
         />
       )}
 
-      {/* Mobile Workflow View */}
-      {isMobile ? (
+      {/* Planning wizard should render immediately after kickoff on all devices */}
+      {projectPlanningWizardOpen && currentProjectRun ? (
+        <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden md:h-auto md:min-h-0 md:flex-none md:overflow-visible">
+          <ProjectPlanningWizard
+            open={projectPlanningWizardOpen}
+            layout={isMobile ? 'dialog' : 'fullscreen'}
+            onOpenChange={setProjectPlanningWizardOpen}
+            onWorkflowFullyComplete={handlePlanningWizardFullyComplete}
+            onGoToWorkflow={() => {
+              setProjectPlanningWizardOpen(false);
+            }}
+            onOpenBudgeting={() => setProjectBudgetingOpen(true)}
+            onOpenRiskManagement={() => setRiskManagementOpen(true)}
+            onOpenQualityControl={() => {
+              setQualityCheckExpandSettingsAccordion(true);
+              setQualityCheckOpen(true);
+            }}
+            onOpenToolRentals={() => setToolRentalsOpen(true)}
+            onOpenExpertSupport={() => setExpertHelpOpen(true)}
+          />
+        </div>
+      ) : isMobile ? (
         <MobileWorkflowView
           projectName={activeProject?.name || 'Project'}
           currentStep={currentStep}
@@ -2967,26 +2994,6 @@ export default function UserView({
           instructionLevel={instructionLevel}
           onInstructionLevelChange={handleInstructionLevelChange}
         />
-      ) : projectPlanningWizardOpen && currentProjectRun ? (
-        <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden md:h-auto md:min-h-0 md:flex-none md:overflow-visible">
-          <ProjectPlanningWizard
-            open={projectPlanningWizardOpen}
-            layout="fullscreen"
-            onOpenChange={setProjectPlanningWizardOpen}
-            onWorkflowFullyComplete={handlePlanningWizardFullyComplete}
-            onGoToWorkflow={() => {
-              setProjectPlanningWizardOpen(false);
-            }}
-            onOpenBudgeting={() => setProjectBudgetingOpen(true)}
-            onOpenRiskManagement={() => setRiskManagementOpen(true)}
-            onOpenQualityControl={() => {
-              setQualityCheckExpandSettingsAccordion(true);
-              setQualityCheckOpen(true);
-            }}
-            onOpenToolRentals={() => setToolRentalsOpen(true)}
-            onOpenExpertSupport={() => setExpertHelpOpen(true)}
-          />
-        </div>
       ) : (
         /* Desktop Workflow View */
         <SidebarProvider>
