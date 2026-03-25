@@ -93,6 +93,8 @@ interface Risk {
   status?: 'open' | 'mitigated' | 'closed' | 'monitoring';
   is_template_risk?: boolean;
   template_risk_id?: string | null;
+  /** True when copied from Standard Project Foundation `project_risks` (DB `from_standard_foundation`). */
+  from_standard_foundation?: boolean;
   display_order?: number;
   // Legacy fields for backward compatibility
   impact?: string;
@@ -291,6 +293,8 @@ export function RiskManagementWindow({
   const [showAddForm, setShowAddForm] = useState(false);
   const [detailsRisk, setDetailsRisk] = useState<Risk | null>(null);
   const [showHiddenRisks, setShowHiddenRisks] = useState(false);
+  /** Risk-Less: when true, hide rows originating from Standard Project Foundation. Default off (show all). */
+  const [hideStandardRisks, setHideStandardRisks] = useState(false);
   const [riskListSort, setRiskListSort] = useState<'alpha' | 'severity-desc'>('alpha');
   const showRiskFocusHiddenToggle = riskFocusRun && risks.length > 0;
 
@@ -333,6 +337,9 @@ export function RiskManagementWindow({
           ? risks
           : risks.filter((r) => !r.hidden_from_register)
         : risks;
+    if (variant === 'risk-focus' && mode === 'run' && hideStandardRisks) {
+      list = list.filter((r) => !r.from_standard_foundation);
+    }
     const sorted = [...list];
     if (variant === 'risk-focus' && mode === 'run') {
       if (riskListSort === 'alpha') {
@@ -346,7 +353,7 @@ export function RiskManagementWindow({
       }
     }
     return sorted;
-  }, [risks, variant, mode, showHiddenRisks, riskListSort]);
+  }, [risks, variant, mode, showHiddenRisks, hideStandardRisks, riskListSort]);
 
   useEffect(() => {
     if (open) {
@@ -483,7 +490,8 @@ export function RiskManagementWindow({
           template_risk_id: risk.template_risk_id,
           display_order: risk.display_order,
           impact: risk.impact,
-          hidden_from_register: risk.hidden_from_register === true
+          hidden_from_register: risk.hidden_from_register === true,
+          from_standard_foundation: risk.from_standard_foundation === true,
         }));
         
         setRisks(mappedRisks);
@@ -637,7 +645,8 @@ export function RiskManagementWindow({
                 : null,
               status: formData.status,
               display_order: nextOrder,
-              hidden_from_register: false
+              hidden_from_register: false,
+              from_standard_foundation: false,
             });
 
           if (error) throw error;
@@ -949,7 +958,7 @@ export function RiskManagementWindow({
 
         {variant === 'risk-focus' && mode === 'run' ? (
           <RiskFocusDashboard
-            risks={risks.filter((r) => !r.hidden_from_register)}
+            risks={displayRisks}
             projectDisplayName={
               riskFocusRunForProgress
                 ? riskFocusRunForProgress.customProjectName?.trim() ||
@@ -1111,6 +1120,23 @@ export function RiskManagementWindow({
                           </Label>
                         </div>
                       ) : null}
+                      {riskFocusRun ? (
+                        <div className="flex max-w-[9rem] items-start gap-1">
+                          <Checkbox
+                            id="hide-standard-risks-riskless-mobile"
+                            className="mt-0.5 h-3 w-3 shrink-0 rounded-sm border-[1.5px] [&_svg]:h-2.5 [&_svg]:w-2.5"
+                            checked={hideStandardRisks}
+                            onCheckedChange={(c) => setHideStandardRisks(c === true)}
+                          />
+                          <Label
+                            htmlFor="hide-standard-risks-riskless-mobile"
+                            className="cursor-pointer text-[10px] font-normal leading-tight"
+                          >
+                            <span className="block leading-tight">Hide</span>
+                            <span className="block leading-tight">Standard risks</span>
+                          </Label>
+                        </div>
+                      ) : null}
                       {showAddRiskRow ? (
                         <Button
                           variant="default"
@@ -1203,19 +1229,36 @@ export function RiskManagementWindow({
                     ) : null}
                     {showAddRiskRow ? (
                       <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
-                        {showRiskFocusHiddenToggle ? (
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="show-hidden-risks-toolbar"
-                              checked={showHiddenRisks}
-                              onCheckedChange={(c) => setShowHiddenRisks(c === true)}
-                            />
-                            <Label
-                              htmlFor="show-hidden-risks-toolbar"
-                              className="cursor-pointer text-xs font-normal sm:text-sm"
-                            >
-                              Show hidden risks
-                            </Label>
+                        {riskFocusRun ? (
+                          <div className="flex flex-wrap items-center gap-4">
+                            {showRiskFocusHiddenToggle ? (
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  id="show-hidden-risks-toolbar"
+                                  checked={showHiddenRisks}
+                                  onCheckedChange={(c) => setShowHiddenRisks(c === true)}
+                                />
+                                <Label
+                                  htmlFor="show-hidden-risks-toolbar"
+                                  className="cursor-pointer text-xs font-normal sm:text-sm"
+                                >
+                                  Show hidden risks
+                                </Label>
+                              </div>
+                            ) : null}
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id="hide-standard-risks-toolbar-md"
+                                checked={hideStandardRisks}
+                                onCheckedChange={(c) => setHideStandardRisks(c === true)}
+                              />
+                              <Label
+                                htmlFor="hide-standard-risks-toolbar-md"
+                                className="cursor-pointer text-xs font-normal sm:text-sm"
+                              >
+                                Hide standard risks
+                              </Label>
+                            </div>
                           </div>
                         ) : null}
                         <Button
@@ -1244,17 +1287,48 @@ export function RiskManagementWindow({
                       </div>
                     ) : showRiskFocusHiddenToggle ? (
                       <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+                        <div className="flex flex-wrap items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="show-hidden-risks-toolbar-solo"
+                              checked={showHiddenRisks}
+                              onCheckedChange={(c) => setShowHiddenRisks(c === true)}
+                            />
+                            <Label
+                              htmlFor="show-hidden-risks-toolbar-solo"
+                              className="cursor-pointer text-xs font-normal sm:text-sm"
+                            >
+                              Show hidden risks
+                            </Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="hide-standard-risks-toolbar-md-solo"
+                              checked={hideStandardRisks}
+                              onCheckedChange={(c) => setHideStandardRisks(c === true)}
+                            />
+                            <Label
+                              htmlFor="hide-standard-risks-toolbar-md-solo"
+                              className="cursor-pointer text-xs font-normal sm:text-sm"
+                            >
+                              Hide standard risks
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+                    ) : riskFocusRun ? (
+                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
                         <div className="flex items-center gap-2">
                           <Checkbox
-                            id="show-hidden-risks-toolbar"
-                            checked={showHiddenRisks}
-                            onCheckedChange={(c) => setShowHiddenRisks(c === true)}
+                            id="hide-standard-risks-toolbar-md-only"
+                            checked={hideStandardRisks}
+                            onCheckedChange={(c) => setHideStandardRisks(c === true)}
                           />
                           <Label
-                            htmlFor="show-hidden-risks-toolbar"
+                            htmlFor="hide-standard-risks-toolbar-md-only"
                             className="cursor-pointer text-xs font-normal sm:text-sm"
                           >
-                            Show hidden risks
+                            Hide standard risks
                           </Label>
                         </div>
                       </div>
@@ -1326,19 +1400,36 @@ export function RiskManagementWindow({
                   ) : null}
                   {showAddRiskRow ? (
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
-                      {showRiskFocusHiddenToggle ? (
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id="show-hidden-risks-toolbar"
-                            checked={showHiddenRisks}
-                            onCheckedChange={(c) => setShowHiddenRisks(c === true)}
-                          />
-                          <Label
-                            htmlFor="show-hidden-risks-toolbar"
-                            className="cursor-pointer text-xs font-normal sm:text-sm"
-                          >
-                            Show hidden risks
-                          </Label>
+                      {riskFocusRun ? (
+                        <div className="flex flex-wrap items-center gap-4">
+                          {showRiskFocusHiddenToggle ? (
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id="show-hidden-risks-toolbar-sm"
+                                checked={showHiddenRisks}
+                                onCheckedChange={(c) => setShowHiddenRisks(c === true)}
+                              />
+                              <Label
+                                htmlFor="show-hidden-risks-toolbar-sm"
+                                className="cursor-pointer text-xs font-normal sm:text-sm"
+                              >
+                                Show hidden risks
+                              </Label>
+                            </div>
+                          ) : null}
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="hide-standard-risks-toolbar-sm"
+                              checked={hideStandardRisks}
+                              onCheckedChange={(c) => setHideStandardRisks(c === true)}
+                            />
+                            <Label
+                              htmlFor="hide-standard-risks-toolbar-sm"
+                              className="cursor-pointer text-xs font-normal sm:text-sm"
+                            >
+                              Hide standard risks
+                            </Label>
+                          </div>
                         </div>
                       ) : null}
                       <Button
@@ -1367,17 +1458,48 @@ export function RiskManagementWindow({
                     </div>
                   ) : showRiskFocusHiddenToggle ? (
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+                      <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="show-hidden-risks-toolbar-sm-solo"
+                            checked={showHiddenRisks}
+                            onCheckedChange={(c) => setShowHiddenRisks(c === true)}
+                          />
+                          <Label
+                            htmlFor="show-hidden-risks-toolbar-sm-solo"
+                            className="cursor-pointer text-xs font-normal sm:text-sm"
+                          >
+                            Show hidden risks
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="hide-standard-risks-toolbar-sm-solo"
+                            checked={hideStandardRisks}
+                            onCheckedChange={(c) => setHideStandardRisks(c === true)}
+                          />
+                          <Label
+                            htmlFor="hide-standard-risks-toolbar-sm-solo"
+                            className="cursor-pointer text-xs font-normal sm:text-sm"
+                          >
+                            Hide standard risks
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+                  ) : riskFocusRun ? (
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
                       <div className="flex items-center gap-2">
                         <Checkbox
-                          id="show-hidden-risks-toolbar"
-                          checked={showHiddenRisks}
-                          onCheckedChange={(c) => setShowHiddenRisks(c === true)}
+                          id="hide-standard-risks-toolbar-sm-only"
+                          checked={hideStandardRisks}
+                          onCheckedChange={(c) => setHideStandardRisks(c === true)}
                         />
                         <Label
-                          htmlFor="show-hidden-risks-toolbar"
+                          htmlFor="hide-standard-risks-toolbar-sm-only"
                           className="cursor-pointer text-xs font-normal sm:text-sm"
                         >
-                          Show hidden risks
+                          Hide standard risks
                         </Label>
                       </div>
                     </div>
@@ -1399,8 +1521,11 @@ export function RiskManagementWindow({
                   {displayRisks.length === 0 ? (
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 py-12 text-center">
                       <p className="text-muted-foreground text-sm">
-                        All predefined risks are hidden. Turn on <span className="font-medium">Show hidden risks</span>{' '}
-                        next to Add Risk to see them.
+                        {risks.length === 0
+                          ? 'No risks loaded for this run.'
+                          : hideStandardRisks
+                            ? 'No risks match the current filters. Turn off Hide standard risks or Show hidden risks to see more.'
+                            : 'All predefined risks are hidden. Turn on Show hidden risks next to Add Risk to see them.'}
                       </p>
                     </div>
                   ) : null}
@@ -1439,6 +1564,11 @@ export function RiskManagementWindow({
                                 <div className="text-xs text-muted-foreground mb-1">What could go wrong?</div>
                                 <div className="flex flex-wrap items-center gap-2">
                                   <h3 className="font-semibold text-sm leading-snug">{risk.risk}</h3>
+                                  {riskFocusRun && risk.from_standard_foundation ? (
+                                    <Badge variant="outline" className="text-[10px] border-muted-foreground/40">
+                                      Standard
+                                    </Badge>
+                                  ) : null}
                                   {riskFocusRun && risk.hidden_from_register ? (
                                     <Badge variant="secondary" className="text-[10px]">
                                       Hidden
@@ -1773,6 +1903,11 @@ export function RiskManagementWindow({
                             <TableCell className="font-medium">
                               <div className="flex flex-wrap items-center gap-2">
                                 <span>{risk.risk}</span>
+                                {riskFocusRun && risk.from_standard_foundation ? (
+                                  <Badge variant="outline" className="text-[10px] border-muted-foreground/40">
+                                    Standard
+                                  </Badge>
+                                ) : null}
                                 {riskFocusRun && risk.hidden_from_register ? (
                                   <Badge variant="secondary" className="text-[10px]">
                                     Hidden
@@ -2306,7 +2441,14 @@ export function RiskManagementWindow({
                 <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   What could go wrong?
                 </h4>
-                <p className="mt-1.5 text-sm leading-relaxed">{detailsRisk.risk}</p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  <p className="text-sm leading-relaxed">{detailsRisk.risk}</p>
+                  {riskFocusRun && detailsRisk.from_standard_foundation ? (
+                    <Badge variant="outline" className="text-[10px] border-muted-foreground/40">
+                      Standard
+                    </Badge>
+                  ) : null}
+                </div>
               </section>
               <section>
                 <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

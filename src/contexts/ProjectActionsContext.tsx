@@ -96,6 +96,8 @@ function sanitizeMitigationActionsForInsert(value: unknown): Json | null {
 type ProjectRunRiskInsertRow = {
   project_run_id: string;
   template_risk_id: string;
+  /** Copied from Standard Project Foundation project_risks vs this template's project_risks. */
+  from_standard_foundation: boolean;
   risk_title: string;
   risk_description: string | null;
   likelihood: string | null;
@@ -239,6 +241,11 @@ async function syncFoundationAndTemplateRisksToProjectRun(
   }
 
   const foundationRisks = foundationRisksRes || [];
+  const foundationRiskIds = new Set(
+    foundationRisks
+      .map((r: { id?: unknown }) => (r?.id != null && String(r.id).length > 0 ? String(r.id) : null))
+      .filter((id): id is string => id != null)
+  );
   const sourceRisksOrdered = [...foundationRisks, ...projectRisks];
 
   if (sourceRisksOrdered.length === 0) {
@@ -269,9 +276,11 @@ async function syncFoundationAndTemplateRisksToProjectRun(
     if (!templateRiskId) {
       throw new Error('Risk row from database is missing id');
     }
+    const fromStandardFoundation = foundationRiskIds.has(templateRiskId);
     return {
       project_run_id: projectRunId,
       template_risk_id: templateRiskId,
+      from_standard_foundation: fromStandardFoundation,
       risk_title: risk.risk_title.trim(),
       risk_description: optionalDbTextForRiskCopy(risk.risk_description),
       likelihood: optionalDbTextForRiskCopy(risk.likelihood),

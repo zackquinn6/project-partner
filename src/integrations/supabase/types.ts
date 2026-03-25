@@ -2141,6 +2141,7 @@ export type Database = {
           budget_impact_low: number | null
           created_at: string | null
           display_order: number | null
+          from_standard_foundation: boolean
           hidden_from_register: boolean
           id: string
           impact: string | null
@@ -2165,6 +2166,7 @@ export type Database = {
           budget_impact_low?: number | null
           created_at?: string | null
           display_order?: number | null
+          from_standard_foundation?: boolean
           hidden_from_register?: boolean
           id?: string
           impact?: string | null
@@ -2189,6 +2191,7 @@ export type Database = {
           budget_impact_low?: number | null
           created_at?: string | null
           display_order?: number | null
+          from_standard_foundation?: boolean
           hidden_from_register?: boolean
           id?: string
           impact?: string | null
