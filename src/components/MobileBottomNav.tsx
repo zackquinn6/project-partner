@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Home, Folder, HelpCircle, CheckSquare, MessageCircle, TrendingUp, BookOpen } from 'lucide-react';
+import { Home, Folder, HelpCircle, CheckSquare, MessageCircle, TrendingUp, BookOpen, Mail } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useProject } from '@/contexts/ProjectContext';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { FeedbackDialog } from './FeedbackDialog';
 import { FeatureRoadmapWindow } from './FeatureRoadmapWindow';
 import { AppDocumentationWindow } from './AppDocumentationWindow';
+import { ContactUsWindow } from './ContactUsWindow';
 interface MobileBottomNavProps {
   currentView: string;
   onViewChange: (view: 'home' | 'projects' | 'tasks' | 'profile' | 'help' | 'expert') => void;
@@ -16,13 +16,12 @@ interface MobileBottomNavProps {
 
 export function MobileBottomNav({ currentView, onViewChange, onQuickAction }: MobileBottomNavProps) {
   const { user } = useAuth();
-  const { currentProjectRun } = useProject();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState(currentView);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [isContactOpen, setIsContactOpen] = useState(false);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
   const [isDocumentationOpen, setIsDocumentationOpen] = useState(false);
-  const [showTaskManager, setShowTaskManager] = useState(false);
 
   useEffect(() => {
     setActiveTab(currentView);
@@ -52,7 +51,7 @@ export function MobileBottomNav({ currentView, onViewChange, onQuickAction }: Mo
       id: 'tasks',
       icon: CheckSquare,
       label: 'Tasks',
-      onClick: () => setShowTaskManager(true)
+      onClick: () => handleTabClick('tasks')
     }
   ];
 
@@ -106,6 +105,10 @@ export function MobileBottomNav({ currentView, onViewChange, onQuickAction }: Mo
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Send Feedback
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsContactOpen(true)}>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Contact Us
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setIsRoadmapOpen(true)}>
                   <TrendingUp className="h-4 w-4 mr-2" />
                   App Roadmap
@@ -124,6 +127,7 @@ export function MobileBottomNav({ currentView, onViewChange, onQuickAction }: Mo
 
       {/* Dialogs */}
       <FeedbackDialog open={showFeedback} onOpenChange={setShowFeedback} />
+      <ContactUsWindow open={isContactOpen} onOpenChange={setIsContactOpen} />
       <FeatureRoadmapWindow open={isRoadmapOpen} onOpenChange={setIsRoadmapOpen} />
       <AppDocumentationWindow open={isDocumentationOpen} onOpenChange={setIsDocumentationOpen} />
     </>

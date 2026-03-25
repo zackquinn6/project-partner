@@ -1,50 +1,67 @@
-import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEnhancedAchievements } from '@/hooks/useEnhancedAchievements';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Trophy, Home, Paintbrush, Droplet, Wrench, Zap, Calendar, 
-  TrendingUp, Star, Award, Medal, Network, Grid3x3, Repeat, Layers,
-  Lock
+import {
+  Trophy,
+  Home,
+  Paintbrush,
+  Droplet,
+  Wrench,
+  Zap,
+  Calendar,
+  TrendingUp,
+  Star,
+  Award,
+  Medal,
+  Network,
+  Grid3x3,
+  Repeat,
+  Layers,
+  Camera,
+  ClipboardList,
+  Link2,
+  PiggyBank,
+  Shield,
+  Lock,
 } from 'lucide-react';
 
 const iconMap: Record<string, any> = {
-  Trophy, Home, Paintbrush, Droplet, Wrench, Zap, Calendar,
-  TrendingUp, Star, Award, Medal, Network, Grid3x3, Repeat, Layers
+  Trophy,
+  Home,
+  Paintbrush,
+  Droplet,
+  Wrench,
+  Zap,
+  Calendar,
+  TrendingUp,
+  Star,
+  Award,
+  Medal,
+  Network,
+  Grid3x3,
+  Repeat,
+  Layers,
+  Camera,
+  ClipboardList,
+  Link2,
+  PiggyBank,
+  Shield,
 };
 
 export function AchievementsSection() {
   const { user } = useAuth();
-  const { 
-    achievements, 
-    userAchievements, 
-    xpHistory,
-    loading, 
+  const {
+    achievements,
+    userAchievements,
+    loading,
     totalXP,
     totalPoints,
     level,
-    xpForNextLevel
+    xpForNextLevel,
   } = useEnhancedAchievements(user?.id);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-
-  const categories = [
-    { value: 'all', label: 'All' },
-    { value: 'foundational', label: 'Foundational' },
-    { value: 'frequency', label: 'Frequency' },
-    { value: 'scale', label: 'Scale' },
-    { value: 'overlapping', label: 'Overlapping' },
-    { value: 'skill', label: 'Skill' },
-    { value: 'legacy', label: 'Legacy' },
-  ];
-
-  const filteredAchievements =
-    selectedCategory === 'all'
-      ? achievements
-      : achievements.filter((a) => a.category === selectedCategory);
 
   const unlockedIds = new Set(userAchievements.map((ua) => ua.achievement_id));
   const unlockedCount = userAchievements.length;
@@ -114,20 +131,13 @@ export function AchievementsSection() {
       {/* Achievements Grid */}
       <Card>
         <CardHeader>
-          <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-            <TabsList className="grid grid-cols-7 w-full">
-              {categories.map((cat) => (
-                <TabsTrigger key={cat.value} value={cat.value}>
-                  {cat.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <CardTitle className="text-lg">All achievements</CardTitle>
+          <CardDescription>Browse every badge and your unlock progress</CardDescription>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[600px] pr-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredAchievements.map((achievement) => {
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {achievements.map((achievement) => {
                 const isUnlocked = unlockedIds.has(achievement.id);
                 const IconComponent = iconMap[achievement.icon] || Trophy;
                 const userAchievement = userAchievements.find(

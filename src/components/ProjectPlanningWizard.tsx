@@ -49,6 +49,8 @@ interface ProjectPlanningWizardProps {
   onOpenQualityControl?: () => void;
   /** Opens Tool Access / rentals at host level (e.g. UserView). */
   onOpenToolRentals?: () => void;
+  /** Opens Expert Support at host level (e.g. UserView). */
+  onOpenExpertSupport?: () => void;
   /** Persist workflow step completion + outputs when the user finishes every wizard step */
   onWorkflowFullyComplete?: (selectedTools: PlanningToolId[]) => void | Promise<void>;
   /** `fullscreen` = same shell as project kickoff (desktop). `dialog` = modal (e.g. mobile). */
@@ -63,6 +65,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   onOpenRiskManagement,
   onOpenQualityControl,
   onOpenToolRentals,
+  onOpenExpertSupport,
   onWorkflowFullyComplete,
   layout = 'dialog',
 }) => {
@@ -114,7 +117,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     }
     return ordered.map(toolId => {
       const meta = PLANNING_TOOLS.find(t => t.id === toolId);
-      const title = toolId === 'risk' ? 'Risk/Uncertainty' : meta?.label ?? toolId;
+      const title = meta?.label ?? toolId;
       return {
         id: `planning-${toolId}`,
         toolId,
@@ -285,7 +288,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
           />
         );
       case 'expert_support':
-        return <ExpertSupportStep {...stepProps} />;
+        return <ExpertSupportStep {...stepProps} onOpenExpertSupport={onOpenExpertSupport} />;
       default:
         return (
           <Card>
@@ -402,9 +405,14 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
             <div className="flex w-full flex-col gap-2 sm:w-auto">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full text-xs sm:w-auto sm:text-sm">
-                    <Settings2 className="mr-1.5 h-4 w-4" />
-                    Change planning tools
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full max-w-full text-[10px] leading-tight sm:w-auto sm:text-xs"
+                  >
+                    <Settings2 className="mr-1 h-3.5 w-3.5 shrink-0 sm:mr-1.5 sm:h-4 sm:w-4" />
+                    <span className="hidden lg:inline">Change planning tools</span>
+                    <span className="inline lg:hidden">Change tools</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -417,6 +425,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                       <DropdownMenuCheckboxItem
                         key={id}
                         checked={checked}
+                        onSelect={event => event.preventDefault()}
                         onCheckedChange={value => handlePlanningToolToggle(id, value === true)}
                         disabled={isScope}
                       >
@@ -428,15 +437,16 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
               </DropdownMenu>
               <div className="flex w-full items-center justify-center gap-1.5 sm:w-auto">
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
+                  aria-label="Previous step"
                   onClick={handlePrevious}
                   disabled={currentStep === 0}
-                  className="h-11 flex-1 text-xs sm:h-9 sm:flex-initial"
+                  className="h-9 w-9 shrink-0 p-0 lg:h-9 lg:w-auto lg:px-3 lg:flex-initial"
                 >
-                  <ChevronLeft className="mr-1 w-4 h-4 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Previous</span>
-                  <span className="sm:hidden">Prev</span>
+                  <ChevronLeft className="h-4 w-4 lg:mr-1" />
+                  <span className="hidden lg:inline">Previous</span>
                 </Button>
                 <div className="min-w-[70px] px-1 text-center leading-tight">
                   <div className="text-[10px] font-medium text-foreground sm:text-xs">Step</div>
@@ -452,15 +462,16 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                   ) : null}
                 </div>
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
+                  aria-label="Next step"
                   onClick={handleNext}
                   disabled={currentStep === wizardSteps.length - 1}
-                  className="h-11 flex-1 text-xs sm:h-9 sm:flex-initial"
+                  className="h-9 w-9 shrink-0 p-0 lg:h-9 lg:w-auto lg:px-3 lg:flex-initial"
                 >
-                  <span className="hidden sm:inline">Next</span>
-                  <span className="sm:hidden">Next</span>
-                  <ChevronRight className="ml-1 w-4 h-4 sm:w-4 sm:h-4" />
+                  <span className="hidden lg:inline lg:mr-1">Next</span>
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>

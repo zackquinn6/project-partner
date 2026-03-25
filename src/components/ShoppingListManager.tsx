@@ -9,7 +9,6 @@ interface ShoppingListItem {
   id: string;
   material_name: string;
   quantity: number;
-  completed: boolean;
   task_id: string;
   task_title: string;
   task_status: string;
@@ -24,8 +23,6 @@ export function ShoppingListManager() {
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<SortField>('material_name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [showCompleted, setShowCompleted] = useState(false);
-
   useEffect(() => {
     if (user) {
       fetchItems();
@@ -39,13 +36,7 @@ export function ShoppingListManager() {
     try {
       const { data: shoppingData, error } = await supabase
         .from('task_shopping_list')
-        .select(`
-          id,
-          material_name,
-          quantity,
-          completed,
-          task_id
-        `)
+        .select('id, material_name, quantity, task_id')
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -82,20 +73,6 @@ export function ShoppingListManager() {
     }
   };
 
-  const handleToggleComplete = async (itemId: string, currentCompleted: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('task_shopping_list')
-        .update({ completed: !currentCompleted })
-        .eq('id', itemId);
-
-      if (error) throw error;
-      fetchItems();
-    } catch (error) {
-      console.error('Error updating shopping list item:', error);
-    }
-  };
-
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -106,17 +83,16 @@ export function ShoppingListManager() {
   };
 
   const sortedItems = useMemo(() => {
-    const filtered = showCompleted ? items : items.filter(item => !item.completed);
-    const sorted = [...filtered].sort((a, b) => {
+    const sorted = [...items].sort((a, b) => {
       const aVal = a[sortField].toLowerCase();
       const bVal = b[sortField].toLowerCase();
-      
+
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
     return sorted;
-  }, [items, sortField, sortDirection, showCompleted]);
+  }, [items, sortField, sortDirection]);
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return <ChevronDown className="h-3 w-3 opacity-30" />;
@@ -138,26 +114,13 @@ export function ShoppingListManager() {
     );
   }
 
-  const completedCount = items.filter(item => item.completed).length;
-
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button
-          variant={showCompleted ? "default" : "outline"}
-          size="sm"
-          onClick={() => setShowCompleted(!showCompleted)}
-          className="h-7 text-xs"
-        >
-          {showCompleted ? `Hide Done (${completedCount})` : `Show Done (${completedCount})`}
-        </Button>
-      </div>
       <div className="border rounded-lg overflow-hidden">
         <div className="overflow-auto max-h-[600px]">
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
-                <TableHead className="w-8"></TableHead>
                 <TableHead className="min-w-[200px]">
                   <Button
                     variant="ghost"
@@ -190,25 +153,9 @@ export function ShoppingListManager() {
                 </TableRow>
               ) : (
                 sortedItems.map((item) => (
-                  <TableRow key={item.id} className={item.completed ? 'opacity-60' : ''}>
-                    <TableCell className="w-8">
-                      <button
-                        onClick={() => handleToggleComplete(item.id, item.completed)}
-                        className="text-xs font-medium hover:opacity-70 transition-opacity touch-target min-h-[44px] min-w-[44px] flex items-center justify-center -m-2"
-                        title={item.completed ? 'Mark as incomplete' : 'Mark as complete'}
-                      >
-                        {item.completed ? '✓' : '○'}
-                      </button>
-                    </TableCell>
+                  <TableRow key={item.id}>
                     <TableCell>
-                      <span
-                        className={`text-xs font-medium cursor-pointer ${
-                          item.completed ? 'line-through text-muted-foreground' : ''
-                        }`}
-                        onClick={() => handleToggleComplete(item.id, item.completed)}
-                      >
-                        {item.completed ? '✓ ' : ''}{item.material_name}
-                      </span>
+                      <span className="text-xs font-medium">{item.material_name}</span>
                     </TableCell>
                     <TableCell className="text-xs text-center">
                       {item.quantity || 1}

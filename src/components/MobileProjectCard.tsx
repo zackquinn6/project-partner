@@ -56,7 +56,12 @@ export function MobileProjectCard({ project, onSelect, variant = 'project', onDe
   const status: DashboardRunStatus | 'template' = isProjectRun
     ? dashboardStatusFromProgressPercent(progress)
     : 'template';
-  
+
+  const displayTitle =
+    projectRunData != null
+      ? getRiskFocusAwareDisplayName(projectRunData)
+      : project.name;
+
   // Only allow swipe to delete for project runs (not templates)
   const canDelete = isProjectRun;
   
@@ -178,60 +183,62 @@ export function MobileProjectCard({ project, onSelect, variant = 'project', onDe
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              {/* Header */}
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  {projectRunData != null && isRiskFocusRun(projectRunData) && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 mb-1">
-                      Risk-Focus
-                    </Badge>
-                  )}
-                  <h3 className="font-semibold text-card-foreground text-base leading-tight line-clamp-2">
-                    {displayTitle}
-                  </h3>
-                  {project.description && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {project.description}
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <StatusBadge status={status} />
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </div>
-
-              {/* Progress (for project runs) */}
-              {isProjectRun && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Progress</span>
-                    <span className="font-medium text-card-foreground">{progress}%</span>
+          <CardContent className={isProjectRun ? 'p-3' : 'p-4'}>
+            {isProjectRun ? (
+              <div className="flex items-start gap-2">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      {projectRunData != null && isRiskFocusRun(projectRunData) ? (
+                        <Badge variant="outline" className="mb-0.5 inline-flex px-1.5 py-0 text-[9px] leading-tight">
+                          Risk-Focus
+                        </Badge>
+                      ) : null}
+                      <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-card-foreground">
+                        {displayTitle}
+                      </h3>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <StatusBadge status={status} compact />
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
+                    </div>
                   </div>
-                  <Progress value={progress} className="h-2" />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Progress value={progress} className="h-1.5 min-w-[4rem] flex-1" />
+                    <span className="shrink-0 text-xs font-semibold tabular-nums text-foreground">{progress}%</span>
+                    <ActionButton status={status} progress={progress} onSelect={onSelect} compact />
+                  </div>
+                  <p className="truncate text-[11px] text-muted-foreground">
+                    <span>Started {formatDate((project as ProjectRun).createdAt)}</span>
+                    {(project as ProjectRun).updatedAt ? (
+                      <span> · Updated {formatDate((project as ProjectRun).updatedAt)}</span>
+                    ) : null}
+                  </p>
                 </div>
-              )}
-
-              {/* Metadata */}
-              <div className="flex items-center justify-between pt-1">
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  {isProjectRun && (
-                    <>
-                      <span>Started {formatDate((project as ProjectRun).createdAt)}</span>
-                      {(project as ProjectRun).updatedAt && (
-                        <span>• Updated {formatDate((project as ProjectRun).updatedAt)}</span>
-                      )}
-                    </>
-                  )}
-                  {!isProjectRun && project.phases && (
-                    <span>{project.phases.filter(phase => phase.isStandard !== true).length} phases</span>
-                  )}
-                </div>
-                <ActionButton status={status} progress={progress} onSelect={onSelect} />
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="line-clamp-2 text-base font-semibold leading-tight text-card-foreground">
+                      {displayTitle}
+                    </h3>
+                    {project.description ? (
+                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{project.description}</p>
+                    ) : null}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <StatusBadge status={status} />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+                {project.phases ? (
+                  <div className="text-xs text-muted-foreground">
+                    {project.phases.filter((phase) => phase.isStandard !== true).length} phases
+                  </div>
+                ) : null}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -267,24 +274,31 @@ export function MobileProjectCard({ project, onSelect, variant = 'project', onDe
   );
 }
 
-function StatusBadge({ status }: { status: DashboardRunStatus | 'template' }) {
+function StatusBadge({
+  status,
+  compact = false,
+}: {
+  status: DashboardRunStatus | 'template';
+  compact?: boolean;
+}) {
   if (status === 'template') {
     return (
-      <Badge className="bg-muted text-muted-foreground text-xs px-2 py-1 font-medium">
+      <Badge
+        className={`bg-muted font-medium text-muted-foreground ${compact ? 'px-1.5 py-0 text-[10px]' : 'px-2 py-1 text-xs'}`}
+      >
         Template
       </Badge>
     );
   }
 
-  const Icon =
-    status === 'not-started' ? Play : status === 'in-progress' ? Clock : CheckCircle;
+  const Icon = status === 'not-started' ? Play : status === 'in-progress' ? Clock : CheckCircle;
 
   return (
     <Badge
-      className={`${dashboardStatusBadgeClassName(status)} text-xs px-2 py-1 font-medium border`}
+      className={`${dashboardStatusBadgeClassName(status)} border font-medium ${compact ? 'gap-0.5 px-1.5 py-0 text-[10px]' : 'gap-1 px-2 py-1 text-xs'}`}
     >
-      <div className="flex items-center gap-1">
-        <Icon className="h-3 w-3" />
+      <div className="flex items-center gap-0.5">
+        <Icon className={compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
         {dashboardStatusBadgeLabel(status)}
       </div>
     </Badge>
@@ -295,10 +309,12 @@ function ActionButton({
   status,
   progress,
   onSelect,
+  compact = false,
 }: {
   status: DashboardRunStatus | 'template';
   progress: number;
   onSelect: () => void;
+  compact?: boolean;
 }) {
   const [isLoading, setIsLoading] = useState(false);
   
@@ -316,42 +332,26 @@ function ActionButton({
     setIsLoading(false);
   };
   
+  const btnClass = compact ? 'h-7 px-2 text-[11px]' : 'h-7 px-3 text-xs';
+
   if (status === 'complete') {
     return (
-      <Button 
-        variant="outline" 
-        size="sm" 
-        className="text-xs px-3 py-1 h-7"
-        onClick={handleClick}
-        disabled={isLoading}
-      >
+      <Button variant="outline" size="sm" className={btnClass} onClick={handleClick} disabled={isLoading}>
         {isLoading ? '...' : 'View'}
       </Button>
     );
   }
-  
+
   if (status === 'in-progress') {
     return (
-      <Button 
-        variant="default" 
-        size="sm" 
-        className="text-xs px-3 py-1 h-7"
-        onClick={handleClick}
-        disabled={isLoading}
-      >
+      <Button variant="default" size="sm" className={btnClass} onClick={handleClick} disabled={isLoading}>
         {isLoading ? '...' : 'Continue'}
       </Button>
     );
   }
-  
+
   return (
-    <Button 
-      variant="outline" 
-      size="sm" 
-      className="text-xs px-3 py-1 h-7"
-      onClick={handleClick}
-      disabled={isLoading}
-    >
+    <Button variant="outline" size="sm" className={btnClass} onClick={handleClick} disabled={isLoading}>
       {isLoading ? '...' : 'Start'}
     </Button>
   );

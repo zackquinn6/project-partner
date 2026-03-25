@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Camera, Upload, X, Loader2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEnhancedAchievements } from '@/hooks/useEnhancedAchievements';
 import { toast } from 'sonner';
 import { sanitizeInput } from '@/utils/inputSanitization';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -51,9 +52,9 @@ interface PhotoUploadProps {
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 
-export function PhotoUpload({ 
-  projectRunId, 
-  templateId, 
+export function PhotoUpload({
+  projectRunId,
+  templateId: _templateId,
   stepId: initialStepId = '', 
   stepName: initialStepName = '',
   phaseId: initialPhaseId,
@@ -67,6 +68,7 @@ export function PhotoUpload({
   onPhotoUploaded 
 }: PhotoUploadProps) {
   const { user } = useAuth();
+  const { checkMilestoneUnlocks } = useEnhancedAchievements(user?.id);
   const { isMobile } = useResponsive();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
@@ -163,31 +165,24 @@ export function PhotoUpload({
       const sanitizedPhaseName = finalPhaseName ? sanitizeInput(finalPhaseName) : null;
       const sanitizedOperationName = finalOperationName ? sanitizeInput(finalOperationName) : null;
 
-      // Save metadata to database
-      const { error: dbError } = await supabase
-        .from('project_photos')
-        .insert({
-          user_id: user.id,
-          project_run_id: projectRunId,
-          template_id: templateId,
-          step_id: finalStepId,
-          step_name: sanitizedStepName,
-          phase_id: initialPhaseId || null,
-          phase_name: sanitizedPhaseName,
-          operation_id: initialOperationId || null,
-          operation_name: sanitizedOperationName,
-          storage_path: filePath,
-          file_name: sanitizedOriginalName,
-          file_size: selectedFile.size,
-          privacy_level: privacyLevel,
-          caption: sanitizedCaption,
-          photo_name: sanitizedPhotoName
-        } as any);
+      // project_run_photos.photo_url stores the storage object path (same bucket) for signed URLs
+      const { error: dbError } = await supabase.from('project_run_photos').insert({
+        user_id: user.id,
+        project_run_id: projectRunId,
+        photo_url: filePath,
+        caption: sanitizedCaption,
+        phase_name: sanitizedPhaseName,
+        operation_name: sanitizedOperationName,
+        step_title: sanitizedStepName,
+        photo_type: privacyLevel,
+      });
 
       if (dbError) throw dbError;
 
       toast.success('Photo uploaded successfully');
-      
+
+      void checkMilestoneUnlocks();
+
       // Reset form
       setSelectedFile(null);
       setPreviewUrl(null);

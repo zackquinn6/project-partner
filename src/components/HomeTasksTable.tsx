@@ -10,6 +10,9 @@ import { Pencil, Trash2, ChevronDown, ChevronUp, Plus, Link2, ExternalLink } fro
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/useResponsive";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEnhancedAchievements } from "@/hooks/useEnhancedAchievements";
+
 interface HomeTask {
   id: string;
   title: string;
@@ -23,6 +26,21 @@ interface HomeTask {
   created_at: string;
   project_run_id: string | null;
   ordered: boolean;
+}
+
+function xpForHomeTaskComplete(task: HomeTask): number {
+  const base = 18;
+  const diyMult =
+    task.diy_level === "beginner"
+      ? 1
+      : task.diy_level === "intermediate"
+        ? 1.2
+        : task.diy_level === "advanced"
+          ? 1.45
+          : 1.65;
+  const priMult =
+    task.priority === "low" ? 1 : task.priority === "medium" ? 1.1 : 1.22;
+  return Math.round(base * diyMult * priMult);
 }
 
 interface Subtask {
@@ -57,6 +75,8 @@ export function HomeTasksTable({
 }: HomeTasksTableProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const { awardXP, checkMilestoneUnlocks } = useEnhancedAchievements(user?.id);
   const [sortField, setSortField] = useState<SortField>('due_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterPriority, setFilterPriority] = useState<string>('all');
@@ -154,16 +174,22 @@ export function HomeTasksTable({
     }
   };
 
-  const handleToggleTaskComplete = async (taskId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'closed' ? 'open' : 'closed';
+  const handleToggleTaskComplete = async (task: HomeTask) => {
+    const newStatus = task.status === "closed" ? "open" : "closed";
     const { error } = await supabase
-      .from('home_tasks')
+      .from("home_tasks")
       .update({ status: newStatus })
-      .eq('id', taskId);
+      .eq("id", task.id);
 
-    if (!error) {
-      onTaskUpdate?.();
+    if (error) return;
+
+    if (newStatus === "closed") {
+      const xp = xpForHomeTaskComplete(task);
+      await awardXP(xp, `Task completed: ${task.title}`);
+      await checkMilestoneUnlocks();
     }
+
+    onTaskUpdate?.();
   };
 
   const getDisplayStatus = (task: HomeTask) => {
@@ -285,8 +311,8 @@ export function HomeTasksTable({
   ];
 
   return <div className="space-y-2 md:space-y-3 flex flex-col h-full">
-      {/* Desktop filters and controls */}
-      <div className="hidden md:flex flex-row gap-4 items-center pt-3">
+      {/* Full-width desktop (xl+): DIY level pills + inline “Show completed” */}
+      <div className="hidden xl:flex flex-row gap-4 items-center pt-3">
         {onAddTask && (
           <Button
             onClick={onAddTask}
@@ -314,7 +340,7 @@ export function HomeTasksTable({
               <SelectItem value="low">Low</SelectItem>
             </SelectContent>
           </Select>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             {diyLevels.map(level => (
               <button
                 key={level.id}
@@ -341,6 +367,68 @@ export function HomeTasksTable({
               Show completed
             </label>
           </div>
+        </div>
+      </div>
+
+      {/* Tablet / slim desktop (md–lg): filters as dropdowns + Show Done button (same pattern as mobile) */}
+      <div className="hidden md:flex xl:hidden flex-col gap-2 mb-1 pt-3">
+        <Input
+          placeholder="Search tasks..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="text-sm h-8 w-full max-w-xl"
+        />
+        <div className="flex flex-wrap gap-2 items-center">
+          <Select value={filterPriority} onValueChange={setFilterPriority}>
+            <SelectTrigger className="h-8 text-xs min-w-[7.5rem] flex-1 sm:flex-none sm:w-36">
+              <SelectValue>
+                {filterPriority === 'all' ? 'Priority' : filterPriority === 'high' ? 'High' : filterPriority === 'medium' ? 'Med' : 'Low'}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="bg-background border shadow-lg z-[100]">
+              <SelectItem value="all">All Priorities</SelectItem>
+              <SelectItem value="high">High Priority</SelectItem>
+              <SelectItem value="medium">Medium Priority</SelectItem>
+              <SelectItem value="low">Low Priority</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterDiyLevel} onValueChange={setFilterDiyLevel}>
+            <SelectTrigger className="h-8 text-xs min-w-[7.5rem] flex-1 sm:flex-none sm:w-36">
+              <SelectValue>
+                {filterDiyLevel === 'all' ? 'DIY level' : filterDiyLevel === 'beginner' ? 'Beginner' : filterDiyLevel === 'intermediate' ? 'Intermediate' : filterDiyLevel === 'advanced' ? 'Advanced' : 'Professional'}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="bg-background border shadow-lg z-[100]">
+              <SelectItem value="all">All Levels</SelectItem>
+              <SelectItem value="beginner">Beginner</SelectItem>
+              <SelectItem value="intermediate">Intermediate</SelectItem>
+              <SelectItem value="advanced">Advanced</SelectItem>
+              <SelectItem value="pro">Professional</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCompleted(!showCompleted)}
+            className="h-8 text-xs whitespace-nowrap px-3"
+          >
+            {showCompleted ? 'Hide' : 'Show'} Done
+          </Button>
+
+          {onAddTask && (
+            <Button
+              onClick={onAddTask}
+              size="sm"
+              variant="outline"
+              className="h-8 shrink-0 text-xs border-blue-600 bg-blue-600 text-white hover:bg-blue-700 hover:border-blue-700"
+              title="Add Task"
+            >
+              <Plus className="h-4 w-4 mr-1.5" aria-hidden />
+              Add Task
+            </Button>
+          )}
         </div>
       </div>
 
@@ -461,7 +549,7 @@ export function HomeTasksTable({
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleToggleTaskComplete(task.id, task.status)}
+                            onClick={() => handleToggleTaskComplete(task)}
                             className="h-12 w-12 min-h-12 min-w-12 p-0 text-lg font-medium rounded-md border-2 hover:bg-primary/10"
                             title={task.status === 'closed' ? 'Mark as open' : 'Mark as complete'}
                           >
@@ -473,7 +561,7 @@ export function HomeTasksTable({
                       <div className="flex items-center gap-1.5 md:gap-2 flex-wrap min-w-0">
                         <span 
                           className={`text-sm md:text-[18px] font-medium cursor-pointer leading-tight min-w-0 truncate ${task.status === 'closed' ? 'line-through text-muted-foreground' : ''}`}
-                          onClick={() => handleToggleTaskComplete(task.id, task.status)}
+                          onClick={() => handleToggleTaskComplete(task)}
                         >
                           {task.status === 'closed' ? '✓ ' : ''}{task.title}
                         </span>

@@ -3027,37 +3027,48 @@ export type Database = {
       }
       user_achievements: {
         Row: {
-          achievement_id: string
+          achievement_id: string | null
           created_at: string
           earned_at: string
           id: string
+          is_read: boolean
+          notification_sent: boolean
+          phase_name: string | null
           project_run_id: string | null
+          reason: string | null
+          type: string
           user_id: string
+          xp_amount: number | null
         }
         Insert: {
-          achievement_id: string
+          achievement_id?: string | null
           created_at?: string
           earned_at?: string
           id?: string
+          is_read?: boolean
+          notification_sent?: boolean
+          phase_name?: string | null
           project_run_id?: string | null
+          reason?: string | null
+          type?: string
           user_id: string
+          xp_amount?: number | null
         }
         Update: {
-          achievement_id?: string
+          achievement_id?: string | null
           created_at?: string
           earned_at?: string
           id?: string
+          is_read?: boolean
+          notification_sent?: boolean
+          phase_name?: string | null
           project_run_id?: string | null
+          reason?: string | null
+          type?: string
           user_id?: string
+          xp_amount?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "user_achievements_achievement_id_fkey"
-            columns: ["achievement_id"]
-            isOneToOne: false
-            referencedRelation: "achievements"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "user_achievements_project_run_id_fkey"
             columns: ["project_run_id"]

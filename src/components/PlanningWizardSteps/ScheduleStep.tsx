@@ -1,8 +1,9 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from 'lucide-react';
+import { PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 
 interface ScheduleStepProps {
   onComplete: () => void;
@@ -32,9 +33,6 @@ export const ScheduleStep: React.FC<ScheduleStepProps> = ({
             Schedule
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
-          <CardDescription className="text-xs sm:text-sm mt-0.5">
-            Create a realistic timeline
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 p-3 sm:p-4">
           <div className="text-center space-y-4 py-6">
@@ -42,12 +40,13 @@ export const ScheduleStep: React.FC<ScheduleStepProps> = ({
               Scheduling puts a realistic timeline to the work plan
             </p>
             
-            <Button 
+            <Button
+              type="button"
+              variant="default"
               onClick={handleOpenScheduler}
-              size="lg"
-              className="w-full max-w-md h-16 text-lg font-semibold"
+              className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
             >
-              <Calendar className="w-6 h-6 mr-3" />
+              <Calendar className="shrink-0" aria-hidden />
               Open Project Scheduler
             </Button>
 

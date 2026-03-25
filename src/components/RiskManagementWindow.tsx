@@ -18,6 +18,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Plus,
   Edit,
   Trash2,
@@ -31,6 +37,7 @@ import {
   Eye,
   ArrowDownAZ,
   ArrowDownWideNarrow,
+  ChevronDown,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -181,7 +188,7 @@ function RiskFocusDashboard({
     <div className="shrink-0 border-b bg-muted/30 px-3 pb-1.5 pt-1 md:px-4 md:pb-2 md:pt-1.5">
       {name ? (
         <div className="mb-2 min-w-0">
-          <h2 className="text-left text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl md:text-3xl">
+          <h2 className="text-center text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl md:text-left md:text-3xl">
             {name}
           </h2>
         </div>
@@ -956,7 +963,259 @@ export function RiskManagementWindow({
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 flex-col gap-3">
-              {showRiskFocusProgressRow || showAddRiskRow || showRiskFocusHiddenToggle ? (
+              {riskFocusRun &&
+              (showRiskFocusProgressRow ||
+                showAddRiskRow ||
+                showRiskFocusHiddenToggle ||
+                risks.length > 0) ? (
+                <>
+                  {/* Risk-Less mobile: progress (narrow) | sort menu (center) | hidden + add */}
+                  <div className="flex w-full shrink-0 items-center gap-2 md:hidden">
+                    <div className="shrink-0">
+                      {showRiskFocusProgressRow && riskFocusRunForProgress ? (
+                        <Select
+                          disabled={readOnly}
+                          value={riskFocusProgressSelectValue(riskFocusRunForProgress.progress)}
+                          onValueChange={(value) => {
+                            const progress = Number.parseInt(value, 10);
+                            if (
+                              !Number.isFinite(progress) ||
+                              !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
+                            ) {
+                              return;
+                            }
+                            void updateProjectRun({ ...riskFocusRunForProgress, progress });
+                          }}
+                        >
+                          <SelectTrigger
+                            className="h-7 w-[120px] max-w-[120px] shrink-0 text-xs"
+                            aria-label="Project progress"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem
+                              value="0"
+                              className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
+                            >
+                              0%
+                            </SelectItem>
+                            <SelectItem
+                              value="25"
+                              className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
+                            >
+                              25%
+                            </SelectItem>
+                            <SelectItem
+                              value="50"
+                              className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
+                            >
+                              50%
+                            </SelectItem>
+                            <SelectItem
+                              value="75"
+                              className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
+                            >
+                              75%
+                            </SelectItem>
+                            <SelectItem
+                              value="100"
+                              className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
+                            >
+                              Complete
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : null}
+                    </div>
+                    <div className="flex min-w-0 flex-1 justify-center px-1">
+                      {risks.length > 0 ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 gap-1 px-2 text-xs"
+                              aria-label="Sort risks"
+                            >
+                              {riskListSort === 'alpha' ? (
+                                <ArrowDownAZ className="h-3.5 w-3.5 shrink-0" />
+                              ) : (
+                                <ArrowDownWideNarrow className="h-3.5 w-3.5 shrink-0" />
+                              )}
+                              <span className="max-w-[5.5rem] truncate">
+                                {riskListSort === 'alpha' ? 'A–Z' : 'Risk level'}
+                              </span>
+                              <ChevronDown className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="center" className="z-[250]">
+                            <DropdownMenuItem onClick={() => setRiskListSort('alpha')}>
+                              <ArrowDownAZ className="mr-2 h-4 w-4" />
+                              A–Z
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setRiskListSort('severity-desc')}>
+                              <ArrowDownWideNarrow className="mr-2 h-4 w-4" />
+                              Risk level
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : null}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      {showRiskFocusHiddenToggle ? (
+                        <div className="flex max-w-[9rem] items-start gap-1">
+                          <Checkbox
+                            id="show-hidden-risks-riskless-mobile"
+                            className="mt-0.5 h-3 w-3 shrink-0 rounded-sm border-[1.5px] [&_svg]:h-2.5 [&_svg]:w-2.5"
+                            checked={showHiddenRisks}
+                            onCheckedChange={(c) => setShowHiddenRisks(c === true)}
+                          />
+                          <Label
+                            htmlFor="show-hidden-risks-riskless-mobile"
+                            className="cursor-pointer text-[10px] font-normal leading-tight"
+                          >
+                            <span className="block leading-tight">Show</span>
+                            <span className="block leading-tight">Hidden risks</span>
+                          </Label>
+                        </div>
+                      ) : null}
+                      {showAddRiskRow ? (
+                        <Button
+                          variant="default"
+                          size="icon"
+                          className="h-7 w-7 shrink-0"
+                          aria-label="Add risk"
+                          onClick={() => {
+                            setEditingRisk(null);
+                            setFormData({
+                              risk: '',
+                              likelihood: 'medium',
+                              severity: 'medium',
+                              schedule_impact_days: 0,
+                              budget_impact_dollars: 0,
+                              mitigation: '',
+                              mitigation_actions: [],
+                              notes: '',
+                              status: 'open'
+                            });
+                            setShowAddForm(true);
+                          }}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {/* Risk-Less desktop toolbar */}
+                  <div
+                    className={cn(
+                      'hidden w-full shrink-0 flex-row items-center gap-2 md:flex',
+                      showRiskFocusProgressRow && (showAddRiskRow || showRiskFocusHiddenToggle)
+                        ? 'justify-between'
+                        : showRiskFocusProgressRow
+                          ? 'justify-start'
+                          : 'justify-end'
+                    )}
+                  >
+                    {showRiskFocusProgressRow && riskFocusRunForProgress ? (
+                      <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-1.5">
+                        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Project progress
+                        </span>
+                        <Select
+                          disabled={readOnly}
+                          value={riskFocusProgressSelectValue(riskFocusRunForProgress.progress)}
+                          onValueChange={(value) => {
+                            const progress = Number.parseInt(value, 10);
+                            if (
+                              !Number.isFinite(progress) ||
+                              !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
+                            ) {
+                              return;
+                            }
+                            void updateProjectRun({ ...riskFocusRunForProgress, progress });
+                          }}
+                        >
+                          <SelectTrigger
+                            className="h-7 w-[160px] text-xs"
+                            aria-label="Project progress"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">0%</SelectItem>
+                            <SelectItem value="25">25%</SelectItem>
+                            <SelectItem value="50">50%</SelectItem>
+                            <SelectItem value="75">75%</SelectItem>
+                            <SelectItem value="100">Complete</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : null}
+                    {showAddRiskRow ? (
+                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+                        {showRiskFocusHiddenToggle ? (
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="show-hidden-risks-toolbar"
+                              checked={showHiddenRisks}
+                              onCheckedChange={(c) => setShowHiddenRisks(c === true)}
+                            />
+                            <Label
+                              htmlFor="show-hidden-risks-toolbar"
+                              className="cursor-pointer text-xs font-normal sm:text-sm"
+                            >
+                              Show hidden risks
+                            </Label>
+                          </div>
+                        ) : null}
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => {
+                            setEditingRisk(null);
+                            setFormData({
+                              risk: '',
+                              likelihood: 'medium',
+                              severity: 'medium',
+                              schedule_impact_days: 0,
+                              budget_impact_dollars: 0,
+                              mitigation: '',
+                              mitigation_actions: [],
+                              notes: '',
+                              status: 'open'
+                            });
+                            setShowAddForm(true);
+                          }}
+                          className="h-7 gap-1 px-3 text-xs font-medium"
+                        >
+                          <Plus className="h-3.5 w-3.5 shrink-0" />
+                          Add Risk
+                        </Button>
+                      </div>
+                    ) : showRiskFocusHiddenToggle ? (
+                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="show-hidden-risks-toolbar"
+                            checked={showHiddenRisks}
+                            onCheckedChange={(c) => setShowHiddenRisks(c === true)}
+                          />
+                          <Label
+                            htmlFor="show-hidden-risks-toolbar"
+                            className="cursor-pointer text-xs font-normal sm:text-sm"
+                          >
+                            Show hidden risks
+                          </Label>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </>
+              ) : showRiskFocusProgressRow || showAddRiskRow || showRiskFocusHiddenToggle ? (
                 <div
                   className={cn(
                     'flex shrink-0 flex-col sm:flex-row sm:items-center',
@@ -1061,33 +1320,6 @@ export function RiskManagementWindow({
                       </div>
                     </div>
                   ) : null}
-                </div>
-              ) : null}
-              {variant === 'risk-focus' && mode === 'run' && risks.length > 0 ? (
-                <div className="flex shrink-0 flex-wrap items-center justify-center gap-2 md:hidden">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Sort
-                  </span>
-                  <Button
-                    type="button"
-                    variant={riskListSort === 'alpha' ? 'secondary' : 'outline'}
-                    size="sm"
-                    className="h-8 gap-1 text-xs"
-                    onClick={() => setRiskListSort('alpha')}
-                  >
-                    <ArrowDownAZ className="h-3.5 w-3.5" />
-                    A–Z
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={riskListSort === 'severity-desc' ? 'secondary' : 'outline'}
-                    size="sm"
-                    className="h-8 gap-1 text-xs"
-                    onClick={() => setRiskListSort('severity-desc')}
-                  >
-                    <ArrowDownWideNarrow className="h-3.5 w-3.5" />
-                    Risk level
-                  </Button>
                 </div>
               ) : null}
               {risks.length === 0 ? (
@@ -1197,39 +1429,6 @@ export function RiskManagementWindow({
                                 <ImpactIfItDoesContent risk={risk} />
                               </div>
                             </div>
-                            {mode === 'run' && variant === 'risk-focus' && (
-                              <div
-                                onClick={(e) => e.stopPropagation()}
-                                onKeyDown={(e) => e.stopPropagation()}
-                              >
-                                <div className="text-xs text-muted-foreground mb-1">Whats the new status?</div>
-                                {readOnly ? (
-                                  <Badge className={currentRiskLevelBadgeClass(riskFocusLevelValue(risk))}>
-                                    {riskFocusLevelValue(risk) === 'high'
-                                      ? 'High'
-                                      : riskFocusLevelValue(risk) === 'low'
-                                        ? 'Low'
-                                        : 'Med'}
-                                  </Badge>
-                                ) : (
-                                  <Select
-                                    value={riskFocusLevelValue(risk)}
-                                    onValueChange={(value) =>
-                                      handleUpdateCurrentRiskLevel(risk, value as 'low' | 'medium' | 'high')
-                                    }
-                                  >
-                                    <SelectTrigger className="h-11 text-sm">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="high">High</SelectItem>
-                                      <SelectItem value="medium">Med</SelectItem>
-                                      <SelectItem value="low">Low</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              </div>
-                            )}
                             {mode === 'run' && variant !== 'risk-focus' && (
                               <div>
                                 <div className="text-xs text-muted-foreground mb-1">Status</div>
@@ -1256,67 +1455,100 @@ export function RiskManagementWindow({
                               </div>
                             )}
                             {riskFocusRun ? (
-                              <div
-                                onClick={(e) => e.stopPropagation()}
-                                onKeyDown={(e) => e.stopPropagation()}
-                              >
-                                <div className="text-xs text-muted-foreground mb-1">
-                                  What can we do to prevent it?
-                                </div>
-                                {(risk.mitigation_actions?.length ?? 0) > 0 ? (
-                                  <ul className="space-y-2 text-sm">
-                                    {risk.mitigation_actions!.map((ma, idx) => (
-                                      <li key={idx} className="flex items-start gap-2">
-                                        {!readOnly && String(ma.action).trim() ? (
-                                          <Checkbox
-                                            className="mt-0.5"
-                                            checked={Boolean(ma.completed)}
-                                            onCheckedChange={() => void handleMitigationActionCompletedToggle(risk, idx)}
-                                            aria-label={`Done: ${ma.action}`}
-                                          />
-                                        ) : null}
-                                        <div className="min-w-0 flex-1">
-                                          {!readOnly && !String(ma.action).trim() ? (
-                                            <Input
-                                              className="h-9 text-sm"
-                                              placeholder="Describe this mitigation"
-                                              defaultValue=""
-                                              onBlur={(e) => void handleMitigationActionTextBlur(risk, idx, e.target.value)}
-                                              onClick={(e) => e.stopPropagation()}
-                                              onKeyDown={(e) => e.stopPropagation()}
-                                            />
-                                          ) : (
-                                            <span>
-                                              <span className="font-medium">{ma.action}</span>
-                                              {ma.benefit ? (
-                                                <span className="text-muted-foreground"> – {ma.benefit}</span>
-                                              ) : null}
-                                            </span>
-                                          )}
-                                        </div>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : risk.mitigation ? (
-                                  <p className="text-sm">{risk.mitigation}</p>
-                                ) : (
-                                  <p className="text-sm text-muted-foreground">No mitigation steps yet.</p>
-                                )}
-                                {!readOnly ? (
-                                  <div className="mt-2 flex justify-center">
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-                                      aria-label="Add mitigation"
-                                      onClick={() => void handleAppendMitigationAction(risk)}
-                                    >
-                                      <Plus className="h-4 w-4" />
-                                    </Button>
+                              <>
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
+                                  onKeyDown={(e) => e.stopPropagation()}
+                                >
+                                  <div className="text-xs text-muted-foreground mb-1">
+                                    What can we do to prevent it?
                                   </div>
-                                ) : null}
-                              </div>
+                                  {(risk.mitigation_actions?.length ?? 0) > 0 ? (
+                                    <ul className="space-y-2 text-sm">
+                                      {risk.mitigation_actions!.map((ma, idx) => (
+                                        <li key={idx} className="flex items-start gap-2">
+                                          {!readOnly && String(ma.action).trim() ? (
+                                            <Checkbox
+                                              className="mt-0.5 h-3 w-3 shrink-0 rounded-sm border-[1.5px] [&_svg]:h-2.5 [&_svg]:w-2.5"
+                                              checked={Boolean(ma.completed)}
+                                              onCheckedChange={() => void handleMitigationActionCompletedToggle(risk, idx)}
+                                              aria-label={`Done: ${ma.action}`}
+                                            />
+                                          ) : null}
+                                          <div className="min-w-0 flex-1">
+                                            {!readOnly && !String(ma.action).trim() ? (
+                                              <Input
+                                                className="h-9 text-sm"
+                                                placeholder="Describe this mitigation"
+                                                defaultValue=""
+                                                onBlur={(e) => void handleMitigationActionTextBlur(risk, idx, e.target.value)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                onKeyDown={(e) => e.stopPropagation()}
+                                              />
+                                            ) : (
+                                              <span>
+                                                <span className="font-medium">{ma.action}</span>
+                                                {ma.benefit ? (
+                                                  <span className="text-muted-foreground"> – {ma.benefit}</span>
+                                                ) : null}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  ) : risk.mitigation ? (
+                                    <p className="text-sm">{risk.mitigation}</p>
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">No mitigation steps yet.</p>
+                                  )}
+                                  {!readOnly ? (
+                                    <div className="mt-2 flex justify-center">
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                                        aria-label="Add mitigation"
+                                        onClick={() => void handleAppendMitigationAction(risk)}
+                                      >
+                                        <Plus className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  ) : null}
+                                </div>
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
+                                  onKeyDown={(e) => e.stopPropagation()}
+                                >
+                                  <div className="text-xs text-muted-foreground mb-1">Whats the new status?</div>
+                                  {readOnly ? (
+                                    <Badge className={currentRiskLevelBadgeClass(riskFocusLevelValue(risk))}>
+                                      {riskFocusLevelValue(risk) === 'high'
+                                        ? 'High'
+                                        : riskFocusLevelValue(risk) === 'low'
+                                          ? 'Low'
+                                          : 'Med'}
+                                    </Badge>
+                                  ) : (
+                                    <Select
+                                      value={riskFocusLevelValue(risk)}
+                                      onValueChange={(value) =>
+                                        handleUpdateCurrentRiskLevel(risk, value as 'low' | 'medium' | 'high')
+                                      }
+                                    >
+                                      <SelectTrigger className="h-11 text-sm">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="high">High</SelectItem>
+                                        <SelectItem value="medium">Med</SelectItem>
+                                        <SelectItem value="low">Low</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                </div>
+                              </>
                             ) : (
                               <>
                                 {(risk.mitigation_actions && risk.mitigation_actions.length > 0) && (

@@ -1097,10 +1097,10 @@ export default function UserView({
     let cancelled = false;
     void (async () => {
       const { count, error } = await supabase
-        .from('project_photos')
+        .from('project_run_photos')
         .select('id', { count: 'exact', head: true })
         .eq('project_run_id', currentProjectRun.id)
-        .eq('step_id', currentStep.id);
+        .eq('step_title', currentStep.step);
       if (!cancelled && !error) {
         setStepPhotoCountForCompletion(count ?? 0);
       }
@@ -1519,10 +1519,10 @@ export default function UserView({
 
       if (qc.require_photos_per_step && currentProjectRun) {
         const { count, error: photoCountError } = await supabase
-          .from('project_photos')
+          .from('project_run_photos')
           .select('id', { count: 'exact', head: true })
           .eq('project_run_id', currentProjectRun.id)
-          .eq('step_id', currentStep.id);
+          .eq('step_title', currentStep.step);
         if (photoCountError) {
           console.error('Photo count check failed:', photoCountError);
           toast.error('Could not verify photos for this step. Try again.');
@@ -2984,6 +2984,7 @@ export default function UserView({
               setQualityCheckOpen(true);
             }}
             onOpenToolRentals={() => setToolRentalsOpen(true)}
+            onOpenExpertSupport={() => setExpertHelpOpen(true)}
           />
         </div>
       ) : (
@@ -3880,6 +3881,7 @@ export default function UserView({
             setQualityCheckOpen(true);
           }}
           onOpenToolRentals={() => setToolRentalsOpen(true)}
+          onOpenExpertSupport={() => setExpertHelpOpen(true)}
         />
       ) : null}
       

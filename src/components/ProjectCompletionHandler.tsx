@@ -70,15 +70,24 @@ export function ProjectCompletionHandler({
           .single();
 
         if (projectRun) {
-          // Award completion XP
-          const completionXP = calculateXPForProject(projectRun);
+          const { data: otherRuns } = await supabase
+            .from('project_runs')
+            .select('id, status, progress')
+            .eq('user_id', user.id)
+            .neq('id', projectRunId);
+
+          const priorCompletedCount = (otherRuns ?? []).filter((p) => {
+            const progress = p.progress ?? 0;
+            return p.status === 'complete' || progress >= 100;
+          }).length;
+
+          const completionXP = calculateXPForProject(projectRun, priorCompletedCount);
           await awardXP(
             completionXP,
             `Project completed: ${projectRun.name}`,
             projectRunId
           );
 
-          // Check and unlock achievements
           await checkAndUnlockAchievements(projectRun);
         }
       }

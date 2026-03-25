@@ -1,8 +1,9 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ClipboardCheck } from 'lucide-react';
+import { PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 
 interface QualityControlStepProps {
   onComplete: () => void;
@@ -25,27 +26,23 @@ export const QualityControlStep: React.FC<QualityControlStepProps> = ({
             Quality
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
-          <CardDescription className="text-xs sm:text-sm mt-0.5">
-            Document results for future inspections
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 p-2 sm:p-3">
           <div className="text-center space-y-3 py-4 sm:py-5">
             <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
-              Open Quality Control to review outputs, adjust project settings, and export a PDF. This also continues the planning workflow.
+              Set the detail level of quality (documentation) tracking.
             </p>
             {!isCompleted && (
               <Button
                 type="button"
                 variant="default"
-                size="lg"
-                className="w-full max-w-md min-h-14 text-base font-semibold whitespace-normal leading-snug px-3 py-3"
+                className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
                 onClick={() => {
                   onOpenQualityControlApp?.();
                   onComplete();
                 }}
               >
-                <ClipboardCheck className="mr-2 h-5 w-5 shrink-0" />
+                <ClipboardCheck className="shrink-0" aria-hidden />
                 Open Quality Control
               </Button>
             )}

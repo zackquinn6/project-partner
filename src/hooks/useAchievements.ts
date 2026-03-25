@@ -1,30 +1,27 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import {
+  achievementCriteriaMet,
+  achievementDefinitionById,
+  achievementDefinitionsSorted,
+  type AchievementDefinition,
+} from '@/constants/achievementDefinitions';
+import { fetchUserAchievementStats } from '@/hooks/useEnhancedAchievements';
 
-export interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  icon: string;
-  points: number;
-  criteria: any;
-  created_at: string;
-  updated_at: string;
-}
+export type Achievement = AchievementDefinition & { created_at?: string; updated_at?: string };
 
 export interface UserAchievement {
   id: string;
   user_id: string;
   achievement_id: string;
   unlocked_at: string;
-  progress: any;
-  achievement?: Achievement;
+  achievement?: Achievement | null;
 }
 
+/** @deprecated Prefer useEnhancedAchievements for XP and full history. */
 export function useAchievements(userId?: string) {
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [achievements] = useState<Achievement[]>(() => achievementDefinitionsSorted() as Achievement[]);
   const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalPoints, setTotalPoints] = useState(0);
@@ -39,43 +36,38 @@ export function useAchievements(userId?: string) {
   }, [userId]);
 
   const fetchAchievements = async () => {
+    if (!userId) return;
+
     try {
       setLoading(true);
 
-      // Fetch all achievements
-      const { data: allAchievements, error: achievementsError } = await supabase
-        .from('achievements')
-        .select('*')
-        .order('category', { ascending: true });
-
-      if (achievementsError) throw achievementsError;
-
-      // Fetch user's unlocked achievements (no embed: avoid relying on FK in schema cache)
-      const { data: unlockedRows, error: unlockedError } = await supabase
+      const { data: rows, error: unlockedError } = await supabase
         .from('user_achievements')
         .select('*')
         .eq('user_id', userId);
 
       if (unlockedError) throw unlockedError;
 
-      const achievementIds = [...new Set((unlockedRows || []).map((r: { achievement_id: string }) => r.achievement_id))];
-      const { data: achievementsById } = achievementIds.length
-        ? await supabase.from('achievements').select('*').in('id', achievementIds)
-        : { data: [] };
-      const achievementMap = new Map((achievementsById || []).map((a: { id: string; points?: number }) => [a.id, a]));
-      const unlocked = (unlockedRows || []).map((ua: Record<string, unknown>) => ({
-        ...ua,
-        achievement: achievementMap.get(ua.achievement_id as string) ?? null
-      }));
-
-      setAchievements(allAchievements || []);
-      setUserAchievements(unlocked || []);
-
-      // Calculate total points
-      const points = (unlocked || []).reduce(
-        (sum, ua) => sum + ((ua.achievement as { points?: number } | null)?.points || 0),
-        0
+      const unlockRows = (rows || []).filter(
+        (r: { type?: string | null; achievement_id?: string | null }) =>
+          (r.type ?? 'unlock') !== 'xp' && Boolean(r.achievement_id)
       );
+
+      const unlocked: UserAchievement[] = unlockRows.map((ua: Record<string, unknown>) => {
+        const aid = ua.achievement_id as string;
+        const earnedAt = (ua.earned_at as string) ?? (ua.created_at as string);
+        return {
+          id: ua.id as string,
+          user_id: ua.user_id as string,
+          achievement_id: aid,
+          unlocked_at: earnedAt,
+          achievement: achievementDefinitionById(aid) ?? null,
+        };
+      });
+
+      setUserAchievements(unlocked);
+
+      const points = unlocked.reduce((sum, ua) => sum + (ua.achievement?.points ?? 0), 0);
       setTotalPoints(points);
     } catch (error) {
       console.error('Error fetching achievements:', error);
@@ -84,113 +76,67 @@ export function useAchievements(userId?: string) {
     }
   };
 
-  const checkAndUnlockAchievements = async (projectData: any) => {
+  const checkAndUnlockAchievements = async (projectData: Record<string, unknown>) => {
     if (!userId) return;
 
     try {
-      // Fetch user's project history
-      const { data: projects, error } = await supabase
-        .from('project_runs')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'completed');
+      const { data: uaExisting } = await supabase
+        .from('user_achievements')
+        .select('achievement_id, type')
+        .eq('user_id', userId);
+
+      const unlockedIds = new Set(
+        (uaExisting || [])
+          .filter((r: { type?: string | null; achievement_id?: string | null }) => {
+            const t = r.type ?? 'unlock';
+            return t !== 'xp' && Boolean(r.achievement_id);
+          })
+          .map((r: { achievement_id: string }) => r.achievement_id)
+      );
+
+      const { data: projects, error } = await supabase.from('project_runs').select('*').eq('user_id', userId);
 
       if (error) throw error;
 
-      const completedProjects = projects || [];
-      const newlyUnlocked: Achievement[] = [];
+      const completedProjects = (projects || []).filter((p) => {
+        const progress = p.progress ?? 0;
+        return p.status === 'complete' || progress >= 100;
+      });
 
-      // Check each achievement
-      for (const achievement of achievements) {
-        // Skip if already unlocked
-        const alreadyUnlocked = userAchievements.some(
-          (ua) => ua.achievement_id === achievement.id
+      const stats = await fetchUserAchievementStats(userId);
+
+      const newlyUnlocked: AchievementDefinition[] = [];
+      const catalog = achievementDefinitionsSorted();
+
+      for (const achievement of catalog) {
+        if (unlockedIds.has(achievement.id)) continue;
+
+        const shouldUnlock = achievementCriteriaMet(
+          achievement.criteria,
+          completedProjects as Record<string, unknown>[],
+          stats
         );
-        if (alreadyUnlocked) continue;
 
-        let shouldUnlock = false;
-
-        // Check criteria
-        const criteria = achievement.criteria;
-
-        if (criteria.project_count !== undefined) {
-          shouldUnlock = completedProjects.length >= criteria.project_count;
-        }
-
-        if (criteria.category && criteria.project_count !== undefined) {
-          const categoryProjects = completedProjects.filter(
-            (p) => p.category === criteria.category
-          );
-          shouldUnlock = categoryProjects.length >= criteria.project_count;
-        }
-
-        if (criteria.difficulty) {
-          const difficultyProjects = completedProjects.filter(
-            (p) => p.difficulty === criteria.difficulty
-          );
-          shouldUnlock = difficultyProjects.length >= 1;
-        }
-
-        if (criteria.projects_in_month !== undefined) {
-          const oneMonthAgo = new Date();
-          oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-          const recentProjects = completedProjects.filter(
-            (p) => new Date(p.end_date) >= oneMonthAgo
-          );
-          shouldUnlock = recentProjects.length >= criteria.projects_in_month;
-        }
-
-        if (criteria.projects_in_year !== undefined) {
-          const oneYearAgo = new Date();
-          oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-          const yearProjects = completedProjects.filter(
-            (p) => new Date(p.end_date) >= oneYearAgo
-          );
-          shouldUnlock = yearProjects.length >= criteria.projects_in_year;
-        }
-
-        if (criteria.category_repeat !== undefined) {
-          const categoryCounts = completedProjects.reduce((acc: any, p) => {
-            acc[p.category] = (acc[p.category] || 0) + 1;
-            return acc;
-          }, {});
-          shouldUnlock = Object.values(categoryCounts).some(
-            (count: any) => count >= criteria.category_repeat
-          );
-        }
-
-        if (criteria.category_depth !== undefined) {
-          const categoryCounts = completedProjects.reduce((acc: any, p) => {
-            acc[p.category] = (acc[p.category] || 0) + 1;
-            return acc;
-          }, {});
-          shouldUnlock = Object.values(categoryCounts).some(
-            (count: any) => count >= criteria.category_depth
-          );
-        }
-
-        if (criteria.category_breadth !== undefined) {
-          const uniqueCategories = new Set(completedProjects.map((p) => p.category));
-          shouldUnlock = uniqueCategories.size >= criteria.category_breadth;
-        }
-
-        // Unlock if criteria met
         if (shouldUnlock) {
-          const { error: insertError } = await supabase
-            .from('user_achievements')
-            .insert({
-              user_id: userId,
-              achievement_id: achievement.id,
-              progress: {},
-            });
+          const now = new Date().toISOString();
+          const { error: insertError } = await supabase.from('user_achievements').insert({
+            user_id: userId,
+            achievement_id: achievement.id,
+            type: 'unlock',
+            xp_amount: null,
+            project_run_id: (projectData?.id as string | undefined) ?? null,
+            is_read: false,
+            notification_sent: false,
+            earned_at: now,
+          });
 
           if (!insertError) {
+            unlockedIds.add(achievement.id);
             newlyUnlocked.push(achievement);
           }
         }
       }
 
-      // Show toast for newly unlocked achievements
       if (newlyUnlocked.length > 0) {
         newlyUnlocked.forEach((achievement) => {
           toast.success(`🏆 Achievement Unlocked: ${achievement.name}!`, {
@@ -198,7 +144,6 @@ export function useAchievements(userId?: string) {
           });
         });
 
-        // Refresh achievements
         await fetchAchievements();
       }
     } catch (error) {

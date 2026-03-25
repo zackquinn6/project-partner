@@ -580,7 +580,7 @@ export function WorkflowSidebar({
                       </Button>
                     </div>
 
-                    {/* Partner Tools + Progress first (A–Z); project apps below (A–Z): Budget, Quality Control, Risk Management, Scheduler, Shopping List */}
+                    {/* Partner Tools + Progress first (A–Z); project apps below (A–Z): Budget, Quality Control, Risk Management, Scheduler, Shopping */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -668,7 +668,7 @@ export function WorkflowSidebar({
                           onClick={() => openAppByActionKey('shopping-checklist')}
                         >
                           <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
-                          Shopping List
+                          Shopping
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

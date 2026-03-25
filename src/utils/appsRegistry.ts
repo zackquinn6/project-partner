@@ -34,7 +34,7 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     displayOrder: 2
   },
   'shopping-checklist': {
-    appName: 'Shopping Checklist',
+    appName: 'Shopping',
     appType: 'native',
     icon: 'ShoppingCart',
     description: 'Order tools and materials',

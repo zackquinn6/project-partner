@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import DIYSurveyPopup from "./DIYSurveyPopup";
-import { AchievementsSection } from "./AchievementsSection";
+import { AchievementsFullDialog } from "./AchievementsFullDialog";
 import type { PMFocus } from "@/components/landing/OnboardingDialog";
 
 interface ProfileManagerProps {
@@ -119,6 +119,7 @@ export default function ProfileManager({
       <>
         <Dialog open onOpenChange={onOpenChange}>
           <DialogContent className="flex h-screen max-h-full w-full max-w-full flex-col overflow-hidden p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
+            <DialogTitle className="sr-only">My Profile</DialogTitle>
             <div className="flex h-full flex-col overflow-hidden">
               <div className="flex flex-shrink-0 items-center justify-between border-b px-4 py-4 md:px-6">
                 <h2 className="text-lg font-bold md:text-xl">My Profile</h2>
@@ -139,26 +140,7 @@ export default function ProfileManager({
             </div>
           </DialogContent>
         </Dialog>
-        <Dialog open={showAchievements} onOpenChange={setShowAchievements}>
-          <DialogContent className="flex h-screen max-h-full w-full max-w-full flex-col overflow-hidden p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
-            <div className="flex h-full flex-col overflow-hidden">
-              <div className="flex flex-shrink-0 items-center justify-between border-b px-4 py-4 md:px-6">
-                <h2 className="text-lg font-bold md:text-xl">My Achievements</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowAchievements(false)}
-                  className="ml-4 flex-shrink-0"
-                >
-                  Close
-                </Button>
-              </div>
-              <div className="flex-1 overflow-y-auto px-4 py-6">
-                <AchievementsSection />
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <AchievementsFullDialog open={showAchievements} onOpenChange={setShowAchievements} />
       </>
     );
   }
@@ -192,26 +174,7 @@ export default function ProfileManager({
         }}
       />
 
-      <Dialog open={showAchievements} onOpenChange={setShowAchievements}>
-        <DialogContent className="flex h-screen max-h-full w-full max-w-full flex-col overflow-hidden p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
-          <div className="flex h-full flex-col overflow-hidden">
-            <div className="flex flex-shrink-0 items-center justify-between border-b px-4 py-4 md:px-6">
-              <h2 className="text-lg font-bold md:text-xl">My Achievements</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAchievements(false)}
-                className="ml-4 flex-shrink-0"
-              >
-                Close
-              </Button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-4 py-6">
-              <AchievementsSection />
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AchievementsFullDialog open={showAchievements} onOpenChange={setShowAchievements} />
     </>
   );
 }

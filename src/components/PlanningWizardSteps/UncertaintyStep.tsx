@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle } from 'lucide-react';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
+import { PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 import { useProject } from '@/contexts/ProjectContext';
 
 interface UncertaintyStepProps {
@@ -36,32 +37,28 @@ export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
         <CardHeader className="p-3 sm:p-4">
           <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
             <AlertTriangle className="w-5 h-5" />
-            Project Uncertainty
+            Risk-Less
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
-          <CardDescription className="text-xs sm:text-sm mt-0.5">
-            Plan for potential risks and uncertainties
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 p-3 sm:p-4">
           <div className="text-center space-y-4 py-6">
             <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
-              Identify and plan for potential risks and uncertainties that could impact your project timeline and budget.
+              Identify and plan for things that could impact your timeline and budget
             </p>
-            
-            <Button 
+
+            <Button
+              type="button"
+              variant="default"
               onClick={handleOpenRiskManagement}
-              size="lg"
-              className="w-full max-w-md h-16 text-lg font-semibold"
+              className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
             >
-              <AlertTriangle className="w-6 h-6 mr-3" />
-              Plan for Uncertainty
+              <AlertTriangle className="shrink-0" aria-hidden />
+              Open Risk-Less
             </Button>
 
             {isCompleted && (
-              <p className="text-xs sm:text-sm text-green-600 font-medium">
-                ✓ Uncertainty planning completed
-              </p>
+              <p className="text-xs sm:text-sm font-medium text-green-600">✓ Risk-Less step completed</p>
             )}
           </div>
         </CardContent>

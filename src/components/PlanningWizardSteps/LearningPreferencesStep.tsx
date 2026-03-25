@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen } from 'lucide-react';
@@ -22,9 +22,6 @@ export const LearningPreferencesStep: React.FC<LearningPreferencesStepProps> = (
             Learning preferences
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
-          <CardDescription className="text-xs sm:text-sm mt-0.5">
-            Choose how much detail you want in step-by-step instructions
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 p-3 sm:p-4">
           <div className="text-center space-y-4 py-6">

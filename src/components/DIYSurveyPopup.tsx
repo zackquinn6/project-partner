@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { useTempQuiz } from "@/contexts/TempQuizContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEnhancedAchievements } from "@/hooks/useEnhancedAchievements";
 import {
   ProjectSkillsForm,
   buildProjectSkillRows,
@@ -94,6 +95,7 @@ export default function DIYSurveyPopup({
   const [personalityProfile, setPersonalityProfile] = useState<PersonalityProfile | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { checkMilestoneUnlocks } = useEnhancedAchievements(user?.id);
   const { saveTempPersonalityProfile, saveTempProfileAnswers } = useTempQuiz();
   const [answers, setAnswers] = useState({
     skillLevel: initialData?.skillLevel || "",
@@ -529,6 +531,8 @@ export default function DIYSurveyPopup({
           });
           return false;
         }
+
+        void checkMilestoneUnlocks();
       } else {
         saveTempProfileAnswers({
           ...answers,
@@ -901,17 +905,14 @@ export default function DIYSurveyPopup({
               </div>
               
               <div>
-                <Label htmlFor="nickname" className="text-base font-semibold">Project Nickname</Label>
+                <Label htmlFor="nickname" className="text-base font-semibold">Nickname</Label>
                 <Input
                   id="nickname"
                   value={answers.nickname}
                   onChange={(e) => setAnswers(prev => ({ ...prev, nickname: e.target.value }))}
-                  placeholder="Choose a fun name like 'The Great One' or 'Prime Time'"
+                  placeholder="Optional"
                   className="mt-2"
                 />
-                <p className="text-xs text-muted-foreground mt-2 italic">
-                  💡 Choose a fun project name like "The Great One" or "Prime Time" to make your DIY journey more exciting!
-                </p>
               </div>
             </div>
           </div>

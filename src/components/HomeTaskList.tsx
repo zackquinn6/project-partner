@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Home as HomeIcon, X, GripVertical, List, ListOrdered, ShoppingCart, Users, Link2, HelpCircle, Bell } from "lucide-react";
+import { Plus, Home as HomeIcon, X, GripVertical, List, ListOrdered, ShoppingCart, Users, Link2, Bell } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,11 +21,10 @@ import { HomeTaskProjectLink } from "./HomeTaskProjectLink";
 import { RapidProjectAssessment } from "./RapidProjectAssessment";
 import { ResponsiveDialog } from "./ResponsiveDialog";
 import { ShoppingListManager } from "./ShoppingListManager";
-import { useIsMobile } from "@/hooks/useResponsive";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ProjectPortfolioRemindersDialog } from "@/components/ProjectPortfolioRemindersDialog";
 import { useNavigate } from "react-router-dom";
+import { WorkspaceSubViewHeader } from "@/components/WorkspaceSubViewHeader";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface HomeTask {
   id: string;
@@ -69,7 +68,6 @@ export function HomeTaskList({
 }) {
   const { user } = useAuth();
   const { canAccessPaidFeatures } = useMembership();
-  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<HomeTask[]>([]);
   const [homes, setHomes] = useState<Home[]>([]);
@@ -119,6 +117,7 @@ export function HomeTaskList({
   });
 
   const [subtasksByTaskId, setSubtasksByTaskId] = useState<Record<string, Array<{ task_id: string; estimated_hours: number | null; completed: boolean }>>>({});
+  const [dataLoadError, setDataLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSubtasksForDashboard = async () => {
@@ -147,51 +146,90 @@ export function HomeTaskList({
 
   useEffect(() => {
     if ((open || embedded) && user) {
-      fetchHomes();
-      fetchTasks();
+      void (async () => {
+        const homesResult = await fetchHomes();
+        if (!homesResult.ok) return;
+        await fetchTasks(
+          "tasksHomeId" in homesResult ? homesResult.tasksHomeId : undefined
+        );
+      })();
     }
   }, [open, embedded, user]);
 
   useEffect(() => {
     if (selectedHomeId) {
-      fetchTasks();
+      void fetchTasks();
     }
   }, [selectedHomeId]);
 
-  const fetchHomes = async () => {
-    if (!user) return;
+  const fetchHomes = async (): Promise<
+    { ok: false } | { ok: true; tasksHomeId: string } | { ok: true }
+  > => {
+    if (!user) return { ok: false };
     const { data, error } = await supabase
       .from("homes")
       .select("id, name")
       .eq("user_id", user.id)
       .order("is_primary", { ascending: false });
-    
-    if (!error && data) {
+
+    if (error) {
+      console.error("Error loading homes:", error);
+      const msg = error.message ?? "";
+      const code = "code" in error ? String((error as { code?: string }).code) : "";
+      setDataLoadError(
+        msg === "Failed to fetch" || code === ""
+          ? "Cannot reach the backend. Check your internet connection, VPN, and firewall. Try opening your Supabase project URL in the browser to confirm it loads."
+          : msg
+      );
+      return { ok: false };
+    }
+
+    if (data) {
       setHomes(data);
       if (data.length > 0) {
-        setSelectedHomeId(data[0].id);
+        const firstId = data[0].id;
+        setSelectedHomeId(firstId);
+        return { ok: true, tasksHomeId: firstId };
       }
     }
+    return { ok: true };
   };
 
-  const fetchTasks = async () => {
-    if (!user) return;
-    
+  const fetchTasks = async (homeIdOverride?: string | null): Promise<boolean> => {
+    if (!user) return false;
+
+    const effectiveHomeId =
+      homeIdOverride !== undefined ? homeIdOverride : selectedHomeId;
+
     let query = supabase
       .from("home_tasks")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
-    
-    if (selectedHomeId) {
-      query = query.eq("home_id", selectedHomeId);
+
+    if (effectiveHomeId && effectiveHomeId !== "all") {
+      query = query.eq("home_id", effectiveHomeId);
     }
-    
+
     const { data, error } = await query;
-    
-    if (!error && data) {
+
+    if (error) {
+      console.error("Error loading home_tasks:", error);
+      const msg = error.message ?? "";
+      const code = "code" in error ? String((error as { code?: string }).code) : "";
+      setDataLoadError(
+        msg === "Failed to fetch" || code === ""
+          ? "Cannot reach the backend. Check your internet connection, VPN, and firewall. Try opening your Supabase project URL in the browser to confirm it loads."
+          : msg
+      );
+      return false;
+    }
+
+    setDataLoadError(null);
+    if (data) {
       setTasks(data as HomeTask[]);
     }
+    return true;
   };
 
   const handleSubmit = async (onCreated?: (task: HomeTask) => void) => {
@@ -269,7 +307,6 @@ export function HomeTaskList({
             user_id: user.id,
             material_name: m.material_name,
             quantity: m.quantity || 1,
-            completed: false
           }));
           
           if (materialsToInsert.length > 0) {
@@ -315,7 +352,6 @@ export function HomeTaskList({
             user_id: user.id,
             material_name: m.material_name,
             quantity: m.quantity || 1,
-            completed: false
           }));
           
           if (materialsToInsert.length > 0) {
@@ -482,88 +518,52 @@ export function HomeTaskList({
     onOpenChange(false);
   };
 
-  const headerTitleBlock = (
-    <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
-      <List className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" aria-hidden />
-      {embedded ? (
-        <h2 className="text-base font-bold md:text-xl truncate">Project & Task Manager</h2>
-      ) : (
-        <DialogTitle className="text-base font-bold md:text-xl truncate">Project & Task Manager</DialogTitle>
-      )}
-      <TooltipProvider delayDuration={400}>
-        <Popover>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <PopoverTrigger asChild>
-                <button type="button" tabIndex={-1} className="text-muted-foreground hover:text-foreground p-0.5 rounded shrink-0" aria-label="About Project & Task Manager">
-                  <HelpCircle className="h-4 w-4" />
-                </button>
-              </PopoverTrigger>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-xs">
-              <p>About Project & Task Manager</p>
-            </TooltipContent>
-          </Tooltip>
-          <PopoverContent side="bottom" className="max-w-sm" align="start">
-            <p className="font-medium mb-1">About Project & Task Manager</p>
-            <p className="text-sm text-muted-foreground">
-              Project & Task Manager includes both projects and tasks. Complex projects should be linked to allow for detailed project management. All tasks can have tracking of sub-tasks, materials shopping list, and budgeting.
-            </p>
-          </PopoverContent>
-        </Popover>
-      </TooltipProvider>
-    </div>
+  const workspaceHeader = (
+    <WorkspaceSubViewHeader
+      screenTitle="Project & Task Manager"
+      screenIcon={<List className="h-4 w-4 md:h-[18px] md:w-[18px]" aria-hidden />}
+      helpTitle="About Project & Task Manager"
+      helpBody="Project & Task Manager includes both projects and tasks. Complex projects should be linked to allow for detailed project management. All tasks can have tracking of sub-tasks, materials shopping list, and budgeting."
+      onGoToWorkspace={tryCloseFromChrome}
+      homes={homes}
+      selectedHomeId={selectedHomeId}
+      onHomeChange={setSelectedHomeId}
+      onOpenHomeManager={() => setShowHomeManager(true)}
+      showReminders
+      onOpenReminders={() => setShowPortfolioReminders(true)}
+    />
   );
 
-  const headerToolbar = (
-    <div className="flex flex-row flex-nowrap items-center gap-2 min-w-0 flex-shrink-0 ml-auto">
-      <Button
-        variant={isMobile ? "ghost" : "outline"}
-        size="sm"
-        className={`h-8 w-8 md:h-9 md:w-9 p-0 shrink-0 ${isMobile ? "border-0 outline-none bg-slate-900/40 hover:bg-slate-800/80 text-slate-100" : "border-input bg-background hover:bg-muted"}`}
-        onClick={() => setShowPortfolioReminders(true)}
-        title="Reminders & notifications"
-        aria-label="Reminders & notifications"
-      >
-        <Bell className="h-4 w-4" />
-      </Button>
-      <Button
-        variant={isMobile ? "ghost" : "outline"}
-        size="sm"
-        className={`h-8 w-8 md:h-9 md:w-9 p-0 shrink-0 ${isMobile ? "border-0 outline-none bg-slate-900/40 hover:bg-slate-800/80 text-slate-100" : "border-input bg-background hover:bg-muted"}`}
-        onClick={() => setShowHomeManager(true)}
-        title="Homes"
-        aria-label="Homes"
-      >
-        <HomeIcon className="h-4 w-4" />
-      </Button>
-      <Select value={selectedHomeId || ""} onValueChange={setSelectedHomeId}>
-        <SelectTrigger className="w-[133px] md:w-[187px] text-[10px] md:text-xs h-8 md:h-9 shrink-0">
-          <SelectValue placeholder="Select home" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Homes</SelectItem>
-          {homes.map((home) => (
-            <SelectItem key={home.id} value={home.id}>
-              {home.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={tryCloseFromChrome}
-        className="shrink-0"
-      >
-        {isMobile ? 'Back to Workspace' : 'Close'}
-      </Button>
-    </div>
-  );
+  const connectionProblemBanner =
+    dataLoadError ? (
+      <Alert variant="destructive" className="mx-3 mt-2 shrink-0 md:mx-4">
+        <AlertTitle>Connection problem</AlertTitle>
+        <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <span>{dataLoadError}</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0 border-destructive/40"
+            onClick={() => {
+              void (async () => {
+                const homesResult = await fetchHomes();
+                if (!homesResult.ok) return;
+                await fetchTasks(
+                  "tasksHomeId" in homesResult ? homesResult.tasksHomeId : undefined
+                );
+              })();
+            }}
+          >
+            Retry
+          </Button>
+        </AlertDescription>
+      </Alert>
+    ) : null;
 
   const taskManagerTabs = (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <div className="flex-shrink-0 px-1 md:px-4 pt-0 pb-1 md:pb-1.5 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="flex-shrink-0 border-b border-border/60 bg-background/95 px-3 pb-1.5 pt-1 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:pb-2 md:pt-1.5">
                 <div className="overflow-hidden">
                   <TabsList className={`w-full inline-flex ${canAccessPaidFeatures ? 'h-8 md:h-9' : 'h-8 md:h-9'} p-0.5 gap-0.5 md:gap-1 bg-muted/50 rounded-full`}>
                     <TabsTrigger value="tasks" className="text-[11px] md:text-xs px-2 md:px-3 py-1.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0 truncate">
@@ -581,7 +581,7 @@ export function HomeTaskList({
                 </div>
               </div>
 
-              <div className="flex-1 overflow-auto px-1 md:px-4 pt-0.5 md:pt-0 pb-2 min-h-0 bg-gradient-to-b from-background to-muted/30">
+              <div className="min-h-0 flex-1 overflow-auto bg-gradient-to-b from-background to-muted/30 px-3 pb-3 pt-1 md:px-6 md:pb-4 md:pt-0">
                 <TabsContent value="tasks" className="mt-0 space-y-0.5 md:space-y-3 h-full">
                   {/* Project Dashboard metrics (Project & Task Manager) */}
                   {(() => {
@@ -1126,27 +1126,26 @@ export function HomeTaskList({
   return (
     <>
       {embedded ? (
-        <div className="flex flex-col flex-1 min-h-0 h-full max-h-full overflow-hidden bg-background">
+        <div className="flex h-full max-h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
           <p className="sr-only">
             Project & Task Manager for tasks, projects, sub-tasks, shopping list, and budgeting.
           </p>
-          <div className="px-2 md:px-6 py-2 md:py-4 border-b flex flex-row flex-nowrap items-center justify-between gap-2 flex-shrink-0 min-h-0 w-full">
-            {headerTitleBlock}
-            {headerToolbar}
-          </div>
-          <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+          {workspaceHeader}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {connectionProblemBanner}
             {taskManagerTabs}
           </div>
         </div>
       ) : (
         <Dialog open={open} onOpenChange={handleMainOpenChange}>
-          <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-            <DialogDescription className="sr-only">Project & Task Manager for tasks, projects, sub-tasks, shopping list, and budgeting.</DialogDescription>
-            <DialogHeader className="px-2 md:px-6 py-2 md:py-4 border-b flex flex-row flex-nowrap items-center justify-between gap-2 flex-shrink-0 min-h-0 space-y-0 w-full">
-              {headerTitleBlock}
-              {headerToolbar}
-            </DialogHeader>
-            <div className="flex-1 overflow-hidden flex flex-col">
+          <DialogContent className="flex h-screen max-h-full w-full max-w-full flex-col overflow-hidden p-0 md:h-[90vh] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
+            <DialogTitle className="sr-only">Project & Task Manager</DialogTitle>
+            <DialogDescription className="sr-only">
+              Project & Task Manager for tasks, projects, sub-tasks, shopping list, and budgeting.
+            </DialogDescription>
+            {workspaceHeader}
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              {connectionProblemBanner}
               {taskManagerTabs}
             </div>
           </DialogContent>

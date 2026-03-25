@@ -1,8 +1,9 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Hammer } from 'lucide-react';
+import { PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 
 interface ToolRentalsStepProps {
   onComplete: () => void;
@@ -32,33 +33,28 @@ export const ToolRentalsStep: React.FC<ToolRentalsStepProps> = ({
         <CardHeader className="p-3 sm:p-4">
           <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
             <Hammer className="w-5 h-5" />
-            Tool rental partners
+            Tool Rental
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
-          <CardDescription className="text-xs sm:text-sm mt-0.5">
-            Connect with our tool rental partners for this project
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 p-3 sm:p-4">
           <div className="text-center space-y-4 py-6">
             <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
-              Make an account with our tool rental partners to browse rental options and resources matched to your area.
+              Create an account to align your project to the tool rental period
             </p>
 
             <Button
               type="button"
+              variant="default"
               onClick={handleOpen}
-              size="lg"
-              className="w-full max-w-md min-h-16 whitespace-normal px-3 py-3 text-base font-semibold leading-snug"
+              className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
             >
-              <Hammer className="mr-2 h-6 w-6 shrink-0" />
-              Make an account with our tool rental partners
+              <Hammer className="shrink-0" aria-hidden />
+              Open Tool Rental
             </Button>
 
             {isCompleted && (
-              <p className="text-xs sm:text-sm text-green-600 font-medium">
-                ✓ Tool rental partners reviewed
-              </p>
+              <p className="text-xs sm:text-sm font-medium text-green-600">✓ Tool Rental reviewed</p>
             )}
           </div>
         </CardContent>

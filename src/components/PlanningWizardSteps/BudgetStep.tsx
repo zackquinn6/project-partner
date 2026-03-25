@@ -1,8 +1,9 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DollarSign } from 'lucide-react';
+import { PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 
 interface BudgetStepProps {
   onComplete: () => void;
@@ -35,23 +36,20 @@ export const BudgetStep: React.FC<BudgetStepProps> = ({
             Budget
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
-          <CardDescription className="text-xs sm:text-sm mt-0.5">
-            Manage project finances
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 p-3 sm:p-4">
           <div className="text-center space-y-4 py-6">
             <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
-              Manage finances for this project. Go to Project Budgeting app.
+              Manage finances for this project.
             </p>
             
-            <Button 
+            <Button
               type="button"
+              variant="default"
               onClick={handleOpenBudgeting}
-              size="lg"
-              className="w-full max-w-md h-16 text-lg font-semibold"
+              className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
             >
-              <DollarSign className="w-6 h-6 mr-3" />
+              <DollarSign className="shrink-0" aria-hidden />
               Open Project Budgeting
             </Button>
 

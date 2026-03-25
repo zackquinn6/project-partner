@@ -1,18 +1,67 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import {
+  achievementCriteriaMet,
+  achievementDefinitionById,
+  achievementDefinitionsSorted,
+  type AchievementDefinition,
+  type UserAchievementStats,
+} from '@/constants/achievementDefinitions';
 
-export interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  icon: string;
-  points: number;
-  base_xp: number;
-  scales_with_project_size: boolean;
-  criteria: any;
+/** Loads counts used for photo / task / tool / risk milestones. */
+export async function fetchUserAchievementStats(userId: string): Promise<UserAchievementStats> {
+  const [
+    photosRes,
+    profileRes,
+    tasksClosedRes,
+    homesRes,
+    linkedTasksRes,
+    maintRes,
+    runsRes,
+  ] = await Promise.all([
+    supabase.from('project_run_photos').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+    supabase.from('user_profiles').select('owned_tools').eq('user_id', userId).maybeSingle(),
+    supabase.from('home_tasks').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'closed'),
+    supabase.from('homes').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+    supabase
+      .from('home_tasks')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .not('project_run_id', 'is', null),
+    supabase
+      .from('user_maintenance_tasks')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .not('last_completed', 'is', null),
+    supabase.from('project_runs').select('id').eq('user_id', userId),
+  ]);
+
+  const owned = profileRes.data?.owned_tools;
+  const toolsInLibrary = Array.isArray(owned) ? owned.length : 0;
+
+  const runIds = (runsRes.data ?? []).map((r) => r.id);
+  let risksLogged = 0;
+  if (runIds.length > 0) {
+    const { count } = await supabase
+      .from('project_run_risks')
+      .select('*', { count: 'exact', head: true })
+      .in('project_run_id', runIds);
+    risksLogged = count ?? 0;
+  }
+
+  return {
+    photoCount: photosRes.count ?? 0,
+    toolsInLibrary,
+    tasksClosed: tasksClosedRes.count ?? 0,
+    homesCount: homesRes.count ?? 0,
+    risksLogged,
+    linkedTasksCount: linkedTasksRes.count ?? 0,
+    maintenanceCompletions: maintRes.count ?? 0,
+  };
 }
+
+export type Achievement = AchievementDefinition;
 
 export interface UserAchievement {
   id: string;
@@ -21,7 +70,8 @@ export interface UserAchievement {
   unlocked_at: string;
   xp_earned: number;
   notification_sent: boolean;
-  achievement?: Achievement;
+  achievement?: Achievement | null;
+  type?: string;
 }
 
 export interface XPHistory {
@@ -33,7 +83,7 @@ export interface XPHistory {
 }
 
 export function useEnhancedAchievements(userId?: string) {
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [achievements] = useState<Achievement[]>(() => achievementDefinitionsSorted());
   const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
   const [xpHistory, setXpHistory] = useState<XPHistory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,76 +101,68 @@ export function useEnhancedAchievements(userId?: string) {
   }, [userId]);
 
   const calculateLevel = (xp: number) => {
-    // Level formula: level = floor(sqrt(xp / 100)) + 1
     return Math.floor(Math.sqrt(xp / 100)) + 1;
   };
 
   const xpForNextLevel = (currentLevel: number) => {
-    // XP needed for next level
     return Math.pow(currentLevel, 2) * 100;
   };
 
   const fetchAchievementsData = async () => {
+    if (!userId) return;
+
     try {
       setLoading(true);
 
-      // Fetch all achievements
-      const { data: allAchievements, error: achievementsError } = await supabase
-        .from('achievements')
-        .select('*')
-        .order('category', { ascending: true });
-
-      if (achievementsError) throw achievementsError;
-
-      // Fetch user's unlocked achievements (no embed: avoid relying on FK in schema cache)
-      const { data: unlockedRows, error: unlockedError } = await supabase
+      const { data: rows, error: rowsError } = await supabase
         .from('user_achievements')
         .select('*')
         .eq('user_id', userId);
 
-      if (unlockedError) throw unlockedError;
+      if (rowsError) throw rowsError;
 
-      const achievementIds = [...new Set((unlockedRows || []).map((r: { achievement_id: string }) => r.achievement_id))];
-      const { data: achievementsById } = achievementIds.length
-        ? await supabase.from('achievements').select('*').in('id', achievementIds)
-        : { data: [] };
-      const achievementMap = new Map((achievementsById || []).map((a: Achievement) => [a.id, a]));
-      const unlocked = (unlockedRows || []).map((ua: Record<string, unknown>) => ({
-        ...ua,
-        achievement: achievementMap.get(ua.achievement_id as string) ?? null
-      }));
+      const allRows = rows || [];
+      const unlockRows = allRows.filter((r: { type?: string }) => (r.type ?? 'unlock') !== 'xp');
+      const xpRows = allRows.filter((r: { type?: string }) => r.type === 'xp');
 
-      // Fetch XP history (type='xp' rows in user_achievements)
-      const { data: history, error: historyError } = await supabase
-        .from('user_achievements')
-        .select('id, xp_amount, reason, phase_name, created_at')
-        .eq('user_id', userId)
-        .eq('type', 'xp')
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const unlocked: UserAchievement[] = unlockRows
+        .filter((r: { achievement_id?: string | null }) => r.achievement_id)
+        .map((ua: Record<string, unknown>) => {
+          const aid = ua.achievement_id as string;
+          const earnedAt = (ua.earned_at as string) ?? (ua.created_at as string);
+          return {
+            id: ua.id as string,
+            user_id: ua.user_id as string,
+            achievement_id: aid,
+            unlocked_at: earnedAt,
+            xp_earned: Number(ua.xp_amount) || 0,
+            notification_sent: Boolean(ua.notification_sent),
+            type: ua.type as string | undefined,
+            achievement: achievementDefinitionById(aid) ?? null,
+          };
+        });
 
-      if (historyError) throw historyError;
-
-      setAchievements(allAchievements || []);
-      setUserAchievements(unlocked || []);
-      setXpHistory((history || []).map((r: { id: string; xp_amount: number; reason: string; phase_name?: string; created_at: string }) => ({
-        id: r.id,
-        xp_amount: r.xp_amount,
-        reason: r.reason,
-        phase_name: r.phase_name,
-        created_at: r.created_at
-      })));
-
-      // Calculate total XP from unlock rows (xp_amount on user_achievements)
-      const xp = (unlocked || []).reduce((sum, ua) => sum + (Number((ua as any).xp_amount) || 0), 0);
-      setTotalXP(xp);
-      setLevel(calculateLevel(xp));
-
-      // Calculate total points
-      const points = (unlocked || []).reduce(
-        (sum, ua) => sum + ((ua.achievement as any)?.points || 0),
-        0
+      setXpHistory(
+        xpRows.map((r: Record<string, unknown>) => ({
+          id: r.id as string,
+          xp_amount: Number(r.xp_amount) || 0,
+          reason: (r.reason as string) ?? '',
+          phase_name: r.phase_name as string | undefined,
+          created_at: (r.created_at as string) ?? (r.earned_at as string),
+        }))
       );
+
+      setUserAchievements(unlocked);
+
+      const xpFromLog = xpRows.reduce((sum, r: { xp_amount?: number | null }) => {
+        return sum + (Number(r.xp_amount) || 0);
+      }, 0);
+      setTotalXP(xpFromLog);
+      setLevel(calculateLevel(xpFromLog));
+
+      const points = unlocked.reduce((sum, ua) => {
+        return sum + (ua.achievement?.points ?? 0);
+      }, 0);
       setTotalPoints(points);
     } catch (error) {
       console.error('Error fetching achievements:', error);
@@ -129,160 +171,221 @@ export function useEnhancedAchievements(userId?: string) {
     }
   };
 
-  const calculateXPForProject = (projectData: any) => {
-    let baseXP = 50; // Base XP per step
-    
-    // Count completed steps
-    const completedSteps = projectData.completedSteps?.length || 0;
-    let xp = baseXP * completedSteps;
+  /**
+   * XP for completing a project run (always granted on completion, even when no new badge unlocks).
+   * priorCompletedCount: number of other completed runs the user already had (excludes this run).
+   */
+  const calculateXPForProject = (
+    projectData: Record<string, unknown>,
+    priorCompletedCount = 0
+  ) => {
+    let baseXP = 50;
 
-    // Scale by project size if available
-    if (projectData.customization_decisions?.standardDecisions?.projectSize) {
-      const size = parseFloat(projectData.customization_decisions.standardDecisions.projectSize);
-      if (!isNaN(size) && size > 0) {
-        // Scale XP by project size (e.g., 1000 sq ft = 2x multiplier)
-        const sizeMultiplier = 1 + (size / 1000);
+    const completedStepsRaw =
+      projectData.completed_steps ?? projectData.completedSteps;
+    const completedSteps = Array.isArray(completedStepsRaw)
+      ? completedStepsRaw.length
+      : typeof completedStepsRaw === 'object' && completedStepsRaw !== null
+        ? Object.keys(completedStepsRaw as object).length
+        : 0;
+    let xp = baseXP * Math.max(completedSteps, 1);
+
+    const customization = projectData.customization_decisions as
+      | { standardDecisions?: { projectSize?: string } }
+      | undefined;
+    if (customization?.standardDecisions?.projectSize) {
+      const size = parseFloat(String(customization.standardDecisions.projectSize));
+      if (!Number.isNaN(size) && size > 0) {
+        const sizeMultiplier = 1 + size / 1000;
         xp = Math.floor(xp * sizeMultiplier);
       }
     }
 
-    // Difficulty multiplier
     const difficultyMultipliers: Record<string, number> = {
-      'Beginner': 1,
-      'Intermediate': 1.5,
-      'Advanced': 2
+      Beginner: 1,
+      Intermediate: 1.5,
+      Advanced: 2,
+      Professional: 2.25,
     };
-    xp = Math.floor(xp * (difficultyMultipliers[projectData.difficulty] || 1));
+    const skillLevel =
+      (typeof projectData.skill_level === 'string' && projectData.skill_level) ||
+      (typeof projectData.instruction_level_preference === 'string' &&
+        projectData.instruction_level_preference.charAt(0).toUpperCase() +
+          projectData.instruction_level_preference.slice(1)) ||
+      (typeof projectData.difficulty_level === 'string' && projectData.difficulty_level) ||
+      undefined;
+    const difficulty =
+      (typeof projectData.difficulty === 'string' && projectData.difficulty) || skillLevel;
+    xp = Math.floor(xp * (difficulty ? difficultyMultipliers[difficulty] ?? 1 : 1));
+
+    const effortMultipliers: Record<string, number> = {
+      Low: 1,
+      Medium: 1.15,
+      High: 1.35,
+    };
+    const effort =
+      typeof projectData.effort_level === 'string' ? projectData.effort_level : undefined;
+    if (effort) {
+      xp = Math.floor(xp * (effortMultipliers[effort] ?? 1));
+    }
+
+    const repeatBonus = Math.min(280, Math.floor(Math.max(0, priorCompletedCount) * 14));
+    xp += repeatBonus;
 
     return xp;
   };
 
-  const awardXP = async (xpAmount: number, reason: string, projectRunId?: string, phaseName?: string) => {
+  const awardXP = async (
+    xpAmount: number,
+    reason: string,
+    projectRunId?: string,
+    phaseName?: string,
+    options?: { skipRefetch?: boolean; skipToast?: boolean }
+  ) => {
     if (!userId) return;
 
     try {
       const now = new Date().toISOString();
-      const { error: xpError } = await supabase
-        .from('user_achievements')
-        .insert({
-          user_id: userId,
-          type: 'xp',
-          project_run_id: projectRunId ?? null,
-          phase_name: phaseName ?? null,
-          xp_amount: xpAmount,
-          reason,
-          earned_at: now
-        });
+      const { error: xpError } = await supabase.from('user_achievements').insert({
+        user_id: userId,
+        type: 'xp',
+        achievement_id: null,
+        project_run_id: projectRunId ?? null,
+        phase_name: phaseName ?? null,
+        xp_amount: xpAmount,
+        reason,
+        earned_at: now,
+        is_read: false,
+        notification_sent: false,
+      });
 
       if (xpError) throw xpError;
 
-      // Refresh data
-      await fetchAchievementsData();
+      if (!options?.skipRefetch) {
+        await fetchAchievementsData();
+      }
 
-      // Show toast notification
-      toast.success(`🎉 +${xpAmount} XP earned!`, {
-        description: reason
-      });
+      if (!options?.skipToast) {
+        toast.success(`🎉 +${xpAmount} XP earned!`, {
+          description: reason,
+        });
+      }
     } catch (error) {
       console.error('Error awarding XP:', error);
     }
   };
 
-  const checkAndUnlockAchievements = async (projectData: any) => {
+  const performAchievementUnlockPass = async (
+    projectData: Record<string, unknown> | null,
+    completedProjects: Record<string, unknown>[],
+    stats: UserAchievementStats
+  ) => {
+    if (!userId) return;
+
+    const { data: uaExisting } = await supabase
+      .from('user_achievements')
+      .select('achievement_id, type')
+      .eq('user_id', userId);
+
+    const unlockedIds = new Set(
+      (uaExisting || [])
+        .filter((r: { type?: string | null; achievement_id?: string | null }) => {
+          const t = r.type ?? 'unlock';
+          return t !== 'xp' && Boolean(r.achievement_id);
+        })
+        .map((r: { achievement_id: string }) => r.achievement_id)
+    );
+
+    const newlyUnlocked: Achievement[] = [];
+    const catalog = achievementDefinitionsSorted();
+    const runId = (projectData?.id as string | undefined) ?? null;
+
+    for (const achievement of catalog) {
+      if (unlockedIds.has(achievement.id)) continue;
+
+      const shouldUnlock = achievementCriteriaMet(achievement.criteria, completedProjects, stats);
+
+      let earnedXP = achievement.base_xp;
+      if (shouldUnlock && achievement.scales_with_project_size && projectData) {
+        earnedXP = calculateXPForProject(projectData, 0);
+      }
+
+      if (shouldUnlock) {
+        const now = new Date().toISOString();
+        const { error: insertError } = await supabase.from('user_achievements').insert({
+          user_id: userId,
+          achievement_id: achievement.id,
+          type: 'unlock',
+          xp_amount: null,
+          project_run_id: runId,
+          is_read: false,
+          notification_sent: false,
+          earned_at: now,
+        });
+
+        if (!insertError) {
+          unlockedIds.add(achievement.id);
+          newlyUnlocked.push(achievement);
+
+          await awardXP(
+            earnedXP,
+            `Achievement unlocked: ${achievement.name}`,
+            runId ?? undefined,
+            undefined,
+            { skipRefetch: true, skipToast: true }
+          );
+        }
+      }
+    }
+
+    if (newlyUnlocked.length > 0) {
+      newlyUnlocked.forEach((achievement) => {
+        toast.success(`🏆 Achievement Unlocked: ${achievement.name}!`, {
+          description: achievement.description,
+          duration: 5000,
+        });
+      });
+
+      await fetchAchievementsData();
+    }
+  };
+
+  const checkAndUnlockAchievements = async (projectData: Record<string, unknown>) => {
     if (!userId) return;
 
     try {
-      // Fetch user's project history
-      const { data: projects, error } = await supabase
-        .from('project_runs')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'completed');
+      const stats = await fetchUserAchievementStats(userId);
+
+      const { data: projects, error } = await supabase.from('project_runs').select('*').eq('user_id', userId);
 
       if (error) throw error;
 
-      const completedProjects = projects || [];
-      const newlyUnlocked: Achievement[] = [];
+      const completedProjects = (projects || []).filter((p) => {
+        const progress = p.progress ?? 0;
+        return p.status === 'complete' || progress >= 100;
+      });
 
-      // Check each achievement
-      for (const achievement of achievements) {
-        // Skip if already unlocked
-        const alreadyUnlocked = userAchievements.some(
-          (ua) => ua.achievement_id === achievement.id
-        );
-        if (alreadyUnlocked) continue;
-
-        let shouldUnlock = false;
-        let earnedXP = achievement.base_xp;
-
-        // Check criteria (same logic as before)
-        const criteria = achievement.criteria;
-
-        if (criteria.project_count !== undefined) {
-          shouldUnlock = completedProjects.length >= criteria.project_count;
-        }
-
-        if (criteria.category && criteria.project_count !== undefined) {
-          const categoryProjects = completedProjects.filter(
-            (p) => p.category === criteria.category
-          );
-          shouldUnlock = categoryProjects.length >= criteria.project_count;
-        }
-
-        if (criteria.difficulty) {
-          const difficultyProjects = completedProjects.filter(
-            (p) => p.difficulty === criteria.difficulty
-          );
-          shouldUnlock = difficultyProjects.length >= 1;
-        }
-
-        // Scale XP if achievement scales with project size
-        if (shouldUnlock && achievement.scales_with_project_size && projectData) {
-          earnedXP = calculateXPForProject(projectData);
-        }
-
-        // Unlock if criteria met (one row in user_achievements with type='unlock', is_read=false for notification)
-        if (shouldUnlock) {
-          const now = new Date().toISOString();
-          const { error: insertError } = await supabase
-            .from('user_achievements')
-            .insert({
-              user_id: userId,
-              achievement_id: achievement.id,
-              type: 'unlock',
-              xp_amount: earnedXP,
-              project_run_id: projectData?.id ?? null,
-              is_read: false,
-              earned_at: now
-            });
-
-          if (!insertError) {
-            newlyUnlocked.push(achievement);
-
-            // Award XP
-            await awardXP(
-              earnedXP,
-              `Achievement unlocked: ${achievement.name}`,
-              projectData?.id
-            );
-          }
-        }
-      }
-
-      // Show toast for newly unlocked achievements
-      if (newlyUnlocked.length > 0) {
-        newlyUnlocked.forEach((achievement) => {
-          toast.success(`🏆 Achievement Unlocked: ${achievement.name}!`, {
-            description: achievement.description,
-            duration: 5000
-          });
-        });
-
-        // Refresh achievements
-        await fetchAchievementsData();
-      }
+      await performAchievementUnlockPass(projectData, completedProjects as Record<string, unknown>[], stats);
     } catch (error) {
       console.error('Error checking achievements:', error);
+    }
+  };
+
+  /** Re-evaluate milestones that depend on photos, tasks, tools, etc. (no project completion required). */
+  const checkMilestoneUnlocks = async () => {
+    if (!userId) return;
+
+    try {
+      const stats = await fetchUserAchievementStats(userId);
+      const { data: projects, error } = await supabase.from('project_runs').select('*').eq('user_id', userId);
+      if (error) throw error;
+      const completedProjects = (projects || []).filter((p) => {
+        const progress = p.progress ?? 0;
+        return p.status === 'complete' || progress >= 100;
+      });
+      await performAchievementUnlockPass(null, completedProjects as Record<string, unknown>[], stats);
+    } catch (error) {
+      console.error('Error checking milestone achievements:', error);
     }
   };
 
@@ -298,6 +401,7 @@ export function useEnhancedAchievements(userId?: string) {
     calculateXPForProject,
     awardXP,
     checkAndUnlockAchievements,
+    checkMilestoneUnlocks,
     refreshAchievements: fetchAchievementsData,
   };
 }

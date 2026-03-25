@@ -728,15 +728,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 <DropdownMenuContent align="end" className="w-56 z-[100]">
                 <DropdownMenuItem onClick={() => setShowHomeManager(true)}>
                   <Home className="h-4 w-4 mr-2" />
-                  Edit home
+                  Manage Homes
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowMaintenancePlanComingSoon(true)} disabled={!selectedHomeId}>
                   <ClipboardList className="h-4 w-4 mr-2 text-primary" />
                   Generate plan
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowMaintenancePhotos(true)}>
-                  <ImageIcon className="h-4 w-4 mr-2 text-primary" />
-                  View photos
                 </DropdownMenuItem>
                 {selectedHomeId && tasks.length > 0 && (
                   <DropdownMenuItem onSelect={() => document.getElementById('maintenance-pdf-trigger')?.click()}>
@@ -744,10 +740,6 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                     Export PDF
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => setShowAlerts(true)} disabled={!selectedHomeId}>
-                  <Bell className="h-4 w-4 mr-2 text-amber-500" />
-                  Setup alerts
-                </DropdownMenuItem>
               </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -938,7 +930,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                       </div>
 
                       {/* Task list – fills remaining height so table area uses full window on desktop */}
-                      <div className="flex-1 min-h-0 basis-0 overflow-y-auto py-3 pt-3 pb-0 md:pb-3 px-3 md:py-3 md:px-6">
+                      <div className="flex-1 min-h-0 basis-0 overflow-y-auto px-2 pt-2 pb-0 md:px-6 md:py-3 md:pb-3">
                         {loading ? (
                           <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>
                         ) : filteredTasks.length === 0 ? (
@@ -974,7 +966,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                         ) : (
                           <>
                             {/* Mobile: card list */}
-                            <div className="md:hidden space-y-2">
+                            <div className="md:hidden space-y-1.5">
                               {tasksNotCompletedToday.map(task => {
                                 const progress = getTaskProgress(task);
                                 const summary = task.description ?? 'No description yet.';
@@ -990,17 +982,17 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                       setSelectedTaskForDetails(task);
                                     }}
                                   >
-                                    <CardContent className="p-1.5 md:p-3">
+                                    <CardContent className="px-2 pt-1.5 pb-1 md:p-3">
                                       <div className="flex items-center justify-between gap-1.5 md:gap-2">
                                         <div className="min-w-0 flex-1">
-                                          <h4 className="font-medium text-sm">{task.title}</h4>
-                                          <p className="text-xs text-muted-foreground mt-0.5">
+                                          <h4 className="font-medium text-sm leading-snug">{task.title}</h4>
+                                          <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
                                             Due {format(new Date(task.next_due), 'MMM dd, yyyy')} · Every {task.frequency_days} days
                                           </p>
-                                          <div className="flex items-center gap-1.5 mt-1 md:mt-2 text-xs text-muted-foreground">
+                                          <div className="flex items-center gap-1 mt-0.5 md:mt-2 md:gap-1.5 text-xs text-muted-foreground">
                                             <span className="shrink-0">Progress</span>
                                             <span className="shrink-0 tabular-nums">{Math.round(progress)}%</span>
-                                            <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[52%] md:max-w-none" />
+                                            <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[52%] md:max-w-none border-0 shadow-none py-0" />
                                             <Button
                                               variant="ghost"
                                               size="icon"
@@ -1052,8 +1044,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                               })}
                               {tasksCompletedToday.length > 0 && (
                                 <>
-                                  <div className="border-t border-border my-3" aria-hidden />
-                                  <p className="text-xs font-medium text-muted-foreground pt-2 pb-1 sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                                  <div className="border-t border-border my-2 md:my-3" aria-hidden />
+                                  <p className="text-xs font-medium text-muted-foreground pt-1 pb-0.5 md:pt-2 md:pb-1 sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                                     Completed today
                                   </p>
                                   {tasksCompletedToday.map(task => {
@@ -1071,17 +1063,17 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                           setSelectedTaskForDetails(task);
                                         }}
                                       >
-                                        <CardContent className="p-1.5 md:p-3">
+                                        <CardContent className="px-2 pt-1.5 pb-1 md:p-3">
                                           <div className="flex items-center justify-between gap-1.5 md:gap-2">
                                             <div className="min-w-0 flex-1">
-                                              <h4 className="font-medium text-sm">{task.title}</h4>
-                                              <p className="text-xs text-muted-foreground mt-0.5">
+                                              <h4 className="font-medium text-sm leading-snug">{task.title}</h4>
+                                              <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
                                                 Due {format(new Date(task.next_due), 'MMM dd, yyyy')} · Every {task.frequency_days} days
                                               </p>
-                                              <div className="flex items-center gap-1.5 mt-1 md:mt-2 text-xs text-muted-foreground">
+                                              <div className="flex items-center gap-1 mt-0.5 md:mt-2 md:gap-1.5 text-xs text-muted-foreground">
                                                 <span className="shrink-0">Progress</span>
                                                 <span className="shrink-0 tabular-nums">{Math.round(progress)}%</span>
-                                                <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[52%] md:max-w-none" />
+                                                <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[52%] md:max-w-none border-0 shadow-none py-0" />
                                                 <Button
                                                   variant="ghost"
                                                   size="icon"

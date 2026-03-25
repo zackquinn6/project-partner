@@ -559,15 +559,17 @@ const Index = () => {
         case 'projects':
           console.log('🔍 RENDERING Index MobileProjectListing - mobileView is projects');
           return (
-            <div className="h-screen flex flex-col">
-              <MobileProjectListing
-                onProjectSelect={handleMobileProjectSelect}
-                onNewProject={
-                  projectCatalogEnabled ? () => setMobileView('catalog') : undefined
-                }
-                catalogNewProjectEnabled={projectCatalogEnabled}
-                onClose={() => setMobileView('home')}
-              />
+            <div className="flex h-screen min-h-0 flex-col">
+              <div className="min-h-0 flex-1 overflow-hidden pb-20">
+                <MobileProjectListing
+                  onProjectSelect={handleMobileProjectSelect}
+                  onNewProject={
+                    projectCatalogEnabled ? () => setMobileView('catalog') : undefined
+                  }
+                  catalogNewProjectEnabled={projectCatalogEnabled}
+                  onClose={() => setMobileView('home')}
+                />
+              </div>
               <MobileBottomNav
                 currentView={mobileNavCurrentView}
                 onViewChange={handleMobileNavigation}

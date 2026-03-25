@@ -17,7 +17,7 @@ interface TaskShoppingListDialogProps {
 interface ShoppingListItem {
   id: string;
   material_name: string;
-  completed: boolean;
+  quantity: number;
 }
 
 export function TaskShoppingListDialog({ 
@@ -68,7 +68,7 @@ export function TaskShoppingListDialog({
           user_id: user.id,
           task_id: taskId,
           material_name: newMaterial.trim(),
-          completed: false
+          quantity: 1,
         });
 
       if (error) throw error;
@@ -136,7 +136,10 @@ export function TaskShoppingListDialog({
                   key={item.id}
                   className="flex items-center justify-between p-2 bg-muted rounded-lg"
                 >
-                  <span className="text-sm">{item.material_name}</span>
+                  <span className="text-sm">
+                    {item.material_name}
+                    {item.quantity > 1 ? ` ×${item.quantity}` : ''}
+                  </span>
                   <Button
                     variant="ghost"
                     size="sm"

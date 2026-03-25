@@ -157,7 +157,6 @@ export function MobileOptimizedHome() {
       id: 'home-task-list',
       icon: ListChecks,
       title: 'Project & Task Manager',
-      subtitle: 'Manage tasks',
       color: 'bg-green-500', // Home: Green
       action: () => window.dispatchEvent(new CustomEvent('show-home-task-list'))
     },
@@ -165,7 +164,6 @@ export function MobileOptimizedHome() {
       id: 'home-maintenance',
       icon: HomeIcon,
       title: 'Home Maintenance',
-      subtitle: 'Schedule & track',
       color: 'bg-green-600', // Home: Green
       action: () => window.dispatchEvent(new CustomEvent('show-home-maintenance'))
     },
@@ -173,7 +171,6 @@ export function MobileOptimizedHome() {
       id: 'risk-focus',
       icon: Crosshair,
       title: 'Risk-Less',
-      subtitle: 'Risks for a template',
       color: 'bg-teal-600',
       action: () => window.dispatchEvent(new CustomEvent('open-risk-focus-launcher'))
     }
@@ -319,9 +316,6 @@ export function MobileOptimizedHome() {
                 <p className="text-xl font-semibold text-emerald-50">
                   {stats.openTasks ?? 0}
                 </p>
-                <p className="hidden sm:block text-[11px] text-emerald-100/70">
-                  All tasks in Project & Task Manager not completed
-                </p>
               </CardContent>
             </Card>
 
@@ -333,9 +327,6 @@ export function MobileOptimizedHome() {
                 </p>
                 <p className="text-xl font-semibold text-sky-50">
                   {stats.maintenanceDueSoon ?? 0}
-                </p>
-                <p className="hidden sm:block text-[11px] text-sky-100/70">
-                  Matches Due Soon in Home Maintenance (90–99% toward due)
                 </p>
               </CardContent>
             </Card>
@@ -365,19 +356,14 @@ export function MobileOptimizedHome() {
               return (
                 <Card 
                   key={action.id}
-                  className="gradient-card cursor-pointer hover:shadow-md transition-smooth shadow-sm rounded-xl"
+                  className="gradient-card cursor-pointer hover:shadow-md transition-smooth shadow-sm rounded-xl min-h-[100px]"
                   onClick={action.action}
                 >
-                  <CardContent className="p-4 min-h-[110px]">
-                    <div className="relative w-12 h-12 mb-3">
-                      <div className={`w-12 h-12 ${action.color} rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform`}>
-                        <Icon className="h-6 w-6 text-white" />
-                      </div>
+                  <CardContent className="p-3 text-center flex flex-col items-center justify-center h-full min-h-[100px]">
+                    <div className={`w-10 h-10 ${action.color} rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition-transform`}>
+                      <Icon className="h-5 w-5 text-white" />
                     </div>
-                    <h3 className="font-semibold text-xs text-card-foreground mb-1">
-                      {action.title}
-                    </h3>
-                    <p className="text-[10px] text-muted-foreground leading-tight">{action.subtitle}</p>
+                    <p className="text-xs font-medium text-card-foreground leading-tight">{action.title}</p>
                   </CardContent>
                 </Card>
               );

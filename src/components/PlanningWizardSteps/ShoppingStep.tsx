@@ -1,8 +1,9 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShoppingCart } from 'lucide-react';
+import { PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 
 interface ShoppingStepProps {
   onComplete: () => void;
@@ -24,32 +25,28 @@ export const ShoppingStep: React.FC<ShoppingStepProps> = ({
         <CardHeader className="p-3 sm:p-4">
           <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
-            Shopping List
+            Shopping
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
-          <CardDescription className="text-xs sm:text-sm mt-0.5">
-            Track tool & material shopping
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 p-3 sm:p-4">
           <div className="text-center space-y-4 py-6">
             <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
-              Select materials and tools you need for your project and track your shopping list.
+              Setup your shopping list preferences
             </p>
 
             <Button
+              type="button"
+              variant="default"
               onClick={handleOpenShoppingList}
-              size="lg"
-              className="w-full max-w-md h-16 text-lg font-semibold"
+              className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
             >
-              <ShoppingCart className="w-6 h-6 mr-3" />
-              Open Shopping List
+              <ShoppingCart className="shrink-0" aria-hidden />
+              Open Shopping
             </Button>
 
             {isCompleted && (
-              <p className="text-xs sm:text-sm text-green-600 font-medium">
-                ✓ Shopping list step completed
-              </p>
+              <p className="text-xs sm:text-sm font-medium text-green-600">✓ Shopping step completed</p>
             )}
           </div>
         </CardContent>

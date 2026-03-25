@@ -1,16 +1,19 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, Plus, SortAsc } from 'lucide-react';
+import { Search, Plus, SortAsc, FolderKanban } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { MobileProjectCard } from './MobileProjectCard';
 import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useButtonTracker } from '@/hooks/useButtonTracker';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
 import { getRiskFocusAwareDisplayName, isRiskFocusRun } from '@/utils/projectRunRiskFocus';
+import { WorkspaceSubViewHeader } from '@/components/WorkspaceSubViewHeader';
+import { HomeManager } from '@/components/HomeManager';
 
 function listingProgressPercent(run: ProjectRun): number {
   try {
@@ -34,11 +37,33 @@ export function MobileProjectListing({
   catalogNewProjectEnabled = true,
   onClose,
 }: MobileProjectListingProps) {
-  const { projects, projectRuns, currentProjectRun } = useProject();
+  const { user } = useAuth();
+  const { projectRuns, currentProjectRun } = useProject();
   const { trackClick } = useButtonTracker();
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'progress'>('recent');
+  const [homes, setHomes] = useState<{ id: string; name: string }[]>([]);
+  const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
+  const [showHomeManager, setShowHomeManager] = useState(false);
+
+  const fetchHomes = useCallback(async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from('homes')
+      .select('id, name')
+      .eq('user_id', user.id)
+      .order('is_primary', { ascending: false });
+    if (error || !data) return;
+    setHomes(data);
+    setSelectedHomeId((prev) => {
+      if (prev && (prev === 'all' || data.some((h) => h.id === prev))) return prev;
+      return data[0]?.id ?? 'all';
+    });
+  }, [user]);
+
+  useEffect(() => {
+    void fetchHomes();
+  }, [fetchHomes]);
 
   // Get access to reset functions from parent Index component
   const [resetUserView, setResetUserView] = useState(false);
@@ -58,7 +83,10 @@ export function MobileProjectListing({
   // Filter and sort project runs
   const filteredProjectRuns = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    let filtered = projectRuns.filter(run => {
+    let filtered = projectRuns.filter((run) => {
+      if (selectedHomeId && selectedHomeId !== 'all' && run.home_id !== selectedHomeId) {
+        return false;
+      }
       if (!q) return true;
       const display = getRiskFocusAwareDisplayName(run);
       const haystack = [run.name, run.customProjectName, display, run.description]
@@ -68,138 +96,156 @@ export function MobileProjectListing({
       return haystack.includes(q);
     });
 
-    // Sort by progress (active first, then completed)
     return filtered.sort((a, b) => {
       const aProgress = listingProgressPercent(a);
       const bProgress = listingProgressPercent(b);
-      
-      // Active projects first
+
+      if (sortBy === 'name') {
+        return getRiskFocusAwareDisplayName(a).localeCompare(getRiskFocusAwareDisplayName(b));
+      }
+      if (sortBy === 'progress') {
+        if (aProgress !== bProgress) return bProgress - aProgress;
+        return (
+          new Date(b.updatedAt || b.createdAt).getTime() -
+          new Date(a.updatedAt || a.createdAt).getTime()
+        );
+      }
       if (aProgress < 100 && bProgress >= 100) return -1;
       if (bProgress < 100 && aProgress >= 100) return 1;
-      
-      // Within same category, sort by recent activity
-      return new Date(b.updatedAt || b.createdAt).getTime() - 
-             new Date(a.updatedAt || a.createdAt).getTime();
+      return (
+        new Date(b.updatedAt || b.createdAt).getTime() -
+        new Date(a.updatedAt || a.createdAt).getTime()
+      );
     });
-  }, [projectRuns, searchQuery, sortBy]);
+  }, [projectRuns, searchQuery, sortBy, selectedHomeId]);
 
-  // Filter project templates
-  const filteredProjects = useMemo(() => {
-    let filtered = projects.filter(project => {
-      return project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-             project.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    });
+  const runsInHomeScope = useMemo(() => {
+    if (!selectedHomeId || selectedHomeId === 'all') return projectRuns;
+    return projectRuns.filter((r) => r.home_id === selectedHomeId);
+  }, [projectRuns, selectedHomeId]);
 
-    return filtered.sort((a, b) => a.name.localeCompare(b.name));
-  }, [projects, searchQuery]);
+  const activeCount = runsInHomeScope.filter((run) => listingProgressPercent(run) < 100).length;
+  const completedCount = runsInHomeScope.filter((run) => listingProgressPercent(run) >= 100).length;
 
-  // Get counts
-  const activeCount = projectRuns.filter((run) => listingProgressPercent(run) < 100).length;
-  const completedCount = projectRuns.filter((run) => listingProgressPercent(run) >= 100).length;
+  const goToWorkspace = () => {
+    onClose?.();
+  };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex-shrink-0 p-4 space-y-4 bg-background/95 backdrop-blur-sm border-b border-border">
-        {/* Close Button and Actions */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Project Dashboard</h2>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="text-sm text-muted-foreground hover:text-foreground px-3 py-1 rounded-md hover:bg-accent/10 transition-colors"
-            >
-              Close
-            </button>
-          )}
-        </div>
-        
-        {/* Search and Actions */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <WorkspaceSubViewHeader
+        screenTitle="Project Dashboard"
+        screenIcon={<FolderKanban className="h-4 w-4 md:h-[18px] md:w-[18px]" aria-hidden />}
+        helpTitle="About Project Dashboard"
+        helpBody="View and open your active and completed project runs. Use the home selector to focus on projects linked to a property. Search and sort help you find a run quickly."
+        onGoToWorkspace={goToWorkspace}
+        homes={homes}
+        selectedHomeId={selectedHomeId}
+        onHomeChange={setSelectedHomeId}
+        onOpenHomeManager={() => setShowHomeManager(true)}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative min-w-0 flex-1 basis-[min(100%,12rem)]">
+            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search projects..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-10"
+              className="h-9 pl-9 text-sm md:h-10"
             />
           </div>
           <Button
+            type="button"
             variant="outline"
             size="sm"
+            className="h-9 shrink-0 px-3 md:h-10"
+            title="Sort order"
+            aria-label="Sort projects"
             onClick={() => {
               const nextSort = sortBy === 'recent' ? 'name' : sortBy === 'name' ? 'progress' : 'recent';
               setSortBy(nextSort);
             }}
-            className="px-3 h-10"
           >
             <SortAsc className="h-4 w-4" />
           </Button>
-          {catalogNewProjectEnabled && onNewProject && (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => {
-              console.log('📱 MobileProjectListing: + button clicked, calling onNewProject');
-              onNewProject();
-            }}
-            className="px-3 h-10"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-          )}
+          {catalogNewProjectEnabled && onNewProject ? (
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              className="h-9 shrink-0 px-3 md:h-10"
+              onClick={() => {
+                onNewProject();
+              }}
+              aria-label="New project"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          ) : null}
         </div>
 
-        {/* Continue Current Project (if any) */}
-        {currentProjectRun && (
-          <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-primary">Continue Current Project</p>
-                {isRiskFocusRun(currentProjectRun) && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 mt-1 mb-0.5">
-                    Risk-Focus
-                  </Badge>
-                )}
-                <p className="text-xs text-muted-foreground truncate">
+        {currentProjectRun ? (
+          <div className="rounded-lg border border-primary/25 bg-primary/5 px-3 py-2">
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-primary">
+                    Continue
+                  </span>
+                  {isRiskFocusRun(currentProjectRun) ? (
+                    <Badge variant="outline" className="px-1.5 py-0 text-[9px] leading-none">
+                      Risk-Focus
+                    </Badge>
+                  ) : null}
+                </div>
+                <p className="truncate text-sm font-medium leading-tight text-foreground">
                   {getRiskFocusAwareDisplayName(currentProjectRun)}
                 </p>
               </div>
               <Button
+                type="button"
                 variant="default"
                 size="sm"
-                onClick={trackClick('continue-current-project', () => {
-                  console.log('🎯 CONTINUE CLICKED - Clearing reset flags and navigating');
-                  
-                  // Clear reset flags immediately
-                  setResetUserView(false);
-                  setForceListingMode(false);
-                  window.dispatchEvent(new CustomEvent('clear-reset-flags'));
-                  
-                  if (currentProjectRun && isRiskFocusRun(currentProjectRun)) {
-                    window.dispatchEvent(
-                      new CustomEvent('open-risk-focus-register-for-run', {
-                        detail: { projectRunId: currentProjectRun.id },
-                      })
-                    );
-                    return;
-                  }
-                  if (currentProjectRun) {
-                    onProjectSelect(currentProjectRun);
-                  }
-                }, { preventBubbling: true })}
-                className="ml-3"
+                className="h-8 shrink-0 px-3 text-xs"
+                onClick={trackClick(
+                  'continue-current-project',
+                  () => {
+                    setResetUserView(false);
+                    setForceListingMode(false);
+                    window.dispatchEvent(new CustomEvent('clear-reset-flags'));
+
+                    if (currentProjectRun && isRiskFocusRun(currentProjectRun)) {
+                      window.dispatchEvent(
+                        new CustomEvent('open-risk-focus-register-for-run', {
+                          detail: { projectRunId: currentProjectRun.id },
+                        })
+                      );
+                      return;
+                    }
+                    if (currentProjectRun) {
+                      onProjectSelect(currentProjectRun);
+                    }
+                  },
+                  { preventBubbling: true }
+                )}
               >
-                Continue
+                Open
               </Button>
             </div>
           </div>
-        )}
-      </div>
+        ) : null}
+      </WorkspaceSubViewHeader>
+
+      <HomeManager
+        open={showHomeManager}
+        onOpenChange={setShowHomeManager}
+        selectedHomeId={null}
+        onHomeSelected={() => void fetchHomes()}
+        showSelector={false}
+      />
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-4 space-y-3">
+      <div className="min-h-0 flex-1 space-y-3 overflow-auto px-3 py-3 md:px-6 md:py-4">
         {/* Active Projects Section */}
         {filteredProjectRuns.filter((run) => listingProgressPercent(run) < 100).length > 0 && (
           <>

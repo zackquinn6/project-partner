@@ -34,12 +34,52 @@ interface Photo {
   phase_name?: string | null;
   operation_id?: string | null;
   operation_name?: string | null;
+  /** Storage object path in `project-photos` bucket (empty when directPhotoUrl is set) */
   storage_path: string;
+  /** Set when `project_run_photos.photo_url` is a full HTTP(S) URL */
+  directPhotoUrl?: string | null;
   file_name: string;
   file_size: number;
   privacy_level: 'personal' | 'project_partner' | 'public';
   caption: string | null;
   created_at: string;
+}
+
+function mapProjectRunPhotoRow(row: {
+  id: string;
+  user_id: string;
+  project_run_id: string;
+  photo_url: string;
+  caption: string | null;
+  phase_name: string | null;
+  operation_name: string | null;
+  step_title: string | null;
+  photo_type: string | null;
+  created_at: string;
+}): Photo {
+  const raw = row.photo_url?.trim() ?? '';
+  const isHttp = /^https?:\/\//i.test(raw);
+  const fileName = raw.split('/').filter(Boolean).pop() || 'photo';
+  const pl = row.photo_type === 'personal' || row.photo_type === 'public' ? row.photo_type : 'project_partner';
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    project_run_id: row.project_run_id,
+    template_id: null,
+    step_id: row.step_title || '-',
+    step_name: row.step_title,
+    phase_id: null,
+    phase_name: row.phase_name,
+    operation_id: null,
+    operation_name: row.operation_name,
+    storage_path: isHttp ? '' : raw,
+    directPhotoUrl: isHttp ? raw : null,
+    file_name: fileName,
+    file_size: 0,
+    privacy_level: pl,
+    caption: row.caption,
+    created_at: row.created_at,
+  };
 }
 
 interface PhotoGalleryProps {
@@ -149,30 +189,43 @@ export function PhotoGallery({
 
     setLoading(true);
     try {
-      // Build query
+      let projectRunIdsForTemplate: string[] | null = null;
+      if (!projectRunId && templateId) {
+        const { data: runs, error: runsErr } = await supabase
+          .from('project_runs')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('template_id', templateId);
+        if (runsErr) throw runsErr;
+        projectRunIdsForTemplate = (runs || []).map((r) => r.id);
+        if (projectRunIdsForTemplate.length === 0) {
+          setPhotos([]);
+          setThumbnailUrls({});
+          setLoading(false);
+          return;
+        }
+      }
+
       let query = supabase
-        .from('project_photos')
+        .from('project_run_photos')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      // Filter by specific project run if provided
       if (projectRunId) {
         query = query.eq('project_run_id', projectRunId);
-      } else if (templateId) {
-        query = query.eq('template_id', templateId);
+      } else if (projectRunIdsForTemplate) {
+        query = query.in('project_run_id', projectRunIdsForTemplate);
       }
 
-      // Apply project filter
       if (projectFilter !== 'all' && !projectRunId) {
         query = query.eq('project_run_id', projectFilter);
       }
 
-      // Apply date filter
       if (dateFilter !== 'all') {
         const now = new Date();
         let startDate: Date;
-        
+
         switch (dateFilter) {
           case 'today':
             startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -192,51 +245,53 @@ export function PhotoGallery({
           default:
             startDate = new Date(0);
         }
-        
+
         query = query.gte('created_at', startDate.toISOString());
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
-      
-      // Fetch project run names for all unique project_run_ids
-      const projectRunIds = [...new Set((data || []).map((p: any) => p.project_run_id))];
-      const { data: projectRunsData } = await supabase
-        .from('project_runs')
-        .select('id, name, custom_project_name')
-        .in('id', projectRunIds);
-      
-      const projectRunMap = new Map(
-        (projectRunsData || []).map((run: any) => [
-          run.id,
-          run.custom_project_name || run.name
-        ])
-      );
-      
-      // Map the data to include project run name
-      const fetchedPhotos: Photo[] = (data || []).map((photo: any) => ({
-        ...photo,
-        project_run_name: projectRunMap.get(photo.project_run_id) || null
-      }));
-      
+
+      const projectRunIds = [...new Set((data || []).map((p) => p.project_run_id))];
+      let projectRunMap = new Map<string, string>();
+      if (projectRunIds.length > 0) {
+        const { data: projectRunsData } = await supabase
+          .from('project_runs')
+          .select('id, name, custom_project_name')
+          .in('id', projectRunIds);
+        projectRunMap = new Map(
+          (projectRunsData || []).map((run) => [run.id, run.custom_project_name || run.name])
+        );
+      }
+
+      const fetchedPhotos: Photo[] = (data || []).map((row) => {
+        const photo = mapProjectRunPhotoRow(row);
+        return { ...photo, project_run_name: projectRunMap.get(photo.project_run_id) || null };
+      });
+
       setPhotos(fetchedPhotos);
-      
-      // Load thumbnail URLs for all photos
+
       const thumbnailPromises = fetchedPhotos.map(async (photo) => {
         try {
+          if (photo.directPhotoUrl) {
+            return { id: photo.id, url: photo.directPhotoUrl };
+          }
+          if (!photo.storage_path) {
+            return { id: photo.id, url: null };
+          }
           const { data: urlData, error: urlError } = await supabase.storage
             .from('project-photos')
             .createSignedUrl(photo.storage_path, 3600);
-          
+
           if (urlError) throw urlError;
           return { id: photo.id, url: urlData.signedUrl };
-        } catch (error) {
-          console.error(`Error loading thumbnail for photo ${photo.id}:`, error);
+        } catch (err) {
+          console.error(`Error loading thumbnail for photo ${photo.id}:`, err);
           return { id: photo.id, url: null };
         }
       });
-      
+
       const thumbnailResults = await Promise.all(thumbnailPromises);
       const thumbnailMap: Record<string, string> = {};
       thumbnailResults.forEach(({ id, url }) => {
@@ -253,9 +308,17 @@ export function PhotoGallery({
 
   const loadPhotoUrl = async (photo: Photo) => {
     try {
+      if (photo.directPhotoUrl) {
+        setPhotoUrl(photo.directPhotoUrl);
+        return;
+      }
+      if (!photo.storage_path) {
+        toast.error('No image path available for this photo');
+        return;
+      }
       const { data, error } = await supabase.storage
         .from('project-photos')
-        .createSignedUrl(photo.storage_path, 3600); // 1 hour expiry
+        .createSignedUrl(photo.storage_path, 3600);
 
       if (error) throw error;
       setPhotoUrl(data.signedUrl);
@@ -274,18 +337,12 @@ export function PhotoGallery({
     if (!confirm('Are you sure you want to delete this photo?')) return;
 
     try {
-      // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from('project-photos')
-        .remove([storagePath]);
+      if (storagePath) {
+        const { error: storageError } = await supabase.storage.from('project-photos').remove([storagePath]);
+        if (storageError) throw storageError;
+      }
 
-      if (storageError) throw storageError;
-
-      // Delete from database
-      const { error: dbError } = await supabase
-        .from('project_photos')
-        .delete()
-        .eq('id', photoId);
+      const { error: dbError } = await supabase.from('project_run_photos').delete().eq('id', photoId);
 
       if (dbError) throw dbError;
 
@@ -509,9 +566,9 @@ export function PhotoGallery({
                     <Calendar className="w-3 h-3" />
                     {format(new Date(selectedPhoto.created_at), 'PPp')}
                   </div>
-                  <div>
-                    {(selectedPhoto.file_size / 1024 / 1024).toFixed(2)} MB
-                  </div>
+                  {selectedPhoto.file_size > 0 ? (
+                    <div>{(selectedPhoto.file_size / 1024 / 1024).toFixed(2)} MB</div>
+                  ) : null}
                 </div>
 
                 <div className="flex flex-col gap-2 mt-auto">
@@ -543,10 +600,10 @@ export function PhotoGallery({
       )}
 
       {/* Photo Upload Dialog */}
-      {projectRunId && templateId && (
+      {projectRunId && (
         <PhotoUpload
           projectRunId={projectRunId}
-          templateId={templateId}
+          templateId={templateId ?? null}
           availableSteps={availableSteps}
           showButton={false}
           open={showPhotoUpload}

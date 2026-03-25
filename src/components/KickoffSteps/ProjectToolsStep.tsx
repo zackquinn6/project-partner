@@ -21,12 +21,12 @@ export const PLANNING_TOOL_IDS = [
 export const PLANNING_TOOLS: { id: (typeof PLANNING_TOOL_IDS)[number]; label: string; benefit: string }[] = [
   { id: 'scope', label: 'Customize', benefit: 'Shape the work to fit your situation' },
   { id: 'schedule', label: 'Schedule', benefit: 'Set a realistic timeline' },
-  { id: 'risk', label: 'Risk/Uncertainty', benefit: 'Proactively avoid issues' },
+  { id: 'risk', label: 'Risk-Less', benefit: 'Proactively avoid issues' },
   { id: 'budget', label: 'Budget', benefit: 'Spend what you want' },
-  { id: 'shopping_list', label: 'Shopping List', benefit: 'Track tool & material shopping' },
-  { id: 'tool_rentals', label: 'Tool rental partners', benefit: 'Make an account with our tool rental partners to plan what to borrow or rent' },
+  { id: 'shopping_list', label: 'Shopping', benefit: 'Track tool & material shopping' },
+  { id: 'tool_rentals', label: 'Tool Rental', benefit: 'Plan what to borrow or rent with rental options matched to your area' },
   { id: 'quality_control', label: 'Quality', benefit: 'Document results for future inspections' },
-  { id: 'expert_support', label: 'Expert support', benefit: 'Make an account with our expert support partners when you need help' }
+  { id: 'expert_support', label: 'Support', benefit: 'Setup on-call expert support for when you need help' }
 ];
 
 export type PlanningToolId = (typeof PLANNING_TOOL_IDS)[number];
@@ -282,9 +282,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
                     disabled={isScope}
                   />
                   <div className="space-y-0.5 min-w-0">
-                    <CardTitle className="text-base font-medium whitespace-normal">
-                      {id === 'risk' ? 'Risk/Uncertainty' : label}
-                    </CardTitle>
+                    <CardTitle className="text-base font-medium whitespace-normal">{label}</CardTitle>
                     <p className="text-sm text-muted-foreground">{benefit}</p>
                   </div>
                 </div>

@@ -39,8 +39,8 @@ export const PartnerAppToggles: React.FC = () => {
         key === 'partner_apps_enabled'
           ? 'Partner apps'
           : key === 'expert_support_enabled'
-            ? 'Expert support'
-            : 'Tool rentals';
+            ? 'Support'
+            : 'Tool Rental';
       toast.success(`${label} ${enabled ? 'enabled' : 'disabled'}`);
     } catch (err) {
       console.error('Error updating partner app setting:', err);
@@ -55,7 +55,7 @@ export const PartnerAppToggles: React.FC = () => {
       <CardHeader>
         <CardTitle>Partner apps</CardTitle>
         <CardDescription>
-          Turn on or off usage of partner apps and expert support. When Expert support is off, it is removed from project planning and kickoff tool options.
+          Turn on or off partner apps and Expert Support. When Support is off, it is removed from project planning and kickoff tool options.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -79,9 +79,9 @@ export const PartnerAppToggles: React.FC = () => {
 
         <div className="flex items-center justify-between">
           <Label htmlFor="expert-support" className="flex-1">
-            <div className="font-medium">Expert support</div>
+            <div className="font-medium">Support</div>
             <div className="text-sm text-muted-foreground">
-              When enabled, Expert support (Call the Trades) appears in project planning and Workflow Setup
+              When enabled, Expert Support appears in project planning and Workflow Setup
             </div>
           </Label>
           <Switch
@@ -97,9 +97,9 @@ export const PartnerAppToggles: React.FC = () => {
 
         <div className="flex items-center justify-between">
           <Label htmlFor="tool-rentals" className="flex-1">
-            <div className="font-medium">Tool rentals</div>
+            <div className="font-medium">Tool Rental</div>
             <div className="text-sm text-muted-foreground">
-              When enabled, Tool Rentals appears in the project workflow sidebar (Project Tools)
+              When enabled, Tool Rental appears in the project workflow sidebar (Project Tools)
             </div>
           </Label>
           <Switch
@@ -117,7 +117,7 @@ export const PartnerAppToggles: React.FC = () => {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Expert support is off. The option will not appear in the project planning workflow or in Kickoff step 4 (Workflow Setup).
+              Support is off. The option will not appear in the project planning workflow or in Kickoff step 4 (Workflow Setup).
             </AlertDescription>
           </Alert>
         )}

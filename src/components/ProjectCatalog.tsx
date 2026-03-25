@@ -25,7 +25,6 @@ import {
   DropdownMenuRadioItem
 } from '@/components/ui/dropdown-menu';
 import { ArrowLeft, Clock, Layers, Target, Hammer, Home, Palette, Zap, Shield, Search, Filter, AlertTriangle, Plus, Info } from 'lucide-react';
-import { MemoizedProjectCard } from '@/components/OptimizedComponents/MemoizedProjectCard';
 import { supabase } from '@/integrations/supabase/client';
 import DIYSurveyPopup from '@/components/DIYSurveyPopup';
 import ProfileManager from '@/components/ProfileManager';
@@ -882,7 +881,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     }
   };
   return <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-y-auto">
-      <div className="container mx-auto px-6 py-8 min-h-screen">
+      <div className="container mx-auto min-h-screen px-4 pt-3 pb-5 md:px-6 md:py-8 md:pb-8">
             <div className="hidden md:flex items-center gap-4 mb-6">
               <Button
                 variant="ghost"
@@ -896,19 +895,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               </Button>
             </div>
 
-        <div className="text-center mb-8 pt-1 pb-3">
-          <h1 className="text-4xl lg:text-5xl font-bold mb-4 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 leading-[1.35]">
-            <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent inline-block pb-1 pt-0.5">
-              Project Catalog
-            </span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-normal">Select a project to get started</p>
-        </div>
-
-        {/* Mobile Close Button */}
-        <div className="md:hidden flex justify-end mb-4">
-          <Button 
-            variant="ghost" 
+        {/* Mobile: workshop link top-left, minimal vertical space */}
+        <div className="md:hidden mb-2">
+          <Button
+            variant="ghost"
             size="sm"
             onClick={() => {
               if (onClose) {
@@ -917,16 +907,26 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                 navigate('/');
               }
             }}
-            className="text-sm"
+            className="h-8 -ml-2 px-2 text-sm flex items-center gap-1.5"
           >
+            <ArrowLeft className="w-4 h-4 shrink-0" />
             Go to My Workshop
           </Button>
         </div>
 
+        <div className="text-center mb-4 md:mb-8 md:pt-1 md:pb-3">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 md:mb-4 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 leading-[1.35]">
+            <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent inline-block pb-1 pt-0.5">
+              Project Catalog
+            </span>
+          </h1>
+          <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto leading-normal px-1">Select a project to get started</p>
+        </div>
+
         {/* Filters Header Bar */}
-        <div className="bg-card border rounded-lg p-6 mb-8 space-y-4">
+        <div className="bg-card border rounded-lg p-3 mb-4 space-y-3 md:p-6 md:mb-8 md:space-y-4">
           {/* Mobile: Compact filter layout */}
-          <div className="md:hidden space-y-3">
+          <div className="md:hidden space-y-2">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -1150,8 +1150,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
         {/* Popular projects carousel - under search/filters, above Show all Projects; hidden when "Show all projects" is expanded */}
         {!shouldShowGrid && popularProjects.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">Popular projects</h2>
+          <div className="mb-4 md:mb-8">
+            <h2 className="text-lg font-semibold mb-2 md:mb-4">Popular projects</h2>
             <Carousel
               opts={{ align: 'start', loop: false }}
               className="w-full px-11 sm:px-12 md:px-14"
@@ -1217,7 +1217,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
         {/* Show All Projects Button - Only show when grid is hidden */}
         {!shouldShowGrid && (
-          <div className="mb-10 flex flex-col items-center gap-8">
+          <div className="mb-6 flex flex-col items-center gap-4 md:mb-10 md:gap-8">
             <Button 
               variant="outline" 
               size="sm"
@@ -1262,11 +1262,11 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           </div>
         )}
 
-        {/* Project Grid - Mobile: Row layout, Desktop: Grid - Only show when shouldShowGrid is true */}
+        {/* Full list: compact rows below lg; photo cards in grid from lg up */}
         {shouldShowGrid && (
-          <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-4">
+          <div className="space-y-2 lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 lg:gap-4 lg:space-y-0">
           {filteredProjects.length === 0 ? (
-            <div className="col-span-full text-center py-12">
+            <div className="lg:col-span-full text-center py-12">
               <p className="text-muted-foreground mb-4">
                 {publishedProjects.length === 0 
                   ? (isAdminMode ? "No template projects exist yet. Create your first template project to get started." : "No published projects available yet. Check back soon!")
@@ -1296,9 +1296,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               
               return (
                 <div key={project.id}>
-                  {/* Mobile: Row layout - Reduced size by 50% */}
+                  {/* Compact row: phones & tablets below lg (no tall photo cards) */}
                   <div 
-                    className="md:hidden group hover:shadow-lg transition-all duration-300 cursor-pointer border rounded-lg bg-card overflow-hidden h-24" 
+                    className="lg:hidden group hover:bg-muted/40 transition-colors cursor-pointer border rounded-lg bg-card overflow-hidden h-16" 
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -1309,52 +1309,50 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       }
                     }}
                   >
-                    <div className="flex items-center gap-0 h-full">
-                      {/* Cover Image or Icon - Reduced from w-24 h-24 to w-12 h-12 */}
-                      <div className="flex-shrink-0 w-12 h-12">
+                    <div className="flex items-stretch h-full min-h-0">
+                      <div className="flex-shrink-0 w-14 h-16 self-stretch overflow-hidden bg-muted">
                         {((project as any).cover_image || project.image || (project as any).images?.[0]) ? (
                           <img 
                             src={(project as any).cover_image || project.image || (project as any).images?.[0]} 
-                            alt={project.name}
+                            alt=""
                             className="w-full h-full object-cover"
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center">
-                            <IconComponent className="w-4 h-4 text-white" />
+                            <IconComponent className="w-5 h-5 text-white" />
                           </div>
                         )}
                       </div>
-                      
-                      {/* Project info - Reduced padding */}
-                      <div className="flex-1 min-w-0 p-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <h3 className="font-semibold text-xs truncate group-hover:text-primary transition-colors line-clamp-2" style={{ maxWidth: '75ch' }}>
+
+                      <div className="flex-1 min-w-0 px-3 py-1.5 flex flex-col justify-center gap-0.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <h3 className="font-semibold text-sm leading-tight line-clamp-1 group-hover:text-primary transition-colors min-w-0 flex-1">
                             {project.name}
                           </h3>
-                          {project.publishStatus === 'beta-testing' && (
-                            <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-[10px] px-1 py-0 flex-shrink-0">
-                              BETA
-                            </Badge>
-                          )}
-                          {(project as any).visibility_status === 'coming-soon' && (
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-[10px] px-1 py-0 flex-shrink-0">
-                              Coming Soon
-                            </Badge>
-                          )}
+                          <div className="flex items-center gap-1 shrink-0">
+                            {project.publishStatus === 'beta-testing' && (
+                              <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-[10px] px-1 py-0">
+                                BETA
+                              </Badge>
+                            )}
+                            {(project as any).visibility_status === 'coming-soon' && (
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-[10px] px-1 py-0">
+                                Soon
+                              </Badge>
+                            )}
+                          </div>
                         </div>
+                        <p className="text-[11px] text-muted-foreground line-clamp-1">
+                          {(project as any).difficulty || 'Beginner'}
+                          {project.estimatedTime ? ` · ${project.estimatedTime}` : ''}
+                        </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Desktop: Card layout - 4:3 aspect ratio */}
+                  {/* Large photo cards: lg breakpoint and up (no inline display — it overrides Tailwind `hidden` on small screens) */}
                   <div 
-                    className="hidden md:block group hover:shadow-xl transition-all duration-300 cursor-pointer rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden"
-                    style={{ 
-                      aspectRatio: '4/3',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      height: '100%'
-                    }}
+                    className="hidden lg:flex lg:flex-col lg:h-full lg:aspect-[4/3] group hover:shadow-xl transition-all duration-300 cursor-pointer rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
