@@ -34,6 +34,7 @@ import { BetaProjectWarning } from '@/components/BetaProjectWarning';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { isKickoffPhaseComplete } from '@/utils/projectUtils';
+import { filterProjectsForCatalog } from '@/utils/catalogProjectFilters';
 interface ProjectTemplate {
   id: string;
   name: string;
@@ -201,64 +202,32 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
   // Filter projects to show published, beta, and coming-soon projects or all projects in admin mode
   const publishedProjects = useMemo(() => {
-    const filteredFromDb = user 
-      ? projects.filter(project => {
-          const publishStatus = project.publishStatus || (project as any).publish_status;
-          const visibility =
-            (project as any).visibilityStatus ??
-            (project as any).visibility_status ??
-            'default';
+    if (user) {
+      return filterProjectsForCatalog(projects, isAdminMode);
+    }
 
-          const isComingSoon = visibility === 'coming-soon';
-          const isHidden = visibility === 'hidden';
-          const isPublishVisible = publishStatus === 'published' || publishStatus === 'beta-testing';
+    const filteredFromDb = publicProjects.filter((project) => {
+      const visibility =
+        (project as any).visibilityStatus ??
+        (project as any).visibility_status ??
+        'default';
 
-          // Visibility always wins: hidden never shows, even in admin mode
-          const isValidStatus = (
-            !isHidden &&
-            (isComingSoon || isPublishVisible || isAdminMode)
-          );
+      const isHidden = visibility === 'hidden';
+      const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
 
-          const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
+      const isStandardByFlag = !!(project as any).is_standard;
+      const isStandardById = project.id === '00000000-0000-0000-0000-000000000001';
+      const isStandardByName =
+        typeof (project as any).name === 'string' &&
+        (project as any).name.trim().toLowerCase() === 'standard project foundation';
 
-          // Extra safety: treat Standard Project Foundation as standard by flag OR by name/ID
-          const isStandardByFlag = !!(project as any).is_standard;
-          const isStandardById = project.id === '00000000-0000-0000-0000-000000000001';
-          const isStandardByName =
-            typeof (project as any).name === 'string' &&
-            (project as any).name.trim().toLowerCase() === 'standard project foundation';
+      const isNotStandardFoundation = !(isStandardByFlag || isStandardById || isStandardByName);
 
-          const isNotStandardFoundation = !(isStandardByFlag || isStandardById || isStandardByName);
-          
-          // Include if: visible (not hidden) AND (published/beta OR coming-soon OR admin mode) AND not manual template AND not standard foundation
-          const shouldInclude = isValidStatus && isNotManualTemplate && isNotStandardFoundation;
-
-          return shouldInclude;
-        })
-      : publicProjects.filter(project => {
-          const visibility =
-            (project as any).visibilityStatus ??
-            (project as any).visibility_status ??
-            'default';
-
-          const isHidden = visibility === 'hidden';
-          const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
-
-          const isStandardByFlag = !!(project as any).is_standard;
-          const isStandardById = project.id === '00000000-0000-0000-0000-000000000001';
-          const isStandardByName =
-            typeof (project as any).name === 'string' &&
-            (project as any).name.trim().toLowerCase() === 'standard project foundation';
-
-          const isNotStandardFoundation = !(isStandardByFlag || isStandardById || isStandardByName);
-
-          return !isHidden && isNotManualTemplate && isNotStandardFoundation;
-        });
+      return !isHidden && isNotManualTemplate && isNotStandardFoundation;
+    });
 
     let finalProjects = filteredFromDb;
 
-    // For non-admins, collapse revisions so only the latest published/beta (or coming-soon teaser)
-    // per project family is shown in the catalog.
     if (!isAdminMode) {
       const byFamily = new Map<string, any>();
       for (const project of filteredFromDb) {
@@ -286,12 +255,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       finalProjects = Array.from(byFamily.values());
     }
 
-    // Always sort alphabetically by project name for stable catalog ordering
-    finalProjects = [...finalProjects].sort((a, b) =>
-      (a.name || '').localeCompare(b.name || '')
-    );
-
-    return finalProjects;
+    return [...finalProjects].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }, [projects, user, isAdminMode, publicProjects]);
 
   // Get unique filter options
