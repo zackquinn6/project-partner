@@ -97,41 +97,49 @@ export function EnhancedVariationViewer({
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch variations from unified tool_variations
-      const { data: variationsData, error: variationsError } = await supabase
-        .from('tool_variations')
-        .select('*')
-        .eq('core_item_id', coreItemId)
-        .eq('item_type', itemType);
+      const [variationsRes, flagsRes] = await Promise.all([
+        supabase
+          .from('tool_variations')
+          .select('*')
+          .eq('core_item_id', coreItemId)
+          .eq('item_type', itemType),
+        supabase.from('warning_flags').select('*').order('name'),
+      ]);
+
+      const { data: variationsData, error: variationsError } = variationsRes;
+      const { data: flagsData, error: flagsError } = flagsRes;
 
       if (variationsError) throw variationsError;
+      if (flagsError) throw flagsError;
+
       setVariations((variationsData || []).map(v => ({
         ...v,
         attributes: v.attributes as Record<string, string> || {},
         warning_flags: v.warning_flags || []
       })));
 
-      // Fetch models for each variation
+      setWarningFlags(flagsData || []);
+
       if (variationsData?.length > 0) {
         const variationIds = variationsData.map(v => v.id);
         const { data: modelsData, error: modelsError } = await supabase
           .from('tools')
-          .select('*')
+          .select(
+            'id, model_name, manufacturer, model_number, upc_code, variation_instance_id'
+          )
           .in('variation_instance_id', variationIds);
 
         if (modelsError) throw modelsError;
 
-        // Group models by variation
         const modelsByVariation: Record<string, ToolModel[]> = {};
         modelsData?.forEach(model => {
           if (!modelsByVariation[model.variation_instance_id]) {
             modelsByVariation[model.variation_instance_id] = [];
           }
-          modelsByVariation[model.variation_instance_id].push(model);
+          modelsByVariation[model.variation_instance_id].push(model as ToolModel);
         });
         setModels(modelsByVariation);
 
-        // Pricing lives on tool_variations.pricing (JSONB array per variation)
         const pricingByModel: Record<string, PricingData[]> = {};
         (variationsData || []).forEach(v => {
           const list = (v.pricing as PricingData[] | null) || [];
@@ -141,16 +149,10 @@ export function EnhancedVariationViewer({
           });
         });
         setPricingData(pricingByModel);
+      } else {
+        setModels({});
+        setPricingData({});
       }
-
-      // Fetch warning flags
-      const { data: flagsData, error: flagsError } = await supabase
-        .from('warning_flags')
-        .select('*')
-        .order('name');
-
-      if (flagsError) throw flagsError;
-      setWarningFlags(flagsData || []);
 
     } catch (error) {
       console.error('Error fetching data:', error);

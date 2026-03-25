@@ -43,7 +43,7 @@ export function useAchievements(userId?: string) {
 
       const { data: rows, error: unlockedError } = await supabase
         .from('user_achievements')
-        .select('*')
+        .select('id, user_id, achievement_id, earned_at, created_at, type')
         .eq('user_id', userId);
 
       if (unlockedError) throw unlockedError;
@@ -80,10 +80,21 @@ export function useAchievements(userId?: string) {
     if (!userId) return;
 
     try {
-      const { data: uaExisting } = await supabase
-        .from('user_achievements')
-        .select('achievement_id, type')
-        .eq('user_id', userId);
+      const [uaRes, projectsRes, stats] = await Promise.all([
+        supabase.from('user_achievements').select('achievement_id, type').eq('user_id', userId),
+        supabase
+          .from('project_runs')
+          .select(
+            'id, progress, status, effort_level, skill_level, budget_data, category, actual_end_date, end_date'
+          )
+          .eq('user_id', userId),
+        fetchUserAchievementStats(userId),
+      ]);
+
+      const uaExisting = uaRes.data;
+      const { data: projects, error } = projectsRes;
+
+      if (error) throw error;
 
       const unlockedIds = new Set(
         (uaExisting || [])
@@ -94,16 +105,10 @@ export function useAchievements(userId?: string) {
           .map((r: { achievement_id: string }) => r.achievement_id)
       );
 
-      const { data: projects, error } = await supabase.from('project_runs').select('*').eq('user_id', userId);
-
-      if (error) throw error;
-
       const completedProjects = (projects || []).filter((p) => {
         const progress = p.progress ?? 0;
         return p.status === 'complete' || progress >= 100;
       });
-
-      const stats = await fetchUserAchievementStats(userId);
 
       const newlyUnlocked: AchievementDefinition[] = [];
       const catalog = achievementDefinitionsSorted();

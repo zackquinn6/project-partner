@@ -20,18 +20,18 @@ export async function fetchUserAchievementStats(userId: string): Promise<UserAch
     maintRes,
     runsRes,
   ] = await Promise.all([
-    supabase.from('project_run_photos').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+    supabase.from('project_run_photos').select('id', { count: 'exact', head: true }).eq('user_id', userId),
     supabase.from('user_profiles').select('owned_tools').eq('user_id', userId).maybeSingle(),
-    supabase.from('home_tasks').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'closed'),
-    supabase.from('homes').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+    supabase.from('home_tasks').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'closed'),
+    supabase.from('homes').select('id', { count: 'exact', head: true }).eq('user_id', userId),
     supabase
       .from('home_tasks')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .not('project_run_id', 'is', null),
     supabase
       .from('user_maintenance_tasks')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .not('last_completed', 'is', null),
     supabase.from('project_runs').select('id').eq('user_id', userId),
@@ -45,7 +45,7 @@ export async function fetchUserAchievementStats(userId: string): Promise<UserAch
   if (runIds.length > 0) {
     const { count } = await supabase
       .from('project_run_risks')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .in('project_run_id', runIds);
     risksLogged = count ?? 0;
   }
@@ -357,9 +357,17 @@ export function useEnhancedAchievements(userId?: string) {
     if (!userId) return;
 
     try {
-      const stats = await fetchUserAchievementStats(userId);
+      const [stats, projectsRes] = await Promise.all([
+        fetchUserAchievementStats(userId),
+        supabase
+          .from('project_runs')
+          .select(
+            'id, progress, status, effort_level, skill_level, budget_data, category, actual_end_date, end_date'
+          )
+          .eq('user_id', userId),
+      ]);
 
-      const { data: projects, error } = await supabase.from('project_runs').select('*').eq('user_id', userId);
+      const { data: projects, error } = projectsRes;
 
       if (error) throw error;
 
@@ -379,8 +387,16 @@ export function useEnhancedAchievements(userId?: string) {
     if (!userId) return;
 
     try {
-      const stats = await fetchUserAchievementStats(userId);
-      const { data: projects, error } = await supabase.from('project_runs').select('*').eq('user_id', userId);
+      const [stats, projectsRes] = await Promise.all([
+        fetchUserAchievementStats(userId),
+        supabase
+          .from('project_runs')
+          .select(
+            'id, progress, status, effort_level, skill_level, budget_data, category, actual_end_date, end_date'
+          )
+          .eq('user_id', userId),
+      ]);
+      const { data: projects, error } = projectsRes;
       if (error) throw error;
       const completedProjects = (projects || []).filter((p) => {
         const progress = p.progress ?? 0;

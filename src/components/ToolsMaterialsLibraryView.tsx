@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -82,6 +82,13 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
   const [viewMode, setViewMode] = useState<'library' | 'add'>('library');
   const { user } = useAuth();
 
+  const profileSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingLibraryRef = useRef<{
+    tools: UserOwnedTool[];
+    materials: UserOwnedMaterial[];
+  } | null>(null);
+  const fetchUserItemsRef = useRef<() => Promise<void>>(async () => {});
+
   useEffect(() => {
     if (user && open) {
       fetchUserItems();
@@ -157,6 +164,58 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
     }
   };
 
+  fetchUserItemsRef.current = fetchUserItems;
+
+  const clearScheduledProfileSave = useCallback(() => {
+    if (profileSaveTimerRef.current) {
+      clearTimeout(profileSaveTimerRef.current);
+      profileSaveTimerRef.current = null;
+    }
+  }, []);
+
+  const persistLibrary = useCallback(
+    async (tools: UserOwnedTool[], materials: UserOwnedMaterial[]) => {
+      if (!user?.id) return;
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          owned_tools: tools as any,
+          owned_materials: materials as any,
+        })
+        .eq('user_id', user.id);
+      if (error) {
+        console.error('Failed to save profile library:', error);
+        await fetchUserItemsRef.current();
+      }
+    },
+    [user?.id]
+  );
+
+  const scheduleLibraryPersist = useCallback(
+    (tools: UserOwnedTool[], materials: UserOwnedMaterial[]) => {
+      if (!user?.id) return;
+      pendingLibraryRef.current = { tools, materials };
+      clearScheduledProfileSave();
+      profileSaveTimerRef.current = setTimeout(() => {
+        profileSaveTimerRef.current = null;
+        const p = pendingLibraryRef.current;
+        pendingLibraryRef.current = null;
+        if (p) void persistLibrary(p.tools, p.materials);
+      }, 450);
+    },
+    [user?.id, clearScheduledProfileSave, persistLibrary]
+  );
+
+  useEffect(() => {
+    if (open) return;
+    clearScheduledProfileSave();
+    const p = pendingLibraryRef.current;
+    if (p && user?.id) {
+      pendingLibraryRef.current = null;
+      void persistLibrary(p.tools, p.materials);
+    }
+  }, [open, user?.id, clearScheduledProfileSave, persistLibrary]);
+
   const filteredTools = userTools.filter(tool => {
     const itemMatch = tool.item?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
     const descriptionMatch = tool.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false;
@@ -207,6 +266,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
         if (selectedItem && selectedItem.id === itemId) {
           setSelectedItem({ ...selectedItem, user_photo_url: publicUrl } as UserOwnedTool);
         }
+        void persistLibrary(updatedTools, userMaterials);
       } else {
         const updatedMaterials = userMaterials.map(material => 
           material.id === itemId ? { ...material, user_photo_url: publicUrl } : material
@@ -215,6 +275,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
         if (selectedItem && selectedItem.id === itemId) {
           setSelectedItem({ ...selectedItem, user_photo_url: publicUrl } as UserOwnedMaterial);
         }
+        void persistLibrary(userTools, updatedMaterials);
       }
 
     } catch (error) {
@@ -224,7 +285,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
     }
   };
 
-  const updateItem = async (field: string, value: any) => {
+  const updateItem = (field: string, value: any) => {
     if (!selectedItem || !user) return;
     
     let updatedTools = userTools;
@@ -243,48 +304,19 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
       setUserMaterials(updatedMaterials);
       setSelectedItem({ ...selectedItem, [field]: value } as UserOwnedMaterial);
     }
-    
-    // Immediately save to database
-    try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ 
-          owned_tools: updatedTools as any,
-          owned_materials: updatedMaterials as any
-        })
-        .eq('user_id', user.id);
-      
-      if (error) {
-        console.error('Failed to save item update to database:', error);
-        // Revert local state on error
-        if (selectedType === 'tool') {
-          setUserTools(userTools);
-          setSelectedItem(selectedItem);
-        } else {
-          setUserMaterials(userMaterials);
-          setSelectedItem(selectedItem);
-        }
-        return;
-      }
-    } catch (error) {
-      console.error('Error updating item:', error);
-      // Revert local state on error
-      if (selectedType === 'tool') {
-        setUserTools(userTools);
-        setSelectedItem(selectedItem);
-      } else {
-        setUserMaterials(userMaterials);
-        setSelectedItem(selectedItem);
-      }
-    }
+
+    scheduleLibraryPersist(updatedTools, updatedMaterials);
   };
 
   const deleteItem = async () => {
     if (!selectedItem || !user) return;
-    
+
+    const prevTools = userTools;
+    const prevMaterials = userMaterials;
+
     let updatedTools = userTools;
     let updatedMaterials = userMaterials;
-    
+
     if (selectedType === 'tool') {
       updatedTools = userTools.filter(tool => tool.id !== selectedItem.id);
       setUserTools(updatedTools);
@@ -292,60 +324,33 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
       updatedMaterials = userMaterials.filter(material => material.id !== selectedItem.id);
       setUserMaterials(updatedMaterials);
     }
-    
-    // Immediately save to database
-    try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ 
-          owned_tools: updatedTools as any,
-          owned_materials: updatedMaterials as any
-        })
-        .eq('user_id', user.id);
-      
-      if (error) {
-        console.error('Failed to delete from database:', error);
-        // Revert local state on error
-        if (selectedType === 'tool') {
-          setUserTools(userTools);
-        } else {
-          setUserMaterials(userMaterials);
-        }
-        return;
-      }
-    } catch (error) {
-      console.error('Error deleting item:', error);
-      // Revert local state on error
-      if (selectedType === 'tool') {
-        setUserTools(userTools);
-      } else {
-        setUserMaterials(userMaterials);
-      }
+
+    clearScheduledProfileSave();
+    pendingLibraryRef.current = null;
+
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({
+        owned_tools: updatedTools as any,
+        owned_materials: updatedMaterials as any,
+      })
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Failed to delete from database:', error);
+      setUserTools(prevTools);
+      setUserMaterials(prevMaterials);
       return;
     }
-    
+
     setSelectedItem(null);
   };
 
   const saveItems = async () => {
     if (!user) return;
-    
-    setIsLoading(true);
-    try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ 
-          owned_tools: userTools as any,
-          owned_materials: userMaterials as any
-        })
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error saving items:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    clearScheduledProfileSave();
+    pendingLibraryRef.current = null;
+    await persistLibrary(userTools, userMaterials);
   };
 
   return (

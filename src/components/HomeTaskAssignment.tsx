@@ -178,16 +178,24 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
       return;
     }
 
-    // Get task and subtask titles
-    const { data: tasksData } = await supabase
-      .from('home_tasks')
-      .select('id, title')
-      .in('id', taskIds);
+    let peopleQuery = supabase
+      .from('home_task_people')
+      .select('id')
+      .eq('user_id', userId);
 
-    const { data: subtasksData } = await supabase
-      .from('home_task_subtasks')
-      .select('id, title, task_id')
-      .in('task_id', taskIds);
+    if (homeId) {
+      peopleQuery = peopleQuery.eq('home_id', homeId);
+    }
+
+    const [tasksRes, subtasksRes, peopleRes] = await Promise.all([
+      supabase.from('home_tasks').select('id, title').in('id', taskIds),
+      supabase.from('home_task_subtasks').select('id, title, task_id').in('task_id', taskIds),
+      peopleQuery,
+    ]);
+
+    const tasksData = tasksRes.data;
+    const subtasksData = subtasksRes.data;
+    const peopleData = peopleRes.data;
 
     const taskTitles: Record<string, string> = {};
     tasksData?.forEach(t => {
@@ -198,18 +206,6 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
     subtasksData?.forEach(st => {
       subtaskTitles[st.id] = st.title;
     });
-
-    // Fetch people to ensure we have the current list
-    let peopleQuery = supabase
-      .from('home_task_people')
-      .select('id')
-      .eq('user_id', userId);
-
-    if (homeId) {
-      peopleQuery = peopleQuery.eq('home_id', homeId);
-    }
-
-    const { data: peopleData } = await peopleQuery;
 
     // Group assignments by person
     const assignmentsByPerson: Record<string, Assignment[]> = {};
