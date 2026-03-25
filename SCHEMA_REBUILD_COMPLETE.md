@@ -57,7 +57,7 @@ Successfully applied 4 migrations:
 - ✅ project_run_photos
 
 ### User & Authentication
-- ✅ user_roles
+- ✅ user_profiles
 - ✅ trial_tracking
 - ✅ stripe_subscriptions
 - ✅ coupon_codes

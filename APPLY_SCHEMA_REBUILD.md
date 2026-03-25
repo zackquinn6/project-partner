@@ -81,7 +81,7 @@ You should see ~40-50 tables including:
 - project_runs
 - project_phases
 - homes
-- user_roles
+- user_profiles
 - materials
 - tool_models
 - etc.
@@ -110,7 +110,7 @@ Should return `project_templates_live`.
 ## What Tables Were Rebuilt
 
 ### Core Tables (40+)
-- ✅ **User & Auth:** user_roles, trial_tracking, stripe_subscriptions, coupon_codes
+- ✅ **User & Auth:** user_profiles, trial_tracking, stripe_subscriptions, coupon_codes
 - ✅ **Homes:** homes, home_details, home_spaces
 - ✅ **Projects:** projects, project_phases, phase_operations, operation_steps
 - ✅ **Project Runs:** project_runs, project_run_spaces, project_run_photos

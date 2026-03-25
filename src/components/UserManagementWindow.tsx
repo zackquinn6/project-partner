@@ -1,6 +1,7 @@
 import React from 'react';
 import { UserRoleManager } from '@/components/UserRoleManager';
 import { AgreementTemplatesSection } from '@/components/AgreementTemplatesSection';
+import { UsageAgreementsList } from '@/components/UsageAgreementsList';
 import { AdminMembershipManager } from '@/components/AdminMembershipManager';
 import { ResponsiveDialog } from '@/components/ResponsiveDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,6 +36,7 @@ export const UserManagementWindow: React.FC<UserManagementWindowProps> = ({ open
         
         <TabsContent value="agreements" className="flex-1 overflow-y-auto space-y-8">
           <AgreementTemplatesSection />
+          <UsageAgreementsList />
         </TabsContent>
       </Tabs>
     </ResponsiveDialog>

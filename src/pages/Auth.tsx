@@ -61,6 +61,11 @@ export default function Auth() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [showGoogleErrorDialog, setShowGoogleErrorDialog] = useState(false);
+  const [forgotDialogOpen, setForgotDialogOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSubmitting, setForgotSubmitting] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotSent, setForgotSent] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // When user becomes available, persist any pending onboarding (e.g. after email confirmation)
@@ -304,6 +309,38 @@ export default function Auth() {
     // Always navigate to home for guest users
     navigate('/');
   };
+
+  const handleForgotPassword = async () => {
+    setForgotSubmitting(true);
+    setForgotError(null);
+    setForgotSent(false);
+
+    const emailToUse = (forgotEmail || email).trim().toLowerCase();
+    const validation = validateAndSanitize({ email: emailToUse }, { email: commonRules.email });
+    if (!validation.isValid) {
+      setForgotError(validation.errors.email || 'Enter a valid email.');
+      setForgotSubmitting(false);
+      return;
+    }
+
+    const explicitRedirect = import.meta.env.VITE_AUTH_EMAIL_REDIRECT_URL;
+    const redirectUrl =
+      typeof explicitRedirect === 'string' && explicitRedirect.trim() !== ''
+        ? explicitRedirect.trim()
+        : `${window.location.origin}/auth`;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(validation.sanitizedData.email, {
+      redirectTo: redirectUrl,
+    });
+
+    if (error) {
+      setForgotError(error.message);
+    } else {
+      setForgotSent(true);
+    }
+
+    setForgotSubmitting(false);
+  };
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -386,6 +423,22 @@ export default function Auth() {
                         {validationErrors.password}
                       </div>
                     )}
+                  </div>
+                  <div className="-mt-2 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="px-0 h-auto text-xs"
+                      onClick={() => {
+                        setForgotDialogOpen(true);
+                        setForgotEmail(email);
+                        setForgotError(null);
+                        setForgotSent(false);
+                      }}
+                      disabled={isLoading}
+                    >
+                      Forgot password?
+                    </Button>
                   </div>
                   <div className="pt-4">
                     <Button type="submit" className="w-full" disabled={isLoading}>
@@ -523,6 +576,63 @@ export default function Auth() {
             <Button onClick={() => setShowGoogleErrorDialog(false)}>
               OK
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={forgotDialogOpen} onOpenChange={setForgotDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset your password</DialogTitle>
+            <DialogDescription>
+              Enter your account email and we’ll send a password reset link.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="forgot-email">Email</Label>
+              <Input
+                id="forgot-email"
+                type="email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                placeholder="your@email.com"
+                autoComplete="email"
+              />
+            </div>
+            {forgotError && (
+              <Alert className="border-destructive">
+                <AlertDescription className="text-destructive">
+                  {forgotError}
+                </AlertDescription>
+              </Alert>
+            )}
+            {forgotSent && (
+              <Alert>
+                <AlertDescription>
+                  If an account exists for that email, a reset link has been sent.
+                </AlertDescription>
+              </Alert>
+            )}
+            <div className="flex gap-2 justify-end pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setForgotDialogOpen(false)}
+                disabled={forgotSubmitting}
+              >
+                Close
+              </Button>
+              <Button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={forgotSubmitting}
+              >
+                {forgotSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Send reset email
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

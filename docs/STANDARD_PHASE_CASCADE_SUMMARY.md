@@ -195,7 +195,7 @@ toast.success('Success!', { description: 'Details' });
 
 ### If cascade doesn't appear to work:
 1. Check edge function logs in Supabase dashboard
-2. Verify admin role in `user_roles` table
+2. Verify admin status via `public.is_admin(user_id)` and the relevant user profile record
 3. Run manual sync from Admin Panel
 4. Check browser console for detailed error messages
 5. Verify `template_operations` have correct `standard_phase_id` values

@@ -42,26 +42,16 @@ Your admin role is confirmed in the database, but your session needs to refresh.
 
 ## How Admin Access Works
 
-The `check-subscription` edge function checks your `user_roles` table:
+Admin status is determined by database role logic (the `public.is_admin(...)` function) and the user profile record.
 
 ```typescript
-const { data: adminRole } = await supabase
-  .from('user_roles')
-  .select('role')
-  .eq('user_id', user.id)
-  .eq('role', 'admin')
-  .single();
-
-if (adminRole) {
-  return { 
-    subscribed: true, 
-    isAdmin: true,
-    subscriptionEnd: null 
-  };
-}
+// Example shape: call server-side logic and treat it as source of truth.
+// (Exact implementation may live in an edge function / RPC.)
+const { data: isAdmin } = await supabase.rpc('is_admin', { check_user_id: user.id });
+if (isAdmin) return { subscribed: true, isAdmin: true, subscriptionEnd: null };
 ```
 
-**Your database has the admin role**, so once your session refreshes, this check will pass.
+**Once your session refreshes**, the admin check will reflect your current status.
 
 ## Verify It's Working
 

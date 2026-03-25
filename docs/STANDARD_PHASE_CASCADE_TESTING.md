@@ -186,7 +186,7 @@ Admin clicks "Sync Standard Phases" button in Admin Panel:
 **Symptoms**: "Admin access required" error in toast
 
 **Debug Steps**:
-1. Verify user has admin role in `user_roles` table
+1. Verify admin status via `public.is_admin(user_id)` and the user profile record
 2. Check auth token in network request headers
 3. Review edge function logs for auth errors
 

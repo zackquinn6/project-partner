@@ -1887,6 +1887,7 @@ export type Database = {
           preferred_learning_methods: string[] | null
           project_focus: string | null
           project_skills: Json | null
+          roles: string[]
           skill_level: string | null
           survey_completed_at: string | null
           updated_at: string
@@ -1909,6 +1910,7 @@ export type Database = {
           preferred_learning_methods?: string[] | null
           project_focus?: string | null
           project_skills?: Json | null
+          roles?: string[]
           skill_level?: string | null
           survey_completed_at?: string | null
           updated_at?: string
@@ -1931,6 +1933,7 @@ export type Database = {
           preferred_learning_methods?: string[] | null
           project_focus?: string | null
           project_skills?: Json | null
+          roles?: string[]
           skill_level?: string | null
           survey_completed_at?: string | null
           updated_at?: string
@@ -2549,7 +2552,7 @@ export type Database = {
           tags: string[] | null
           typical_project_size: number | null
           updated_at: string
-          user_id: string
+          user_id: string | null
           visibility_status: string
         }
         Insert: {
@@ -2582,7 +2585,7 @@ export type Database = {
           tags?: string[] | null
           typical_project_size?: number | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           visibility_status?: string
         }
         Update: {
@@ -2615,7 +2618,7 @@ export type Database = {
           tags?: string[] | null
           typical_project_size?: number | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           visibility_status?: string
         }
         Relationships: [

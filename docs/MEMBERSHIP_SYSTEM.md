@@ -7,12 +7,12 @@ The Toolio membership system provides a flexible tiered access model with a 7-da
 
 ### 1. **Admin**
 - **Access**: Full access to all features (no subscription needed)
-- **Role**: `admin` in `user_roles` table
+- **Role**: Determined by `public.is_admin(user_id)` (backed by user profile role data in `user_profiles`)
 - **Features**: All free + paid features, plus admin panel
 
 ### 2. **Member** (Paid Annual Subscription)
 - **Access**: Full access to paid features
-- **Role**: `member` in `user_roles` table
+- **Role**: Determined by server-side membership logic (stored on the user profile / membership tables)
 - **Cost**: $25/year ($2.08/month)
 - **Features**:
   - Everything in Free Tier
@@ -23,7 +23,7 @@ The Toolio membership system provides a flexible tiered access model with a 7-da
 
 ### 3. **Non-Member** (Free Tier)
 - **Access**: Free features only
-- **Role**: `non_member` in `user_roles` table
+- **Role**: Determined by server-side membership logic (stored on the user profile / membership tables)
 - **Features**:
   - Home Maintenance Tracking
   - Task Manager
@@ -272,7 +272,7 @@ View in User Management → Membership tab:
 
 **Access denied despite subscription**
 - Run `check-subscription` manually
-- Verify `user_roles` table
+- Verify user profile role data in `user_profiles` and server-side checks (e.g. `public.is_admin(user_id)`)
 - Check subscription status in Stripe
 
 ### Edge Function Logs
@@ -293,7 +293,7 @@ View at: Supabase Dashboard → Edge Functions → Logs
 
 ### Configuration
 All features designed for easy expansion:
-- Add new tiers in `user_roles`
+- Add new tiers in `user_profiles` role data and server-side membership logic
 - Create new Stripe products
 - Update access control logic
 - Add tier-specific features
