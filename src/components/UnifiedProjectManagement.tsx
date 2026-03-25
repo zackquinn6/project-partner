@@ -3096,8 +3096,8 @@ export function UnifiedProjectManagement({
 
       {/* PFMEA Dialog */}
       <Dialog open={pfmeaOpen} onOpenChange={setPfmeaOpen}>
-        <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-          <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <DialogContent className="w-full h-screen max-w-none max-h-none p-0 overflow-hidden flex flex-col [&>button]:hidden">
+          <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background">
             <div className="flex items-center justify-between gap-2">
               <DialogTitle className="text-lg md:text-xl font-bold">Process FMEA</DialogTitle>
               <Button 

@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Edit, Trash2, Target, AlertTriangle, FileText, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -627,13 +626,14 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
     return (
       <Card>
         <CardContent className="p-0">
-          <ScrollArea className="h-[600px] w-full">
-            <Table>
+          <div className="h-[600px] w-full overflow-auto">
+            <Table className="min-w-[1800px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[120px]">Phase</TableHead>
-                  <TableHead className="min-w-[120px]">Operation</TableHead>
-                  <TableHead className="min-w-[120px]">Process Step</TableHead>
+                  <TableHead className="min-w-[120px] bg-muted/20 px-2">Phase</TableHead>
+                  <TableHead className="min-w-[140px] bg-muted/10 px-2">Operation</TableHead>
+                  <TableHead className="min-w-[120px] bg-muted/20 px-2">Process Step</TableHead>
+                  <TableHead className="min-w-[260px] bg-muted/10 px-2">Step Description</TableHead>
                   <TableHead className="min-w-[200px]">Failure Mode</TableHead>
                   <TableHead className="min-w-[200px]">Potential Effects</TableHead>
                   <TableHead className="w-20">S</TableHead>
@@ -654,19 +654,21 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
                   if (reqFailureModes.length === 0) {
                     return (
                       <TableRow key={requirement.id}>
-                        <TableCell className="font-medium">
+                        <TableCell rowSpan={1} className="font-medium bg-muted/10 p-2">
                           <div className="text-sm">{requirementPhaseName(requirement)}</div>
                         </TableCell>
-                        <TableCell className="font-medium">
+                        <TableCell rowSpan={1} className="font-medium bg-muted/5 p-2">
                           <div className="text-sm">{requirementOperationName(requirement)}</div>
                         </TableCell>
-                        <TableCell className="font-medium">
-                          <div className="space-y-1">
-                            <div className="text-sm">{requirementStepName(requirement)}</div>
-                            <div className="text-xs text-muted-foreground font-normal">{requirement.requirement_text}</div>
+                        <TableCell rowSpan={1} className="font-medium bg-muted/10 p-2">
+                          <div className="text-sm">{requirementStepName(requirement)}</div>
+                        </TableCell>
+                        <TableCell className="bg-muted/5 p-2">
+                          <div className="text-xs text-muted-foreground font-normal">
+                            {requirement.requirement_text}
                           </div>
                         </TableCell>
-                        <TableCell colSpan={9} className="text-center py-4">
+                        <TableCell colSpan={10} className="text-center py-4">
                           <Button
                             variant="outline"
                             onClick={() => addFailureMode(requirement.id)}
@@ -688,16 +690,30 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
                       <TableRow key={failureMode.id} className={rpnColorClass}>
                         {index === 0 && (
                           <>
-                            <TableCell rowSpan={reqFailureModes.length} className="font-medium">
+                            <TableCell
+                              rowSpan={reqFailureModes.length}
+                              className="font-medium bg-muted/10 p-2"
+                            >
                               <div className="text-sm">{requirementPhaseName(requirement)}</div>
                             </TableCell>
-                            <TableCell rowSpan={reqFailureModes.length} className="font-medium">
+                            <TableCell
+                              rowSpan={reqFailureModes.length}
+                              className="font-medium bg-muted/5 p-2"
+                            >
                               <div className="text-sm">{requirementOperationName(requirement)}</div>
                             </TableCell>
-                            <TableCell rowSpan={reqFailureModes.length} className="font-medium">
-                              <div className="space-y-1">
-                                <div className="text-sm">{requirementStepName(requirement)}</div>
-                                <div className="text-xs text-muted-foreground font-normal">{requirement.requirement_text}</div>
+                            <TableCell
+                              rowSpan={reqFailureModes.length}
+                              className="font-medium bg-muted/10 p-2"
+                            >
+                              <div className="text-sm">{requirementStepName(requirement)}</div>
+                            </TableCell>
+                            <TableCell
+                              rowSpan={reqFailureModes.length}
+                              className="bg-muted/5 p-2"
+                            >
+                              <div className="text-xs text-muted-foreground font-normal">
+                                {requirement.requirement_text}
                               </div>
                             </TableCell>
                           </>
@@ -894,7 +910,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
                 })}
               </TableBody>
             </Table>
-          </ScrollArea>
+          </div>
         </CardContent>
       </Card>
     );
