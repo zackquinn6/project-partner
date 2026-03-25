@@ -39,9 +39,11 @@ export const PricingSection: React.FC = () => {
     <section className="px-4 py-16 md:py-20">
       <div className="container mx-auto">
         <div className="mb-12 text-center md:mb-16">
-          <h2 className="mb-4 text-3xl font-bold md:text-4xl lg:text-5xl">Simple pricing for every homeowner</h2>
+          <h2 className="mb-4 text-3xl font-bold md:text-4xl lg:text-5xl">
+            Simple pricing for every level of projects
+          </h2>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground md:text-xl">
-            Start free, add Risk-less when you need it, or unlock the full project suite.
+            Start free and unlock project control when you need it
           </p>
         </div>
 
