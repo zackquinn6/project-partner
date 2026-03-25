@@ -20,12 +20,15 @@ import { ExpertHelpWindow } from '@/components/ExpertHelpWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
+import { useMembership } from '@/contexts/MembershipContext';
+import { toast } from 'sonner';
 export const PostAuthLanding = () => {
   const navigate = useNavigate();
   const { projectCatalogEnabled, workshopLabsAccordionEnabled } = useGlobalPublicSettings();
   const {
     user
   } = useAuth();
+  const { hasProjectsTier, loading: membershipLoading } = useMembership();
   const {
     isAdmin
   } = useUserRole();
@@ -150,7 +153,13 @@ export const PostAuthLanding = () => {
             {
               icon: BookOpen,
               title: 'Browse Project Catalog',
-              action: () => navigate('/projects'),
+              action: () => {
+                if (!membershipLoading && !hasProjectsTier) {
+                  toast.error('Projects membership is required to browse the project catalog.');
+                  return;
+                }
+                navigate('/projects');
+              },
               color: 'bg-blue-700',
               textColor: 'text-white',
             },
@@ -171,7 +180,7 @@ export const PostAuthLanding = () => {
         textColor: 'text-white',
       },
     ],
-    [projectCatalogEnabled, navigate]
+    [projectCatalogEnabled, navigate, hasProjectsTier, membershipLoading]
   );
 
   // Section 3: Account

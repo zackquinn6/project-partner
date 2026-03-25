@@ -56,9 +56,6 @@ export function WorkspaceSubViewHeader({
               width={112}
               height={28}
             />
-            <span className="truncate text-xs font-semibold tracking-tight text-foreground md:text-sm">
-              Project Partner
-            </span>
           </div>
           <Button
             type="button"
@@ -140,7 +137,12 @@ export function WorkspaceSubViewHeader({
               >
                 <SelectValue placeholder="Select home" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent
+                align="end"
+                sideOffset={4}
+                collisionPadding={16}
+                className="max-w-[min(20rem,calc(100vw-2rem))]"
+              >
                 <SelectItem value="all">All Homes</SelectItem>
                 {homes.map((home) => (
                   <SelectItem key={home.id} value={home.id}>

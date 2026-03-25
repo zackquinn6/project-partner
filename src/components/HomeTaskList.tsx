@@ -25,6 +25,9 @@ import { ProjectPortfolioRemindersDialog } from "@/components/ProjectPortfolioRe
 import { useNavigate } from "react-router-dom";
 import { WorkspaceSubViewHeader } from "@/components/WorkspaceSubViewHeader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
+import type { ProjectRun } from "@/interfaces/ProjectRun";
+import { isRiskFocusRun } from "@/utils/projectRunRiskFocus";
 
 interface HomeTask {
   id: string;
@@ -67,7 +70,7 @@ export function HomeTaskList({
   embedded?: boolean;
 }) {
   const { user } = useAuth();
-  const { canAccessPaidFeatures } = useMembership();
+  const { hasProjectsTier, hasRiskLessTier, loading: membershipLoading } = useMembership();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<HomeTask[]>([]);
   const [homes, setHomes] = useState<Home[]>([]);
@@ -83,6 +86,8 @@ export function HomeTaskList({
   const [showTeamWindow, setShowTeamWindow] = useState(false);
   const [showAssignWindow, setShowAssignWindow] = useState(false);
   const [showPortfolioReminders, setShowPortfolioReminders] = useState(false);
+  const [linkedProjectUpgradeOpen, setLinkedProjectUpgradeOpen] = useState(false);
+  const [linkedProjectUpgradeFeature, setLinkedProjectUpgradeFeature] = useState('Projects membership');
   const [subtasks, setSubtasks] = useState<Array<{ 
     id: string; 
     title: string; 
@@ -372,18 +377,6 @@ export function HomeTaskList({
     }
   };
 
-  const handleDelete = async (taskId: string) => {
-    const { error } = await supabase
-      .from("home_tasks")
-      .delete()
-      .eq("id", taskId);
-    
-    if (error) {
-      return;
-    }
-    fetchTasks();
-  };
-
   const resetForm = () => {
     setFormData({
       title: "",
@@ -460,6 +453,49 @@ export function HomeTaskList({
   const handleRapidCosting = (task: HomeTask) => {
     setSelectedTask(task);
     setShowRapidCosting(true);
+  };
+
+  /** Open a linked project run in the workspace; respects Risk-less vs Projects membership (manual entries always allowed). */
+  const tryOpenLinkedProjectRun = async (projectRunId: string) => {
+    if (membershipLoading) return;
+
+    const { data, error } = await supabase
+      .from('project_runs')
+      .select('customization_decisions, is_manual_entry')
+      .eq('id', projectRunId)
+      .maybeSingle();
+
+    if (error || !data) {
+      onOpenChange(false);
+      navigate('/', { state: { view: 'user', projectRunId } });
+      return;
+    }
+
+    const stub = {
+      customization_decisions: data.customization_decisions,
+      isManualEntry: Boolean(data.is_manual_entry),
+    } as ProjectRun;
+
+    if (stub.isManualEntry) {
+      onOpenChange(false);
+      navigate('/', { state: { view: 'user', projectRunId } });
+      return;
+    }
+
+    if (isRiskFocusRun(stub)) {
+      if (!hasRiskLessTier) {
+        setLinkedProjectUpgradeFeature('Risk-Less');
+        setLinkedProjectUpgradeOpen(true);
+        return;
+      }
+    } else if (!hasProjectsTier) {
+      setLinkedProjectUpgradeFeature('Projects membership');
+      setLinkedProjectUpgradeOpen(true);
+      return;
+    }
+
+    onOpenChange(false);
+    navigate('/', { state: { view: 'user', projectRunId } });
   };
 
   const addSubtask = () => {
@@ -565,18 +601,18 @@ export function HomeTaskList({
     <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
               <div className="flex-shrink-0 border-b border-border/60 bg-background/95 px-3 pb-1.5 pt-1 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:pb-2 md:pt-1.5">
                 <div className="overflow-hidden">
-                  <TabsList className={`w-full inline-flex ${canAccessPaidFeatures ? 'h-8 md:h-9' : 'h-8 md:h-9'} p-0.5 gap-0.5 md:gap-1 bg-muted/50 rounded-full`}>
+                  <TabsList className="w-full inline-flex h-8 md:h-9 p-0.5 gap-0.5 md:gap-1 bg-muted/50 rounded-full">
                     <TabsTrigger value="tasks" className="text-[11px] md:text-xs px-2 md:px-3 py-1.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0 truncate">
                       Tasks
                     </TabsTrigger>
                     <TabsTrigger value="shopping" className="text-[11px] md:text-xs px-2 md:px-3 py-1.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0 truncate">
                       Shopping
                     </TabsTrigger>
-                    {canAccessPaidFeatures && (
+                    {user ? (
                       <TabsTrigger value="schedule" className="text-[11px] md:text-xs px-2 md:px-3 py-1.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0 truncate">
                         Schedule
                       </TabsTrigger>
-                    )}
+                    ) : null}
                   </TabsList>
                 </div>
               </div>
@@ -1027,6 +1063,26 @@ export function HomeTaskList({
                             className="h-8 text-xs"
                             onClick={() => {
                               if (editingTask) {
+                                handleRapidCosting(editingTask);
+                              } else {
+                                void handleSubmit((task) => {
+                                  setSelectedTask(task);
+                                  setShowRapidCosting(true);
+                                });
+                              }
+                            }}
+                            disabled={!formData.title.trim() || !selectedHomeId || selectedHomeId === 'all'}
+                          >
+                            <span className="mr-1 text-[13px] font-medium">$</span>
+                            Budget
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs"
+                            onClick={() => {
+                              if (editingTask) {
                                 setSelectedTask(editingTask);
                                 setShowProjectLink(true);
                               } else {
@@ -1039,7 +1095,7 @@ export function HomeTaskList({
                             disabled={!formData.title.trim() || !selectedHomeId || selectedHomeId === 'all'}
                           >
                             <Link2 className="h-3 w-3 mr-1" />
-                            {editingTask?.project_run_id ? 'Edit linking' : 'Link task to project'}
+                            {editingTask?.project_run_id ? 'Edit Link to Project' : 'Link task to project'}
                           </Button>
                           {editingTask?.project_run_id && (
                             <Button
@@ -1048,11 +1104,12 @@ export function HomeTaskList({
                               size="sm"
                               className="h-8 text-xs"
                               onClick={() => {
-                                navigate('/', { state: { view: 'user', projectRunId: editingTask.project_run_id } });
-                                onOpenChange(false);
+                                if (editingTask.project_run_id) {
+                                  void tryOpenLinkedProjectRun(editingTask.project_run_id);
+                                }
                               }}
                             >
-                              Open project
+                              Open Project
                             </Button>
                           )}
                           <Button variant="outline" onClick={resetForm} size="sm" className="h-8 text-xs">
@@ -1069,7 +1126,6 @@ export function HomeTaskList({
                   <HomeTasksTable
                     tasks={tasks}
                     onEdit={handleEdit}
-                    onDelete={handleDelete}
                     onLinkProject={handleLinkProject}
                     onRapidCosting={handleRapidCosting}
                     onAddTask={() => {
@@ -1077,6 +1133,7 @@ export function HomeTaskList({
                       setShowAddTask(true);
                     }}
                     onProjectNavigate={() => onOpenChange(false)}
+                    onOpenLinkedProjectRun={(id) => void tryOpenLinkedProjectRun(id)}
                     onTaskUpdate={fetchTasks}
                   />
                 </TabsContent>
@@ -1085,7 +1142,7 @@ export function HomeTaskList({
                   <ShoppingListManager />
                 </TabsContent>
 
-                {canAccessPaidFeatures && (
+                {user ? (
                   <TabsContent value="schedule" className="mt-0 h-full space-y-4">
                     {/* Top buttons for Team and Assign windows */}
                     <div className="flex gap-2">
@@ -1118,7 +1175,7 @@ export function HomeTaskList({
                       />
                     )}
                   </TabsContent>
-                )}
+                ) : null}
               </div>
             </Tabs>
   );
@@ -1158,6 +1215,12 @@ export function HomeTaskList({
         selectedHomeId={null}
         onHomeSelected={() => fetchHomes()}
         showSelector={false}
+      />
+
+      <UpgradePrompt
+        open={linkedProjectUpgradeOpen}
+        onOpenChange={setLinkedProjectUpgradeOpen}
+        feature={linkedProjectUpgradeFeature}
       />
 
       <ProjectPortfolioRemindersDialog

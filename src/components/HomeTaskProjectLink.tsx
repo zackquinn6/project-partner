@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMembership } from "@/contexts/MembershipContext";
+import { toast } from "sonner";
 import { Link2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -127,7 +129,11 @@ export function HomeTaskProjectLink({
 
   const handleCreateAndLinkProject = async (templateId: string) => {
     if (!user) return;
-    
+    if (!membershipLoading && !hasProjectsTier) {
+      toast.error("Projects membership is required to start a new project from the catalog.");
+      return;
+    }
+
     setLoading(true);
     
     try {

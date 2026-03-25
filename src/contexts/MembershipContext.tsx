@@ -1,11 +1,16 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useBetaMode } from '@/hooks/useBetaMode';
 
-/** Apps that are always openable without a subscription. All other apps require an active subscription. */
-export const FREE_APP_ACTION_KEYS = ['my-tools', 'home-maintenance', 'task-manager', 'quality-check'] as const;
+export type SubscriptionTier = 'none' | 'risk_less' | 'projects';
+
+/** Native app keys that require the $59/yr Projects tier (catalog + guided project runs). */
+export const PROJECTS_TIER_APP_ACTION_KEYS = ['project-catalog'] as const;
+
+/** Native app keys that require Risk-less ($15/yr) or Projects tier. */
+export const RISK_LESS_APP_ACTION_KEYS = ['risk-management', 'risk-focus'] as const;
 
 interface MembershipContextType {
   isSubscribed: boolean;
@@ -14,17 +19,34 @@ interface MembershipContextType {
   trialEndDate: string | null;
   subscriptionEnd: string | null;
   loading: boolean;
+  /** Stripe/API tier: none, risk_less ($15/yr), or projects ($59/yr). Trial users are treated as projects on the client. */
+  subscriptionTier: SubscriptionTier;
+  /** Catalog, start/open catalog-backed project runs, full workflows. */
+  hasProjectsTier: boolean;
+  /** Risk-less apps; includes everyone who has Projects tier. */
+  hasRiskLessTier: boolean;
   checkSubscription: () => Promise<void>;
   createCheckout: () => Promise<void>;
   openCustomerPortal: () => Promise<void>;
   redeemCoupon: (code: string) => Promise<void>;
+  /** Any paid or trial access (legacy); prefer hasProjectsTier / hasRiskLessTier for gating. */
   canAccessPaidFeatures: boolean;
-  /** True if the app can be opened (free apps always; others require subscription). */
+  /** Per-app gate: catalog = projects tier; risk apps = risk_less+; all other registered apps = free. */
   canAccessApp: (actionKey: string) => boolean;
   trialDaysRemaining: number;
 }
 
 const MembershipContext = createContext<MembershipContextType | undefined>(undefined);
+
+function normalizeTier(data: {
+  subscribed?: boolean;
+  subscriptionTier?: string;
+}): SubscriptionTier {
+  const t = data.subscriptionTier;
+  if (t === 'risk_less' || t === 'projects' || t === 'none') return t;
+  if (data.subscribed) return 'projects';
+  return 'none';
+}
 
 export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -36,28 +58,34 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
   const [trialEndDate, setTrialEndDate] = useState<string | null>(null);
   const [lastTrialNotificationDate, setLastTrialNotificationDate] = useState<string | null>(null);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('none');
   const [loading, setLoading] = useState(true);
 
   const checkSubscription = async () => {
     if (!user) {
+      setIsSubscribed(false);
+      setIsAdmin(false);
+      setInTrial(false);
+      setTrialEndDate(null);
+      setLastTrialNotificationDate(null);
+      setSubscriptionEnd(null);
+      setSubscriptionTier('none');
       setLoading(false);
       return;
     }
 
     try {
       const { data, error } = await supabase.functions.invoke('check-subscription');
-      
+
       if (error) throw error;
 
-      // Check if user needs to re-authenticate
       if (data.requiresReauth) {
         console.log('User account not found, signing out:', data.error);
         toast({
-          title: "Session Expired",
-          description: "Please sign in again to continue.",
-          variant: "destructive",
+          title: 'Session Expired',
+          description: 'Please sign in again to continue.',
+          variant: 'destructive',
         });
-        // Sign out to clear invalid session
         await supabase.auth.signOut();
         return;
       }
@@ -68,6 +96,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
       setTrialEndDate(data.trialEndDate || null);
       setLastTrialNotificationDate(data.lastTrialNotificationDate ?? null);
       setSubscriptionEnd(data.subscriptionEnd || null);
+      setSubscriptionTier(normalizeTier(data));
     } catch (error) {
       console.error('Error checking subscription:', error);
     } finally {
@@ -78,7 +107,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
   const createCheckout = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout');
-      
+
       if (error) throw error;
 
       if (data?.url) {
@@ -87,9 +116,9 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
     } catch (error) {
       console.error('Error creating checkout:', error);
       toast({
-        title: "Error",
-        description: "Failed to create checkout session. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to create checkout session. Please try again.',
+        variant: 'destructive',
       });
     }
   };
@@ -97,7 +126,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
   const openCustomerPortal = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
-      
+
       if (error) throw error;
 
       if (data?.url) {
@@ -106,9 +135,9 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
     } catch (error) {
       console.error('Error opening customer portal:', error);
       toast({
-        title: "Error",
-        description: "Failed to open customer portal. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to open customer portal. Please try again.',
+        variant: 'destructive',
       });
     }
   };
@@ -118,32 +147,31 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
       const { data, error } = await supabase.functions.invoke('redeem-coupon', {
         body: { code },
       });
-      
+
       if (error) throw error;
 
       toast({
-        title: "Coupon Redeemed!",
+        title: 'Coupon Redeemed!',
         description: `Your trial has been extended by ${data.daysExtended} days.`,
       });
 
       await checkSubscription();
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to redeem coupon.",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to redeem coupon.',
+        variant: 'destructive',
       });
     }
   };
 
   useEffect(() => {
-    checkSubscription();
+    void checkSubscription();
 
-    const interval = setInterval(checkSubscription, 5 * 60 * 1000);
+    const interval = setInterval(() => void checkSubscription(), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [user]);
 
-  // Daily in-app trial reminder (positive); show once per day when in trial
   useEffect(() => {
     if (!user || !inTrial || !trialEndDate || loading) return;
 
@@ -152,7 +180,10 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
     if (alreadyNotifiedToday) return;
 
     const showReminder = () => {
-      const daysLeft = Math.max(0, Math.ceil((new Date(trialEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+      const daysLeft = Math.max(
+        0,
+        Math.ceil((new Date(trialEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      );
       toast({
         title: "You're in your free trial",
         description: `We hope you're finding Toolio helpful. You have ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left to explore – we're here to help you get your project done.`,
@@ -165,16 +196,34 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
     return () => clearTimeout(t);
   }, [user, inTrial, trialEndDate, loading, lastTrialNotificationDate, toast]);
 
-  const canAccessPaidFeatures = isBetaMode || isSubscribed || isAdmin || inTrial;
+  const hasProjectsTier = useMemo(
+    () =>
+      isBetaMode ||
+      isAdmin ||
+      inTrial ||
+      subscriptionTier === 'projects',
+    [isBetaMode, isAdmin, inTrial, subscriptionTier]
+  );
+
+  const hasRiskLessTier = useMemo(
+    () => hasProjectsTier || subscriptionTier === 'risk_less',
+    [hasProjectsTier, subscriptionTier]
+  );
+
+  const canAccessPaidFeatures = isBetaMode || isAdmin || inTrial || isSubscribed;
 
   const canAccessApp = useCallback(
     (actionKey: string): boolean => {
-      if ((FREE_APP_ACTION_KEYS as readonly string[]).includes(actionKey)) return true;
-      // While subscription status is loading, do not treat a signed-in user as unpaid (avoids false blocks).
       if (user && loading) return true;
-      return canAccessPaidFeatures;
+      if ((PROJECTS_TIER_APP_ACTION_KEYS as readonly string[]).includes(actionKey)) {
+        return hasProjectsTier;
+      }
+      if ((RISK_LESS_APP_ACTION_KEYS as readonly string[]).includes(actionKey)) {
+        return hasRiskLessTier;
+      }
+      return true;
     },
-    [canAccessPaidFeatures, user, loading]
+    [hasProjectsTier, hasRiskLessTier, user, loading]
   );
 
   const trialDaysRemaining = trialEndDate
@@ -190,6 +239,9 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
         trialEndDate,
         subscriptionEnd,
         loading,
+        subscriptionTier,
+        hasProjectsTier,
+        hasRiskLessTier,
         checkSubscription,
         createCheckout,
         openCustomerPortal,

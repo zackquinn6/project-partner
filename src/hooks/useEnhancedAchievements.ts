@@ -322,6 +322,10 @@ export function useEnhancedAchievements(userId?: string) {
           earned_at: now,
         });
 
+        if (insertError) {
+          console.error('user_achievements unlock insert failed:', insertError.message, insertError);
+        }
+
         if (!insertError) {
           unlockedIds.add(achievement.id);
           newlyUnlocked.push(achievement);

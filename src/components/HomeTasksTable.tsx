@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Pencil, Trash2, ChevronDown, ChevronUp, Plus, Link2, ExternalLink } from "lucide-react";
+import { Pencil, ChevronDown, ChevronUp, Plus, Link2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/useResponsive";
@@ -54,11 +54,12 @@ interface Subtask {
 interface HomeTasksTableProps {
   tasks: HomeTask[];
   onEdit: (task: HomeTask) => void;
-  onDelete: (taskId: string) => void;
   onLinkProject: (task: HomeTask) => void;
   onRapidCosting: (task: HomeTask) => void;
   onAddTask?: () => void;
   onProjectNavigate?: () => void;
+  /** When set, opening a linked catalog project run uses this (e.g. membership gate) instead of navigating directly. */
+  onOpenLinkedProjectRun?: (projectRunId: string) => void;
   onTaskUpdate?: () => void;
 }
 type SortField = 'title' | 'priority' | 'diy_level' | 'due_date';
@@ -66,11 +67,11 @@ type SortDirection = 'asc' | 'desc';
 export function HomeTasksTable({
   tasks,
   onEdit,
-  onDelete,
   onLinkProject,
   onRapidCosting,
   onAddTask,
   onProjectNavigate,
+  onOpenLinkedProjectRun,
   onTaskUpdate
 }: HomeTasksTableProps) {
   const navigate = useNavigate();
@@ -613,43 +614,50 @@ export function HomeTasksTable({
                     {!isMobile && (
                       <TableCell className="text-right">
                         <div className="flex gap-1 justify-end">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => onRapidCosting(task)} 
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onRapidCosting(task)}
                             className="h-8 px-2"
-                            title="Cost Assessment"
+                            title="Budget"
+                            aria-label="Budget"
                           >
                             <span className="text-[18px]">$</span>
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => onLinkProject(task)} 
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (task.project_run_id) {
+                                if (onOpenLinkedProjectRun) {
+                                  onOpenLinkedProjectRun(task.project_run_id);
+                                } else {
+                                  onProjectNavigate?.();
+                                  navigate('/', { state: { view: 'user', projectRunId: task.project_run_id } });
+                                }
+                              } else {
+                                onLinkProject(task);
+                              }
+                            }}
                             className="h-8 px-2"
-                            title={task.project_run_id ? "Linked to project" : "Link to project"}
+                            title={task.project_run_id ? 'Open project' : 'Link to project'}
+                            aria-label={task.project_run_id ? 'Open project' : 'Link to project'}
                           >
-                            <Link2 className="h-[18px] w-[18px]" />
-                          </Button>
-                          {task.project_run_id && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => {
-                                onProjectNavigate?.();
-                                navigate('/', { state: { view: 'user', projectRunId: task.project_run_id } });
-                              }} 
-                              className="h-8 px-2"
-                              title="Open linked project"
-                            >
+                            {task.project_run_id ? (
                               <ExternalLink className="h-[18px] w-[18px]" />
-                            </Button>
-                          )}
-                          <Button variant="ghost" size="sm" onClick={() => onEdit(task)} className="h-8 px-2">
-                            <Pencil className="h-[18px] w-[18px]" />
+                            ) : (
+                              <Link2 className="h-[18px] w-[18px]" />
+                            )}
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => onDelete(task.id)} className="h-8 px-2 text-destructive">
-                            <Trash2 className="h-[18px] w-[18px]" />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onEdit(task)}
+                            className="h-8 px-2"
+                            title="Edit"
+                            aria-label="Edit"
+                          >
+                            <Pencil className="h-[18px] w-[18px]" />
                           </Button>
                         </div>
                       </TableCell>
@@ -658,14 +666,60 @@ export function HomeTasksTable({
                   {isMobile && swipedTaskId === task.id && (
                     <TableRow key={`${task.id}-swipe-actions`} className="bg-muted/50">
                       <TableCell colSpan={2} className="py-2">
-                        <div className="flex gap-2 justify-end">
-                          <Button variant="outline" size="sm" className="h-9 text-[18px]" onClick={() => { onEdit(task); setSwipedTaskId(null); }}>
-                            <Pencil className="h-[18px] w-[18px] mr-1" />
-                            Edit
+                        <div className="flex flex-wrap gap-2 justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 text-[18px]"
+                            onClick={() => {
+                              onRapidCosting(task);
+                              setSwipedTaskId(null);
+                            }}
+                          >
+                            <span className="mr-1 text-[18px] font-medium">$</span>
+                            Budget
                           </Button>
-                          <Button variant="outline" size="sm" className="h-9 text-[18px] text-destructive border-destructive/50 hover:bg-destructive/10" onClick={() => { onDelete(task.id); setSwipedTaskId(null); }}>
-                            <Trash2 className="h-[18px] w-[18px] mr-1" />
-                            Delete
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 text-[18px]"
+                            onClick={() => {
+                              if (task.project_run_id) {
+                                if (onOpenLinkedProjectRun) {
+                                  onOpenLinkedProjectRun(task.project_run_id);
+                                } else {
+                                  onProjectNavigate?.();
+                                  navigate('/', { state: { view: 'user', projectRunId: task.project_run_id } });
+                                }
+                              } else {
+                                onLinkProject(task);
+                              }
+                              setSwipedTaskId(null);
+                            }}
+                          >
+                            {task.project_run_id ? (
+                              <>
+                                <ExternalLink className="mr-1 h-[18px] w-[18px]" />
+                                Project
+                              </>
+                            ) : (
+                              <>
+                                <Link2 className="mr-1 h-[18px] w-[18px]" />
+                                Project
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 text-[18px]"
+                            onClick={() => {
+                              onEdit(task);
+                              setSwipedTaskId(null);
+                            }}
+                          >
+                            <Pencil className="mr-1 h-[18px] w-[18px]" />
+                            Edit
                           </Button>
                         </div>
                       </TableCell>

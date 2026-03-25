@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +53,24 @@ export default function ProfileManager({
       setIsLoading(false);
     }
   }, [open, user]);
+
+  const surveyInitialData = useMemo(
+    () => ({
+      skillLevel: existingProfile?.skill_level || "",
+      physicalCapability: existingProfile?.physical_capability || "",
+      homeOwnership: existingProfile?.home_ownership || "",
+      homeBuildYear: existingProfile?.home_build_year || "",
+      homeState: existingProfile?.home_state || "",
+      preferredLearningMethods: existingProfile?.preferred_learning_methods || [],
+      projectFocus: (existingProfile?.project_focus as PMFocus | null | undefined) ?? undefined,
+      ownedTools: existingProfile?.owned_tools || [],
+      fullName: existingProfile?.full_name || "",
+      nickname: existingProfile?.nickname || "",
+      projectSkills: existingProfile?.project_skills ?? null,
+      avoidProjects: existingProfile?.avoid_projects ?? null,
+    }),
+    [existingProfile]
+  );
 
   const loadExistingProfile = async (quiet: boolean) => {
     if (!quiet) setIsLoading(true);
@@ -114,30 +132,16 @@ export default function ProfileManager({
     }
   };
 
-  if (open && (isLoading || !user)) {
+  if (open && !user) {
     return (
       <>
         <Dialog open onOpenChange={onOpenChange}>
-          <DialogContent className="flex h-screen max-h-full w-full max-w-full flex-col overflow-hidden p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
+          <DialogContent className="sm:max-w-md">
             <DialogTitle className="sr-only">My Profile</DialogTitle>
-            <div className="flex h-full flex-col overflow-hidden">
-              <div className="flex flex-shrink-0 items-center justify-between border-b px-4 py-4 md:px-6">
-                <h2 className="text-lg font-bold md:text-xl">My Profile</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onOpenChange(false)}
-                  className="ml-4 flex-shrink-0"
-                >
-                  Close
-                </Button>
-              </div>
-              <div className="flex flex-1 items-center justify-center py-8">
-                <div className="text-center text-muted-foreground">
-                  {!user ? 'Sign in to edit your profile.' : 'Loading profile…'}
-                </div>
-              </div>
-            </div>
+            <p className="text-sm text-muted-foreground">Sign in to edit your profile.</p>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
           </DialogContent>
         </Dialog>
         <AchievementsFullDialog open={showAchievements} onOpenChange={setShowAchievements} />
@@ -148,30 +152,14 @@ export default function ProfileManager({
   return (
     <>
       <DIYSurveyPopup
-        open={open}
-        onOpenChange={(next) => {
-          if (!next) {
-            onOpenChange(false);
-          }
-        }}
+        open={open && Boolean(user)}
+        onOpenChange={onOpenChange}
         mode="new"
         enableProgressSave
+        initialDataLoading={Boolean(user) && isLoading}
         onProfileSaved={() => void loadExistingProfile(true)}
         onOpenAchievements={() => setShowAchievements(true)}
-        initialData={{
-          skillLevel: existingProfile?.skill_level || "",
-          physicalCapability: existingProfile?.physical_capability || "",
-          homeOwnership: existingProfile?.home_ownership || "",
-          homeBuildYear: existingProfile?.home_build_year || "",
-          homeState: existingProfile?.home_state || "",
-          preferredLearningMethods: existingProfile?.preferred_learning_methods || [],
-          projectFocus: (existingProfile?.project_focus as PMFocus | null | undefined) ?? undefined,
-          ownedTools: existingProfile?.owned_tools || [],
-          fullName: existingProfile?.full_name || "",
-          nickname: existingProfile?.nickname || "",
-          projectSkills: existingProfile?.project_skills ?? null,
-          avoidProjects: existingProfile?.avoid_projects ?? null,
-        }}
+        initialData={surveyInitialData}
       />
 
       <AchievementsFullDialog open={showAchievements} onOpenChange={setShowAchievements} />

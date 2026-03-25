@@ -12,6 +12,21 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
+/** Aligns with landing tiers: Risk-less ($15) vs Projects ($59). Comma-separated Stripe price IDs in env. */
+type SubscriptionTier = "none" | "risk_less" | "projects";
+
+function subscriptionTierFromPriceId(priceId: string | undefined): SubscriptionTier {
+  if (!priceId) return "projects";
+  const riskRaw = Deno.env.get("STRIPE_PRICE_IDS_RISK_LESS") ?? "";
+  const projectsRaw = Deno.env.get("STRIPE_PRICE_IDS_PROJECTS") ?? "";
+  const riskIds = riskRaw.split(",").map((s) => s.trim()).filter(Boolean);
+  const projectIds = projectsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+  if (projectIds.length > 0 && projectIds.includes(priceId)) return "projects";
+  if (riskIds.length > 0 && riskIds.includes(priceId)) return "risk_less";
+  // Legacy: env not set or unknown price ID → full Projects access (backward compatible)
+  return "projects";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -69,7 +84,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         subscribed: true, 
         isAdmin: true,
-        subscriptionEnd: null 
+        subscriptionEnd: null,
+        subscriptionTier: "projects" as SubscriptionTier,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -83,7 +99,8 @@ serve(async (req) => {
         subscribed: true, 
         isAdmin: false,
         isProjectOwner: true,
-        subscriptionEnd: null 
+        subscriptionEnd: null,
+        subscriptionTier: "projects" as SubscriptionTier,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -120,7 +137,8 @@ serve(async (req) => {
         subscribed: false, 
         inTrial,
         trialEndDate: membershipData?.trial_end_date ?? null,
-        lastTrialNotificationDate: membershipData?.last_trial_notification_date ?? null
+        lastTrialNotificationDate: membershipData?.last_trial_notification_date ?? null,
+        subscriptionTier: "none" as SubscriptionTier,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -139,9 +157,13 @@ serve(async (req) => {
 
     const hasActiveSub = subscriptions.data.length > 0;
     let subscriptionEnd: string | null = null;
+    let subscriptionTier: SubscriptionTier = "none";
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
+      const priceId = subscription.items.data[0]?.price?.id;
+      subscriptionTier = subscriptionTierFromPriceId(priceId);
+      logStep("Subscription tier resolved", { priceId, subscriptionTier });
       const periodStart = new Date(subscription.current_period_start * 1000);
       const periodEnd = new Date(subscription.current_period_end * 1000);
       subscriptionEnd = periodEnd.toISOString();
@@ -218,7 +240,8 @@ serve(async (req) => {
         isAdmin: false,
         inTrial: inTrialNoSub,
         trialEndDate: membershipDataNoSub?.trial_end_date ?? null,
-        lastTrialNotificationDate: membershipDataNoSub?.last_trial_notification_date ?? null
+        lastTrialNotificationDate: membershipDataNoSub?.last_trial_notification_date ?? null,
+        subscriptionTier: "none" as SubscriptionTier,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -228,7 +251,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       subscriptionEnd,
-      isAdmin: false
+      isAdmin: false,
+      subscriptionTier,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

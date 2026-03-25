@@ -184,6 +184,29 @@ function currentRiskLevelBadgeClass(level: 'low' | 'medium' | 'high') {
   }
 }
 
+/** Select trigger styling for “What’s the new status?” severity (red / yellow / green). */
+function riskFocusSeveritySelectTriggerClass(level: 'low' | 'medium' | 'high'): string {
+  switch (level) {
+    case 'high':
+      return 'border-red-300 bg-red-50/90 text-red-900 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200';
+    case 'low':
+      return 'border-emerald-300 bg-emerald-50/90 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200';
+    default:
+      return 'border-amber-300 bg-amber-50/90 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200';
+  }
+}
+
+function riskFocusSeveritySelectItemClass(level: 'high' | 'medium' | 'low'): string {
+  switch (level) {
+    case 'high':
+      return 'text-red-800 focus:bg-red-50 focus:text-red-900 dark:text-red-300 dark:focus:bg-red-950/50 dark:focus:text-red-200';
+    case 'low':
+      return 'text-emerald-800 focus:bg-emerald-50 focus:text-emerald-900 dark:text-emerald-300 dark:focus:bg-emerald-950/40 dark:focus:text-emerald-200';
+    default:
+      return 'text-amber-900 focus:bg-amber-50 focus:text-amber-950 dark:text-amber-300 dark:focus:bg-amber-950/40 dark:focus:text-amber-200';
+  }
+}
+
 function RiskFocusDashboard({
   risks,
   projectDisplayName
@@ -194,58 +217,62 @@ function RiskFocusDashboard({
   const { high, medium, low, unset, total } = riskFocusSeverityCounts(risks);
   const name = projectDisplayName?.trim() || null;
   return (
-    <div className="shrink-0 border-b bg-muted/30 px-3 pb-1.5 pt-1 md:px-4 md:pb-2 md:pt-1.5">
-      {name ? (
-        <div className="mb-2 min-w-0">
-          <h2 className="text-center text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl md:text-left md:text-3xl">
-            {name}
-          </h2>
-        </div>
-      ) : null}
-      <div className="mb-1 w-full border-b border-border/60 pb-1 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Current Risk Summary
-      </div>
-      <div className="flex w-full justify-center">
-        <Card className="min-w-0 w-full max-w-md overflow-hidden">
-          <CardContent className="flex flex-row flex-wrap items-center justify-center gap-y-1 px-1.5 py-1 sm:px-2 sm:py-1">
-            <div className="flex min-w-0 flex-row flex-wrap items-center justify-center gap-x-2 gap-y-0.5 sm:gap-x-3">
-              <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  High
-                </span>
-                <span className="text-base font-bold tabular-nums text-destructive sm:text-lg">{high}</span>
-              </div>
-              <div className="flex flex-row items-baseline gap-1.5 border-l border-foreground/20 pl-2 dark:border-foreground/30 sm:gap-2 sm:pl-3">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Med
-                </span>
-                <span className="text-base font-bold tabular-nums text-amber-600 sm:text-lg">{medium}</span>
-              </div>
-              <div className="flex flex-row items-baseline gap-1.5 border-l border-foreground/20 pl-2 dark:border-foreground/30 sm:gap-2 sm:pl-3">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Low
-                </span>
-                <span className="text-base font-bold tabular-nums text-emerald-600 sm:text-lg">{low}</span>
-              </div>
-              <div
-                className="mx-0.5 h-6 w-px shrink-0 self-center bg-foreground/45 dark:bg-foreground/55 sm:mx-1.5"
-                aria-hidden
-                role="presentation"
-              />
-              <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Total
-                </span>
-                <span className="text-base font-bold tabular-nums sm:text-lg">{total}</span>
-              </div>
-            </div>
-          </CardContent>
-          {unset > 0 ? (
-            <div className="border-t border-border/50 px-1.5 py-0.5 text-center text-[10px] text-muted-foreground">
-              Not set: {unset}
-            </div>
+    <div className="shrink-0 border-b bg-muted/30 px-3 py-2 md:px-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+        <div className="min-w-0 sm:max-w-[38%] sm:flex-1">
+          {name ? (
+            <h2 className="text-center text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-left sm:text-2xl md:text-3xl">
+              {name}
+            </h2>
           ) : null}
-        </Card>
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col sm:max-w-[58%] sm:items-end">
+          <div className="mb-1 w-full text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:text-right">
+            Current Risk Summary
+          </div>
+          <div className="flex w-full justify-center sm:justify-end">
+            <Card className="min-w-0 w-full max-w-md overflow-hidden">
+              <CardContent className="flex flex-row flex-wrap items-center justify-center gap-y-1 px-1.5 py-1 sm:px-2 sm:py-1">
+                <div className="flex min-w-0 flex-row flex-wrap items-center justify-center gap-x-2 gap-y-0.5 sm:gap-x-3">
+                  <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      High
+                    </span>
+                    <span className="text-base font-bold tabular-nums text-destructive sm:text-lg">{high}</span>
+                  </div>
+                  <div className="flex flex-row items-baseline gap-1.5 border-l border-foreground/20 pl-2 dark:border-foreground/30 sm:gap-2 sm:pl-3">
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Med
+                    </span>
+                    <span className="text-base font-bold tabular-nums text-amber-600 sm:text-lg">{medium}</span>
+                  </div>
+                  <div className="flex flex-row items-baseline gap-1.5 border-l border-foreground/20 pl-2 dark:border-foreground/30 sm:gap-2 sm:pl-3">
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Low
+                    </span>
+                    <span className="text-base font-bold tabular-nums text-emerald-600 sm:text-lg">{low}</span>
+                  </div>
+                  <div
+                    className="mx-0.5 h-6 w-px shrink-0 self-center bg-foreground/45 dark:bg-foreground/55 sm:mx-1.5"
+                    aria-hidden
+                    role="presentation"
+                  />
+                  <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Total
+                    </span>
+                    <span className="text-base font-bold tabular-nums sm:text-lg">{total}</span>
+                  </div>
+                </div>
+              </CardContent>
+              {unset > 0 ? (
+                <div className="border-t border-border/50 px-1.5 py-0.5 text-center text-[10px] text-muted-foreground">
+                  Not set: {unset}
+                </div>
+              ) : null}
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1542,6 +1569,7 @@ export function RiskManagementWindow({
                           key={risk.id}
                           className={cn(
                             'p-4',
+                            riskFocusRun && 'pb-2',
                             riskFocusRun &&
                               'cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
                           )}
@@ -1558,7 +1586,7 @@ export function RiskManagementWindow({
                               : undefined
                           }
                         >
-                          <div className="space-y-3">
+                          <div className={cn('space-y-3', riskFocusRun && 'space-y-2')}>
                             <div className="flex items-start gap-2">
                               <div className="min-w-0 flex-1">
                                 <div className="text-xs text-muted-foreground mb-1">What could go wrong?</div>
@@ -1603,7 +1631,7 @@ export function RiskManagementWindow({
                                 </div>
                               ) : null}
                             </div>
-                            <div className="space-y-3">
+                            <div className={cn('space-y-3', riskFocusRun && 'space-y-2')}>
                               <div>
                                 <div className="text-xs text-muted-foreground mb-1">How likely?</div>
                                 <Badge
@@ -1729,13 +1757,24 @@ export function RiskManagementWindow({
                                         handleUpdateCurrentRiskLevel(risk, value as 'low' | 'medium' | 'high')
                                       }
                                     >
-                                      <SelectTrigger className="h-11 text-sm">
+                                      <SelectTrigger
+                                        className={cn(
+                                          'h-11 text-sm',
+                                          riskFocusSeveritySelectTriggerClass(riskFocusLevelValue(risk))
+                                        )}
+                                      >
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="high">High</SelectItem>
-                                        <SelectItem value="medium">Med</SelectItem>
-                                        <SelectItem value="low">Low</SelectItem>
+                                        <SelectItem value="high" className={riskFocusSeveritySelectItemClass('high')}>
+                                          High
+                                        </SelectItem>
+                                        <SelectItem value="medium" className={riskFocusSeveritySelectItemClass('medium')}>
+                                          Med
+                                        </SelectItem>
+                                        <SelectItem value="low" className={riskFocusSeveritySelectItemClass('low')}>
+                                          Low
+                                        </SelectItem>
                                       </SelectContent>
                                     </Select>
                                   )}
@@ -1801,10 +1840,19 @@ export function RiskManagementWindow({
                     )}
                   >
                     <div className="min-h-0 flex-1 overflow-auto rounded-md border border-border/60">
-                      <Table>
+                      <Table
+                        className={cn(
+                          riskFocusRun &&
+                            '[&_td]:!px-3 [&_td]:!py-1.5 [&_td]:!pb-1 [&_th]:!h-10 [&_th]:!py-2 [&_th]:!px-3'
+                        )}
+                      >
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="min-w-[180px] max-w-[240px]">
+                          <TableHead
+                            className={cn(
+                              riskFocusRun ? 'min-w-[135px] max-w-[180px]' : 'min-w-[180px] max-w-[240px]'
+                            )}
+                          >
                             {riskFocusRun ? (
                               <button
                                 type="button"
@@ -1835,7 +1883,9 @@ export function RiskManagementWindow({
                           <TableHead
                             className={cn(
                               'align-top',
-                              riskFocusRun ? 'w-[14%] min-w-[7rem] max-w-[10rem]' : 'min-w-[140px] max-w-[200px]'
+                              riskFocusRun
+                                ? 'w-[17.5%] min-w-[8.75rem] max-w-[12.5rem]'
+                                : 'min-w-[140px] max-w-[200px]'
                             )}
                           >
                             What happens if it does?
@@ -1923,7 +1973,7 @@ export function RiskManagementWindow({
                             <TableCell
                               className={cn(
                                 'text-sm align-top',
-                                riskFocusRun && 'max-w-[10rem]'
+                                riskFocusRun && 'max-w-[12.5rem]'
                               )}
                             >
                               <ImpactIfItDoesContent risk={risk} />
@@ -2026,13 +2076,24 @@ export function RiskManagementWindow({
                                       handleUpdateCurrentRiskLevel(risk, value as 'low' | 'medium' | 'high')
                                     }
                                   >
-                                    <SelectTrigger className="h-8 text-xs">
+                                    <SelectTrigger
+                                      className={cn(
+                                        'h-8 text-xs',
+                                        riskFocusSeveritySelectTriggerClass(riskFocusLevelValue(risk))
+                                      )}
+                                    >
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="high">High</SelectItem>
-                                      <SelectItem value="medium">Med</SelectItem>
-                                      <SelectItem value="low">Low</SelectItem>
+                                      <SelectItem value="high" className={riskFocusSeveritySelectItemClass('high')}>
+                                        High
+                                      </SelectItem>
+                                      <SelectItem value="medium" className={riskFocusSeveritySelectItemClass('medium')}>
+                                        Med
+                                      </SelectItem>
+                                      <SelectItem value="low" className={riskFocusSeveritySelectItemClass('low')}>
+                                        Low
+                                      </SelectItem>
                                     </SelectContent>
                                   </Select>
                                 )}

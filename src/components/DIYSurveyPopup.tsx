@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,8 +41,10 @@ interface DIYSurveyPopupProps {
     projectSkills?: Record<string, number> | null;
     avoidProjects?: string[] | null;
   };
-  /** Show Save next to Next; persist without closing (My Profile editor). */
+  /** My Profile editor: save on close (no separate Save), optional achievements entry. */
   enableProgressSave?: boolean;
+  /** When true, profile host is still fetching row; show loading inside this dialog. */
+  initialDataLoading?: boolean;
   onProfileSaved?: () => void;
   /** Optional control (e.g. open achievements from host). */
   onOpenAchievements?: () => void;
@@ -85,6 +87,7 @@ export default function DIYSurveyPopup({
   mode = 'new',
   initialData,
   enableProgressSave = false,
+  initialDataLoading = false,
   onProfileSaved,
   onOpenAchievements,
 }: DIYSurveyPopupProps) {
@@ -127,6 +130,16 @@ export default function DIYSurveyPopup({
     if (initialData?.physicalCapability === "heavy") return 100;
     return 0;
   });
+
+  const openPrevRef = useRef(false);
+  const loadingPrevRef = useRef(false);
+
+  const validateRequiredProfileFields = (): string | null => {
+    if (!answers.fullName.trim() || !answers.skillLevel || !answers.physicalCapability) {
+      return "Add your full name, skill level, and physical capability before closing.";
+    }
+    return null;
+  };
 
   const profileProgressPercent =
     mode === 'verify' && currentStep === 0
@@ -192,14 +205,71 @@ export default function DIYSurveyPopup({
   }, [open, currentStep]);
 
   useEffect(() => {
-    if (!open) return;
+    const openNow = open;
+    const loadNow = initialDataLoading;
+
+    if (!openNow) {
+      openPrevRef.current = false;
+      loadingPrevRef.current = loadNow;
+      return;
+    }
+
+    if (mode === "personality") {
+      openPrevRef.current = true;
+      loadingPrevRef.current = false;
+      return;
+    }
+
+    if (loadNow) {
+      loadingPrevRef.current = true;
+      openPrevRef.current = true;
+      return;
+    }
+
+    const finishedProfileFetch = loadingPrevRef.current && !loadNow;
+    const justOpened = openNow && !openPrevRef.current;
+    loadingPrevRef.current = false;
+    openPrevRef.current = true;
+
+    if (!justOpened && !finishedProfileFetch) return;
+
+    const data = initialData;
+    setAnswers({
+      skillLevel: data?.skillLevel || "",
+      physicalCapability: data?.physicalCapability || "",
+      homeOwnership: data?.homeOwnership || "",
+      homeBuildYear: data?.homeBuildYear || "",
+      homeState: data?.homeState || "",
+      preferredLearningMethods: data?.preferredLearningMethods ? [...data.preferredLearningMethods] : [],
+      projectFocus: data?.projectFocus ?? null,
+      ownedTools: data?.ownedTools || [],
+      fullName: data?.fullName || "",
+      nickname: data?.nickname || "",
+    });
     setProjectSkillRows(
-      buildProjectSkillRows(
-        initialData?.projectSkills ?? null,
-        initialData?.avoidProjects ?? null
-      )
+      buildProjectSkillRows(data?.projectSkills ?? null, data?.avoidProjects ?? null)
     );
-  }, [open]);
+    setSkillLevelSliderValue(
+      data?.skillLevel === "newbie"
+        ? 0
+        : data?.skillLevel === "confident"
+          ? 50
+          : data?.skillLevel === "hero"
+            ? 100
+            : 0
+    );
+    setPhysicalCapabilitySliderValue(
+      data?.physicalCapability === "light"
+        ? 0
+        : data?.physicalCapability === "medium"
+          ? 50
+          : data?.physicalCapability === "heavy"
+            ? 100
+            : 0
+    );
+    setQuickAddTools({});
+    setCurrentStep(mode === "verify" ? 0 : 1);
+  }, [open, initialDataLoading, initialData, mode]);
 
   const usStates = [
     "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", 
@@ -444,8 +514,9 @@ export default function DIYSurveyPopup({
     setPersonalityAnswers(newAnswers);
   };
 
-  /** Persist Build Profile wizard data (merge quick-add tools, upsert user_profiles). */
-  const persistBuildProfile = async (closeAfter: boolean): Promise<boolean> => {
+  /** Persist Build Profile wizard data (merge quick-add tools, upsert user_profiles). Caller closes the dialog when needed. */
+  const persistBuildProfile = async (options?: { showSavedToast?: boolean }): Promise<boolean> => {
+    const showSavedToast = options?.showSavedToast ?? false;
     setIsSubmitting(true);
     try {
       let finalOwnedTools = [...answers.ownedTools];
@@ -542,16 +613,13 @@ export default function DIYSurveyPopup({
         });
       }
 
-      if (!closeAfter && user) {
+      if (showSavedToast && user) {
         toast({
           title: 'Saved',
           description: 'Your profile was updated.',
         });
       }
       onProfileSaved?.();
-      if (closeAfter) {
-        onOpenChange(false);
-      }
       return true;
     } catch (error) {
       console.error('Error completing survey:', error);
@@ -566,24 +634,44 @@ export default function DIYSurveyPopup({
     }
   };
 
-  const handleSaveProgress = async () => {
+  const requestCloseProfile = async () => {
+    if (!enableProgressSave) {
+      onOpenChange(false);
+      return;
+    }
+    if (initialDataLoading) {
+      onOpenChange(false);
+      return;
+    }
     if (!user) {
+      onOpenChange(false);
+      return;
+    }
+    const missing = validateRequiredProfileFields();
+    if (missing) {
       toast({
-        title: 'Sign in required',
-        description: 'You need to be signed in to save your profile.',
-        variant: 'destructive',
+        title: "Not ready to close",
+        description: missing,
+        variant: "destructive",
       });
       return;
     }
-    if (!answers.fullName.trim() || !answers.skillLevel || !answers.physicalCapability) {
-      toast({
-        title: 'Not ready to save',
-        description: 'Add your full name, skill level, and physical capability first.',
-        variant: 'destructive',
-      });
+    const ok = await persistBuildProfile();
+    if (ok) {
+      onOpenChange(false);
+    }
+  };
+
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      onOpenChange(true);
       return;
     }
-    await persistBuildProfile(false);
+    if (enableProgressSave) {
+      void requestCloseProfile();
+      return;
+    }
+    onOpenChange(false);
   };
 
   const handleNext = async () => {
@@ -665,7 +753,10 @@ export default function DIYSurveyPopup({
       return;
     }
 
-    await persistBuildProfile(true);
+    const ok = await persistBuildProfile();
+    if (ok) {
+      onOpenChange(false);
+    }
   };
 
   const handleEdit = () => {
@@ -1185,19 +1276,32 @@ export default function DIYSurveyPopup({
   };
 
   const showProfileWizardNav =
+    !initialDataLoading &&
     (mode === 'new' || mode === 'verify') &&
     currentStep >= 1 &&
     currentStep <= PROFILE_MAX_STEP;
 
   return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleDialogOpenChange}>
         <DialogPortal>
           <DialogOverlay className="z-[100]" />
           <DialogContent className="w-full h-screen max-w-full max-h-full md:w-[92vw] md:max-w-5xl md:h-[85vh] md:rounded-lg flex flex-col z-[101]" aria-describedby="diy-survey-description">
             <DialogDescription id="diy-survey-description" className="sr-only">
               {mode === 'verify' ? "Update your DIY profile and preferences" : (mode === 'personality' ? 'DIY builder personality quiz' : "Set up your profile for project recommendations")}
             </DialogDescription>
-            <DialogHeader className="text-center space-y-2 md:space-y-4 flex-shrink-0 px-4 pt-4">
+            <DialogHeader className="relative text-center space-y-2 md:space-y-4 flex-shrink-0 px-4 pt-4">
+            {enableProgressSave ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="absolute right-1 top-1 z-10 md:right-3 md:top-3"
+                disabled={isSubmitting}
+                onClick={() => void requestCloseProfile()}
+              >
+                Close
+              </Button>
+            ) : null}
             <div className="flex items-center justify-center space-x-2">
               <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-primary" />
               <DialogTitle className="text-xl md:text-2xl font-bold gradient-text">
@@ -1205,7 +1309,8 @@ export default function DIYSurveyPopup({
               </DialogTitle>
               <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-primary" />
             </div>
-            {(currentStep > 0 || (mode === 'personality' && currentStep >= 0)) && (
+            {(currentStep > 0 || (mode === 'personality' && currentStep >= 0)) &&
+              !(initialDataLoading && enableProgressSave) && (
               <div className="space-y-2">
                 <Progress value={progress} className="w-full" />
                 <p className="text-sm text-muted-foreground">
@@ -1268,11 +1373,18 @@ export default function DIYSurveyPopup({
               </>
             )}
             <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 md:px-6 md:py-6">
-              {renderStep()}
+              {initialDataLoading && enableProgressSave ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-2 py-24 text-muted-foreground">
+                  <p className="text-sm">Loading profile…</p>
+                </div>
+              ) : (
+                renderStep()
+              )}
             </div>
           </div>
 
-          {(currentStep > 0 || (mode === 'personality' && currentStep >= 0)) && (
+          {!(initialDataLoading && enableProgressSave) &&
+            (currentStep > 0 || (mode === 'personality' && currentStep >= 0)) && (
             <div className="flex flex-shrink-0 flex-col gap-2 border-t px-3 py-3 sm:flex-row sm:items-center sm:justify-between md:px-6 md:pt-6">
               <div className="flex flex-wrap items-center gap-2">
                 {((currentStep > 1 && mode !== 'verify') || (mode === 'personality' && currentStep >= 0) || (mode === 'verify' && currentStep === 1)) && (
@@ -1290,18 +1402,6 @@ export default function DIYSurveyPopup({
               </div>
 
               <div className="flex flex-1 justify-end gap-2 sm:flex-initial">
-                {enableProgressSave && showProfileWizardNav ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="md:h-10"
-                    disabled={isSubmitting}
-                    onClick={() => void handleSaveProgress()}
-                  >
-                    Save
-                  </Button>
-                ) : null}
                 <Button
                   onClick={() => void handleNext()}
                   disabled={!canProceed() || isSubmitting}

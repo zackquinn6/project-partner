@@ -97,6 +97,7 @@ import {
   isOutputInQualityScope,
   parseQualityControlSettingsColumn
 } from '@/utils/qualityControlSettings';
+import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 import { 
   formatEstimatedFinishDate,
   shouldRefreshEstimatedFinishDate
@@ -125,7 +126,7 @@ export default function UserView({
   const { projectCatalogEnabled } = useGlobalPublicSettings();
   const { isMobile } = useResponsive();
   const { isAdmin } = useUserRole();
-  const { canAccessApp } = useMembership();
+  const { canAccessApp, hasProjectsTier, hasRiskLessTier, loading: membershipLoading } = useMembership();
   const { user } = useAuth();
   const qualityControlPdfUserLabel = useMemo(() => {
     if (!user) return '';
@@ -138,6 +139,7 @@ export default function UserView({
     return '';
   }, [user]);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [upgradePromptFeature, setUpgradePromptFeature] = useState('this app');
   const {
     currentProject,
     currentProjectRun,
@@ -151,6 +153,7 @@ export default function UserView({
   const [viewMode, setViewMode] = useState<'listing' | 'workflow'>('listing');
   const [workflowMainView, setWorkflowMainView] = useState<'overview' | 'steps'>('overview');
   const lastWorkflowProjectRunIdRef = useRef<string | null>(null);
+  const handleLaunchAppRef = useRef<(app: AppReference) => void>(() => {});
   /** Run ids for which we already applied profile-based instruction level (no DB preference yet). */
   const instructionLevelProfileInitRunIdsRef = useRef<Set<string>>(new Set());
   const currentProjectRunForInstructionRef = useRef(currentProjectRun);
@@ -1847,6 +1850,13 @@ export default function UserView({
     
     // Native apps: require subscription unless app is free (Home maintenance, Task manager, My tools library)
     if (app.actionKey && !canAccessApp(app.actionKey)) {
+      if (app.actionKey === 'risk-management' || app.actionKey === 'risk-focus') {
+        setUpgradePromptFeature('Risk-Less');
+      } else if (app.actionKey === 'project-catalog') {
+        setUpgradePromptFeature('Projects membership');
+      } else {
+        setUpgradePromptFeature('this app');
+      }
       setShowUpgradePrompt(true);
       return;
     }
@@ -1917,10 +1927,19 @@ export default function UserView({
       case 'waste-removal':
         toast.info('Waste Removal is coming soon.');
         break;
+      case 'project-catalog':
+        navigate('/projects');
+        break;
+      case 'progress-board':
+        window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'));
+        navigate('/', { state: { view: 'user' } });
+        break;
       default:
         console.warn('Unknown app action:', app.actionKey);
     }
   };
+
+  handleLaunchAppRef.current = handleLaunchApp;
 
   // Add event listener for open-app custom event
   useEffect(() => {
@@ -1928,7 +1947,7 @@ export default function UserView({
       const customEvent = event as CustomEvent;
       console.log('🎯 UserView: open-app event received', customEvent.detail);
       if (customEvent.detail && customEvent.detail.actionKey) {
-        handleLaunchApp({
+        handleLaunchAppRef.current({
           appType: 'native',
           actionKey: customEvent.detail.actionKey
         } as AppReference);
@@ -1940,8 +1959,30 @@ export default function UserView({
     return () => {
       window.removeEventListener('open-app', handleOpenApp as EventListener);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // handleLaunchApp is stable (uses only setState functions)
+  }, []);
+
+  useEffect(() => {
+    if (membershipLoading || !currentProjectRun) return;
+    if (currentProjectRun.status === 'cancelled') return;
+    if (currentProjectRun.isManualEntry) return;
+    const risk = isRiskFocusRun(currentProjectRun);
+    const denied = (risk && !hasRiskLessTier) || (!risk && !hasProjectsTier);
+    if (!denied) return;
+    setUpgradePromptFeature(risk ? 'Risk-Less' : 'Projects membership');
+    setShowUpgradePrompt(true);
+    setCurrentProjectRun(null);
+    setViewMode('listing');
+    navigate('/', { replace: true, state: { view: 'user' } });
+    onProjectSelected?.();
+  }, [
+    membershipLoading,
+    currentProjectRun,
+    hasProjectsTier,
+    hasRiskLessTier,
+    setCurrentProjectRun,
+    navigate,
+    onProjectSelected,
+  ]);
   
   // Fetch step instructions based on instruction level
   const { instruction, loading: instructionLoading } = useStepInstructions(
@@ -3989,7 +4030,7 @@ export default function UserView({
       />
 
       {/* Upgrade prompt when launching a paid app without subscription */}
-      <UpgradePrompt open={showUpgradePrompt} onOpenChange={setShowUpgradePrompt} feature="this app" />
+      <UpgradePrompt open={showUpgradePrompt} onOpenChange={setShowUpgradePrompt} feature={upgradePromptFeature} />
 
       {/* Photo Gallery */}
       {currentProjectRun && (

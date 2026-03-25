@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import { getTaskProgress as getTaskProgressUtil } from '@/utils/maintenanceProgress';
+import { computeMaintenanceHealthScore } from '@/utils/maintenanceHealthScore';
 
 export type SystemKey = 'hvac' | 'roof' | 'plumbing' | 'appliances' | 'safety' | 'other';
 
@@ -100,15 +101,6 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
   const getTaskProgress = (task: MaintenanceTaskForDashboard): number =>
     getTaskProgressUtil(task, today);
 
-  const overdue = tasks.filter(t => getTaskProgress(t) >= 100);
-  const caution = tasks.filter(t => {
-    const p = getTaskProgress(t);
-    return p >= 90 && p < 100;
-  });
-  const O = overdue.length;
-  const C = overdue.reduce((sum, t) => sum + getCriticality(t), 0);
-  const D = caution.length;
-
   const yearStart = new Date(now.getFullYear(), 0, 1);
   const completionsThisYear = completions.filter(
     c => new Date(c.completed_at).getFullYear() === now.getFullYear()
@@ -159,7 +151,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
     else if (hasCaution) systemStatus[sys] = 'yellow';
   });
 
-  const healthScore = Math.max(0, Math.min(100, Math.round(100 - W_O * O - W_C * C - W_D * D)));
+  const healthScore = computeMaintenanceHealthScore(tasks, now);
 
   const gaugeRotation = -90 + (healthScore / 100) * 180;
   const totalCompletions = completions.length;

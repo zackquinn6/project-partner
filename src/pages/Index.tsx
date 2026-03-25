@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
+import { useMembership } from '@/contexts/MembershipContext';
 import { useProject } from '@/contexts/ProjectContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectOwner } from '@/hooks/useProjectOwner';
@@ -41,12 +42,14 @@ import { RiskFocusLauncherDialog } from '@/components/RiskFocusLauncher';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import type { ProjectRun } from '@/interfaces/ProjectRun';
 import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 // Force rebuild to clear cache
 
 const Index = () => {
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL RETURNS
   const { user } = useAuth();
+  const { hasProjectsTier, hasRiskLessTier, loading: membershipLoading } = useMembership();
   const { projectCatalogEnabled } = useGlobalPublicSettings();
   const { accepted: liabilityAccepted, loading: liabilityLoading, refetch: refetchLiability } = useLiabilityAcceptance();
   const { isAdmin } = useUserRole();
@@ -61,6 +64,8 @@ const Index = () => {
   const [resetUserView, setResetUserView] = useState(false);
   const [forceListingMode, setForceListingMode] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState<'home' | 'projects' | 'tasks' | 'profile' | 'help' | 'expert'>('home');
+  const [mobileUpgradeOpen, setMobileUpgradeOpen] = useState(false);
+  const [mobileUpgradeFeature, setMobileUpgradeFeature] = useState('Projects membership');
   
   // Modal states - moved from Navigation to work on both mobile and desktop
   const [showKCExplainer, setShowKCExplainer] = useState(false);
@@ -79,29 +84,53 @@ const Index = () => {
   const [riskFocusRegisterRunId, setRiskFocusRegisterRunId] = useState<string | null>(null);
 
   // CRITICAL: All hooks must be at the top - before any conditional logic
-  const handleMobileProjectSelect = useCallback((project: any) => {
-    console.log('🎯 Index: Mobile project selected:', project.name);
-    
-    if ('progress' in project) {
-      const run = project as ProjectRun;
-      if (isRiskFocusRun(run)) {
-        setRiskFocusRegisterRunId(run.id);
-        return;
+  const handleMobileProjectSelect = useCallback(
+    (project: any) => {
+      console.log('🎯 Index: Mobile project selected:', project.name);
+
+      if ('progress' in project) {
+        const run = project as ProjectRun;
+        if (!run.isManualEntry) {
+          if (isRiskFocusRun(run)) {
+            if (!membershipLoading && !hasRiskLessTier) {
+              setMobileUpgradeFeature('Risk-Less');
+              setMobileUpgradeOpen(true);
+              return;
+            }
+          } else if (!membershipLoading && !hasProjectsTier) {
+            setMobileUpgradeFeature('Projects membership');
+            setMobileUpgradeOpen(true);
+            return;
+          }
+        }
+        if (isRiskFocusRun(run)) {
+          setRiskFocusRegisterRunId(run.id);
+          return;
+        }
+        setCurrentProjectRun(project);
+        setMobileView('workflow');
+        setCurrentView('user');
+        setResetUserView(false);
+        setForceListingMode(false);
+      } else {
+        if (!membershipLoading && !hasProjectsTier) {
+          setMobileUpgradeFeature('Projects membership');
+          setMobileUpgradeOpen(true);
+          return;
+        }
+        setCurrentProject(project);
+        setMobileView('workflow');
+        setCurrentView('user');
       }
-      // Project run selected - go directly to workflow
-      setCurrentProjectRun(project);
-      setMobileView('workflow');
-      setCurrentView('user');
-      // CRITICAL: Clear reset flags for direct navigation
-      setResetUserView(false);
-      setForceListingMode(false);
-    } else {
-      // Project template selected
-      setCurrentProject(project);
-      setMobileView('workflow');
-      setCurrentView('user');
-    }
-  }, [setCurrentProjectRun, setCurrentProject]);
+    },
+    [
+      setCurrentProjectRun,
+      setCurrentProject,
+      hasProjectsTier,
+      hasRiskLessTier,
+      membershipLoading,
+    ]
+  );
 
   useEffect(() => {
     if (!projectCatalogEnabled && mobileView === 'catalog') {
@@ -526,6 +555,26 @@ const Index = () => {
       switch (mobileView) {
         case 'catalog':
           console.log('🔍 RENDERING Index ProjectCatalog - mobileView is catalog');
+          if (!membershipLoading && !hasProjectsTier) {
+            return (
+              <div className="flex h-screen flex-col items-center justify-center gap-4 p-6">
+                <p className="max-w-sm text-center text-muted-foreground">
+                  A Projects membership is required to use the project catalog and start new catalog projects.
+                </p>
+                <Button
+                  onClick={() => {
+                    setMobileUpgradeFeature('Projects membership');
+                    setMobileUpgradeOpen(true);
+                  }}
+                >
+                  View plans
+                </Button>
+                <Button variant="outline" onClick={() => setMobileView('projects')}>
+                  Back to dashboard
+                </Button>
+              </div>
+            );
+          }
           return (
             <div className="h-screen flex flex-col">
               <ProjectCatalog onClose={() => {
@@ -564,7 +613,16 @@ const Index = () => {
                 <MobileProjectListing
                   onProjectSelect={handleMobileProjectSelect}
                   onNewProject={
-                    projectCatalogEnabled ? () => setMobileView('catalog') : undefined
+                    projectCatalogEnabled
+                      ? () => {
+                          if (!membershipLoading && !hasProjectsTier) {
+                            setMobileUpgradeFeature('Projects membership');
+                            setMobileUpgradeOpen(true);
+                            return;
+                          }
+                          setMobileView('catalog');
+                        }
+                      : undefined
                   }
                   catalogNewProjectEnabled={projectCatalogEnabled}
                   onClose={() => setMobileView('home')}
@@ -721,6 +779,12 @@ const Index = () => {
         open={isRiskFocusLauncherOpen}
         onOpenChange={setIsRiskFocusLauncherOpen}
         onRiskFocusRunStarted={(runId) => setRiskFocusRegisterRunId(runId)}
+      />
+
+      <UpgradePrompt
+        open={mobileUpgradeOpen}
+        onOpenChange={setMobileUpgradeOpen}
+        feature={mobileUpgradeFeature}
       />
 
       {user && riskFocusRegisterRunId ? (

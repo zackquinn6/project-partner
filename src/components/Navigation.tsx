@@ -28,6 +28,7 @@ import { AchievementNotificationCenter } from './AchievementNotificationCenter';
 import { NotificationDropdown } from './NotificationDropdown';
 import { supabase } from '@/integrations/supabase/client';
 import { ProjectRun } from '@/interfaces/ProjectRun';
+import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 interface NavigationProps {
   currentView: 'home' | 'admin' | 'user' | 'editWorkflow';
   onViewChange: (view: 'home' | 'admin' | 'user' | 'editWorkflow') => void;
@@ -51,6 +52,7 @@ export default function Navigation({
   const [showFeedback, setShowFeedback] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [upgradePromptFeature, setUpgradePromptFeature] = useState('Projects membership');
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
 
   // Add error boundary for useProject hook
@@ -77,7 +79,7 @@ export default function Navigation({
   const { isAdmin } = useUserRole();
   const { hasProjectOwnerRole } = useProjectOwner();
   const showAdminPanel = isAdmin || hasProjectOwnerRole;
-  const { canAccessPaidFeatures } = useMembership();
+  const { hasProjectsTier, hasRiskLessTier, loading: membershipLoading } = useMembership();
   const { isBetaMode } = useBetaMode();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -122,13 +124,7 @@ export default function Navigation({
       console.log('🔄 Navigation: My Projects event - checking access');
       event.stopPropagation();
 
-      // Check if user has access to paid features
-      if (!canAccessPaidFeatures) {
-        console.log('🔒 Navigation: Access denied - showing upgrade prompt');
-        setShowUpgradePrompt(true);
-        return;
-      }
-      console.log('✅ Navigation: Access granted - showing projects listing');
+      console.log('✅ Navigation: Opening project dashboard listing');
       onViewChange('user');
       onProjectsView?.();
     };
@@ -174,6 +170,19 @@ export default function Navigation({
       // Fallback to cached data
       const selectedRun = projectRuns.find(run => run.id === projectRunId);
       if (selectedRun) {
+        if (!selectedRun.isManualEntry) {
+          if (isRiskFocusRun(selectedRun)) {
+            if (!membershipLoading && !hasRiskLessTier) {
+              setUpgradePromptFeature('Risk-Less');
+              setShowUpgradePrompt(true);
+              return;
+            }
+          } else if (!membershipLoading && !hasProjectsTier) {
+            setUpgradePromptFeature('Projects membership');
+            setShowUpgradePrompt(true);
+            return;
+          }
+        }
         setCurrentProjectRun(selectedRun);
         onViewChange('user');
         onProjectSelected?.();
@@ -280,6 +289,20 @@ export default function Navigation({
       phasesCount: projectRun.phases?.length || 0,
       hasPhases: !!(projectRun.phases && Array.isArray(projectRun.phases) && projectRun.phases.length > 0)
     });
+
+    if (!projectRun.isManualEntry) {
+      if (isRiskFocusRun(projectRun)) {
+        if (!membershipLoading && !hasRiskLessTier) {
+          setUpgradePromptFeature('Risk-Less');
+          setShowUpgradePrompt(true);
+          return;
+        }
+      } else if (!membershipLoading && !hasProjectsTier) {
+        setUpgradePromptFeature('Projects membership');
+        setShowUpgradePrompt(true);
+        return;
+      }
+    }
     
     // CRITICAL: Clear reset flags immediately BEFORE setting project run
     // This prevents UserView useEffect from forcing listing mode
@@ -371,13 +394,7 @@ export default function Navigation({
                 <DropdownMenuContent align="start" className="w-80 z-50 bg-background border shadow-lg" sideOffset={8}>
                   {/* My Projects Link at top */}
                   <DropdownMenuItem onClick={() => {
-                  console.log('🔄 Navigation: My Projects clicked - checking access');
-                  if (!canAccessPaidFeatures) {
-                    console.log('🔒 Navigation: Access denied - showing upgrade prompt');
-                    setShowUpgradePrompt(true);
-                    return;
-                  }
-                  console.log('✅ Navigation: Access granted - clearing current project');
+                  console.log('🔄 Navigation: My Projects — project dashboard listing');
                   setCurrentProjectRun(null);
                   setCurrentProject(null);
                   onViewChange('user');
@@ -518,7 +535,7 @@ export default function Navigation({
         
         <ExpertHelpWindow isOpen={isExpertHelpOpen} onClose={() => setIsExpertHelpOpen(false)} />
         
-         <UpgradePrompt open={showUpgradePrompt} onOpenChange={setShowUpgradePrompt} feature="Project Catalog & Workflows" />
+         <UpgradePrompt open={showUpgradePrompt} onOpenChange={setShowUpgradePrompt} feature={upgradePromptFeature} />
          
          <MembershipWindow open={isMembershipOpen} onOpenChange={setIsMembershipOpen} />
     </>;

@@ -61,7 +61,7 @@ function RiskFocusStartControls({
       return;
     }
     if (!canAccessApp('risk-focus')) {
-      toast.error('A subscription or trial is required to use Risk-Less.');
+      toast.error('Risk-Less requires a Risk-less or Projects membership (or an active trial).');
       return;
     }
     const project = projects.find((p) => p.id === selectedId);

@@ -28,6 +28,8 @@ import {
 import { PhotoGallery } from '@/components/PhotoGallery';
 import { ProjectPortfolioRemindersDialog } from '@/components/ProjectPortfolioRemindersDialog';
 import { getRiskFocusAwareDisplayName, isRiskFocusRun } from '@/utils/projectRunRiskFocus';
+import { useMembership } from '@/contexts/MembershipContext';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 interface ProjectListingProps {
   onProjectSelect?: (project: Project | null | 'workflow') => void;
@@ -37,6 +39,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
   const { projectRuns, currentProjectRun, setCurrentProjectRun, deleteProjectRun, fetchProjectRuns } = useProject();
   const { trackClick } = useButtonTracker();
   const { projectCatalogEnabled } = useGlobalPublicSettings();
+  const { hasProjectsTier, hasRiskLessTier, loading: membershipLoading } = useMembership();
   const navigate = useNavigate();
   const [showProfileManager, setShowProfileManager] = useState(false);
   const [showToolsLibrary, setShowToolsLibrary] = useState(false);
@@ -47,6 +50,17 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
   const [editingProjectRun, setEditingProjectRun] = useState<ProjectRun | null>(null);
   const [showPhotoGallery, setShowPhotoGallery] = useState(false);
   const [showPortfolioReminders, setShowPortfolioReminders] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [upgradeFeature, setUpgradeFeature] = useState('Projects membership');
+
+  const goToCatalog = () => {
+    if (!membershipLoading && !hasProjectsTier) {
+      setUpgradeFeature('Projects membership');
+      setShowUpgradePrompt(true);
+      return;
+    }
+    navigate('/projects');
+  };
 
   const calculateProgress = (projectRun: ProjectRun) => {
     try {
@@ -74,6 +88,20 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
 
   const handleOpenProjectRun = useCallback((projectRun: ProjectRun) => {
     console.log("🎯 Opening project run:", projectRun.name);
+
+    if (!projectRun.isManualEntry) {
+      if (isRiskFocusRun(projectRun)) {
+        if (!membershipLoading && !hasRiskLessTier) {
+          setUpgradeFeature('Risk-Less');
+          setShowUpgradePrompt(true);
+          return;
+        }
+      } else if (!membershipLoading && !hasProjectsTier) {
+        setUpgradeFeature('Projects membership');
+        setShowUpgradePrompt(true);
+        return;
+      }
+    }
 
     if (isRiskFocusRun(projectRun)) {
       window.dispatchEvent(
@@ -103,7 +131,14 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
     onProjectSelect?.('workflow' as any);
     
     console.log("🎯 Project run navigation completed:", projectRun.name);
-  }, [setCurrentProjectRun, onProjectSelect, navigate]);
+  }, [
+    setCurrentProjectRun,
+    onProjectSelect,
+    navigate,
+    hasProjectsTier,
+    hasRiskLessTier,
+    membershipLoading,
+  ]);
 
   const handleDeleteProjectRun = async (projectRunId: string) => {
     // Always clear projectRunId from location state so UserView does not open
@@ -166,7 +201,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
               </Button>
               {projectCatalogEnabled && (
               <Button 
-                onClick={() => navigate('/projects')}
+                onClick={goToCatalog}
                 variant="default"
                 size="sm"
                 className="w-full sm:w-auto"
@@ -197,7 +232,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                 <p className="text-muted-foreground">No projects yet.</p>
                 {projectCatalogEnabled && (
                 <Button 
-                  onClick={() => navigate('/projects')}
+                  onClick={goToCatalog}
                   variant="outline"
                   size="sm"
                 >
@@ -338,7 +373,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                       <p className="text-muted-foreground">No projects yet.</p>
                       {projectCatalogEnabled && (
                       <Button 
-                        onClick={() => navigate('/projects')}
+                        onClick={goToCatalog}
                         variant="outline"
                         size="sm"
                       >
@@ -515,6 +550,11 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
         onOpenChange={setShowPhotoGallery}
         mode="user"
         title="All Project Photos"
+      />
+      <UpgradePrompt
+        open={showUpgradePrompt}
+        onOpenChange={setShowUpgradePrompt}
+        feature={upgradeFeature}
       />
       {/* Removed duplicate CommunityPostsWindow - handled by Navigation */}
     </div>

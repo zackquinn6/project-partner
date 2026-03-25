@@ -13,6 +13,21 @@ import { toast } from 'sonner';
 import { HomeSpacesTab } from './HomeSpacesTab';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { computeMaintenanceHealthScore, type TaskForHealthScore } from '@/utils/maintenanceHealthScore';
 
 interface Home {
   id: string;
@@ -98,6 +113,7 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [fullScreenPhoto, setFullScreenPhoto] = useState<string | null>(null);
+  const [maintenanceTasksForHealth, setMaintenanceTasksForHealth] = useState<TaskForHealthScore[]>([]);
 
   useEffect(() => {
     if (open && home && user) {
@@ -146,6 +162,15 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
 
       if (maintenanceError) throw maintenanceError;
       setCompletedMaintenance(maintenance || []);
+
+      const { data: maintTaskRows, error: maintTasksErr } = await supabase
+        .from('user_maintenance_tasks')
+        .select('id, frequency_days, last_completed, criticality, progress_percentage')
+        .eq('user_id', user.id)
+        .eq('home_id', home.id);
+
+      if (maintTasksErr) throw maintTasksErr;
+      setMaintenanceTasksForHealth((maintTaskRows || []) as TaskForHealthScore[]);
 
     } catch (error) {
       console.error('Error fetching home data:', error);
@@ -285,32 +310,23 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
 
   const handleRiskMitigation = async (riskId: string, isMitigated: boolean, notes?: string) => {
     if (!home || !user) return;
-    
+
     try {
-      const existingMitigation = riskMitigations.find(m => m.risk_id === riskId);
-      
-      if (existingMitigation) {
-        const { error } = await supabase
-          .from('home_risk_mitigations')
-          .update({ is_mitigated: isMitigated, mitigation_notes: notes })
-          .eq('id', existingMitigation.id);
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('home_risk_mitigations')
-          .insert({
-            user_id: user.id,
-            home_id: home.id,
-            risk_id: riskId,
-            is_mitigated: isMitigated,
-            mitigation_notes: notes
-          });
-        
-        if (error) throw error;
-      }
-      
-      fetchRiskMitigations();
+      const { error } = await supabase.from('home_risk_mitigations').upsert(
+        {
+          user_id: user.id,
+          home_id: home.id,
+          risk_id: riskId,
+          is_mitigated: isMitigated,
+          mitigation_notes: notes ?? null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,home_id,risk_id' }
+      );
+
+      if (error) throw error;
+
+      await fetchRiskMitigations();
       toast.success('Risk mitigation updated successfully');
     } catch (error) {
       console.error('Error updating risk mitigation:', error);
@@ -362,6 +378,9 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
       default: return 'bg-blue-50 border-blue-200';
     }
   };
+
+  const maintenanceHealthScore = computeMaintenanceHealthScore(maintenanceTasksForHealth);
+  const recentMaintenance = completedMaintenance.slice(0, 10);
 
   if (!home) return null;
 
@@ -605,224 +624,261 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
           </Card>
         </TabsContent>
 
-        <TabsContent value="projects" className="flex-1 overflow-y-auto space-y-6">
-          {/* Projects Section */}
-          <Card>
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle>Completed Projects</CardTitle>
-              {projectCatalogEnabled && (
-              <Button
-                size="sm"
-                onClick={() => navigate('/projects')}
-                className="self-start sm:self-auto"
-              >
-                Start a New Project Today
-              </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="text-muted-foreground">Loading projects...</div>
+        <TabsContent
+          value="projects"
+          className="flex-1 overflow-y-auto min-h-0 flex flex-col data-[state=inactive]:hidden"
+        >
+          <Accordion
+            type="multiple"
+            defaultValue={['completed-projects', 'completed-maintenance', 'hazard-assessment']}
+            className="w-full space-y-2 pb-6"
+          >
+            <AccordionItem value="completed-projects" className="border rounded-lg px-3">
+              <AccordionTrigger className="text-left hover:no-underline py-3">
+                <span className="font-semibold">Projects</span>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4 pt-0">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
+                  {projectCatalogEnabled && (
+                    <Button size="sm" onClick={() => navigate('/projects')} className="self-end sm:self-auto">
+                      Start a New Project Today
+                    </Button>
+                  )}
                 </div>
-              ) : completedProjects.length > 0 ? (
-                <div className="grid gap-4">
-                  {completedProjects.map(project => (
-                    <Card key={project.id}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-medium">{project.name}</h4>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              Category: {project.category || 'Not specified'}
-                            </p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                              <span className="text-sm">
-                                Completed: {project.end_date 
-                                  ? new Date(project.end_date).toLocaleDateString()
-                                  : 'Date not recorded'
-                                }
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <CheckCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No completed projects for this home yet</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Maintenance Section */}
-          <Card>
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle>Completed Maintenance</CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}
-                className="self-start sm:self-auto"
-              >
-                Open Home Maintenance
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="text-muted-foreground">Loading maintenance...</div>
-                </div>
-              ) : completedMaintenance.length > 0 ? (
-                <div className="grid gap-4">
-                  {completedMaintenance.map(maintenance => (
-                    <Card key={maintenance.id}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-medium">{maintenance.user_maintenance_tasks.title}</h4>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              Category: {maintenance.user_maintenance_tasks.category}
-                            </p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                              <span className="text-sm">
-                                Completed: {new Date(maintenance.completed_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                            {maintenance.notes && (
-                              <p className="text-sm mt-2 p-2 bg-muted rounded">
-                                {maintenance.notes}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <CheckCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No completed maintenance for this home yet</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Home Hazard Assessment</CardTitle>
-              <CardDescription>
-                Review known material risks based on your home&apos;s build profile.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {homeRisks.length > 0 ? (
-                <div className="grid gap-4">
-                  {homeRisks.map(risk => {
-                    const mitigation = riskMitigations.find(m => m.risk_id === risk.id);
-                    const isMitigated = mitigation?.is_mitigated || false;
-
-                    return (
-                      <Card key={risk.id} className={`border-2 ${getRiskColor(risk.risk_level, isMitigated)}`}>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8 text-muted-foreground">
+                    Loading projects...
+                  </div>
+                ) : completedProjects.length > 0 ? (
+                  <div className="grid gap-4">
+                    {completedProjects.map((project) => (
+                      <Card key={project.id}>
                         <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            {getRiskIcon(risk.risk_level, isMitigated)}
-                            <div className="flex-1">
-                              <h4 className="font-medium">{risk.material_name}</h4>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-medium">{project.name}</h4>
                               <p className="text-sm text-muted-foreground mt-1">
-                                {risk.description}
+                                Category: {project.category || 'Not specified'}
                               </p>
                               <div className="flex items-center gap-2 mt-2">
-                                <Badge 
-                                  variant={isMitigated ? "default" : "destructive"}
-                                  className="text-xs"
-                                >
-                                  {isMitigated ? "Mitigated" : risk.risk_level.toUpperCase()}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  {risk.start_year}-{risk.end_year || 'present'}
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                <span className="text-sm">
+                                  Completed:{' '}
+                                  {project.end_date
+                                    ? new Date(project.end_date).toLocaleDateString()
+                                    : 'Date not recorded'}
                                 </span>
-                              </div>
-                              {mitigation?.mitigation_notes && (
-                                <p className="text-sm mt-2 p-2 bg-background rounded border">
-                                  Mitigation: {mitigation.mitigation_notes}
-                                </p>
-                              )}
-                              <div className="mt-3 pt-3 border-t border-border/60 space-y-2">
-                                <p className="text-xs font-semibold text-muted-foreground">
-                                  Your current risk status
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant={!isMitigated ? "default" : "outline"}
-                                    className="h-7 px-2 text-xs"
-                                    onClick={() => handleRiskMitigation(risk.id, false, mitigation?.mitigation_notes)}
-                                  >
-                                    Still a risk
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant={isMitigated ? "default" : "outline"}
-                                    className="h-7 px-2 text-xs"
-                                    onClick={() => handleRiskMitigation(risk.id, true, mitigation?.mitigation_notes)}
-                                  >
-                                    Mitigated / none
-                                  </Button>
-                                </div>
-                                <div className="space-y-1">
-                                  <p className="text-[11px] text-muted-foreground">
-                                    Mitigation actions
-                                  </p>
-                                  <Textarea
-                                    defaultValue={mitigation?.mitigation_notes || ''}
-                                    rows={2}
-                                    className="text-sm"
-                                    placeholder='e.g. "Removed all asbestos from home in 2024"'
-                                    onBlur={(e) => {
-                                      const value = e.target.value.trim();
-                                      const nextNotes = value === '' ? undefined : value;
-                                      handleRiskMitigation(
-                                        risk.id,
-                                        mitigation?.is_mitigated ?? isMitigated,
-                                        nextNotes
-                                      );
-                                    }}
-                                  />
-                                  <p className="text-[11px] text-muted-foreground">
-                                    Use your own words to describe the current status of this risk for your home.
-                                  </p>
-                                </div>
                               </div>
                             </div>
                           </div>
                         </CardContent>
                       </Card>
-                    );
-                  })}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <CheckCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">No completed projects for this home yet</p>
+                  </div>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="completed-maintenance" className="border rounded-lg px-3">
+              <AccordionTrigger className="text-left hover:no-underline py-3">
+                <span className="font-semibold">Maintenance</span>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4 pt-0">
+                <div className="rounded-lg border bg-muted/30 px-4 py-3 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Home health score
+                    </p>
+                    <p
+                      className={`text-3xl font-bold tabular-nums ${
+                        maintenanceHealthScore >= 90
+                          ? 'text-emerald-600'
+                          : maintenanceHealthScore >= 70
+                            ? 'text-amber-600'
+                            : 'text-destructive'
+                      }`}
+                    >
+                      {maintenanceHealthScore}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground max-w-md">
+                      Based on overdue and due-soon tasks for this home (same model as Home Maintenance).
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}
+                    className="self-start sm:self-auto shrink-0"
+                  >
+                    Open Home Maintenance
+                  </Button>
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Info className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    {home.build_year 
-                      ? "No specific risks identified for this home's build year"
-                      : "Add a build year to see potential home risks"
-                    }
-                  </p>
+
+                {loading ? (
+                  <div className="flex items-center justify-center py-8 text-muted-foreground">
+                    Loading maintenance...
+                  </div>
+                ) : recentMaintenance.length > 0 ? (
+                  <div className="min-h-[22rem] max-h-[28rem] flex flex-col border rounded-md overflow-hidden">
+                    <div className="text-xs text-muted-foreground px-3 py-2 border-b bg-muted/20 shrink-0">
+                      Most recent {recentMaintenance.length} completion
+                      {recentMaintenance.length !== 1 ? 's' : ''}
+                    </div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Task name</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead className="text-right whitespace-nowrap">Last completed</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {recentMaintenance.map((maintenance) => (
+                          <TableRow key={maintenance.id}>
+                            <TableCell className="font-medium">
+                              {maintenance.user_maintenance_tasks.title}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {maintenance.user_maintenance_tasks.category || '—'}
+                            </TableCell>
+                            <TableCell className="text-right whitespace-nowrap">
+                              {new Date(maintenance.completed_at).toLocaleDateString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <CheckCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">No completed maintenance for this home yet</p>
+                  </div>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="hazard-assessment" className="border rounded-lg px-3">
+              <AccordionTrigger className="text-left hover:no-underline py-3">
+                <div className="flex flex-col items-start gap-0.5">
+                  <span className="font-semibold">Home hazard assessment</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    Known material risks from your home&apos;s build profile
+                  </span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4 pt-0">
+                {homeRisks.length > 0 ? (
+                  <div className="grid gap-4">
+                    {homeRisks.map((risk) => {
+                      const mitigation = riskMitigations.find((m) => m.risk_id === risk.id);
+                      const isMitigated = mitigation?.is_mitigated || false;
+
+                      return (
+                        <Card key={risk.id} className={`border-2 ${getRiskColor(risk.risk_level, isMitigated)}`}>
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-3">
+                              {getRiskIcon(risk.risk_level, isMitigated)}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 gap-y-1">
+                                  <h4 className="font-medium">{risk.material_name}</h4>
+                                  <Badge
+                                    variant={isMitigated ? 'default' : 'destructive'}
+                                    className="text-xs shrink-0"
+                                  >
+                                    {isMitigated ? 'Mitigated' : risk.risk_level.toUpperCase()}
+                                  </Badge>
+                                  <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                                    {risk.start_year}–{risk.end_year ?? 'present'}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-1">{risk.description}</p>
+                                {mitigation?.mitigation_notes && (
+                                  <p className="text-sm mt-2 p-2 bg-background rounded border">
+                                    Mitigation: {mitigation.mitigation_notes}
+                                  </p>
+                                )}
+                                <div className="mt-3 pt-3 border-t border-border/60 space-y-2">
+                                  <p className="text-xs font-semibold text-muted-foreground">
+                                    Your current risk status
+                                  </p>
+                                  <div className="flex flex-wrap gap-2">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant={!isMitigated ? 'default' : 'outline'}
+                                      className="h-7 px-2 text-xs"
+                                      onClick={() =>
+                                        handleRiskMitigation(risk.id, false, mitigation?.mitigation_notes)
+                                      }
+                                    >
+                                      Still a risk
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant={isMitigated ? 'default' : 'outline'}
+                                      className="h-7 px-2 text-xs"
+                                      onClick={() =>
+                                        handleRiskMitigation(risk.id, true, mitigation?.mitigation_notes)
+                                      }
+                                    >
+                                      Mitigated / none
+                                    </Button>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div className="flex flex-wrap items-baseline gap-x-6">
+                                      <span className="text-[11px] font-medium text-muted-foreground shrink-0">
+                                        Mitigation actions
+                                      </span>
+                                      <span className="text-[11px] text-muted-foreground pl-2 border-l border-border/60 min-w-0">
+                                        Use your own words to describe the current status of this risk for your
+                                        home.
+                                      </span>
+                                    </div>
+                                    <Textarea
+                                      key={`${risk.id}-${mitigation?.id ?? 'new'}`}
+                                      defaultValue={mitigation?.mitigation_notes || ''}
+                                      rows={2}
+                                      className="text-sm"
+                                      placeholder='e.g. "Removed all asbestos from home in 2024"'
+                                      onBlur={(e) => {
+                                        const value = e.target.value.trim();
+                                        const nextNotes = value === '' ? undefined : value;
+                                        handleRiskMitigation(
+                                          risk.id,
+                                          mitigation?.is_mitigated ?? isMitigated,
+                                          nextNotes
+                                        );
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Info className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">
+                      {home.build_year
+                        ? "No specific risks identified for this home's build year"
+                        : 'Add a build year to see potential home risks'}
+                    </p>
+                  </div>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </TabsContent>
       </Tabs>
       </DialogContent>

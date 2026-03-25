@@ -2821,6 +2821,7 @@ export type Database = {
           id: string
           material_name: string
           quantity: number
+          shopped: boolean
           task_id: string
           user_id: string
         }
@@ -2828,6 +2829,7 @@ export type Database = {
           id?: string
           material_name?: string
           quantity?: number
+          shopped?: boolean
           task_id: string
           user_id: string
         }
@@ -2835,6 +2837,7 @@ export type Database = {
           id?: string
           material_name?: string
           quantity?: number
+          shopped?: boolean
           task_id?: string
           user_id?: string
         }
