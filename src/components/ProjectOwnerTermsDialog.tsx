@@ -84,47 +84,13 @@ export const ProjectOwnerTermsDialog: React.FC<ProjectOwnerTermsDialogProps> = (
     setLoading(true);
 
     try {
-      // Record terms acceptance
-      const { error: termsError } = await supabase
-        .from('project_owner_terms_acceptances')
-        .insert({
-          user_id: user.id,
-          invitation_id: invitationId,
-          terms_version: '1.0',
-          ip_address: null, // Could be captured with a backend service
-          user_agent: navigator.userAgent
-        });
+      const { error: rpcError } = await supabase.rpc('complete_project_owner_invitation', {
+        p_invitation_id: invitationId,
+        p_terms_version: '1.0',
+        p_user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+      });
 
-      if (termsError) throw termsError;
-
-      // Update invitation status
-      const { error: invitationError } = await supabase
-        .from('project_owner_invitations')
-        .update({
-          status: 'accepted',
-          invited_user_id: user.id,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', invitationId);
-
-      if (invitationError) throw invitationError;
-
-      // Add project_owner to user_profiles.roles
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('roles')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      const roles = Array.isArray(profile?.roles) ? profile.roles : ['user'];
-      if (!roles.includes('project_owner')) {
-        const { error: roleError } = await supabase
-          .from('user_profiles')
-          .update({ roles: [...roles, 'project_owner'] })
-          .eq('user_id', user.id);
-
-        if (roleError) throw roleError;
-      }
+      if (rpcError) throw rpcError;
 
       toast({
         title: "Welcome, Project Owner!",

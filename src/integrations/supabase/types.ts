@@ -3457,6 +3457,14 @@ export type Database = {
         }[]
       }
       get_standard_project_with_phases: { Args: never; Returns: Json }
+      complete_project_owner_invitation: {
+        Args: {
+          p_invitation_id: string
+          p_terms_version?: string
+          p_user_agent?: string | null
+        }
+        Returns: Json
+      }
       is_admin: { Args: { check_user_id?: string }; Returns: boolean }
       log_failed_login: {
         Args: {
