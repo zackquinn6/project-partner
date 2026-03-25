@@ -408,7 +408,23 @@ export default function Auth() {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <div className="flex items-center justify-between gap-2">
+                      <Label htmlFor="signin-password">Password</Label>
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="px-0 h-auto text-xs"
+                        onClick={() => {
+                          setForgotDialogOpen(true);
+                          setForgotEmail(email);
+                          setForgotError(null);
+                          setForgotSent(false);
+                        }}
+                        disabled={isLoading}
+                      >
+                        Forgot password?
+                      </Button>
+                    </div>
                     <Input 
                       id="signin-password" 
                       type="password" 
@@ -423,22 +439,6 @@ export default function Auth() {
                         {validationErrors.password}
                       </div>
                     )}
-                  </div>
-                  <div className="-mt-2 flex justify-end">
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="px-0 h-auto text-xs"
-                      onClick={() => {
-                        setForgotDialogOpen(true);
-                        setForgotEmail(email);
-                        setForgotError(null);
-                        setForgotSent(false);
-                      }}
-                      disabled={isLoading}
-                    >
-                      Forgot password?
-                    </Button>
                   </div>
                   <div className="pt-4">
                     <Button type="submit" className="w-full" disabled={isLoading}>
