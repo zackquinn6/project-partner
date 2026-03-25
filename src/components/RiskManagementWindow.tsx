@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/contexts/ProjectContext';
+import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 
 const RISK_FOCUS_PROGRESS_STOPS = [0, 25, 50, 75, 100] as const;
 
@@ -64,6 +66,11 @@ function riskFocusProgressSelectValue(progress: number | null | undefined): stri
     }
   }
   return String(best);
+}
+
+function riskFocusProgressBarPercent(progress: number | null | undefined): number {
+  if (progress == null || !Number.isFinite(progress)) return 0;
+  return Math.round(Math.min(100, Math.max(0, progress)));
 }
 
 interface Risk {
@@ -267,6 +274,10 @@ export function RiskManagementWindow({
   const riskFocusRunForProgress = useMemo(
     () => (projectRunId ? projectRuns.find((r) => r.id === projectRunId) : undefined),
     [projectRuns, projectRunId]
+  );
+  const progressEditable = useMemo(
+    () => Boolean(riskFocusRunForProgress && isRiskFocusRun(riskFocusRunForProgress)),
+    [riskFocusRunForProgress]
   );
   const showRiskFocusProgressRow =
     variant === 'risk-focus' && mode === 'run' && Boolean(projectRunId && riskFocusRunForProgress);
@@ -973,59 +984,78 @@ export function RiskManagementWindow({
                   <div className="flex w-full shrink-0 items-center gap-2 md:hidden">
                     <div className="shrink-0">
                       {showRiskFocusProgressRow && riskFocusRunForProgress ? (
-                        <Select
-                          disabled={readOnly}
-                          value={riskFocusProgressSelectValue(riskFocusRunForProgress.progress)}
-                          onValueChange={(value) => {
-                            const progress = Number.parseInt(value, 10);
-                            if (
-                              !Number.isFinite(progress) ||
-                              !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
-                            ) {
-                              return;
-                            }
-                            void updateProjectRun({ ...riskFocusRunForProgress, progress });
-                          }}
-                        >
-                          <SelectTrigger
-                            className="h-7 w-[120px] max-w-[120px] shrink-0 text-xs"
-                            aria-label="Project progress"
+                        progressEditable ? (
+                          <Select
+                            disabled={readOnly}
+                            value={riskFocusProgressSelectValue(riskFocusRunForProgress.progress)}
+                            onValueChange={(value) => {
+                              const progress = Number.parseInt(value, 10);
+                              if (
+                                !Number.isFinite(progress) ||
+                                !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
+                              ) {
+                                return;
+                              }
+                              void updateProjectRun({ ...riskFocusRunForProgress, progress });
+                            }}
                           >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem
-                              value="0"
-                              className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
+                            <SelectTrigger
+                              className="h-7 w-[120px] max-w-[120px] shrink-0 text-xs"
+                              aria-label="Project progress"
                             >
-                              0%
-                            </SelectItem>
-                            <SelectItem
-                              value="25"
-                              className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
-                            >
-                              25%
-                            </SelectItem>
-                            <SelectItem
-                              value="50"
-                              className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
-                            >
-                              50%
-                            </SelectItem>
-                            <SelectItem
-                              value="75"
-                              className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
-                            >
-                              75%
-                            </SelectItem>
-                            <SelectItem
-                              value="100"
-                              className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
-                            >
-                              Complete
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem
+                                value="0"
+                                className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
+                              >
+                                0%
+                              </SelectItem>
+                              <SelectItem
+                                value="25"
+                                className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
+                              >
+                                25%
+                              </SelectItem>
+                              <SelectItem
+                                value="50"
+                                className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
+                              >
+                                50%
+                              </SelectItem>
+                              <SelectItem
+                                value="75"
+                                className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
+                              >
+                                75%
+                              </SelectItem>
+                              <SelectItem
+                                value="100"
+                                className="justify-center pl-2 pr-2 text-center [&>span:first-child]:hidden"
+                              >
+                                Complete
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div
+                            className="flex w-[min(100%,9rem)] flex-col gap-0.5"
+                            role="status"
+                            aria-label={`Project progress ${riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%`}
+                          >
+                            <div className="flex items-center justify-between gap-1 text-[10px] text-muted-foreground">
+                              <span>Progress</span>
+                              <span className="tabular-nums font-medium text-foreground">
+                                {riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%
+                              </span>
+                            </div>
+                            <Progress
+                              value={riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}
+                              className="h-1.5"
+                            />
+                          </div>
+                        )
                       ) : null}
                     </div>
                     <div className="flex min-w-0 flex-1 justify-center px-1">
@@ -1125,34 +1155,50 @@ export function RiskManagementWindow({
                         <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                           Project progress
                         </span>
-                        <Select
-                          disabled={readOnly}
-                          value={riskFocusProgressSelectValue(riskFocusRunForProgress.progress)}
-                          onValueChange={(value) => {
-                            const progress = Number.parseInt(value, 10);
-                            if (
-                              !Number.isFinite(progress) ||
-                              !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
-                            ) {
-                              return;
-                            }
-                            void updateProjectRun({ ...riskFocusRunForProgress, progress });
-                          }}
-                        >
-                          <SelectTrigger
-                            className="h-7 w-[160px] text-xs"
-                            aria-label="Project progress"
+                        {progressEditable ? (
+                          <Select
+                            disabled={readOnly}
+                            value={riskFocusProgressSelectValue(riskFocusRunForProgress.progress)}
+                            onValueChange={(value) => {
+                              const progress = Number.parseInt(value, 10);
+                              if (
+                                !Number.isFinite(progress) ||
+                                !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
+                              ) {
+                                return;
+                              }
+                              void updateProjectRun({ ...riskFocusRunForProgress, progress });
+                            }}
                           >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">0%</SelectItem>
-                            <SelectItem value="25">25%</SelectItem>
-                            <SelectItem value="50">50%</SelectItem>
-                            <SelectItem value="75">75%</SelectItem>
-                            <SelectItem value="100">Complete</SelectItem>
-                          </SelectContent>
-                        </Select>
+                            <SelectTrigger
+                              className="h-7 w-[160px] text-xs"
+                              aria-label="Project progress"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">0%</SelectItem>
+                              <SelectItem value="25">25%</SelectItem>
+                              <SelectItem value="50">50%</SelectItem>
+                              <SelectItem value="75">75%</SelectItem>
+                              <SelectItem value="100">Complete</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div
+                            className="flex min-w-0 max-w-md flex-1 flex-col gap-1 sm:min-w-[200px]"
+                            role="status"
+                            aria-label={`Project progress ${riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%`}
+                          >
+                            <div className="flex items-center justify-end text-xs tabular-nums text-foreground">
+                              {riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%
+                            </div>
+                            <Progress
+                              value={riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}
+                              className="h-2"
+                            />
+                          </div>
+                        )}
                       </div>
                     ) : null}
                     {showAddRiskRow ? (
@@ -1232,34 +1278,50 @@ export function RiskManagementWindow({
                       <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                         Project progress
                       </span>
-                      <Select
-                        disabled={readOnly}
-                        value={riskFocusProgressSelectValue(riskFocusRunForProgress.progress)}
-                        onValueChange={(value) => {
-                          const progress = Number.parseInt(value, 10);
-                          if (
-                            !Number.isFinite(progress) ||
-                            !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
-                          ) {
-                            return;
-                          }
-                          void updateProjectRun({ ...riskFocusRunForProgress, progress });
-                        }}
-                      >
-                        <SelectTrigger
-                          className="h-7 w-full text-xs sm:w-[160px]"
-                          aria-label="Project progress"
+                      {progressEditable ? (
+                        <Select
+                          disabled={readOnly}
+                          value={riskFocusProgressSelectValue(riskFocusRunForProgress.progress)}
+                          onValueChange={(value) => {
+                            const progress = Number.parseInt(value, 10);
+                            if (
+                              !Number.isFinite(progress) ||
+                              !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
+                            ) {
+                              return;
+                            }
+                            void updateProjectRun({ ...riskFocusRunForProgress, progress });
+                          }}
                         >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0">0%</SelectItem>
-                          <SelectItem value="25">25%</SelectItem>
-                          <SelectItem value="50">50%</SelectItem>
-                          <SelectItem value="75">75%</SelectItem>
-                          <SelectItem value="100">Complete</SelectItem>
-                        </SelectContent>
-                      </Select>
+                          <SelectTrigger
+                            className="h-7 w-full text-xs sm:w-[160px]"
+                            aria-label="Project progress"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">0%</SelectItem>
+                            <SelectItem value="25">25%</SelectItem>
+                            <SelectItem value="50">50%</SelectItem>
+                            <SelectItem value="75">75%</SelectItem>
+                            <SelectItem value="100">Complete</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div
+                          className="flex min-w-0 w-full flex-col gap-1 sm:max-w-md sm:flex-1"
+                          role="status"
+                          aria-label={`Project progress ${riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%`}
+                        >
+                          <div className="flex items-center justify-end text-xs tabular-nums text-foreground">
+                            {riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%
+                          </div>
+                          <Progress
+                            value={riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}
+                            className="h-2"
+                          />
+                        </div>
+                      )}
                     </div>
                   ) : null}
                   {showAddRiskRow ? (

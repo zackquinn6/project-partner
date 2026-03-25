@@ -105,7 +105,6 @@ import {
   shouldRegenerateSchedule,
   autoRegenerateSchedule
 } from '@/utils/autoScheduleRegeneration';
-import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 import { projectRunFromSupabaseRow } from '@/utils/projectRunFromSupabaseRow';
 import { instructionLevelFromProfileSkill } from '@/utils/instructionLevelFromProfile';
 interface UserViewProps {
@@ -3966,7 +3965,7 @@ export default function UserView({
           onOpenChange={setRiskManagementOpen}
           projectRunId={currentProjectRun.id}
           mode="run"
-          variant={isRiskFocusRun(currentProjectRun) ? 'risk-focus' : 'default'}
+          variant="risk-focus"
         />
       )}
 

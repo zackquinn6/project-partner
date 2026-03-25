@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, Shield, DollarSign, ShoppingCart, ClipboardCheck, Handshake } from "lucide-react";
+import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, Shield, DollarSign, ShoppingCart, ClipboardCheck, Handshake, Crosshair } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -580,7 +580,7 @@ export function WorkflowSidebar({
                       </Button>
                     </div>
 
-                    {/* Partner Tools + Progress first (A–Z); project apps below (A–Z): Budget, Quality Control, Risk Management, Scheduler, Shopping */}
+                        {/* Partner Tools + Progress first (A–Z); project apps below (A–Z): Budget, Quality Control, Risk-Less, Scheduler, Shopping */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -653,8 +653,8 @@ export function WorkflowSidebar({
                           className="text-xs gap-2 cursor-pointer"
                           onClick={() => openAppByActionKey('risk-management')}
                         >
-                          <Shield className="h-3.5 w-3.5 shrink-0" />
-                          Risk Management
+                          <Crosshair className="h-3.5 w-3.5 shrink-0" />
+                          Risk-Less
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"
