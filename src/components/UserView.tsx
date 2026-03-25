@@ -3893,6 +3893,7 @@ export default function UserView({
         allSteps={allSteps}
         completedSteps={completedSteps}
         currentStepId={currentStep?.id}
+        workflowPhases={workflowPhases}
         onStepClick={(stepIndex) => {
           if (stepIndex >= 0 && isKickoffComplete) {
             setCurrentStepIndex(stepIndex);

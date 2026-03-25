@@ -2036,6 +2036,297 @@ export type Database = {
           },
         ]
       }
+      pfmea_action_items: {
+        Row: {
+          id: string
+          failure_mode_id: string
+          recommended_action: string
+          responsible_person: string | null
+          target_completion_date: string | null
+          status: string
+          completion_notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          failure_mode_id: string
+          recommended_action?: string
+          responsible_person?: string | null
+          target_completion_date?: string | null
+          status?: string
+          completion_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          failure_mode_id?: string
+          recommended_action?: string
+          responsible_person?: string | null
+          target_completion_date?: string | null
+          status?: string
+          completion_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pfmea_action_items_failure_mode_id_fkey"
+            columns: ["failure_mode_id"]
+            isOneToOne: false
+            referencedRelation: "pfmea_failure_modes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pfmea_controls: {
+        Row: {
+          id: string
+          failure_mode_id: string | null
+          cause_id: string | null
+          control_type: string
+          control_description: string
+          detection_score: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          failure_mode_id?: string | null
+          cause_id?: string | null
+          control_type: string
+          control_description?: string
+          detection_score?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          failure_mode_id?: string | null
+          cause_id?: string | null
+          control_type?: string
+          control_description?: string
+          detection_score?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pfmea_controls_failure_mode_id_fkey"
+            columns: ["failure_mode_id"]
+            isOneToOne: false
+            referencedRelation: "pfmea_failure_modes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pfmea_controls_cause_id_fkey"
+            columns: ["cause_id"]
+            isOneToOne: false
+            referencedRelation: "pfmea_potential_causes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pfmea_failure_modes: {
+        Row: {
+          id: string
+          requirement_id: string
+          failure_mode: string
+          severity_score: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          requirement_id: string
+          failure_mode: string
+          severity_score?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          requirement_id?: string
+          failure_mode?: string
+          severity_score?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pfmea_failure_modes_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "pfmea_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pfmea_potential_causes: {
+        Row: {
+          id: string
+          failure_mode_id: string
+          cause_description: string
+          occurrence_score: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          failure_mode_id: string
+          cause_description?: string
+          occurrence_score?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          failure_mode_id?: string
+          cause_description?: string
+          occurrence_score?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pfmea_potential_causes_failure_mode_id_fkey"
+            columns: ["failure_mode_id"]
+            isOneToOne: false
+            referencedRelation: "pfmea_failure_modes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pfmea_potential_effects: {
+        Row: {
+          id: string
+          failure_mode_id: string
+          effect_description: string
+          severity_score: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          failure_mode_id: string
+          effect_description?: string
+          severity_score?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          failure_mode_id?: string
+          effect_description?: string
+          severity_score?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pfmea_potential_effects_failure_mode_id_fkey"
+            columns: ["failure_mode_id"]
+            isOneToOne: false
+            referencedRelation: "pfmea_failure_modes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pfmea_requirements: {
+        Row: {
+          id: string
+          project_id: string
+          project_phase_id: string
+          phase_operation_id: string
+          operation_step_id: string
+          requirement_text: string
+          output_reference: Json | null
+          display_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          project_phase_id: string
+          phase_operation_id: string
+          operation_step_id: string
+          requirement_text: string
+          output_reference?: Json | null
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          project_phase_id?: string
+          phase_operation_id?: string
+          operation_step_id?: string
+          requirement_text?: string
+          output_reference?: Json | null
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pfmea_requirements_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects_pfmea"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "pfmea_requirements_project_phase_id_fkey"
+            columns: ["project_phase_id"]
+            isOneToOne: false
+            referencedRelation: "project_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pfmea_requirements_phase_operation_id_fkey"
+            columns: ["phase_operation_id"]
+            isOneToOne: false
+            referencedRelation: "phase_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pfmea_requirements_operation_step_id_fkey"
+            columns: ["operation_step_id"]
+            isOneToOne: false
+            referencedRelation: "operation_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects_pfmea: {
+        Row: {
+          project_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          project_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          project_id?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_pfmea_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_plans: {
         Row: {
           contingency_percent: number
@@ -3475,6 +3766,10 @@ export type Database = {
         Returns: undefined
       }
       rebuild_phases_json_from_project_phases: {
+        Args: { p_project_id: string }
+        Returns: undefined
+      }
+      sync_pfmea_requirements_for_project: {
         Args: { p_project_id: string }
         Returns: undefined
       }
