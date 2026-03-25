@@ -1,6 +1,7 @@
 import { ExternalLink, HelpCircle, Calendar as CalendarIcon, ShoppingCart, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 interface ContentSection {
   id?: string;
@@ -52,10 +53,38 @@ export function MultiContentRenderer({ sections, onButtonAction }: MultiContentR
     return null;
   }
 
+  const warningSections = sections.filter((s) => s.type === "safety-warning" && s.content);
+  const nonWarningSections = sections.filter((s) => !(s.type === "safety-warning" && s.content));
+
   return (
     <div className="space-y-6">
+      {warningSections.length > 0 && (
+        <div className="space-y-3">
+          {warningSections.map((section, index) => (
+            <Alert
+              key={section.id || `warning-${index}`}
+              variant="destructive"
+              className="border-2 w-full"
+            >
+              <AlertTriangle className="h-5 w-5" />
+              {(section.title || section.severity) && (
+                <AlertTitle className="flex items-center gap-2">
+                  {section.title ? <span>{section.title}</span> : null}
+                  {section.severity ? (
+                    <Badge variant="secondary" className="uppercase">
+                      {section.severity}
+                    </Badge>
+                  ) : null}
+                </AlertTitle>
+              )}
+              <AlertDescription className="mt-2">{section.content}</AlertDescription>
+            </Alert>
+          ))}
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-4">
-        {sections.map((section, index) => (
+        {nonWarningSections.map((section, index) => (
           <div 
             key={section.id || `section-${index}`} 
             className={`${getWidthClass(section.width)} ${getAlignmentClass(section.alignment)}`}
@@ -130,20 +159,7 @@ export function MultiContentRenderer({ sections, onButtonAction }: MultiContentR
               </div>
             )}
 
-            {section.type === 'safety-warning' && section.content && (
-              <Alert variant="destructive" className="border-2">
-                <AlertTriangle className="h-5 w-5" />
-                {section.title && <AlertTitle>{section.title}</AlertTitle>}
-                <AlertDescription className="mt-2">
-                  {section.content}
-                </AlertDescription>
-                {section.severity && (
-                  <div className="mt-2 text-xs font-medium opacity-80">
-                    Severity: {section.severity.charAt(0).toUpperCase() + section.severity.slice(1)}
-                  </div>
-                )}
-              </Alert>
-            )}
+            {/* safety warnings are hoisted into the top banner */}
           </div>
         ))}
       </div>

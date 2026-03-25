@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, FileText, Image, Video, ExternalLink, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 interface ContentSection {
   id: string;
@@ -400,7 +401,18 @@ export function MultiContentEditor({ sections, onChange }: MultiContentEditorPro
                       <div className="flex items-start gap-2">
                         <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                         <div>
-                          {section.title && <div className="font-semibold text-destructive mb-1">{section.title}</div>}
+                          {(section.title || section.severity) && (
+                            <div className="flex items-center gap-2 mb-1">
+                              {section.title ? (
+                                <div className="font-semibold text-destructive">{section.title}</div>
+                              ) : null}
+                              {section.severity ? (
+                                <Badge variant="secondary" className="uppercase">
+                                  {section.severity}
+                                </Badge>
+                              ) : null}
+                            </div>
+                          )}
                           <div className="text-sm text-muted-foreground">{section.content}</div>
                         </div>
                       </div>
