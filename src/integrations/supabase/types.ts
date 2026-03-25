@@ -176,6 +176,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          session_start: string
+          session_end: string | null
+          ip_address: unknown
+          user_agent: string | null
+          is_active: boolean
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          session_start?: string
+          session_end?: string | null
+          ip_address?: unknown
+          user_agent?: string | null
+          is_active?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          session_start?: string
+          session_end?: string | null
+          ip_address?: unknown
+          user_agent?: string | null
+          is_active?: boolean
+        }
+        Relationships: []
+      }
       agreement_templates: {
         Row: {
           body: string
