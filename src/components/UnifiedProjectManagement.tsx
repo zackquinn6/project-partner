@@ -61,6 +61,7 @@ interface Project {
   phases?: any; // JSON field for phases
   images?: string[]; // Array of image URLs
   cover_image?: string | null; // URL of cover image
+  is_popular?: boolean;
   visibility_status?: 'default' | 'coming-soon' | 'hidden';
   release_date?: string | null;
 }
@@ -262,7 +263,8 @@ export function UnifiedProjectManagement({
         estimated_total_time: selectedProject.estimated_total_time || null,
         typical_project_size: selectedProject.typical_project_size || null,
         budget_per_unit: (selectedProject as any).budget_per_unit || null,
-        budget_per_typical_size: (selectedProject as any).budget_per_typical_size || null
+        budget_per_typical_size: (selectedProject as any).budget_per_typical_size || null,
+        is_popular: (selectedProject as any).is_popular ?? false,
       });
       setEditingProject(true);
     }
@@ -294,6 +296,10 @@ export function UnifiedProjectManagement({
         // Always include project_challenges - determine value below
         project_challenges: null
       };
+
+      if ((editedProject as any).is_popular !== undefined) {
+        updateData.is_popular = Boolean((editedProject as any).is_popular);
+      }
 
       // Include visibility_status when edited; otherwise preserve existing or let default stand
       if ((editedProject as any).visibility_status !== undefined) {
@@ -1708,7 +1714,7 @@ export function UnifiedProjectManagement({
                   <SelectTrigger>
                     <SelectValue placeholder="Choose a project to manage..." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-72 overflow-y-auto">
                     <div className="p-2 border-b">
                       <Input placeholder="Search projects..." value={projectSearch} onChange={e => setProjectSearch(e.target.value)} className="h-8" onClick={e => e.stopPropagation()} />
                     </div>
@@ -1850,6 +1856,33 @@ export function UnifiedProjectManagement({
                                   if (v === 'hidden') return 'Hidden from Catalog';
                                   return 'Default (uses publish status)';
                                 })()}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label className="text-sm">Popular?</Label>
+                            {editingProject ? (
+                              <Select
+                                value={String(Boolean((editedProject as any).is_popular))}
+                                onValueChange={(value) =>
+                                  setEditedProject((prev) => ({
+                                    ...prev,
+                                    is_popular: value === 'true',
+                                  }))
+                                }
+                              >
+                                <SelectTrigger className="text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="false">No</SelectItem>
+                                  <SelectItem value="true">Yes</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <div className="p-2 bg-muted rounded text-sm">
+                                {(selectedProject as any).is_popular ? 'Yes' : 'No'}
                               </div>
                             )}
                           </div>

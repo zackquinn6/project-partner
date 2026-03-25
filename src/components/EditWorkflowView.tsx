@@ -1775,14 +1775,14 @@ export default function EditWorkflowView({
                 <AccordionTrigger className="px-6 py-4 hover:no-underline [&[data-state=open]]:border-b border-border/80">
                   <div className="flex flex-col items-start gap-1 text-left pr-2">
                     <span className="text-base font-semibold">Instruction data sources</span>
-                    <span className="text-sm font-normal text-muted-foreground">
-                      Document where this project&apos;s step instructions come from (manuals, codes, internal
-                      references, SMEs, etc.). One field for the whole template.
-                    </span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-3 px-6 pb-6 pt-2">
+                    <p className="text-sm text-muted-foreground">
+                      Document where this project&apos;s step instructions come from (manuals, codes, internal
+                      references, SMEs, etc.). One field for the whole template.
+                    </p>
                     <Textarea
                       value={instructionsDataSourcesDraft}
                       onChange={(e) => setInstructionsDataSourcesDraft(e.target.value)}
