@@ -22,14 +22,14 @@ function AppIconTile({
   tileClassName: string;
 }) {
   return (
-    <div className="flex w-[5.75rem] flex-col items-center gap-2 sm:w-24">
+    <div className="flex w-[4.75rem] flex-col items-center gap-1.5 sm:w-20">
       <div
         className={cn(
-          'flex h-[4.25rem] w-[4.25rem] items-center justify-center rounded-[1.35rem] shadow-md ring-1 ring-black/10 dark:ring-white/15 sm:h-[4.75rem] sm:w-[4.75rem]',
+          'flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-[1.1rem] shadow-sm ring-1 ring-black/10 dark:ring-white/15 sm:h-[3.6rem] sm:w-[3.6rem]',
           tileClassName
         )}
       >
-        <Icon className="h-8 w-8 text-white sm:h-9 sm:w-9" strokeWidth={1.65} aria-hidden />
+        <Icon className="h-6 w-6 text-white sm:h-7 sm:w-7" strokeWidth={1.65} aria-hidden />
       </div>
       <span className="text-center text-[11px] font-semibold leading-snug tracking-tight text-foreground sm:text-xs">
         {label}
@@ -108,7 +108,7 @@ export function SimplifiedLandingHero({ onLearnMore }: SimplifiedLandingHeroProp
                         </div>
                       </CardHeader>
                       <CardContent className="flex flex-1 flex-col gap-5 px-5 pb-6 pt-2 sm:px-6">
-                        <div className="flex flex-wrap items-start justify-center gap-4 sm:gap-5">
+                        <div className="mx-auto grid w-fit grid-cols-2 items-start justify-center gap-3 sm:gap-4">
                           <AppIconTile
                             icon={ListTodo}
                             label="Task & Project Manager"
@@ -161,9 +161,6 @@ export function SimplifiedLandingHero({ onLearnMore }: SimplifiedLandingHeroProp
 
                     {/* $59 / yr — Projects */}
                     <Card className="relative flex flex-col border-2 border-primary shadow-md transition-shadow hover:shadow-lg">
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-primary-foreground shadow">
-                        Full suite
-                      </div>
                       <CardHeader className="space-y-1 pb-2 pt-7 text-center">
                         <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Projects</p>
                         <div className="pt-1">

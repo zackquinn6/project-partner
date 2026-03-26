@@ -2506,9 +2506,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       await updatePhasePosition(phase.id, phase.phaseOrderNumber, phases.length);
       await updatePhasePosition(prevPhase.id, prevPhase.phaseOrderNumber, phases.length);
       
-      // Reload phases
-      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
-      loadedProjectIdRef.current = null;
+      // Reload phases without triggering parent refresh (keeps scroll position stable).
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       setPhases(sortedPhases);
       
       toast.success('Phase moved up');
@@ -2565,9 +2564,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       await updatePhasePosition(phase.id, phase.phaseOrderNumber, phases.length);
       await updatePhasePosition(nextPhase.id, nextPhase.phaseOrderNumber, phases.length);
       
-      // Reload phases
-      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
-      loadedProjectIdRef.current = null;
+      // Reload phases without triggering parent refresh (keeps scroll position stable).
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       setPhases(sortedPhases);
       
       toast.success('Phase moved down');
@@ -2689,10 +2687,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       
       // Reload phases with position data from database
-      const sortedPhases = await reloadPhasesWithPositions(currentProject.id);
-      
-      // Reset loadedProjectIdRef to allow immediate UI update
-      loadedProjectIdRef.current = null;
+      // Reload without triggering parent refresh (keeps scroll position stable).
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       
       // Update UI immediately
       setPhases(sortedPhases);
