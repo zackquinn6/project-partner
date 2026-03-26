@@ -992,11 +992,7 @@ export default function EditWorkflowView({
 
   // Helper to check if current step is from a standard or incorporated phase
   const isStepFromStandardOrIncorporatedPhase = (step: WorkflowStep | undefined) => {
-    if (!step || isEditingStandardProject) {
-      if (isEditingStandardProject) {
-      }
-      return false;
-    }
+    if (!step || isEditingStandardProject) return false;
     
     // Get the phase containing this step
     const phaseName = step.phaseName;
@@ -1176,9 +1172,6 @@ export default function EditWorkflowView({
     if (!stepId || !sections) return;
     
     try {
-      if (!silent) {
-      }
-      
       const { error } = await supabase
         .from('step_instructions')
         .upsert({
@@ -1201,8 +1194,6 @@ export default function EditWorkflowView({
           setPendingContentChanges(null);
           pendingContentRef.current.changes = null;
           pendingContentRef.current.stepId = null;
-        }
-        if (!silent) {
         }
       }
     } catch (err) {
@@ -1440,9 +1431,6 @@ export default function EditWorkflowView({
       const isEditableStandardStep = editingStep.allowContentEdit === true;
       
       if (isCustomStep || isEditableStandardStep) {
-        if (isEditableStandardStep) {
-        } else {
-        }
         try {
           const appsToSave = Array.isArray(editingStep.apps) ? editingStep.apps : (editingStep.apps ? [editingStep.apps] : []);
           
@@ -1498,7 +1486,6 @@ export default function EditWorkflowView({
         } catch (err) {
           console.error('❌ Exception saving custom step:', err);
         }
-      } else {
       }
     }
     

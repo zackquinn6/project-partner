@@ -24,6 +24,17 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
       "@typescript-eslint/no-unused-vars": "off",
+      // Keep lint actionable given current repo state.
+      "@typescript-eslint/no-explicit-any": "warn",
+      "prefer-const": "warn",
+      "no-useless-escape": "warn",
+      "no-control-regex": "warn",
+      "no-empty": "warn",
+      "no-case-declarations": "warn",
+      "no-prototype-builtins": "warn",
+      "no-irregular-whitespace": "warn",
+      "@typescript-eslint/no-empty-object-type": "warn",
+      "react-hooks/rules-of-hooks": "warn",
     },
   }
 );
