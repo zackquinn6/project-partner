@@ -30,10 +30,17 @@ import { CompactTimeEstimation } from '@/components/CompactTimeEstimation';
 import { CompactAppsSection } from '@/components/CompactAppsSection';
 import { AppsLibraryDialog } from '@/components/AppsLibraryDialog';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
-import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock, Shield } from 'lucide-react';
+import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock, Shield, Menu, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 // Extended interfaces for step-level usage
 interface StepMaterial extends Material {
@@ -1684,17 +1691,46 @@ export default function EditWorkflowView({
         {/* Header with Back Button and View Toggle */}
         <div className="w-full px-6 py-6">
           <div className="flex items-center justify-between mb-6">
-            <Button variant="ghost" onClick={onBackToAdmin} className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Project Manager
-            </Button>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="hidden md:block">
+                <Button variant="ghost" onClick={onBackToAdmin} className="flex items-center gap-2">
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to Project Manager
+                </Button>
+              </div>
+              <div className="md:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="ghost" size="icon" aria-label="Open navigation menu" className="h-9 w-9">
+                      <Menu className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        onBackToAdmin();
+                      }}
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back to Project Manager
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+            <div className="hidden md:flex items-center gap-4">
               <div className="flex gap-2">
                 <Button onClick={() => setViewMode('structure')} variant="default" size="sm" className="flex items-center gap-2">
                   <List className="w-4 h-4" />
                   Process Map
                 </Button>
               </div>
+              <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                Process Map
+              </Badge>
+            </div>
+            <div className="md:hidden">
               <Badge variant="outline" className="bg-blue-100 text-blue-800">
                 Process Map
               </Badge>
@@ -1714,28 +1750,57 @@ export default function EditWorkflowView({
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold">
-                {isEditingStandardProject ? '🔒 Standard Project Foundation Editor' : `Workflow Editor: ${currentProject?.name?.replace(/\s*\([Dd]raft\)\s*/g, '').replace(/\s*\(Rev\s+\d+\)\s*/gi, '').trim() || 'Untitled Project'}`}
+              {isEditingStandardProject ? '🔒 Standard Project Foundation Editor' : `Workflow Editor: ${currentProject?.name?.replace(/\s*\([Dd]raft\)\s*/g, '').replace(/\s*\(Rev\s+\d+\)\s*/gi, '').trim() || 'Untitled Project'}`}
               </h1>
-              {!isEditingStandardProject && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Standard and incorporated phases must be edited outside this template.
-                </p>
-              )}
+              {!isEditingStandardProject ? (
+                <div className="hidden md:flex mt-2 items-center gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                          aria-label="Template editing restrictions"
+                        >
+                          <Info className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-xs">
+                        Standard and incorporated phases must be edited outside this template.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              ) : null}
             </div>
             <div className="flex items-center gap-4">
-              {editMode && <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+              {editMode && (
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                   Editing: {currentStep?.step}
-                </Badge>}
-                <div className="flex gap-2">
-                {editMode ? <>
+                </Badge>
+              )}
+
+              {/* Desktop/tablet header actions */}
+              <div className="hidden md:flex gap-2">
+                {editMode ? (
+                  <>
                     <Button onClick={handleSaveEdit} size="icon" variant="outline" title="Save Changes">
                       <Save className="w-4 h-4" />
                     </Button>
                     <Button onClick={handleCancelEdit} size="icon" variant="outline" title="Cancel">
                       <X className="w-4 h-4" />
                     </Button>
-                  </> : <>
-                    <Button onClick={() => setViewMode('structure')} variant="outline" size="sm" className="flex items-center gap-2">
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      onClick={() => setViewMode('structure')}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
                       <List className="w-4 h-4" />
                       Process Map
                     </Button>
@@ -1757,30 +1822,151 @@ export default function EditWorkflowView({
                       <FileText className="w-4 h-4" />
                       PFMEA
                     </Button>
-                    <Button onClick={() => setImportOpen(true)} variant="outline" size="icon" title="Import">
+                    <Button
+                      onClick={() => setRiskManagementOpen(true)}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <Shield className="w-4 h-4" />
+                      Project Risk
+                    </Button>
+                    <Button
+                      onClick={() => setImportOpen(true)}
+                      variant="outline"
+                      size="icon"
+                      title="Import"
+                      className="h-9 w-9 p-0 flex items-center justify-center"
+                    >
                       <Upload className="w-4 h-4" />
                     </Button>
-                     <Button onClick={() => setAiProjectGeneratorOpen(true)} variant="outline" size="sm" className="flex items-center gap-2">
-                       <Sparkles className="w-4 h-4" />
-                       AI Project Generator
-                     </Button>
-                     <Button onClick={() => setRiskManagementOpen(true)} variant="outline" size="sm" className="flex items-center gap-2">
-                       <Shield className="w-4 h-4" />
-                       Project Risk
-                     </Button>
-                      <Button 
-                        onClick={() => {
-                          onBackToAdmin();
-                        }} 
-                        variant="default" 
-                        size="sm" 
-                        className="flex items-center gap-2"
-                      >
-                        <Save className="w-4 h-4" />
-                        Save and Close
-                      </Button>
-                   </>}
-               </div>
+                    <Button
+                      onClick={() => setAiProjectGeneratorOpen(true)}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      AI Project Generator
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        onBackToAdmin();
+                      }}
+                      variant="default"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      Save and Close
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {/* Slim-width header actions */}
+              <div className="md:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="outline" size="icon" className="h-9 w-9" aria-label="Open actions menu">
+                      <Menu className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    {editMode ? (
+                      <>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            handleSaveEdit();
+                          }}
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Changes
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            handleCancelEdit();
+                          }}
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Cancel
+                        </DropdownMenuItem>
+                      </>
+                    ) : (
+                      <>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            toast.info('Standard and incorporated phases must be edited outside this template.');
+                          }}
+                        >
+                          <Info className="w-4 h-4 mr-2" />
+                          Template restrictions
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setViewMode('structure');
+                          }}
+                        >
+                          <List className="w-4 h-4 mr-2" />
+                          Process Map
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!currentProject?.id}
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            if (!currentProject?.id) return;
+                            setPfmeaRefreshNonce((n) => n + 1);
+                            setPfmeaOpen(true);
+                          }}
+                        >
+                          <FileText className="w-4 h-4 mr-2" />
+                          PFMEA
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setRiskManagementOpen(true);
+                          }}
+                        >
+                          <Shield className="w-4 h-4 mr-2" />
+                          Project Risk
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setImportOpen(true);
+                          }}
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Import
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setAiProjectGeneratorOpen(true);
+                          }}
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          AI Project Generator
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            onBackToAdmin();
+                          }}
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          Save and Close
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
         </div>
