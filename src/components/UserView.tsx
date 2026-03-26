@@ -589,12 +589,12 @@ export default function UserView({
   
   // CRITICAL ARCHITECTURE:
   // - UserView ONLY displays project runs (immutable snapshots)
-  // - Structure Manager operates on templates, not project runs
+  // - Process Map operates on templates, not project runs
   // - Project runs are immutable snapshots - phases are copied (not linked) at creation time
   // - All phases (standard and custom) are copied into the snapshot, not dynamically linked
   
   // CRITICAL: UserView ONLY displays project runs (immutable snapshots)
-  // Structure Manager operates on templates, not project runs
+  // Process Map operates on templates, not project runs
   // Project runs are immutable snapshots - they should NEVER dynamically load phases from database
   // All phases (standard and custom) are copied into the snapshot at creation time, not linked
   let rawWorkflowPhases: Phase[] = [];
@@ -627,12 +627,12 @@ export default function UserView({
     }
   } else {
     // No project run - UserView should not display templates
-    // Templates are edited in Structure Manager, not viewed in UserView workflow
+    // Templates are edited in Process Map, not viewed in UserView workflow
     rawWorkflowPhases = [];
   }
 
-  // Apply standard phase ordering to match Structure Manager
-  // This ensures workflow navigation follows the same order as structure manager
+  // Apply standard phase ordering to match Process Map
+  // This ensures workflow navigation follows the same order as Process Map
   const workflowPhases = enforceStandardPhaseOrdering(rawWorkflowPhases);
   
   // CRITICAL: Project runs should preserve exact template phase structure

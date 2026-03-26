@@ -54,7 +54,7 @@ export default function EditWorkflowView({
     updateProject
   } = useProject();
 
-  // Use the same data source and detection logic as StructureManager
+  // Use the same data source and detection logic as Process Map (StructureManager)
   // Both components work identically for Standard Project Foundation and regular project templates
   // The only difference is isEditingStandardProject flag which controls edit permissions
   
@@ -62,8 +62,8 @@ export default function EditWorkflowView({
   // Check both the hardcoded ID and the isStandardTemplate flag
   const isEditingStandardProject = currentProject?.isStandardTemplate || currentProject?.id === 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5';
   
-  // Load phases directly from database - EXACTLY like StructureManager does
-  // This ensures workflow editor and structure manager always match
+  // Load phases directly from database - EXACTLY like Process Map does
+  // This ensures workflow editor and Process Map always match
   const [rawPhases, setRawPhases] = React.useState<Phase[]>([]);
   const [loadingPhases, setLoadingPhases] = React.useState(true);
   
@@ -878,10 +878,10 @@ export default function EditWorkflowView({
     }
   }, [currentProject?.id, loadPhasesFromDatabase]);
   
-  // Listen for phase updates from StructureManager
+  // Listen for phase updates from Process Map
   React.useEffect(() => {
     const handlePhaseUpdate = (event: CustomEvent) => {
-      // Refresh phases when StructureManager updates them
+      // Refresh phases when Process Map updates them
       if (currentProject?.id && event.detail?.projectId === currentProject.id) {
         const updateKind = event.detail?.updateKind;
         const stepId = event.detail?.stepId;
@@ -930,9 +930,9 @@ export default function EditWorkflowView({
 
   // No longer needed - we load phases directly from database
 
-  // Apply standard phase ordering to match Structure Manager
-  // This ensures the workflow editor shows phases in the same order as structure manager
-  // Also deduplicate phases like StructureManager does
+  // Apply standard phase ordering to match Process Map
+  // This ensures the workflow editor shows phases in the same order as Process Map
+  // Also deduplicate phases like Process Map does
   const deduplicatePhases = (phases: Phase[]): Phase[] => {
     const seen = new Set<string>();
     const result: Phase[] = [];
@@ -947,7 +947,7 @@ export default function EditWorkflowView({
     return result;
   };
   
-  // Sort phases by order number (same logic as StructureManager)
+  // Sort phases by order number (same logic as Process Map)
   const sortPhasesByOrderNumber = (phases: Phase[]): Phase[] => {
     const sortedPhases = [...phases].sort((a, b) => {
       const aOrder = a.phaseOrderNumber === 'last' ? Infinity : 
@@ -1055,7 +1055,6 @@ export default function EditWorkflowView({
   const [ppeToolsLibraryOpen, setPpeToolsLibraryOpen] = useState(false);
   const [ppeMaterialsLibraryOpen, setPpeMaterialsLibraryOpen] = useState(false);
   const [appsLibraryOpen, setAppsLibraryOpen] = useState(false);
-  const [showStructureManager, setShowStructureManager] = useState(false);
   const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
   const [decisionTreeOpen, setDecisionTreeOpen] = useState(false);
   const [instructionLevel, setInstructionLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
@@ -1690,11 +1689,11 @@ export default function EditWorkflowView({
               <div className="flex gap-2">
                 <Button onClick={() => setViewMode('structure')} variant="default" size="sm" className="flex items-center gap-2">
                   <List className="w-4 h-4" />
-                  Structure Manager
+                  Process Map
                 </Button>
               </div>
               <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                Structure Mode
+                Process Map
               </Badge>
             </div>
           </div>
@@ -1735,7 +1734,7 @@ export default function EditWorkflowView({
                   </> : <>
                     <Button onClick={() => setViewMode('structure')} variant="outline" size="sm" className="flex items-center gap-2">
                       <List className="w-4 h-4" />
-                      Structure Manager
+                      Process Map
                     </Button>
                     <Button onClick={() => setImportOpen(true)} variant="outline" size="sm" className="flex items-center gap-2">
                       <Upload className="w-4 h-4" />

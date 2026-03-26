@@ -1,5 +1,5 @@
 /**
- * StructureManager Component - Complete Redesign from Scratch
+ * Process Map editor (structure / phases UI). Exported as StructureManager.
  * 
  * Purpose: Create, edit, and delete phases, operations, and steps for:
  * 1. Standard Project Foundation (basis for all other projects)
@@ -63,7 +63,7 @@ interface ValidationError {
 }
 
 /**
- * StructureManager Component
+ * Process Map component
  * 
  * Complete redesign implementing all requirements:
  * - Strict validation on load
@@ -2788,7 +2788,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               </div>
             )}
             <p className="text-sm text-gray-600">
-              Please contact an admin to review and fix the database. The Structure Manager cannot load until validation passes.
+              Please contact an admin to review and fix the database. Process Map cannot load until validation passes.
             </p>
           </CardContent>
         </Card>
@@ -2817,7 +2817,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           <div className="container mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold">Structure Manager</h2>
+                <h2 className="text-xl font-bold">Process Map</h2>
                 <p className="text-muted-foreground text-sm">
                   {isEditingStandardProject ? 'Edit Standard Project Foundation' : currentProject.name}
                 </p>

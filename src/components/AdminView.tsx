@@ -141,14 +141,14 @@ export const AdminView: React.FC = () => {
   const [toolsMaterialsOpen, setToolsMaterialsOpen] = useState(false);
   const [homeRiskManagerOpen, setHomeRiskManagerOpen] = useState(false);
   const [editWorkflowOpen, setEditWorkflowOpen] = useState(false);
-  const [structureManagerOpen, setStructureManagerOpen] = useState(false);
+  const [processMapOpen, setProcessMapOpen] = useState(false);
   const [roadmapManagerOpen, setRoadmapManagerOpen] = useState(false);
   const [featureRequestManagerOpen, setFeatureRequestManagerOpen] = useState(false);
   const [adminGuideOpen, setAdminGuideOpen] = useState(false);
   const [actionCenterOpen, setActionCenterOpen] = useState(false);
   const [appManagerOpen, setAppManagerOpen] = useState(false);
   const [projectSkillAssessmentsOpen, setProjectSkillAssessmentsOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'admin' | 'structure-manager'>('admin');
+  const [currentView, setCurrentView] = useState<'admin' | 'process-map'>('admin');
 
   useEffect(() => {
     if (isProjectOwnerOnly) {
@@ -156,7 +156,7 @@ export const AdminView: React.FC = () => {
     }
   }, [isProjectOwnerOnly]);
 
-  if (currentView === 'structure-manager') {
+  if (currentView === 'process-map') {
     return <StructureManager onBack={() => setCurrentView('admin')} />;
   }
   return (
@@ -469,15 +469,15 @@ export const AdminView: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={structureManagerOpen} onOpenChange={setStructureManagerOpen}>
+        <Dialog open={processMapOpen} onOpenChange={setProcessMapOpen}>
           <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
             <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               <div className="flex items-center justify-between gap-2">
-                <DialogTitle className="text-lg md:text-xl font-bold">Structure Manager</DialogTitle>
+                <DialogTitle className="text-lg md:text-xl font-bold">Process Map</DialogTitle>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={() => setStructureManagerOpen(false)} 
+                  onClick={() => setProcessMapOpen(false)} 
                   className="h-7 px-2 text-[9px] md:text-xs"
                 >
                   Close
@@ -485,7 +485,7 @@ export const AdminView: React.FC = () => {
               </div>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
-              <StructureManager onBack={() => setStructureManagerOpen(false)} />
+              <StructureManager onBack={() => setProcessMapOpen(false)} />
             </div>
           </DialogContent>
         </Dialog>

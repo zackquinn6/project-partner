@@ -5760,7 +5760,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold">Structure Manager</h2>
+              <h2 className="text-xl font-bold">Process Map</h2>
               <p className="text-muted-foreground">Use up/down arrows to reorder phases, operations, and steps (incorporated phases are read-only modules)</p>
             </div>
             <div className="flex items-center gap-2">

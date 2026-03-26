@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProject } from '@/contexts/ProjectContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown, Sparkles, Shield, Info, BookOpen, BarChart3 } from 'lucide-react';
+import { GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown, Sparkles, Shield, Info, BookOpen, BarChart3, Network } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
@@ -23,11 +23,14 @@ import { useProjectOwner } from '@/hooks/useProjectOwner';
 import { ProjectImageManager } from '@/components/ProjectImageManager';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
 import { PFMEAManagement } from '@/components/PFMEAManagement';
+import { StructureManager } from '@/components/StructureManager';
+import type { Project as AppContextProject } from '@/interfaces/Project';
 import { DeleteProjectDialog } from '@/components/DeleteProjectDialog';
 import { PlanningGuideWindow, type PlanningGuideTab } from '@/components/PlanningGuideWindow';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { calculateProjectTimeEstimate, formatScalingUnit } from '@/utils/projectTimeEstimation';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 
 // Alphabetically sorted project categories
 const PROJECT_CATEGORIES = ['Appliances', 'Bathroom', 'Ceilings', 'Decks & Patios', 'Doors & Windows', 'Electrical', 'Exterior Carpentry', 'Flooring', 'General Repairs & Maintenance', 'HVAC & Ventilation', 'Insulation & Weatherproofing', 'Interior Carpentry', 'Kitchen', 'Landscaping & Outdoor Projects', 'Lighting & Electrical', 'Masonry & Concrete', 'Painting & Finishing', 'Plumbing', 'Roofing', 'Safety & Security', 'Smart Home & Technology', 'Storage & Organization', 'Tile', 'Walls & Drywall'];
@@ -65,6 +68,20 @@ interface Project {
   visibility_status?: 'default' | 'coming-soon' | 'hidden';
   release_date?: string | null;
 }
+
+function unifiedTemplateRowToContextProject(p: Project): AppContextProject {
+  return {
+    id: p.id,
+    name: p.name,
+    description: p.description || '',
+    createdAt: new Date(p.created_at),
+    updatedAt: new Date(p.updated_at),
+    publishStatus: p.publish_status,
+    category: p.category ?? [],
+    phases: [],
+  };
+}
+
 interface UnifiedProjectManagementProps {
   onEditWorkflow?: () => void;
   onOpenAnalytics?: () => void;
@@ -78,8 +95,13 @@ export function UnifiedProjectManagement({
   const { isAdmin } = useUserRole();
   const { hasProjectOwnerRole } = useProjectOwner();
   const {
-    setCurrentProject
+    setCurrentProject,
+    currentProject
   } = useProject();
+  const pfmeaProcessMapRestoreRef = useRef<AppContextProject | null>(null);
+  const pfmeaProcessMapDidStashRef = useRef(false);
+  const [pfmeaProcessMapOpen, setPfmeaProcessMapOpen] = useState(false);
+  const [pfmeaDataRefreshNonce, setPfmeaDataRefreshNonce] = useState(0);
   const {
     trackClick
   } = useButtonTracker();
@@ -145,6 +167,24 @@ export function UnifiedProjectManagement({
   const [planningGuideOpen, setPlanningGuideOpen] = useState(false);
   const [planningGuideInitialTab, setPlanningGuideInitialTab] = useState<PlanningGuideTab | null>(null);
   const [pfmeaOpen, setPfmeaOpen] = useState(false);
+  const closePfmeaProcessMap = useCallback(() => {
+    if (pfmeaProcessMapDidStashRef.current) {
+      setCurrentProject(pfmeaProcessMapRestoreRef.current);
+      pfmeaProcessMapDidStashRef.current = false;
+      setPfmeaDataRefreshNonce((n) => n + 1);
+    }
+    setPfmeaProcessMapOpen(false);
+  }, [setCurrentProject]);
+  const openPfmeaProcessMap = useCallback(() => {
+    if (!selectedProject) {
+      toast.error('Select a project before opening Process Map');
+      return;
+    }
+    pfmeaProcessMapRestoreRef.current = currentProject;
+    pfmeaProcessMapDidStashRef.current = true;
+    setCurrentProject(unifiedTemplateRowToContextProject(selectedProject));
+    setPfmeaProcessMapOpen(true);
+  }, [selectedProject, currentProject, setCurrentProject]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -3094,25 +3134,61 @@ export function UnifiedProjectManagement({
         initialTab={planningGuideInitialTab ?? undefined}
       />
 
-      {/* PFMEA Dialog */}
-      <Dialog open={pfmeaOpen} onOpenChange={setPfmeaOpen}>
-        <DialogContent className="w-full h-screen max-w-none max-h-none p-0 overflow-hidden flex flex-col [&>button]:hidden">
+      {/* PFMEA — full-viewport surface (not a centered popout) */}
+      <Dialog
+        open={pfmeaOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            closePfmeaProcessMap();
+          }
+          setPfmeaOpen(open);
+        }}
+      >
+        <DialogContent
+          className={cn(
+            'relative fixed inset-0 z-50 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 shadow-none overflow-hidden',
+            'md:max-w-none md:max-h-none md:rounded-none',
+            '[&>button]:hidden',
+          )}
+        >
           <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background">
             <div className="flex items-center justify-between gap-2">
               <DialogTitle className="text-lg md:text-xl font-bold">Process FMEA</DialogTitle>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setPfmeaOpen(false)} 
-                className="h-7 px-2 text-[9px] md:text-xs"
-              >
-                Close
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={!selectedProject?.id}
+                  onClick={openPfmeaProcessMap}
+                >
+                  <Network className="w-4 h-4 mr-1.5" />
+                  Process Map
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPfmeaOpen(false)}
+                  className="h-7 px-2 text-[9px] md:text-xs"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
-            <PFMEAManagement projectId={selectedProject?.id} />
+          <div className="min-h-0 flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+            <PFMEAManagement projectId={selectedProject?.id} refreshTrigger={pfmeaDataRefreshNonce} />
           </div>
+          {pfmeaProcessMapOpen ? (
+            <div
+              className="absolute inset-0 z-[100] flex min-h-0 flex-col bg-background"
+              role="dialog"
+              aria-label="Process Map"
+            >
+              <StructureManager onBack={closePfmeaProcessMap} />
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
 

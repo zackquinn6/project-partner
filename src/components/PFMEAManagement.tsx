@@ -1,5 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Edit, Trash2, Target, AlertTriangle, FileText, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 // Database types for PFMEA
 interface DatabaseProject {
@@ -83,9 +93,53 @@ interface PFMEAActionItem {
   completion_notes?: string;
 }
 
-interface PFMEAManagementProps {
-  projectId?: string; // Optional project ID to bypass selection and go directly to editor
+/** Highest severity from listed effects; if none, use failure mode row severity (explicit DB field). */
+function maxPfmeaSeverityForFailureMode(fm: PFMEAFailureMode): number {
+  if (fm.pfmea_potential_effects.length > 0) {
+    return Math.max(...fm.pfmea_potential_effects.map((e) => e.severity_score));
+  }
+  return fm.severity_score;
 }
+
+type PfmeaNavColumn =
+  | 'failure_mode'
+  | 'effects'
+  | 's'
+  | 'causes'
+  | 'prevention_controls'
+  | 'o'
+  | 'detection_controls'
+  | 'd'
+  | 'rpn'
+  | 'ap'
+  | 'recommended_actions';
+
+const PFMEA_NAV_COLS: PfmeaNavColumn[] = [
+  'failure_mode',
+  'effects',
+  's',
+  'causes',
+  'prevention_controls',
+  'o',
+  'detection_controls',
+  'd',
+  'rpn',
+  'ap',
+  'recommended_actions',
+];
+
+interface PFMEAManagementProps {
+  projectId?: string;
+  /** Increment (e.g. after Process Map closes) to re-sync requirements from workflow and reload PFMEA. */
+  refreshTrigger?: number;
+}
+
+type PfmeaLineDeleteTarget = {
+  kind: 'failure_mode' | 'effect' | 'cause' | 'control' | 'action';
+  id: string;
+  title: string;
+  description: string;
+};
 
 function requirementPhaseName(r: PFMEARequirement): string {
   return r.project_phases?.name ?? (r.output_reference as { phase_name?: string } | null)?.phase_name ?? '—';
@@ -105,7 +159,7 @@ function requirementStepName(r: PFMEARequirement): string {
   );
 }
 
-export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) => {
+export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, refreshTrigger }) => {
   const [pfmeaTemplates, setPfmeaTemplates] = useState<PfmeaTemplateContext[]>([]);
   const [selectedPfmeaProject, setSelectedPfmeaProject] = useState<PfmeaTemplateContext | null>(null);
   const [projects, setProjects] = useState<DatabaseProject[]>([]);
@@ -115,6 +169,12 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
   const [editingCell, setEditingCell] = useState<{row: string, column: string, type: string} | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
   const [currentTab, setCurrentTab] = useState('overview');
+  const [gridFocus, setGridFocus] = useState<{ rowIndex: number; col: PfmeaNavColumn }>({
+    rowIndex: 0,
+    col: 'failure_mode',
+  });
+  const [pfmeaLineDeleteTarget, setPfmeaLineDeleteTarget] = useState<PfmeaLineDeleteTarget | null>(null);
+  const [pfmeaDeletePending, setPfmeaDeletePending] = useState(false);
 
   useEffect(() => {
     void fetchData();
@@ -166,6 +226,67 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
       toast.error('Failed to load PFMEA details');
     }
   }, []);
+
+  useEffect(() => {
+    if (refreshTrigger === undefined || refreshTrigger < 1 || !projectId) return;
+    void (async () => {
+      const { error } = await supabase.rpc('sync_pfmea_requirements_for_project', {
+        p_project_id: projectId,
+      });
+      if (error) {
+        console.error('sync_pfmea_requirements_for_project', error);
+        toast.error(error.message);
+      }
+      await fetchPfmeaDetails(projectId);
+    })();
+  }, [refreshTrigger, projectId, fetchPfmeaDetails]);
+
+  const persistEffectSeverity = useCallback(
+    async (effectId: string, scoreStr: string) => {
+      try {
+        const { error } = await supabase
+          .from('pfmea_potential_effects')
+          .update({ severity_score: parseInt(scoreStr, 10) })
+          .eq('id', effectId);
+        if (error) throw error;
+        if (selectedPfmeaProject) {
+          await fetchPfmeaDetails(selectedPfmeaProject.project_id);
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to update severity');
+      }
+    },
+    [selectedPfmeaProject, fetchPfmeaDetails]
+  );
+
+  const executePfmeaLineDelete = useCallback(async () => {
+    if (!pfmeaLineDeleteTarget || !selectedPfmeaProject) return;
+    const { kind, id } = pfmeaLineDeleteTarget;
+    const table =
+      kind === 'failure_mode'
+        ? 'pfmea_failure_modes'
+        : kind === 'effect'
+          ? 'pfmea_potential_effects'
+          : kind === 'cause'
+            ? 'pfmea_potential_causes'
+            : kind === 'control'
+              ? 'pfmea_controls'
+              : 'pfmea_action_items';
+    setPfmeaDeletePending(true);
+    try {
+      const { error } = await supabase.from(table).delete().eq('id', id);
+      if (error) throw error;
+      await fetchPfmeaDetails(selectedPfmeaProject.project_id);
+      toast.success('Removed');
+      setPfmeaLineDeleteTarget(null);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete');
+    } finally {
+      setPfmeaDeletePending(false);
+    }
+  }, [pfmeaLineDeleteTarget, selectedPfmeaProject, fetchPfmeaDetails]);
 
   const fetchData = async () => {
     try {
@@ -255,10 +376,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
   };
 
   const calculateRPN = (failureMode: PFMEAFailureMode): number => {
-    const maxSeverity = Math.max(
-      failureMode.severity_score || 0,
-      ...failureMode.pfmea_potential_effects.map(e => e.severity_score)
-    );
+    const maxSeverity = maxPfmeaSeverityForFailureMode(failureMode);
     
     const avgOccurrence = failureMode.pfmea_potential_causes.length > 0
       ? failureMode.pfmea_potential_causes.reduce((sum, c) => sum + c.occurrence_score, 0) / failureMode.pfmea_potential_causes.length
@@ -273,11 +391,66 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
     return Math.round(maxSeverity * avgOccurrence * minDetection);
   };
 
-  const getRPNColor = (rpn: number): string => {
-    if (rpn >= 200) return 'bg-red-100 border-red-500 text-red-900';
-    if (rpn >= 100) return 'bg-orange-100 border-orange-500 text-orange-900';
-    if (rpn >= 50) return 'bg-yellow-100 border-yellow-500 text-yellow-900';
-    return 'bg-green-100 border-green-500 text-green-900';
+  // AIAG-VDA Action Priority (AP): High / Medium / Low based on the S/O/D decision table.
+  const calculateActionPriority = (failureMode: PFMEAFailureMode): 'H' | 'M' | 'L' => {
+    const s = Math.round(maxPfmeaSeverityForFailureMode(failureMode));
+
+    const avgOccurrence = failureMode.pfmea_potential_causes.length > 0
+      ? failureMode.pfmea_potential_causes.reduce((sum, c) => sum + c.occurrence_score, 0) / failureMode.pfmea_potential_causes.length
+      : 10;
+    const o = Math.round(avgOccurrence);
+
+    const detectionScores = failureMode.pfmea_controls
+      .filter((c) => c.control_type === 'detection' && c.detection_score != null)
+      .map((c) => c.detection_score!);
+    const d = detectionScores.length > 0 ? Math.min(...detectionScores) : 10;
+
+    // Severity bands
+    if (s >= 9) {
+      // O: 8-10 => H, 6-7 => H, 4-5 => (D=1 -> M else H), 2-3 => (D>=7 -> H, D>=5 -> M, else L), O=1 => L
+      if (o >= 8) return 'H';
+      if (o >= 6) return 'H';
+      if (o >= 4) return d === 1 ? 'M' : 'H';
+      if (o >= 2) return d >= 7 ? 'H' : d >= 5 ? 'M' : 'L';
+      return 'L';
+    }
+
+    if (s >= 7) {
+      // O: 8-10 => H, 6-7 => (D=1 -> M else H), 4-5 => (D>=7 -> H else M), 2-3 => (D>=5 -> M else L), O=1 => L
+      if (o >= 8) return 'H';
+      if (o >= 6) return d === 1 ? 'M' : 'H';
+      if (o >= 4) return d >= 7 ? 'H' : 'M';
+      if (o >= 2) return d >= 5 ? 'M' : 'L';
+      return 'L';
+    }
+
+    if (s >= 4) {
+      // O: 8-10 => (D>=5 -> H else M), 6-7 => (D=1 -> L else M), 4-5 => (D>=7 -> M else L), 2-3 => L, O=1 => L
+      if (o >= 8) return d >= 5 ? 'H' : 'M';
+      if (o >= 6) return d === 1 ? 'L' : 'M';
+      if (o >= 4) return d >= 7 ? 'M' : 'L';
+      return 'L';
+    }
+
+    if (s >= 2) {
+      // O: 8-10 => (D>=5 -> M else L), else => L
+      if (o >= 8) return d >= 5 ? 'M' : 'L';
+      return 'L';
+    }
+
+    return 'L';
+  };
+
+  const getActionPriorityRowClass = (ap: 'H' | 'M' | 'L'): string => {
+    if (ap === 'H') return 'bg-red-50';
+    if (ap === 'M') return 'bg-orange-50';
+    return 'bg-green-50';
+  };
+
+  const getActionPriorityBadgeClasses = (ap: 'H' | 'M' | 'L'): string => {
+    if (ap === 'H') return 'border-red-500 text-red-700';
+    if (ap === 'M') return 'border-orange-500 text-orange-700';
+    return 'border-green-500 text-green-700';
   };
 
   const getAllActionItems = () => {
@@ -362,17 +535,24 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
     }
   };
 
-  const renderEditableCell = (value: string, rowId: string, column: string, type: string, isDropdown = false) => {
+  const renderEditableCell = (
+    value: string,
+    rowId: string,
+    column: string,
+    type: string,
+    isDropdown = false,
+    opts?: { fullWidth?: boolean }
+  ) => {
     const isEditing = editingCell?.row === rowId && editingCell?.column === column;
-    
+    const fw = opts?.fullWidth;
+
     if (isEditing) {
       if (isDropdown) {
         return (
-          <Select 
-            value={editingValue} 
+          <Select
+            value={editingValue}
             onValueChange={(newValue) => {
               setEditingValue(newValue);
-              // Auto-save on dropdown change
               setTimeout(() => saveEdit(), 0);
             }}
             onOpenChange={(open) => {
@@ -381,11 +561,11 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
               }
             }}
           >
-            <SelectTrigger className="h-8">
+            <SelectTrigger className={cn('h-8', fw && 'w-full min-w-0')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Array.from({ length: 10 }, (_, i) => i + 1).map(num => (
+              {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
                 <SelectItem key={num} value={num.toString()}>
                   {num}
                 </SelectItem>
@@ -393,32 +573,60 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
             </SelectContent>
           </Select>
         );
-      } else {
-        return (
-          <Input
-            value={editingValue}
-            onChange={(e) => setEditingValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') saveEdit();
-              if (e.key === 'Escape') cancelEdit();
-            }}
-            onBlur={saveEdit}
-            className="h-8"
-            autoFocus
-          />
-        );
       }
+      return (
+        <Input
+          value={editingValue}
+          onChange={(e) => setEditingValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') saveEdit();
+            if (e.key === 'Escape') cancelEdit();
+          }}
+          onBlur={saveEdit}
+          className={cn('h-8 text-sm', fw && 'w-full min-w-0')}
+          autoFocus
+        />
+      );
     }
 
     return (
       <div
-        className="cursor-pointer hover:bg-muted/50 p-1 rounded min-h-[24px]"
+        className={cn(
+          'cursor-pointer rounded-sm hover:bg-muted/40',
+          fw ? 'min-h-[22px] w-full min-w-0 py-0.5' : 'min-h-[22px] p-0.5'
+        )}
         onClick={() => startEdit(rowId, column, type, value)}
       >
-        {value || <span className="text-muted-foreground italic">Click to edit</span>}
+        {value ? (
+          <span className={cn('text-sm', fw && 'block w-full min-w-0 whitespace-pre-wrap break-words')}>{value}</span>
+        ) : (
+          <span className="text-muted-foreground italic text-sm">Click to edit</span>
+        )}
       </div>
     );
   };
+
+  const renderEffectSeverityInParens = (effect: PFMEAPotentialEffect) => (
+    <Select value={String(effect.severity_score)} onValueChange={(v) => void persistEffectSeverity(effect.id, v)}>
+      <SelectTrigger
+        className="inline-flex h-auto w-auto min-h-0 items-baseline gap-0 border-0 bg-transparent p-0 text-sm font-semibold text-muted-foreground shadow-none ring-0 ring-offset-0 hover:bg-muted/50 hover:text-foreground focus:ring-1 focus:ring-ring data-[state=open]:bg-muted/50 [&_svg]:hidden [&>span]:line-clamp-none"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        title="Change severity (1–10)"
+      >
+        <SelectValue>
+          <span className="tabular-nums">({effect.severity_score})</span>
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+          <SelectItem key={num} value={String(num)}>
+            {num}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 
   const addPotentialEffect = async (failureModeId: string) => {
     try {
@@ -501,6 +709,212 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
     }
   };
 
+  type PfmeaFlatRow =
+    | { kind: 'empty'; requirement: PFMEARequirement }
+    | {
+        kind: 'fm';
+        requirement: PFMEARequirement;
+        failureMode: PFMEAFailureMode;
+        firstInReq: boolean;
+        groupSize: number;
+      };
+
+  const pfmeaFlatRows: PfmeaFlatRow[] = useMemo(() => {
+    const out: PfmeaFlatRow[] = [];
+    for (const requirement of requirements) {
+      const reqFms = failureModes.filter((fm) => fm.requirement_id === requirement.id);
+      if (reqFms.length === 0) {
+        out.push({ kind: 'empty', requirement });
+      } else {
+        reqFms.forEach((fm, idx) => {
+          out.push({
+            kind: 'fm',
+            requirement,
+            failureMode: fm,
+            firstInReq: idx === 0,
+            groupSize: reqFms.length,
+          });
+        });
+      }
+    }
+    return out;
+  }, [requirements, failureModes]);
+
+  useEffect(() => {
+    setGridFocus((f) => ({
+      ...f,
+      rowIndex: Math.min(f.rowIndex, Math.max(0, pfmeaFlatRows.length - 1)),
+    }));
+  }, [pfmeaFlatRows.length]);
+
+  const handleColumnAdd = useCallback(
+    (col: PfmeaNavColumn) => {
+      const entry = pfmeaFlatRows[gridFocus.rowIndex];
+      if (!entry) {
+        toast.error('Select a row in the PFMEA table (click a cell or focus the table and use arrow keys).');
+        return;
+      }
+      if (entry.kind === 'empty') {
+        if (col === 'failure_mode') {
+          void addFailureMode(entry.requirement.id);
+          return;
+        }
+        toast.message('Add a failure mode for this step first', {
+          description: 'Use the + control on the Failure Mode column header.',
+        });
+        return;
+      }
+      const { requirement, failureMode: fm } = entry;
+      switch (col) {
+        case 'failure_mode':
+          void addFailureMode(requirement.id);
+          return;
+        case 'effects':
+        case 's':
+          void addPotentialEffect(fm.id);
+          return;
+        case 'causes':
+        case 'o':
+          void addPotentialCause(fm.id);
+          return;
+        case 'prevention_controls':
+          void addControl(fm.id, 'prevention');
+          return;
+        case 'detection_controls':
+        case 'd':
+          void addControl(fm.id, 'detection');
+          return;
+        case 'rpn':
+        case 'ap':
+          return;
+        case 'recommended_actions':
+          void addActionItem(fm.id);
+          return;
+        default:
+          return;
+      }
+    },
+    [pfmeaFlatRows, gridFocus.rowIndex]
+  );
+
+  const handlePfmeaGridKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (pfmeaFlatRows.length === 0) return;
+      const el = e.target as HTMLElement;
+      if (el.closest('input, textarea, select, [contenteditable="true"]')) return;
+      if (el.closest('[data-radix-popper-content-wrapper]')) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setGridFocus((f) => ({
+          ...f,
+          rowIndex: Math.min(f.rowIndex + 1, pfmeaFlatRows.length - 1),
+        }));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setGridFocus((f) => ({
+          ...f,
+          rowIndex: Math.max(f.rowIndex - 1, 0),
+        }));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setGridFocus((f) => {
+          const idx = PFMEA_NAV_COLS.indexOf(f.col);
+          return { ...f, col: PFMEA_NAV_COLS[(idx + 1) % PFMEA_NAV_COLS.length] };
+        });
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setGridFocus((f) => {
+          const idx = PFMEA_NAV_COLS.indexOf(f.col);
+          return {
+            ...f,
+            col: PFMEA_NAV_COLS[(idx - 1 + PFMEA_NAV_COLS.length) % PFMEA_NAV_COLS.length],
+          };
+        });
+      } else if (e.key === 'Home' && !e.ctrlKey) {
+        e.preventDefault();
+        setGridFocus((f) => ({ ...f, rowIndex: 0 }));
+      } else if (e.key === 'End' && !e.ctrlKey) {
+        e.preventDefault();
+        setGridFocus((f) => ({ ...f, rowIndex: pfmeaFlatRows.length - 1 }));
+      }
+    },
+    [pfmeaFlatRows.length]
+  );
+
+  const pfmeaThSticky = 'sticky top-0 z-20 border-b shadow-sm';
+  /** Column header bar colors (PFMEA table). */
+  const pfmeaHeaderBar = {
+    structure: `${pfmeaThSticky} bg-[#0c2744] text-white border-blue-950/60`,
+    failure: `${pfmeaThSticky} bg-amber-400 text-amber-950 border-amber-600/70`,
+    effectSeverity: `${pfmeaThSticky} bg-[#722f37] text-white border-[#5c262e]`,
+    causeOccurrence: `${pfmeaThSticky} bg-green-800 text-white border-green-950/70`,
+    detectionPurple: `${pfmeaThSticky} bg-purple-800 text-white border-purple-950/80`,
+    other: `${pfmeaThSticky} bg-slate-600 text-white border-slate-800`,
+  } as const;
+
+  const renderHeaderWithPlus = (
+    label: string,
+    col: PfmeaNavColumn,
+    opts?: { derived?: boolean; barClassName: string; lightBar?: boolean; hidePlus?: boolean }
+  ) => (
+    <TableHead className={cn(opts?.barClassName ?? pfmeaHeaderBar.other, 'h-auto px-1 py-1 align-bottom')}>
+      <div className="flex min-h-9 flex-col items-stretch justify-center gap-0.5 py-0.5">
+        <div className="flex items-center justify-center gap-0.5">
+          <span
+            className={cn(
+              'text-center text-xs font-medium leading-tight',
+              opts?.lightBar ? 'text-amber-950' : 'text-white'
+            )}
+          >
+            {label}
+          </span>
+          {opts?.hidePlus ? null : (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn(
+                'h-7 w-7 shrink-0',
+                opts?.lightBar ? 'text-amber-950 hover:bg-amber-950/15' : 'text-white hover:bg-white/15'
+              )}
+              disabled={opts?.derived}
+              title={
+                opts?.derived
+                  ? 'Derived from S, O, and D'
+                  : `Add for the selected PFMEA line (${label})`
+              }
+              onClick={() => handleColumnAdd(col)}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
+    </TableHead>
+  );
+
+  const focusCellClass = (rowIndex: number, col: PfmeaNavColumn) =>
+    gridFocus.rowIndex === rowIndex && gridFocus.col === col ? 'ring-2 ring-primary ring-inset' : '';
+
+  const pfmeaTrashButton = (label: string, onRequest: () => void) => (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+      title={label}
+      aria-label={label}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+        onRequest();
+      }}
+    >
+      <Trash2 className="h-3.5 w-3.5" />
+    </Button>
+  );
+
   const renderProjectSelector = () => {
     if (projectId && !loading && !selectedPfmeaProject) {
       const sourceProject = projects.find((p) => p.id === projectId);
@@ -528,9 +942,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium">{selectedPfmeaProject.name}</p>
-            <p className="text-xs text-muted-foreground">
-              PFMEA lines reference custom phases only (linked via project_phases / phase_operations / operation_steps).
-            </p>
           </div>
         </div>
       );
@@ -623,293 +1034,424 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
   const renderPfmeaTable = () => {
     if (!selectedPfmeaProject) return null;
 
+    const td = 'p-1 align-top';
+
     return (
       <Card>
-        <CardContent className="p-0">
-          <div className="h-[600px] w-full overflow-auto">
-            <Table className="min-w-[1800px]">
+        <CardContent className="min-w-0 p-0">
+          <p className="px-3 py-2 text-xs text-muted-foreground border-b bg-muted/20">
+            Focus the table (click inside the grid or Tab to it), then use arrow keys to move the selection. Header + adds a line for the{' '}
+            <span className="font-medium text-foreground">selected row</span> (same process step). Phases, operations, and steps are edited only in{' '}
+            <span className="font-medium text-foreground">Process Map</span>.
+          </p>
+          <div
+            role="grid"
+            aria-label="PFMEA worksheet"
+            tabIndex={0}
+            onKeyDown={handlePfmeaGridKeyDown}
+            className="h-[600px] w-full min-w-0 touch-pan-x overflow-x-auto overflow-y-auto overscroll-x-contain outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <table className="w-full min-w-[1800px] caption-bottom text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[120px] bg-muted/20 px-2">Phase</TableHead>
-                  <TableHead className="min-w-[140px] bg-muted/10 px-2">Operation</TableHead>
-                  <TableHead className="min-w-[120px] bg-muted/20 px-2">Process Step</TableHead>
-                  <TableHead className="min-w-[260px] bg-muted/10 px-2">Step Description</TableHead>
-                  <TableHead className="min-w-[200px]">Failure Mode</TableHead>
-                  <TableHead className="min-w-[200px]">Potential Effects</TableHead>
-                  <TableHead className="w-20">S</TableHead>
-                  <TableHead className="min-w-[200px]">Potential Causes</TableHead>
-                  <TableHead className="w-20">O</TableHead>
-                  <TableHead className="min-w-[200px]">Controls</TableHead>
-                  <TableHead className="w-20">D</TableHead>
-                  <TableHead className="w-20">RPN</TableHead>
-                  <TableHead className="min-w-[200px]">Recommended Actions</TableHead>
-                  <TableHead className="w-40">Actions</TableHead>
+                  <TableHead className={cn(pfmeaHeaderBar.structure, 'h-auto min-w-[120px] px-1 py-1 font-medium')}>
+                    Phase
+                  </TableHead>
+                  <TableHead className={cn(pfmeaHeaderBar.structure, 'h-auto min-w-[140px] px-1 py-1 font-medium')}>
+                    Operation
+                  </TableHead>
+                  <TableHead className={cn(pfmeaHeaderBar.structure, 'h-auto min-w-[120px] px-1 py-1 font-medium')}>
+                    Process Step
+                  </TableHead>
+                  <TableHead className={cn(pfmeaHeaderBar.structure, 'h-auto min-w-[260px] px-1 py-1 font-medium')}>
+                    Step Description
+                  </TableHead>
+                  {renderHeaderWithPlus('Failure Mode', 'failure_mode', {
+                    barClassName: pfmeaHeaderBar.failure,
+                    lightBar: true,
+                  })}
+                  {renderHeaderWithPlus('Potential Effects', 'effects', { barClassName: pfmeaHeaderBar.effectSeverity })}
+                  {renderHeaderWithPlus('S', 's', { barClassName: pfmeaHeaderBar.effectSeverity, hidePlus: true })}
+                  {renderHeaderWithPlus('Potential Causes', 'causes', { barClassName: pfmeaHeaderBar.causeOccurrence })}
+                  {renderHeaderWithPlus('Prevention Controls', 'prevention_controls', {
+                    barClassName: pfmeaHeaderBar.causeOccurrence,
+                  })}
+                  {renderHeaderWithPlus('O', 'o', { barClassName: pfmeaHeaderBar.causeOccurrence, hidePlus: true })}
+                  {renderHeaderWithPlus('Detection Controls', 'detection_controls', {
+                    barClassName: pfmeaHeaderBar.detectionPurple,
+                  })}
+                  {renderHeaderWithPlus('D', 'd', { barClassName: pfmeaHeaderBar.detectionPurple, hidePlus: true })}
+                  {renderHeaderWithPlus('RPN', 'rpn', {
+                    derived: true,
+                    barClassName: pfmeaHeaderBar.other,
+                    hidePlus: true,
+                  })}
+                  {renderHeaderWithPlus('Action Priority', 'ap', {
+                    derived: true,
+                    barClassName: pfmeaHeaderBar.other,
+                    hidePlus: true,
+                  })}
+                  {renderHeaderWithPlus('Recommended Actions', 'recommended_actions', {
+                    barClassName: pfmeaHeaderBar.other,
+                  })}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {requirements.map(requirement => {
-                  const reqFailureModes = failureModes.filter(fm => fm.requirement_id === requirement.id);
-                  
-                  // If no failure modes exist for this requirement, show an empty row with add button
-                  if (reqFailureModes.length === 0) {
+                {pfmeaFlatRows.map((entry, rowIndex) => {
+                  if (entry.kind === 'empty') {
+                    const { requirement } = entry;
                     return (
-                      <TableRow key={requirement.id}>
-                        <TableCell rowSpan={1} className="font-medium bg-muted/10 p-2">
-                          <div className="text-sm">{requirementPhaseName(requirement)}</div>
+                      <TableRow
+                        key={`${requirement.id}-empty`}
+                        className={gridFocus.rowIndex === rowIndex ? 'bg-muted/40' : ''}
+                      >
+                        <TableCell rowSpan={1} className={cn(td, 'font-medium bg-muted/10')}>
+                          <div className="w-full min-w-0 text-sm break-words">{requirementPhaseName(requirement)}</div>
                         </TableCell>
-                        <TableCell rowSpan={1} className="font-medium bg-muted/5 p-2">
-                          <div className="text-sm">{requirementOperationName(requirement)}</div>
+                        <TableCell rowSpan={1} className={cn(td, 'font-medium bg-muted/5')}>
+                          <div className="w-full min-w-0 text-sm break-words">{requirementOperationName(requirement)}</div>
                         </TableCell>
-                        <TableCell rowSpan={1} className="font-medium bg-muted/10 p-2">
-                          <div className="text-sm">{requirementStepName(requirement)}</div>
+                        <TableCell rowSpan={1} className={cn(td, 'font-medium bg-muted/10')}>
+                          <div className="w-full min-w-0 text-sm break-words">{requirementStepName(requirement)}</div>
                         </TableCell>
-                        <TableCell className="bg-muted/5 p-2">
-                          <div className="text-xs text-muted-foreground font-normal">
+                        <TableCell className={cn(td, 'bg-muted/5')}>
+                          <div className="w-full min-w-0 text-xs text-muted-foreground font-normal break-words">
                             {requirement.requirement_text}
                           </div>
                         </TableCell>
-                        <TableCell colSpan={10} className="text-center py-4">
-                          <Button
-                            variant="outline"
-                            onClick={() => addFailureMode(requirement.id)}
-                            className="bg-blue-50 hover:bg-blue-100 border-blue-200"
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add First Failure Mode
-                          </Button>
+                        <TableCell
+                          colSpan={11}
+                          className={cn(td, 'py-2 text-sm text-muted-foreground', focusCellClass(rowIndex, 'failure_mode'))}
+                          onMouseDown={() => setGridFocus({ rowIndex, col: 'failure_mode' })}
+                        >
+                          No failure modes
                         </TableCell>
                       </TableRow>
                     );
                   }
-                  
-                  return reqFailureModes.map((failureMode, index) => {
-                    const rpn = calculateRPN(failureMode);
-                    const rpnColorClass = getRPNColor(rpn);
-                    
-                    return (
-                      <TableRow key={failureMode.id} className={rpnColorClass}>
-                        {index === 0 && (
-                          <>
-                            <TableCell
-                              rowSpan={reqFailureModes.length}
-                              className="font-medium bg-muted/10 p-2"
-                            >
-                              <div className="text-sm">{requirementPhaseName(requirement)}</div>
-                            </TableCell>
-                            <TableCell
-                              rowSpan={reqFailureModes.length}
-                              className="font-medium bg-muted/5 p-2"
-                            >
-                              <div className="text-sm">{requirementOperationName(requirement)}</div>
-                            </TableCell>
-                            <TableCell
-                              rowSpan={reqFailureModes.length}
-                              className="font-medium bg-muted/10 p-2"
-                            >
-                              <div className="text-sm">{requirementStepName(requirement)}</div>
-                            </TableCell>
-                            <TableCell
-                              rowSpan={reqFailureModes.length}
-                              className="bg-muted/5 p-2"
-                            >
-                              <div className="text-xs text-muted-foreground font-normal">
-                                {requirement.requirement_text}
-                              </div>
-                            </TableCell>
-                          </>
-                        )}
-                        <TableCell>
-                          {renderEditableCell(failureMode.failure_mode, failureMode.id, 'failure_mode', 'failure_mode')}
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            {failureMode.pfmea_potential_effects.map(effect => (
-                              <div key={effect.id} className="text-sm border rounded p-2">
-                                {renderEditableCell(effect.effect_description, effect.id, 'effect_description', 'effect')}
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  S: {renderEditableCell(effect.severity_score.toString(), effect.id, 'severity_score', 'effect_severity', true)}
-                                </div>
-                              </div>
-                            ))}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => addPotentialEffect(failureMode.id)}
-                              className="text-xs p-1 h-6"
-                            >
-                              <Plus className="w-3 h-3 mr-1" />
-                              Add Effect
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center font-bold">
-                          {Math.max(failureMode.severity_score || 0, ...failureMode.pfmea_potential_effects.map(e => e.severity_score))}
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            {failureMode.pfmea_potential_causes.map(cause => (
-                              <div key={cause.id} className="text-sm border rounded p-2">
-                                {renderEditableCell(cause.cause_description, cause.id, 'cause_description', 'cause')}
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  O: {renderEditableCell(cause.occurrence_score.toString(), cause.id, 'occurrence_score', 'cause_occurrence', true)}
-                                </div>
-                              </div>
-                            ))}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => addPotentialCause(failureMode.id)}
-                              className="text-xs p-1 h-6"
-                            >
-                              <Plus className="w-3 h-3 mr-1" />
-                              Add Cause
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center font-bold">
-                          {failureMode.pfmea_potential_causes.length > 0
-                            ? Math.round(failureMode.pfmea_potential_causes.reduce((sum, c) => sum + c.occurrence_score, 0) / failureMode.pfmea_potential_causes.length)
-                            : 10
-                          }
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            {failureMode.pfmea_controls
-                              .filter(control => control.control_type === 'prevention')
-                              .map(control => (
-                                <div key={control.id} className="text-sm border rounded p-2">
-                                  <Badge variant="outline" className="text-xs mr-1">Prev</Badge>
-                                  {renderEditableCell(control.control_description, control.id, 'control_description', 'control')}
-                                </div>
-                              ))
-                            }
-                            {failureMode.pfmea_controls
-                              .filter(control => control.control_type === 'detection')
-                              .map(control => (
-                                <div key={control.id} className="text-sm border rounded p-2">
-                                  <Badge variant="outline" className="text-xs mr-1">Det</Badge>
-                                  {renderEditableCell(control.control_description, control.id, 'control_description', 'control')}
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    D: {renderEditableCell((control.detection_score || 5).toString(), control.id, 'detection_score', 'control_detection', true)}
-                                  </div>
-                                </div>
-                              ))
-                            }
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => addControl(failureMode.id, 'prevention')}
-                                className="text-xs p-1 h-6"
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Prev
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => addControl(failureMode.id, 'detection')}
-                                className="text-xs p-1 h-6"
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Det
-                              </Button>
+
+                  const { requirement, failureMode, firstInReq, groupSize } = entry;
+                  const rpn = calculateRPN(failureMode);
+                  const ap = calculateActionPriority(failureMode);
+                  const apColorClass = getActionPriorityRowClass(ap);
+
+                  return (
+                    <TableRow
+                      key={failureMode.id}
+                      className={`${apColorClass} ${gridFocus.rowIndex === rowIndex ? 'outline outline-1 outline-primary/50' : ''}`}
+                    >
+                      {firstInReq ? (
+                        <>
+                          <TableCell rowSpan={groupSize} className={cn(td, 'font-medium bg-muted/10')}>
+                            <div className="w-full min-w-0 text-sm break-words">{requirementPhaseName(requirement)}</div>
+                          </TableCell>
+                          <TableCell rowSpan={groupSize} className={cn(td, 'font-medium bg-muted/5')}>
+                            <div className="w-full min-w-0 text-sm break-words">{requirementOperationName(requirement)}</div>
+                          </TableCell>
+                          <TableCell rowSpan={groupSize} className={cn(td, 'font-medium bg-muted/10')}>
+                            <div className="w-full min-w-0 text-sm break-words">{requirementStepName(requirement)}</div>
+                          </TableCell>
+                          <TableCell rowSpan={groupSize} className={cn(td, 'bg-muted/5')}>
+                            <div className="w-full min-w-0 text-xs text-muted-foreground font-normal break-words">
+                              {requirement.requirement_text}
                             </div>
+                          </TableCell>
+                        </>
+                      ) : null}
+                      <TableCell
+                        className={cn(td, focusCellClass(rowIndex, 'failure_mode'))}
+                        onMouseDown={() => setGridFocus({ rowIndex, col: 'failure_mode' })}
+                      >
+                        <div className="flex w-full min-w-0 items-start gap-0.5">
+                          <div className="min-w-0 flex-1">
+                            {renderEditableCell(failureMode.failure_mode, failureMode.id, 'failure_mode', 'failure_mode', false, {
+                              fullWidth: true,
+                            })}
                           </div>
-                        </TableCell>
-                        <TableCell className="text-center font-bold">
-                          {(() => {
-                            const d = failureMode.pfmea_controls
-                              .filter((c) => c.control_type === 'detection' && c.detection_score != null)
-                              .map((c) => c.detection_score!);
-                            return d.length > 0 ? Math.min(...d, 10) : '—';
-                          })()}
-                        </TableCell>
-                        <TableCell className={`text-center font-bold text-lg ${rpn >= 200 ? 'text-red-600' : rpn >= 100 ? 'text-orange-600' : ''}`}>
-                          {rpn}
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            {failureMode.pfmea_action_items.map(action => (
-                              <div key={action.id} className="text-sm p-2 bg-blue-50 rounded border">
-                                {renderEditableCell(action.recommended_action, action.id, 'recommended_action', 'action')}
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  {action.responsible_person && `Assigned: ${action.responsible_person}`}
-                                  {action.target_completion_date && ` | Due: ${action.target_completion_date}`}
+                          {pfmeaTrashButton('Delete failure mode and all lines under it', () =>
+                            setPfmeaLineDeleteTarget({
+                              kind: 'failure_mode',
+                              id: failureMode.id,
+                              title: 'Delete this failure mode?',
+                              description: `This removes "${failureMode.failure_mode}" and all potential effects, causes, controls, and action items linked to it. Process steps stay unchanged — edit those in Process Map.`,
+                            })
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell
+                        className={cn(td, 'min-w-0 max-w-none', focusCellClass(rowIndex, 'effects'))}
+                        onMouseDown={() => setGridFocus({ rowIndex, col: 'effects' })}
+                      >
+                        <div className="flex w-full min-w-0 flex-col gap-1">
+                          {failureMode.pfmea_potential_effects.map((effect) => (
+                            <div
+                              key={effect.id}
+                              className="flex w-full min-w-0 flex-wrap items-baseline gap-x-1 gap-y-0.5 border-b border-border/50 pb-1 last:border-b-0 last:pb-0"
+                            >
+                              <div className="min-w-0 flex-1">
+                                {renderEditableCell(
+                                  effect.effect_description,
+                                  effect.id,
+                                  'effect_description',
+                                  'effect',
+                                  false,
+                                  { fullWidth: true }
+                                )}
+                              </div>
+                              <div className="flex shrink-0 items-baseline gap-0.5">
+                                {renderEffectSeverityInParens(effect)}
+                                {pfmeaTrashButton('Delete potential effect', () =>
+                                  setPfmeaLineDeleteTarget({
+                                    kind: 'effect',
+                                    id: effect.id,
+                                    title: 'Delete this potential effect?',
+                                    description: 'This line will be removed from the PFMEA table.',
+                                  })
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => addPotentialEffect(failureMode.id)}
+                            className="h-6 px-1 text-xs"
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Add Effect
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell
+                        className={cn(td, 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 's'))}
+                        onMouseDown={() => setGridFocus({ rowIndex, col: 's' })}
+                      >
+                        {maxPfmeaSeverityForFailureMode(failureMode)}
+                      </TableCell>
+                      <TableCell
+                        className={cn(td, 'min-w-0', focusCellClass(rowIndex, 'causes'))}
+                        onMouseDown={() => setGridFocus({ rowIndex, col: 'causes' })}
+                      >
+                        <div className="flex w-full min-w-0 flex-col gap-1">
+                          {failureMode.pfmea_potential_causes.map((cause) => (
+                            <div key={cause.id} className="rounded border p-1 text-sm">
+                              <div className="flex items-start gap-0.5">
+                                <div className="min-w-0 flex-1">
+                                  {renderEditableCell(cause.cause_description, cause.id, 'cause_description', 'cause', false, {
+                                    fullWidth: true,
+                                  })}
                                 </div>
-                                <Badge variant="secondary" className="text-xs mt-1">
-                                  {action.status.replace('_', ' ')}
-                                </Badge>
+                                {pfmeaTrashButton('Delete potential cause', () =>
+                                  setPfmeaLineDeleteTarget({
+                                    kind: 'cause',
+                                    id: cause.id,
+                                    title: 'Delete this potential cause?',
+                                    description:
+                                      'This line will be removed. Controls tied only to this cause are removed by the database.',
+                                  })
+                                )}
+                              </div>
+                              <div className="mt-0.5 text-xs text-muted-foreground">
+                                O:{' '}
+                                {renderEditableCell(
+                                  cause.occurrence_score.toString(),
+                                  cause.id,
+                                  'occurrence_score',
+                                  'cause_occurrence',
+                                  true
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => addPotentialCause(failureMode.id)}
+                            className="h-6 px-1 text-xs"
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Add Cause
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell
+                        className={cn(td, 'min-w-0', focusCellClass(rowIndex, 'prevention_controls'))}
+                        onMouseDown={() => setGridFocus({ rowIndex, col: 'prevention_controls' })}
+                      >
+                        <div className="flex w-full min-w-0 flex-col gap-1">
+                          {failureMode.pfmea_controls
+                            .filter((control) => control.control_type === 'prevention')
+                            .map((control) => (
+                              <div key={control.id} className="rounded border p-1 text-sm">
+                                <div className="flex items-start gap-0.5">
+                                  <Badge variant="outline" className="mt-0.5 mr-1 shrink-0 text-xs">
+                                    Prev
+                                  </Badge>
+                                  <div className="min-w-0 flex-1">
+                                    {renderEditableCell(control.control_description, control.id, 'control_description', 'control', false, {
+                                      fullWidth: true,
+                                    })}
+                                  </div>
+                                  {pfmeaTrashButton('Delete prevention control', () =>
+                                    setPfmeaLineDeleteTarget({
+                                      kind: 'control',
+                                      id: control.id,
+                                      title: 'Delete this prevention control?',
+                                      description: 'This control line will be removed from the PFMEA table.',
+                                    })
+                                  )}
+                                </div>
                               </div>
                             ))}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => addActionItem(failureMode.id)}
-                              className="text-xs p-1 h-6"
-                            >
-                              <Plus className="w-3 h-3 mr-1" />
-                              Add Action
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {index === 0 && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => addFailureMode(requirement.id)}
-                                className="text-xs px-2 py-1 h-auto bg-blue-50 hover:bg-blue-100 border-blue-200"
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Failure Mode
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => addPotentialEffect(failureMode.id)}
-                              className="text-xs px-2 py-1 h-auto bg-red-50 hover:bg-red-100 border-red-200"
-                            >
-                              <Plus className="w-3 h-3 mr-1" />
-                              Effect
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => addPotentialCause(failureMode.id)}
-                              className="text-xs px-2 py-1 h-auto bg-orange-50 hover:bg-orange-100 border-orange-200"
-                            >
-                              <Plus className="w-3 h-3 mr-1" />
-                              Cause
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => addControl(failureMode.id, 'prevention')}
-                              className="text-xs px-2 py-1 h-auto bg-green-50 hover:bg-green-100 border-green-200"
-                            >
-                              <Plus className="w-3 h-3 mr-1" />
-                              Control
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => addActionItem(failureMode.id)}
-                              className="text-xs px-2 py-1 h-auto bg-purple-50 hover:bg-purple-100 border-purple-200"
-                            >
-                              <Plus className="w-3 h-3 mr-1" />
-                              Action
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  });
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => addControl(failureMode.id, 'prevention')}
+                            className="h-6 px-1 text-xs"
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Prev
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell
+                        className={cn(td, 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 'o'))}
+                        onMouseDown={() => setGridFocus({ rowIndex, col: 'o' })}
+                      >
+                        {failureMode.pfmea_potential_causes.length > 0
+                          ? Math.round(
+                              failureMode.pfmea_potential_causes.reduce((sum, c) => sum + c.occurrence_score, 0) /
+                                failureMode.pfmea_potential_causes.length
+                            )
+                          : 10}
+                      </TableCell>
+                      <TableCell
+                        className={cn(td, 'min-w-0', focusCellClass(rowIndex, 'detection_controls'))}
+                        onMouseDown={() => setGridFocus({ rowIndex, col: 'detection_controls' })}
+                      >
+                        <div className="flex w-full min-w-0 flex-col gap-1">
+                          {failureMode.pfmea_controls
+                            .filter((control) => control.control_type === 'detection')
+                            .map((control) => (
+                              <div key={control.id} className="rounded border p-1 text-sm">
+                                <div className="flex items-start gap-0.5">
+                                  <Badge variant="outline" className="mt-0.5 mr-1 shrink-0 text-xs">
+                                    Det
+                                  </Badge>
+                                  <div className="min-w-0 flex-1">
+                                    {renderEditableCell(control.control_description, control.id, 'control_description', 'control', false, {
+                                      fullWidth: true,
+                                    })}
+                                  </div>
+                                  {pfmeaTrashButton('Delete detection control', () =>
+                                    setPfmeaLineDeleteTarget({
+                                      kind: 'control',
+                                      id: control.id,
+                                      title: 'Delete this detection control?',
+                                      description: 'This control line will be removed from the PFMEA table.',
+                                    })
+                                  )}
+                                </div>
+                                <div className="mt-0.5 text-xs text-muted-foreground">
+                                  D:{' '}
+                                  {renderEditableCell(
+                                    (control.detection_score || 5).toString(),
+                                    control.id,
+                                    'detection_score',
+                                    'control_detection',
+                                    true
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => addControl(failureMode.id, 'detection')}
+                            className="h-6 px-1 text-xs"
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Det
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell
+                        className={cn(td, 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 'd'))}
+                        onMouseDown={() => setGridFocus({ rowIndex, col: 'd' })}
+                      >
+                        {(() => {
+                          const d = failureMode.pfmea_controls
+                            .filter((c) => c.control_type === 'detection' && c.detection_score != null)
+                            .map((c) => c.detection_score!);
+                          return d.length > 0 ? Math.min(...d, 10) : '—';
+                        })()}
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          td,
+                          'text-center text-lg font-bold tabular-nums',
+                          ap === 'H' ? 'text-red-600' : ap === 'M' ? 'text-orange-600' : 'text-green-700',
+                          focusCellClass(rowIndex, 'rpn')
+                        )}
+                        onMouseDown={() => setGridFocus({ rowIndex, col: 'rpn' })}
+                      >
+                        {rpn}
+                      </TableCell>
+                      <TableCell
+                        className={cn(td, 'text-center', focusCellClass(rowIndex, 'ap'))}
+                        onMouseDown={() => setGridFocus({ rowIndex, col: 'ap' })}
+                      >
+                        <Badge variant="outline" className={getActionPriorityBadgeClasses(ap)}>
+                          {ap === 'H' ? 'High' : ap === 'M' ? 'Medium' : 'Low'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell
+                        className={cn(td, 'min-w-0', focusCellClass(rowIndex, 'recommended_actions'))}
+                        onMouseDown={() => setGridFocus({ rowIndex, col: 'recommended_actions' })}
+                      >
+                        <div className="flex w-full min-w-0 flex-col gap-1">
+                          {failureMode.pfmea_action_items.map((action) => (
+                            <div key={action.id} className="rounded border bg-blue-50 p-1 text-sm">
+                              <div className="flex items-start gap-0.5">
+                                <div className="min-w-0 flex-1">
+                                  {renderEditableCell(action.recommended_action, action.id, 'recommended_action', 'action', false, {
+                                    fullWidth: true,
+                                  })}
+                                </div>
+                                {pfmeaTrashButton('Delete recommended action', () =>
+                                  setPfmeaLineDeleteTarget({
+                                    kind: 'action',
+                                    id: action.id,
+                                    title: 'Delete this recommended action?',
+                                    description: 'This action line will be removed from the PFMEA table.',
+                                  })
+                                )}
+                              </div>
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                {action.responsible_person && `Assigned: ${action.responsible_person}`}
+                                {action.target_completion_date && ` | Due: ${action.target_completion_date}`}
+                              </div>
+                              <Badge variant="secondary" className="text-xs mt-1">
+                                {action.status.replace('_', ' ')}
+                              </Badge>
+                            </div>
+                          ))}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => addActionItem(failureMode.id)}
+                            className="h-6 px-1 text-xs"
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Add Action
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
                 })}
               </TableBody>
-            </Table>
+            </table>
           </div>
         </CardContent>
       </Card>
@@ -965,10 +1507,10 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
                     <div className="bg-green-50 p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <CheckCircle2 className="w-5 h-5 text-green-600" />
-                        <span className="font-medium">High Priority (RPN ≥ 200)</span>
+                        <span className="font-medium">High Priority (AP = H)</span>
                       </div>
                       <div className="text-2xl font-bold text-green-600">
-                        {failureModes.filter(fm => calculateRPN(fm) >= 200).length}
+                        {failureModes.filter(fm => calculateActionPriority(fm) === 'H').length}
                       </div>
                     </div>
                     <div className="bg-purple-50 p-4 rounded-lg">
@@ -988,15 +1530,14 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
 
               <Card>
                 <CardHeader>
-                  <CardTitle>RPN Distribution</CardTitle>
+                  <CardTitle>Action Priority Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {[
-                      { label: 'Critical (≥ 200)', color: 'bg-red-500', count: failureModes.filter(fm => calculateRPN(fm) >= 200).length },
-                      { label: 'High (100-199)', color: 'bg-orange-500', count: failureModes.filter(fm => { const rpn = calculateRPN(fm); return rpn >= 100 && rpn < 200; }).length },
-                      { label: 'Medium (50-99)', color: 'bg-yellow-500', count: failureModes.filter(fm => { const rpn = calculateRPN(fm); return rpn >= 50 && rpn < 100; }).length },
-                      { label: 'Low (< 50)', color: 'bg-green-500', count: failureModes.filter(fm => calculateRPN(fm) < 50).length }
+                      { label: 'High (H)', color: 'bg-red-500', count: failureModes.filter(fm => calculateActionPriority(fm) === 'H').length },
+                      { label: 'Medium (M)', color: 'bg-orange-500', count: failureModes.filter(fm => calculateActionPriority(fm) === 'M').length },
+                      { label: 'Low (L)', color: 'bg-green-500', count: failureModes.filter(fm => calculateActionPriority(fm) === 'L').length }
                     ].map(item => (
                       <div key={item.label} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -1035,12 +1576,14 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-10 p-2" aria-label="Delete" />
                           <TableHead className="cursor-pointer hover:bg-muted/50">Action</TableHead>
                           <TableHead className="cursor-pointer hover:bg-muted/50">Owner</TableHead>
                           <TableHead className="cursor-pointer hover:bg-muted/50">Due Date</TableHead>
                           <TableHead className="cursor-pointer hover:bg-muted/50">Project</TableHead>
                           <TableHead className="cursor-pointer hover:bg-muted/50">Status</TableHead>
                           <TableHead className="cursor-pointer hover:bg-muted/50">RPN</TableHead>
+                          <TableHead className="cursor-pointer hover:bg-muted/50">Action Priority</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1048,14 +1591,30 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
                           .sort((a, b) => {
                             if (a.status === 'complete' && b.status !== 'complete') return 1;
                             if (a.status !== 'complete' && b.status === 'complete') return -1;
+                            const apA = calculateActionPriority(a.failureMode);
+                            const apB = calculateActionPriority(b.failureMode);
+                            const rankA = apA === 'H' ? 3 : apA === 'M' ? 2 : 1;
+                            const rankB = apB === 'H' ? 3 : apB === 'M' ? 2 : 1;
+                            if (rankB !== rankA) return rankB - rankA;
                             const rpnA = calculateRPN(a.failureMode);
                             const rpnB = calculateRPN(b.failureMode);
                             return rpnB - rpnA;
                           })
                           .map((actionItem) => {
                             const rpn = calculateRPN(actionItem.failureMode);
+                            const ap = calculateActionPriority(actionItem.failureMode);
                             return (
                               <TableRow key={actionItem.id} className={actionItem.status === 'complete' ? 'opacity-60' : ''}>
+                                <TableCell className="w-10 p-2 align-top">
+                                  {pfmeaTrashButton('Delete action item', () =>
+                                    setPfmeaLineDeleteTarget({
+                                      kind: 'action',
+                                      id: actionItem.id,
+                                      title: 'Delete this action item?',
+                                      description: 'This action will be removed from the tracker and the PFMEA table.',
+                                    })
+                                  )}
+                                </TableCell>
                                 <TableCell className="max-w-xs">
                                   <div className="font-medium">{actionItem.recommended_action}</div>
                                   <div className="text-xs text-muted-foreground mt-1">
@@ -1096,14 +1655,14 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
                                 <TableCell>
                                   <Badge 
                                     variant="outline"
-                                    className={`${
-                                      rpn >= 200 ? 'border-red-500 text-red-700' :
-                                      rpn >= 100 ? 'border-orange-500 text-orange-700' :
-                                      rpn >= 50 ? 'border-yellow-500 text-yellow-700' :
-                                      'border-green-500 text-green-700'
-                                    }`}
+                                    className={getActionPriorityBadgeClasses(ap)}
                                   >
                                     {rpn}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className={getActionPriorityBadgeClasses(ap)}>
+                                    {ap === 'H' ? 'High' : ap === 'M' ? 'Medium' : 'Low'}
                                   </Badge>
                                 </TableCell>
                               </TableRow>
@@ -1119,6 +1678,30 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId }) =
           </TabsContent>
         </Tabs>
       )}
+
+      <AlertDialog
+        open={pfmeaLineDeleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !pfmeaDeletePending) setPfmeaLineDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pfmeaLineDeleteTarget?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{pfmeaLineDeleteTarget?.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pfmeaDeletePending}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={pfmeaDeletePending}
+              onClick={() => void executePfmeaLineDelete()}
+            >
+              {pfmeaDeletePending ? 'Deleting…' : 'Delete'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

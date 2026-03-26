@@ -111,7 +111,7 @@ export const AppDescriptionDialog: React.FC<AppDescriptionDialogProps> = ({
                   <ul className="text-sm space-y-1 text-muted-foreground">
                     <li><strong>Project Management:</strong> Create and edit project templates</li>
                     <li><strong>Workflow Editor:</strong> Visual workflow design and modification</li>
-                    <li><strong>Structure Manager:</strong> Project phase, operation, and step editing</li>
+                    <li><strong>Process Map:</strong> Project phase, operation, and step editing</li>
                     <li><strong>Tools & Materials Library:</strong> Reusable component management</li>
                     <li><strong>Knowledge System:</strong> AI content ingestion and updates</li>
                   </ul>
