@@ -3693,11 +3693,11 @@ export type Database = {
         Args: { p_project_run_id: string; p_template_project_id: string }
         Returns: number
       }
-      create_project_revision_v2: {
+      create_project_revision: {
         Args: { new_name: string; p_source_project_id: string }
         Returns: string
       }
-      create_project_run_snapshot_v2: {
+      create_project_run_snapshot: {
         Args: {
           p_home_id?: string
           p_plan_end_date?: string
@@ -3708,7 +3708,7 @@ export type Database = {
         }
         Returns: string
       }
-      create_project_with_standard_foundation_v2: {
+      create_project_with_standard_foundation: {
         Args: {
           p_category?: string
           p_created_by?: string

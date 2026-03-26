@@ -907,7 +907,7 @@ export function UnifiedProjectManagement({
       : 0;
     const nextRevisionNumber = maxRevisionNumber + 1;
 
-    // RPC create_project_revision_v2(p_source_project_id, new_name) — name optional in UI; derive from project + rev # when blank
+    // RPC create_project_revision(p_source_project_id, new_name) — name optional in UI; derive from project + rev # when blank
     const notesToUse = revisionNotes.trim();
     const newName =
       notesToUse ||
@@ -918,7 +918,7 @@ export function UnifiedProjectManagement({
       const {
         data,
         error
-      } = await supabase.rpc('create_project_revision_v2', {
+      } = await supabase.rpc('create_project_revision', {
         p_source_project_id: selectedProject.id,
         new_name: newName,
       });
@@ -1643,7 +1643,7 @@ export function UnifiedProjectManagement({
       const {
         data,
         error
-      } = await supabase.rpc('create_project_with_standard_foundation_v2', {
+      } = await supabase.rpc('create_project_with_standard_foundation', {
         p_project_name: projectName,
         p_project_description: newProject.description || '',
         p_category: newProject.categories.length > 0 ? newProject.categories[0] : 'general',
@@ -1750,7 +1750,11 @@ export function UnifiedProjectManagement({
                   <BookOpen className="w-4 h-4" />
                   Planning Guide
                 </Button>
-                <Button onClick={() => setAiProjectGeneratorOpen(true)} variant="outline" className="flex items-center gap-2">
+                <Button
+                  onClick={() => setAiProjectGeneratorOpen(true)}
+                  variant="outline"
+                  className="hidden lg:flex items-center gap-2"
+                >
                   <Sparkles className="w-4 h-4" />
                   AI Generator
                 </Button>
@@ -2632,7 +2636,7 @@ export function UnifiedProjectManagement({
                                 } else {
                                   toast.info('Project selected. Use the "Edit Standard" button in the Admin Panel to edit the workflow.');
                                 }
-                              }} className="flex items-center justify-center gap-1">
+                              }} className="flex items-center justify-center gap-1 px-2 text-xs whitespace-nowrap">
                           <Edit className="w-3 h-3" />
                           Edit Workflow
                         </Button>
@@ -2644,7 +2648,7 @@ export function UnifiedProjectManagement({
                             e.stopPropagation();
                             openProcessMapForProject(revision);
                           }}
-                          className="flex items-center justify-center gap-1"
+                          className="flex items-center justify-center gap-1 px-2 text-xs whitespace-nowrap min-w-0"
                         >
                           <Network className="w-3 h-3" />
                           Process Map
@@ -2657,7 +2661,7 @@ export function UnifiedProjectManagement({
                             e.stopPropagation();
                             openPfmeaForProjectId(revision.id);
                           }}
-                          className="flex items-center justify-center gap-1"
+                          className="flex items-center justify-center gap-1 px-2 text-xs whitespace-nowrap min-w-0"
                         >
                           <Shield className="w-3 h-3" />
                           PFMEA
@@ -2680,7 +2684,7 @@ export function UnifiedProjectManagement({
                                   e.stopPropagation();
                                   console.log('🎯 Production button clicked');
                                   handleStatusChange(revision, 'published');
-                                }} className="flex items-center justify-center gap-1">
+                                }} className="flex items-center justify-center gap-1 px-2 text-xs whitespace-nowrap">
                                              <ArrowRight className="w-3 h-3" />
                                              Release to Production
                                            </Button>
@@ -3229,15 +3233,39 @@ export function UnifiedProjectManagement({
           <div className="min-h-0 flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
             <PFMEAManagement projectId={selectedProject?.id} refreshTrigger={pfmeaDataRefreshNonce} />
           </div>
-          {pfmeaProcessMapOpen ? (
-            <div
-              className="absolute inset-0 z-[100] flex min-h-0 flex-col bg-background"
-              role="dialog"
-              aria-label="Process Map"
-            >
-              <StructureManager onBack={closePfmeaProcessMap} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Process Map — full-viewport surface */}
+      <Dialog
+        open={pfmeaProcessMapOpen}
+        onOpenChange={(open) => {
+          if (!open) closePfmeaProcessMap();
+        }}
+      >
+        <DialogContent
+          className={cn(
+            'relative fixed inset-0 z-50 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 shadow-none overflow-hidden',
+            'md:max-w-none md:max-h-none md:rounded-none',
+            '[&>button]:hidden',
+          )}
+        >
+          <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background">
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="text-lg md:text-xl font-bold">Process Map</DialogTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={closePfmeaProcessMap}
+                className="h-7 px-2 text-[9px] md:text-xs"
+              >
+                Close
+              </Button>
             </div>
-          ) : null}
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+            <StructureManager onBack={closePfmeaProcessMap} />
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -372,7 +372,7 @@ export const AdminView: React.FC = () => {
         )}
 
         <Dialog open={enhancedProjectManagementOpen} onOpenChange={setEnhancedProjectManagementOpen}>
-          <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+          <DialogContent className="fixed inset-0 w-full h-[100dvh] max-w-none max-h-none md:max-w-none md:max-h-none translate-x-0 translate-y-0 rounded-none md:rounded-none border-0 p-0 overflow-hidden flex flex-col shadow-none [&>button]:hidden">
             <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               <div className="flex items-center justify-between gap-2">
                 <DialogTitle className="text-lg md:text-xl font-bold">Project Management</DialogTitle>

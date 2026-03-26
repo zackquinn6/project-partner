@@ -483,7 +483,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     try {
       // Use database function for proper project_phases architecture
       const { data: projectId, error } = await supabase
-        .rpc('create_project_with_standard_foundation_v2', {
+        .rpc('create_project_with_standard_foundation', {
           p_project_name: projectData.name,
           p_project_description: projectData.description || '',
           p_category: Array.isArray(projectData.category) ? projectData.category[0] : (projectData.category || 'general')
@@ -526,7 +526,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       await refetchProjects();
 
       // NOTE: Standard phases for runs are always provided by the database via
-      // get_project_workflow_with_standards / create_project_run_snapshot_v2.
+      // get_project_workflow_with_standards / create_project_run_snapshot.
       // We do NOT synthesize or mutate phases on the client here to avoid
       // diverging from the canonical database representation.
 
@@ -560,7 +560,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     }
 
     try {
-      const { data, error } = await supabase.rpc('create_project_run_snapshot_v2', {
+      const { data, error } = await supabase.rpc('create_project_run_snapshot', {
         p_template_id: project.id,
         p_user_id: user.id,
         p_run_name: customName || project.name,
@@ -570,7 +570,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       });
 
       if (error) {
-        console.error('❌ Error calling create_project_run_snapshot_v2:', {
+        console.error('❌ Error calling create_project_run_snapshot:', {
           error,
           message: error.message,
           details: error.details,
@@ -588,7 +588,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       }
 
       if (!data) {
-        console.error('❌ create_project_run_snapshot_v2 returned no ID');
+        console.error('❌ create_project_run_snapshot returned no ID');
         throw new Error('Project run creation returned no ID');
       }
 
@@ -786,9 +786,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     try {
       const defaultHomeId = await getDefaultHomeIdForUser(user.id);
 
-      // Use new RPC function to create immutable project run snapshot
+      // Use RPC function to create immutable project run snapshot
       const { data: newProjectRunId, error } = await supabase
-        .rpc('create_project_run_snapshot_v2', {
+        .rpc('create_project_run_snapshot', {
           p_template_id: projectRunData.templateId,
           p_user_id: user.id,
           p_run_name: projectRunData.name,
@@ -1200,7 +1200,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           throw new Error('schedule_optimization_method is missing from project run data');
         }
 
-        // New runs from create_project_run_snapshot_v2 may leave these NULL; NOT NULL / CHECK
+        // New runs from create_project_run_snapshot may leave these NULL; NOT NULL / CHECK
         // constraints reject PATCH with null. Use the same defaults as documented migrations.
         const VALID_PROGRESS_REPORTING_STYLES = new Set(['linear', 'exponential', 'time-based']);
         const VALID_SCHEDULE_OPTIMIZATION_METHODS = new Set(['single-piece-flow', 'batch-flow']);

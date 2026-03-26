@@ -533,7 +533,7 @@ export async function importGeneratedProject(
 
       // Create new project using standard methodology
       const { data: newProjectId, error: createError } = await supabase
-        .rpc('create_project_with_standard_foundation_v2', {
+        .rpc('create_project_with_standard_foundation', {
           p_project_name: projectName,
           p_project_description: projectDescription,
           p_category: category.length > 0 ? category[0] : 'general',

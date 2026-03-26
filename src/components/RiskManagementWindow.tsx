@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -319,6 +320,7 @@ export function RiskManagementWindow({
   const [templateProjectIdForRisks, setTemplateProjectIdForRisks] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [detailsRisk, setDetailsRisk] = useState<Risk | null>(null);
+  const [advancedMode, setAdvancedMode] = useState(false);
   const [showHiddenRisks, setShowHiddenRisks] = useState(false);
   /** Risk-Less: when true, hide rows originating from Standard Project Foundation. Default off (show all). */
   const [hideStandardRisks, setHideStandardRisks] = useState(false);
@@ -972,14 +974,20 @@ export function RiskManagementWindow({
                 </p>
               ) : null}
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => onOpenChange(false)} 
-              className="h-7 px-2 text-[9px] md:text-xs flex-shrink-0"
-            >
-              Close
-            </Button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Advanced</span>
+                <Switch checked={advancedMode} onCheckedChange={setAdvancedMode} />
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="h-7 px-2 text-[9px] md:text-xs flex-shrink-0"
+              >
+                Close
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
@@ -1589,7 +1597,7 @@ export function RiskManagementWindow({
                           <div className={cn('space-y-3', riskFocusRun && 'space-y-2')}>
                             <div className="flex items-start gap-2">
                               <div className="min-w-0 flex-1">
-                                <div className="text-xs text-muted-foreground mb-1">What could go wrong?</div>
+                                <div className="text-xs text-muted-foreground mb-1">Risk</div>
                                 <div className="flex flex-wrap items-center gap-2">
                                   <h3 className="font-semibold text-sm leading-snug">{risk.risk}</h3>
                                   {riskFocusRun && risk.from_standard_foundation ? (
@@ -1633,7 +1641,7 @@ export function RiskManagementWindow({
                             </div>
                             <div className={cn('space-y-3', riskFocusRun && 'space-y-2')}>
                               <div>
-                                <div className="text-xs text-muted-foreground mb-1">How likely?</div>
+                                <div className="text-xs text-muted-foreground mb-1">Likelihood</div>
                                 <Badge
                                   className={getRiskLevelColor(
                                     risk.likelihood,
@@ -1644,8 +1652,34 @@ export function RiskManagementWindow({
                                   {risk.likelihood}
                                 </Badge>
                               </div>
+                              {advancedMode ? (
+                                <div className="grid grid-cols-3 gap-3">
+                                  <div>
+                                    <div className="text-xs text-muted-foreground mb-1">Overall Severity</div>
+                                    {risk.severity ? (
+                                      <Badge variant="outline">{risk.severity}</Badge>
+                                    ) : (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div className="text-xs text-muted-foreground mb-1">Budget Risk</div>
+                                    <div className="text-sm tabular-nums">
+                                      {risk.budget_impact_dollars != null
+                                        ? `$${Number(risk.budget_impact_dollars).toLocaleString()}`
+                                        : '—'}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="text-xs text-muted-foreground mb-1">Timeline Risk</div>
+                                    <div className="text-sm tabular-nums">
+                                      {risk.schedule_impact_days != null ? `${Number(risk.schedule_impact_days)} days` : '—'}
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : null}
                               <div>
-                                <div className="text-xs text-muted-foreground mb-1">What happens if it does?</div>
+                                <div className="text-xs text-muted-foreground mb-1">Impact</div>
                                 <ImpactIfItDoesContent risk={risk} />
                               </div>
                             </div>
@@ -1680,9 +1714,7 @@ export function RiskManagementWindow({
                                   onClick={(e) => e.stopPropagation()}
                                   onKeyDown={(e) => e.stopPropagation()}
                                 >
-                                  <div className="text-xs text-muted-foreground mb-1">
-                                    What can we do to prevent it?
-                                  </div>
+                                  <div className="text-xs text-muted-foreground mb-1">Mitigation</div>
                                   {(risk.mitigation_actions?.length ?? 0) > 0 ? (
                                     <ul className="space-y-2 text-sm">
                                       {risk.mitigation_actions!.map((ma, idx) => (
@@ -1866,7 +1898,7 @@ export function RiskManagementWindow({
                                 }}
                                 aria-pressed={riskListSort === 'alpha'}
                               >
-                                <span className="min-w-0 leading-snug">What could go wrong?</span>
+                                <span className="min-w-0 leading-snug">Risk</span>
                                 <ArrowDownAZ
                                   className={cn(
                                     'h-3.5 w-3.5 shrink-0',
@@ -1876,10 +1908,13 @@ export function RiskManagementWindow({
                                 />
                               </button>
                             ) : (
-                              'What could go wrong?'
+                              'Risk'
                             )}
                           </TableHead>
-                          <TableHead className="w-[100px]">How likely?</TableHead>
+                          <TableHead className="w-[100px]">Likelihood</TableHead>
+                          {advancedMode ? <TableHead className="w-[120px]">Overall Severity</TableHead> : null}
+                          {advancedMode ? <TableHead className="w-[120px]">Budget Risk</TableHead> : null}
+                          {advancedMode ? <TableHead className="w-[120px]">Timeline Risk</TableHead> : null}
                           <TableHead
                             className={cn(
                               'align-top',
@@ -1888,7 +1923,7 @@ export function RiskManagementWindow({
                                 : 'min-w-[140px] max-w-[200px]'
                             )}
                           >
-                            What happens if it does?
+                            Impact
                           </TableHead>
                           <TableHead
                             className={cn(
@@ -1896,7 +1931,7 @@ export function RiskManagementWindow({
                               riskFocusRun ? 'min-w-[16rem] w-[36%]' : 'min-w-[200px]'
                             )}
                           >
-                            What can we do to prevent it?
+                            Mitigation
                           </TableHead>
                           {mode === 'run' && variant === 'risk-focus' ? (
                             <TableHead className="min-w-[100px] max-w-[140px] leading-tight">
@@ -1970,6 +2005,33 @@ export function RiskManagementWindow({
                                 {risk.likelihood}
                               </Badge>
                             </TableCell>
+                            {advancedMode ? (
+                              <TableCell>
+                                {risk.severity ? (
+                                  <Badge variant="outline">{risk.severity}</Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                            ) : null}
+                            {advancedMode ? (
+                              <TableCell className="tabular-nums">
+                                {risk.budget_impact_dollars != null ? (
+                                  `$${Number(risk.budget_impact_dollars).toLocaleString()}`
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                            ) : null}
+                            {advancedMode ? (
+                              <TableCell className="tabular-nums">
+                                {risk.schedule_impact_days != null ? (
+                                  `${Number(risk.schedule_impact_days)}`
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                            ) : null}
                             <TableCell
                               className={cn(
                                 'text-sm align-top',
@@ -2189,7 +2251,7 @@ export function RiskManagementWindow({
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">
             <div className="space-y-4">
               <div>
-                <Label htmlFor="risk">What could go wrong? *</Label>
+                <Label htmlFor="risk">Risk *</Label>
                 <Textarea
                   id="risk"
                   value={formData.risk}
@@ -2201,7 +2263,7 @@ export function RiskManagementWindow({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="likelihood">How likely?</Label>
+                  <Label htmlFor="likelihood">Likelihood</Label>
                   <Select
                     value={formData.likelihood}
                     onValueChange={(value: any) => setFormData({ ...formData, likelihood: value })}
@@ -2281,7 +2343,7 @@ export function RiskManagementWindow({
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium text-foreground">What happens if it does?</p>
+                <p className="text-sm font-medium text-foreground">Impact</p>
                 <p className="text-xs text-muted-foreground">Estimate schedule and budget impact if the risk occurs.</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -2323,7 +2385,7 @@ export function RiskManagementWindow({
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="mitigation">What can we do to prevent it?</Label>
+                <Label htmlFor="mitigation">Mitigation</Label>
                 <Textarea
                   id="mitigation"
                   value={formData.mitigation}

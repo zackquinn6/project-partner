@@ -670,7 +670,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           }
         }
         // Use workflowPhases from the database when available. If none are returned,
-        // defer to create_project_run_snapshot_v2 to assemble phases from the
+        // defer to create_project_run_snapshot to assemble phases from the
         // canonical project_phases / phase_operations / operation_steps tables.
         templatePhases = normalized;
         if (templatePhases.length > 0) {

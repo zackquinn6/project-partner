@@ -26,6 +26,7 @@ interface PublishedProject {
   phases: any; // Will be parsed as Phase[] after fetching
   revision_number: number;
   category?: string[];
+  is_standard?: boolean | null;
 }
 export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> = ({
   open,
@@ -66,7 +67,7 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
     try {
       const { data, error } = await supabase
         .from('projects')
-        .select('id, name, description, phases, revision_number, category')
+        .select('id, name, description, phases, revision_number, category, is_standard')
         .eq('publish_status', 'published')
         .order('updated_at', { ascending: false });
 
@@ -76,6 +77,7 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
       // This uses the rebuild_phases_json_from_project_phases function to get fresh data
       const processedProjects = await Promise.all((data || [])
         .filter(project => project.name.toLowerCase() !== 'manual project template')
+        .filter(project => project.is_standard !== true)
         .map(async (project) => {
           let phases: Phase[] = [];
           try {

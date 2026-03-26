@@ -472,7 +472,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     try {
       console.log('🔄 Creating revision from project:', currentProject.id);
 
-      const { data: newRevisionId, error } = await supabase.rpc('create_project_revision_v2', {
+      const { data: newRevisionId, error } = await supabase.rpc('create_project_revision', {
         p_source_project_id: currentProject.id,
         new_name: newName,
       });
