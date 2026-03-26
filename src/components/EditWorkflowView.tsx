@@ -19,6 +19,7 @@ import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import { DecisionTreeManager } from '@/components/DecisionTreeManager';
 import { MultiSelectLibraryDialog } from '@/components/MultiSelectLibraryDialog';
 import { StructureManager } from '@/components/StructureManager';
+import { PFMEAManagement } from '@/components/PFMEAManagement';
 import { OutputEditForm } from '@/components/OutputEditForm';
 import { ProjectContentImport } from '@/components/ProjectContentImport';
 import { CompactToolsTable } from '@/components/CompactToolsTable';
@@ -1050,6 +1051,8 @@ export default function EditWorkflowView({
   const [importOpen, setImportOpen] = useState(false);
   const [toolsMaterialsOpen, setToolsMaterialsOpen] = useState(false);
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
+  const [pfmeaOpen, setPfmeaOpen] = useState(false);
+  const [pfmeaRefreshNonce, setPfmeaRefreshNonce] = useState(0);
   const [toolsLibraryOpen, setToolsLibraryOpen] = useState(false);
   const [materialsLibraryOpen, setMaterialsLibraryOpen] = useState(false);
   const [ppeToolsLibraryOpen, setPpeToolsLibraryOpen] = useState(false);
@@ -1736,9 +1739,26 @@ export default function EditWorkflowView({
                       <List className="w-4 h-4" />
                       Process Map
                     </Button>
-                    <Button onClick={() => setImportOpen(true)} variant="outline" size="sm" className="flex items-center gap-2">
+                    <Button
+                      onClick={() => {
+                        if (!currentProject?.id) {
+                          toast.error('No project selected');
+                          return;
+                        }
+                        setPfmeaRefreshNonce((n) => n + 1);
+                        setPfmeaOpen(true);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                      disabled={!currentProject?.id}
+                      title="PFMEA"
+                    >
+                      <FileText className="w-4 h-4" />
+                      PFMEA
+                    </Button>
+                    <Button onClick={() => setImportOpen(true)} variant="outline" size="icon" title="Import">
                       <Upload className="w-4 h-4" />
-                      Import
                     </Button>
                      <Button onClick={() => setAiProjectGeneratorOpen(true)} variant="outline" size="sm" className="flex items-center gap-2">
                        <Sparkles className="w-4 h-4" />
@@ -1746,7 +1766,7 @@ export default function EditWorkflowView({
                      </Button>
                      <Button onClick={() => setRiskManagementOpen(true)} variant="outline" size="sm" className="flex items-center gap-2">
                        <Shield className="w-4 h-4" />
-                       Risk Management
+                       Project Risk
                      </Button>
                       <Button 
                         onClick={() => {
@@ -2307,6 +2327,28 @@ export default function EditWorkflowView({
           mode="template"
         />
       )}
+
+      {/* PFMEA */}
+      <Dialog open={pfmeaOpen} onOpenChange={setPfmeaOpen}>
+        <DialogContent className="relative fixed inset-0 z-50 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 shadow-none overflow-hidden md:max-w-none md:max-h-none md:rounded-none [&>button]:hidden">
+          <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background">
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="text-lg md:text-xl font-bold">Process FMEA</DialogTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPfmeaOpen(false)}
+                className="h-7 px-2 text-[9px] md:text-xs"
+              >
+                Close
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+            {currentProject?.id ? <PFMEAManagement projectId={currentProject.id} refreshTrigger={pfmeaRefreshNonce} /> : null}
+          </div>
+        </DialogContent>
+      </Dialog>
       
       {/* Apps Library Dialog */}
       <AppsLibraryDialog open={appsLibraryOpen} onOpenChange={setAppsLibraryOpen} selectedApps={editingStep?.apps || []} onAppsSelected={apps => updateEditingStep('apps', apps)} />

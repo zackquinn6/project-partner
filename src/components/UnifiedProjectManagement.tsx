@@ -102,6 +102,7 @@ export function UnifiedProjectManagement({
   const pfmeaProcessMapDidStashRef = useRef(false);
   const [pfmeaProcessMapOpen, setPfmeaProcessMapOpen] = useState(false);
   const [pfmeaDataRefreshNonce, setPfmeaDataRefreshNonce] = useState(0);
+  const [pfmeaTargetProjectId, setPfmeaTargetProjectId] = useState<string | null>(null);
   const {
     trackClick
   } = useButtonTracker();
@@ -185,6 +186,21 @@ export function UnifiedProjectManagement({
     setCurrentProject(unifiedTemplateRowToContextProject(selectedProject));
     setPfmeaProcessMapOpen(true);
   }, [selectedProject, currentProject, setCurrentProject]);
+
+  const openProcessMapForProject = useCallback(
+    (projectRow: Project) => {
+      pfmeaProcessMapRestoreRef.current = currentProject;
+      pfmeaProcessMapDidStashRef.current = true;
+      setCurrentProject(unifiedTemplateRowToContextProject(projectRow));
+      setPfmeaProcessMapOpen(true);
+    },
+    [currentProject, setCurrentProject]
+  );
+
+  const openPfmeaForProjectId = useCallback((projectId: string) => {
+    setPfmeaTargetProjectId(projectId);
+    setPfmeaOpen(true);
+  }, []);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -1470,6 +1486,11 @@ export function UnifiedProjectManagement({
       toast.dismiss(loadingToast);
       toast.success("Revisions reset successfully. Latest revision is now revision 1 (draft).");
       setResetRevisionsDialogOpen(false);
+      // Ensure the UI reflects the new root revision immediately.
+      // Users reported it can look like the project was deleted until a refresh.
+      setTimeout(() => {
+        window.location.reload();
+      }, 50);
     } catch (error: any) {
       console.error('❌ Error resetting revisions:', error);
       toast.dismiss(loadingToast);
@@ -1716,7 +1737,7 @@ export function UnifiedProjectManagement({
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Settings className="w-5 h-5" />
-                Project Management & Revision Control
+                Project Management
               </CardTitle>
               <div className="flex gap-2">
                 {isAdmin && (
@@ -1781,7 +1802,7 @@ export function UnifiedProjectManagement({
                 <Tabs value={activeView} onValueChange={value => setActiveView(value as any)} className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="details">Project Details</TabsTrigger>
-                    <TabsTrigger value="revisions">Revision Control</TabsTrigger>
+                    <TabsTrigger value="revisions">Workflow Editor</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="details" className="mt-6">
@@ -1801,10 +1822,6 @@ export function UnifiedProjectManagement({
                                 <Button onClick={startProjectEdit} className="flex items-center gap-1">
                                   <Edit className="w-4 h-4" />
                                   Edit Project
-                                </Button>
-                                <Button onClick={() => setPfmeaOpen(true)} variant="outline" className="flex items-center gap-1">
-                                  <Shield className="w-4 h-4" />
-                                  PFMEA
                                 </Button>
                                 <Button onClick={() => handleDeleteProjectClick(selectedProject.id, selectedProject.name)} variant="ghost" size="sm" className="text-destructive hover:text-destructive">
                                   <Trash2 className="w-4 h-4" />
@@ -2480,7 +2497,7 @@ export function UnifiedProjectManagement({
                     <Card>
                       <CardHeader>
                         <div className="flex items-center justify-between">
-                          <CardTitle>Revision Control</CardTitle>
+                          <CardTitle>Workflow Editor</CardTitle>
                           <div className="flex gap-2">
                             <Button onClick={async () => {
                           console.log('🔵 Create Revision button clicked', {
@@ -2564,8 +2581,10 @@ export function UnifiedProjectManagement({
                                         </div>}
                                     </div>
 
-                     <div className="flex flex-col gap-2 ml-4">
-                      {revision.publish_status === 'draft' && <Button size="sm" variant="outline" onClick={() => {
+                     <div className="ml-4 flex flex-col gap-2">
+                      {revision.publish_status === 'draft' && (
+                        <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2">
+                        <Button size="sm" variant="outline" onClick={() => {
                                 // Parse phases
                                 let parsedPhases = [];
                                 try {
@@ -2613,11 +2632,40 @@ export function UnifiedProjectManagement({
                                 } else {
                                   toast.info('Project selected. Use the "Edit Standard" button in the Admin Panel to edit the workflow.');
                                 }
-                              }} className="flex items-center gap-1">
+                              }} className="flex items-center justify-center gap-1">
                           <Edit className="w-3 h-3" />
                           Edit Workflow
-                        </Button>}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openProcessMapForProject(revision);
+                          }}
+                          className="flex items-center justify-center gap-1"
+                        >
+                          <Network className="w-3 h-3" />
+                          Process Map
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openPfmeaForProjectId(revision.id);
+                          }}
+                          className="flex items-center justify-center gap-1"
+                        >
+                          <Shield className="w-3 h-3" />
+                          PFMEA
+                        </Button>
+                        </div>
+                      )}
                                       {revision.publish_status === 'draft' && <>
+                                          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-2">
                                           <Button size="sm" variant="outline" onClick={e => {
                                   e.preventDefault();
                                   e.stopPropagation();
@@ -2625,17 +2673,18 @@ export function UnifiedProjectManagement({
                                   handleStatusChange(revision, 'beta-testing');
                                 }} className="flex items-center gap-1">
                                             <ArrowRight className="w-3 h-3" />
-                                            Release to Beta
+                                            Release Beta
                                           </Button>
                                            <Button size="sm" onClick={e => {
                                   e.preventDefault();
                                   e.stopPropagation();
                                   console.log('🎯 Production button clicked');
                                   handleStatusChange(revision, 'published');
-                                }} className="flex items-center gap-1">
+                                }} className="flex items-center justify-center gap-1">
                                              <ArrowRight className="w-3 h-3" />
                                              Release to Production
                                            </Button>
+                                          </div>
                                            {revision.revision_number > 0 && <Button size="sm" variant="destructive" onClick={() => deleteDraftRevision(revision.id, revision.revision_number)} className="flex items-center gap-1">
                                                <X className="w-3 h-3" />
                                                Delete Draft
