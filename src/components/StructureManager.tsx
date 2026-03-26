@@ -2988,7 +2988,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">{phase.operations.length} operations</Badge>
+                        <Badge variant="outline" className="text-xs tabular-nums">{phase.operations.length} operations</Badge>
                         
                         {/* Button visibility rules */}
                         {phaseIsStandard && !isEditingStandardProject ? (
@@ -3022,6 +3022,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                               ) : (
                                 <ChevronDown className="w-4 h-4" />
                               )}
+                            </Button>
+                            {/* Keep arrow column alignment consistent with non-linked phases that render an Edit button. */}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="opacity-0 pointer-events-none"
+                              aria-hidden="true"
+                              tabIndex={-1}
+                            >
+                              <Edit className="w-4 h-4" />
                             </Button>
                             <Button 
                               size="sm" 
