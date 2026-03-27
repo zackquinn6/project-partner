@@ -1539,9 +1539,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
     const td = 'p-1 align-top';
     const frozenBg = 'bg-background';
-    const frozenHeadBg = 'bg-[#0c2744]';
     const frozenCellBase = 'sticky z-10 border-r border-border/50';
-    const frozenHeadBase = 'sticky z-40 border-r border-blue-950/50';
 
     const wPhase = colWidths.phase;
     const wOp = colWidths.operation;
@@ -1556,20 +1554,25 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     const frozenCol = (leftPx: number, widthPx: number) => ({
       className: cn(frozenCellBase, frozenBg),
       style: {
+        position: 'sticky',
         left: leftPx,
+        zIndex: 10,
         minWidth: widthPx,
         width: widthPx,
         maxWidth: widthPx,
       } as React.CSSProperties,
     });
-    const frozenHead = (leftPx: number, widthPx: number) => ({
-      className: cn(frozenHeadBase, frozenHeadBg),
-      style: {
-        left: leftPx,
-        minWidth: widthPx,
-        width: widthPx,
-        maxWidth: widthPx,
-      } as React.CSSProperties,
+
+    /** Sticky on both axes so headers stay aligned with frozen body cells (do not use `relative` on th — it breaks sticky). */
+    const frozenHeaderThStyle = (leftPx: number, widthPx: number): React.CSSProperties => ({
+      position: 'sticky',
+      left: leftPx,
+      top: 0,
+      zIndex: 50,
+      minWidth: widthPx,
+      width: widthPx,
+      maxWidth: widthPx,
+      backgroundColor: '#0c2744',
     });
     const pfmeaColBand: Record<PfmeaNavColumn, string> = {
       // Note: requirements + failure_mode headers are colored; keep body un-tinted for those columns.
@@ -1663,79 +1666,79 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
             onKeyDown={handlePfmeaGridKeyDown}
             className="h-[600px] w-full min-w-0 touch-pan-x overflow-x-auto overflow-y-auto overscroll-x-contain outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            <table className="w-full min-w-[1950px] caption-bottom text-sm">
+            <table className="w-full min-w-[1950px] border-separate border-spacing-0 caption-bottom text-sm">
               <TableHeader>
                 {/* Left-to-right: Phase, Operation, Process Step, Step Description, then Requirements, Failure Mode, Effects, … */}
                 <TableRow>
                   {pfmeaColVisibility.phase ? (
                     <TableHead
-                      className={cn(pfmeaHeaderBar.structure, frozenHead(leftPhase, wPhase).className, 'relative h-auto px-1 py-1 font-medium')}
-                      style={frozenHead(leftPhase, wPhase).style}
+                      className="border-b border-blue-950/60 border-r border-blue-950/50 shadow-sm !text-white h-auto px-1 py-1 font-medium align-middle"
+                      style={frozenHeaderThStyle(leftPhase, wPhase)}
                     >
-                    <div className="flex items-center justify-center gap-0.5">
-                      <span className="text-xs font-medium text-white">Phase</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0 text-white hover:bg-white/15"
-                        title="Sort by Phase"
-                        onClick={() => togglePfmeaSort('phase')}
-                      >
-                        {sortIcon('phase')}
-                      </Button>
-                    </div>
-                    {resizeHandle('phase')}
+                      <div className="relative flex min-h-9 w-full items-center justify-center gap-0.5">
+                        <span className="text-xs font-medium text-white">Phase</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 text-white hover:bg-white/15"
+                          title="Sort by Phase"
+                          onClick={() => togglePfmeaSort('phase')}
+                        >
+                          {sortIcon('phase')}
+                        </Button>
+                        {resizeHandle('phase')}
+                      </div>
                     </TableHead>
                   ) : null}
                   {pfmeaColVisibility.operation ? (
                     <TableHead
-                      className={cn(pfmeaHeaderBar.structure, frozenHead(leftOp, wOp).className, 'relative h-auto px-1 py-1 font-medium')}
-                      style={frozenHead(leftOp, wOp).style}
+                      className="border-b border-blue-950/60 border-r border-blue-950/50 shadow-sm !text-white h-auto px-1 py-1 font-medium align-middle"
+                      style={frozenHeaderThStyle(leftOp, wOp)}
                     >
-                    <div className="flex items-center justify-center gap-0.5">
-                      <span className="text-xs font-medium text-white">Operation</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0 text-white hover:bg-white/15"
-                        title="Sort by Operation"
-                        onClick={() => togglePfmeaSort('operation')}
-                      >
-                        {sortIcon('operation')}
-                      </Button>
-                    </div>
-                    {resizeHandle('operation')}
+                      <div className="relative flex min-h-9 w-full items-center justify-center gap-0.5">
+                        <span className="text-xs font-medium text-white">Operation</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 text-white hover:bg-white/15"
+                          title="Sort by Operation"
+                          onClick={() => togglePfmeaSort('operation')}
+                        >
+                          {sortIcon('operation')}
+                        </Button>
+                        {resizeHandle('operation')}
+                      </div>
                     </TableHead>
                   ) : null}
                   {pfmeaColVisibility.step ? (
                     <TableHead
-                      className={cn(pfmeaHeaderBar.structure, frozenHead(leftStep, wStep).className, 'relative h-auto px-1 py-1 font-medium')}
-                      style={frozenHead(leftStep, wStep).style}
+                      className="border-b border-blue-950/60 border-r border-blue-950/50 shadow-sm !text-white h-auto px-1 py-1 font-medium align-middle"
+                      style={frozenHeaderThStyle(leftStep, wStep)}
                     >
-                    <div className="flex items-center justify-center gap-0.5">
-                      <span className="text-xs font-medium text-white">Process Step</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0 text-white hover:bg-white/15"
-                        title="Sort by Step"
-                        onClick={() => togglePfmeaSort('step')}
-                      >
-                        {sortIcon('step')}
-                      </Button>
-                    </div>
-                    {resizeHandle('step')}
+                      <div className="relative flex min-h-9 w-full items-center justify-center gap-0.5">
+                        <span className="text-xs font-medium text-white">Process Step</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 text-white hover:bg-white/15"
+                          title="Sort by Step"
+                          onClick={() => togglePfmeaSort('step')}
+                        >
+                          {sortIcon('step')}
+                        </Button>
+                        {resizeHandle('step')}
+                      </div>
                     </TableHead>
                   ) : null}
                   {pfmeaColVisibility.step_description ? (
                     <TableHead
-                      className={cn(pfmeaHeaderBar.structure, frozenHead(leftDesc, wDesc).className, 'relative h-auto px-1 py-1 font-medium')}
-                      style={frozenHead(leftDesc, wDesc).style}
+                      className="border-b border-blue-950/60 border-r border-blue-950/50 shadow-sm !text-white h-auto px-1 py-1 font-medium align-middle"
+                      style={frozenHeaderThStyle(leftDesc, wDesc)}
                     >
-                      <div className="flex items-center justify-center gap-0.5">
+                      <div className="relative flex min-h-9 w-full items-center justify-center gap-0.5">
                         <span className="text-xs font-medium text-white">Step Description</span>
                         <Button
                           type="button"
@@ -1747,8 +1750,8 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         >
                           {sortIcon('step_description')}
                         </Button>
+                        {resizeHandle('step_description')}
                       </div>
-                      {resizeHandle('step_description')}
                     </TableHead>
                   ) : null}
                   {renderHeaderWithPlus('Requirements', 'requirements', {
