@@ -14,7 +14,11 @@ export interface StepInstruction {
     sections: Array<{
       title: string;
       content: string;
-      type?: 'warning' | 'tip' | 'standard';
+      type?: 'text' | 'image' | 'video' | 'link' | 'button' | 'safety-warning' | 'warning' | 'tip' | 'standard';
+      width?: 'full' | 'half' | 'third' | 'two-thirds';
+      alignment?: 'left' | 'center' | 'right';
+      display_order?: number;
+      severity?: 'low' | 'medium' | 'high' | 'critical';
     }>;
     photos: Array<{
       url: string;
@@ -49,11 +53,20 @@ function normalizeContent(row: StepInstructionRow | null, instructionLevel: Step
     links: [] as StepInstruction['content']['links'],
   };
   if (Array.isArray(raw) && raw.length > 0) {
-    empty.sections = raw.map((s: { title?: string; content?: string; type?: string }) => ({
+    empty.sections = raw.map((s: { title?: string; content?: string; type?: string; width?: string; alignment?: string; display_order?: number; severity?: string }) => ({
       title: s.title ?? '',
       content: s.content ?? '',
-      type: (s.type as 'warning' | 'tip' | 'standard') || 'standard',
-    }));
+      type: s.type as StepInstruction['content']['sections'][number]['type'],
+      width: s.width as StepInstruction['content']['sections'][number]['width'],
+      alignment: s.alignment as StepInstruction['content']['sections'][number]['alignment'],
+      display_order: typeof s.display_order === 'number' ? s.display_order : undefined,
+      severity: s.severity as StepInstruction['content']['sections'][number]['severity'],
+    }))
+    .sort((a, b) => {
+      const aOrder = typeof a.display_order === 'number' ? a.display_order : Number.MAX_SAFE_INTEGER;
+      const bOrder = typeof b.display_order === 'number' ? b.display_order : Number.MAX_SAFE_INTEGER;
+      return aOrder - bOrder;
+    });
   } else if (raw && typeof raw === 'object' && 'sections' in (raw as object)) {
     const obj = raw as StepInstruction['content'];
     return {

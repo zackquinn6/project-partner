@@ -34,6 +34,7 @@ const WIZARD_TOOL_ORDER: PlanningToolId[] = [
   'quality_control',
   'budget',
   'tool_rentals',
+  'waste_removal',
   'expert_support',
 ];
 
@@ -70,7 +71,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   layout = 'dialog',
 }) => {
   const { currentProjectRun, updateProjectRun } = useProject();
-  const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled } = usePartnerAppSettings();
+  const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled, wasteRemovalEnabled } = usePartnerAppSettings();
   const validToolIds = useMemo(() => new Set(PLANNING_TOOLS.map(t => t.id)), []);
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
@@ -83,9 +84,10 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     const rawSelected = (decisions.selected_planning_tools as unknown as string[] | undefined) ?? [];
     const normalized = rawSelected.filter((id): id is PlanningToolId => validToolIds.has(id as any));
     return normalized.filter(id => {
-      if (!partnerAppsEnabled && (id === 'expert_support' || id === 'tool_rentals')) return false;
+      if (!partnerAppsEnabled && (id === 'expert_support' || id === 'tool_rentals' || id === 'waste_removal')) return false;
       if (id === 'expert_support' && !expertSupportEnabled) return false;
       if (id === 'tool_rentals' && !toolRentalsEnabled) return false;
+      if (id === 'waste_removal' && !wasteRemovalEnabled) return false;
       return true;
     });
   }, [
@@ -94,6 +96,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     partnerAppsEnabled,
     expertSupportEnabled,
     toolRentalsEnabled,
+    wasteRemovalEnabled,
     validToolIds,
   ]);
 
@@ -101,9 +104,10 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     const selected = localSelectedTools ?? selectedToolsFromContext;
     const selectedSet = new Set(selected);
     const orderFiltered = WIZARD_TOOL_ORDER.filter(id => {
-      if (!partnerAppsEnabled && (id === 'expert_support' || id === 'tool_rentals')) return false;
+      if (!partnerAppsEnabled && (id === 'expert_support' || id === 'tool_rentals' || id === 'waste_removal')) return false;
       if (id === 'expert_support' && !expertSupportEnabled) return false;
       if (id === 'tool_rentals' && !toolRentalsEnabled) return false;
+      if (id === 'waste_removal' && !wasteRemovalEnabled) return false;
       return true;
     });
     const ordered = orderFiltered.filter(id => selectedSet.has(id));
@@ -131,6 +135,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     partnerAppsEnabled,
     expertSupportEnabled,
     toolRentalsEnabled,
+    wasteRemovalEnabled,
   ]);
 
   useEffect(() => {
@@ -191,19 +196,21 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     const orderIdx = (id: PlanningToolId) => WIZARD_TOOL_ORDER.indexOf(id);
     return PLANNING_TOOLS.filter(t => {
       if (!WIZARD_TOOL_ORDER.includes(t.id)) return false;
-      if (!partnerAppsEnabled && (t.id === 'expert_support' || t.id === 'tool_rentals')) return false;
+      if (!partnerAppsEnabled && (t.id === 'expert_support' || t.id === 'tool_rentals' || t.id === 'waste_removal')) return false;
       if (t.id === 'expert_support' && !expertSupportEnabled) return false;
       if (t.id === 'tool_rentals' && !toolRentalsEnabled) return false;
+      if (t.id === 'waste_removal' && !wasteRemovalEnabled) return false;
       return true;
     }).sort((a, b) => orderIdx(a.id) - orderIdx(b.id));
-  }, [partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled]);
+  }, [partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled, wasteRemovalEnabled]);
 
   const handlePlanningToolToggle = useCallback(
     (toolId: PlanningToolId, checked: boolean) => {
       if (!currentProjectRun || toolId === 'scope') return;
-      if (!partnerAppsEnabled && (toolId === 'expert_support' || toolId === 'tool_rentals')) return;
+      if (!partnerAppsEnabled && (toolId === 'expert_support' || toolId === 'tool_rentals' || toolId === 'waste_removal')) return;
       if (toolId === 'expert_support' && !expertSupportEnabled) return;
       if (toolId === 'tool_rentals' && !toolRentalsEnabled) return;
+      if (toolId === 'waste_removal' && !wasteRemovalEnabled) return;
       const decisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
       // Use effective selection (local + context) so rapid toggles don't overwrite with stale context
       const effectiveSelected = localSelectedTools ?? selectedToolsFromContext;
@@ -216,9 +223,11 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       if (!partnerAppsEnabled) {
         currentSet.delete('expert_support');
         currentSet.delete('tool_rentals');
+        currentSet.delete('waste_removal');
       } else {
         if (!expertSupportEnabled) currentSet.delete('expert_support');
         if (!toolRentalsEnabled) currentSet.delete('tool_rentals');
+        if (!wasteRemovalEnabled) currentSet.delete('waste_removal');
       }
       const next = Array.from(currentSet);
       setLocalSelectedTools(next);
@@ -237,6 +246,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       partnerAppsEnabled,
       expertSupportEnabled,
       toolRentalsEnabled,
+      wasteRemovalEnabled,
     ]
   );
 
@@ -280,6 +290,25 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         return <ShoppingStep {...stepProps} />;
       case 'tool_rentals':
         return <ToolRentalsStep {...stepProps} onOpenToolRentals={onOpenToolRentals} />;
+      case 'waste_removal':
+        return (
+          <Card>
+            <CardContent className="space-y-3 p-4">
+              <p className="text-sm text-muted-foreground">
+                Open Waste Removal to track cleanup and disposal planning for this project.
+              </p>
+              <Button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey: 'waste-removal' } }));
+                  stepProps.onComplete();
+                }}
+              >
+                Open Waste Removal
+              </Button>
+            </CardContent>
+          </Card>
+        );
       case 'quality_control':
         return (
           <QualityControlStep

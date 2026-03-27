@@ -11,6 +11,7 @@ interface ContentSection {
   severity?: 'low' | 'medium' | 'high' | 'critical';
   width?: 'full' | 'half' | 'third' | 'two-thirds';
   alignment?: 'left' | 'center' | 'right';
+  display_order?: number;
   // Button-specific properties
   buttonAction?: 'project-customizer' | 'project-scheduler' | 'shopping-checklist' | 'materials-selection' | 'project-budgeting' | 'project-performance';
   buttonLabel?: string;
@@ -53,8 +54,14 @@ export function MultiContentRenderer({ sections, onButtonAction }: MultiContentR
     return null;
   }
 
-  const warningSections = sections.filter((s) => s.type === "safety-warning" && s.content);
-  const nonWarningSections = sections.filter((s) => !(s.type === "safety-warning" && s.content));
+  const sortedSections = [...sections].sort((a, b) => {
+    const aOrder = typeof a.display_order === 'number' ? a.display_order : Number.MAX_SAFE_INTEGER;
+    const bOrder = typeof b.display_order === 'number' ? b.display_order : Number.MAX_SAFE_INTEGER;
+    return aOrder - bOrder;
+  });
+
+  const warningSections = sortedSections.filter((s) => s.type === "safety-warning" && s.content);
+  const nonWarningSections = sortedSections.filter((s) => !(s.type === "safety-warning" && s.content));
 
   return (
     <div className="space-y-6">

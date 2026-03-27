@@ -14,6 +14,7 @@ export const PLANNING_TOOL_IDS = [
   'budget',
   'shopping_list',
   'tool_rentals',
+  'waste_removal',
   'quality_control',
   'expert_support'
 ] as const;
@@ -25,6 +26,7 @@ export const PLANNING_TOOLS: { id: (typeof PLANNING_TOOL_IDS)[number]; label: st
   { id: 'budget', label: 'Budget', benefit: 'Spend what you want' },
   { id: 'shopping_list', label: 'Shopping', benefit: 'Track tool & material shopping' },
   { id: 'tool_rentals', label: 'Tool Rental', benefit: 'Plan what to borrow or rent with rental options matched to your area' },
+  { id: 'waste_removal', label: 'Waste Removal', benefit: 'Plan disposal and debris handling during the project' },
   { id: 'quality_control', label: 'Quality', benefit: 'Document results for future inspections' },
   { id: 'expert_support', label: 'Support', benefit: 'Setup on-call expert support for when you need help' }
 ];
@@ -40,6 +42,7 @@ const KICKOFF_TOOLS_GRID_ORDER: PlanningToolId[] = [
   'quality_control',
   'budget',
   'tool_rentals',
+  'waste_removal',
   'expert_support',
 ];
 
@@ -47,7 +50,7 @@ export const DEFAULT_PLANNING_TOOLS_SELECTION: PlanningToolId[] = ['scope', 'ris
 
 /** Preset tool sets by project focus. Scope is always included. */
 const FOCUS_PRESETS: Record<string, PlanningToolId[]> = {
-  savings: ['scope', 'budget', 'shopping_list', 'tool_rentals', 'risk'],
+  savings: ['scope', 'budget', 'shopping_list', 'tool_rentals', 'waste_removal', 'risk'],
   quality: ['scope', 'quality_control', 'risk'],
   schedule: ['scope', 'schedule', 'risk'],
 };
@@ -64,12 +67,14 @@ export function filterByPartnerAvailability(
   ids: PlanningToolId[],
   partnerAppsEnabled: boolean,
   expertSupportEnabled: boolean,
-  toolRentalsEnabled: boolean
+  toolRentalsEnabled: boolean,
+  wasteRemovalEnabled: boolean
 ): PlanningToolId[] {
   return ids.filter(id => {
-    if (!partnerAppsEnabled && (id === 'expert_support' || id === 'tool_rentals')) return false;
+    if (!partnerAppsEnabled && (id === 'expert_support' || id === 'tool_rentals' || id === 'waste_removal')) return false;
     if (id === 'expert_support' && !expertSupportEnabled) return false;
     if (id === 'tool_rentals' && !toolRentalsEnabled) return false;
+    if (id === 'waste_removal' && !wasteRemovalEnabled) return false;
     return true;
   });
 }
@@ -88,18 +93,19 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   onSelectionChange
 }) => {
   const { user } = useAuth();
-  const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled } = usePartnerAppSettings();
+  const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled, wasteRemovalEnabled } = usePartnerAppSettings();
   const [projectFocus, setProjectFocus] = useState<string | null>(null);
 
   const toolsToShow = React.useMemo(() => {
     const filtered = PLANNING_TOOLS.filter(t => {
-      if (!partnerAppsEnabled && (t.id === 'expert_support' || t.id === 'tool_rentals')) return false;
+      if (!partnerAppsEnabled && (t.id === 'expert_support' || t.id === 'tool_rentals' || t.id === 'waste_removal')) return false;
       if (t.id === 'expert_support' && !expertSupportEnabled) return false;
       if (t.id === 'tool_rentals' && !toolRentalsEnabled) return false;
+      if (t.id === 'waste_removal' && !wasteRemovalEnabled) return false;
       return true;
     });
     return sortToolsForKickoffGrid(filtered);
-  }, [partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled]);
+  }, [partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled, wasteRemovalEnabled]);
 
   const [selected, setSelected] = useState<Set<PlanningToolId>>(() => {
     const initial = initialSelected.length > 0 ? initialSelected : DEFAULT_PLANNING_TOOLS_SELECTION;
@@ -107,7 +113,8 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
       initial,
       partnerAppsEnabled,
       expertSupportEnabled,
-      toolRentalsEnabled
+      toolRentalsEnabled,
+      wasteRemovalEnabled
     );
     return new Set(filtered as PlanningToolId[]);
   });
@@ -133,7 +140,8 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
       fromPersisted as PlanningToolId[],
       partnerAppsEnabled,
       expertSupportEnabled,
-      toolRentalsEnabled
+      toolRentalsEnabled,
+      wasteRemovalEnabled
     );
     setSelected(new Set(next));
     // Keep KickoffWorkflow.selectedPlanningTools aligned with what the user sees (defaults
@@ -145,6 +153,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     partnerAppsEnabled,
     expertSupportEnabled,
     toolRentalsEnabled,
+    wasteRemovalEnabled,
     onSelectionChange,
   ]);
 
@@ -155,9 +164,11 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     if (!partnerAppsEnabled) {
       withScope.delete('expert_support');
       withScope.delete('tool_rentals');
+      withScope.delete('waste_removal');
     } else {
       if (!expertSupportEnabled) withScope.delete('expert_support');
       if (!toolRentalsEnabled) withScope.delete('tool_rentals');
+      if (!wasteRemovalEnabled) withScope.delete('waste_removal');
     }
     const cleaned = Array.from(withScope).filter(id => validToolIds.has(id as any)) as PlanningToolId[];
     onSelectionChange?.(cleaned);
@@ -177,9 +188,10 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   const handleSelectAll = () => {
     const all = new Set(
       PLANNING_TOOL_IDS.filter(id => {
-        if (!partnerAppsEnabled && (id === 'expert_support' || id === 'tool_rentals')) return false;
+        if (!partnerAppsEnabled && (id === 'expert_support' || id === 'tool_rentals' || id === 'waste_removal')) return false;
         if (id === 'expert_support' && !expertSupportEnabled) return false;
         if (id === 'tool_rentals' && !toolRentalsEnabled) return false;
+        if (id === 'waste_removal' && !wasteRemovalEnabled) return false;
         return true;
       })
     );
@@ -193,6 +205,8 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
       partnerAppsEnabled,
       expertSupportEnabled,
       toolRentalsEnabled
+      ,
+      wasteRemovalEnabled
     );
     const next = new Set(ids as PlanningToolId[]);
     setSelected(next);

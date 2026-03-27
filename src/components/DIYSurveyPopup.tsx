@@ -1159,10 +1159,10 @@ export default function DIYSurveyPopup({
           <div className="space-y-6">
             <div className="text-center space-y-2">
               <h3 className="text-2xl font-bold">What is most important to you?</h3>
-              <p className="text-muted-foreground">Pick your primary project management focus. This helps us prioritize guidance for your projects.</p>
+              <p className="text-muted-foreground">Pick Your Project Strategy</p>
             </div>
             <div className="grid grid-cols-1 gap-3 py-2" role="group" aria-label="Project management focus">
-              {PM_FOCUS_OPTIONS.map(({ value, title, description, icon: Icon }) => (
+              {PM_FOCUS_OPTIONS.map(({ value, title, description, icon: Icon, colorClasses }) => (
                 <button
                   key={value}
                   type="button"
@@ -1171,20 +1171,21 @@ export default function DIYSurveyPopup({
                     flex items-start gap-3 p-4 rounded-xl border-2 text-left
                     transition-all duration-200
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+                    ${colorClasses}
                     ${answers.projectFocus === value
-                      ? 'border-primary bg-primary/10 text-foreground shadow-sm'
-                      : 'border-border/60 bg-muted/20 hover:border-primary/50 hover:bg-muted/40 text-foreground'
+                      ? 'ring-2 ring-primary/70 text-foreground shadow-sm'
+                      : 'text-foreground/95'
                     }
                   `}
                   aria-pressed={answers.projectFocus === value}
                   aria-label={`${title}: ${description}`}
                 >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-background/80">
-                    <Icon className="h-5 w-5 text-muted-foreground" aria-hidden />
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black/35">
+                    <Icon className="h-5 w-5 text-foreground/90" aria-hidden />
                   </span>
                   <span className="flex flex-col gap-0.5">
-                    <span className="font-medium">{title}</span>
-                    <span className="text-sm text-muted-foreground">{description}</span>
+                    <span className="font-medium text-foreground">{title}</span>
+                    <span className="text-sm text-foreground/75">{description}</span>
                   </span>
                 </button>
               ))}

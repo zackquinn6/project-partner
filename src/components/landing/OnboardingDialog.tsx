@@ -32,30 +32,35 @@ export const PM_FOCUS_OPTIONS: {
   title: string;
   description: string;
   icon: typeof Calendar;
+  colorClasses: string;
 }[] = [
   {
     value: 'schedule',
-    title: 'Hitting my schedule',
+    title: 'Go Fast',
     description: 'Hitting the schedule I told myself and others',
     icon: Calendar,
+    colorClasses: 'border-slate-700 bg-slate-950/90 hover:border-slate-500',
   },
   {
     value: 'quality',
     title: 'Highest quality work',
     description: 'Focusing on precision of work',
     icon: Award,
+    colorClasses: 'border-emerald-700 bg-emerald-950/70 hover:border-emerald-500',
   },
   {
     value: 'savings',
     title: 'Maximize savings',
     description: 'Avoiding overspending / maximize savings',
     icon: PiggyBank,
+    colorClasses: 'border-violet-700 bg-violet-950/70 hover:border-violet-500',
   },
   {
     value: 'all_three',
     title: 'Balanced',
     description: 'Balance cost, quality, and schedule together',
     icon: Target,
+    colorClasses: 'border-blue-700 bg-blue-950/70 hover:border-blue-500',
   },
 ];
 
@@ -201,7 +206,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
           )}
           {step === 3 && (
             <p className="text-sm text-muted-foreground font-normal">
-              Pick your primary project management focus. This helps us prioritize guidance for your projects.
+              Pick Your Project Strategy
             </p>
           )}
         </DialogHeader>
@@ -271,7 +276,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
 
         {step === 3 && (
           <div className="grid grid-cols-1 gap-3 py-2" role="group" aria-label="Project management focus">
-            {PM_FOCUS_OPTIONS.map(({ value, title, description, icon: Icon }) => (
+            {PM_FOCUS_OPTIONS.map(({ value, title, description, icon: Icon, colorClasses }) => (
               <button
                 key={value}
                 type="button"
@@ -280,20 +285,21 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                   flex items-start gap-3 p-4 rounded-xl border-2 text-left
                   transition-all duration-200
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+                  ${colorClasses}
                   ${pmFocus === value
-                    ? 'border-primary bg-primary/10 text-foreground shadow-sm'
-                    : 'border-border/60 bg-muted/20 hover:border-primary/50 hover:bg-muted/40 text-foreground'
+                    ? 'ring-2 ring-primary/70 text-foreground shadow-sm'
+                    : 'text-foreground/95'
                   }
                 `}
                 aria-pressed={pmFocus === value}
                 aria-label={`${title}: ${description}`}
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-background/80">
-                  <Icon className="h-5 w-5 text-muted-foreground" aria-hidden />
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black/35">
+                  <Icon className="h-5 w-5 text-foreground/90" aria-hidden />
                 </span>
                 <span className="flex flex-col gap-0.5">
-                  <span className="font-medium">{title}</span>
-                  <span className="text-sm text-muted-foreground">{description}</span>
+                  <span className="font-medium text-foreground">{title}</span>
+                  <span className="text-sm text-foreground/75">{description}</span>
                 </span>
               </button>
             ))}

@@ -134,7 +134,6 @@ async function syncStepsForOperation(
       display_order: stepIndex + 1,  // Changed from step_number
       step_title: step.step || `Step ${stepIndex + 1}`,
       description: step.description || null,
-      content_sections: JSON.stringify(step.content || []),
       materials: JSON.stringify(step.materials || []),
       tools: JSON.stringify(step.tools || []),
       outputs: JSON.stringify(step.outputs || []),

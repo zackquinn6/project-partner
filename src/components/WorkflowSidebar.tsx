@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, Shield, DollarSign, ShoppingCart, ClipboardCheck, Handshake, Crosshair } from "lucide-react";
+import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, Shield, DollarSign, ShoppingCart, ClipboardCheck, Handshake, Crosshair, Trash2 } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -81,7 +81,7 @@ export function WorkflowSidebar({
 }: WorkflowSidebarProps) {
   const { updateProjectRun } = useProject();
   const { user } = useAuth();
-  const { expertSupportEnabled, toolRentalsEnabled } = usePartnerAppSettings();
+  const { expertSupportEnabled, toolRentalsEnabled, wasteRemovalEnabled } = usePartnerAppSettings();
   const {
     state
   } = useSidebar();
@@ -598,7 +598,7 @@ export function WorkflowSidebar({
                         className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] max-w-[min(100%,14rem)] bg-sky-50 dark:bg-sky-950/40 border-sky-200/80 dark:border-sky-800"
                       >
                         {/* Non–project-tool entries first, alphabetical: Partner Tools, Progress */}
-                        {(expertSupportEnabled || (toolRentalsEnabled && onToolRentalsClick)) && (
+                        {(expertSupportEnabled || (toolRentalsEnabled && onToolRentalsClick) || wasteRemovalEnabled) && (
                           <DropdownMenuSub>
                             <DropdownMenuSubTrigger className="text-xs gap-2 cursor-pointer px-2 py-1.5">
                               <Handshake className="h-3.5 w-3.5 shrink-0" />
@@ -621,6 +621,15 @@ export function WorkflowSidebar({
                                 >
                                   <Wrench className="h-3.5 w-3.5 shrink-0" />
                                   Tool Rentals
+                                </DropdownMenuItem>
+                              )}
+                              {wasteRemovalEnabled && (
+                                <DropdownMenuItem
+                                  className="text-xs gap-2 cursor-pointer"
+                                  onClick={() => openAppByActionKey('waste-removal')}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                                  Waste Removal
                                 </DropdownMenuItem>
                               )}
                             </DropdownMenuSubContent>

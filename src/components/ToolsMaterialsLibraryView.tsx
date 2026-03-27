@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -453,36 +452,35 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                       <p>No tools in your library yet</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-1.5 sm:gap-2">
                       {sortedFilteredTools.map((tool) => (
-                        <Card 
+                        <button
+                          type="button"
                           key={tool.id} 
-                          className="cursor-pointer hover:shadow-md transition-shadow p-3 relative"
+                          className="group relative flex flex-col items-center gap-0.5 rounded-md p-0 text-center transition-colors hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                           onClick={() => {
                             setSelectedItem(tool);
                             setSelectedType('tool');
                           }}
                         >
-                          <div className="flex flex-col items-center space-y-2">
-                            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center relative">
-                              {(tool.user_photo_url || tool.photo_url) ? (
-                                <img 
-                                  src={tool.user_photo_url || tool.photo_url} 
-                                  alt={tool.item}
-                                  className="w-10 h-10 object-cover rounded"
-                                />
-                              ) : (
-                                <Wrench className="w-6 h-6 text-primary" />
-                              )}
-                              {tool.quantity >= 1 && (
-                                <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                                  {tool.quantity}
-                                </div>
-                              )}
-                            </div>
-                            <span className="text-xs text-center font-medium line-clamp-2">{tool.item}</span>
+                          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                            {(tool.user_photo_url || tool.photo_url) ? (
+                              <img 
+                                src={tool.user_photo_url || tool.photo_url} 
+                                alt={tool.item}
+                                className="h-9 w-9 rounded object-cover"
+                              />
+                            ) : (
+                              <Wrench className="h-6 w-6 text-primary" />
+                            )}
+                            {tool.quantity >= 1 && (
+                              <div className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] px-0.5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold leading-none text-primary-foreground">
+                                {tool.quantity}
+                              </div>
+                            )}
                           </div>
-                        </Card>
+                          <span className="text-[10px] font-medium leading-[1.15] line-clamp-2">{tool.item}</span>
+                        </button>
                       ))}
                     </div>
                   )}
@@ -495,36 +493,35 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                       <p>No materials in your library yet</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-1.5 sm:gap-2">
                       {filteredMaterials.map((material) => (
-                        <Card 
+                        <button
+                          type="button"
                           key={material.id} 
-                          className="cursor-pointer hover:shadow-md transition-shadow p-3 relative"
+                          className="group relative flex flex-col items-center gap-0.5 rounded-md p-0 text-center transition-colors hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                           onClick={() => {
                             setSelectedItem(material);
                             setSelectedType('material');
                           }}
                         >
-                          <div className="flex flex-col items-center space-y-2">
-                            <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center relative">
-                              {(material.user_photo_url || material.photo_url) ? (
-                                <img 
-                                  src={material.user_photo_url || material.photo_url} 
-                                  alt={material.item}
-                                  className="w-10 h-10 object-cover rounded"
-                                />
-                              ) : (
-                                <Package className="w-6 h-6 text-accent-foreground" />
-                              )}
-                              {material.quantity >= 1 && (
-                                <div className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                                  {material.quantity}
-                                </div>
-                              )}
-                            </div>
-                            <span className="text-xs text-center font-medium line-clamp-2">{material.item}</span>
+                          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-accent/10">
+                            {(material.user_photo_url || material.photo_url) ? (
+                              <img 
+                                src={material.user_photo_url || material.photo_url} 
+                                alt={material.item}
+                                className="h-9 w-9 rounded object-cover"
+                              />
+                            ) : (
+                              <Package className="h-6 w-6 text-accent-foreground" />
+                            )}
+                            {material.quantity >= 1 && (
+                              <div className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] px-0.5 items-center justify-center rounded-full bg-accent text-[10px] font-semibold leading-none text-accent-foreground">
+                                {material.quantity}
+                              </div>
+                            )}
                           </div>
-                        </Card>
+                          <span className="text-[10px] font-medium leading-[1.15] line-clamp-2">{material.item}</span>
+                        </button>
                       ))}
                     </div>
                   )}

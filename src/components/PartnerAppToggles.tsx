@@ -9,20 +9,28 @@ import { toast } from 'sonner';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 
 export const PartnerAppToggles: React.FC = () => {
-  const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled, loading, refetch } = usePartnerAppSettings();
+  const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled, wasteRemovalEnabled, loading, refetch } = usePartnerAppSettings();
   const [updatingPartner, setUpdatingPartner] = useState(false);
   const [updatingExpert, setUpdatingExpert] = useState(false);
   const [updatingToolRentals, setUpdatingToolRentals] = useState(false);
+  const [updatingWasteRemoval, setUpdatingWasteRemoval] = useState(false);
 
-  const updateSetting = async (key: 'partner_apps_enabled' | 'expert_support_enabled' | 'tool_rentals_enabled', enabled: boolean) => {
-    const setBusy = key === 'partner_apps_enabled' ? setUpdatingPartner : key === 'expert_support_enabled' ? setUpdatingExpert : setUpdatingToolRentals;
+  const updateSetting = async (key: 'partner_apps_enabled' | 'expert_support_enabled' | 'tool_rentals_enabled' | 'waste_removal_enabled', enabled: boolean) => {
+    const setBusy =
+      key === 'partner_apps_enabled'
+        ? setUpdatingPartner
+        : key === 'expert_support_enabled'
+          ? setUpdatingExpert
+          : key === 'tool_rentals_enabled'
+            ? setUpdatingToolRentals
+            : setUpdatingWasteRemoval;
     setBusy(true);
     try {
       // When disabling partner apps, disable all dependent options at the same time.
       // This ensures expert support / tool rentals cannot be used when partner apps are off.
       const keysToUpdate =
         key === 'partner_apps_enabled' && enabled === false
-          ? ['partner_apps_enabled', 'expert_support_enabled', 'tool_rentals_enabled']
+          ? ['partner_apps_enabled', 'expert_support_enabled', 'tool_rentals_enabled', 'waste_removal_enabled']
           : [key];
 
       const payload = keysToUpdate.map(settingKey => ({
@@ -40,7 +48,9 @@ export const PartnerAppToggles: React.FC = () => {
           ? 'Partner apps'
           : key === 'expert_support_enabled'
             ? 'Support'
-            : 'Tool Rental';
+            : key === 'tool_rentals_enabled'
+              ? 'Tool Rental'
+              : 'Waste Removal';
       toast.success(`${label} ${enabled ? 'enabled' : 'disabled'}`);
     } catch (err) {
       console.error('Error updating partner app setting:', err);
@@ -74,6 +84,24 @@ export const PartnerAppToggles: React.FC = () => {
             checked={partnerAppsEnabled}
             onCheckedChange={checked => updateSetting('partner_apps_enabled', checked)}
             disabled={loading || updatingPartner}
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <Label htmlFor="waste-removal" className="flex-1">
+            <div className="font-medium">Waste Removal</div>
+            <div className="text-sm text-muted-foreground">
+              When enabled, Waste Removal appears in the project workflow under Partner Tools
+            </div>
+          </Label>
+          <Switch
+            id="waste-removal"
+            checked={wasteRemovalEnabled}
+            onCheckedChange={checked => {
+              if (!partnerAppsEnabled) return;
+              updateSetting('waste_removal_enabled', checked);
+            }}
+            disabled={loading || updatingWasteRemoval || !partnerAppsEnabled}
           />
         </div>
 

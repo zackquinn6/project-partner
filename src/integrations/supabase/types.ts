@@ -1670,9 +1670,6 @@ export type Database = {
         Row: {
           allow_content_edit: boolean | null
           apps: Json | null
-          content: string | null
-          content_sections: Json | null
-          content_type: string | null
           created_at: string
           description: string | null
           display_order: number
@@ -1695,9 +1692,6 @@ export type Database = {
         Insert: {
           allow_content_edit?: boolean | null
           apps?: Json | null
-          content?: string | null
-          content_sections?: Json | null
-          content_type?: string | null
           created_at?: string
           description?: string | null
           display_order?: number
@@ -1720,9 +1714,6 @@ export type Database = {
         Update: {
           allow_content_edit?: boolean | null
           apps?: Json | null
-          content?: string | null
-          content_sections?: Json | null
-          content_type?: string | null
           created_at?: string
           description?: string | null
           display_order?: number
@@ -3427,6 +3418,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_projects_runtime: {
+        Row: {
+          canonical_step_id: string
+          created_at: string
+          ended_at: string | null
+          id: string
+          project_run_id: string
+          started_at: string | null
+          step_id: string
+          updated_at: string
+        }
+        Insert: {
+          canonical_step_id: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          project_run_id: string
+          started_at?: string | null
+          step_id: string
+          updated_at?: string
+        }
+        Update: {
+          canonical_step_id?: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          project_run_id?: string
+          started_at?: string | null
+          step_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_projects_runtime_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_maintenance_tasks: {
         Row: {

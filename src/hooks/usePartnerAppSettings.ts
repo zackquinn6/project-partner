@@ -5,11 +5,12 @@ export function usePartnerAppSettings() {
   const [partnerAppsEnabled, setPartnerAppsEnabled] = useState(true);
   const [expertSupportEnabled, setExpertSupportEnabled] = useState(true);
   const [toolRentalsEnabled, setToolRentalsEnabled] = useState(true);
+  const [wasteRemovalEnabled, setWasteRemovalEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = async () => {
     try {
-      const keys = ['partner_apps_enabled', 'expert_support_enabled', 'tool_rentals_enabled'];
+      const keys = ['partner_apps_enabled', 'expert_support_enabled', 'tool_rentals_enabled', 'waste_removal_enabled'];
       const { data, error } = await supabase
         .from('app_settings')
         .select('setting_key, setting_value')
@@ -21,11 +22,13 @@ export function usePartnerAppSettings() {
       setPartnerAppsEnabled(map.get('partner_apps_enabled')?.enabled ?? true);
       setExpertSupportEnabled(map.get('expert_support_enabled')?.enabled ?? true);
       setToolRentalsEnabled(map.get('tool_rentals_enabled')?.enabled ?? true);
+      setWasteRemovalEnabled(map.get('waste_removal_enabled')?.enabled ?? true);
     } catch (err) {
       console.error('Error fetching partner app settings:', err);
       setPartnerAppsEnabled(true);
       setExpertSupportEnabled(true);
       setToolRentalsEnabled(true);
+      setWasteRemovalEnabled(true);
     } finally {
       setLoading(false);
     }
@@ -45,7 +48,12 @@ export function usePartnerAppSettings() {
         },
         (payload) => {
           const key = (payload.new as { setting_key?: string })?.setting_key;
-          if (key === 'partner_apps_enabled' || key === 'expert_support_enabled' || key === 'tool_rentals_enabled') fetchSettings();
+          if (
+            key === 'partner_apps_enabled' ||
+            key === 'expert_support_enabled' ||
+            key === 'tool_rentals_enabled' ||
+            key === 'waste_removal_enabled'
+          ) fetchSettings();
         }
       )
       .subscribe();
@@ -53,5 +61,12 @@ export function usePartnerAppSettings() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  return { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled, loading, refetch: fetchSettings };
+  return {
+    partnerAppsEnabled,
+    expertSupportEnabled,
+    toolRentalsEnabled,
+    wasteRemovalEnabled,
+    loading,
+    refetch: fetchSettings
+  };
 }

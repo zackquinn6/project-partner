@@ -166,9 +166,6 @@ export default function EditWorkflowView({
               step_title,
               apps,
               description,
-              content_type,
-              content,
-              content_sections,
               display_order,
               materials,
               tools,
@@ -229,8 +226,8 @@ export default function EditWorkflowView({
                   return parsedApps;
                 })(),
                 description: step.description || '',
-                contentType: step.content_type || 'text',
-                content: step.content || '',
+                contentType: 'text',
+                content: '',
                 contentSections: parsedContentSections,
                 allowContentEdit: step.allow_content_edit || false,
                 displayOrder: step.display_order || 0,
@@ -370,9 +367,6 @@ export default function EditWorkflowView({
                 step_title,
                 apps,
                 description,
-                content_type,
-                content,
-                content_sections,
                 display_order,
                 materials,
                 tools,
@@ -486,8 +480,8 @@ export default function EditWorkflowView({
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
                   inputs: parseProcessVariables(s.process_variables),
-                  contentType: s.content_type || 'text',
-                  content: s.content || '',
+                  contentType: 'text',
+                  content: '',
                   contentSections: parsedContentSections,
                   allowContentEdit: s.allow_content_edit || false,
                   timeEstimation: {
@@ -534,9 +528,6 @@ export default function EditWorkflowView({
                 step_title,
                 apps,
                 description,
-                content_type,
-                content,
-                content_sections,
                 display_order,
                 materials,
                 tools,
@@ -652,8 +643,8 @@ export default function EditWorkflowView({
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
                   inputs: parseProcessVariables(s.process_variables),
-                  contentType: s.content_type || 'text',
-                  content: s.content || '',
+                  contentType: 'text',
+                  content: '',
                   contentSections: parsedContentSections,
                   allowContentEdit: s.allow_content_edit || false,
                   timeEstimation: {
@@ -721,9 +712,6 @@ export default function EditWorkflowView({
               step_title,
               apps,
               description,
-              content_type,
-              content,
-              content_sections,
               display_order,
               materials,
               tools,
@@ -839,8 +827,8 @@ export default function EditWorkflowView({
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
                   inputs: parseProcessVariables(s.process_variables),
-                  contentType: s.content_type || 'text',
-                  content: s.content || '',
+                  contentType: 'text',
+                  content: '',
                   contentSections: parsedContentSections,
                   timeEstimation: {
                     variableTime: {
@@ -1205,12 +1193,17 @@ export default function EditWorkflowView({
     if (!stepId || !sections) return;
     
     try {
+      const sectionsWithDisplayOrder = sections.map((section, index) => ({
+        ...section,
+        display_order: index + 1
+      }));
+
       const { error } = await supabase
         .from('step_instructions')
         .upsert({
           step_id: stepId,
           instruction_level: targetLevel,
-          content: sections as any,
+          content: sectionsWithDisplayOrder as any,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'step_id,instruction_level'
@@ -1273,7 +1266,13 @@ export default function EditWorkflowView({
         pendingContentRef.current.level = instructionLevel;
       } else if (data?.content) {
         // Content is stored as Json, convert to ContentSection[]
-        const content = Array.isArray(data.content) ? data.content as unknown as ContentSection[] : null;
+        const content = Array.isArray(data.content)
+          ? (data.content as unknown as ContentSection[]).sort((a, b) => {
+              const aOrder = typeof (a as any).display_order === 'number' ? (a as any).display_order : Number.MAX_SAFE_INTEGER;
+              const bOrder = typeof (b as any).display_order === 'number' ? (b as any).display_order : Number.MAX_SAFE_INTEGER;
+              return aOrder - bOrder;
+            })
+          : null;
         setLevelSpecificContent(content);
         setLevelSpecificContentKey({ stepId, level: instructionLevel });
         setPendingContentLevel(instructionLevel);
@@ -1417,8 +1416,6 @@ export default function EditWorkflowView({
         const updateData: any = {
           step_title: editingStep.step,
           description: editingStep.description,
-          content_type: editingStep.contentType || 'text',
-          content: editingStep.content || '',
           step_type: editingStep.stepType || 'scaled',
           flow_type: editingStep.flowType || 'prime',
           materials: editingStep.materials || [] as any,
@@ -1473,8 +1470,6 @@ export default function EditWorkflowView({
             // Content fields only - structure remains locked
             step_title: editingStep.step,
             description: editingStep.description,
-            content_type: editingStep.contentType || 'text',
-            content: editingStep.content || '',
             materials: editingStep.materials || [] as any,
             tools: editingStep.tools || [] as any,
             outputs: editingStep.outputs || [] as any,
@@ -1485,8 +1480,6 @@ export default function EditWorkflowView({
             // For custom steps, allow all fields to be updated
             step_title: editingStep.step,
             description: editingStep.description,
-            content_type: editingStep.contentType || 'text',
-            content: editingStep.content || '',
             step_type: editingStep.stepType || 'scaled',
             flow_type: editingStep.flowType || 'prime',
             materials: editingStep.materials || [] as any,

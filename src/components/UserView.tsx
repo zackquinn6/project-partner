@@ -159,6 +159,8 @@ export default function UserView({
   const currentProjectRunForInstructionRef = useRef(currentProjectRun);
   currentProjectRunForInstructionRef.current = currentProjectRun;
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const stepRuntimeStartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingRuntimeStepKeyRef = useRef<string | null>(null);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [checkedMaterials, setCheckedMaterials] = useState<Record<string, Set<string>>>({});
   const [checkedTools, setCheckedTools] = useState<Record<string, Set<string>>>({});
@@ -1371,20 +1373,88 @@ export default function UserView({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Track step start time when user views a step (for analytics)
-  useEffect(() => {
-    if (workflowMainView !== 'steps') return;
-    if (!currentStep || !currentProjectRun) return;
-
-    // Record started_at timestamp when step is first viewed
-    // NOTE: project_run_steps table does not exist - this tracking is disabled
-    const trackStepStart = async () => {
-      // Table does not exist - skip tracking
+  const startUserProjectRuntime = useCallback(async (stepId: string, stepKey: string) => {
+    if (!currentProjectRun?.id) return;
+    const now = new Date().toISOString();
+    const { data: existing, error: readError } = await supabase
+      .from('user_projects_runtime')
+      .select('id, started_at')
+      .eq('project_run_id', currentProjectRun.id)
+      .eq('step_id', stepKey)
+      .maybeSingle();
+    if (readError) {
+      console.error('Failed reading user_projects_runtime row:', readError);
       return;
-    };
+    }
+    if (!existing) {
+      const { error: insertError } = await supabase.from('user_projects_runtime').insert({
+        project_run_id: currentProjectRun.id,
+        step_id: stepKey,
+        canonical_step_id: stepId,
+        started_at: now,
+      });
+      if (insertError) console.error('Failed inserting user_projects_runtime row:', insertError);
+      return;
+    }
+    if (existing.started_at) return;
+    const { error: updateError } = await supabase
+      .from('user_projects_runtime')
+      .update({ started_at: now, updated_at: now })
+      .eq('id', existing.id);
+    if (updateError) console.error('Failed updating user_projects_runtime start time:', updateError);
+  }, [currentProjectRun?.id]);
 
-    trackStepStart();
-  }, [workflowMainView, currentStep?.id, currentProjectRun?.id]); // Track when step or project changes
+  const endUserProjectRuntime = useCallback(async (stepId: string, stepKey: string) => {
+    if (!currentProjectRun?.id) return;
+    const now = new Date().toISOString();
+    const { data: existing, error: readError } = await supabase
+      .from('user_projects_runtime')
+      .select('id')
+      .eq('project_run_id', currentProjectRun.id)
+      .eq('step_id', stepKey)
+      .maybeSingle();
+    if (readError) {
+      console.error('Failed reading user_projects_runtime row for end time:', readError);
+      return;
+    }
+    if (!existing) {
+      const { error: insertError } = await supabase.from('user_projects_runtime').insert({
+        project_run_id: currentProjectRun.id,
+        step_id: stepKey,
+        canonical_step_id: stepId,
+        ended_at: now,
+      });
+      if (insertError) console.error('Failed inserting user_projects_runtime end row:', insertError);
+      return;
+    }
+    const { error: updateError } = await supabase
+      .from('user_projects_runtime')
+      .update({ ended_at: now, updated_at: now })
+      .eq('id', existing.id);
+    if (updateError) console.error('Failed updating user_projects_runtime end time:', updateError);
+  }, [currentProjectRun?.id]);
+
+  // Track step start time when user keeps a step open for 15 seconds
+  useEffect(() => {
+    if (stepRuntimeStartTimerRef.current) {
+      clearTimeout(stepRuntimeStartTimerRef.current);
+      stepRuntimeStartTimerRef.current = null;
+    }
+    pendingRuntimeStepKeyRef.current = null;
+    if (workflowMainView !== 'steps' || !currentStep || !currentProjectRun) return;
+    const stepKey = getStepCompletionKey(currentStep.id, (currentStep as any).spaceId);
+    pendingRuntimeStepKeyRef.current = stepKey;
+    stepRuntimeStartTimerRef.current = setTimeout(() => {
+      if (pendingRuntimeStepKeyRef.current !== stepKey) return;
+      void startUserProjectRuntime(currentStep.id, stepKey);
+    }, 15000);
+    return () => {
+      if (stepRuntimeStartTimerRef.current) {
+        clearTimeout(stepRuntimeStartTimerRef.current);
+        stepRuntimeStartTimerRef.current = null;
+      }
+    };
+  }, [workflowMainView, currentStep?.id, (currentStep as any)?.spaceId, currentProjectRun?.id, startUserProjectRuntime]); // Track when step or project changes
   // Helper functions for check-off functionality
   const toggleMaterialCheck = (stepId: string, materialId: string) => {
     setCheckedMaterials(prev => {
@@ -1603,6 +1673,8 @@ export default function UserView({
         
         // End time tracking for step
         endTimeTracking('step', currentStep.id);
+        const runtimeStepKey = getStepCompletionKey(currentStep.id, (currentStep as any).spaceId);
+        await endUserProjectRuntime(currentStep.id, runtimeStepKey);
         
         // Check if this completes a phase - FIXED VERSION
         const currentPhase = getCurrentPhase();
@@ -1993,121 +2065,41 @@ export default function UserView({
   const renderContent = (step: typeof currentStep) => {
     if (!step) return null;
 
-    // If we have instruction data for this level, render it
+    // If we have instruction data for this level, render from step_instructions content.
     if (instruction && !instructionLoading) {
-      return (
-        <div className="space-y-6">
-          {/* Main text content */}
-          {instruction.content.text && (
-            <div className="prose max-w-none">
-              <div className="whitespace-pre-wrap text-foreground leading-relaxed">
-                {instruction.content.text}
-              </div>
-            </div>
-          )}
+      const sectionRows = Array.isArray(instruction.content.sections) ? instruction.content.sections : [];
+      const textRows = instruction.content.text ? [{
+        type: 'text' as const,
+        title: '',
+        content: instruction.content.text,
+        display_order: 0
+      }] : [];
+      const photoRows = (instruction.content.photos || []).map((photo, idx) => ({
+        type: 'image' as const,
+        title: photo.caption || photo.alt || '',
+        content: photo.url,
+        display_order: 1000 + idx
+      }));
+      const videoRows = (instruction.content.videos || []).map((video, idx) => ({
+        type: 'video' as const,
+        title: video.title || '',
+        content: video.embed ? (getSafeEmbedUrl(video.embed) || video.url) : video.url,
+        display_order: 2000 + idx
+      }));
+      const linkRows = (instruction.content.links || []).map((link, idx) => ({
+        type: 'link' as const,
+        title: link.title || link.url,
+        content: link.url,
+        display_order: 3000 + idx
+      }));
 
-          {/* Sections (tips, warnings, etc) - Safety warnings always first */}
-          {instruction.content.sections && instruction.content.sections.length > 0 && (
-            <div className="space-y-4">
-              {[...instruction.content.sections]
-                .sort((a, b) => {
-                  // Sort warnings to top, then tips, then standard
-                  const order = { warning: 0, tip: 1, standard: 2 };
-                  return (order[a.type || 'standard'] || 2) - (order[b.type || 'standard'] || 2);
-                })
-                .map((section, idx) => (
-                <div
-                  key={idx}
-                  className={`p-4 rounded-lg border ${
-                    section.type === 'warning'
-                      ? 'bg-orange-50 border-orange-200'
-                      : section.type === 'tip'
-                      ? 'bg-blue-50 border-blue-200'
-                      : 'bg-muted border-muted-foreground/20'
-                  }`}
-                >
-                  <h4 className="font-semibold mb-2">{section.title}</h4>
-                  <div className="text-sm whitespace-pre-wrap">{section.content}</div>
-                </div>
-              ))}
-            </div>
-          )}
+      const normalizedSectionRows = sectionRows.map((section: any, idx: number) => ({
+        ...section,
+        type: section.type === 'warning' ? 'safety-warning' : section.type,
+        display_order: typeof section.display_order === 'number' ? section.display_order : (10 + idx)
+      }));
 
-          {/* Photos */}
-          {instruction.content.photos && instruction.content.photos.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {instruction.content.photos.map((photo, idx) => (
-                <div key={idx} className="space-y-2">
-                  <img
-                    src={photo.url}
-                    alt={photo.alt}
-                    className="w-full rounded-lg shadow-card"
-                  />
-                  {photo.caption && (
-                    <p className="text-sm text-muted-foreground italic">{photo.caption}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Videos */}
-          {instruction.content.videos && instruction.content.videos.length > 0 && (
-            <div className="space-y-4">
-              {instruction.content.videos.map((video, idx) => {
-                // Safely parse embed HTML if present, otherwise use direct URL
-                const safeUrl = video.embed 
-                  ? getSafeEmbedUrl(video.embed) || video.url
-                  : video.url;
-                
-                // Only render if we have a valid URL
-                if (!safeUrl) {
-                  console.warn('Invalid or untrusted video URL blocked');
-                  return null;
-                }
-
-                return (
-                  <div key={idx} className="space-y-2">
-                    {video.title && <h4 className="font-semibold">{video.title}</h4>}
-                    <div className="aspect-video rounded-lg overflow-hidden shadow-card">
-                      <iframe
-                        src={safeUrl}
-                        className="w-full h-full border-0"
-                        allowFullScreen
-                        title={video.title || 'Video'}
-                        sandbox="allow-scripts allow-same-origin allow-presentation"
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Links */}
-          {instruction.content.links && instruction.content.links.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="font-semibold">Additional Resources</h4>
-              <div className="space-y-2">
-                {instruction.content.links.map((link, idx) => (
-                  <a
-                    key={idx}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block p-3 bg-muted hover:bg-muted/80 rounded-lg transition-colors"
-                  >
-                    <div className="font-medium text-primary">{link.title}</div>
-                    {link.description && (
-                      <div className="text-sm text-muted-foreground">{link.description}</div>
-                    )}
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      );
+      return <MultiContentRenderer sections={[...textRows, ...normalizedSectionRows, ...photoRows, ...videoRows, ...linkRows]} />;
     }
     
     // Use original content if no instruction data
@@ -3022,7 +3014,6 @@ export default function UserView({
             console.log('🎯 Mobile: Navigating to step:', stepIndex);
             if (stepIndex >= 0 && isKickoffComplete) {
               setCurrentStepIndex(stepIndex);
-              startTimeTracking('step', allSteps[stepIndex].id);
             }
           }}
           allSteps={allSteps}
@@ -3070,7 +3061,6 @@ export default function UserView({
                 });
                 setWorkflowMainView('steps');
                 setCurrentStepIndex(stepIndex);
-                startTimeTracking('step', step.id);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               } else {
                 console.log('❌ Step navigation blocked:', {

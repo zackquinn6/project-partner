@@ -64,7 +64,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     deleteProjectRun
   } = useProject();
   const { user } = useAuth();
-  const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled } = usePartnerAppSettings();
+  const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled, wasteRemovalEnabled } = usePartnerAppSettings();
   const [kickoffOrderResolved, setKickoffOrderResolved] = useState(false);
   const [kickoffStepOrder, setKickoffStepOrder] = useState<'profile_first' | 'match_first'>('match_first');
   const [currentKickoffStep, setCurrentKickoffStep] = useState(0);
@@ -212,7 +212,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
           tools,
           partnerAppsEnabled,
           expertSupportEnabled,
-          toolRentalsEnabled
+          toolRentalsEnabled,
+          wasteRemovalEnabled
         );
         customization_decisions = { ...existingDecisions, selected_planning_tools: normalized };
       }

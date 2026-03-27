@@ -8,7 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { CheckCircle2, Target, RefreshCw } from 'lucide-react';
+import { CheckCircle2, Target, RefreshCw, FileUp, Info } from 'lucide-react';
 import { WorkflowStep } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { isStepCompleted } from '@/utils/projectUtils';
@@ -20,6 +20,8 @@ import {
 } from '@/utils/qualityControlSettings';
 import { toast } from 'sonner';
 import { QualityControlPdfPrinter, type QualityControlPdfRow } from '@/components/QualityControlPdfPrinter';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 type StepInstance = WorkflowStep & {
   phaseName?: string;
@@ -73,8 +75,10 @@ export function QualityCheckWindow({
   userDisplayName,
   expandSettingsAccordionWhenOpen = false,
 }: QualityCheckWindowProps) {
+  const { user } = useAuth();
   const [showOnlyIncomplete, setShowOnlyIncomplete] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
   /** Open accordion item values: `qc-settings`, `qc-table` (multiple allowed). */
   const [accordionOpenValues, setAccordionOpenValues] = useState<string[]>([]);
 
@@ -212,6 +216,71 @@ export function QualityCheckWindow({
     ? projectRun.customProjectName?.trim() || projectRun.name?.trim() || projectRun.id
     : '';
 
+  const handleDocumentUpload = useCallback(async (file: File | null) => {
+    if (!file) return;
+    if (!projectRun) {
+      toast.error('No active project run');
+      return;
+    }
+    if (!user) {
+      toast.error('You must be signed in');
+      return;
+    }
+
+    setUploadingDocument(true);
+    try {
+      const extension = file.name.split('.').pop()?.toLowerCase();
+      if (!extension) {
+        toast.error('Invalid file name');
+        return;
+      }
+
+      const safeExtension = extension.replace(/[^a-z0-9]/g, '');
+      const safeFileStem = file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9._-]/g, '_');
+      const safeUserId = user.id.replace(/[^a-zA-Z0-9-]/g, '');
+      const safeProjectRunId = projectRun.id.replace(/[^a-zA-Z0-9-]/g, '');
+      const storagePath = `${safeUserId}/${safeProjectRunId}/documents/${Date.now()}-${safeFileStem}.${safeExtension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('project-photos')
+        .upload(storagePath, file, { upsert: false });
+      if (uploadError) throw uploadError;
+
+      const existingIssueReports: Record<string, unknown> =
+        projectRun.issue_reports && typeof projectRun.issue_reports === 'object'
+          ? (projectRun.issue_reports as Record<string, unknown>)
+          : {};
+      const maybeDocuments = existingIssueReports.quality_control_documents;
+      const existingDocuments = Array.isArray(maybeDocuments)
+        ? maybeDocuments
+        : [];
+
+      const nextIssueReports = {
+        ...existingIssueReports,
+        quality_control_documents: [
+          ...existingDocuments,
+          {
+            name: file.name,
+            storage_path: storagePath,
+            uploaded_at: new Date().toISOString()
+          }
+        ]
+      };
+
+      await updateProjectRun({
+        ...projectRun,
+        issue_reports: nextIssueReports
+      });
+
+      toast.success('Document uploaded');
+    } catch (e) {
+      console.error('Failed to upload quality document', e);
+      toast.error('Failed to upload document');
+    } finally {
+      setUploadingDocument(false);
+    }
+  }, [projectRun, updateProjectRun, user]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
@@ -242,6 +311,50 @@ export function QualityCheckWindow({
                 </DialogTitle>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                <div className="relative">
+                  <input
+                    id="quality-doc-upload-input"
+                    type="file"
+                    className="sr-only"
+                    accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp"
+                    onChange={(event) => {
+                      const nextFile = event.target.files?.[0] ?? null;
+                      void handleDocumentUpload(nextFile);
+                      event.currentTarget.value = '';
+                    }}
+                    disabled={uploadingDocument || !projectRun}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const input = document.getElementById('quality-doc-upload-input') as HTMLInputElement | null;
+                      input?.click();
+                    }}
+                    disabled={uploadingDocument || !projectRun}
+                    className="h-8 px-3 text-xs font-medium"
+                  >
+                    <FileUp className="w-3.5 h-3.5 mr-1" />
+                    {uploadingDocument ? 'Uploading...' : 'Upload Document'}
+                  </Button>
+                </div>
+                <TooltipProvider delayDuration={150}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted"
+                        aria-label="Document upload help"
+                      >
+                        <Info className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-xs">
+                      Upload reference documents for this run, such as manufacturer manuals, permits, inspection records, or design documents.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 {onRefresh && (
                   <TooltipProvider delayDuration={150}>
                     <Tooltip>
