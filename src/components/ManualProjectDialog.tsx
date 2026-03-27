@@ -100,7 +100,7 @@ export function ManualProjectDialog({ open, onOpenChange, onProjectCreated }: Ma
       
       const projectData = {
         user_id: user.id,
-        template_id: null, // Manual projects don't need a template
+        project_id: null, // Manual projects are not tied to a catalog project
         name: formData.name,
         description: formData.description || null,
         category: formData.category.length > 0 ? formData.category.join(', ') : null,

@@ -23,7 +23,7 @@ interface ProjectRun {
   id: string;
   name: string;
   status: string;
-  template_id: string;
+  project_id: string;
 }
 
 interface ProjectTemplate {
@@ -63,7 +63,7 @@ export function HomeTaskProjectLink({
     
     const { data, error } = await supabase
       .from("project_runs")
-      .select("id, name, status, template_id")
+      .select("id, name, status, project_id")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     
@@ -142,7 +142,7 @@ export function HomeTaskProjectLink({
       const { data: newRun, error: runError } = await supabase
         .from("project_runs")
         .insert([{
-          template_id: templateId,
+          project_id: templateId,
           user_id: user.id,
           name: template?.name || "New Project",
           status: "not-started"

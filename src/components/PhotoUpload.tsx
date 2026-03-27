@@ -36,7 +36,7 @@ interface StepOption {
 
 interface PhotoUploadProps {
   projectRunId: string;
-  templateId: string | null;
+  projectId: string | null;
   stepId?: string;
   stepName?: string;
   phaseId?: string;
@@ -54,7 +54,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 
 export function PhotoUpload({
   projectRunId,
-  templateId: _templateId,
+  projectId: _projectId,
   stepId: initialStepId = '', 
   stepName: initialStepName = '',
   phaseId: initialPhaseId,

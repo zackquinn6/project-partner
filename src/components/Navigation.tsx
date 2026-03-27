@@ -216,9 +216,9 @@ export default function Navigation({
       });
       
       // Try to fetch template and rebuild phases
-      if (freshRun.template_id) {
-        console.log('🔄 Attempting to fetch template phases for:', freshRun.template_id);
-        const template = projects.find(p => p.id === freshRun.template_id);
+      if (freshRun.project_id) {
+        console.log('🔄 Attempting to fetch template phases for:', freshRun.project_id);
+        const template = projects.find(p => p.id === freshRun.project_id);
         if (template?.phases && Array.isArray(template.phases) && template.phases.length > 0) {
           console.log('✅ Found template phases, using template data');
           parsedPhases = template.phases;
@@ -239,7 +239,7 @@ export default function Navigation({
     // Transform database data to ProjectRun format
     const projectRun: ProjectRun = {
       id: freshRun.id,
-      templateId: freshRun.template_id,
+      projectId: freshRun.project_id ?? '',
       name: freshRun.name,
       description: freshRun.description || '',
       projectChallenges: freshRun.project_challenges,

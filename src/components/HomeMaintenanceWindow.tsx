@@ -46,7 +46,7 @@ interface MaintenanceTask {
   id: string;
   user_id: string;
   home_id: string;
-  template_id?: string;
+  maintenance_template_id?: string;
   title: string;
   description: string | null;
   summary: string | null;

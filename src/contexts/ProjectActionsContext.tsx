@@ -189,11 +189,11 @@ const RISK_ASSEMBLY_ACCESS_MESSAGE =
   'Cannot contact database to access risks. Contact administrator';
 
 /** Root template id for `project_risks` (revision rows use `parent_project_id` when set). */
-async function resolveTemplateRootIdForRisks(templateId: string): Promise<string> {
+async function resolveTemplateRootIdForRisks(projectId: string): Promise<string> {
   const { data, error } = await supabase
     .from('projects')
     .select('id, parent_project_id')
-    .eq('id', templateId)
+    .eq('id', projectId)
     .maybeSingle();
   if (error) throw error;
   if (!data?.id) throw new Error('Template not found for risk assembly');
@@ -561,7 +561,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
     try {
       const { data, error } = await supabase.rpc('create_project_run_snapshot', {
-        p_template_id: project.id,
+        p_project_id: project.id,
         p_user_id: user.id,
         p_run_name: customName || project.name,
         p_home_id: homeId || null,
@@ -595,7 +595,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       // Verify that phases were copied to the project run (immutable snapshot)
       const { data: createdRun, error: fetchError } = await supabase
         .from('project_runs')
-        .select('id, phases, template_id, name')
+        .select('id, phases, project_id, name')
         .eq('id', data)
         .single();
 
@@ -635,7 +635,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       if (!phasesExist || runPhasesCount === 0) {
         console.error('❌ CRITICAL: Project run created without phases!', {
           runId: data,
-          templateId: project.id,
+          projectId: project.id,
           templateName: project.name,
           runPhases: createdRun.phases,
           runPhasesType: typeof createdRun.phases,
@@ -657,7 +657,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       if (templatePhasesCount > 0 && runPhasesCount < templatePhasesCount) {
         console.error('❌ CRITICAL: Project run created with incomplete phases!', {
           runId: data,
-          templateId: project.id,
+          projectId: project.id,
           templateName: project.name,
           templatePhasesCount,
           runPhasesCount,
@@ -678,7 +678,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       if (templatePhasesCount > 0 && runIncorporatedCount < templateIncorporatedCount) {
         console.error('❌ CRITICAL: Project run missing incorporated phases!', {
           runId: data,
-          templateId: project.id,
+          projectId: project.id,
           templateName: project.name,
           templateIncorporatedCount,
           runIncorporatedCount,
@@ -789,7 +789,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       // Use RPC function to create immutable project run snapshot
       const { data: newProjectRunId, error } = await supabase
         .rpc('create_project_run_snapshot', {
-          p_template_id: projectRunData.templateId,
+          p_project_id: projectRunData.projectId,
           p_user_id: user.id,
           p_run_name: projectRunData.name,
           p_home_id: defaultHomeId,
@@ -802,7 +802,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       // Same foundation + template risk merge as createProjectRun / Risk-Less (catalog uses addProjectRun only).
       if (newProjectRunId) {
         try {
-          const templateRootIdForRisks = await resolveTemplateRootIdForRisks(projectRunData.templateId);
+          const templateRootIdForRisks = await resolveTemplateRootIdForRisks(projectRunData.projectId);
           await syncFoundationAndTemplateRisksToProjectRun(newProjectRunId, templateRootIdForRisks);
         } catch (riskAssemblyError) {
           console.error('❌ Risk assembly failed; deleting created run:', riskAssemblyError);
@@ -1425,7 +1425,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         // Transform the data (handle JSON fields and snake_case to camelCase)
         const transformedRun: ProjectRun = {
           id: freshRun.id,
-          templateId: freshRun.template_id,
+          projectId: freshRun.project_id ?? '',
           name: freshRun.name,
           description: freshRun.description || '',
           home_id: freshRun.home_id || undefined,

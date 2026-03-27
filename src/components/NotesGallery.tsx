@@ -29,7 +29,7 @@ interface NotesGalleryProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectRunId?: string;
-  templateId?: string;
+  projectId?: string;
   mode?: Mode;
   title?: string;
   initialStepId?: string;

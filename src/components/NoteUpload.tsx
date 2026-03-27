@@ -18,7 +18,7 @@ interface StepOption {
 
 interface NoteUploadProps {
   projectRunId: string;
-  templateId?: string | null;
+  projectId?: string | null;
   stepId?: string;
   stepName?: string;
   phaseId?: string;

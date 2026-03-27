@@ -491,7 +491,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
     // Create a new project RUN based on the template
     const newProjectRun = {
-      templateId: selectedTemplate.id,
+      projectId: selectedTemplate.id,
       name: projectSetupForm.customProjectName || selectedTemplate.name,
       description: selectedTemplate.description,
       createdAt: new Date(),
@@ -680,7 +680,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       
       // Create a new project RUN based on the template without setup info
       const newProjectRun = {
-        templateId: projectTemplate.id,
+        projectId: projectTemplate.id,
         name: projectTemplate.name,
         description: projectTemplate.description || '',
         createdAt: new Date(),
@@ -752,7 +752,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
     // Create a new project RUN based on the template without setup info
     const newProjectRun = {
-      templateId: selectedTemplate.id,
+      projectId: selectedTemplate.id,
       name: selectedTemplate.name,
       description: selectedTemplate.description,
       createdAt: new Date(),
@@ -815,7 +815,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     
     // Check if there's an active project run for this template
     const existingRun = projectRuns.find(run => 
-      run.templateId === selectedTemplate.id && 
+      run.projectId === selectedTemplate.id && 
       run.status !== 'complete'
     );
     

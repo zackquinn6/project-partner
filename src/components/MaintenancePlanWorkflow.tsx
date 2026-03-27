@@ -164,7 +164,7 @@ interface MaintenanceTemplate {
 
 interface PlanItem {
   type: 'template';
-  templateId: string;
+  maintenanceTemplateId: string;
   title: string;
   template: MaintenanceTemplate;
 }
@@ -357,7 +357,7 @@ export function MaintenancePlanWorkflow({
   const addTemplateToPlan = (template: MaintenanceTemplate) => {
     setPlanEntries((prev) => [
       ...prev,
-      { type: 'template' as const, templateId: template.id, title: template.title, template },
+      { type: 'template' as const, maintenanceTemplateId: template.id, title: template.title, template },
     ]);
   };
 
@@ -374,10 +374,10 @@ export function MaintenancePlanWorkflow({
             .order('title'),
           supabase
             .from('user_maintenance_tasks')
-            .select('template_id')
+            .select('maintenance_template_id')
             .eq('user_id', user.id)
             .eq('home_id', homeId)
-            .not('template_id', 'is', null),
+            .not('maintenance_template_id', 'is', null),
         ]);
 
         if (templatesRes.error) throw templatesRes.error;
@@ -385,7 +385,7 @@ export function MaintenancePlanWorkflow({
         const existingTemplateIdSet = new Set<string>(
           existingRes.error
             ? []
-            : (existingRes.data || []).map((r: { template_id: string }) => r.template_id)
+            : (existingRes.data || []).map((r: { maintenance_template_id: string }) => r.maintenance_template_id)
         );
         setExistingTemplateIds(existingTemplateIdSet);
 
@@ -560,7 +560,7 @@ export function MaintenancePlanWorkflow({
         const entries: PlanEntry[] = [
           ...selected.map((t: MaintenanceTemplate) => ({
             type: 'template' as const,
-            templateId: t.id,
+            maintenanceTemplateId: t.id,
             title: t.title,
             template: t,
           })),
@@ -583,16 +583,16 @@ export function MaintenancePlanWorkflow({
     try {
       const { data: existingTasks } = await supabase
         .from('user_maintenance_tasks')
-        .select('template_id, title')
+        .select('maintenance_template_id, title')
         .eq('user_id', user.id)
         .eq('home_id', homeId);
 
       const existingTemplateIds = new Set(
-        (existingTasks || []).filter((r) => r.template_id != null).map((r) => r.template_id as string)
+        (existingTasks || []).filter((r) => r.maintenance_template_id != null).map((r) => r.maintenance_template_id as string)
       );
       const existingCustomTitles = new Set(
         (existingTasks || [])
-          .filter((r) => r.template_id == null && r.title != null)
+          .filter((r) => r.maintenance_template_id == null && r.title != null)
           .map((r) => (r.title as string).trim().toLowerCase())
       );
 
@@ -600,12 +600,12 @@ export function MaintenancePlanWorkflow({
       const now = new Date();
       for (const entry of planEntries) {
         if (entry.type === 'template') {
-          if (existingTemplateIds.has(entry.templateId)) continue;
+          if (existingTemplateIds.has(entry.maintenanceTemplateId)) continue;
           const t = entry.template;
           toInsert.push({
             user_id: user.id,
             home_id: homeId,
-            template_id: t.id,
+            maintenance_template_id: t.id,
             title: t.title,
             description: t.description ?? null,
             summary: t.summary ?? null,
@@ -618,7 +618,7 @@ export function MaintenancePlanWorkflow({
             criticality: t.criticality ?? 2,
             repair_cost_savings: t.repair_cost_savings ?? null,
           });
-          existingTemplateIds.add(entry.templateId);
+          existingTemplateIds.add(entry.maintenanceTemplateId);
         } else {
           if (existingCustomTitles.has(entry.title.trim().toLowerCase())) continue;
           toInsert.push({
@@ -1231,7 +1231,7 @@ export function MaintenancePlanWorkflow({
                     </div>
                   ) : (() => {
                     const alreadyInPlanIds = new Set(
-                      planEntries.filter((e): e is PlanItem => e.type === 'template').map((e) => e.templateId)
+                      planEntries.filter((e): e is PlanItem => e.type === 'template').map((e) => e.maintenanceTemplateId)
                     );
                     const existingIds = existingTemplateIds;
                     const excludedIds = new Set<string>([

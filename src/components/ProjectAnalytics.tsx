@@ -69,7 +69,7 @@ const ProjectAnalytics: React.FC = () => {
     if (!hasProjectOwnerRole || isAdmin) return projectRuns;
     if (ownedAllProjectIds === null) return [];
     if (ownedAllProjectIds.size === 0) return [];
-    return projectRuns.filter(r => ownedAllProjectIds.has(r.templateId));
+    return projectRuns.filter(r => ownedAllProjectIds.has(r.projectId));
   }, [projectRuns, ownedAllProjectIds, hasProjectOwnerRole, isAdmin]);
 
   // Filter states

@@ -74,7 +74,7 @@ export function calculateRealAnalytics(
   let filteredRuns = projectRuns;
 
   if (selectedProject && selectedProject !== 'all') {
-    filteredRuns = filteredRuns.filter(run => run.templateId === selectedProject);
+    filteredRuns = filteredRuns.filter(run => run.projectId === selectedProject);
   }
 
   if (selectedCategory && selectedCategory !== 'all') {

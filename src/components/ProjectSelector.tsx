@@ -86,7 +86,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
       // Check if we're in kickoff mode before opening setup dialog
       if (!isAdminMode) {
         const existingRun = projectRuns.find(run => 
-          run.templateId === project.id && 
+          run.projectId === project.id && 
           run.status !== 'complete'
         );
         
@@ -113,7 +113,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
       // Check if we're in kickoff mode before opening setup dialog
       if (!isAdminMode) {
         const existingRun = projectRuns.find(run => 
-          run.templateId === project.id && 
+          run.projectId === project.id && 
           run.status !== 'complete'
         );
         

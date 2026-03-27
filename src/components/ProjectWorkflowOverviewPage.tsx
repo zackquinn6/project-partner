@@ -20,7 +20,7 @@ export function ProjectWorkflowOverviewPage({
   // Resolve template project for description + cover when context project is not loaded.
   const templateProject =
     currentProjectRun && projects
-      ? projects.find(p => p.id === currentProjectRun.templateId) || null
+      ? projects.find(p => p.id === currentProjectRun.projectId) || null
       : null;
 
   const runDescription = currentProjectRun?.description?.trim();

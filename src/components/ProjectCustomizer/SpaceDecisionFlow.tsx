@@ -41,8 +41,8 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
   const [spaceSizingData, setSpaceSizingData] = useState<Map<string, Record<string, number>>>(new Map());
 
   // Get template project to access scaling unit and name
-  const templateProject = projectRun?.templateId 
-    ? projects.find(p => p.id === projectRun.templateId)
+  const templateProject = projectRun?.projectId
+    ? projects.find(p => p.id === projectRun.projectId)
     : null;
   const projectScaleUnit = templateProject?.scalingUnit?.replace('per ', '') || projectRun?.scalingUnit?.replace('per ', '') || 'item';
   const currentProjectName = templateProject?.name || projectRun.name || 'Current Project';

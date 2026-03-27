@@ -133,8 +133,8 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   const [showHomeManager, setShowHomeManager] = useState(false);
   
   // Get template project to access scaling unit and item type
-  const templateProject = currentProjectRun?.templateId 
-    ? projects.find(p => p.id === currentProjectRun.templateId)
+  const templateProject = currentProjectRun?.projectId
+    ? projects.find(p => p.id === currentProjectRun.projectId)
     : null;
   
   // Fetch scaling_unit and item_type directly from database since they may not be in the transformed Project interface
@@ -149,7 +149,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   useEffect(() => {
     const fetchScalingUnitAndItemType = async () => {
       setTemplateEconomicsLoaded(false);
-      const templateId = templateProject?.id || currentProjectRun?.templateId;
+      const catalogProjectId = templateProject?.id || currentProjectRun?.projectId;
 
       const applyTemplateFallback = () => {
         const fallbackScalingUnit =
@@ -165,14 +165,14 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       };
 
       try {
-        if (templateId) {
+        if (catalogProjectId) {
           try {
             const { data, error } = await supabase
               .from('projects')
               .select(
                 'scaling_unit, item_type, typical_project_size, budget_per_unit, budget_per_typical_size'
               )
-              .eq('id', templateId)
+              .eq('id', catalogProjectId)
               .single();
 
             if (!error && data) {
@@ -217,7 +217,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       }
     };
 
-    if (currentProjectRun?.templateId || templateProject?.id) {
+    if (currentProjectRun?.projectId || templateProject?.id) {
       void fetchScalingUnitAndItemType();
     } else {
       const fallbackScalingUnit = (currentProjectRun as any)?.scalingUnit || 'per item';
@@ -230,7 +230,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       setTemplateBudgetPerTypicalSize(null);
       setTemplateEconomicsLoaded(true);
     }
-  }, [templateProject?.id, currentProjectRun?.templateId, currentProjectRun, projects]);
+  }, [templateProject?.id, currentProjectRun?.projectId, currentProjectRun, projects]);
 
   useEffect(() => {
     if (!currentProjectRun?.id) return;

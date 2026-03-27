@@ -86,8 +86,8 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   const [itemType, setItemType] = useState<string | null>(null);
 
   // Get template project to access scaling unit and item type
-  const templateProject = currentProjectRun?.templateId 
-    ? projects.find(p => p.id === currentProjectRun.templateId)
+  const templateProject = currentProjectRun?.projectId
+    ? projects.find(p => p.id === currentProjectRun.projectId)
     : null;
   const scalingUnit = templateProject?.scalingUnit || currentProjectRun?.scalingUnit || 'per item';
 
@@ -819,7 +819,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         onOpenChange={setShowPhaseBrowser}
         availableProjects={projects}
         onSelectPhases={handleAddCustomPlannedWork}
-        currentProjectId={currentProjectRun.templateId}
+        currentProjectId={currentProjectRun.projectId}
         onAddCustomWork={() => {
           setShowPhaseBrowser(false);
           setShowCustomWorkManager(true);

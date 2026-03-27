@@ -621,7 +621,7 @@ export default function UserView({
       console.error('❌ CRITICAL ERROR: Project run has no phases!', {
         runId: currentProjectRun.id,
         runName: currentProjectRun.name,
-        templateId: currentProjectRun.templateId
+        projectId: currentProjectRun.projectId
       });
       toast.error('Project run is missing phases. Please contact support or try creating a new project run.');
     }
@@ -955,7 +955,7 @@ export default function UserView({
             
             const transformedRun: ProjectRun = {
               id: freshRun.id,
-              templateId: freshRun.template_id,
+              projectId: freshRun.project_id,
               name: freshRun.name,
               description: freshRun.description || '',
               projectChallenges: freshRun.project_challenges,
@@ -2900,8 +2900,8 @@ export default function UserView({
   
   // Count template phases for debugging
   let templatePhasesCount = 0;
-  if (currentProjectRun?.templateId) {
-    const templateProject = currentProject || projects?.find(p => p.id === currentProjectRun.templateId);
+  if (currentProjectRun?.projectId) {
+    const templateProject = currentProject || projects?.find(p => p.id === currentProjectRun.projectId);
     if (templateProject?.phases) {
       templatePhasesCount = Array.isArray(templateProject.phases) ? templateProject.phases.length : 0;
     }
@@ -2941,7 +2941,7 @@ export default function UserView({
     hasPhasesData,
     currentProjectRunId: currentProjectRun?.id,
     activeProjectId: activeProject?.id,
-    templateId: currentProjectRun?.templateId,
+    projectId: currentProjectRun?.projectId,
     projectRunId,
     hasCurrentProjectRun: !!currentProjectRun,
     projectRunIdMatches: projectRunId && currentProjectRun ? currentProjectRun.id === projectRunId : false,
@@ -3382,7 +3382,7 @@ export default function UserView({
                     <>
                       <PhotoUpload
                         projectRunId={currentProjectRun.id}
-                        templateId={currentProjectRun.templateId || null}
+                        projectId={currentProjectRun.projectId || null}
                         stepId={currentStep.id}
                         stepName={currentStep.step}
                         phaseId={currentStep.phaseId}
@@ -3393,7 +3393,7 @@ export default function UserView({
                       />
                       <NoteUpload
                         projectRunId={currentProjectRun.id}
-                        templateId={currentProjectRun.templateId || null}
+                        projectId={currentProjectRun.projectId || null}
                         stepId={currentStep.id}
                         stepName={currentStep.step}
                         phaseId={currentStep.phaseId}
@@ -4039,7 +4039,7 @@ export default function UserView({
           open={photoGalleryOpen}
           onOpenChange={setPhotoGalleryOpen}
           projectRunId={currentProjectRun.id}
-          templateId={currentProjectRun.templateId || undefined}
+          projectId={currentProjectRun.projectId || undefined}
           mode="user"
           title="My Project Photos"
         />
@@ -4051,7 +4051,7 @@ export default function UserView({
           open={notesGalleryOpen}
           onOpenChange={setNotesGalleryOpen}
           projectRunId={currentProjectRun.id}
-          templateId={currentProjectRun.templateId || undefined}
+          projectId={currentProjectRun.projectId || undefined}
           mode="user"
           title="Project Notes"
           initialStepId={notesGalleryInitialStepId}

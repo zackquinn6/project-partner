@@ -2316,8 +2316,8 @@ export type Database = {
             foreignKeyName: "pfmea_requirements_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "projects_pfmea"
-            referencedColumns: ["project_id"]
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "pfmea_requirements_project_phase_id_fkey"
@@ -2338,32 +2338,6 @@ export type Database = {
             columns: ["operation_step_id"]
             isOneToOne: false
             referencedRelation: "operation_steps"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      projects_pfmea: {
-        Row: {
-          project_id: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          project_id: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          project_id?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "projects_pfmea_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: true
-            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -2678,7 +2652,7 @@ export type Database = {
           shopping_checklist_data: Json | null
           start_date: string | null
           status: string | null
-          template_id: string | null
+          project_id: string | null
           time_tracking: Json | null
           updated_at: string
           user_id: string
@@ -2719,7 +2693,7 @@ export type Database = {
           shopping_checklist_data?: Json | null
           start_date?: string | null
           status?: string | null
-          template_id?: string | null
+          project_id?: string | null
           time_tracking?: Json | null
           updated_at?: string
           user_id: string
@@ -2760,7 +2734,7 @@ export type Database = {
           shopping_checklist_data?: Json | null
           start_date?: string | null
           status?: string | null
-          template_id?: string | null
+          project_id?: string | null
           time_tracking?: Json | null
           updated_at?: string
           user_id?: string
@@ -2774,8 +2748,8 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "project_runs_template_id_fkey"
-            columns: ["template_id"]
+            foreignKeyName: "project_runs_project_id_fkey"
+            columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
@@ -3528,7 +3502,7 @@ export type Database = {
           repair_cost_savings: string | null
           risks_of_skipping: string | null
           summary: string | null
-          template_id: string | null
+          maintenance_template_id: string | null
           title: string
           updated_at: string
           user_id: string
@@ -3551,7 +3525,7 @@ export type Database = {
           repair_cost_savings?: string | null
           risks_of_skipping?: string | null
           summary?: string | null
-          template_id?: string | null
+          maintenance_template_id?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -3574,7 +3548,7 @@ export type Database = {
           repair_cost_savings?: string | null
           risks_of_skipping?: string | null
           summary?: string | null
-          template_id?: string | null
+          maintenance_template_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -3588,8 +3562,8 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "user_maintenance_tasks_template_id_fkey"
-            columns: ["template_id"]
+            foreignKeyName: "user_maintenance_tasks_maintenance_template_id_fkey"
+            columns: ["maintenance_template_id"]
             isOneToOne: false
             referencedRelation: "maintenance_templates"
             referencedColumns: ["id"]
@@ -3787,9 +3761,9 @@ export type Database = {
         Args: {
           p_home_id?: string
           p_plan_end_date?: string
+          p_project_id: string
           p_run_name: string
           p_start_date?: string
-          p_template_id: string
           p_user_id: string
         }
         Returns: string

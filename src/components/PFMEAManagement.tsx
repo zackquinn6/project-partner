@@ -37,7 +37,7 @@ interface DatabaseProject {
   [key: string]: any;
 }
 
-/** Template project + extension row (projects_pfmea.project_id = projects.id). */
+/** Catalog project used for PFMEA (pfmea_requirements.project_id → projects.id). */
 interface PfmeaTemplateContext {
   project_id: string;
   name: string;
@@ -348,25 +348,22 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         setProjects(projectsData);
       }
 
-      const { data: pfmeaRows, error: pfmeaErr } = await supabase
-        .from('projects_pfmea')
-        .select('project_id, updated_at, projects ( id, name, description, publish_status )')
-        .order('updated_at', { ascending: false });
+      const { data: projectRows, error: projectsErr } = await supabase
+        .from('projects')
+        .select('id, name, description, publish_status')
+        .order('name', { ascending: true });
 
-      if (pfmeaErr) {
-        console.error('projects_pfmea load error:', pfmeaErr);
-        toast.error(pfmeaErr.message || 'Failed to load projects_pfmea');
+      if (projectsErr) {
+        console.error('PFMEA projects load error:', projectsErr);
+        toast.error(projectsErr.message || 'Failed to load projects');
         setPfmeaTemplates([]);
       } else {
-        const mapped: PfmeaTemplateContext[] = (pfmeaRows ?? []).map((row: Record<string, unknown>) => {
-          const pr = row.projects as { name?: string; description?: string; publish_status?: string | null } | null;
-          return {
-            project_id: row.project_id as string,
-            name: pr?.name ?? 'Unknown project',
-            description: pr?.description ?? undefined,
-            publish_status: pr?.publish_status ?? null,
-          };
-        });
+        const mapped: PfmeaTemplateContext[] = (projectRows ?? []).map((row) => ({
+          project_id: row.id,
+          name: row.name ?? 'Unknown project',
+          description: row.description ?? undefined,
+          publish_status: row.publish_status ?? null,
+        }));
         setPfmeaTemplates(mapped);
       }
     } catch (error) {
@@ -381,15 +378,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     if (!projectId || loading) return;
 
     const run = async () => {
-      const { error: upsertErr } = await supabase
-        .from('projects_pfmea')
-        .upsert({ project_id: projectId }, { onConflict: 'project_id' });
-      if (upsertErr) {
-        console.error('projects_pfmea upsert:', upsertErr);
-        toast.error(upsertErr.message || 'Could not ensure projects_pfmea row');
-        return;
-      }
-
       const nameFromList = pfmeaTemplates.find((t) => t.project_id === projectId)?.name;
       const nameFromProjects = projects.find((p) => p.id === projectId)?.name;
       const publishFromList = pfmeaTemplates.find((t) => t.project_id === projectId)?.publish_status ?? null;
@@ -1218,7 +1206,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           <CardContent>
             <p className="text-muted-foreground">
               {sourceProject
-                ? `Preparing PFMEA for "${sourceProject.name}" (projects_pfmea + workflow sync)…`
+                ? `Preparing PFMEA for "${sourceProject.name}" (workflow sync)…`
                 : 'Preparing PFMEA for this project…'}
             </p>
           </CardContent>
@@ -1241,7 +1229,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           </CardHeader>
           <CardContent className="space-y-2">
             <p className="text-sm text-muted-foreground mb-4">
-              Each project has a <code className="text-xs">projects_pfmea</code> row. Requirements link to{' '}
+              Each catalog project can have PFMEA requirements. Requirements link to{' '}
               <code className="text-xs">project_phases</code>, <code className="text-xs">phase_operations</code>, and{' '}
               <code className="text-xs">operation_steps</code> (custom phases only).
             </p>

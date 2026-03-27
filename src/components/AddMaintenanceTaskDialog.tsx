@@ -95,12 +95,12 @@ export function AddMaintenanceTaskDialog({
     try {
       const { data, error } = await supabase
         .from('user_maintenance_tasks')
-        .select('template_id')
+        .select('maintenance_template_id')
         .eq('user_id', user.id)
         .eq('home_id', homeId)
-        .not('template_id', 'is', null);
+        .not('maintenance_template_id', 'is', null);
       if (error) throw error;
-      const ids = new Set((data || []).map((r: { template_id: string }) => r.template_id));
+      const ids = new Set((data || []).map((r: { maintenance_template_id: string }) => r.maintenance_template_id));
       setExistingTemplateIds(ids);
     } catch (error) {
       console.error('Error fetching existing template IDs:', error);
@@ -120,7 +120,7 @@ export function AddMaintenanceTaskDialog({
         .insert({
           user_id: user?.id,
           home_id: homeId,
-          template_id: template.id,
+          maintenance_template_id: template.id,
           title: template.title,
           description: template.description,
           summary: template.summary ?? null,

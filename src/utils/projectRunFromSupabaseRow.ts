@@ -55,7 +55,7 @@ export function projectRunFromSupabaseRow(freshRun: Record<string, unknown>): Pr
 
   return {
     id: freshRun.id,
-    templateId: freshRun.template_id as string,
+    projectId: String(freshRun.project_id ?? ''),
     name: typeof freshRun.name === 'string' ? freshRun.name : '',
     description: typeof freshRun.description === 'string' ? freshRun.description : '',
     projectChallenges:

@@ -27,7 +27,7 @@ interface Photo {
   user_id: string;
   project_run_id: string;
   project_run_name?: string | null;
-  template_id: string | null;
+  project_id: string | null;
   step_id: string;
   step_name?: string | null;
   phase_id?: string | null;
@@ -65,7 +65,7 @@ function mapProjectRunPhotoRow(row: {
     id: row.id,
     user_id: row.user_id,
     project_run_id: row.project_run_id,
-    template_id: null,
+    project_id: null,
     step_id: row.step_title || '-',
     step_name: row.step_title,
     phase_id: null,
@@ -86,7 +86,7 @@ interface PhotoGalleryProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectRunId?: string;
-  templateId?: string;
+  projectId?: string;
   mode?: 'user' | 'admin';
   title?: string;
 }
@@ -95,7 +95,7 @@ export function PhotoGallery({
   open, 
   onOpenChange, 
   projectRunId,
-  templateId,
+  projectId,
   mode = 'user',
   title = 'Project Photos'
 }: PhotoGalleryProps) {
@@ -119,7 +119,7 @@ export function PhotoGallery({
         fetchAvailableSteps();
       }
     }
-  }, [open, projectRunId, templateId, projectFilter, dateFilter]);
+  }, [open, projectRunId, projectId, projectFilter, dateFilter]);
   
   const fetchAvailableSteps = async () => {
     if (!projectRunId) return;
@@ -190,12 +190,12 @@ export function PhotoGallery({
     setLoading(true);
     try {
       let projectRunIdsForTemplate: string[] | null = null;
-      if (!projectRunId && templateId) {
+      if (!projectRunId && projectId) {
         const { data: runs, error: runsErr } = await supabase
           .from('project_runs')
           .select('id')
           .eq('user_id', user.id)
-          .eq('template_id', templateId);
+          .eq('project_id', projectId);
         if (runsErr) throw runsErr;
         projectRunIdsForTemplate = (runs || []).map((r) => r.id);
         if (projectRunIdsForTemplate.length === 0) {
@@ -405,7 +405,7 @@ export function PhotoGallery({
 
           <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
             {/* Filters - only show when viewing all photos (not filtered by specific project) */}
-            {!projectRunId && !templateId && (
+            {!projectRunId && !projectId && (
               <div className="flex flex-wrap gap-2 mb-4">
                 <Select value={projectFilter} onValueChange={setProjectFilter}>
                   <SelectTrigger className="w-48">
@@ -603,7 +603,7 @@ export function PhotoGallery({
       {projectRunId && (
         <PhotoUpload
           projectRunId={projectRunId}
-          templateId={templateId ?? null}
+          projectId={projectId ?? null}
           availableSteps={availableSteps}
           showButton={false}
           open={showPhotoUpload}

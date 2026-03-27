@@ -224,7 +224,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
 
       return {
         id: run.id,
-        templateId: run.template_id,
+        projectId: run.project_id,
         name: run.name,
         description: run.description || '',
         projectChallenges: run.project_challenges,

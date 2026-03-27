@@ -148,7 +148,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   } = useAuth();
   const navigate = useNavigate();
   const { projectCatalogEnabled } = useGlobalPublicSettings();
-  const templateProject = currentProject || projects.find(project => project.id === currentProjectRun?.templateId) || null;
+  const templateProject = currentProject || projects.find(project => project.id === currentProjectRun?.projectId) || null;
   const runDescription = currentProjectRun?.description?.trim();
   const templateDescription = templateProject?.description?.trim();
   const resolvedProjectDescription = runDescription && runDescription.length > 0

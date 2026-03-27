@@ -43,7 +43,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
 
   // Get available phases from other published projects
   const availablePhases: DraggedPhase[] = projects
-    .filter(project => project.publishStatus === 'published' && project.id !== currentProjectRun?.templateId)
+    .filter(project => project.publishStatus === 'published' && project.id !== currentProjectRun?.projectId)
     .flatMap(project => 
       project.phases
         .filter(phase => phase.name !== 'Kickoff')

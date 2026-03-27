@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { PhotoGallery } from './PhotoGallery';
 
 interface ProjectPhotoStats {
-  template_id: string;
+  project_id: string;
   template_name: string;
   photo_count: number;
   public_count: number;
@@ -42,8 +42,8 @@ export function AdminPhotoAggregation() {
     }
   };
 
-  const handleViewPhotos = (templateId: string) => {
-    setSelectedTemplateId(templateId);
+  const handleViewPhotos = (catalogProjectId: string) => {
+    setSelectedTemplateId(catalogProjectId);
     setPhotoGalleryOpen(true);
   };
 
@@ -77,7 +77,7 @@ export function AdminPhotoAggregation() {
           ) : (
             <div className="space-y-2">
               {stats.map((stat) => (
-                <Card key={stat.template_id} className="hover:shadow-md transition-shadow">
+                <Card key={stat.project_id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -106,7 +106,7 @@ export function AdminPhotoAggregation() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleViewPhotos(stat.template_id)}
+                        onClick={() => handleViewPhotos(stat.project_id)}
                         disabled={stat.photo_count === 0}
                       >
                         View Photos
@@ -126,9 +126,9 @@ export function AdminPhotoAggregation() {
         <PhotoGallery
           open={photoGalleryOpen}
           onOpenChange={setPhotoGalleryOpen}
-          templateId={selectedTemplateId}
+          projectId={selectedTemplateId}
           mode="admin"
-          title={`${stats.find(s => s.template_id === selectedTemplateId)?.template_name || 'Project'} Photos`}
+          title={`${stats.find(s => s.project_id === selectedTemplateId)?.template_name || 'Project'} Photos`}
         />
       )}
     </>

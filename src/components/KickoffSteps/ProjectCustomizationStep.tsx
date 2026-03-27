@@ -48,7 +48,7 @@ export const ProjectCustomizationStep: React.FC<ProjectCustomizationStepProps> =
   // Get available phases from other published projects
   const availablePhases: DraggedPhase[] = projects
     .filter(project => project.publishStatus === 'published' && 
-                      project.id !== currentProjectRun?.templateId && 
+                      project.id !== currentProjectRun?.projectId && 
                       project.id !== '00000000-0000-0000-0000-000000000000') // Hide manual log template
     .flatMap(project => project.phases.filter(phase => phase.name !== 'Kickoff').map(phase => ({
     ...phase,

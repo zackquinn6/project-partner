@@ -1040,7 +1040,7 @@ export function UnifiedProjectManagement({
         await supabase.from('project_phases').delete().eq('project_id', pid);
 
         // Delete project_runs that reference this template
-        await supabase.from('project_runs').delete().eq('template_id', pid);
+        await supabase.from('project_runs').delete().eq('project_id', pid);
       }
 
       // Finally delete all projects (parent and revisions)
@@ -1259,7 +1259,7 @@ export function UnifiedProjectManagement({
           const { error: runsError } = await supabase
             .from('project_runs')
             .delete()
-            .eq('template_id', revisionId);
+            .eq('project_id', revisionId);
           
           if (runsError) {
             console.error('Error deleting project_runs:', runsError);
@@ -1382,7 +1382,7 @@ export function UnifiedProjectManagement({
         await supabase
           .from('project_runs')
           .delete()
-          .eq('template_id', parentIdToExclude);
+          .eq('project_id', parentIdToExclude);
         
         // Delete the parent project
         const { error: parentDeleteError } = await supabase

@@ -23,7 +23,7 @@ interface MaintenanceTask {
   next_due: string;
   is_custom: boolean;
   home_id: string;
-  template_id?: string;
+  maintenance_template_id?: string;
 }
 
 interface TaskCompletionDialogProps {

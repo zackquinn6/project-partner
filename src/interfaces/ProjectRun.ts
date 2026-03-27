@@ -5,7 +5,7 @@ import type { QualityControlSettings } from '@/utils/qualityControlSettings';
  * Project run (user's instance of a project).
  *
  * Schema: maps to Supabase table `project_runs`.
- * - id, template_id, name, description, project_challenges, is_manual_entry
+ * - id, project_id (source catalog project), name, description, project_challenges, is_manual_entry
  * - created_at, updated_at, start_date, plan_end_date, end_date, status
  * - project_leader, accountability_partner, custom_project_name, home_id
  * - current_phase_id, current_operation_id, current_step_id
@@ -21,7 +21,7 @@ import type { QualityControlSettings } from '@/utils/qualityControlSettings';
  */
 export interface ProjectRun {
   id: string;
-  templateId: string; // Reference to the template project
+  projectId: string; // Reference to the catalog / source project this run was created from
   name: string;
   description: string;
   projectChallenges?: string; // Copied from template project
