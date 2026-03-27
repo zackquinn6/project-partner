@@ -48,6 +48,10 @@ ALTER TABLE public.user_maintenance_tasks
 -- ---------------------------------------------------------------------------
 -- 4) create_project_run_snapshot (p_project_id)
 -- ---------------------------------------------------------------------------
+-- Parameter names are part of the function identity for CREATE OR REPLACE in PG:
+-- renaming p_template_id -> p_project_id requires DROP first (same arg types).
+DROP FUNCTION IF EXISTS public.create_project_run_snapshot(uuid, uuid, text, uuid, timestamp with time zone, timestamp with time zone);
+
 CREATE OR REPLACE FUNCTION public.create_project_run_snapshot(
   p_project_id UUID,
   p_user_id UUID,
