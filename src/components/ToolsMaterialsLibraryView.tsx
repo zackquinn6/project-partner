@@ -445,14 +445,15 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                   </TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="tools" className="space-y-4 mt-4 max-h-[50vh] overflow-y-auto">
+                <TabsContent value="tools" className="mt-4 space-y-4 data-[state=inactive]:hidden">
                   {sortedFilteredTools.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Wrench className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
                       <p>No tools in your library yet</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-1.5 sm:gap-2">
+                    <div className="max-h-[50vh] overflow-y-auto overflow-x-hidden overscroll-contain px-0.5 py-2">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-1.5 sm:gap-2">
                       {sortedFilteredTools.map((tool) => (
                         <button
                           type="button"
@@ -463,7 +464,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                             setSelectedType('tool');
                           }}
                         >
-                          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-visible rounded-md bg-primary/10">
                             {(tool.user_photo_url || tool.photo_url) ? (
                               <img 
                                 src={tool.user_photo_url || tool.photo_url} 
@@ -471,10 +472,10 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                                 className="h-9 w-9 rounded object-cover"
                               />
                             ) : (
-                              <Wrench className="h-6 w-6 text-primary" />
+                              <Wrench className="h-6 w-6 shrink-0 text-primary" />
                             )}
                             {tool.quantity >= 1 && (
-                              <div className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] px-0.5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold leading-none text-primary-foreground">
+                              <div className="absolute bottom-0 right-0 flex h-4 min-w-[1rem] translate-x-px translate-y-px items-center justify-center rounded-full bg-primary px-0.5 text-[10px] font-semibold leading-none text-primary-foreground shadow-sm ring-1 ring-background">
                                 {tool.quantity}
                               </div>
                             )}
@@ -482,18 +483,20 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                           <span className="text-[10px] font-medium leading-[1.15] line-clamp-2">{tool.item}</span>
                         </button>
                       ))}
+                      </div>
                     </div>
                   )}
                 </TabsContent>
                 
-                <TabsContent value="materials" className="space-y-4 mt-4 max-h-[50vh] overflow-y-auto">
+                <TabsContent value="materials" className="mt-4 space-y-4 data-[state=inactive]:hidden">
                   {filteredMaterials.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
                       <p>No materials in your library yet</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-1.5 sm:gap-2">
+                    <div className="max-h-[50vh] overflow-y-auto overflow-x-hidden overscroll-contain px-0.5 py-2">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-1.5 sm:gap-2">
                       {filteredMaterials.map((material) => (
                         <button
                           type="button"
@@ -504,7 +507,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                             setSelectedType('material');
                           }}
                         >
-                          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-accent/10">
+                          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-visible rounded-md bg-accent/10">
                             {(material.user_photo_url || material.photo_url) ? (
                               <img 
                                 src={material.user_photo_url || material.photo_url} 
@@ -512,10 +515,10 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                                 className="h-9 w-9 rounded object-cover"
                               />
                             ) : (
-                              <Package className="h-6 w-6 text-accent-foreground" />
+                              <Package className="h-6 w-6 shrink-0 text-accent-foreground" />
                             )}
                             {material.quantity >= 1 && (
-                              <div className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] px-0.5 items-center justify-center rounded-full bg-accent text-[10px] font-semibold leading-none text-accent-foreground">
+                              <div className="absolute bottom-0 right-0 flex h-4 min-w-[1rem] translate-x-px translate-y-px items-center justify-center rounded-full bg-accent px-0.5 text-[10px] font-semibold leading-none text-accent-foreground shadow-sm ring-1 ring-background">
                                 {material.quantity}
                               </div>
                             )}
@@ -523,6 +526,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                           <span className="text-[10px] font-medium leading-[1.15] line-clamp-2">{material.item}</span>
                         </button>
                       ))}
+                      </div>
                     </div>
                   )}
                 </TabsContent>
@@ -531,7 +535,7 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
 
             {/* Detail Panel */}
             {selectedItem && (
-              <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l pt-4 lg:pt-0 lg:pl-6 space-y-4 lg:space-y-6 overflow-y-auto max-h-[50vh] lg:max-h-full">
+              <div className="w-full min-w-0 lg:w-80 border-t lg:border-t-0 lg:border-l pt-4 lg:pt-0 lg:pl-6 lg:pr-2 px-2 sm:px-3 space-y-4 lg:space-y-6 max-h-[50vh] overflow-y-auto overflow-x-hidden overscroll-contain lg:max-h-full">
                 <div className="flex items-center gap-3">
                   <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
                     {(selectedItem.user_photo_url || selectedItem.photo_url) ? (
@@ -552,13 +556,13 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
                 </div>
 
                 <div className="space-y-4">
-                  <div>
+                  <div className="min-w-0 py-0.5">
                     <Label className="text-xs text-muted-foreground">Quantity</Label>
                     <Input
                       type="number"
                       value={selectedItem.quantity}
                       onChange={(e) => updateItem('quantity', parseInt(e.target.value) || 0)}
-                      className="mt-1 w-20"
+                      className="mt-1 w-full max-w-[6.5rem] min-w-0"
                     />
                   </div>
 

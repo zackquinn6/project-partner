@@ -106,6 +106,8 @@ Where **Step X** is one of the steps defined below.
   - **≤ 50 characters max**
   - **< 30 characters preferred**
 
+- **Name the output as the outcome itself, not as an inspection** — unless the step’s actual deliverable *is* an inspection or verification activity. A step may use inspections (for example, a flood test) to validate quality, but list the **installed or achieved result** as the output when that is what the step produces. Example: for shower waterproofing, a flood test inspection supports quality control; the output of the installation step is still something like **“waterproof shower assembly”** (the physical result), not “flood test passed,” unless the step is specifically defined as delivering that inspection outcome.
+
 ### Step 3 — Project Risks
 
 **Deliverables**
