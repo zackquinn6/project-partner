@@ -464,7 +464,7 @@ export const AdminView: React.FC = () => {
         </Dialog>
 
         <Dialog open={editWorkflowOpen} onOpenChange={setEditWorkflowOpen}>
-          <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+          <DialogContent className="relative fixed inset-0 z-50 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 shadow-none overflow-hidden md:max-w-none md:max-h-none md:rounded-none [&>button]:hidden">
             <EditWorkflowView onBackToAdmin={() => setEditWorkflowOpen(false)} />
           </DialogContent>
         </Dialog>

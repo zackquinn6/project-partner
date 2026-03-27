@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, Minus, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -35,6 +34,8 @@ interface MultiSelectLibraryDialogProps {
   /** Optional library category filter (used by PPE step editor) */
   categoryInclude?: string | null;
   categoryExclude?: string | null;
+  /** Overrides default "Select … from Library" title (e.g. alternate picker) */
+  titleOverride?: string | null;
 }
 
 export function MultiSelectLibraryDialog({
@@ -44,7 +45,8 @@ export function MultiSelectLibraryDialog({
   onSelect,
   availableStepTools = [],
   categoryInclude = null,
-  categoryExclude = null
+  categoryExclude = null,
+  titleOverride = null
 }: MultiSelectLibraryDialogProps) {
   const [items, setItems] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
@@ -223,12 +225,43 @@ export function MultiSelectLibraryDialog({
     })
     .sort((a, b) => a.item.localeCompare(b.item));
 
-  const handleItemToggle = (coreItem: any) => {
-    console.log('🔘 Add Variation clicked:', {
-      coreItemId: coreItem.id,
-      coreItemName: coreItem.item,
-      type
+  const addCoreItemDirect = (coreItem: any) => {
+    const selectedId = `direct_${coreItem.id}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    setSelectedItems((prev) => {
+      const existing = prev.find(
+        (item) =>
+          item.coreItemId === coreItem.id &&
+          !item.variationId &&
+          Object.keys(item.attributes).length === 0
+      );
+      if (existing) {
+        return prev.map((item) =>
+          item.id === existing.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: selectedId,
+          coreItemId: coreItem.id,
+          item: coreItem.item,
+          quantity: 1,
+          category: coreItem.category ?? null,
+          description: coreItem.description ?? null,
+          attributes: {},
+          isPrime: true,
+          unit: coreItem.unit_size || (coreItem as { unit?: string | null }).unit || null,
+        },
+      ];
     });
+  };
+
+  const handleAddItemClick = (coreItem: any) => {
+    const variations = itemVariations[coreItem.id] || [];
+    if (variations.length === 0) {
+      addCoreItemDirect(coreItem);
+      return;
+    }
     setSelectingVariationFor(coreItem.id);
   };
 
@@ -308,10 +341,13 @@ export function MultiSelectLibraryDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[90vw] max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle>Select {type === 'tools' ? 'Tools' : 'Materials'} from Library</DialogTitle>
+        <DialogContent className="flex h-[min(90dvh,880px)] w-[min(96vw,42rem)] max-w-[96vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,42rem)]">
+          <DialogHeader className="flex-shrink-0 space-y-1 border-b px-6 py-4">
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="text-left">
+                {titleOverride ??
+                  `Select ${type === 'tools' ? 'Tools' : 'Materials'} from Library`}
+              </DialogTitle>
               <Button
                 variant="outline"
                 size="sm"
@@ -323,8 +359,8 @@ export function MultiSelectLibraryDialog({
             </div>
           </DialogHeader>
           
-          <div className="space-y-4 flex-1 overflow-hidden">
-            <div className="relative">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-6 py-4">
+            <div className="relative flex-shrink-0">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={`Search ${type}...`}
@@ -396,8 +432,8 @@ export function MultiSelectLibraryDialog({
               </Card>
             )}
 
-            <ScrollArea className="flex-1">
-              <div className="space-y-4">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+              <div className="space-y-4 pb-2">
                 {loading ? (
                   <div className="text-center py-8 text-muted-foreground">Loading...</div>
                 ) : filteredItems.length === 0 ? (
@@ -407,17 +443,18 @@ export function MultiSelectLibraryDialog({
                 ) : (
                   filteredItems.map((item) => {
                     const selectedForItem = selectedItems.filter(selected => selected.coreItemId === item.id);
+                    const variationCount = (itemVariations[item.id] || []).length;
                     
                     return (
                       <Card key={item.id} className="cursor-pointer transition-colors hover:bg-accent/50">
                         <CardContent className="p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 mb-2">
                                 <h4 className="font-medium">{item.item}</h4>
                                 {selectedForItem.length > 0 && (
                                   <Badge variant="secondary">
-                                    {selectedForItem.length} variation{selectedForItem.length !== 1 ? 's' : ''} selected
+                                    {selectedForItem.length} selected
                                   </Badge>
                                 )}
                               </div>
@@ -444,9 +481,10 @@ export function MultiSelectLibraryDialog({
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleItemToggle(item)}
+                              className="flex-shrink-0"
+                              onClick={() => handleAddItemClick(item)}
                             >
-                              Add Variation
+                              {variationCount === 0 ? 'Add' : 'Choose variant'}
                             </Button>
                           </div>
                         </CardContent>
@@ -455,10 +493,10 @@ export function MultiSelectLibraryDialog({
                   })
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </div>
 
-          <div className="flex justify-end gap-2 border-t pt-4">
+          <div className="flex flex-shrink-0 justify-end gap-2 border-t px-6 py-4">
             <Button variant="outline" onClick={handleCancel}>
               Cancel
             </Button>
@@ -474,21 +512,23 @@ export function MultiSelectLibraryDialog({
 
       {/* Variation Selection Dialog */}
       <Dialog open={!!selectingVariationFor} onOpenChange={() => setSelectingVariationFor(null)}>
-        <DialogContent className="w-[90vw] max-w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>
-              Select Variation for {items.find(i => i.id === selectingVariationFor)?.item}
+        <DialogContent className="flex max-h-[min(90dvh,880px)] w-[min(96vw,42rem)] max-w-[96vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,42rem)]">
+          <DialogHeader className="flex-shrink-0 border-b px-6 py-4">
+            <DialogTitle className="text-left">
+              Select variant — {items.find(i => i.id === selectingVariationFor)?.item}
             </DialogTitle>
           </DialogHeader>
           {selectingVariationFor && (
-            <VariationSelector
-              coreItemId={selectingVariationFor}
-              itemType={type}
-              coreItemName={items.find(i => i.id === selectingVariationFor)?.item || ''}
-              onVariationSelect={handleVariationSelect}
-              allowPrimeToggle={true}
-              availableAlternateTools={type === 'tools' ? availableStepTools : []}
-            />
+            <div className="max-h-[min(70dvh,640px)] min-h-0 overflow-y-auto overscroll-contain px-6 py-4">
+              <VariationSelector
+                coreItemId={selectingVariationFor}
+                itemType={type}
+                coreItemName={items.find(i => i.id === selectingVariationFor)?.item || ''}
+                onVariationSelect={handleVariationSelect}
+                allowPrimeToggle={true}
+                availableAlternateTools={type === 'tools' ? availableStepTools : []}
+              />
+            </div>
           )}
         </DialogContent>
       </Dialog>

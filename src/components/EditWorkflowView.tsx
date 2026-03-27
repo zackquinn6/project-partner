@@ -30,7 +30,7 @@ import { CompactTimeEstimation } from '@/components/CompactTimeEstimation';
 import { CompactAppsSection } from '@/components/CompactAppsSection';
 import { AppsLibraryDialog } from '@/components/AppsLibraryDialog';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
-import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock, Shield, Menu, Info, Crosshair } from 'lucide-react';
+import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock, Shield, Menu, Info, Crosshair } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
@@ -47,10 +47,12 @@ import {
 interface StepMaterial extends Material {
   quantity?: number;
   purpose?: string;
+  parentId?: string;
 }
 interface StepTool extends Tool {
   quantity?: number;
   purpose?: string;
+  parentId?: string;
 }
 interface EditWorkflowViewProps {
   onBackToAdmin: () => void;
@@ -1081,6 +1083,11 @@ export default function EditWorkflowView({
   const [materialsLibraryOpen, setMaterialsLibraryOpen] = useState(false);
   const [ppeToolsLibraryOpen, setPpeToolsLibraryOpen] = useState(false);
   const [ppeMaterialsLibraryOpen, setPpeMaterialsLibraryOpen] = useState(false);
+  /** Step row id of primary tool/material when picking a substitute from the library */
+  const [alternateToolParentId, setAlternateToolParentId] = useState<string | null>(null);
+  const [alternateMaterialParentId, setAlternateMaterialParentId] = useState<string | null>(null);
+  const [alternatePpeToolParentId, setAlternatePpeToolParentId] = useState<string | null>(null);
+  const [alternatePpeMaterialParentId, setAlternatePpeMaterialParentId] = useState<string | null>(null);
   const [appsLibraryOpen, setAppsLibraryOpen] = useState(false);
   const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
   const [decisionTreeOpen, setDecisionTreeOpen] = useState(false);
@@ -2216,116 +2223,60 @@ export default function EditWorkflowView({
                             title="Tools"
                             tools={nonPpeTools}
                             onToolsChange={tools => updateEditingStep('tools', [...tools, ...ppeTools])}
-                            onAddTool={() => setToolsLibraryOpen(true)}
+                            onAddTool={() => {
+                              setAlternateToolParentId(null);
+                              setToolsLibraryOpen(true);
+                            }}
+                            onAddAlternate={parentId => {
+                              setAlternateToolParentId(parentId);
+                              setToolsLibraryOpen(true);
+                            }}
                           />
 
                           <CompactMaterialsTable
                             title="Materials"
                             materials={nonPpeMaterials}
                             onMaterialsChange={materials => updateEditingStep('materials', [...materials, ...ppeMaterials])}
-                            onAddMaterial={() => setMaterialsLibraryOpen(true)}
+                            onAddMaterial={() => {
+                              setAlternateMaterialParentId(null);
+                              setMaterialsLibraryOpen(true);
+                            }}
+                            onAddAlternate={parentId => {
+                              setAlternateMaterialParentId(parentId);
+                              setMaterialsLibraryOpen(true);
+                            }}
                           />
 
-                          <div className="pt-2 border-t space-y-3">
-                            <div className="flex items-center justify-between">
-                              <h3 className="text-sm font-medium">Personal Protective Equipment</h3>
-                              <Button size="sm" variant="outline" onClick={() => setPpeToolsLibraryOpen(true)}>
-                                <Plus className="w-3 h-3 mr-1" />
-                                Add PPE
-                              </Button>
-                            </div>
-                            {ppeTools.length + ppeMaterials.length > 0 ? (
-                              <div className="border rounded-md">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow className="bg-muted/30">
-                                      <TableHead className="text-xs py-2">Item</TableHead>
-                                      <TableHead className="text-xs py-2 w-24">Type</TableHead>
-                                      <TableHead className="text-xs py-2 w-16">Qty</TableHead>
-                                      <TableHead className="text-xs py-2">Purpose</TableHead>
-                                      <TableHead className="text-xs py-2 w-16"></TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {[...ppeTools.map(item => ({ ...item, itemType: 'tool' as const })), ...ppeMaterials.map(item => ({ ...item, itemType: 'material' as const }))].map((item) => (
-                                      <TableRow key={`${item.itemType}-${item.id}`} className="text-xs">
-                                        <TableCell className="py-2">
-                                          <div className="font-medium text-xs">{item.name}</div>
-                                        </TableCell>
-                                        <TableCell className="py-2">
-                                          <Badge variant="secondary" className="text-[10px] px-1 py-0">
-                                            {item.itemType === 'tool' ? 'Tool' : 'Material'}
-                                          </Badge>
-                                        </TableCell>
-                                        <TableCell className="py-2">
-                                          <Input
-                                            type="number"
-                                            min="1"
-                                            value={item.quantity || 1}
-                                            onChange={(e) => {
-                                              const qty = parseInt(e.target.value, 10) || 1;
-                                              if (item.itemType === 'tool') {
-                                                updateEditingStep('tools', [
-                                                  ...nonPpeTools,
-                                                  ...ppeTools.map(t => (t.id === item.id ? { ...t, quantity: qty } : t)),
-                                                ]);
-                                              } else {
-                                                updateEditingStep('materials', [
-                                                  ...nonPpeMaterials,
-                                                  ...ppeMaterials.map(m => (m.id === item.id ? { ...m, quantity: qty } : m)),
-                                                ]);
-                                              }
-                                            }}
-                                            className="w-16 h-7 text-xs"
-                                          />
-                                        </TableCell>
-                                        <TableCell className="py-2">
-                                          <Input
-                                            value={item.purpose || ''}
-                                            onChange={(e) => {
-                                              const purpose = e.target.value;
-                                              if (item.itemType === 'tool') {
-                                                updateEditingStep('tools', [
-                                                  ...nonPpeTools,
-                                                  ...ppeTools.map(t => (t.id === item.id ? { ...t, purpose } : t)),
-                                                ]);
-                                              } else {
-                                                updateEditingStep('materials', [
-                                                  ...nonPpeMaterials,
-                                                  ...ppeMaterials.map(m => (m.id === item.id ? { ...m, purpose } : m)),
-                                                ]);
-                                              }
-                                            }}
-                                            placeholder="Usage..."
-                                            className="text-xs h-6"
-                                          />
-                                        </TableCell>
-                                        <TableCell className="py-2 text-center">
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => {
-                                              if (item.itemType === 'tool') {
-                                                updateEditingStep('tools', [...nonPpeTools, ...ppeTools.filter(t => t.id !== item.id)]);
-                                              } else {
-                                                updateEditingStep('materials', [...nonPpeMaterials, ...ppeMaterials.filter(m => m.id !== item.id)]);
-                                              }
-                                            }}
-                                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                                          >
-                                            <Trash2 className="w-3 h-3" />
-                                          </Button>
-                                        </TableCell>
-                                      </TableRow>
-                                    ))}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                            ) : (
-                              <div className="text-center py-3 text-xs text-muted-foreground border border-dashed rounded-md">
-                                No PPE added yet
-                              </div>
-                            )}
+                          <div className="pt-2 border-t space-y-4">
+                            <h3 className="text-sm font-medium">Personal Protective Equipment</h3>
+                            <CompactToolsTable
+                              title="PPE — Tools"
+                              tools={ppeTools}
+                              onToolsChange={tools => updateEditingStep('tools', [...nonPpeTools, ...tools])}
+                              onAddTool={() => {
+                                setAlternatePpeToolParentId(null);
+                                setPpeToolsLibraryOpen(true);
+                              }}
+                              onAddAlternate={parentId => {
+                                setAlternatePpeToolParentId(parentId);
+                                setPpeToolsLibraryOpen(true);
+                              }}
+                              addButtonLabel="Add PPE tool"
+                            />
+                            <CompactMaterialsTable
+                              title="PPE — Materials"
+                              materials={ppeMaterials}
+                              onMaterialsChange={materials => updateEditingStep('materials', [...nonPpeMaterials, ...materials])}
+                              onAddMaterial={() => {
+                                setAlternatePpeMaterialParentId(null);
+                                setPpeMaterialsLibraryOpen(true);
+                              }}
+                              onAddAlternate={parentId => {
+                                setAlternatePpeMaterialParentId(parentId);
+                                setPpeMaterialsLibraryOpen(true);
+                              }}
+                              addButtonLabel="Add PPE material"
+                            />
                           </div>
                         </CardContent>
                       </Card>
@@ -2690,51 +2641,85 @@ export default function EditWorkflowView({
       {/* Apps Library Dialog */}
       <AppsLibraryDialog open={appsLibraryOpen} onOpenChange={setAppsLibraryOpen} selectedApps={editingStep?.apps || []} onAppsSelected={apps => updateEditingStep('apps', apps)} />
       
-      <MultiSelectLibraryDialog open={toolsLibraryOpen} onOpenChange={setToolsLibraryOpen} type="tools" categoryExclude="PPE" availableStepTools={editingStep?.tools?.map(t => ({
-      id: t.id,
-      name: t.name
-    })) || []} onSelect={selectedItems => {
-      const newTools: StepTool[] = selectedItems.map(item => ({
-        id: `tool-${Date.now()}-${Math.random()}`,
-        name: item.item,
-        description: item.description || '',
-        category: item.category as any,
-        alternates: [],
-        quantity: item.quantity
-      }));
-      updateEditingStep('tools', [...(editingStep?.tools || []), ...newTools]);
-    }} />
-      
-      <MultiSelectLibraryDialog open={materialsLibraryOpen} onOpenChange={setMaterialsLibraryOpen} type="materials" categoryExclude="PPE" onSelect={selectedItems => {
-      const newMaterials: StepMaterial[] = selectedItems.map(item => ({
-        id: `material-${Date.now()}-${Math.random()}`,
-        name: item.item,
-        description: item.description || '',
-        category: item.category as any,
-        alternates: [],
-        quantity: item.quantity,
-        unit: item.unit || undefined
-      }));
-      updateEditingStep('materials', [...(editingStep?.materials || []), ...newMaterials]);
-    }} />
+      <MultiSelectLibraryDialog
+        open={toolsLibraryOpen}
+        onOpenChange={(open) => {
+          setToolsLibraryOpen(open);
+          if (!open) setAlternateToolParentId(null);
+        }}
+        type="tools"
+        categoryExclude="PPE"
+        titleOverride={alternateToolParentId ? 'Select substitute tool' : null}
+        availableStepTools={editingStep?.tools?.map((t) => ({
+          id: t.id,
+          name: t.name,
+        })) || []}
+        onSelect={(selectedItems) => {
+          const parentId = alternateToolParentId;
+          setAlternateToolParentId(null);
+          const newTools: StepTool[] = selectedItems.map((item) => ({
+            id: `tool-${Date.now()}-${Math.random()}`,
+            name: item.item,
+            description: item.description || '',
+            category: item.category as StepTool['category'],
+            alternates: [],
+            quantity: item.quantity,
+            ...(parentId ? { parentId } : {}),
+          }));
+          updateEditingStep('tools', [...(editingStep?.tools || []), ...newTools]);
+        }}
+      />
+
+      <MultiSelectLibraryDialog
+        open={materialsLibraryOpen}
+        onOpenChange={(open) => {
+          setMaterialsLibraryOpen(open);
+          if (!open) setAlternateMaterialParentId(null);
+        }}
+        type="materials"
+        categoryExclude="PPE"
+        titleOverride={alternateMaterialParentId ? 'Select substitute material' : null}
+        onSelect={(selectedItems) => {
+          const parentId = alternateMaterialParentId;
+          setAlternateMaterialParentId(null);
+          const newMaterials: StepMaterial[] = selectedItems.map((item) => ({
+            id: `material-${Date.now()}-${Math.random()}`,
+            name: item.item,
+            description: item.description || '',
+            category: item.category as StepMaterial['category'],
+            alternates: [],
+            quantity: item.quantity,
+            unit: item.unit || undefined,
+            ...(parentId ? { parentId } : {}),
+          }));
+          updateEditingStep('materials', [...(editingStep?.materials || []), ...newMaterials]);
+        }}
+      />
 
       <MultiSelectLibraryDialog
         open={ppeToolsLibraryOpen}
-        onOpenChange={setPpeToolsLibraryOpen}
+        onOpenChange={(open) => {
+          setPpeToolsLibraryOpen(open);
+          if (!open) setAlternatePpeToolParentId(null);
+        }}
         type="tools"
         categoryInclude="PPE"
-        availableStepTools={editingStep?.tools?.map(t => ({
+        titleOverride={alternatePpeToolParentId ? 'Select substitute PPE (tool)' : null}
+        availableStepTools={editingStep?.tools?.map((t) => ({
           id: t.id,
-          name: t.name
+          name: t.name,
         })) || []}
-        onSelect={selectedItems => {
-          const newPpeTools: StepTool[] = selectedItems.map(item => ({
+        onSelect={(selectedItems) => {
+          const parentId = alternatePpeToolParentId;
+          setAlternatePpeToolParentId(null);
+          const newPpeTools: StepTool[] = selectedItems.map((item) => ({
             id: `ppe-tool-${Date.now()}-${Math.random()}`,
             name: item.item,
             description: item.description || '',
-            category: item.category as any,
+            category: item.category as StepTool['category'],
             alternates: [],
-            quantity: item.quantity
+            quantity: item.quantity,
+            ...(parentId ? { parentId } : {}),
           }));
           updateEditingStep('tools', [...(editingStep?.tools || []), ...newPpeTools]);
         }}
@@ -2742,18 +2727,25 @@ export default function EditWorkflowView({
 
       <MultiSelectLibraryDialog
         open={ppeMaterialsLibraryOpen}
-        onOpenChange={setPpeMaterialsLibraryOpen}
+        onOpenChange={(open) => {
+          setPpeMaterialsLibraryOpen(open);
+          if (!open) setAlternatePpeMaterialParentId(null);
+        }}
         type="materials"
         categoryInclude="PPE"
-        onSelect={selectedItems => {
-          const newPpeMaterials: StepMaterial[] = selectedItems.map(item => ({
+        titleOverride={alternatePpeMaterialParentId ? 'Select substitute PPE (material)' : null}
+        onSelect={(selectedItems) => {
+          const parentId = alternatePpeMaterialParentId;
+          setAlternatePpeMaterialParentId(null);
+          const newPpeMaterials: StepMaterial[] = selectedItems.map((item) => ({
             id: `ppe-material-${Date.now()}-${Math.random()}`,
             name: item.item,
             description: item.description || '',
-            category: item.category as any,
+            category: item.category as StepMaterial['category'],
             alternates: [],
             quantity: item.quantity,
-            unit: item.unit || undefined
+            unit: item.unit || undefined,
+            ...(parentId ? { parentId } : {}),
           }));
           updateEditingStep('materials', [...(editingStep?.materials || []), ...newPpeMaterials]);
         }}
