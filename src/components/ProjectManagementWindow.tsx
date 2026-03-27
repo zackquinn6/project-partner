@@ -90,7 +90,6 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
           id,
           name,
           description,
-          display_order,
           position_rule,
           position_value,
           is_standard,
@@ -117,7 +116,8 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
           )
         `)
         .eq('project_id', standardProject.id)
-        .order('display_order', { ascending: true });
+        .order('position_rule', { ascending: true })
+        .order('position_value', { ascending: true, nullsFirst: false });
 
       if (phasesError) throw phasesError;
 

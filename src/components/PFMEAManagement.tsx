@@ -54,7 +54,12 @@ interface PFMEARequirement {
   requirement_text: string;
   output_reference: { output_id: string | null; output_index: number };
   display_order: number;
-  project_phases?: { id: string; name: string; display_order: number } | null;
+  project_phases?: {
+    id: string;
+    name: string;
+    position_rule?: string | null;
+    position_value?: number | null;
+  } | null;
   phase_operations?: { id: string; operation_name: string; display_order: number } | null;
   operation_steps?: { id: string; step_title: string; display_order: number; description?: string | null; outputs?: unknown } | null;
 }
@@ -190,6 +195,13 @@ function requirementOutputKey(requirement: PFMEARequirement): string {
   return `index:${requirement.output_reference.output_index}`;
 }
 
+function phasePositionSortKey(phase: PFMEARequirement['project_phases']): number {
+  if (!phase) return Number.MAX_SAFE_INTEGER;
+  if (phase.position_rule === 'last') return Number.MAX_SAFE_INTEGER - 1;
+  if (phase.position_rule === 'nth' && typeof phase.position_value === 'number') return phase.position_value;
+  return Number.MAX_SAFE_INTEGER;
+}
+
 export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, refreshTrigger }) => {
   const [pfmeaTemplates, setPfmeaTemplates] = useState<PfmeaTemplateContext[]>([]);
   const [selectedPfmeaProject, setSelectedPfmeaProject] = useState<PfmeaTemplateContext | null>(null);
@@ -205,6 +217,24 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     operation: true,
     step: true,
     step_description: true,
+  });
+  const [colWidths, setColWidths] = useState<Record<string, number>>({
+    phase: 120,
+    operation: 140,
+    step: 120,
+    step_description: 260,
+    requirements: 220,
+    failure_mode: 220,
+    effects: 260,
+    s: 64,
+    causes: 240,
+    prevention_controls: 230,
+    o: 64,
+    detection_controls: 230,
+    d: 64,
+    rpn: 80,
+    ap: 120,
+    recommended_actions: 260,
   });
   const [gridFocus, setGridFocus] = useState<{ rowIndex: number; col: PfmeaNavColumn }>({
     rowIndex: 0,
@@ -249,7 +279,8 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           `
           id,
           name,
-          display_order,
+          position_rule,
+          position_value,
           phase_operations (
             id,
             operation_name,
@@ -264,16 +295,32 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           )
         `
         )
-        .eq('project_id', templateProjectId)
-        .order('display_order', { ascending: true });
+        .eq('project_id', templateProjectId);
 
       if (phaseError) throw phaseError;
 
       const rows: PFMEARequirement[] = [];
-      for (const phase of phaseRows ?? []) {
-        const operations = Array.isArray(phase.phase_operations) ? phase.phase_operations : [];
+      const sortedPhases = [...(phaseRows ?? [])].sort((a, b) => {
+        const aKey =
+          a.position_rule === 'last'
+            ? Number.MAX_SAFE_INTEGER - 1
+            : a.position_rule === 'nth' && typeof a.position_value === 'number'
+              ? a.position_value
+              : Number.MAX_SAFE_INTEGER;
+        const bKey =
+          b.position_rule === 'last'
+            ? Number.MAX_SAFE_INTEGER - 1
+            : b.position_rule === 'nth' && typeof b.position_value === 'number'
+              ? b.position_value
+              : Number.MAX_SAFE_INTEGER;
+        return aKey - bKey;
+      });
+      for (const phase of sortedPhases) {
+        const operations = Array.isArray(phase.phase_operations) ? [...phase.phase_operations] : [];
+        operations.sort((a, b) => (a.display_order ?? Number.MAX_SAFE_INTEGER) - (b.display_order ?? Number.MAX_SAFE_INTEGER));
         for (const operation of operations) {
-          const steps = Array.isArray(operation.operation_steps) ? operation.operation_steps : [];
+          const steps = Array.isArray(operation.operation_steps) ? [...operation.operation_steps] : [];
+          steps.sort((a, b) => (a.display_order ?? Number.MAX_SAFE_INTEGER) - (b.display_order ?? Number.MAX_SAFE_INTEGER));
           for (const step of steps) {
             const outputs = parseStepOutputs(step.outputs);
             for (let outputIndex = 0; outputIndex < outputs.length; outputIndex += 1) {
@@ -290,7 +337,12 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                   output_index: outputIndex,
                 },
                 display_order: outputIndex,
-                project_phases: { id: phase.id, name: phase.name, display_order: phase.display_order },
+                project_phases: {
+                  id: phase.id,
+                  name: phase.name,
+                  position_rule: phase.position_rule,
+                  position_value: phase.position_value,
+                },
                 phase_operations: {
                   id: operation.id,
                   operation_name: operation.operation_name,
@@ -484,20 +536,16 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     }
   };
 
-  const calculateRPN = (failureMode: PFMEAFailureMode): number => {
-    const maxSeverity = maxPfmeaSeverityForFailureMode(failureMode);
-    
-    const avgOccurrence = failureMode.pfmea_potential_causes.length > 0
-      ? failureMode.pfmea_potential_causes.reduce((sum, c) => sum + c.occurrence_score, 0) / failureMode.pfmea_potential_causes.length
-      : 10;
-
+  const calculateRPN = (failureMode: PFMEAFailureMode, cause: PFMEAPotentialCause | null): number => {
+    const severity = failureMode.severity_score;
+    const occurrence = cause?.occurrence_score ?? 10;
     const detectionScores = failureMode.pfmea_controls
       .filter((c) => c.control_type === 'detection' && c.detection_score != null)
       .map((c) => c.detection_score!);
     const minDetection =
       detectionScores.length > 0 ? Math.min(...detectionScores, 10) : 10;
 
-    return Math.round(maxSeverity * avgOccurrence * minDetection);
+    return Math.round(severity * occurrence * minDetection);
   };
 
   // AIAG-VDA Action Priority (AP): High / Medium / Low based on the S/O/D decision table.
@@ -691,6 +739,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         <Input
           value={editingValue}
           onChange={(e) => setEditingValue(e.target.value)}
+          onMouseDown={(e) => e.stopPropagation()}
           onKeyDown={(e) => {
             if (e.key === 'Enter') saveEdit();
             if (e.key === 'Escape') cancelEdit();
@@ -740,6 +789,92 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       </SelectContent>
     </Select>
   );
+
+  const updateFailureModeSeverity = useCallback(
+    async (failureModeId: string, score: string) => {
+      if (!pfmeaIsEditable) return;
+      const parsed = parseInt(score, 10);
+      if (Number.isNaN(parsed)) return;
+      const { error } = await supabase
+        .from('pfmea_failure_modes')
+        .update({ severity_score: parsed })
+        .eq('id', failureModeId);
+      if (error) {
+        toast.error('Failed to update severity');
+        return;
+      }
+      if (selectedPfmeaProject) await fetchPfmeaDetails(selectedPfmeaProject.project_id);
+    },
+    [pfmeaIsEditable, selectedPfmeaProject, fetchPfmeaDetails]
+  );
+
+  const updateCauseOccurrence = useCallback(
+    async (causeId: string, score: string) => {
+      if (!pfmeaIsEditable) return;
+      const parsed = parseInt(score, 10);
+      if (Number.isNaN(parsed)) return;
+      const { error } = await supabase
+        .from('pfmea_potential_causes')
+        .update({ occurrence_score: parsed })
+        .eq('id', causeId);
+      if (error) {
+        toast.error('Failed to update occurrence');
+        return;
+      }
+      if (selectedPfmeaProject) await fetchPfmeaDetails(selectedPfmeaProject.project_id);
+    },
+    [pfmeaIsEditable, selectedPfmeaProject, fetchPfmeaDetails]
+  );
+
+  const updateDetectionScoreForRow = useCallback(
+    async (failureMode: PFMEAFailureMode, score: string) => {
+      if (!pfmeaIsEditable) return;
+      const parsed = parseInt(score, 10);
+      if (Number.isNaN(parsed)) return;
+      const detectionControls = failureMode.pfmea_controls.filter((c) => c.control_type === 'detection');
+      if (detectionControls.length === 0) {
+        toast.error('Add a detection control first');
+        return;
+      }
+      const ids = detectionControls.map((c) => c.id);
+      const { error } = await supabase
+        .from('pfmea_controls')
+        .update({ detection_score: parsed })
+        .in('id', ids);
+      if (error) {
+        toast.error('Failed to update detection');
+        return;
+      }
+      if (selectedPfmeaProject) await fetchPfmeaDetails(selectedPfmeaProject.project_id);
+    },
+    [pfmeaIsEditable, selectedPfmeaProject, fetchPfmeaDetails]
+  );
+
+  const renderScoreCell = (
+    value: number | null,
+    onChange?: (value: string) => void
+  ) => {
+    if (value == null) return '';
+    if (!onChange || !pfmeaIsEditable) return value;
+    return (
+      <Select value={String(value)} onValueChange={onChange}>
+        <SelectTrigger
+          className="mx-auto h-7 w-[62px] border-0 bg-transparent px-1 text-center text-sm font-bold shadow-none ring-0 hover:bg-muted/50 [&_svg]:hidden"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+            <SelectItem key={num} value={String(num)}>
+              {num}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  };
 
   const addPotentialEffect = async (failureModeId: string) => {
     if (!pfmeaIsEditable) {
@@ -935,7 +1070,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     const step = (r: PfmeaFlatRow) => requirementStepName(r.requirement);
     const stepDesc = (r: PfmeaFlatRow) => r.requirement.operation_steps?.description ?? '';
     const req = (r: PfmeaFlatRow) => r.requirement.requirement_text ?? '';
-    const phaseOrder = (r: PfmeaFlatRow) => r.requirement.project_phases?.display_order;
+    const phaseOrder = (r: PfmeaFlatRow) => phasePositionSortKey(r.requirement.project_phases);
     const opOrder = (r: PfmeaFlatRow) => r.requirement.phase_operations?.display_order;
     const stepOrder = (r: PfmeaFlatRow) => r.requirement.operation_steps?.display_order;
     const reqOrderInStep = (r: PfmeaFlatRow) => r.requirement.display_order;
@@ -950,7 +1085,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         .map((c) => c.detection_score as number);
       return scores.length > 0 ? Math.min(...scores) : -1;
     };
-    const rpn = (r: PfmeaFlatRow) => (r.failureMode ? calculateRPN(r.failureMode) : -1);
+    const rpn = (r: PfmeaFlatRow) => (r.failureMode ? calculateRPN(r.failureMode, r.cause) : -1);
     const ap = (r: PfmeaFlatRow) => (r.failureMode ? calculateActionPriority(r.failureMode) : 'L');
 
     const defaultComparator = (a: PfmeaFlatRow, b: PfmeaFlatRow) => {
@@ -1171,6 +1306,36 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     return pfmeaSort.dir === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />;
   };
 
+  const startResize = (colKey: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const initialWidth = colWidths[colKey] ?? 120;
+    const onMove = (ev: MouseEvent) => {
+      const next = Math.max(56, initialWidth + (ev.clientX - startX));
+      setColWidths((prev) => ({ ...prev, [colKey]: next }));
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  const resizeHandle = (colKey: string, dark = true) => (
+    <span
+      role="separator"
+      aria-orientation="vertical"
+      onMouseDown={(e) => startResize(colKey, e)}
+      className={cn(
+        'absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none',
+        dark ? 'hover:bg-white/30' : 'hover:bg-slate-400/60'
+      )}
+      title="Drag to resize column"
+    />
+  );
+
   const renderHeaderWithPlus = (
     label: string,
     col: PfmeaNavColumn,
@@ -1183,7 +1348,10 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       sortDefaultDir?: 'asc' | 'desc';
     }
   ) => (
-    <TableHead className={cn(opts?.barClassName ?? pfmeaHeaderBar.other, 'h-auto px-1 py-1 align-bottom')}>
+    <TableHead
+      className={cn(opts?.barClassName ?? pfmeaHeaderBar.other, 'relative h-auto px-1 py-1 align-bottom')}
+      style={{ width: `${colWidths[col]}px`, minWidth: `${colWidths[col]}px` }}
+    >
       <div className="flex min-h-9 flex-col items-stretch justify-center gap-0.5 py-0.5">
         <div className="flex items-center justify-center gap-0.5">
           <span
@@ -1231,6 +1399,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           )}
         </div>
       </div>
+      {resizeHandle(col, !(opts?.lightBar ?? false))}
     </TableHead>
   );
 
@@ -1374,10 +1543,10 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     const frozenCellBase = 'sticky z-10 border-r border-border/50';
     const frozenHeadBase = 'sticky z-40 border-r border-blue-950/50';
 
-    const wPhase = 120;
-    const wOp = 140;
-    const wStep = 120;
-    const wDesc = 260;
+    const wPhase = colWidths.phase;
+    const wOp = colWidths.operation;
+    const wStep = colWidths.step;
+    const wDesc = colWidths.step_description;
 
     const leftPhase = 0;
     const leftOp = leftPhase + wPhase;
@@ -1439,39 +1608,41 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
               >
                 Default sort
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-muted-foreground">
-                    Columns
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuCheckboxItem
-                    checked={pfmeaColVisibility.phase}
-                    onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, phase: Boolean(v) }))}
-                  >
-                    Phase
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={pfmeaColVisibility.operation}
-                    onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, operation: Boolean(v) }))}
-                  >
-                    Operation
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={pfmeaColVisibility.step}
-                    onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, step: Boolean(v) }))}
-                  >
-                    Process Step
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={pfmeaColVisibility.step_description}
-                    onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, step_description: Boolean(v) }))}
-                  >
-                    Step Description
-                  </DropdownMenuCheckboxItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {!pfmeaColVisibility.step_description ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-muted-foreground">
+                      Edit Columns
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuCheckboxItem
+                      checked={pfmeaColVisibility.phase}
+                      onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, phase: Boolean(v) }))}
+                    >
+                      Phase
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={pfmeaColVisibility.operation}
+                      onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, operation: Boolean(v) }))}
+                    >
+                      Operation
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={pfmeaColVisibility.step}
+                      onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, step: Boolean(v) }))}
+                    >
+                      Process Step
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                      checked={pfmeaColVisibility.step_description}
+                      onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, step_description: Boolean(v) }))}
+                    >
+                      Step Description
+                    </DropdownMenuCheckboxItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1499,7 +1670,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                 <TableRow>
                   {pfmeaColVisibility.phase ? (
                     <TableHead
-                      className={cn(pfmeaHeaderBar.structure, frozenHead(leftPhase, wPhase).className, 'h-auto px-1 py-1 font-medium')}
+                      className={cn(pfmeaHeaderBar.structure, frozenHead(leftPhase, wPhase).className, 'relative h-auto px-1 py-1 font-medium')}
                       style={frozenHead(leftPhase, wPhase).style}
                     >
                     <div className="flex items-center justify-center gap-0.5">
@@ -1515,11 +1686,12 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         {sortIcon('phase')}
                       </Button>
                     </div>
+                    {resizeHandle('phase')}
                     </TableHead>
                   ) : null}
                   {pfmeaColVisibility.operation ? (
                     <TableHead
-                      className={cn(pfmeaHeaderBar.structure, frozenHead(leftOp, wOp).className, 'h-auto px-1 py-1 font-medium')}
+                      className={cn(pfmeaHeaderBar.structure, frozenHead(leftOp, wOp).className, 'relative h-auto px-1 py-1 font-medium')}
                       style={frozenHead(leftOp, wOp).style}
                     >
                     <div className="flex items-center justify-center gap-0.5">
@@ -1535,11 +1707,12 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         {sortIcon('operation')}
                       </Button>
                     </div>
+                    {resizeHandle('operation')}
                     </TableHead>
                   ) : null}
                   {pfmeaColVisibility.step ? (
                     <TableHead
-                      className={cn(pfmeaHeaderBar.structure, frozenHead(leftStep, wStep).className, 'h-auto px-1 py-1 font-medium')}
+                      className={cn(pfmeaHeaderBar.structure, frozenHead(leftStep, wStep).className, 'relative h-auto px-1 py-1 font-medium')}
                       style={frozenHead(leftStep, wStep).style}
                     >
                     <div className="flex items-center justify-center gap-0.5">
@@ -1555,14 +1728,49 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         {sortIcon('step')}
                       </Button>
                     </div>
+                    {resizeHandle('step')}
                     </TableHead>
                   ) : null}
                   {pfmeaColVisibility.step_description ? (
                     <TableHead
-                      className={cn(pfmeaHeaderBar.structure, frozenHead(leftDesc, wDesc).className, 'h-auto px-1 py-1 font-medium')}
+                      className={cn(pfmeaHeaderBar.structure, frozenHead(leftDesc, wDesc).className, 'relative h-auto px-1 py-1 font-medium')}
                       style={frozenHead(leftDesc, wDesc).style}
                     >
-                      <div className="flex items-center justify-center gap-0.5">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-white hover:bg-white/15">
+                              Edit Columns
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-52">
+                            <DropdownMenuCheckboxItem
+                              checked={pfmeaColVisibility.phase}
+                              onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, phase: Boolean(v) }))}
+                            >
+                              Phase
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                              checked={pfmeaColVisibility.operation}
+                              onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, operation: Boolean(v) }))}
+                            >
+                              Operation
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                              checked={pfmeaColVisibility.step}
+                              onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, step: Boolean(v) }))}
+                            >
+                              Process Step
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                              checked={pfmeaColVisibility.step_description}
+                              onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, step_description: Boolean(v) }))}
+                            >
+                              Step Description
+                            </DropdownMenuCheckboxItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <div className="flex items-center justify-center gap-0.5">
                         <span className="text-xs font-medium">Step Description</span>
                         <Button
                           type="button"
@@ -1574,7 +1782,9 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         >
                           {sortIcon('step_description')}
                         </Button>
+                        </div>
                       </div>
+                      {resizeHandle('step_description')}
                     </TableHead>
                   ) : null}
                   {renderHeaderWithPlus('Requirements', 'requirements', {
@@ -1655,7 +1865,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
                   const ap = failureMode ? calculateActionPriority(failureMode) : 'L';
                   const apColorClass = failureMode ? getActionPriorityRowClass(ap) : '';
-                  const rpn = failureMode ? calculateRPN(failureMode) : null;
+                  const rpn = failureMode ? calculateRPN(failureMode, cause) : null;
 
                   const detectionScores = failureMode
                     ? failureMode.pfmea_controls
@@ -1713,6 +1923,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
                       <TableCell
                         className={cn(td, band('requirements'), focusCellClass(rowIndex, 'requirements'))}
+                        style={{ width: `${colWidths.requirements}px`, minWidth: `${colWidths.requirements}px` }}
                         onMouseDown={() => setGridFocus({ rowIndex, col: 'requirements' })}
                       >
                         <div className="flex w-full min-w-0 flex-col gap-1">
@@ -1735,6 +1946,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
                       <TableCell
                         className={cn(td, band('failure_mode'), focusCellClass(rowIndex, 'failure_mode'))}
+                        style={{ width: `${colWidths.failure_mode}px`, minWidth: `${colWidths.failure_mode}px` }}
                         onMouseDown={() => setGridFocus({ rowIndex, col: 'failure_mode' })}
                       >
                         {failureMode ? (
@@ -1760,6 +1972,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
                       <TableCell
                         className={cn(td, band('effects'), 'min-w-0 max-w-none', focusCellClass(rowIndex, 'effects'))}
+                        style={{ width: `${colWidths.effects}px`, minWidth: `${colWidths.effects}px` }}
                         onMouseDown={() => setGridFocus({ rowIndex, col: 'effects' })}
                       >
                         {failureMode ? (
@@ -1805,13 +2018,17 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
                       <TableCell
                         className={cn(td, band('s'), 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 's'))}
+                        style={{ width: `${colWidths.s}px`, minWidth: `${colWidths.s}px` }}
                         onMouseDown={() => setGridFocus({ rowIndex, col: 's' })}
                       >
-                        {failureMode ? maxPfmeaSeverityForFailureMode(failureMode) : ''}
+                        {failureMode
+                          ? renderScoreCell(failureMode.severity_score, (value) => void updateFailureModeSeverity(failureMode.id, value))
+                          : ''}
                       </TableCell>
 
                       <TableCell
                         className={cn(td, band('causes'), 'min-w-0', focusCellClass(rowIndex, 'causes'))}
+                        style={{ width: `${colWidths.causes}px`, minWidth: `${colWidths.causes}px` }}
                         onMouseDown={() => setGridFocus({ rowIndex, col: 'causes' })}
                       >
                         {failureMode ? (
@@ -1852,6 +2069,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
                       <TableCell
                         className={cn(td, band('prevention_controls'), 'min-w-0', focusCellClass(rowIndex, 'prevention_controls'))}
+                        style={{ width: `${colWidths.prevention_controls}px`, minWidth: `${colWidths.prevention_controls}px` }}
                         onMouseDown={() => setGridFocus({ rowIndex, col: 'prevention_controls' })}
                       >
                         <div className="flex w-full min-w-0 flex-col gap-1">
@@ -1903,15 +2121,15 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
                       <TableCell
                         className={cn(td, band('o'), 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 'o'))}
+                        style={{ width: `${colWidths.o}px`, minWidth: `${colWidths.o}px` }}
                         onMouseDown={() => setGridFocus({ rowIndex, col: 'o' })}
                       >
-                        {cause
-                          ? renderEditableCell(cause.occurrence_score.toString(), cause.id, 'occurrence_score', 'cause_occurrence', true)
-                          : ''}
+                        {cause ? renderScoreCell(cause.occurrence_score, (value) => void updateCauseOccurrence(cause.id, value)) : ''}
                       </TableCell>
 
                       <TableCell
                         className={cn(td, band('detection_controls'), 'min-w-0', focusCellClass(rowIndex, 'detection_controls'))}
+                        style={{ width: `${colWidths.detection_controls}px`, minWidth: `${colWidths.detection_controls}px` }}
                         onMouseDown={() => setGridFocus({ rowIndex, col: 'detection_controls' })}
                       >
                         {failureMode ? (
@@ -1966,13 +2184,17 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
                       <TableCell
                         className={cn(td, band('d'), 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 'd'))}
+                        style={{ width: `${colWidths.d}px`, minWidth: `${colWidths.d}px` }}
                         onMouseDown={() => setGridFocus({ rowIndex, col: 'd' })}
                       >
-                        {failureMode ? (minDetection != null ? minDetection : 10) : ''}
+                        {failureMode
+                          ? renderScoreCell(minDetection ?? 10, (value) => void updateDetectionScoreForRow(failureMode, value))
+                          : ''}
                       </TableCell>
 
                       <TableCell
                         className={cn(td, band('rpn'), 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 'rpn'))}
+                        style={{ width: `${colWidths.rpn}px`, minWidth: `${colWidths.rpn}px` }}
                         onMouseDown={() => setGridFocus({ rowIndex, col: 'rpn' })}
                       >
                         {rpn != null ? rpn : ''}
@@ -1980,6 +2202,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
                       <TableCell
                         className={cn(td, band('ap'), 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 'ap'))}
+                        style={{ width: `${colWidths.ap}px`, minWidth: `${colWidths.ap}px` }}
                         onMouseDown={() => setGridFocus({ rowIndex, col: 'ap' })}
                       >
                         {failureMode ? (
@@ -1993,6 +2216,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
                       <TableCell
                         className={cn(td, band('recommended_actions'), 'min-w-0', focusCellClass(rowIndex, 'recommended_actions'))}
+                        style={{ width: `${colWidths.recommended_actions}px`, minWidth: `${colWidths.recommended_actions}px` }}
                         onMouseDown={() => setGridFocus({ rowIndex, col: 'recommended_actions' })}
                       >
                         {failureMode ? (
@@ -2098,7 +2322,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                   }
 
                   const { requirement, failureMode, firstInReq, groupSize } = entry;
-                  const rpn = calculateRPN(failureMode);
+                  const rpn = calculateRPN(failureMode, null);
                   const ap = calculateActionPriority(failureMode);
                   const apColorClass = getActionPriorityRowClass(ap);
 
@@ -2589,12 +2813,12 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                             const rankA = apA === 'H' ? 3 : apA === 'M' ? 2 : 1;
                             const rankB = apB === 'H' ? 3 : apB === 'M' ? 2 : 1;
                             if (rankB !== rankA) return rankB - rankA;
-                            const rpnA = calculateRPN(a.failureMode);
-                            const rpnB = calculateRPN(b.failureMode);
+                            const rpnA = calculateRPN(a.failureMode, null);
+                            const rpnB = calculateRPN(b.failureMode, null);
                             return rpnB - rpnA;
                           })
                           .map((actionItem) => {
-                            const rpn = calculateRPN(actionItem.failureMode);
+                            const rpn = calculateRPN(actionItem.failureMode, null);
                             const ap = calculateActionPriority(actionItem.failureMode);
                             return (
                               <TableRow key={actionItem.id} className={actionItem.status === 'complete' ? 'opacity-60' : ''}>

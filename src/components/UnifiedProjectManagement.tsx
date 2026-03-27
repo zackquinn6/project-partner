@@ -1517,7 +1517,6 @@ export function UnifiedProjectManagement({
           id,
           name,
           description,
-          display_order,
           position_rule,
           position_value,
           is_standard,
@@ -1544,7 +1543,8 @@ export function UnifiedProjectManagement({
           )
         `)
         .eq('project_id', standardProject.id)
-        .order('display_order', { ascending: true });
+        .order('position_rule', { ascending: true })
+        .order('position_value', { ascending: true, nullsFirst: false });
 
       if (phasesError) throw phasesError;
 

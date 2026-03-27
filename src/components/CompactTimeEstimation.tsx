@@ -2,13 +2,14 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, Timer, Pause, Info, Users, GraduationCap } from 'lucide-react';
+import { Clock, Timer, Info, Users, GraduationCap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { WorkflowStep } from '@/interfaces/Project';
 
 interface CompactTimeEstimationProps {
   step: WorkflowStep;
   scalingUnit?: string;
+  typicalProjectSize?: number;
   onChange: (timeEstimation: WorkflowStep['timeEstimation']) => void;
   onWorkersChange?: (workersNeeded: number) => void;
   onSkillLevelChange?: (skillLevel: WorkflowStep['skillLevel']) => void;
@@ -17,6 +18,7 @@ interface CompactTimeEstimationProps {
 export function CompactTimeEstimation({
   step,
   scalingUnit = 'per item',
+  typicalProjectSize,
   onChange,
   onWorkersChange,
   onSkillLevelChange
@@ -24,15 +26,26 @@ export function CompactTimeEstimation({
   const getScalingUnitDisplay = () => {
     switch (scalingUnit) {
       case 'per square feet':
-      case 'per square foot': return 'sq ft';
-      case 'per 10x10 room': return 'room';
+      case 'per square foot': return 'square foot';
+      case 'per 10x10 room': return '10x10 room';
       case 'per linear feet':
-      case 'per linear foot': return 'lin ft';
-      case 'per cubic yard': return 'cu yd';
+      case 'per linear foot': return 'linear foot';
+      case 'per cubic yard': return 'cubic yard';
       case 'per item': return 'item';
       default: return 'unit';
     }
   };
+
+  const stepType = step.stepType === 'prime' ? 'prime' : 'scaled';
+  const unit = getScalingUnitDisplay();
+  const primeSize = typeof typicalProjectSize === 'number' && typicalProjectSize > 0 ? typicalProjectSize : null;
+  const unitPlural = primeSize === 1 ? unit : `${unit}s`;
+  const scaleLabel =
+    stepType === 'prime'
+      ? primeSize != null
+        ? `${primeSize} ${unitPlural}`
+        : `Typical project size (${unitPlural})`
+      : `1 ${unit}`;
 
   const handleVariableTimeChange = (level: 'low' | 'medium' | 'high', value: string) => {
     const numValue = parseFloat(value) || 0;
@@ -56,11 +69,7 @@ export function CompactTimeEstimation({
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <Timer className="w-3 h-3 text-primary" />
-          <Label className="text-xs font-medium">
-            {step.stepType === 'scaled' || step.stepType === 'quality_control_scaled' 
-              ? `Work Time (hours per ${getScalingUnitDisplay()})`
-              : 'Work Time (total hours)'}
-          </Label>
+          <Label className="text-xs font-medium">Work Time Estimations (hours)</Label>
           <TooltipProvider delayDuration={100}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -68,66 +77,66 @@ export function CompactTimeEstimation({
               </TooltipTrigger>
               <TooltipContent className="max-w-xs text-xs">
                 <div className="space-y-1">
-                  <p className="font-semibold">Time Estimate Ranges:</p>
-                  <p>• <strong>Medium</strong> = Expected / average time</p>
-                  <p>• <strong>Low</strong> = 10th percentile (best case)</p>
-                  <p>• <strong>High</strong> = 90th percentile (worst case)</p>
-                  {(step.stepType === 'scaled' || step.stepType === 'quality_control_scaled') && (
-                    <p className="mt-2 pt-2 border-t">
-                      <strong>Note:</strong> Times are per {getScalingUnitDisplay()}. 
-                      Total time = estimate × project size.
-                    </p>
-                  )}
-                  {(step.stepType === 'prime' || step.stepType === 'quality_control_non_scaled' || !step.stepType) && (
-                    <p className="mt-2 pt-2 border-t">
-                      <strong>Note:</strong> Times are total hours (fixed, does not scale with project size).
-                    </p>
-                  )}
+                  <p><strong>Low:</strong> 10th percentile (fastest 10% of jobs)</p>
+                  <p><strong>Expected:</strong> typical / average duration</p>
+                  <p><strong>High:</strong> 90th percentile (slowest 10% of jobs)</p>
                 </div>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
-        
-        <div className="grid grid-cols-6 gap-2 items-center text-xs">
-          <Label className="text-green-700 font-medium">Best</Label>
-          <Input
-            type="number"
-            step="0.1"
-            min="0"
-            placeholder="0.0"
-            value={step.timeEstimation?.variableTime?.low || ''}
-            onChange={(e) => handleVariableTimeChange('low', e.target.value)}
-            className="h-6 text-xs"
-          />
-          
-          <Label className="text-blue-700 font-medium">Typical</Label>
-          <Input
-            type="number"
-            step="0.1"
-            min="0"
-            placeholder="0.0"
-            value={step.timeEstimation?.variableTime?.medium || ''}
-            onChange={(e) => handleVariableTimeChange('medium', e.target.value)}
-            className="h-6 text-xs"
-          />
-          
-          <Label className="text-red-700 font-medium">Worst</Label>
-          <Input
-            type="number"
-            step="0.1"
-            min="0"
-            placeholder="0.0"
-            value={step.timeEstimation?.variableTime?.high || ''}
-            onChange={(e) => handleVariableTimeChange('high', e.target.value)}
-            className="h-6 text-xs"
-          />
+
+        <div className="overflow-x-auto rounded-md border">
+          <table className="w-full text-xs">
+            <thead className="bg-muted/40">
+              <tr>
+                <th className="px-2 py-1 text-left font-medium">Low</th>
+                <th className="px-2 py-1 text-left font-medium">Expected</th>
+                <th className="px-2 py-1 text-left font-medium">High</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="p-2">
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    placeholder="0.0"
+                    value={step.timeEstimation?.variableTime?.low || ''}
+                    onChange={(e) => handleVariableTimeChange('low', e.target.value)}
+                    className="h-7 text-xs"
+                  />
+                </td>
+                <td className="p-2">
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    placeholder="0.0"
+                    value={step.timeEstimation?.variableTime?.medium || ''}
+                    onChange={(e) => handleVariableTimeChange('medium', e.target.value)}
+                    className="h-7 text-xs"
+                  />
+                </td>
+                <td className="p-2">
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    placeholder="0.0"
+                    value={step.timeEstimation?.variableTime?.high || ''}
+                    onChange={(e) => handleVariableTimeChange('high', e.target.value)}
+                    className="h-7 text-xs"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        
+
         <p className="text-[10px] text-muted-foreground">
-          {step.stepType === 'scaled' || step.stepType === 'quality_control_scaled'
-            ? `Active work time per ${getScalingUnitDisplay()} (multiplies by project size)`
-            : 'Active work time (fixed total, does not scale)'}
+          {stepType === 'prime' ? `Prime basis: ${scaleLabel}` : `Scaled basis: ${scaleLabel}`}
         </p>
       </div>
 

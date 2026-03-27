@@ -2308,6 +2308,7 @@ export default function EditWorkflowView({
                 <CompactTimeEstimation 
                   step={editingStep} 
                   scalingUnit={currentProject?.scalingUnit} 
+                  typicalProjectSize={currentProject?.typicalProjectSize}
                   onChange={timeEstimation => updateEditingStep('timeEstimation', timeEstimation)}
                   onWorkersChange={workersNeeded => updateEditingStep('workersNeeded', workersNeeded)}
                   onSkillLevelChange={skillLevel => updateEditingStep('skillLevel', skillLevel)}

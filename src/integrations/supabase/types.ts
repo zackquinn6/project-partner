@@ -2024,7 +2024,6 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
-          display_order: number
           id: string
           is_linked: boolean | null
           is_standard: boolean | null
@@ -2038,7 +2037,6 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
-          display_order?: number
           id?: string
           is_linked?: boolean | null
           is_standard?: boolean | null
@@ -2052,7 +2050,6 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
-          display_order?: number
           id?: string
           is_linked?: boolean | null
           is_standard?: boolean | null

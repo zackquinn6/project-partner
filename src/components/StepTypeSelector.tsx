@@ -1,7 +1,7 @@
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, RotateCcw, Search } from 'lucide-react';
+import { CheckCircle, RotateCcw } from 'lucide-react';
 
 interface StepTypeSelectorProps {
   value?: string;
@@ -23,20 +23,6 @@ const stepTypes = [
     icon: RotateCcw,
     color: 'bg-blue-500',
     description: 'Time estimates scale according to the project scaling unit'
-  },
-  {
-    value: 'quality_control_non_scaled',
-    label: 'Quality Control – Non Scaled',
-    icon: Search,
-    color: 'bg-orange-500', 
-    description: 'Fixed QC steps that do not scale with project size'
-  },
-  {
-    value: 'quality_control_scaled',
-    label: 'Quality Control – Scaled',
-    icon: Search,
-    color: 'bg-purple-500', 
-    description: 'QC steps that scale according to the project scaling unit (same unit as base project)'
   }
 ];
 
