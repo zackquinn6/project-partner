@@ -30,7 +30,7 @@ import { CompactTimeEstimation } from '@/components/CompactTimeEstimation';
 import { CompactAppsSection } from '@/components/CompactAppsSection';
 import { AppsLibraryDialog } from '@/components/AppsLibraryDialog';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
-import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock, Shield, Menu, Info } from 'lucide-react';
+import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, Plus, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock, Shield, Menu, Info, Crosshair } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
@@ -1465,16 +1465,21 @@ export default function EditWorkflowView({
         try {
           const appsToSave = Array.isArray(editingStep.apps) ? editingStep.apps : (editingStep.apps ? [editingStep.apps] : []);
           
-          // For editable standard steps, only update content fields, not structural fields
+          // Editable standard steps (allow_content_edit): flow/decision structure stays managed elsewhere; step type, time, and workers are admin-editable in the workflow editor
           const updateData: any = isEditableStandardStep ? {
-            // Content fields only - structure remains locked
             step_title: editingStep.step,
             description: editingStep.description,
+            step_type: editingStep.stepType || 'scaled',
             materials: editingStep.materials || [] as any,
             tools: editingStep.tools || [] as any,
             outputs: editingStep.outputs || [] as any,
             process_variables: editingStep.inputs || [] as any,
             apps: appsToSave,
+            time_estimate_low: editingStep.timeEstimation?.variableTime?.low || 0,
+            time_estimate_med: editingStep.timeEstimation?.variableTime?.medium || 0,
+            time_estimate_high: editingStep.timeEstimation?.variableTime?.high || 0,
+            number_of_workers: editingStep.workersNeeded ?? 1,
+            skill_level: editingStep.skillLevel || 'Intermediate',
             updated_at: new Date().toISOString()
           } : {
             // For custom steps, allow all fields to be updated
@@ -1860,9 +1865,11 @@ export default function EditWorkflowView({
                       variant="outline"
                       size="sm"
                       className="flex items-center gap-2"
+                      disabled={!currentProject?.id}
+                      title="Risk-Less — project risks for this template"
                     >
-                      <Shield className="w-4 h-4" />
-                      Project Risk
+                      <Crosshair className="w-4 h-4" />
+                      Risk-Less
                     </Button>
                     <Button
                       onClick={() => setDecisionTreeOpen(true)}
@@ -1969,13 +1976,15 @@ export default function EditWorkflowView({
                           PFMEA
                         </DropdownMenuItem>
                         <DropdownMenuItem
+                          disabled={!currentProject?.id}
                           onSelect={(e) => {
                             e.preventDefault();
+                            if (!currentProject?.id) return;
                             setRiskManagementOpen(true);
                           }}
                         >
-                          <Shield className="w-4 h-4 mr-2" />
-                          Project Risk
+                          <Crosshair className="w-4 h-4 mr-2" />
+                          Risk-Less
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onSelect={(e) => {
@@ -2367,12 +2376,11 @@ export default function EditWorkflowView({
                   </Card>
                 </div>
 
-                {/* Time Estimation */}
-                {!editingStep.allowContentEdit && (
+                {/* Time Estimation — admin workflow editor: always editable (incl. allow_content_edit steps) */}
                 <Card className="bg-muted/30 border shadow-sm">
                   <CardHeader>
                     <CardTitle>Time Estimation & Step Type</CardTitle>
-                    <CardDescription>Configure time estimates and step type. Step type determines how time estimates are interpreted.</CardDescription>
+                    <CardDescription>Configure step type, time estimates (low / expected / high), workers, and skill level. Step type determines how time estimates are interpreted.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
@@ -2381,30 +2389,16 @@ export default function EditWorkflowView({
                         onValueChange={value => updateEditingStep('stepType', value)} 
                       />
                     </div>
-                <CompactTimeEstimation 
-                  step={editingStep} 
-                  scalingUnit={currentProject?.scalingUnit} 
-                  typicalProjectSize={currentProject?.typicalProjectSize}
-                  onChange={timeEstimation => updateEditingStep('timeEstimation', timeEstimation)}
-                  onWorkersChange={workersNeeded => updateEditingStep('workersNeeded', workersNeeded)}
-                  onSkillLevelChange={skillLevel => updateEditingStep('skillLevel', skillLevel)}
-                />
+                    <CompactTimeEstimation 
+                      step={editingStep} 
+                      scalingUnit={currentProject?.scalingUnit} 
+                      typicalProjectSize={currentProject?.typicalProjectSize}
+                      onChange={timeEstimation => updateEditingStep('timeEstimation', timeEstimation)}
+                      onWorkersChange={workersNeeded => updateEditingStep('workersNeeded', workersNeeded)}
+                      onSkillLevelChange={skillLevel => updateEditingStep('skillLevel', skillLevel)}
+                    />
                   </CardContent>
                 </Card>
-                )}
-                {editingStep.allowContentEdit && (
-                <Card className="bg-muted/30 border shadow-sm opacity-60">
-                  <CardHeader>
-                    <CardTitle>Time Estimation & Step Type</CardTitle>
-                    <CardDescription className="text-muted-foreground">Step structure is locked. Only content can be edited for this step.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="p-4 bg-muted rounded-md text-sm text-muted-foreground">
-                      Time estimation and step type are part of the step structure and cannot be modified.
-                    </div>
-                  </CardContent>
-                </Card>
-                )}
 
                 {/* Navigation */}
                 <div className="flex justify-between">
@@ -2659,13 +2653,15 @@ export default function EditWorkflowView({
       {/* Tools & Materials Library */}
       <ToolsMaterialsWindow open={toolsMaterialsOpen} onOpenChange={setToolsMaterialsOpen} />
       
-      {/* Risk Management */}
+      {/* Risk-Less (template risks for the project being edited) */}
       {currentProject && (
         <RiskManagementWindow
           open={riskManagementOpen}
           onOpenChange={setRiskManagementOpen}
           projectId={currentProject.id}
           mode="template"
+          workflowEditorRiskLess
+          templateProjectDisplayName={currentProject.name}
         />
       )}
 

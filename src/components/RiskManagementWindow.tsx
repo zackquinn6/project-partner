@@ -287,6 +287,10 @@ interface RiskManagementWindowProps {
   mode?: 'template' | 'run'; // 'template' for admin editing templates, 'run' for user editing runs
   readOnly?: boolean; // If true, disable all editing functionality
   variant?: 'default' | 'risk-focus';
+  /** Workflow editor: use Risk-Less chrome, optional advanced register mode, open on the template being edited */
+  workflowEditorRiskLess?: boolean;
+  /** Display name for Risk-Less dashboard when editing a template from the workflow editor */
+  templateProjectDisplayName?: string;
 }
 
 export function RiskManagementWindow({
@@ -296,7 +300,9 @@ export function RiskManagementWindow({
   projectRunId,
   mode = 'run',
   readOnly = false,
-  variant = 'default'
+  variant = 'default',
+  workflowEditorRiskLess = false,
+  templateProjectDisplayName
 }: RiskManagementWindowProps) {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
@@ -312,6 +318,9 @@ export function RiskManagementWindow({
   const showRiskFocusProgressRow =
     variant === 'risk-focus' && mode === 'run' && Boolean(projectRunId && riskFocusRunForProgress);
   const riskFocusRun = variant === 'risk-focus' && mode === 'run';
+  const useRiskLessChrome = variant === 'risk-focus' || workflowEditorRiskLess;
+  const workflowTemplateRiskLess = Boolean(workflowEditorRiskLess && mode === 'template' && projectId);
+  const showAdvancedToggle = workflowTemplateRiskLess && !readOnly;
   const showAddRiskRow =
     !readOnly && (mode === 'template' || (mode === 'run' && projectRunId));
   const [risks, setRisks] = useState<Risk[]>([]);
@@ -326,6 +335,8 @@ export function RiskManagementWindow({
   const [hideStandardRisks, setHideStandardRisks] = useState(false);
   const [riskListSort, setRiskListSort] = useState<'alpha' | 'severity-desc'>('alpha');
   const showRiskFocusHiddenToggle = riskFocusRun && risks.length > 0;
+  const wfTableAdvanced = workflowTemplateRiskLess && advancedMode;
+  const wfTableFriendly = workflowTemplateRiskLess && !advancedMode;
 
   /** Keep scroll position in Risk-Less: avoid full fetchRisks() after small mitigation edits. */
   const patchRunRiskMitigationActions = useCallback(
@@ -380,9 +391,25 @@ export function RiskManagementWindow({
             (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' })
         );
       }
+    } else if (workflowTemplateRiskLess) {
+      if (riskListSort === 'alpha') {
+        sorted.sort((a, b) => (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' }));
+      } else {
+        sorted.sort(
+          (a, b) =>
+            severitySortRank(b.severity) - severitySortRank(a.severity) ||
+            (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' })
+        );
+      }
     }
     return sorted;
-  }, [risks, variant, mode, showHiddenRisks, hideStandardRisks, riskListSort]);
+  }, [risks, variant, mode, showHiddenRisks, hideStandardRisks, riskListSort, workflowTemplateRiskLess]);
+
+  useEffect(() => {
+    if (!showAdvancedToggle) {
+      setAdvancedMode(false);
+    }
+  }, [showAdvancedToggle, open]);
 
   useEffect(() => {
     if (open) {
@@ -934,7 +961,7 @@ export function RiskManagementWindow({
       <DialogContent
         className={cn(
           'flex flex-col overflow-hidden p-0 [&>button]:hidden',
-          variant === 'risk-focus'
+          useRiskLessChrome
             ? 'flex h-screen max-h-full w-full max-w-[90vw] flex-col overflow-hidden p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg md:p-0 [&>button]:hidden'
             : 'h-screen max-h-full w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg'
         )}
@@ -943,12 +970,12 @@ export function RiskManagementWindow({
           <div className="flex items-center justify-between gap-2">
             <div>
               <DialogTitle className="text-lg md:text-xl font-bold flex items-center gap-2">
-                {variant === 'risk-focus' ? (
+                {useRiskLessChrome ? (
                   <Crosshair className="w-5 h-5" />
                 ) : (
                   <Shield className="w-5 h-5" />
                 )}
-                {variant === 'risk-focus' ? 'Risk-Less' : 'Risk Management'}
+                {useRiskLessChrome ? 'Risk-Less' : 'Risk Management'}
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -961,24 +988,30 @@ export function RiskManagementWindow({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" sideOffset={8} className="max-w-sm text-xs">
-                      {variant === 'risk-focus'
-                        ? 'This session is dedicated to risks for your template: foundation and project risks are on the run, and you can add run-specific risks anytime.'
-                        : 'A risk is simply something uncertain. Construction projects often go off-schedule due to uncertainty at the start. Projects come pre-loaded with risks and potential impact, and you can add your own when you see additional concerns.'}
+                      {workflowTemplateRiskLess
+                        ? 'Edit project risks for this template. Foundation risks may be included depending on the project.'
+                        : variant === 'risk-focus'
+                          ? 'This session is dedicated to risks for your template: foundation and project risks are on the run, and you can add run-specific risks anytime.'
+                          : 'A risk is simply something uncertain. Construction projects often go off-schedule due to uncertainty at the start. Projects come pre-loaded with risks and potential impact, and you can add your own when you see additional concerns.'}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </DialogTitle>
-              {variant === 'risk-focus' ? (
+              {useRiskLessChrome ? (
                 <p className="mt-0.5 max-w-3xl text-sm font-normal leading-snug text-muted-foreground">
-                  {`Spot what could go wrong, decide how much it matters, and plan how you'll handle it`}
+                  {workflowTemplateRiskLess
+                    ? 'Review and edit risks for the project template you are working on'
+                    : `Spot what could go wrong, decide how much it matters, and plan how you'll handle it`}
                 </p>
               ) : null}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
+              {showAdvancedToggle ? (
               <div className="flex items-center gap-2">
                 <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Advanced</span>
                 <Switch checked={advancedMode} onCheckedChange={setAdvancedMode} />
               </div>
+              ) : null}
               <Button
                 variant="ghost"
                 size="sm"
@@ -1002,12 +1035,17 @@ export function RiskManagementWindow({
                 : null
             }
           />
+        ) : workflowTemplateRiskLess ? (
+          <RiskFocusDashboard
+            risks={displayRisks}
+            projectDisplayName={templateProjectDisplayName?.trim() || null}
+          />
         ) : null}
 
         <div
           className={cn(
             'flex min-h-0 flex-1 flex-col px-2 md:px-4',
-            variant === 'risk-focus'
+            useRiskLessChrome
               ? 'gap-2 pb-2 pt-1 md:gap-2 md:pb-3 md:pt-1.5'
               : 'gap-3 py-2 md:py-3'
           )}
@@ -1374,7 +1412,7 @@ export function RiskManagementWindow({
                 <div
                   className={cn(
                     'flex shrink-0 flex-col sm:flex-row sm:items-center',
-                    variant === 'risk-focus' ? 'gap-1.5' : 'gap-2',
+                    useRiskLessChrome ? 'gap-1.5' : 'gap-2',
                     showRiskFocusProgressRow && (showAddRiskRow || showRiskFocusHiddenToggle)
                       ? 'sm:justify-between'
                       : showRiskFocusProgressRow
@@ -1466,6 +1504,39 @@ export function RiskManagementWindow({
                             </Label>
                           </div>
                         </div>
+                      ) : null}
+                      {workflowTemplateRiskLess && displayRisks.length > 0 ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 gap-1 px-2 text-xs"
+                              aria-label="Sort risks"
+                            >
+                              {riskListSort === 'alpha' ? (
+                                <ArrowDownAZ className="h-3.5 w-3.5 shrink-0" />
+                              ) : (
+                                <ArrowDownWideNarrow className="h-3.5 w-3.5 shrink-0" />
+                              )}
+                              <span className="max-w-[5.5rem] truncate">
+                                {riskListSort === 'alpha' ? 'A–Z' : 'Severity'}
+                              </span>
+                              <ChevronDown className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="z-[250]">
+                            <DropdownMenuItem onClick={() => setRiskListSort('alpha')}>
+                              <ArrowDownAZ className="mr-2 h-4 w-4" />
+                              A–Z
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setRiskListSort('severity-desc')}>
+                              <ArrowDownWideNarrow className="mr-2 h-4 w-4" />
+                              Severity
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       ) : null}
                       <Button
                         variant="default"
@@ -1640,48 +1711,118 @@ export function RiskManagementWindow({
                               ) : null}
                             </div>
                             <div className={cn('space-y-3', riskFocusRun && 'space-y-2')}>
-                              <div>
-                                <div className="text-xs text-muted-foreground mb-1">Likelihood</div>
-                                <Badge
-                                  className={getRiskLevelColor(
-                                    risk.likelihood,
-                                    risk.schedule_impact_days,
-                                    risk.budget_impact_dollars
-                                  )}
-                                >
-                                  {risk.likelihood}
-                                </Badge>
-                              </div>
-                              {advancedMode ? (
-                                <div className="grid grid-cols-3 gap-3">
+                              {riskFocusRun ? (
+                                <>
                                   <div>
-                                    <div className="text-xs text-muted-foreground mb-1">Overall Severity</div>
-                                    {risk.severity ? (
-                                      <Badge variant="outline">{risk.severity}</Badge>
-                                    ) : (
-                                      <span className="text-muted-foreground">—</span>
-                                    )}
+                                    <div className="text-xs text-muted-foreground mb-1">Likelihood</div>
+                                    <Badge
+                                      className={getRiskLevelColor(
+                                        risk.likelihood,
+                                        risk.schedule_impact_days,
+                                        risk.budget_impact_dollars
+                                      )}
+                                    >
+                                      {risk.likelihood}
+                                    </Badge>
                                   </div>
+                                  {advancedMode ? (
+                                    <div className="grid grid-cols-3 gap-3">
+                                      <div>
+                                        <div className="text-xs text-muted-foreground mb-1">Overall Severity</div>
+                                        {risk.severity ? (
+                                          <Badge variant="outline">{risk.severity}</Badge>
+                                        ) : (
+                                          <span className="text-muted-foreground">—</span>
+                                        )}
+                                      </div>
+                                      <div>
+                                        <div className="text-xs text-muted-foreground mb-1">Budget Risk</div>
+                                        <div className="text-sm tabular-nums">
+                                          {risk.budget_impact_dollars != null
+                                            ? `$${Number(risk.budget_impact_dollars).toLocaleString()}`
+                                            : '—'}
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className="text-xs text-muted-foreground mb-1">Timeline Risk</div>
+                                        <div className="text-sm tabular-nums">
+                                          {risk.schedule_impact_days != null ? `${Number(risk.schedule_impact_days)} days` : '—'}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : null}
                                   <div>
-                                    <div className="text-xs text-muted-foreground mb-1">Budget Risk</div>
-                                    <div className="text-sm tabular-nums">
-                                      {risk.budget_impact_dollars != null
-                                        ? `$${Number(risk.budget_impact_dollars).toLocaleString()}`
-                                        : '—'}
+                                    <div className="text-xs text-muted-foreground mb-1">Impact</div>
+                                    <ImpactIfItDoesContent risk={risk} />
+                                  </div>
+                                </>
+                              ) : wfTableAdvanced ? (
+                                <>
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                      <div className="text-xs text-muted-foreground mb-1">Severity</div>
+                                      {risk.severity ? (
+                                        <Badge variant="outline">{risk.severity}</Badge>
+                                      ) : (
+                                        <span className="text-muted-foreground">—</span>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <div className="text-xs text-muted-foreground mb-1">Risk level</div>
+                                      <Badge
+                                        className={getRiskLevelColor(
+                                          risk.likelihood,
+                                          risk.schedule_impact_days,
+                                          risk.budget_impact_dollars
+                                        )}
+                                      >
+                                        {risk.likelihood}
+                                      </Badge>
+                                    </div>
+                                    <div>
+                                      <div className="text-xs text-muted-foreground mb-1">Timeline impact</div>
+                                      <div className="text-sm tabular-nums">
+                                        {risk.schedule_impact_days != null ? `${Number(risk.schedule_impact_days)} days` : '—'}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="text-xs text-muted-foreground mb-1">Budget impact</div>
+                                      <div className="text-sm tabular-nums">
+                                        {risk.budget_impact_dollars != null
+                                          ? `$${Number(risk.budget_impact_dollars).toLocaleString()}`
+                                          : '—'}
+                                      </div>
                                     </div>
                                   </div>
                                   <div>
-                                    <div className="text-xs text-muted-foreground mb-1">Timeline Risk</div>
-                                    <div className="text-sm tabular-nums">
-                                      {risk.schedule_impact_days != null ? `${Number(risk.schedule_impact_days)} days` : '—'}
-                                    </div>
+                                    <div className="text-xs text-muted-foreground mb-1">Impact</div>
+                                    <ImpactIfItDoesContent risk={risk} />
                                   </div>
-                                </div>
-                              ) : null}
-                              <div>
-                                <div className="text-xs text-muted-foreground mb-1">Impact</div>
-                                <ImpactIfItDoesContent risk={risk} />
-                              </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div>
+                                    <div className="text-xs text-muted-foreground mb-1">
+                                      {wfTableFriendly ? 'How likely is it?' : 'Likelihood'}
+                                    </div>
+                                    <Badge
+                                      className={getRiskLevelColor(
+                                        risk.likelihood,
+                                        risk.schedule_impact_days,
+                                        risk.budget_impact_dollars
+                                      )}
+                                    >
+                                      {risk.likelihood}
+                                    </Badge>
+                                  </div>
+                                  <div>
+                                    <div className="text-xs text-muted-foreground mb-1">
+                                      {wfTableFriendly ? 'If it happens, then what?' : 'Impact'}
+                                    </div>
+                                    <ImpactIfItDoesContent risk={risk} />
+                                  </div>
+                                </>
+                              )}
                             </div>
                             {mode === 'run' && variant !== 'risk-focus' && (
                               <div>
@@ -1911,10 +2052,25 @@ export function RiskManagementWindow({
                               'Risk'
                             )}
                           </TableHead>
-                          <TableHead className="w-[100px]">Likelihood</TableHead>
-                          {advancedMode ? <TableHead className="w-[120px]">Overall Severity</TableHead> : null}
-                          {advancedMode ? <TableHead className="w-[120px]">Budget Risk</TableHead> : null}
-                          {advancedMode ? <TableHead className="w-[120px]">Timeline Risk</TableHead> : null}
+                          {riskFocusRun ? (
+                            <>
+                              <TableHead className="w-[100px]">Likelihood</TableHead>
+                              {advancedMode ? <TableHead className="w-[120px]">Overall Severity</TableHead> : null}
+                              {advancedMode ? <TableHead className="w-[120px]">Budget Risk</TableHead> : null}
+                              {advancedMode ? <TableHead className="w-[120px]">Timeline Risk</TableHead> : null}
+                            </>
+                          ) : wfTableAdvanced ? (
+                            <>
+                              <TableHead className="w-[100px]">Severity</TableHead>
+                              <TableHead className="w-[120px]">Timeline impact</TableHead>
+                              <TableHead className="w-[120px]">Budget impact</TableHead>
+                              <TableHead className="w-[120px]">Risk level</TableHead>
+                            </>
+                          ) : (
+                            <TableHead className="w-[100px]">
+                              {wfTableFriendly ? 'How likely is it?' : 'Likelihood'}
+                            </TableHead>
+                          )}
                           <TableHead
                             className={cn(
                               'align-top',
@@ -1923,7 +2079,7 @@ export function RiskManagementWindow({
                                 : 'min-w-[140px] max-w-[200px]'
                             )}
                           >
-                            Impact
+                            {wfTableFriendly ? 'If it happens, then what?' : 'Impact'}
                           </TableHead>
                           <TableHead
                             className={cn(
@@ -1931,7 +2087,7 @@ export function RiskManagementWindow({
                               riskFocusRun ? 'min-w-[16rem] w-[36%]' : 'min-w-[200px]'
                             )}
                           >
-                            Mitigation
+                            {wfTableFriendly ? 'What can we do to prevent it?' : 'Mitigation'}
                           </TableHead>
                           {mode === 'run' && variant === 'risk-focus' ? (
                             <TableHead className="min-w-[100px] max-w-[140px] leading-tight">
@@ -2000,38 +2156,77 @@ export function RiskManagementWindow({
                                 ) : null}
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <Badge className={getRiskLevelColor(risk.likelihood, risk.schedule_impact_days, risk.budget_impact_dollars)}>
-                                {risk.likelihood}
-                              </Badge>
-                            </TableCell>
-                            {advancedMode ? (
+                            {riskFocusRun ? (
+                              <>
+                                <TableCell>
+                                  <Badge className={getRiskLevelColor(risk.likelihood, risk.schedule_impact_days, risk.budget_impact_dollars)}>
+                                    {risk.likelihood}
+                                  </Badge>
+                                </TableCell>
+                                {advancedMode ? (
+                                  <TableCell>
+                                    {risk.severity ? (
+                                      <Badge variant="outline">{risk.severity}</Badge>
+                                    ) : (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
+                                  </TableCell>
+                                ) : null}
+                                {advancedMode ? (
+                                  <TableCell className="tabular-nums">
+                                    {risk.budget_impact_dollars != null ? (
+                                      `$${Number(risk.budget_impact_dollars).toLocaleString()}`
+                                    ) : (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
+                                  </TableCell>
+                                ) : null}
+                                {advancedMode ? (
+                                  <TableCell className="tabular-nums">
+                                    {risk.schedule_impact_days != null ? (
+                                      `${Number(risk.schedule_impact_days)}`
+                                    ) : (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
+                                  </TableCell>
+                                ) : null}
+                              </>
+                            ) : wfTableAdvanced ? (
+                              <>
+                                <TableCell>
+                                  {risk.severity ? (
+                                    <Badge variant="outline">{risk.severity}</Badge>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="tabular-nums">
+                                  {risk.schedule_impact_days != null ? (
+                                    `${Number(risk.schedule_impact_days)}`
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="tabular-nums">
+                                  {risk.budget_impact_dollars != null ? (
+                                    `$${Number(risk.budget_impact_dollars).toLocaleString()}`
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge className={getRiskLevelColor(risk.likelihood, risk.schedule_impact_days, risk.budget_impact_dollars)}>
+                                    {risk.likelihood}
+                                  </Badge>
+                                </TableCell>
+                              </>
+                            ) : (
                               <TableCell>
-                                {risk.severity ? (
-                                  <Badge variant="outline">{risk.severity}</Badge>
-                                ) : (
-                                  <span className="text-muted-foreground">—</span>
-                                )}
+                                <Badge className={getRiskLevelColor(risk.likelihood, risk.schedule_impact_days, risk.budget_impact_dollars)}>
+                                  {risk.likelihood}
+                                </Badge>
                               </TableCell>
-                            ) : null}
-                            {advancedMode ? (
-                              <TableCell className="tabular-nums">
-                                {risk.budget_impact_dollars != null ? (
-                                  `$${Number(risk.budget_impact_dollars).toLocaleString()}`
-                                ) : (
-                                  <span className="text-muted-foreground">—</span>
-                                )}
-                              </TableCell>
-                            ) : null}
-                            {advancedMode ? (
-                              <TableCell className="tabular-nums">
-                                {risk.schedule_impact_days != null ? (
-                                  `${Number(risk.schedule_impact_days)}`
-                                ) : (
-                                  <span className="text-muted-foreground">—</span>
-                                )}
-                              </TableCell>
-                            ) : null}
+                            )}
                             <TableCell
                               className={cn(
                                 'text-sm align-top',
