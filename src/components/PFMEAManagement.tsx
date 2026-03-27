@@ -1280,9 +1280,9 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   );
 
   const pfmeaThSticky = 'sticky top-0 z-20 border-b shadow-sm';
-  /** Column header bar colors (PFMEA table). */
+  /** Column header bar colors (PFMEA table). `!text-white` overrides TableHead default `text-muted-foreground`. */
   const pfmeaHeaderBar = {
-    structure: `${pfmeaThSticky} bg-[#0c2744] text-white border-blue-950/60`,
+    structure: `${pfmeaThSticky} bg-[#0c2744] !text-white border-blue-950/60`,
     requirements: `${pfmeaThSticky} bg-yellow-300 text-yellow-950 border-yellow-500/70`,
     failure: `${pfmeaThSticky} bg-yellow-300 text-yellow-950 border-yellow-500/70`,
     effectSeverity: `${pfmeaThSticky} bg-[#722f37] text-white border-[#5c262e]`,
@@ -1598,6 +1598,39 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
               </span>
             </div>
             <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-xs">
+                    Edit Columns
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuCheckboxItem
+                    checked={pfmeaColVisibility.phase}
+                    onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, phase: Boolean(v) }))}
+                  >
+                    Phase
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={pfmeaColVisibility.operation}
+                    onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, operation: Boolean(v) }))}
+                  >
+                    Operation
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={pfmeaColVisibility.step}
+                    onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, step: Boolean(v) }))}
+                  >
+                    Process Step
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={pfmeaColVisibility.step_description}
+                    onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, step_description: Boolean(v) }))}
+                  >
+                    Step Description
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 type="button"
                 variant="outline"
@@ -1608,41 +1641,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
               >
                 Default sort
               </Button>
-              {!pfmeaColVisibility.step_description ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-muted-foreground">
-                      Edit Columns
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuCheckboxItem
-                      checked={pfmeaColVisibility.phase}
-                      onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, phase: Boolean(v) }))}
-                    >
-                      Phase
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={pfmeaColVisibility.operation}
-                      onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, operation: Boolean(v) }))}
-                    >
-                      Operation
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={pfmeaColVisibility.step}
-                      onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, step: Boolean(v) }))}
-                    >
-                      Process Step
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={pfmeaColVisibility.step_description}
-                      onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, step_description: Boolean(v) }))}
-                    >
-                      Step Description
-                    </DropdownMenuCheckboxItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1667,6 +1665,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           >
             <table className="w-full min-w-[1950px] caption-bottom text-sm">
               <TableHeader>
+                {/* Left-to-right: Phase, Operation, Process Step, Step Description, then Requirements, Failure Mode, Effects, … */}
                 <TableRow>
                   {pfmeaColVisibility.phase ? (
                     <TableHead
@@ -1674,7 +1673,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       style={frozenHead(leftPhase, wPhase).style}
                     >
                     <div className="flex items-center justify-center gap-0.5">
-                      <span className="text-xs font-medium">Phase</span>
+                      <span className="text-xs font-medium text-white">Phase</span>
                       <Button
                         type="button"
                         variant="ghost"
@@ -1695,7 +1694,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       style={frozenHead(leftOp, wOp).style}
                     >
                     <div className="flex items-center justify-center gap-0.5">
-                      <span className="text-xs font-medium">Operation</span>
+                      <span className="text-xs font-medium text-white">Operation</span>
                       <Button
                         type="button"
                         variant="ghost"
@@ -1716,7 +1715,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       style={frozenHead(leftStep, wStep).style}
                     >
                     <div className="flex items-center justify-center gap-0.5">
-                      <span className="text-xs font-medium">Process Step</span>
+                      <span className="text-xs font-medium text-white">Process Step</span>
                       <Button
                         type="button"
                         variant="ghost"
@@ -1736,42 +1735,8 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       className={cn(pfmeaHeaderBar.structure, frozenHead(leftDesc, wDesc).className, 'relative h-auto px-1 py-1 font-medium')}
                       style={frozenHead(leftDesc, wDesc).style}
                     >
-                      <div className="flex flex-col items-center gap-0.5">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-white hover:bg-white/15">
-                              Edit Columns
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-52">
-                            <DropdownMenuCheckboxItem
-                              checked={pfmeaColVisibility.phase}
-                              onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, phase: Boolean(v) }))}
-                            >
-                              Phase
-                            </DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem
-                              checked={pfmeaColVisibility.operation}
-                              onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, operation: Boolean(v) }))}
-                            >
-                              Operation
-                            </DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem
-                              checked={pfmeaColVisibility.step}
-                              onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, step: Boolean(v) }))}
-                            >
-                              Process Step
-                            </DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem
-                              checked={pfmeaColVisibility.step_description}
-                              onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, step_description: Boolean(v) }))}
-                            >
-                              Step Description
-                            </DropdownMenuCheckboxItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <div className="flex items-center justify-center gap-0.5">
-                        <span className="text-xs font-medium">Step Description</span>
+                      <div className="flex items-center justify-center gap-0.5">
+                        <span className="text-xs font-medium text-white">Step Description</span>
                         <Button
                           type="button"
                           variant="ghost"
@@ -1782,7 +1747,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         >
                           {sortIcon('step_description')}
                         </Button>
-                        </div>
                       </div>
                       {resizeHandle('step_description')}
                     </TableHead>
