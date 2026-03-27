@@ -861,6 +861,7 @@ export function UnifiedProjectManagement({
       setPublishDialogOpen(false);
       setReleaseNotes('');
       fetchProjects();
+      window.dispatchEvent(new CustomEvent('refetch-projects'));
       if (selectedProject) {
         fetchProjectRevisions();
       }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Crosshair, Loader2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Project } from '@/interfaces/Project';
@@ -207,6 +207,13 @@ export function RiskFocusLauncherDialog({
   onOpenChange: (open: boolean) => void;
   onRiskFocusRunStarted?: (projectRunId: string) => void;
 }) {
+  const { fetchProjects } = useProject();
+  useEffect(() => {
+    if (open) {
+      void fetchProjects();
+    }
+  }, [open, fetchProjects]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">

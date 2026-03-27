@@ -58,8 +58,8 @@ export function useDataFetch<T = any>({
       return;
     }
 
-    // Prevent duplicate fetches with same parameters
-    if (fetchParams === lastFetchParams.current && data.length > 0 && !loading) {
+    // Prevent duplicate fetches with same parameters (only for cached reads; refetch passes useCache=false and must hit the network)
+    if (useCache && fetchParams === lastFetchParams.current && data.length > 0 && !loading) {
       return;
     }
 
