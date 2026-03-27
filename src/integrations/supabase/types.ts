@@ -1681,6 +1681,7 @@ export type Database = {
           materials: Json | null
           number_of_workers: number | null
           operation_id: string
+          process_variables: Json | null
           outputs: Json | null
           skill_level: string | null
           step_title: string
@@ -1705,6 +1706,7 @@ export type Database = {
           materials?: Json | null
           number_of_workers?: number | null
           operation_id: string
+          process_variables?: Json | null
           outputs?: Json | null
           skill_level?: string | null
           step_title: string
@@ -1729,6 +1731,7 @@ export type Database = {
           materials?: Json | null
           number_of_workers?: number | null
           operation_id?: string
+          process_variables?: Json | null
           outputs?: Json | null
           skill_level?: string | null
           step_title?: string
@@ -2172,7 +2175,9 @@ export type Database = {
       pfmea_failure_modes: {
         Row: {
           id: string
-          requirement_id: string
+          project_id: string
+          operation_step_id: string
+          requirement_output_id: string
           failure_mode: string
           severity_score: number
           created_at: string
@@ -2180,7 +2185,9 @@ export type Database = {
         }
         Insert: {
           id?: string
-          requirement_id: string
+          project_id: string
+          operation_step_id: string
+          requirement_output_id: string
           failure_mode: string
           severity_score?: number
           created_at?: string
@@ -2188,7 +2195,9 @@ export type Database = {
         }
         Update: {
           id?: string
-          requirement_id?: string
+          project_id?: string
+          operation_step_id?: string
+          requirement_output_id?: string
           failure_mode?: string
           severity_score?: number
           created_at?: string
@@ -2196,10 +2205,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "pfmea_failure_modes_requirement_id_fkey"
-            columns: ["requirement_id"]
+            foreignKeyName: "pfmea_failure_modes_operation_step_id_fkey"
+            columns: ["operation_step_id"]
             isOneToOne: false
-            referencedRelation: "pfmea_requirements"
+            referencedRelation: "operation_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pfmea_failure_modes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -2270,74 +2286,6 @@ export type Database = {
             columns: ["failure_mode_id"]
             isOneToOne: false
             referencedRelation: "pfmea_failure_modes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pfmea_requirements: {
-        Row: {
-          id: string
-          project_id: string
-          project_phase_id: string
-          phase_operation_id: string
-          operation_step_id: string
-          requirement_text: string
-          output_reference: Json | null
-          display_order: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          project_id: string
-          project_phase_id: string
-          phase_operation_id: string
-          operation_step_id: string
-          requirement_text: string
-          output_reference?: Json | null
-          display_order?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          project_id?: string
-          project_phase_id?: string
-          phase_operation_id?: string
-          operation_step_id?: string
-          requirement_text?: string
-          output_reference?: Json | null
-          display_order?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pfmea_requirements_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pfmea_requirements_project_phase_id_fkey"
-            columns: ["project_phase_id"]
-            isOneToOne: false
-            referencedRelation: "project_phases"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pfmea_requirements_phase_operation_id_fkey"
-            columns: ["phase_operation_id"]
-            isOneToOne: false
-            referencedRelation: "phase_operations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pfmea_requirements_operation_step_id_fkey"
-            columns: ["operation_step_id"]
-            isOneToOne: false
-            referencedRelation: "operation_steps"
             referencedColumns: ["id"]
           },
         ]
@@ -3841,10 +3789,6 @@ export type Database = {
         Returns: undefined
       }
       rebuild_phases_json_from_project_phases: {
-        Args: { p_project_id: string }
-        Returns: undefined
-      }
-      sync_pfmea_requirements_for_project: {
         Args: { p_project_id: string }
         Returns: undefined
       }

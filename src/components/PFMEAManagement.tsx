@@ -37,7 +37,7 @@ interface DatabaseProject {
   [key: string]: any;
 }
 
-/** Catalog project used for PFMEA (pfmea_requirements.project_id → projects.id). */
+/** Catalog project used for PFMEA (requirements are derived from operation_steps.outputs). */
 interface PfmeaTemplateContext {
   project_id: string;
   name: string;
@@ -52,7 +52,7 @@ interface PFMEARequirement {
   phase_operation_id: string;
   operation_step_id: string;
   requirement_text: string;
-  output_reference: Record<string, unknown> | null;
+  output_reference: { output_id: string | null; output_index: number };
   display_order: number;
   project_phases?: { id: string; name: string; display_order: number } | null;
   phase_operations?: { id: string; operation_name: string; display_order: number } | null;
@@ -61,7 +61,9 @@ interface PFMEARequirement {
 
 interface PFMEAFailureMode {
   id: string;
-  requirement_id: string;
+  project_id: string;
+  operation_step_id: string;
+  requirement_output_id: string;
   failure_mode: string;
   severity_score: number;
   pfmea_potential_effects: PFMEAPotentialEffect[];
@@ -154,21 +156,38 @@ type PfmeaLineDeleteTarget = {
 };
 
 function requirementPhaseName(r: PFMEARequirement): string {
-  return r.project_phases?.name ?? (r.output_reference as { phase_name?: string } | null)?.phase_name ?? '—';
+  return r.project_phases?.name ?? '—';
 }
 
 function requirementOperationName(r: PFMEARequirement): string {
-  return (
-    r.phase_operations?.operation_name ??
-    (r.output_reference as { operation_name?: string } | null)?.operation_name ??
-    '—'
-  );
+  return r.phase_operations?.operation_name ?? '—';
 }
 
 function requirementStepName(r: PFMEARequirement): string {
-  return (
-    r.operation_steps?.step_title ?? (r.output_reference as { step_name?: string } | null)?.step_name ?? '—'
-  );
+  return r.operation_steps?.step_title ?? '—';
+}
+
+function parseStepOutputs(raw: unknown): Output[] {
+  if (!Array.isArray(raw)) return [];
+  const valid: Output[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const output = item as Partial<Output>;
+    if (typeof output.name !== 'string') continue;
+    const trimmedName = output.name.trim();
+    if (!trimmedName) continue;
+    valid.push({
+      ...output,
+      name: trimmedName,
+    } as Output);
+  }
+  return valid;
+}
+
+function requirementOutputKey(requirement: PFMEARequirement): string {
+  const outputId = requirement.output_reference.output_id;
+  if (outputId) return outputId;
+  return `index:${requirement.output_reference.output_index}`;
 }
 
 export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, refreshTrigger }) => {
@@ -224,26 +243,74 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
   const fetchPfmeaDetails = useCallback(async (templateProjectId: string) => {
     try {
-      const { data: reqData, error: reqError } = await supabase
-        .from('pfmea_requirements')
+      const { data: phaseRows, error: phaseError } = await supabase
+        .from('project_phases')
         .select(
           `
-          *,
-          project_phases ( id, name, display_order ),
-          phase_operations ( id, operation_name, display_order ),
-          operation_steps ( id, step_title, display_order, description, outputs )
+          id,
+          name,
+          display_order,
+          phase_operations (
+            id,
+            operation_name,
+            display_order,
+            operation_steps (
+              id,
+              step_title,
+              display_order,
+              description,
+              outputs
+            )
+          )
         `
         )
         .eq('project_id', templateProjectId)
         .order('display_order', { ascending: true });
 
-      if (reqError) throw reqError;
+      if (phaseError) throw phaseError;
 
-      const rows = (reqData ?? []) as PFMEARequirement[];
+      const rows: PFMEARequirement[] = [];
+      for (const phase of phaseRows ?? []) {
+        const operations = Array.isArray(phase.phase_operations) ? phase.phase_operations : [];
+        for (const operation of operations) {
+          const steps = Array.isArray(operation.operation_steps) ? operation.operation_steps : [];
+          for (const step of steps) {
+            const outputs = parseStepOutputs(step.outputs);
+            for (let outputIndex = 0; outputIndex < outputs.length; outputIndex += 1) {
+              const output = outputs[outputIndex];
+              rows.push({
+                id: `${step.id}::${output.id ?? `index:${outputIndex}`}`,
+                project_id: templateProjectId,
+                project_phase_id: phase.id,
+                phase_operation_id: operation.id,
+                operation_step_id: step.id,
+                requirement_text: output.name,
+                output_reference: {
+                  output_id: output.id ?? null,
+                  output_index: outputIndex,
+                },
+                display_order: outputIndex,
+                project_phases: { id: phase.id, name: phase.name, display_order: phase.display_order },
+                phase_operations: {
+                  id: operation.id,
+                  operation_name: operation.operation_name,
+                  display_order: operation.display_order,
+                },
+                operation_steps: {
+                  id: step.id,
+                  step_title: step.step_title,
+                  display_order: step.display_order,
+                  description: step.description,
+                  outputs: step.outputs,
+                },
+              });
+            }
+          }
+        }
+      }
       setRequirements(rows);
 
-      const reqIds = rows.map((r) => r.id);
-      if (reqIds.length === 0) {
+      if (rows.length === 0) {
         setFailureModes([]);
         return;
       }
@@ -259,7 +326,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           pfmea_action_items(*)
         `
         )
-        .in('requirement_id', reqIds);
+        .eq('project_id', templateProjectId);
 
       if (fmError) throw fmError;
       setFailureModes((fmData ?? []) as PFMEAFailureMode[]);
@@ -272,13 +339,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   useEffect(() => {
     if (refreshTrigger === undefined || refreshTrigger < 1 || !projectId) return;
     void (async () => {
-      const { error } = await supabase.rpc('sync_pfmea_requirements_for_project', {
-        p_project_id: projectId,
-      });
-      if (error) {
-        console.error('sync_pfmea_requirements_for_project', error);
-        toast.error(error.message);
-      }
       await fetchPfmeaDetails(projectId);
     })();
   }, [refreshTrigger, projectId, fetchPfmeaDetails]);
@@ -396,7 +456,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     void run();
   }, [projectId, loading, pfmeaTemplates, projects, fetchPfmeaDetails]);
 
-  const addFailureMode = async (requirementId: string) => {
+  const addFailureMode = async (requirement: PFMEARequirement) => {
     if (!pfmeaIsEditable) {
       toast.error('PFMEA is locked. Switch this revision to draft to edit.');
       return;
@@ -405,7 +465,9 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       const { error } = await supabase
         .from('pfmea_failure_modes')
         .insert({
-          requirement_id: requirementId,
+          project_id: requirement.project_id,
+          operation_step_id: requirement.operation_step_id,
+          requirement_output_id: requirementOutputKey(requirement),
           failure_mode: 'New Failure Mode',
           severity_score: 5
         });
@@ -819,10 +881,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
         if (selectedPfmeaProject) {
           // Requirements rows are derived from workflow outputs; resync after updating the step.
-          const { error: syncErr } = await supabase.rpc('sync_pfmea_requirements_for_project', {
-            p_project_id: selectedPfmeaProject.project_id,
-          });
-          if (syncErr) throw syncErr;
           await fetchPfmeaDetails(selectedPfmeaProject.project_id);
         }
         toast.success('Output added');
@@ -843,7 +901,12 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   const pfmeaFlatRows: PfmeaFlatRow[] = useMemo(() => {
     const out: PfmeaFlatRow[] = [];
     for (const requirement of requirements) {
-      const reqFms = failureModes.filter((fm) => fm.requirement_id === requirement.id);
+      const outputKey = requirementOutputKey(requirement);
+      const reqFms = failureModes.filter(
+        (fm) =>
+          fm.operation_step_id === requirement.operation_step_id &&
+          fm.requirement_output_id === outputKey
+      );
       if (reqFms.length === 0) {
         out.push({ requirement, failureMode: null, cause: null });
         continue;
@@ -980,7 +1043,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           void addOutputToStep(requirement.operation_step_id);
           return;
         case 'failure_mode':
-          void addFailureMode(requirement.id);
+          void addFailureMode(requirement);
           return;
         case 'effects':
         case 's':

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
-import { WorkflowStep, Tool, Material, Output, ContentSection, Phase, Operation, Project, AppReference, getDefaultStepContentSections } from '@/interfaces/Project';
+import { WorkflowStep, Tool, Material, Output, ContentSection, Phase, Operation, Project, AppReference, StepInput, getDefaultStepContentSections } from '@/interfaces/Project';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -53,6 +53,30 @@ interface StepTool extends Tool {
 }
 interface EditWorkflowViewProps {
   onBackToAdmin: () => void;
+}
+
+function parseProcessVariables(raw: unknown): StepInput[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+    .map((item, index) => {
+      const name = typeof item.name === 'string' ? item.name.trim() : '';
+      const id = typeof item.id === 'string' && item.id ? item.id : `input-${index}`;
+      const normalizedType = item.type === 'upstream' ? 'upstream' : 'process';
+      return {
+        id,
+        name,
+        type: normalizedType,
+        description: typeof item.description === 'string' ? item.description : undefined,
+        required: typeof item.required === 'boolean' ? item.required : false,
+        options: Array.isArray(item.options) ? (item.options as string[]) : undefined,
+        unit: typeof item.unit === 'string' ? item.unit : undefined,
+        sourceStepId: typeof item.sourceStepId === 'string' ? item.sourceStepId : undefined,
+        sourceStepName: typeof item.sourceStepName === 'string' ? item.sourceStepName : undefined,
+        targetValue: typeof item.targetValue === 'string' ? item.targetValue : undefined,
+      };
+    })
+    .filter((item) => item.name.length > 0);
 }
 export default function EditWorkflowView({
   onBackToAdmin
@@ -148,6 +172,7 @@ export default function EditWorkflowView({
               materials,
               tools,
               outputs,
+              process_variables,
               time_estimate_low,
               time_estimate_med,
               time_estimate_high,
@@ -211,6 +236,7 @@ export default function EditWorkflowView({
                 materials: step.materials || [],
                 tools: step.tools || [],
                 outputs: step.outputs || [],
+                inputs: parseProcessVariables(step.process_variables),
                 timeEstimation: {
                   variableTime: {
                     low: step.time_estimate_low || 0,
@@ -218,8 +244,8 @@ export default function EditWorkflowView({
                     high: step.time_estimate_high || 0
                   }
                 },
-                workersNeeded: step.number_of_workers || 1,
-                skillLevel: step.skill_level || 'intermediate'
+                workersNeeded: step.number_of_workers ?? 1,
+                skillLevel: step.skill_level || 'Intermediate'
               };
             }).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
           };
@@ -350,6 +376,7 @@ export default function EditWorkflowView({
                 materials,
                 tools,
                 outputs,
+                process_variables,
                 time_estimate_low,
                 time_estimate_med,
                 time_estimate_high,
@@ -457,6 +484,7 @@ export default function EditWorkflowView({
                   tools: parsedTools,
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
+                  inputs: parseProcessVariables(s.process_variables),
                   contentType: s.content_type || 'text',
                   content: s.content || '',
                   contentSections: parsedContentSections,
@@ -468,8 +496,8 @@ export default function EditWorkflowView({
                       high: s.time_estimate_high || 0
                     }
                   },
-                  workersNeeded: s.number_of_workers || 1,
-                  skillLevel: s.skill_level
+                  workersNeeded: s.number_of_workers ?? 1,
+                  skillLevel: s.skill_level || 'Intermediate'
                 };
               })
             };
@@ -512,6 +540,7 @@ export default function EditWorkflowView({
                 materials,
                 tools,
                 outputs,
+                process_variables,
                 time_estimate_low,
                 time_estimate_med,
                 time_estimate_high,
@@ -621,6 +650,7 @@ export default function EditWorkflowView({
                   tools: parsedTools,
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
+                  inputs: parseProcessVariables(s.process_variables),
                   contentType: s.content_type || 'text',
                   content: s.content || '',
                   contentSections: parsedContentSections,
@@ -632,8 +662,8 @@ export default function EditWorkflowView({
                       high: s.time_estimate_high || 0
                     }
                   },
-                  workersNeeded: s.number_of_workers || 1,
-                  skillLevel: s.skill_level
+                  workersNeeded: s.number_of_workers ?? 1,
+                  skillLevel: s.skill_level || 'Intermediate'
                 };
               })
             };
@@ -697,6 +727,7 @@ export default function EditWorkflowView({
               materials,
               tools,
               outputs,
+              process_variables,
               time_estimate_low,
               time_estimate_med,
               time_estimate_high,
@@ -806,6 +837,7 @@ export default function EditWorkflowView({
                   tools: parsedTools,
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
+                  inputs: parseProcessVariables(s.process_variables),
                   contentType: s.content_type || 'text',
                   content: s.content || '',
                   contentSections: parsedContentSections,
@@ -816,8 +848,8 @@ export default function EditWorkflowView({
                       high: s.time_estimate_high || 0
                     }
                   },
-                  workersNeeded: s.number_of_workers || 1,
-                  skillLevel: s.skill_level,
+                  workersNeeded: s.number_of_workers ?? 1,
+                  skillLevel: s.skill_level || 'Intermediate',
                   allowContentEdit: s.allow_content_edit || false
                 };
               })
@@ -1391,12 +1423,13 @@ export default function EditWorkflowView({
           materials: editingStep.materials || [] as any,
           tools: editingStep.tools || [] as any,
           outputs: editingStep.outputs || [] as any,
+          process_variables: editingStep.inputs || [] as any,
           apps: appsToSave,
           time_estimate_low: editingStep.timeEstimation?.variableTime?.low || 0,
           time_estimate_med: editingStep.timeEstimation?.variableTime?.medium || 0,
           time_estimate_high: editingStep.timeEstimation?.variableTime?.high || 0,
           number_of_workers: editingStep.workersNeeded ?? 1,
-          skill_level: editingStep.skillLevel || 'intermediate',
+          skill_level: editingStep.skillLevel || 'Intermediate',
           updated_at: new Date().toISOString()
         };
 
@@ -1437,12 +1470,14 @@ export default function EditWorkflowView({
           // For editable standard steps, only update content fields, not structural fields
           const updateData: any = isEditableStandardStep ? {
             // Content fields only - structure remains locked
+            step_title: editingStep.step,
             description: editingStep.description,
             content_type: editingStep.contentType || 'text',
             content: editingStep.content || '',
             materials: editingStep.materials || [] as any,
             tools: editingStep.tools || [] as any,
             outputs: editingStep.outputs || [] as any,
+            process_variables: editingStep.inputs || [] as any,
             apps: appsToSave,
             updated_at: new Date().toISOString()
           } : {
@@ -1456,12 +1491,13 @@ export default function EditWorkflowView({
             materials: editingStep.materials || [] as any,
             tools: editingStep.tools || [] as any,
             outputs: editingStep.outputs || [] as any,
+            process_variables: editingStep.inputs || [] as any,
             apps: appsToSave,
             time_estimate_low: editingStep.timeEstimation?.variableTime?.low || 0,
             time_estimate_med: editingStep.timeEstimation?.variableTime?.medium || 0,
             time_estimate_high: editingStep.timeEstimation?.variableTime?.high || 0,
             number_of_workers: editingStep.workersNeeded ?? 1,
-            skill_level: editingStep.skillLevel || 'intermediate',
+            skill_level: editingStep.skillLevel || 'Intermediate',
             updated_at: new Date().toISOString()
           };
 
@@ -1519,7 +1555,7 @@ export default function EditWorkflowView({
     const newInput = {
       id: `input-${Date.now()}-${Math.random()}`,
       name: inputName.trim(),
-      type: 'text' as const,
+      type: 'process' as const,
       required: false
     };
     updateEditingStep('inputs', [...(editingStep.inputs || []), newInput]);
@@ -1835,6 +1871,15 @@ export default function EditWorkflowView({
                       Project Risk
                     </Button>
                     <Button
+                      onClick={() => setDecisionTreeOpen(true)}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <Brain className="w-4 h-4" />
+                      Decision Tree
+                    </Button>
+                    <Button
                       onClick={() => setImportOpen(true)}
                       variant="outline"
                       size="icon"
@@ -1937,6 +1982,15 @@ export default function EditWorkflowView({
                         >
                           <Shield className="w-4 h-4 mr-2" />
                           Project Risk
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setDecisionTreeOpen(true);
+                          }}
+                        >
+                          <Brain className="w-4 h-4 mr-2" />
+                          Decision Tree
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onSelect={(e) => {
@@ -2045,22 +2099,7 @@ export default function EditWorkflowView({
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="step-title" className="text-base font-medium">Step Title</Label>
-                        {editingStep.allowContentEdit ? (
-                          <div className="mt-2">
-                            <Input 
-                              id="step-title" 
-                              value={editingStep.step} 
-                              disabled 
-                              className="text-2xl font-bold bg-muted cursor-not-allowed" 
-                              placeholder="Step title..." 
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Step structure is locked. Only content can be edited for this step.
-                            </p>
-                          </div>
-                        ) : (
-                          <Input id="step-title" value={editingStep.step} onChange={e => updateEditingStep('step', e.target.value)} className="text-2xl font-bold mt-2" placeholder="Step title..." />
-                        )}
+                        <Input id="step-title" value={editingStep.step} onChange={e => updateEditingStep('step', e.target.value)} className="text-2xl font-bold mt-2" placeholder="Step title..." />
                       </div>
                       <div>
                         <Label htmlFor="step-description" className="text-base font-medium">Description</Label>
@@ -2221,7 +2260,7 @@ export default function EditWorkflowView({
                   const newInput = {
                     id: `input-${Date.now()}-${Math.random()}`,
                     name: '',
-                    type: 'text' as const,
+                    type: 'process' as const,
                     required: false
                   };
                   updateEditingStep('inputs', [...(editingStep?.inputs || []), newInput]);

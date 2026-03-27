@@ -144,7 +144,7 @@ export interface StepInput {
   id: string;
   name: string;
   description?: string;
-  type: 'text' | 'number' | 'boolean' | 'file' | 'measurement' | 'selection' | 'upstream';
+  type: 'process' | 'upstream' | 'text' | 'number' | 'boolean' | 'file' | 'measurement' | 'selection';
   required?: boolean;
   options?: string[]; // For selection type
   unit?: string; // For measurement type

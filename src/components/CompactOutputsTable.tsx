@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Plus, FileOutput, Edit } from 'lucide-react';
+import { Trash2, Plus, Edit } from 'lucide-react';
 import { Output } from '@/interfaces/Project';
 
 interface CompactOutputsTableProps {
@@ -62,12 +62,8 @@ export function CompactOutputsTable({ outputs, onOutputsChange, onAddOutput, onE
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium flex items-center gap-2">
-          <FileOutput className="w-4 h-4" />
-          Step Outputs ({safeOutputs.length})
-        </h3>
+    <div className="space-y-2">
+      <div className="flex items-center justify-end">
         <Button size="sm" variant="outline" onClick={onAddOutput}>
           <Plus className="w-3 h-3 mr-1" />
           Add Output
@@ -156,7 +152,7 @@ export function CompactOutputsTable({ outputs, onOutputsChange, onAddOutput, onE
       )}
 
       {safeOutputs.length === 0 && (
-        <div className="text-center py-4 text-xs text-muted-foreground border border-dashed rounded-md">
+        <div className="text-center py-2 text-xs text-muted-foreground border border-dashed rounded-md">
           No outputs defined yet
         </div>
       )}

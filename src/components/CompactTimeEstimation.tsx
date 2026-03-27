@@ -193,7 +193,7 @@ export function CompactTimeEstimation({
                     <p>• <strong>Intermediate</strong> - Some experience</p>
                     <p>• <strong>Advanced</strong> - Experienced DIYer</p>
                     <p>• <strong>Professional</strong> - Professional contractor</p>
-                    <p className="mt-2 text-muted-foreground">Defaults to project skill level if not set</p>
+                    <p className="mt-2 text-muted-foreground">Set explicitly for this step.</p>
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -201,16 +201,15 @@ export function CompactTimeEstimation({
           </div>
           
           <Select
-            value={step.skillLevel || 'none'}
+            value={step.skillLevel || 'Intermediate'}
             onValueChange={(value) => {
-              onSkillLevelChange(value === 'none' ? undefined : (value as WorkflowStep['skillLevel']));
+              onSkillLevelChange(value as WorkflowStep['skillLevel']);
             }}
           >
             <SelectTrigger className="h-8 text-xs">
               <SelectValue placeholder="Select skill level" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">Use project default</SelectItem>
               <SelectItem value="Beginner">Beginner</SelectItem>
               <SelectItem value="Intermediate">Intermediate</SelectItem>
               <SelectItem value="Advanced">Advanced</SelectItem>

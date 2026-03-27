@@ -1320,9 +1320,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           materials: [],
           tools: [],
           outputs: [],
+          process_variables: [],
           apps: [],
           flow_type: 'prime',
-          step_type: 'scaled'
+          step_type: 'scaled',
+          number_of_workers: 1,
+          skill_level: 'Intermediate'
         });
       
       if (stepError) {
@@ -2306,7 +2309,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           display_order: 1,
           materials: [],
           tools: [],
-          outputs: []
+          outputs: [],
+          process_variables: [],
+          number_of_workers: 1,
+          skill_level: 'Intermediate'
         });
       
       if (stepInsertError) {
