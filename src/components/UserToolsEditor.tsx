@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -46,6 +48,97 @@ interface UserToolsEditorProps {
   initialMode?: 'library' | 'add-tools';
   onBackToLibrary?: () => void;
   onSwitchToAdd?: () => void;
+}
+
+type DbClient = SupabaseClient<Database>;
+
+/**
+ * One row per catalog variant (tool_variations.id) or per core tool (tools.id via user_tools).
+ * Merges duplicate core user_tools rows or duplicate profile entries; updates DB when needed.
+ */
+async function normalizeUserOwnedToolsList(
+  client: DbClient,
+  userId: string,
+  tools: UserOwnedTool[],
+  userToolsTableRowIds: Set<string>
+): Promise<{ normalized: UserOwnedTool[]; changed: boolean }> {
+  if (tools.length === 0) {
+    return { normalized: [], changed: false };
+  }
+
+  const distinctIds = [...new Set(tools.map((t) => t.id))];
+  const { data: variationRows, error: varErr } = await client
+    .from("tool_variations")
+    .select("id")
+    .in("id", distinctIds);
+
+  if (varErr) {
+    console.error("normalizeUserOwnedToolsList: tool_variations lookup failed", varErr);
+    return { normalized: tools, changed: false };
+  }
+
+  const variationIdSet = new Set((variationRows ?? []).map((r) => r.id));
+
+  const groups = new Map<string, UserOwnedTool[]>();
+  for (const t of tools) {
+    let key: string;
+    if (variationIdSet.has(t.id)) {
+      key = `v:${t.id}`;
+    } else if (t.tool_id) {
+      key = `c:${t.tool_id}`;
+    } else {
+      key = `u:${t.id}`;
+    }
+    const list = groups.get(key) ?? [];
+    list.push(t);
+    groups.set(key, list);
+  }
+
+  let changed = false;
+  const normalized: UserOwnedTool[] = [];
+
+  for (const [, group] of groups) {
+    if (group.length === 1) {
+      normalized.push(group[0]);
+      continue;
+    }
+
+    changed = true;
+    const totalQty = group.reduce((s, t) => s + (t.quantity ?? 0), 0);
+    const sorted = [...group].sort((a, b) => a.id.localeCompare(b.id));
+    const keep = sorted[0];
+    normalized.push({ ...keep, quantity: totalQty });
+
+    const isVariationEntry = variationIdSet.has(keep.id);
+    if (!isVariationEntry && keep.tool_id) {
+      const extraIds = sorted
+        .slice(1)
+        .map((t) => t.id)
+        .filter((id) => userToolsTableRowIds.has(id));
+      if (extraIds.length > 0) {
+        const { error: delErr } = await client
+          .from("user_tools")
+          .delete()
+          .in("id", extraIds)
+          .eq("user_id", userId);
+        if (delErr) {
+          console.error("normalizeUserOwnedToolsList: delete duplicate user_tools rows", delErr);
+        }
+      }
+      if (userToolsTableRowIds.has(keep.id)) {
+        const { error: upErr } = await client
+          .from("user_tools")
+          .update({ quantity: totalQty })
+          .eq("id", keep.id)
+          .eq("user_id", userId);
+        if (upErr) {
+          console.error("normalizeUserOwnedToolsList: update quantity on user_tools", upErr);
+        }
+      }
+    }
+  }
+
+  return { normalized, changed };
 }
 
 export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSwitchToAdd }: UserToolsEditorProps = {}) {
@@ -178,16 +271,30 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
       }
 
       let merged = Array.from(byId.values());
-      const coreIds = collectOwnedToolCoreIds(merged);
+      const tableRowIds = new Set(fromTableRaw.map((r) => String(r.id)));
+      const { normalized, changed } = await normalizeUserOwnedToolsList(supabase, user.id, merged, tableRowIds);
+      let nextList = normalized;
+
+      const coreIds = collectOwnedToolCoreIds(nextList);
       const { corePhotoById, variationsByCore } = await fetchOwnedToolsPhotoResolution(supabase, coreIds);
-      merged = enrichOwnedToolsWithCatalogPhotos(merged, corePhotoById, variationsByCore);
+      nextList = enrichOwnedToolsWithCatalogPhotos(nextList, corePhotoById, variationsByCore);
+
+      const { error: profileSyncErr } = await supabase
+        .from('user_profiles')
+        .update({ owned_tools: nextList as any })
+        .eq('user_id', user.id);
+      if (profileSyncErr) {
+        console.error('UserToolsEditor: sync owned_tools failed', profileSyncErr);
+      }
+
       console.log('✅ UserToolsEditor - Merged library tools:', {
-        count: merged.length,
+        count: nextList.length,
         fromProfile: fromProfile.length,
         fromTable: fromTableRaw.length,
+        deduped: changed,
       });
 
-      setUserTools(merged);
+      setUserTools(nextList);
     } catch (error) {
       console.error('❌ UserToolsEditor - Error fetching user tools:', error);
     }
@@ -207,8 +314,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
           const { data: variations } = await supabase
             .from('tool_variations')
             .select('*')
-            .eq('core_item_id', tool.id)
-            .eq('item_type', 'tools');
+            .eq('core_item_id', tool.id);
           
           variationsMap[tool.id] = variations || [];
         }
@@ -255,16 +361,16 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
           return !userOwnsCatalogTool(tool.id);
         }
 
-        // Keep in add list until every variation has been added (by variation row id).
-        const allVariationsOwned = variations.every((v) => userOwnsVariationId(v.id));
-        return !allVariationsOwned;
+        // Tools with catalog variations stay listed so users can open the picker to add another
+        // of the same variant (quantity) or additional variants.
+        return true;
       })
       .sort((a, b) => {
         const aName = a.item || a.name || '';
         const bName = b.item || b.name || '';
         return aName.localeCompare(bName);
       });
-  }, [availableTools, searchTerm, toolVariations, userTools, userOwnsCatalogTool, userOwnsVariationId]);
+  }, [availableTools, searchTerm, toolVariations, userTools, userOwnsCatalogTool]);
 
   const { commonTools, otherTools } = useMemo(() => {
     const scale = (t: Tool) => t.specialty_scale ?? 2;
@@ -293,7 +399,6 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
         .from('tool_variations')
         .select('id')
         .eq('core_item_id', tool.id)
-        .eq('item_type', 'tools')
         .limit(1);
 
       if (error) throw error;
@@ -318,6 +423,50 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
     if (!user) return;
 
     try {
+      const { data: existingRows, error: existingErr } = await supabase
+        .from('user_tools')
+        .select('id, quantity')
+        .eq('user_id', user.id)
+        .eq('tool_id', tool.id);
+
+      if (existingErr) {
+        console.error('❌ Failed to check existing user_tools rows:', existingErr);
+        toast.error(existingErr.message || 'Could not add tool to your library.');
+        return;
+      }
+
+      if (existingRows && existingRows.length > 0) {
+        const sorted = [...existingRows].sort((a, b) => a.id.localeCompare(b.id));
+        const keepId = sorted[0].id;
+        const totalQty = sorted.reduce((s, r) => s + (r.quantity ?? 0), 0) + 1;
+        const extraIds = sorted.slice(1).map((r) => r.id);
+        if (extraIds.length > 0) {
+          const { error: delErr } = await supabase
+            .from('user_tools')
+            .delete()
+            .in('id', extraIds)
+            .eq('user_id', user.id);
+          if (delErr) {
+            console.error('❌ Failed to merge duplicate user_tools rows:', delErr);
+            toast.error(delErr.message || 'Could not update quantity.');
+            return;
+          }
+        }
+        const { error: upErr } = await supabase
+          .from('user_tools')
+          .update({ quantity: totalQty })
+          .eq('id', keepId)
+          .eq('user_id', user.id);
+        if (upErr) {
+          console.error('❌ Failed to bump quantity on user_tools:', upErr);
+          toast.error(upErr.message || 'Could not update quantity.');
+          return;
+        }
+        await fetchUserTools();
+        window.dispatchEvent(new CustomEvent('tools-library-updated'));
+        return;
+      }
+
       console.log('💾 UserToolsEditor - Inserting tool into user_tools:', {
         userId: user.id,
         toolId: tool.id,
@@ -343,25 +492,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
         return;
       }
 
-      const row = data as UserOwnedTool;
-      const newUserTool: UserOwnedTool = {
-        ...row,
-        item: row.name,
-        photo_url: tool.photo_url,
-      };
-      const updatedTools = [...userTools, newUserTool];
-      setUserTools(updatedTools);
-
-      // ToolsMaterialsLibraryView and other UIs read owned_tools on user_profiles — keep in sync.
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({ owned_tools: updatedTools as any })
-        .eq('user_id', user.id);
-
-      if (profileError) {
-        console.error('❌ Failed to sync owned_tools after user_tools insert:', profileError);
-        toast.error(profileError.message || 'Tool saved but profile library sync failed.');
-      }
+      await fetchUserTools();
 
       window.dispatchEvent(new CustomEvent('tools-library-updated'));
     } catch (error) {
@@ -650,28 +781,32 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
               }}
               coreItemId={checkingVariations.id}
               coreItemName={checkingVariations.item}
-              itemType="tools"
               onVariationSelect={(variation) => {
-                if (userOwnsVariationId(variation.id)) {
-                  return;
-                }
-
                 const coreId = checkingVariations.id;
-                const newUserTool: UserOwnedTool = {
-                  id: variation.id,
-                  tool_id: coreId,
-                  name: variation.name,
-                  item: variation.name,
-                  description: variation.description,
-                  photo_url: variation.photo_url,
-                  quantity: 1,
-                  model_name: variation.sku || '',
-                  user_photo_url: ''
-                };
-                const updatedTools = [...userTools, newUserTool];
+                let updatedTools: UserOwnedTool[];
+
+                if (userOwnsVariationId(variation.id)) {
+                  updatedTools = userTools.map((t) =>
+                    t.id === variation.id
+                      ? { ...t, quantity: (t.quantity ?? 0) + 1 }
+                      : t
+                  );
+                } else {
+                  const newUserTool: UserOwnedTool = {
+                    id: variation.id,
+                    tool_id: coreId,
+                    name: variation.name,
+                    item: variation.name,
+                    description: variation.description,
+                    photo_url: variation.photo_url,
+                    quantity: 1,
+                    model_name: variation.sku || '',
+                    user_photo_url: ''
+                  };
+                  updatedTools = [...userTools, newUserTool];
+                }
                 setUserTools(updatedTools);
-                
-                // Save to database immediately
+
                 if (user) {
                   supabase
                     .from('user_profiles')
@@ -681,23 +816,11 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
                       if (error) {
                         console.error('Failed to save tool to database:', error);
                       } else {
-                        // Dispatch event to refresh library view
+                        void fetchUserTools();
                         window.dispatchEvent(new CustomEvent('tools-library-updated'));
                       }
                     });
                 }
-                
-                // Check if all variants are now owned - if so, close the window
-                const currentToolVariations = toolVariations[checkingVariations?.id || ''] || [];
-                const updatedOwnedIds = new Set([...userTools.map(t => t.id), variation.id]);
-                const allVariationsNowOwned = currentToolVariations.every(v => 
-                  updatedOwnedIds.has(v.id)
-                );
-                
-                if (allVariationsNowOwned) {
-                  setCheckingVariations(null);
-                }
-                // If not all owned, keep the window open for more selections
               }}
               ownedVariationIds={new Set(userTools.map(userTool => userTool.id))}
             />
@@ -937,7 +1060,6 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
           onOpenChange={() => setViewingVariations(null)}
           coreItemId={viewingVariations.id}
           coreItemName={viewingVariations.item}
-          itemType="tools"
         />
       )}
     </div>

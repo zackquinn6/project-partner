@@ -42,7 +42,7 @@ async function updateStepContent(
       const { data: existingInstruction } = await supabase
         .from('step_instructions')
         .select('id')
-        .eq('template_step_id', stepId)
+        .eq('step_id', stepId)
         .eq('instruction_level', level)
         .maybeSingle();
 
@@ -71,7 +71,7 @@ async function updateStepContent(
         const { error: insertError } = await supabase
           .from('step_instructions')
           .insert({
-            template_step_id: stepId,
+            step_id: stepId,
             instruction_level: level,
             content: {
               text: instructionContent,
@@ -486,7 +486,7 @@ export async function importGeneratedProject(
                 await supabase
                   .from('step_instructions')
                   .delete()
-                  .in('template_step_id', stepIds.map(s => s.id));
+                  .in('step_id', stepIds.map(s => s.id));
               }
             }
 
@@ -1037,7 +1037,7 @@ export async function importGeneratedProject(
               const { error: instructionError } = await supabase
                 .from('step_instructions')
                 .insert({
-                  template_step_id: createdStep.id,
+                  step_id: createdStep.id,
                   instruction_level: level,
                   content: {
                     text: instructionContent,

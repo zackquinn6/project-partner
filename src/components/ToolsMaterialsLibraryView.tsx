@@ -117,11 +117,20 @@ export function ToolsMaterialsLibraryView({ open, onOpenChange, onEditMode, onAd
       
       if (error) throw error;
       
-      // Deduplicate tools by ID
       const rawTools = (data?.owned_tools as unknown as UserOwnedTool[]) || [];
-      const uniqueTools = rawTools.filter((tool, index, arr) => 
-        arr.findIndex(t => t.id === tool.id) === index
-      );
+      const byToolId = new Map<string, UserOwnedTool>();
+      for (const tool of rawTools) {
+        const prev = byToolId.get(tool.id);
+        if (prev) {
+          byToolId.set(tool.id, {
+            ...prev,
+            quantity: (prev.quantity ?? 0) + (tool.quantity ?? 0),
+          });
+        } else {
+          byToolId.set(tool.id, { ...tool });
+        }
+      }
+      const uniqueTools = Array.from(byToolId.values());
       
       // Deduplicate materials by ID and enrich with unit_size from materials table
       const rawMaterials = (data?.owned_materials as unknown as UserOwnedMaterial[]) || [];

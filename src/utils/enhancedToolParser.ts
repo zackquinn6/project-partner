@@ -449,7 +449,6 @@ export async function importEnhancedToolsToDatabase(
           .insert({
             id: crypto.randomUUID(),
             core_item_id: coreToolId,
-            item_type: 'tools',
             name: variant.name,
             description: `${Object.entries(variant.attributes).map(([k, v]) => `${k}: ${v}`).join(', ')}`,
             attributes: variant.attributes,

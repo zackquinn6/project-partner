@@ -6,15 +6,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, X, Edit2, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, X, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
-  countVariationsForCoreItem,
-  fetchAttributeDefinitionsForCoreItem,
-  syncAttributeDefinitionsToAllVariations,
+  countMaterialVariantsForMaterial,
+  fetchAttributeDefinitionsForMaterial,
+  syncAttributeDefinitionsToAllMaterialVariants,
 } from '@/utils/variationAttributeDefinitions';
-import { VariationEditor } from './VariationEditor';
+import { MaterialVariationEditor } from './MaterialVariationEditor';
 import {
   Dialog,
   DialogContent,
@@ -39,32 +39,28 @@ interface VariationAttributeValue {
   value: string;
   display_value: string;
   sort_order: number;
-  core_item_id?: string;
+  material_id?: string;
 }
 
 interface VariationInstance {
   id: string;
-  core_item_id: string;
+  material_id: string;
   name: string;
   description?: string;
   sku?: string;
   photo_url?: string;
   attributes: Record<string, string>;
-  estimated_weight_lbs?: number;
-  weight_lbs?: number;
-  estimated_rental_lifespan_days?: number;
-  warning_flags?: string[];
   created_at?: string;
   updated_at?: string;
 }
 
-interface VariationManagerProps {
-  coreItemId: string;
-  coreItemName: string;
+interface MaterialVariationManagerProps {
+  materialId: string;
+  materialName: string;
   onVariationUpdate?: () => void;
 }
 
-export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }: VariationManagerProps) {
+export function MaterialVariationManager({ materialId, materialName, onVariationUpdate }: MaterialVariationManagerProps) {
   const [attributes, setAttributes] = useState<VariationAttribute[]>([]);
   const [variations, setVariations] = useState<VariationInstance[]>([]);
   const [editingVariation, setEditingVariation] = useState<VariationInstance | null>(null);
@@ -109,7 +105,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
   useEffect(() => {
     fetchAttributes();
     fetchVariations();
-  }, [coreItemId]);
+  }, [materialId]);
 
   // Reset selected attribute if it no longer exists in the updated attributes list
   useEffect(() => {
@@ -120,9 +116,9 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
 
   const fetchAttributes = async () => {
     try {
-      const defs = (await fetchAttributeDefinitionsForCoreItem(
+      const defs = (await fetchAttributeDefinitionsForMaterial(
         supabase,
-        coreItemId
+        materialId
       )) as any[];
       const formattedAttributes: VariationAttribute[] = defs.map((attr: any) => ({
         id: attr.id,
@@ -135,7 +131,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
           value: v.value,
           display_value: v.display_value,
           sort_order: v.sort_order,
-          core_item_id: v.core_item_id
+          material_id: v.material_id
         }))
       }));
 
@@ -149,9 +145,9 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
   const fetchVariations = async () => {
     try {
       const { data, error } = await supabase
-        .from('tool_variations')
+        .from('materials_variants')
         .select('*')
-        .eq('core_item_id', coreItemId);
+        .eq('core_item_id', materialId);
 
       if (error) throw error;
       setVariations((data || []).map(item => ({
@@ -172,7 +168,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
 
     setLoading(true);
     try {
-      const variationCount = await countVariationsForCoreItem(supabase, coreItemId);
+      const variationCount = await countVariationsForCoreItem(supabase, materialId);
       if (variationCount === 0) {
         toast.error('Create at least one variation before defining attribute types.');
         return;
@@ -201,9 +197,9 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
         });
       }
 
-      const defs = (await fetchAttributeDefinitionsForCoreItem(
+      const defs = (await fetchAttributeDefinitionsForMaterial(
         supabase,
-        coreItemId
+        materialId
       )) as any[];
 
       for (const attrData of attributesToCreate) {
@@ -219,7 +215,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
         }
       }
 
-      await syncAttributeDefinitionsToAllVariations(supabase, coreItemId, defs);
+      await syncAttributeDefinitionsToAllMaterialVariants(supabase, materialId, defs);
 
       setNewAttributeName('');
       setSelectedCommonAttributes([]);
@@ -241,15 +237,15 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
 
     setLoading(true);
     try {
-      const variationCount = await countVariationsForCoreItem(supabase, coreItemId);
+      const variationCount = await countVariationsForCoreItem(supabase, materialId);
       if (variationCount === 0) {
         toast.error('Create at least one variation before adding attribute values.');
         return;
       }
 
-      const defs = (await fetchAttributeDefinitionsForCoreItem(
+      const defs = (await fetchAttributeDefinitionsForMaterial(
         supabase,
-        coreItemId
+        materialId
       )) as any[];
       const attrIndex = defs.findIndex((a: any) => a.id === selectedAttributeId);
       if (attrIndex === -1) {
@@ -266,13 +262,13 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
           value: canonicalValue,
           display_value: newValueText,
           sort_order: values.length,
-          core_item_id: coreItemId
+          material_id: materialId
         });
       }
 
       defs[attrIndex] = { ...attr, values };
 
-      await syncAttributeDefinitionsToAllVariations(supabase, coreItemId, defs);
+      await syncAttributeDefinitionsToAllMaterialVariants(supabase, materialId, defs);
       
       setNewValueText('');
       setSelectedAttributeId('');
@@ -294,36 +290,22 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
 
     setLoading(true);
     try {
-      // Determine automatic warning flags based on attributes
-      const automaticWarningFlags: string[] = [];
-      
-      // Check if power source attribute is selected
-      if (selectedAttributes.power_source) {
-        automaticWarningFlags.push('powered');
-        
-        // If battery is selected within power source, add battery warning
-        if (selectedAttributes.power_source === 'battery') {
-          automaticWarningFlags.push('battery');
-        }
-      }
-
-      const defsForNewRow = await fetchAttributeDefinitionsForCoreItem(
+      const defsForNewRow = await fetchAttributeDefinitionsForMaterial(
         supabase,
-        coreItemId
+        materialId
       );
 
-      const { data: variationData, error } = await supabase
-        .from('tool_variations')
+      const { error } = await supabase
+        .from('materials_variants')
         .insert({
           id: crypto.randomUUID(),
-          core_item_id: coreItemId,
+          material_id: materialId,
           name: variationName,
           description: variationDescription || null,
           sku: variationSku || null,
           photo_url: variationPhotoUrl || null,
           attributes: selectedAttributes,
           attribute_definitions: defsForNewRow,
-          warning_flags: automaticWarningFlags.length > 0 ? automaticWarningFlags : undefined
         })
         .select()
         .single();
@@ -336,22 +318,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
         throw error;
       }
 
-      if (variationData) {
-        try {
-          await supabase.functions.invoke('scrape-tool-pricing', {
-            body: {
-              variation_id: variationData.id,
-              tool_name: coreItemName,
-              brand: selectedAttributes.brand || selectedAttributes.manufacturer,
-              model: selectedAttributes.model || selectedAttributes.model_number
-            }
-          });
-          toast.success('Variation created and price scraping started');
-        } catch (scrapeError) {
-          console.error('Price scraping failed:', scrapeError);
-          toast.success('Variation created (price scraping failed)');
-        }
-      }
+      toast.success('Material variant created');
       
       setVariationName('');
       setVariationDescription('');
@@ -374,7 +341,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
 
     try {
       const { error } = await supabase
-        .from('tool_variations')
+        .from('materials_variants')
         .delete()
         .eq('id', variationId);
 
@@ -393,16 +360,16 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
     if (!confirm('Are you sure you want to delete this attribute? This will also delete all its values.')) return;
 
     try {
-      const variationCount = await countVariationsForCoreItem(supabase, coreItemId);
+      const variationCount = await countVariationsForCoreItem(supabase, materialId);
       if (variationCount === 0) {
         toast.error('No variations to update.');
         return;
       }
 
       const defs = (
-        (await fetchAttributeDefinitionsForCoreItem(supabase, coreItemId)) as any[]
+        (await fetchAttributeDefinitionsForMaterial(supabase, materialId)) as any[]
       ).filter((a: any) => a.id !== attributeId);
-      await syncAttributeDefinitionsToAllVariations(supabase, coreItemId, defs);
+      await syncAttributeDefinitionsToAllMaterialVariants(supabase, materialId, defs);
 
       fetchAttributes();
     } catch (error) {
@@ -415,22 +382,22 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
     if (!confirm('Are you sure you want to delete this attribute value?')) return;
 
     try {
-      const variationCount = await countVariationsForCoreItem(supabase, coreItemId);
+      const variationCount = await countVariationsForCoreItem(supabase, materialId);
       if (variationCount === 0) {
         toast.error('No variations to update.');
         return;
       }
 
-      const defs = (await fetchAttributeDefinitionsForCoreItem(
+      const defs = (await fetchAttributeDefinitionsForMaterial(
         supabase,
-        coreItemId
+        materialId
       )) as any[];
       const nextDefs = defs.map((attr: any) => ({
         ...attr,
         values: (attr.values || []).filter((v: any) => v.id !== valueId)
       }));
 
-      await syncAttributeDefinitionsToAllVariations(supabase, coreItemId, nextDefs);
+      await syncAttributeDefinitionsToAllMaterialVariants(supabase, materialId, nextDefs);
 
       fetchAttributes();
     } catch (error) {
@@ -446,7 +413,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
     setLoading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${coreItemId}-${Date.now()}.${fileExt}`;
+      const fileName = `${materialId}-${Date.now()}.${fileExt}`;
       const filePath = `variations/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -501,10 +468,10 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
     
     // If no attributes are selected, generate a "Standard" variation name
     if (attributeStrings.length === 0) {
-      const generatedName = toTitleCaseWithAcronyms(`Standard ${coreItemName}`);
+      const generatedName = toTitleCaseWithAcronyms(`Standard ${materialName}`);
       setVariationName(generatedName);
     } else {
-      const generatedName = toTitleCaseWithAcronyms(`${attributeStrings.join(' ')} ${coreItemName}`);
+      const generatedName = toTitleCaseWithAcronyms(`${attributeStrings.join(' ')} ${materialName}`);
       setVariationName(generatedName);
     }
   };
@@ -699,7 +666,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between text-sm">
-            Variations for {coreItemName}
+            Variations for {materialName}
             <div className="flex items-center space-x-2">
               <Dialog open={showVariationDialog} onOpenChange={setShowVariationDialog}>
               <DialogTrigger asChild>
@@ -885,20 +852,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                       {variation.sku && (
                         <div className="text-xs text-muted-foreground">SKU: {variation.sku}</div>
                       )}
-                       {/* Display weight and pricing if available */}
-                       <div className="flex flex-wrap gap-2 mt-2">
-                         {(variation.weight_lbs || variation.estimated_weight_lbs) && (
-                           <Badge variant="outline" className="text-xs">
-                             Weight: {variation.weight_lbs || variation.estimated_weight_lbs} lbs
-                           </Badge>
-                         )}
-                        {variation.estimated_rental_lifespan_days && (
-                          <Badge variant="outline" className="text-xs">
-                            Rental Life: {variation.estimated_rental_lifespan_days} days
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-1 mt-1">
+                      <div className="mt-2 flex flex-wrap gap-1">
                         {Object.entries(variation.attributes).map(([key, value]) => {
                           const attr = attributes.find(a => a.name === key);
                           const attrValue = attr?.values.find(v => v.value === value);
@@ -942,7 +896,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
 
       {/* Variation Editor Dialog */}
       {editingVariation && (
-        <VariationEditor
+        <MaterialVariationEditor
           open={!!editingVariation}
           onOpenChange={(open) => !open && setEditingVariation(null)}
           variation={editingVariation}

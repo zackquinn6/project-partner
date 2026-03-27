@@ -35,7 +35,6 @@ export function ToolInstructionsPopup({
           .from("tool_variations")
           .select("instructions, core_item_id")
           .eq("id", toolId)
-          .eq("item_type", "tools")
           .maybeSingle();
 
         if (!varError && variation?.instructions) {

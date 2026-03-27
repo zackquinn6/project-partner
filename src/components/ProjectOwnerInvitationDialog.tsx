@@ -52,15 +52,15 @@ export const ProjectOwnerInvitationDialog: React.FC<ProjectOwnerInvitationDialog
         .single();
 
       const { error } = await supabase
-        .from('project_owner_invitations')
+        .from('project_owners')
         .insert({
           invited_by: user.id,
           invited_email: email.toLowerCase(),
           invited_user_id: profileData?.user_id || null,
           invitation_token: token,
           expires_at: expiresAt.toISOString(),
-          status: 'pending',
-          terms_version: '1.0'
+          invitation_status: 'pending',
+          terms_version: '1.0',
         });
 
       if (error) throw error;

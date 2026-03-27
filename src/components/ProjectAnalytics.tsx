@@ -32,7 +32,8 @@ const ProjectAnalytics: React.FC = () => {
       const { data: ownerRows } = await supabase
         .from('project_owners')
         .select('project_id')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .is('invitation_status', null);
       const ids = (ownerRows ?? []).map((r: { project_id: string }) => r.project_id);
       if (ids.length === 0) {
         setOwnedParentIds(new Set());

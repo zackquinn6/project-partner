@@ -31,7 +31,6 @@ export async function fetchOwnedToolsPhotoResolution(
     client
       .from('tool_variations')
       .select('core_item_id, name, sku, photo_url')
-      .eq('item_type', 'tools')
       .in('core_item_id', toolIds),
   ]);
 

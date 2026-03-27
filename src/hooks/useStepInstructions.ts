@@ -33,7 +33,7 @@ export interface StepInstruction {
     }>;
   };
   id?: string;
-  template_step_id?: string;
+  step_id?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -89,7 +89,7 @@ export function useStepInstructions(stepId: string, instructionLevel: 'beginner'
         const { data, error: fetchError } = await supabase
           .from('step_instructions')
           .select('content')
-          .eq('template_step_id', stepId)
+          .eq('step_id', stepId)
           .eq('instruction_level', instructionLevel)
           .maybeSingle();
 

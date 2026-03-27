@@ -67,23 +67,21 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
     setIsSubmitting(true);
     
     try {
-      // Get user profile for name
+      // Get user profile for name (emails only; DB row is user_id + message)
       const { data: profile } = await supabase
         .from('user_profiles')
-        .select('display_name, nickname')
+        .select('full_name, nickname')
         .eq('user_id', user.id)
         .single();
       
-      const userName = profile?.display_name || profile?.nickname || user.email.split('@')[0];
+      const userName =
+        sanitizeInput(profile?.full_name || profile?.nickname || user.email.split('@')[0] || '');
       const categoryLabel = categories.find(c => c.value === sanitizedCategory)?.label || sanitizedCategory;
       
-      // Save feedback to database
       const { error: dbError } = await supabase
         .from('feedback')
         .insert({
           user_id: user.id,
-          user_email: user.email,
-          user_name: sanitizeInput(userName),
           category: categoryLabel,
           message: sanitizedMessage,
           status: 'open'
@@ -96,7 +94,7 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
         await supabase.functions.invoke('send-feedback', {
           body: {
             userEmail: user.email,
-            userName: sanitizeInput(userName),
+            userName,
             category: categoryLabel,
             message: sanitizedMessage,
             currentUrl: window.location.href,

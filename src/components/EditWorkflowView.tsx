@@ -1175,12 +1175,12 @@ export default function EditWorkflowView({
       const { error } = await supabase
         .from('step_instructions')
         .upsert({
-          template_step_id: stepId,
+          step_id: stepId,
           instruction_level: targetLevel,
           content: sections as any,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'template_step_id,instruction_level'
+          onConflict: 'step_id,instruction_level'
         });
 
       if (error) {
@@ -1228,7 +1228,7 @@ export default function EditWorkflowView({
       const { data, error } = await supabase
         .from('step_instructions')
         .select('content')
-        .eq('template_step_id', stepId)
+        .eq('step_id', stepId)
         .eq('instruction_level', instructionLevel)
         .maybeSingle();
 
@@ -1726,7 +1726,23 @@ export default function EditWorkflowView({
         </div>
 
         <div className="w-full px-6">
-          <StructureManager onBack={() => setViewMode('steps')} />
+          <StructureManager
+            onBack={() => {
+              setViewMode('steps');
+              if (currentProject?.id) {
+                setLoadingPhases(true);
+                loadPhasesFromDatabase(currentProject.id)
+                  .then((phases) => {
+                    setRawPhases(phases);
+                    setLoadingPhases(false);
+                  })
+                  .catch((err) => {
+                    console.error('Failed to refresh phases after Process Map:', err);
+                    setLoadingPhases(false);
+                  });
+              }
+            }}
+          />
         </div>
       </div>;
   }

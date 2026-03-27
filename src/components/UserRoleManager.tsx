@@ -91,7 +91,8 @@ export const UserRoleManager: React.FC = () => {
         const { data: ownersData } = await supabase
           .from('project_owners')
           .select('user_id, project_id')
-          .in('user_id', projectOwnerUserIds);
+          .in('user_id', projectOwnerUserIds)
+          .is('invitation_status', null);
         const byUser: Record<string, string[]> = {};
         for (const uid of projectOwnerUserIds) byUser[uid] = [];
         for (const row of ownersData || []) {
@@ -158,7 +159,8 @@ export const UserRoleManager: React.FC = () => {
       const { error: delError } = await supabase
         .from('project_owners')
         .delete()
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .is('invitation_status', null);
       if (delError) throw delError;
       if (projectIds.length > 0) {
         const { error: insError } = await supabase
@@ -230,14 +232,14 @@ export const UserRoleManager: React.FC = () => {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);
         const { data: row, error } = await supabase
-          .from('project_owner_invitations')
+          .from('project_owners')
           .insert({
             project_id: projectId,
             invited_email: email,
             invited_user_id: invitedUserId,
             invited_by: user.id,
             invitation_token: token,
-            status: 'pending',
+            invitation_status: 'pending',
             expires_at: expiresAt.toISOString(),
             terms_version: '1.0',
           })

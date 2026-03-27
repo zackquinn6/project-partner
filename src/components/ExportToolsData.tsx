@@ -27,7 +27,6 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
       const { data: variations, error: variationsError } = await supabase
         .from('tool_variations')
         .select('*')
-        .eq('item_type', 'tools')
         .order('name');
 
       if (variationsError) throw variationsError;
@@ -42,8 +41,6 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
 
       // Pricing is stored on tool_variations.pricing (JSONB array per variation)
       const pricing = (variations || []).flatMap(v => (v.pricing as any[] | null) || []);
-
-      // Attribute definitions are now stored per-variation in tool_variations.attribute_definitions
 
       // Create workbook
       const workbook = XLSX.utils.book_new();
@@ -84,9 +81,9 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
         const tool = tools?.find(t => t.id === variation.core_item_id);
         const attributeStrings: string[] = [];
         
-        // Convert attributes object to readable format using attribute_definitions stored on the variation
+        // Definitions are stored on each tool_variations row (kept in sync).
         if (variation.attributes && typeof variation.attributes === 'object') {
-          const attributeDefinitions = (variation.attribute_definitions || []) as any[];
+          const attributeDefinitions = (variation.attribute_definitions as any[]) || [];
           Object.entries(variation.attributes).forEach(([attrName, valueKey]) => {
             const attribute = attributeDefinitions.find((a: any) => a.name === attrName);
             const value = attribute?.values?.find((v: any) => v.value === valueKey);

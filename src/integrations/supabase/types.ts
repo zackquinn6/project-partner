@@ -17,7 +17,7 @@ export type Database = {
       achievement_notifications: {
         Row: {
           achievement_id: string
-          created_at: string
+          created_at: string | null
           id: string
           is_read: boolean | null
           project_run_id: string | null
@@ -25,7 +25,7 @@ export type Database = {
         }
         Insert: {
           achievement_id: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           is_read?: boolean | null
           project_run_id?: string | null
@@ -33,7 +33,7 @@ export type Database = {
         }
         Update: {
           achievement_id?: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           is_read?: boolean | null
           project_run_id?: string | null
@@ -813,9 +813,7 @@ export type Database = {
           reviewed_by: string | null
           status: string | null
           updated_at: string
-          user_email: string | null
           user_id: string | null
-          user_name: string | null
         }
         Insert: {
           actioned_at?: string | null
@@ -829,9 +827,7 @@ export type Database = {
           reviewed_by?: string | null
           status?: string | null
           updated_at?: string
-          user_email?: string | null
           user_id?: string | null
-          user_name?: string | null
         }
         Update: {
           actioned_at?: string | null
@@ -845,9 +841,7 @@ export type Database = {
           reviewed_by?: string | null
           status?: string | null
           updated_at?: string
-          user_email?: string | null
           user_id?: string | null
-          user_name?: string | null
         }
         Relationships: []
       }
@@ -1624,6 +1618,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      materials_variants: {
+        Row: {
+          attribute_definitions: Json
+          attributes: Json
+          created_at: string
+          description: string | null
+          id: string
+          material_id: string
+          name: string
+          photo_url: string | null
+          sku: string | null
+          updated_at: string
+        }
+        Insert: {
+          attribute_definitions?: Json
+          attributes?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          material_id: string
+          name: string
+          photo_url?: string | null
+          sku?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attribute_definitions?: Json
+          attributes?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          material_id?: string
+          name?: string
+          photo_url?: string | null
+          sku?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'materials_variants_material_id_fkey'
+            columns: ['material_id']
+            isOneToOne: false
+            referencedRelation: 'materials'
+            referencedColumns: ['id']
+          },
+        ]
       }
       operation_steps: {
         Row: {
@@ -2815,6 +2856,54 @@ export type Database = {
           },
         ]
       }
+      project_owners: {
+        Row: {
+          id: string
+          project_id: string | null
+          user_id: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+          invited_email: string | null
+          invited_by: string | null
+          invited_user_id: string | null
+          invitation_token: string | null
+          expires_at: string | null
+          terms_version: string | null
+          invitation_status: string | null
+        }
+        Insert: {
+          id?: string
+          project_id?: string | null
+          user_id?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+          invited_email?: string | null
+          invited_by?: string | null
+          invited_user_id?: string | null
+          invitation_token?: string | null
+          expires_at?: string | null
+          terms_version?: string | null
+          invitation_status?: string | null
+        }
+        Update: {
+          id?: string
+          project_id?: string | null
+          user_id?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+          invited_email?: string | null
+          invited_by?: string | null
+          invited_user_id?: string | null
+          invitation_token?: string | null
+          expires_at?: string | null
+          terms_version?: string | null
+          invitation_status?: string | null
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           budget_per_typical_size: string | null
@@ -3036,7 +3125,7 @@ export type Database = {
           created_at: string | null
           id: string
           instruction_level: string
-          template_step_id: string
+          step_id: string
           updated_at: string | null
         }
         Insert: {
@@ -3044,7 +3133,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           instruction_level: string
-          template_step_id: string
+          step_id: string
           updated_at?: string | null
         }
         Update: {
@@ -3052,13 +3141,13 @@ export type Database = {
           created_at?: string | null
           id?: string
           instruction_level?: string
-          template_step_id?: string
+          step_id?: string
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "step_instructions_template_step_id_fkey"
-            columns: ["template_step_id"]
+            foreignKeyName: "step_instructions_step_id_fkey"
+            columns: ["step_id"]
             isOneToOne: false
             referencedRelation: "operation_steps"
             referencedColumns: ["id"]
@@ -3153,7 +3242,6 @@ export type Database = {
           estimated_weight_lbs: number | null
           id: string
           instructions: Json | null
-          item_type: string
           name: string
           photo_url: string | null
           quick_add: boolean | null
@@ -3172,7 +3260,6 @@ export type Database = {
           estimated_weight_lbs?: number | null
           id: string
           instructions?: Json | null
-          item_type: string
           name: string
           photo_url?: string | null
           quick_add?: boolean | null
@@ -3191,7 +3278,6 @@ export type Database = {
           estimated_weight_lbs?: number | null
           id?: string
           instructions?: Json | null
-          item_type?: string
           name?: string
           photo_url?: string | null
           quick_add?: boolean | null
@@ -3748,6 +3834,21 @@ export type Database = {
         }[]
       }
       get_standard_project_with_phases: { Args: never; Returns: Json }
+      get_project_owner_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          id: string
+          project_id: string
+          project_name: string
+          invited_email: string
+          status: string
+          expires_at: string
+        }[]
+      }
+      accept_project_owner_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: Json
+      }
       complete_project_owner_invitation: {
         Args: {
           p_invitation_id: string

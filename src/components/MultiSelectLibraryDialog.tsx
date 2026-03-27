@@ -147,20 +147,19 @@ export function MultiSelectLibraryDialog({
     try {
       // PERFORMANCE: Fetch all variations in one query instead of one per item
       const itemIds = itemsList.map(i => i.id);
-      const { data: allVariations, error } = await supabase
-        .from('tool_variations')
-        .select('*')
-        .in('core_item_id', itemIds)
-        .eq('item_type', type);
+      const { data: allVariations, error } =
+        type === 'tools'
+          ? await supabase.from('tool_variations').select('*').in('core_item_id', itemIds)
+          : await supabase.from('materials_variants').select('*').in('material_id', itemIds);
       
       if (error) throw error;
       
-      // Group variations by core_item_id
       (allVariations || []).forEach((variation: any) => {
-        if (!variationsMap[variation.core_item_id]) {
-          variationsMap[variation.core_item_id] = [];
+        const parentId = type === 'tools' ? variation.core_item_id : variation.material_id;
+        if (!variationsMap[parentId]) {
+          variationsMap[parentId] = [];
         }
-        variationsMap[variation.core_item_id].push(variation);
+        variationsMap[parentId].push(variation);
       });
       
       // Initialize empty arrays for items with no variations

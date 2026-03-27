@@ -29,12 +29,12 @@ interface ProjectAlerts {
 
 interface FeedbackItem {
   id: string;
-  user_email: string;
-  user_name: string;
+  user_id: string | null;
   category: string;
   message: string;
   status: string;
   created_at: string;
+  submitter_display: string;
 }
 
 export const AdminActionCenter: React.FC<AdminActionCenterProps> = ({
@@ -263,7 +263,12 @@ export const AdminActionCenter: React.FC<AdminActionCenterProps> = ({
                             <Badge variant="outline">{feedback.category}</Badge>
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            From: {feedback.user_name} ({feedback.user_email})
+                            From: {feedback.submitter_display}
+                            {feedback.user_id ? (
+                              <span className="ml-2 font-mono text-xs text-muted-foreground/80">
+                                {feedback.user_id}
+                              </span>
+                            ) : null}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {new Date(feedback.created_at).toLocaleDateString()} at {new Date(feedback.created_at).toLocaleTimeString()}

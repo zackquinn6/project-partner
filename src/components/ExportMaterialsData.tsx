@@ -23,12 +23,15 @@ export function ExportMaterialsData({ className = "" }: ExportMaterialsDataProps
 
       if (materialsError) throw materialsError;
 
-      // Fetch all material variations with their attributes (from unified tool_variations)
-      const { data: variations, error: variationsError } = await supabase
-        .from('tool_variations')
-        .select('*')
-        .eq('item_type', 'materials')
-        .order('name');
+      const materialIds = (materials || []).map(m => m.id);
+      const { data: variations, error: variationsError } =
+        materialIds.length === 0
+          ? { data: [] as any[], error: null }
+          : await supabase
+              .from('materials_variants')
+              .select('*')
+              .in('material_id', materialIds)
+              .order('name');
 
       if (variationsError) throw variationsError;
 
@@ -50,12 +53,12 @@ export function ExportMaterialsData({ className = "" }: ExportMaterialsDataProps
 
       // Variations sheet
       const variationsData = (variations || []).map(variation => {
-        const material = materials?.find(m => m.id === variation.core_item_id);
+        const material = materials?.find(m => m.id === variation.material_id);
         const attributeStrings: string[] = [];
         
-        // Convert attributes object to readable format using attribute_definitions stored on the variation
+        // Definitions are stored on each tool_variations row (kept in sync).
         if (variation.attributes && typeof variation.attributes === 'object') {
-          const attributeDefinitions = (variation.attribute_definitions || []) as any[];
+          const attributeDefinitions = (variation.attribute_definitions as any[]) || [];
           Object.entries(variation.attributes).forEach(([attrName, valueKey]) => {
             const attribute = attributeDefinitions.find((a: any) => a.name === attrName);
             const value = attribute?.values?.find((v: any) => v.value === valueKey);
@@ -71,8 +74,6 @@ export function ExportMaterialsData({ className = "" }: ExportMaterialsDataProps
           'Description': variation.description || '',
           'SKU/Part Numbers': variation.sku || '',
           'Attributes': attributeStrings.join('; '),
-          'Estimated Weight (lbs)': variation.estimated_weight_lbs || '',
-          'Warning Flags': (variation.warning_flags as string[] || []).join(', '),
           'Photo URL': variation.photo_url || '',
           'Created At': new Date(variation.created_at).toLocaleDateString(),
           'Updated At': new Date(variation.updated_at).toLocaleDateString()

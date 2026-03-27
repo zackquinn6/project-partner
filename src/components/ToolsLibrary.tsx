@@ -86,8 +86,7 @@ export function ToolsLibrary() {
           const { data: variations } = await supabase
             .from('tool_variations')
             .select('id, name')
-            .eq('core_item_id', tool.id)
-            .eq('item_type', 'tools');
+            .eq('core_item_id', tool.id);
           
           return {
             ...tool,
@@ -411,7 +410,6 @@ export function ToolsLibrary() {
           open={!!viewingVariations}
           onOpenChange={(open) => !open && setViewingVariations(null)}
           coreItemId={viewingVariations.id}
-          itemType="tools"
           coreItemName={viewingVariations.item}
         />
       )}

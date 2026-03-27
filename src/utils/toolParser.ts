@@ -183,7 +183,6 @@ export async function importToolsToDatabase(
               .insert({
                 id: crypto.randomUUID(),
                 core_item_id: coreToolId,
-                item_type: 'tools',
                 name: `${variation.brand} ${variation.model} ${tool.name}`,
                 description: `${variation.brand} ${variation.model} variant`,
                 attributes: variation.attributes
@@ -238,8 +237,7 @@ async function createAttributesAndValues(coreItemId: string, attributes: Record<
       const { data: variations, error } = await supabase
         .from('tool_variations')
         .select('id, attribute_definitions')
-        .eq('core_item_id', coreItemId)
-        .eq('item_type', 'tools');
+        .eq('core_item_id', coreItemId);
 
       if (error) {
         console.error('Attribute error:', error);

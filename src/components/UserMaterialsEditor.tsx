@@ -48,8 +48,8 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
-  const [checkingVariations, setCheckingVariations] = useState<Material | null>(null);
   const [showAddMaterials, setShowAddMaterials] = useState(initialMode === 'add-materials');
+  const [checkingVariations, setCheckingVariations] = useState<Material | null>(null);
   const { user } = useAuth();
 
   // Update showAddMaterials when initialMode changes
@@ -119,18 +119,14 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
       const materialIds = Array.from(new Set(rawMaterials.map(m => m.material_id).filter(Boolean))) as string[];
       const [corePhotosRes, variationPhotosRes] = await Promise.all([
         materialIds.length > 0
-          ? supabase
-              .from('materials')
-              .select('id, photo_url')
-              .in('id', materialIds)
-          : Promise.resolve({ data: [], error: null } as any),
+          ? supabase.from('materials').select('id, photo_url').in('id', materialIds)
+          : Promise.resolve({ data: [], error: null } as const),
         materialIds.length > 0
           ? supabase
-              .from('tool_variations')
-              .select('core_item_id, name, sku, photo_url')
-              .eq('item_type', 'materials')
-              .in('core_item_id', materialIds)
-          : Promise.resolve({ data: [], error: null } as any),
+              .from('materials_variants')
+              .select('material_id, name, sku, photo_url')
+              .in('material_id', materialIds)
+          : Promise.resolve({ data: [], error: null } as const),
       ]);
 
       if (corePhotosRes.error) throw corePhotosRes.error;
@@ -141,9 +137,9 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
       );
       const variationsByCore = new Map<string, any[]>();
       for (const v of variationPhotosRes.data || []) {
-        const list = variationsByCore.get(v.core_item_id) || [];
+        const list = variationsByCore.get(v.material_id) || [];
         list.push(v);
-        variationsByCore.set(v.core_item_id, list);
+        variationsByCore.set(v.material_id, list);
       }
 
       const enriched = rawMaterials.map((material) => {
@@ -152,9 +148,14 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
         if (!coreId) return material;
 
         const variations = variationsByCore.get(coreId) || [];
-        const matchedVariation = variations.find((v: any) =>
-          (material.brand && v.sku && material.brand.toLowerCase().trim() === String(v.sku).toLowerCase().trim()) ||
-          (material.name && v.name && material.name.toLowerCase().trim() === String(v.name).toLowerCase().trim())
+        const matchedVariation = variations.find(
+          (v: any) =>
+            (material.brand &&
+              v.sku &&
+              material.brand.toLowerCase().trim() === String(v.sku).toLowerCase().trim()) ||
+            (material.name &&
+              v.name &&
+              material.name.toLowerCase().trim() === String(v.name).toLowerCase().trim())
         );
         const linkedPhotoUrl = matchedVariation?.photo_url || corePhotoById.get(coreId) || null;
 
@@ -182,27 +183,22 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
     .sort((a, b) => a.item.localeCompare(b.item));
 
   const handleAddMaterial = async (material: Material) => {
-    // Always check if this material has variations first
     try {
-      const { data: variations, error } = await supabase
-        .from('tool_variations')
+      const { data: variants, error } = await supabase
+        .from('materials_variants')
         .select('id')
-        .eq('core_item_id', material.id)
-        .eq('item_type', 'materials')
+        .eq('material_id', material.id)
         .limit(1);
 
       if (error) throw error;
 
-      if (variations && variations.length > 0) {
-        // Material has variations, always show variation selector
+      if (variants && variants.length > 0) {
         setCheckingVariations(material);
       } else {
-        // No variations exist, add the core material directly
         addMaterial(material);
       }
-    } catch (error) {
-      console.error('Error checking variations:', error);
-      // Fallback to direct add if error occurs
+    } catch (err) {
+      console.error('Error checking material variants:', err);
       addMaterial(material);
     }
   };
@@ -497,54 +493,53 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
         )}
       </div>
 
-      {/* Variation Selection for Adding */}
       {checkingVariations && (
         <VariationViewer
           open={!!checkingVariations}
           onOpenChange={() => setCheckingVariations(null)}
           coreItemId={checkingVariations.id}
-          coreItemName={checkingVariations.item}
-          itemType="materials"
+          coreItemName={checkingVariations.item ?? checkingVariations.name}
+          catalogKind="materials"
           onVariationSelect={(variation) => {
-            // Check if this variation is already in the user's materials
-            const isDuplicate = userMaterials.some(userMaterial => userMaterial.id === variation.id);
+            if (!user || !checkingVariations) return;
+
+            const isDuplicate = userMaterials.some(
+              (m) => m.material_id === checkingVariations.id && m.name === variation.name
+            );
             if (isDuplicate) {
               setCheckingVariations(null);
               return;
             }
-            
-            // Create a new material based on the selected variation
-            const newUserMaterial: UserOwnedMaterial = {
-              id: variation.id,
-              name: variation.name,
-              item: variation.name,
-              description: variation.description,
-              photo_url: variation.photo_url,
-              quantity: 1,
-              brand: variation.sku || '',
-              user_photo_url: '',
-              purchase_location: ''
-            };
-            const updatedMaterials = [...userMaterials, newUserMaterial];
-            setUserMaterials(updatedMaterials);
-            
-            // Save to database immediately
-            if (user) {
-              supabase
-                .from('user_profiles')
-                .update({ owned_materials: updatedMaterials as any })
-                .eq('user_id', user.id)
-                .then(({ error }) => {
-                  if (error) {
-                    console.error('Failed to save material to database:', error);
-                  } else {
-                    // Dispatch event to refresh library view
-                    window.dispatchEvent(new CustomEvent('tools-library-updated'));
-                  }
-                });
-            }
-            
-            setCheckingVariations(null);
+
+            void (async () => {
+              const { data, error } = await supabase
+                .from('user_materials')
+                .insert({
+                  user_id: user.id,
+                  material_id: checkingVariations.id,
+                  name: variation.name,
+                  description: variation.description ?? undefined,
+                  unit: checkingVariations.unit,
+                  unit_size: checkingVariations.unit_size,
+                  brand: variation.sku || '',
+                  purchase_location: '',
+                  quantity: 1,
+                })
+                .select('id, material_id, name, description, unit, unit_size, brand, purchase_location, quantity, user_photo_url')
+                .single();
+
+              if (error) {
+                console.error('Failed to add material variant:', error);
+                setCheckingVariations(null);
+                return;
+              }
+
+              const row = data as UserOwnedMaterial;
+              const withItem = { ...row, item: row.name };
+              setUserMaterials((prev) => [...prev, withItem]);
+              setCheckingVariations(null);
+              window.dispatchEvent(new CustomEvent('tools-library-updated'));
+            })();
           }}
         />
       )}

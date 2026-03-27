@@ -9,6 +9,7 @@ import { Upload, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VariationManager } from './VariationManager';
+import { MaterialVariationManager } from './MaterialVariationManager';
 import { AlternatesEditor } from './AlternatesEditor';
 import { MultiContentEditor } from './MultiContentEditor';
 import type { ContentSection } from '@/interfaces/Project';
@@ -219,7 +220,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
   return (
     <Tabs defaultValue="basic" className="w-full">
       <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="basic">Core Tool</TabsTrigger>
+        <TabsTrigger value="basic">{type === 'tools' ? 'Core Tool' : 'Core Material'}</TabsTrigger>
         <TabsTrigger value="variations" disabled={!item?.id}>
           Variations {!item?.id && '(Save item first)'}
         </TabsTrigger>
@@ -384,11 +385,19 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
       )}
 
       <TabsContent value="variations">
-        {item?.id && (
+        {item?.id && type === 'tools' && (
           <VariationManager
             coreItemId={item.id}
-            itemType={type}
             coreItemName={item.name}
+            onVariationUpdate={() => {
+              // Optionally refresh or notify parent component
+            }}
+          />
+        )}
+        {item?.id && type === 'materials' && (
+          <MaterialVariationManager
+            materialId={item.id}
+            materialName={item.name}
             onVariationUpdate={() => {
               // Optionally refresh or notify parent component
             }}

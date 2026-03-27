@@ -12,12 +12,12 @@ import { ProjectOwnerTermsDialog } from './ProjectOwnerTermsDialog';
 
 interface Invitation {
   id: string;
-  invited_email: string;
-  status: string;
+  invited_email: string | null;
+  invitation_status: string | null;
   created_at: string;
-  expires_at: string;
-  invited_by: string;
-  invitation_token: string;
+  expires_at: string | null;
+  invited_by: string | null;
+  invitation_token: string | null;
 }
 
 export const ProjectOwnerInvitationsList: React.FC = () => {
@@ -32,8 +32,9 @@ export const ProjectOwnerInvitationsList: React.FC = () => {
   const loadInvitations = async () => {
     try {
       const { data, error } = await supabase
-        .from('project_owner_invitations')
+        .from('project_owners')
         .select('*')
+        .not('invitation_status', 'is', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -111,12 +112,14 @@ export const ProjectOwnerInvitationsList: React.FC = () => {
               <TableBody>
                 {invitations.map((invitation) => (
                   <TableRow key={invitation.id}>
-                    <TableCell>{invitation.invited_email}</TableCell>
-                    <TableCell>{getStatusBadge(invitation.status)}</TableCell>
+                    <TableCell>{invitation.invited_email ?? '—'}</TableCell>
+                    <TableCell>{getStatusBadge(invitation.invitation_status)}</TableCell>
                     <TableCell>{new Date(invitation.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell>{new Date(invitation.expires_at).toLocaleDateString()}</TableCell>
                     <TableCell>
-                      {invitation.status === 'pending' && invitation.invited_by !== user?.id && (
+                      {invitation.expires_at ? new Date(invitation.expires_at).toLocaleDateString() : '—'}
+                    </TableCell>
+                    <TableCell>
+                      {invitation.invitation_status === 'pending' && invitation.invited_by !== user?.id && (
                         <Button
                           size="sm"
                           onClick={() => handleAcceptInvitation(invitation.id)}

@@ -244,7 +244,8 @@ export function UnifiedProjectManagement({
         const { data: ownerRows, error: ownerError } = await supabase
           .from('project_owners')
           .select('project_id')
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .is('invitation_status', null);
         if (ownerError) {
           toast.error('Failed to load your project assignments');
           setProjects([]);

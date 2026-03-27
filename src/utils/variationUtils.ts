@@ -3,10 +3,7 @@ import { toast } from 'sonner';
 
 export const clearAllToolVariations = async (): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .from('tool_variations')
-      .delete()
-      .eq('item_type', 'tools');
+    const { error } = await supabase.from('tool_variations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
     if (error) {
       console.error('Error clearing tool variations:', error);
@@ -25,20 +22,20 @@ export const clearAllToolVariations = async (): Promise<boolean> => {
 export const clearAllMaterialVariations = async (): Promise<boolean> => {
   try {
     const { error } = await supabase
-      .from('tool_variations')
+      .from('materials_variants')
       .delete()
-      .eq('item_type', 'materials');
+      .neq('id', '00000000-0000-0000-0000-000000000000');
 
     if (error) {
-      console.error('Error clearing material variations:', error);
-      toast.error('Failed to clear material variations');
+      console.error('Error clearing material variants:', error);
+      toast.error('Failed to clear material variants');
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Error clearing material variations:', error);
-    toast.error('Failed to clear material variations');
+    console.error('Error clearing material variants:', error);
+    toast.error('Failed to clear material variants');
     return false;
   }
 };
@@ -46,10 +43,7 @@ export const clearAllMaterialVariations = async (): Promise<boolean> => {
 export const clearAllTools = async (): Promise<boolean> => {
   try {
     // Get all variation instance IDs for tools first
-    const { data: toolVariations } = await supabase
-      .from('tool_variations')
-      .select('id')
-      .eq('item_type', 'tools');
+    const { data: toolVariations } = await supabase.from('tool_variations').select('id');
 
     const variationIds = toolVariations?.map(v => v.id) || [];
 
@@ -69,10 +63,7 @@ export const clearAllTools = async (): Promise<boolean> => {
     }
 
     console.log('Deleting tool variations...');
-    await supabase
-      .from('tool_variations')
-      .delete()
-      .eq('item_type', 'tools');
+    await supabase.from('tool_variations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
     console.log('Deleting core tools...');
     const { error } = await supabase
@@ -97,29 +88,6 @@ export const clearAllTools = async (): Promise<boolean> => {
 
 export const clearAllMaterials = async (): Promise<boolean> => {
   try {
-    // Get all variation instance IDs for materials first
-    const { data: materialVariations } = await supabase
-      .from('tool_variations')
-      .select('id')
-      .eq('item_type', 'materials');
-
-    const variationIds = materialVariations?.map(v => v.id) || [];
-
-    // Delete in correct order to respect foreign key constraints
-    console.log('Deleting variation warning flags...');
-    if (variationIds.length > 0) {
-      await supabase
-        .from('variation_warning_flags')
-        .delete()
-        .in('variation_instance_id', variationIds);
-    }
-
-    console.log('Deleting material variations...');
-    await supabase
-      .from('tool_variations')
-      .delete()
-      .eq('item_type', 'materials');
-
     console.log('Deleting core materials...');
     const { error } = await supabase
       .from('materials')

@@ -160,7 +160,6 @@ export default function DIYSurveyPopup({
           const { data: variations, error } = await supabase
             .from('tool_variations')
             .select('id, name, core_item_id')
-            .eq('item_type', 'tools')
             .eq('quick_add', true)
             .order('name', { ascending: true });
 
@@ -529,7 +528,6 @@ export default function DIYSurveyPopup({
             .from('tool_variations')
             .select('id, name, description, photo_url, sku, core_item_id')
             .eq('id', variationId)
-            .eq('item_type', 'tools')
             .single();
 
           if (variationError || !variation) {
@@ -558,7 +556,10 @@ export default function DIYSurveyPopup({
             model_name: variation.sku || '',
           };
 
-          if (!finalOwnedTools.some((t) => t.id === toolToAdd.id)) {
+          const existing = finalOwnedTools.find((t) => t.id === toolToAdd.id);
+          if (existing) {
+            existing.quantity = (existing.quantity ?? 0) + 1;
+          } else {
             finalOwnedTools.push(toolToAdd);
           }
         }

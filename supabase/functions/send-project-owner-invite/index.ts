@@ -34,12 +34,12 @@ serve(async (req) => {
     }
 
     const { data: invitation, error: invError } = await supabase
-      .from('project_owner_invitations')
-      .select('id, project_id, invited_email, invited_user_id, invitation_token, status, expires_at')
+      .from('project_owners')
+      .select('id, project_id, invited_email, invited_user_id, invitation_token, invitation_status, expires_at')
       .eq('id', invitation_id)
       .single()
 
-    if (invError || !invitation || invitation.status !== 'pending') {
+    if (invError || !invitation || invitation.invitation_status !== 'pending') {
       return new Response(
         JSON.stringify({ error: 'Invitation not found or not pending' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

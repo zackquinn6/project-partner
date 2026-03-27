@@ -26,7 +26,6 @@ interface EnhancedVariationViewerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   coreItemId: string;
-  itemType: string;
   coreItemName: string;
 }
 
@@ -72,7 +71,6 @@ export function EnhancedVariationViewer({
   open, 
   onOpenChange, 
   coreItemId, 
-  itemType, 
   coreItemName 
 }: EnhancedVariationViewerProps) {
   const [variations, setVariations] = useState<VariationInstance[]>([]);
@@ -101,8 +99,7 @@ export function EnhancedVariationViewer({
         supabase
           .from('tool_variations')
           .select('*')
-          .eq('core_item_id', coreItemId)
-          .eq('item_type', itemType),
+          .eq('core_item_id', coreItemId),
         supabase.from('warning_flags').select('*').order('name'),
       ]);
 

@@ -18,7 +18,6 @@ import type { ContentSection } from '@/interfaces/Project';
 interface VariationInstance {
   id: string;
   core_item_id: string;
-  item_type: 'tools' | 'materials';
   name: string;
   description?: string;
   sku?: string;
@@ -163,9 +162,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
         quick_add: editedVariation.quick_add || false,
         updated_at: new Date().toISOString(),
       };
-      if (variation.item_type === 'tools') {
-        updatePayload.instructions = instructions;
-      }
+      updatePayload.instructions = instructions;
       const { error } = await supabase
         .from('tool_variations')
         .update(updatePayload)
@@ -345,11 +342,9 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={`grid w-full ${variation.item_type === 'tools' ? 'grid-cols-5' : 'grid-cols-4'}`}>
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="details">Details</TabsTrigger>
-            {variation.item_type === 'tools' && (
-              <TabsTrigger value="instructions">Instructions</TabsTrigger>
-            )}
+            <TabsTrigger value="instructions">Instructions</TabsTrigger>
             <TabsTrigger value="warnings">Warnings</TabsTrigger>
             <TabsTrigger value="models">Models</TabsTrigger>
             <TabsTrigger value="pricing">Pricing</TabsTrigger>
@@ -455,8 +450,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
             </div>
           </TabsContent>
 
-          {variation.item_type === 'tools' && (
-            <TabsContent value="instructions" className="space-y-4">
+          <TabsContent value="instructions" className="space-y-4">
               <div>
                 <Label className="text-base font-medium">Variant instructions</Label>
                 <p className="text-sm text-muted-foreground mb-4">
@@ -468,7 +462,6 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
                 {loading ? 'Saving...' : 'Save variation'}
               </Button>
             </TabsContent>
-          )}
 
           <TabsContent value="warnings" className="space-y-4">
             <div>

@@ -5,13 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Edit, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  fetchAttributeDefinitionsForCoreItem,
+  fetchAttributeDefinitionsForMaterial,
+} from '@/utils/variationAttributeDefinitions';
 import { VariationEditor } from './VariationEditor';
+import { MaterialVariationEditor } from './MaterialVariationEditor';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 
 interface VariationInstance {
   id: string;
-  core_item_id: string;
-  item_type: 'tools' | 'materials';
+  core_item_id?: string;
+  material_id?: string;
   name: string;
   description?: string;
   sku?: string;
@@ -57,13 +62,14 @@ interface VariationViewerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   coreItemId: string;
-  itemType: 'tools' | 'materials';
   coreItemName: string;
+  /** Selects `tool_variations` vs `materials_variants`. */
+  catalogKind?: 'tools' | 'materials';
   onVariationSelect?: (variation: VariationInstance) => void;
   ownedVariationIds?: Set<string>;
 }
 
-export function VariationViewer({ open, onOpenChange, coreItemId, itemType, coreItemName, onVariationSelect, ownedVariationIds = new Set() }: VariationViewerProps) {
+export function VariationViewer({ open, onOpenChange, coreItemId, coreItemName, catalogKind = 'tools', onVariationSelect, ownedVariationIds = new Set() }: VariationViewerProps) {
   const [variations, setVariations] = useState<VariationInstance[]>([]);
   const [attributes, setAttributes] = useState<VariationAttribute[]>([]);
   const [models, setModels] = useState<ToolModel[]>([]);
@@ -76,36 +82,49 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
     
     setLoading(true);
     try {
-      // Fetch variations from unified tool_variations
-      const { data: variationsData, error: variationsError } = await supabase
-        .from('tool_variations')
-        .select('*')
-        .eq('core_item_id', coreItemId)
-        .eq('item_type', itemType);
-
-      if (variationsError) throw variationsError;
-      
-      const processedVariations = (variationsData || []).map(item => ({
-        ...item,
-        item_type: item.item_type as 'tools' | 'materials',
-        attributes: item.attributes as Record<string, string>
-      }));
-      setVariations(processedVariations);
-
-      // Fetch tool models for these variations (only when not in selection mode)
-      const variationIds = processedVariations.map(v => v.id);
-      if (variationIds.length > 0 && !onVariationSelect) {
-        const { data: modelsData, error: modelsError } = await supabase
-          .from('tools')
+      if (catalogKind === 'materials') {
+        const { data: variationsData, error: variationsError } = await supabase
+          .from('materials_variants')
           .select('*')
-          .in('variation_instance_id', variationIds);
+          .eq('material_id', coreItemId);
 
-        if (modelsError) throw modelsError;
-        setModels(modelsData || []);
+        if (variationsError) throw variationsError;
 
-        // Pricing is on tool_variations.pricing (JSONB array)
-        const flatPricing = (variationsData || []).flatMap(v => (v.pricing as any[] | null) || []);
-        setPricing(flatPricing);
+        const processedVariations = (variationsData || []).map((item) => ({
+          ...item,
+          core_item_id: item.material_id,
+          attributes: (item.attributes as Record<string, string>) || {},
+        }));
+        setVariations(processedVariations);
+        setModels([]);
+        setPricing([]);
+      } else {
+        const { data: variationsData, error: variationsError } = await supabase
+          .from('tool_variations')
+          .select('*')
+          .eq('core_item_id', coreItemId);
+
+        if (variationsError) throw variationsError;
+        
+        const processedVariations = (variationsData || []).map(item => ({
+          ...item,
+          attributes: item.attributes as Record<string, string>
+        }));
+        setVariations(processedVariations);
+
+        const variationIds = processedVariations.map(v => v.id);
+        if (variationIds.length > 0 && !onVariationSelect) {
+          const { data: modelsData, error: modelsError } = await supabase
+            .from('tools')
+            .select('*')
+            .in('variation_instance_id', variationIds);
+
+          if (modelsError) throw modelsError;
+          setModels(modelsData || []);
+
+          const flatPricing = (variationsData || []).flatMap(v => (v.pricing as any[] | null) || []);
+          setPricing(flatPricing);
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -118,19 +137,9 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
     if (!coreItemId) return;
     
     try {
-      // Attribute definitions now live on tool_variations.attribute_definitions.
-      // Use the first variation for this core item as the source of definitions.
-      const { data: variationWithDefs, error } = await supabase
-        .from('tool_variations')
-        .select('attribute_definitions')
-        .eq('core_item_id', coreItemId)
-        .eq('item_type', itemType)
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      const defs = (variationWithDefs?.attribute_definitions || []) as any[];
+      const defs = (catalogKind === 'materials'
+        ? await fetchAttributeDefinitionsForMaterial(supabase, coreItemId)
+        : await fetchAttributeDefinitionsForCoreItem(supabase, coreItemId)) as any[];
       const formattedAttributes: VariationAttribute[] = defs.map((attr: any) => ({
         id: attr.id,
         name: attr.name,
@@ -154,7 +163,7 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
       fetchData();
       fetchAttributes();
     }
-  }, [open, coreItemId]);
+  }, [open, coreItemId, catalogKind]);
 
   const getModelPricing = (modelId: string) => {
     const modelPricing = pricing.filter(p => p.model_id === modelId && p.price && p.price > 0);
@@ -193,7 +202,7 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
           <DialogHeader>
             <DialogTitle>Select Variation for {coreItemName}</DialogTitle>
             <DialogDescription>
-              Choose a specific variation of this {itemType.slice(0, -1)} to add to your library.
+              Choose a specific variation of this {catalogKind.slice(0, -1)} to add to your library.
             </DialogDescription>
           </DialogHeader>
           
@@ -201,16 +210,14 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
             <div className="flex justify-center p-8">Loading variations...</div>
           ) : variations.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No variations found for this {itemType.slice(0, -1)}.
-            </div>
-          ) : variations.filter(variation => !ownedVariationIds.has(variation.id)).length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              All variations of this {itemType.slice(0, -1)} have been added to your library.
+              No variations found for this {catalogKind.slice(0, -1)}.
             </div>
           ) : (
             <div className="overflow-y-auto max-h-[60vh]">
               <div className="space-y-2">
-                {variations.filter(variation => !ownedVariationIds.has(variation.id)).map(variation => (
+                {variations.map((variation) => {
+                  const alreadyOwned = ownedVariationIds.has(variation.id);
+                  return (
                   <div
                     key={variation.id}
                     className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors"
@@ -226,7 +233,7 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-base truncate">{variation.name}</div>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {Object.entries(variation.attributes).map(([key, value]) => {
+                          {Object.entries(variation.attributes || {}).map(([key, value]) => {
                             const attr = attributes.find(a => a.name === key);
                             const attrValue = attr?.values.find(v => v.value === value);
                             return (
@@ -240,16 +247,18 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
                     </div>
                     <Button
                       size="sm"
+                      variant={alreadyOwned ? "secondary" : "default"}
                       onClick={() => {
                         onVariationSelect(variation);
                       }}
                       className="ml-4 flex-shrink-0"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Add
+                      {alreadyOwned ? 'Add another' : 'Add'}
                     </Button>
                   </div>
-                ))}
+                );
+                })}
               </div>
             </div>
           )}
@@ -270,7 +279,9 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
         <DialogHeader>
           <DialogTitle>Variations for {coreItemName}</DialogTitle>
           <DialogDescription>
-            View all available variations of this {itemType.slice(0, -1)} with pricing and model information.
+            {catalogKind === 'tools'
+              ? 'View all available variations of this tool with pricing and model information.'
+              : 'View all available variants of this material.'}
           </DialogDescription>
         </DialogHeader>
         
@@ -278,7 +289,7 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
           <div className="flex justify-center p-8">Loading variations...</div>
         ) : variations.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            No variations found for this {itemType.slice(0, -1)}.
+            No variations found for this {catalogKind.slice(0, -1)}.
           </div>
         ) : (
           <div className="space-y-4">
@@ -303,7 +314,7 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
                           <div className="text-xs text-muted-foreground mb-2">Model: {variation.sku}</div>
                         )}
                         
-                        {/* Weight and Rental Lifespan Info */}
+                        {catalogKind === 'tools' && (
                         <div className="flex gap-4 mb-2 text-xs text-muted-foreground">
                           {variation.estimated_weight_lbs && (
                             <span>Weight: {variation.estimated_weight_lbs} lbs</span>
@@ -312,9 +323,9 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
                             <span>Rental Life: {variation.estimated_rental_lifespan_days} days</span>
                         )}
                         </div>
+                        )}
 
-                        {/* Models and Pricing */}
-                        {(() => {
+                        {catalogKind === 'tools' && (() => {
                           const variationModels = getVariationModels(variation.id);
                           return variationModels.length > 0 && (
                             <div className="mt-3 space-y-2">
@@ -341,8 +352,7 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
                           );
                         })()}
 
-                        {/* Warning Flags */}
-                        {variation.warning_flags && variation.warning_flags.length > 0 && (
+                        {catalogKind === 'tools' && variation.warning_flags && variation.warning_flags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mb-2">
                             {variation.warning_flags.map((flag, index) => (
                               <Badge key={index} variant="destructive" className="text-xs">
@@ -353,12 +363,12 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
                         )}
 
                         <div className="flex flex-wrap gap-1">
-                          {Object.entries(variation.attributes).map(([key, value]) => {
+                          {Object.entries(variation.attributes || {}).map(([key, value]) => {
                             const attr = attributes.find(a => a.name === key);
                             const attrValue = attr?.values.find(v => v.value === value);
                             return (
                               <Badge key={key} variant="outline" className="text-xs">
-                                {attr?.display_name}: {attrValue?.display_value || value}
+                                {attr?.display_name ?? key}: {attrValue?.display_value || value}
                               </Badge>
                             );
                           })}
@@ -374,11 +384,27 @@ export function VariationViewer({ open, onOpenChange, coreItemId, itemType, core
       </DialogPrimitive.Content>
     </DialogPortal>
 
-      {editingVariation && (
+      {editingVariation && catalogKind === 'tools' && (
         <VariationEditor
           open={!!editingVariation}
           onOpenChange={(open) => !open && setEditingVariation(null)}
-          variation={editingVariation}
+          variation={editingVariation as any}
+          onSave={handleVariationSaved}
+        />
+      )}
+      {editingVariation && catalogKind === 'materials' && (
+        <MaterialVariationEditor
+          open={!!editingVariation}
+          onOpenChange={(open) => !open && setEditingVariation(null)}
+          variation={{
+            id: editingVariation.id,
+            material_id: editingVariation.material_id ?? coreItemId,
+            name: editingVariation.name,
+            description: editingVariation.description,
+            sku: editingVariation.sku,
+            photo_url: editingVariation.photo_url,
+            attributes: editingVariation.attributes || {},
+          }}
           onSave={handleVariationSaved}
         />
       )}

@@ -5,6 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  fetchAttributeDefinitionsForCoreItem,
+  fetchAttributeDefinitionsForMaterial,
+} from '@/utils/variationAttributeDefinitions';
 
 interface VariationAttribute {
   id: string;
@@ -68,7 +72,7 @@ export function VariationSelector({
   useEffect(() => {
     fetchAttributes();
     fetchVariations();
-  }, [coreItemId]);
+  }, [coreItemId, itemType]);
 
   useEffect(() => {
     if (selectedVariation) {
@@ -94,11 +98,12 @@ export function VariationSelector({
   const fetchAttributes = async () => {
     try {
       // First get all variation instances for this item to see what attributes actually exist
-      const { data: variationsData, error: variationsError } = await supabase
-        .from('tool_variations')
-        .select('attributes, attribute_definitions')
-        .eq('core_item_id', coreItemId)
-        .eq('item_type', itemType);
+      const variationsQuery =
+        itemType === 'materials'
+          ? supabase.from('materials_variants').select('attributes').eq('material_id', coreItemId)
+          : supabase.from('tool_variations').select('attributes').eq('core_item_id', coreItemId);
+
+      const { data: variationsData, error: variationsError } = await variationsQuery;
 
       if (variationsError) throw variationsError;
 
@@ -112,10 +117,9 @@ export function VariationSelector({
         }
       });
 
-      // Only fetch attributes that actually exist for this item
-      // Attribute definitions now live on tool_variations.attribute_definitions.
-      // Use attribute_definitions from the first variation as the source.
-      const defs = (variationsData?.[0]?.attribute_definitions || []) as any[];
+      const defs = (itemType === 'materials'
+        ? await fetchAttributeDefinitionsForMaterial(supabase, coreItemId)
+        : await fetchAttributeDefinitionsForCoreItem(supabase, coreItemId)) as any[];
 
       const formattedAttributes: VariationAttribute[] = defs
         .filter((attr: any) => existingAttributeKeys.has(attr.name))
@@ -145,16 +149,16 @@ export function VariationSelector({
 
   const fetchVariations = async () => {
     try {
-      const { data, error } = await supabase
-        .from('tool_variations')
-        .select('*')
-        .eq('core_item_id', coreItemId)
-        .eq('item_type', itemType);
+      const q =
+        itemType === 'materials'
+          ? supabase.from('materials_variants').select('*').eq('material_id', coreItemId)
+          : supabase.from('tool_variations').select('*').eq('core_item_id', coreItemId);
+
+      const { data, error } = await q;
 
       if (error) throw error;
       setVariations((data || []).map(item => ({
         ...item,
-        item_type: item.item_type as 'tools' | 'materials',
         attributes: item.attributes as Record<string, string>
       })));
     } catch (error) {
