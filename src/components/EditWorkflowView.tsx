@@ -34,6 +34,7 @@ import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, X, Settings, Save, C
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
+import { parseProcessVariablesFromDb } from '@/utils/processVariablesUtils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -58,29 +59,6 @@ interface EditWorkflowViewProps {
   onBackToAdmin: () => void;
 }
 
-function parseProcessVariables(raw: unknown): StepInput[] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
-    .map((item, index) => {
-      const name = typeof item.name === 'string' ? item.name.trim() : '';
-      const id = typeof item.id === 'string' && item.id ? item.id : `input-${index}`;
-      const normalizedType = item.type === 'upstream' ? 'upstream' : 'process';
-      return {
-        id,
-        name,
-        type: normalizedType,
-        description: typeof item.description === 'string' ? item.description : undefined,
-        required: typeof item.required === 'boolean' ? item.required : false,
-        options: Array.isArray(item.options) ? (item.options as string[]) : undefined,
-        unit: typeof item.unit === 'string' ? item.unit : undefined,
-        sourceStepId: typeof item.sourceStepId === 'string' ? item.sourceStepId : undefined,
-        sourceStepName: typeof item.sourceStepName === 'string' ? item.sourceStepName : undefined,
-        targetValue: typeof item.targetValue === 'string' ? item.targetValue : undefined,
-      };
-    })
-    .filter((item) => item.name.length > 0);
-}
 export default function EditWorkflowView({
   onBackToAdmin
 }: EditWorkflowViewProps) {
@@ -236,7 +214,7 @@ export default function EditWorkflowView({
                 materials: step.materials || [],
                 tools: step.tools || [],
                 outputs: step.outputs || [],
-                inputs: parseProcessVariables(step.process_variables),
+                inputs: parseProcessVariablesFromDb(step.process_variables),
                 timeEstimation: {
                   variableTime: {
                     low: step.time_estimate_low || 0,
@@ -481,7 +459,7 @@ export default function EditWorkflowView({
                   tools: parsedTools,
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
-                  inputs: parseProcessVariables(s.process_variables),
+                  inputs: parseProcessVariablesFromDb(s.process_variables),
                   contentType: 'text',
                   content: '',
                   contentSections: parsedContentSections,
@@ -644,7 +622,7 @@ export default function EditWorkflowView({
                   tools: parsedTools,
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
-                  inputs: parseProcessVariables(s.process_variables),
+                  inputs: parseProcessVariablesFromDb(s.process_variables),
                   contentType: 'text',
                   content: '',
                   contentSections: parsedContentSections,
@@ -828,7 +806,7 @@ export default function EditWorkflowView({
                   tools: parsedTools,
                   materials: parsedMaterials,
                   outputs: parsedOutputs,
-                  inputs: parseProcessVariables(s.process_variables),
+                  inputs: parseProcessVariablesFromDb(s.process_variables),
                   contentType: 'text',
                   content: '',
                   contentSections: parsedContentSections,

@@ -47,6 +47,9 @@ import { DecisionPointEditor } from './DecisionPointEditor';
 import { PhaseIncorporationDialog } from './PhaseIncorporationDialog';
 import { DecisionTreeManager } from './DecisionTreeManager';
 import { supabase } from '@/integrations/supabase/client';
+import { parseProcessVariablesFromDb } from '@/utils/processVariablesUtils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProcessMapKpiTab } from '@/components/ProcessMapKpiTab';
 
 interface StructureManagerProps {
   onBack: () => void;
@@ -431,6 +434,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               materials,
               tools,
               outputs,
+              process_variables,
               display_order
             `)
             .eq('operation_id', op.id)
@@ -453,6 +457,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 materials: s.materials || [],
                 tools: s.tools || [],
                 outputs: s.outputs || [],
+                inputs: parseProcessVariablesFromDb(s.process_variables),
                 displayOrder: s.display_order
               }))
               .sort((a, b) => {
@@ -632,6 +637,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 materials,
                 tools,
                 outputs,
+                process_variables,
                 display_order
               `)
               .eq('operation_id', op.id)
@@ -654,6 +660,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                   materials: s.materials || [],
                   tools: s.tools || [],
                   outputs: s.outputs || [],
+                  inputs: parseProcessVariablesFromDb(s.process_variables),
                   displayOrder: s.display_order || 0
                 }))
                 .sort((a, b) => {
@@ -705,7 +712,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                   display_order,
                   materials,
                   tools,
-                  outputs
+                  outputs,
+                  process_variables
                 `)
                 .eq('operation_id', op.id)
                 .order('display_order');
@@ -725,7 +733,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                   displayOrder: s.display_order || 0,
                   materials: s.materials || [],
                   tools: s.tools || [],
-                  outputs: s.outputs || []
+                  outputs: s.outputs || [],
+                  inputs: parseProcessVariablesFromDb(s.process_variables)
                 })).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
               };
             }));
@@ -754,6 +763,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 materials,
                 tools,
                 outputs,
+                process_variables,
                 display_order
               `)
               .eq('operation_id', op.id)
@@ -776,6 +786,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                   materials: s.materials || [],
                   tools: s.tools || [],
                   outputs: s.outputs || [],
+                  inputs: parseProcessVariablesFromDb(s.process_variables),
                   displayOrder: s.display_order
                 }))
                 .sort((a, b) => {
@@ -826,6 +837,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 materials,
                 tools,
                 outputs,
+                process_variables,
                 display_order
               `)
               .eq('operation_id', op.id)
@@ -848,6 +860,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                   materials: s.materials || [],
                   tools: s.tools || [],
                   outputs: s.outputs || [],
+                  inputs: parseProcessVariablesFromDb(s.process_variables),
                   displayOrder: s.display_order
                 }))
                 .sort((a, b) => {
@@ -2832,6 +2845,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
 
         {/* Main Content */}
         <div className="container mx-auto px-6 py-8">
+          <Tabs defaultValue="structure" className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="structure">Structure</TabsTrigger>
+              <TabsTrigger value="kpi">KPI / KPO</TabsTrigger>
+            </TabsList>
+            <TabsContent value="structure" className="mt-0 space-y-4">
           {/* Add Phase Button */}
           <div className="flex items-center gap-2 mb-4">
             <Button 
@@ -3428,6 +3447,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               );
             })}
           </div>
+            </TabsContent>
+            <TabsContent value="kpi" className="mt-0">
+              <ProcessMapKpiTab phases={phases} />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 
