@@ -21,6 +21,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, FileText, Info, Plus, Target, Trash2 } from 'lucide-react';
@@ -209,8 +217,15 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   const [requirements, setRequirements] = useState<PFMEARequirement[]>([]);
   const [failureModes, setFailureModes] = useState<PFMEAFailureMode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingCell, setEditingCell] = useState<{row: string, column: string, type: string} | null>(null);
+  const [editingCell, setEditingCell] = useState<{
+    entityId: string;
+    column: string;
+    type: string;
+    rowIndex: number;
+  } | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
+  const [addOutputDialogStepId, setAddOutputDialogStepId] = useState<string | null>(null);
+  const [addOutputName, setAddOutputName] = useState('');
   const [currentTab, setCurrentTab] = useState('overview');
   const [pfmeaColVisibility, setPfmeaColVisibility] = useState({
     phase: true,
@@ -619,13 +634,13 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     );
   };
 
-  // Editing functions for inline editing
-  const startEdit = (row: string, column: string, type: string, currentValue: string) => {
+  // Editing functions for inline editing (rowIndex disambiguates the same entity shown on multiple PFMEA rows)
+  const startEdit = (rowIndex: number, entityId: string, column: string, type: string, currentValue: string) => {
     if (!pfmeaIsEditable) {
       toast.error('PFMEA is locked. Switch this revision to draft to edit.');
       return;
     }
-    setEditingCell({ row, column, type });
+    setEditingCell({ entityId, column, type, rowIndex });
     setEditingValue(currentValue);
   };
 
@@ -638,49 +653,49 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     if (!editingCell) return;
 
     try {
-      const { row, column, type } = editingCell;
-      
+      const { entityId, column, type } = editingCell;
+
       // Update based on type
       if (type === 'failure_mode') {
         await supabase
           .from('pfmea_failure_modes')
           .update({ failure_mode: editingValue })
-          .eq('id', row);
+          .eq('id', entityId);
       } else if (type === 'effect') {
         await supabase
           .from('pfmea_potential_effects')
           .update({ effect_description: editingValue })
-          .eq('id', row);
+          .eq('id', entityId);
       } else if (type === 'effect_severity') {
         await supabase
           .from('pfmea_potential_effects')
           .update({ severity_score: parseInt(editingValue) })
-          .eq('id', row);
+          .eq('id', entityId);
       } else if (type === 'cause') {
         await supabase
           .from('pfmea_potential_causes')
           .update({ cause_description: editingValue })
-          .eq('id', row);
+          .eq('id', entityId);
       } else if (type === 'cause_occurrence') {
         await supabase
           .from('pfmea_potential_causes')
           .update({ occurrence_score: parseInt(editingValue) })
-          .eq('id', row);
+          .eq('id', entityId);
       } else if (type === 'control') {
         await supabase
           .from('pfmea_controls')
           .update({ control_description: editingValue })
-          .eq('id', row);
+          .eq('id', entityId);
       } else if (type === 'control_detection') {
         await supabase
           .from('pfmea_controls')
           .update({ detection_score: parseInt(editingValue) })
-          .eq('id', row);
+          .eq('id', entityId);
       } else if (type === 'action') {
         await supabase
           .from('pfmea_action_items')
           .update({ recommended_action: editingValue })
-          .eq('id', row);
+          .eq('id', entityId);
       }
 
       // Refresh data
@@ -697,6 +712,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   };
 
   const renderEditableCell = (
+    rowIndex: number,
     value: string,
     rowId: string,
     column: string,
@@ -704,7 +720,8 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     isDropdown = false,
     opts?: { fullWidth?: boolean }
   ) => {
-    const isEditing = editingCell?.row === rowId && editingCell?.column === column;
+    const isEditing =
+      editingCell?.entityId === rowId && editingCell?.column === column && editingCell?.rowIndex === rowIndex;
     const fw = opts?.fullWidth;
 
     if (isEditing) {
@@ -757,7 +774,8 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           'cursor-pointer rounded-sm hover:bg-muted/40',
           fw ? 'min-h-[22px] w-full min-w-0 py-0.5' : 'min-h-[22px] p-0.5'
         )}
-        onClick={() => startEdit(rowId, column, type, value)}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={() => startEdit(rowIndex, rowId, column, type, value)}
       >
         {value ? (
           <span className={cn('text-sm', fw && 'block w-full min-w-0 whitespace-pre-wrap break-words')}>{value}</span>
@@ -978,54 +996,68 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     }
   };
 
-  const addOutputToStep = useCallback(
-    async (operationStepId: string) => {
-      if (!pfmeaIsEditable) {
-        toast.error('PFMEA is locked. Switch this revision to draft to edit.');
-        return;
+  const openAddOutputDialog = useCallback((operationStepId: string) => {
+    if (!pfmeaIsEditable) {
+      toast.error('PFMEA is locked. Switch this revision to draft to edit.');
+      return;
+    }
+    setAddOutputDialogStepId(operationStepId);
+    setAddOutputName('');
+  }, [pfmeaIsEditable]);
+
+  const submitAddOutput = useCallback(async () => {
+    if (!addOutputDialogStepId) return;
+    if (!pfmeaIsEditable) {
+      toast.error('PFMEA is locked. Switch this revision to draft to edit.');
+      return;
+    }
+    const name = addOutputName.trim();
+    if (!name) {
+      toast.error('Enter a name for the output');
+      return;
+    }
+
+    const operationStepId = addOutputDialogStepId;
+
+    try {
+      const { data: stepRow, error: stepErr } = await supabase
+        .from('operation_steps')
+        .select('id, outputs')
+        .eq('id', operationStepId)
+        .single();
+      if (stepErr) throw stepErr;
+
+      const existing = (stepRow?.outputs ?? null) as unknown;
+      const outputs: Output[] = Array.isArray(existing) ? (existing as Output[]) : [];
+
+      const next: Output[] = [
+        ...outputs,
+        {
+          id: `output-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          name,
+          description: '',
+          type: 'none',
+        },
+      ];
+
+      const { error: updateErr } = await supabase
+        .from('operation_steps')
+        .update({ outputs: next })
+        .eq('id', operationStepId);
+      if (updateErr) throw updateErr;
+
+      setAddOutputDialogStepId(null);
+      setAddOutputName('');
+
+      if (selectedPfmeaProject) {
+        await fetchPfmeaDetails(selectedPfmeaProject.project_id);
       }
-      const name = window.prompt('Output / requirement name');
-      if (!name || !name.trim()) return;
-
-      try {
-        const { data: stepRow, error: stepErr } = await supabase
-          .from('operation_steps')
-          .select('id, outputs')
-          .eq('id', operationStepId)
-          .single();
-        if (stepErr) throw stepErr;
-
-        const existing = (stepRow?.outputs ?? null) as unknown;
-        const outputs: Output[] = Array.isArray(existing) ? (existing as Output[]) : [];
-
-        const next: Output[] = [
-          ...outputs,
-          {
-            id: `output-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            name: name.trim(),
-            description: '',
-            type: 'none',
-          },
-        ];
-
-        const { error: updateErr } = await supabase
-          .from('operation_steps')
-          .update({ outputs: next })
-          .eq('id', operationStepId);
-        if (updateErr) throw updateErr;
-
-        if (selectedPfmeaProject) {
-          // Requirements rows are derived from workflow outputs; resync after updating the step.
-          await fetchPfmeaDetails(selectedPfmeaProject.project_id);
-        }
-        toast.success('Output added');
-      } catch (err) {
-        console.error(err);
-        toast.error('Failed to add output');
-      }
-    },
-    [pfmeaIsEditable, selectedPfmeaProject, fetchPfmeaDetails]
-  );
+      toast.success('Output added');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to add output');
+    }
+  }, [addOutputDialogStepId, addOutputName, pfmeaIsEditable, selectedPfmeaProject, fetchPfmeaDetails]);
 
   type PfmeaFlatRow = {
     requirement: PFMEARequirement;
@@ -1175,7 +1207,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       const { requirement, failureMode: fm, cause } = entry;
       switch (col) {
         case 'requirements':
-          void addOutputToStep(requirement.operation_step_id);
+          openAddOutputDialog(requirement.operation_step_id);
           return;
         case 'failure_mode':
           void addFailureMode(requirement);
@@ -1231,7 +1263,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           return;
       }
     },
-    [sortedPfmeaRows, gridFocus.rowIndex, addOutputToStep]
+    [sortedPfmeaRows, gridFocus.rowIndex, openAddOutputDialog, addFailureMode]
   );
 
   const handlePfmeaGridKeyDown = useCallback(
@@ -1278,6 +1310,14 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     },
     [sortedPfmeaRows.length]
   );
+
+  const pfmeaGridCellMouseDown = useCallback((e: React.MouseEvent, rowIndex: number, col: PfmeaNavColumn) => {
+    const t = e.target as HTMLElement;
+    if (t.closest('input, textarea, button, a, [role="combobox"], [data-radix-collection-item]')) {
+      return;
+    }
+    setGridFocus({ rowIndex, col });
+  }, []);
 
   const pfmeaThSticky = 'sticky top-0 z-20 border-b shadow-sm';
   /** Column header bar colors (PFMEA table). `!text-white` overrides TableHead default `text-muted-foreground`. */
@@ -1592,6 +1632,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     const band = (col: PfmeaNavColumn) => cn('border-l border-border/30', pfmeaColBand[col]);
 
     return (
+      <>
       <Card>
         <CardContent className="min-w-0 p-0">
           <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-muted-foreground border-b bg-muted/20">
@@ -1891,7 +1932,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       <TableCell
                         className={cn(td, band('requirements'), focusCellClass(rowIndex, 'requirements'))}
                         style={{ width: `${colWidths.requirements}px`, minWidth: `${colWidths.requirements}px` }}
-                        onMouseDown={() => setGridFocus({ rowIndex, col: 'requirements' })}
+                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'requirements')}
                       >
                         <div className="flex w-full min-w-0 flex-col gap-1">
                           <div className="w-full min-w-0 px-1.5 py-1 text-sm break-words">{requirement.requirement_text}</div>
@@ -1901,7 +1942,11 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                               size="sm"
                               variant="ghost"
                               disabled={!pfmeaIsEditable}
-                              onClick={() => void addOutputToStep(requirement.operation_step_id)}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openAddOutputDialog(requirement.operation_step_id);
+                              }}
                               className="h-6 px-1 text-xs self-start"
                             >
                               <Plus className="w-3 h-3 mr-1" />
@@ -1914,12 +1959,12 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       <TableCell
                         className={cn(td, band('failure_mode'), focusCellClass(rowIndex, 'failure_mode'))}
                         style={{ width: `${colWidths.failure_mode}px`, minWidth: `${colWidths.failure_mode}px` }}
-                        onMouseDown={() => setGridFocus({ rowIndex, col: 'failure_mode' })}
+                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'failure_mode')}
                       >
                         {failureMode ? (
                           <div className="flex w-full min-w-0 items-start gap-0.5">
                             <div className="min-w-0 flex-1">
-                              {renderEditableCell(failureMode.failure_mode, failureMode.id, 'failure_mode', 'failure_mode', false, {
+                              {renderEditableCell(rowIndex, failureMode.failure_mode, failureMode.id, 'failure_mode', 'failure_mode', false, {
                                 fullWidth: true,
                               })}
                             </div>
@@ -1933,14 +1978,33 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                             )}
                           </div>
                         ) : (
-                          <div className="text-sm text-muted-foreground italic">No failure modes</div>
+                          <div className="flex flex-col gap-1">
+                            <div className="text-sm text-muted-foreground italic">No failure modes</div>
+                            {gridFocus.rowIndex === rowIndex && gridFocus.col === 'failure_mode' ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                disabled={!pfmeaIsEditable}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void addFailureMode(requirement);
+                                }}
+                                className="h-6 px-1 text-xs self-start"
+                              >
+                                <Plus className="w-3 h-3 mr-1" />
+                                Add Failure Mode
+                              </Button>
+                            ) : null}
+                          </div>
                         )}
                       </TableCell>
 
                       <TableCell
                         className={cn(td, band('effects'), 'min-w-0 max-w-none', focusCellClass(rowIndex, 'effects'))}
                         style={{ width: `${colWidths.effects}px`, minWidth: `${colWidths.effects}px` }}
-                        onMouseDown={() => setGridFocus({ rowIndex, col: 'effects' })}
+                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'effects')}
                       >
                         {failureMode ? (
                           <div className="flex w-full min-w-0 flex-col gap-1">
@@ -1950,7 +2014,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                 className="flex w-full min-w-0 flex-wrap items-baseline gap-x-1 gap-y-0.5 border-b border-border/50 pb-1 last:border-b-0 last:pb-0"
                               >
                                 <div className="min-w-0 flex-1">
-                                  {renderEditableCell(effect.effect_description, effect.id, 'effect_description', 'effect', false, {
+                                  {renderEditableCell(rowIndex, effect.effect_description, effect.id, 'effect_description', 'effect', false, {
                                     fullWidth: true,
                                   })}
                                 </div>
@@ -1986,7 +2050,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       <TableCell
                         className={cn(td, band('s'), 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 's'))}
                         style={{ width: `${colWidths.s}px`, minWidth: `${colWidths.s}px` }}
-                        onMouseDown={() => setGridFocus({ rowIndex, col: 's' })}
+                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 's')}
                       >
                         {failureMode
                           ? renderScoreCell(failureMode.severity_score, (value) => void updateFailureModeSeverity(failureMode.id, value))
@@ -1996,14 +2060,16 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       <TableCell
                         className={cn(td, band('causes'), 'min-w-0', focusCellClass(rowIndex, 'causes'))}
                         style={{ width: `${colWidths.causes}px`, minWidth: `${colWidths.causes}px` }}
-                        onMouseDown={() => setGridFocus({ rowIndex, col: 'causes' })}
+                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'causes')}
                       >
                         {failureMode ? (
                           <div className="flex w-full min-w-0 flex-col gap-1">
                             {cause ? (
                               <div className="flex items-start gap-0.5">
                                 <div className="min-w-0 flex-1">
-                                  {renderEditableCell(cause.cause_description, cause.id, 'cause_description', 'cause', false, { fullWidth: true })}
+                                  {renderEditableCell(rowIndex, cause.cause_description, cause.id, 'cause_description', 'cause', false, {
+                                    fullWidth: true,
+                                  })}
                                 </div>
                                 {pfmeaTrashButton('Delete potential cause', () =>
                                   setPfmeaLineDeleteTarget({
@@ -2037,7 +2103,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       <TableCell
                         className={cn(td, band('prevention_controls'), 'min-w-0', focusCellClass(rowIndex, 'prevention_controls'))}
                         style={{ width: `${colWidths.prevention_controls}px`, minWidth: `${colWidths.prevention_controls}px` }}
-                        onMouseDown={() => setGridFocus({ rowIndex, col: 'prevention_controls' })}
+                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'prevention_controls')}
                       >
                         <div className="flex w-full min-w-0 flex-col gap-1">
                           {cause && preventionControls.length > 0 ? (
@@ -2048,7 +2114,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                     Prev
                                   </Badge>
                                   <div className="min-w-0 flex-1">
-                                    {renderEditableCell(control.control_description, control.id, 'control_description', 'control', false, {
+                                    {renderEditableCell(rowIndex, control.control_description, control.id, 'control_description', 'control', false, {
                                       fullWidth: true,
                                     })}
                                   </div>
@@ -2089,7 +2155,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       <TableCell
                         className={cn(td, band('o'), 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 'o'))}
                         style={{ width: `${colWidths.o}px`, minWidth: `${colWidths.o}px` }}
-                        onMouseDown={() => setGridFocus({ rowIndex, col: 'o' })}
+                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'o')}
                       >
                         {cause ? renderScoreCell(cause.occurrence_score, (value) => void updateCauseOccurrence(cause.id, value)) : ''}
                       </TableCell>
@@ -2097,7 +2163,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       <TableCell
                         className={cn(td, band('detection_controls'), 'min-w-0', focusCellClass(rowIndex, 'detection_controls'))}
                         style={{ width: `${colWidths.detection_controls}px`, minWidth: `${colWidths.detection_controls}px` }}
-                        onMouseDown={() => setGridFocus({ rowIndex, col: 'detection_controls' })}
+                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'detection_controls')}
                       >
                         {failureMode ? (
                           <div className="flex w-full min-w-0 flex-col gap-1">
@@ -2108,7 +2174,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                     Det
                                   </Badge>
                                   <div className="min-w-0 flex-1">
-                                    {renderEditableCell(control.control_description, control.id, 'control_description', 'control', false, {
+                                    {renderEditableCell(rowIndex, control.control_description, control.id, 'control_description', 'control', false, {
                                       fullWidth: true,
                                     })}
                                   </div>
@@ -2124,6 +2190,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                 <div className="mt-0.5 text-xs text-muted-foreground">
                                   D:{' '}
                                   {renderEditableCell(
+                                    rowIndex,
                                     (control.detection_score ?? 5).toString(),
                                     control.id,
                                     'detection_score',
@@ -2152,7 +2219,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       <TableCell
                         className={cn(td, band('d'), 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 'd'))}
                         style={{ width: `${colWidths.d}px`, minWidth: `${colWidths.d}px` }}
-                        onMouseDown={() => setGridFocus({ rowIndex, col: 'd' })}
+                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'd')}
                       >
                         {failureMode
                           ? renderScoreCell(minDetection ?? 10, (value) => void updateDetectionScoreForRow(failureMode, value))
@@ -2162,7 +2229,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       <TableCell
                         className={cn(td, band('rpn'), 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 'rpn'))}
                         style={{ width: `${colWidths.rpn}px`, minWidth: `${colWidths.rpn}px` }}
-                        onMouseDown={() => setGridFocus({ rowIndex, col: 'rpn' })}
+                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'rpn')}
                       >
                         {rpn != null ? rpn : ''}
                       </TableCell>
@@ -2170,7 +2237,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       <TableCell
                         className={cn(td, band('ap'), 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 'ap'))}
                         style={{ width: `${colWidths.ap}px`, minWidth: `${colWidths.ap}px` }}
-                        onMouseDown={() => setGridFocus({ rowIndex, col: 'ap' })}
+                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'ap')}
                       >
                         {failureMode ? (
                           <Badge variant={ap === 'H' ? 'destructive' : ap === 'M' ? 'default' : 'secondary'} className="text-xs">
@@ -2184,7 +2251,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       <TableCell
                         className={cn(td, band('recommended_actions'), 'min-w-0', focusCellClass(rowIndex, 'recommended_actions'))}
                         style={{ width: `${colWidths.recommended_actions}px`, minWidth: `${colWidths.recommended_actions}px` }}
-                        onMouseDown={() => setGridFocus({ rowIndex, col: 'recommended_actions' })}
+                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'recommended_actions')}
                       >
                         {failureMode ? (
                           <div className="flex w-full min-w-0 flex-col gap-1">
@@ -2192,7 +2259,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                               <div key={action.id} className="rounded border p-2 text-sm">
                                 <div className="flex items-start gap-0.5">
                                   <div className="min-w-0 flex-1">
-                                    {renderEditableCell(action.recommended_action, action.id, 'recommended_action', 'action', false, {
+                                    {renderEditableCell(rowIndex, action.recommended_action, action.id, 'recommended_action', 'action', false, {
                                       fullWidth: true,
                                     })}
                                   </div>
@@ -2639,6 +2706,48 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           </div>
         </CardContent>
       </Card>
+
+      <Dialog
+        open={addOutputDialogStepId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAddOutputDialogStepId(null);
+            setAddOutputName('');
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add output</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-2 py-1">
+            <Label htmlFor="pfmea-add-output-name">Output / requirement name</Label>
+            <Input
+              id="pfmea-add-output-name"
+              value={addOutputName}
+              onChange={(e) => setAddOutputName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void submitAddOutput();
+                }
+              }}
+              placeholder="Name"
+              autoComplete="off"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setAddOutputDialogStepId(null)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={() => void submitAddOutput()}>
+              Add
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      </>
     );
   };
 
