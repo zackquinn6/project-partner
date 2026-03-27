@@ -35,6 +35,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -2223,24 +2224,106 @@ export default function EditWorkflowView({
                             onAddMaterial={() => setMaterialsLibraryOpen(true)}
                           />
 
-                          <div className="pt-2 border-t">
-                            <div className="space-y-4">
-                              <CompactToolsTable
-                                title="Personal Protective Equipment"
-                                addButtonLabel="Add PPE Tool"
-                                tools={ppeTools}
-                                onToolsChange={tools => updateEditingStep('tools', [...nonPpeTools, ...tools])}
-                                onAddTool={() => setPpeToolsLibraryOpen(true)}
-                              />
-
-                              <CompactMaterialsTable
-                                title="PPE Materials"
-                                addButtonLabel="Add PPE Material"
-                                materials={ppeMaterials}
-                                onMaterialsChange={materials => updateEditingStep('materials', [...nonPpeMaterials, ...materials])}
-                                onAddMaterial={() => setPpeMaterialsLibraryOpen(true)}
-                              />
+                          <div className="pt-2 border-t space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-medium">Personal Protective Equipment</h3>
+                              <Button size="sm" variant="outline" onClick={() => setPpeToolsLibraryOpen(true)}>
+                                <Plus className="w-3 h-3 mr-1" />
+                                Add PPE
+                              </Button>
                             </div>
+                            {ppeTools.length + ppeMaterials.length > 0 ? (
+                              <div className="border rounded-md">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow className="bg-muted/30">
+                                      <TableHead className="text-xs py-2">Item</TableHead>
+                                      <TableHead className="text-xs py-2 w-24">Type</TableHead>
+                                      <TableHead className="text-xs py-2 w-16">Qty</TableHead>
+                                      <TableHead className="text-xs py-2">Purpose</TableHead>
+                                      <TableHead className="text-xs py-2 w-16"></TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {[...ppeTools.map(item => ({ ...item, itemType: 'tool' as const })), ...ppeMaterials.map(item => ({ ...item, itemType: 'material' as const }))].map((item) => (
+                                      <TableRow key={`${item.itemType}-${item.id}`} className="text-xs">
+                                        <TableCell className="py-2">
+                                          <div className="font-medium text-xs">{item.name}</div>
+                                        </TableCell>
+                                        <TableCell className="py-2">
+                                          <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                                            {item.itemType === 'tool' ? 'Tool' : 'Material'}
+                                          </Badge>
+                                        </TableCell>
+                                        <TableCell className="py-2">
+                                          <Input
+                                            type="number"
+                                            min="1"
+                                            value={item.quantity || 1}
+                                            onChange={(e) => {
+                                              const qty = parseInt(e.target.value, 10) || 1;
+                                              if (item.itemType === 'tool') {
+                                                updateEditingStep('tools', [
+                                                  ...nonPpeTools,
+                                                  ...ppeTools.map(t => (t.id === item.id ? { ...t, quantity: qty } : t)),
+                                                ]);
+                                              } else {
+                                                updateEditingStep('materials', [
+                                                  ...nonPpeMaterials,
+                                                  ...ppeMaterials.map(m => (m.id === item.id ? { ...m, quantity: qty } : m)),
+                                                ]);
+                                              }
+                                            }}
+                                            className="w-16 h-7 text-xs"
+                                          />
+                                        </TableCell>
+                                        <TableCell className="py-2">
+                                          <Input
+                                            value={item.purpose || ''}
+                                            onChange={(e) => {
+                                              const purpose = e.target.value;
+                                              if (item.itemType === 'tool') {
+                                                updateEditingStep('tools', [
+                                                  ...nonPpeTools,
+                                                  ...ppeTools.map(t => (t.id === item.id ? { ...t, purpose } : t)),
+                                                ]);
+                                              } else {
+                                                updateEditingStep('materials', [
+                                                  ...nonPpeMaterials,
+                                                  ...ppeMaterials.map(m => (m.id === item.id ? { ...m, purpose } : m)),
+                                                ]);
+                                              }
+                                            }}
+                                            placeholder="Usage..."
+                                            className="text-xs h-6"
+                                          />
+                                        </TableCell>
+                                        <TableCell className="py-2 text-center">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                              if (item.itemType === 'tool') {
+                                                updateEditingStep('tools', [...nonPpeTools, ...ppeTools.filter(t => t.id !== item.id)]);
+                                              } else {
+                                                updateEditingStep('materials', [...nonPpeMaterials, ...ppeMaterials.filter(m => m.id !== item.id)]);
+                                              }
+                                            }}
+                                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </Button>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            ) : (
+                              <div className="text-center py-3 text-xs text-muted-foreground border border-dashed rounded-md">
+                                No PPE added yet
+                              </div>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
@@ -2444,13 +2527,16 @@ export default function EditWorkflowView({
                   </div>
                   <Accordion type="multiple" defaultValue={["materials", "tools", "outputs"]} className="w-full">
                     {/* Materials */}
-                    {currentStep?.materials?.length > 0 && <AccordionItem value="materials">
+                    {(() => {
+                      const nonPpeMaterials = (currentStep?.materials || []).filter(m => m.category !== 'PPE');
+                      if (nonPpeMaterials.length === 0) return null;
+                      return <AccordionItem value="materials">
                         <AccordionTrigger className="text-lg font-semibold">
-                          Materials Needed ({currentStep?.materials?.length || 0})
+                          Materials Needed ({nonPpeMaterials.length})
                         </AccordionTrigger>
                         <AccordionContent>
                           <div className="space-y-3 pt-2">
-                            {currentStep.materials.map(material => <div key={material.id} className="p-3 bg-background/50 rounded-lg">
+                            {nonPpeMaterials.map(material => <div key={material.id} className="p-3 bg-background/50 rounded-lg">
                                 <div className="flex items-start gap-3">
                                   <div className="flex-1">
                                     <div className="font-medium">{material.name}</div>
@@ -2461,16 +2547,20 @@ export default function EditWorkflowView({
                               </div>)}
                           </div>
                         </AccordionContent>
-                      </AccordionItem>}
+                      </AccordionItem>;
+                    })()}
 
                     {/* Tools */}
-                    {currentStep?.tools?.length > 0 && <AccordionItem value="tools">
+                    {(() => {
+                      const nonPpeTools = (currentStep?.tools || []).filter(t => t.category !== 'PPE');
+                      if (nonPpeTools.length === 0) return null;
+                      return <AccordionItem value="tools">
                         <AccordionTrigger className="text-lg font-semibold">
-                          Tools Required ({currentStep?.tools?.length || 0})
+                          Tools Required ({nonPpeTools.length})
                         </AccordionTrigger>
                         <AccordionContent>
                           <div className="space-y-3 pt-2">
-                            {currentStep.tools.map(tool => <div key={tool.id} className="p-3 bg-background/50 rounded-lg">
+                            {nonPpeTools.map(tool => <div key={tool.id} className="p-3 bg-background/50 rounded-lg">
                                 <div className="flex items-start gap-3">
                                   <div className="flex-1">
                                     <div className="font-medium">{tool.name}</div>
@@ -2481,7 +2571,36 @@ export default function EditWorkflowView({
                               </div>)}
                           </div>
                         </AccordionContent>
-                      </AccordionItem>}
+                      </AccordionItem>;
+                    })()}
+
+                    {/* PPE */}
+                    {(() => {
+                      const ppeTools = (currentStep?.tools || []).filter(t => t.category === 'PPE');
+                      const ppeMaterials = (currentStep?.materials || []).filter(m => m.category === 'PPE');
+                      const totalPpe = ppeTools.length + ppeMaterials.length;
+                      if (totalPpe === 0) return null;
+                      return <AccordionItem value="ppe">
+                        <AccordionTrigger className="text-lg font-semibold">
+                          Personal Protective Equipment ({totalPpe})
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-3 pt-2">
+                            {[...ppeTools.map(item => ({ ...item, itemType: 'Tool' })), ...ppeMaterials.map(item => ({ ...item, itemType: 'Material' }))].map(item => <div key={`${item.itemType}-${item.id}`} className="p-3 bg-background/50 rounded-lg">
+                              <div className="flex items-start gap-3">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="font-medium">{item.name}</div>
+                                    <Badge variant="outline" className="text-xs">{item.itemType}</Badge>
+                                  </div>
+                                  {item.description && <div className="text-sm text-muted-foreground mt-1">{item.description}</div>}
+                                </div>
+                              </div>
+                            </div>)}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>;
+                    })()}
 
                     {/* Outputs */}
                     {currentStep?.outputs?.length > 0 && <AccordionItem value="outputs">
