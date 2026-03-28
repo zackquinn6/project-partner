@@ -8,13 +8,25 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 type PfmeaScoringRow = Database['public']['Tables']['pfmea_scoring']['Row'];
 
-const cell = 'max-w-[220px] align-top text-xs leading-snug';
+const cell = 'align-top p-2 text-xs leading-snug';
+
+const stickyTh =
+  'sticky top-0 z-20 border-b border-border bg-background px-2 py-2 text-left text-xs font-medium text-foreground shadow-[0_1px_0_0_hsl(var(--border))]';
+
+function ScoringTableScroll({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-0 flex-1 overflow-auto rounded-md border">
+      {children}
+    </div>
+  );
+}
 
 export interface PfmeaScoringCriteriaDialogProps {
   open: boolean;
@@ -53,32 +65,41 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(88vh,900px)] w-[60vw] max-w-[60vw] flex-col gap-0 overflow-hidden p-0 md:max-w-[60vw]">
+      <DialogContent className="flex h-[90vh] max-h-[90vh] w-[80vw] max-w-[80vw] flex-col gap-0 overflow-hidden p-0 md:max-w-[80vw]">
         <DialogHeader className="shrink-0 border-b px-6 py-4 text-left">
           <DialogTitle>Scoring criteria</DialogTitle>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 overflow-auto px-4 pb-4 pt-3 sm:px-6">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-3 sm:px-6">
           {loading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : (
-            <Tabs defaultValue="severity" className="w-full">
-              <TabsList className="mb-3 grid w-full grid-cols-3 sm:w-auto sm:inline-grid">
-                <TabsTrigger value="severity">Severity</TabsTrigger>
-                <TabsTrigger value="occurrence">Occurrence</TabsTrigger>
-                <TabsTrigger value="detection">Detection</TabsTrigger>
+            <Tabs defaultValue="severity" className="flex min-h-0 flex-1 flex-col gap-0">
+              <TabsList className="mb-3 grid h-10 w-full shrink-0 grid-cols-3 gap-1 rounded-md bg-muted p-1 text-muted-foreground">
+                <TabsTrigger className="w-full" value="severity">
+                  Severity
+                </TabsTrigger>
+                <TabsTrigger className="w-full" value="occurrence">
+                  Occurrence
+                </TabsTrigger>
+                <TabsTrigger className="w-full" value="detection">
+                  Detection
+                </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="severity" className="mt-0">
-                <div className="overflow-x-auto rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead className="min-w-[180px] text-xs">Process effects</TableHead>
-                        <TableHead className="min-w-[180px] text-xs">Process examples</TableHead>
-                        <TableHead className="w-14 text-center text-xs">Score</TableHead>
-                        <TableHead className="min-w-[180px] text-xs">Quality effects</TableHead>
-                        <TableHead className="min-w-[180px] text-xs">Quality examples</TableHead>
+              <TabsContent
+                value="severity"
+                className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              >
+                <ScoringTableScroll>
+                  <table className="w-full min-w-0 border-separate border-spacing-0 caption-bottom text-sm">
+                    <TableHeader className="[&_tr]:border-b-0">
+                      <TableRow className="border-0 hover:bg-transparent">
+                        <TableHead className={cn(stickyTh, 'min-w-[180px]')}>Process effects</TableHead>
+                        <TableHead className={cn(stickyTh, 'min-w-[180px]')}>Process examples</TableHead>
+                        <TableHead className={cn(stickyTh, 'w-14 text-center')}>Score</TableHead>
+                        <TableHead className={cn(stickyTh, 'min-w-[180px]')}>Quality effects</TableHead>
+                        <TableHead className={cn(stickyTh, 'min-w-[180px]')}>Quality examples</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -86,27 +107,32 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
                         <TableRow key={r.id}>
                           <TableCell className={cell}>{r.process_effects}</TableCell>
                           <TableCell className={cell}>{r.process_examples}</TableCell>
-                          <TableCell className="w-14 text-center font-semibold tabular-nums">{r.score}</TableCell>
+                          <TableCell className="w-14 p-2 text-center text-xs font-semibold tabular-nums">
+                            {r.score}
+                          </TableCell>
                           <TableCell className={cell}>{r.quality_effects}</TableCell>
                           <TableCell className={cell}>{r.quality_examples}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
-                  </Table>
-                </div>
+                  </table>
+                </ScoringTableScroll>
               </TabsContent>
 
-              <TabsContent value="occurrence" className="mt-0">
-                <div className="overflow-x-auto rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead className="min-w-[160px] text-xs">Time scale</TableHead>
-                        <TableHead className="min-w-[160px] text-xs">Occurrence scale</TableHead>
-                        <TableHead className="w-14 text-center text-xs">Score</TableHead>
-                        <TableHead className="min-w-[180px] text-xs">Mistake-proofing</TableHead>
-                        <TableHead className="min-w-[200px] text-xs">Prevention control examples</TableHead>
-                        <TableHead className="min-w-[200px] text-xs">Typical scoring note</TableHead>
+              <TabsContent
+                value="occurrence"
+                className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              >
+                <ScoringTableScroll>
+                  <table className="w-full min-w-0 border-separate border-spacing-0 caption-bottom text-sm">
+                    <TableHeader className="[&_tr]:border-b-0">
+                      <TableRow className="border-0 hover:bg-transparent">
+                        <TableHead className={cn(stickyTh, 'min-w-[160px]')}>Time scale</TableHead>
+                        <TableHead className={cn(stickyTh, 'min-w-[160px]')}>Occurrence scale</TableHead>
+                        <TableHead className={cn(stickyTh, 'w-14 text-center')}>Score</TableHead>
+                        <TableHead className={cn(stickyTh, 'min-w-[180px]')}>Mistake-proofing</TableHead>
+                        <TableHead className={cn(stickyTh, 'min-w-[200px]')}>Prevention control examples</TableHead>
+                        <TableHead className={cn(stickyTh, 'min-w-[200px]')}>Typical scoring note</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -114,27 +140,32 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
                         <TableRow key={r.id}>
                           <TableCell className={cell}>{r.occurrence_time_scale}</TableCell>
                           <TableCell className={cell}>{r.occurrence_frequency_scale}</TableCell>
-                          <TableCell className="w-14 text-center font-semibold tabular-nums">{r.score}</TableCell>
+                          <TableCell className="w-14 p-2 text-center text-xs font-semibold tabular-nums">
+                            {r.score}
+                          </TableCell>
                           <TableCell className={cell}>{r.mistake_proofing_requirement}</TableCell>
                           <TableCell className={cell}>{r.prevention_control_examples}</TableCell>
                           <TableCell className={cell}>{r.typical_occurrence_note}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
-                  </Table>
-                </div>
+                  </table>
+                </ScoringTableScroll>
               </TabsContent>
 
-              <TabsContent value="detection" className="mt-0">
-                <div className="overflow-x-auto rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead className="min-w-[220px] text-xs">Failure mode detection</TableHead>
-                        <TableHead className="min-w-[220px] text-xs">Cause detection</TableHead>
-                        <TableHead className="w-14 text-center text-xs">Score</TableHead>
-                        <TableHead className="min-w-[200px] text-xs">Method guidance</TableHead>
-                        <TableHead className="min-w-[200px] text-xs">Typical note</TableHead>
+              <TabsContent
+                value="detection"
+                className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              >
+                <ScoringTableScroll>
+                  <table className="w-full min-w-0 border-separate border-spacing-0 caption-bottom text-sm">
+                    <TableHeader className="[&_tr]:border-b-0">
+                      <TableRow className="border-0 hover:bg-transparent">
+                        <TableHead className={cn(stickyTh, 'min-w-[220px]')}>Failure mode detection</TableHead>
+                        <TableHead className={cn(stickyTh, 'min-w-[220px]')}>Cause detection</TableHead>
+                        <TableHead className={cn(stickyTh, 'w-14 text-center')}>Score</TableHead>
+                        <TableHead className={cn(stickyTh, 'min-w-[200px]')}>Method guidance</TableHead>
+                        <TableHead className={cn(stickyTh, 'min-w-[200px]')}>Typical note</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -142,14 +173,16 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
                         <TableRow key={r.id}>
                           <TableCell className={cell}>{r.failure_mode_detection}</TableCell>
                           <TableCell className={cell}>{r.cause_detection}</TableCell>
-                          <TableCell className="w-14 text-center font-semibold tabular-nums">{r.score}</TableCell>
+                          <TableCell className="w-14 p-2 text-center text-xs font-semibold tabular-nums">
+                            {r.score}
+                          </TableCell>
                           <TableCell className={cell}>{r.detection_method_guidance}</TableCell>
                           <TableCell className={cell}>{r.typical_detection_note}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
-                  </Table>
-                </div>
+                  </table>
+                </ScoringTableScroll>
               </TabsContent>
             </Tabs>
           )}
