@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -90,6 +90,7 @@ export function HomeTasksTable({
   const [swipedTaskId, setSwipedTaskId] = useState<string | null>(null);
   const [touchStartX, setTouchStartX] = useState(0);
   const [touchEndX, setTouchEndX] = useState(0);
+  const toggleCompleteInFlight = useRef(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchEndX(0);
@@ -176,21 +177,27 @@ export function HomeTasksTable({
   };
 
   const handleToggleTaskComplete = async (task: HomeTask) => {
-    const newStatus = task.status === "closed" ? "open" : "closed";
-    const { error } = await supabase
-      .from("home_tasks")
-      .update({ status: newStatus })
-      .eq("id", task.id);
+    if (toggleCompleteInFlight.current) return;
+    toggleCompleteInFlight.current = true;
+    try {
+      const newStatus = task.status === "closed" ? "open" : "closed";
+      const { error } = await supabase
+        .from("home_tasks")
+        .update({ status: newStatus })
+        .eq("id", task.id);
 
-    if (error) return;
+      if (error) return;
 
-    if (newStatus === "closed") {
-      const xp = xpForHomeTaskComplete(task);
-      await awardXP(xp, `Task completed: ${task.title}`);
-      await checkMilestoneUnlocks();
+      if (newStatus === "closed") {
+        const xp = xpForHomeTaskComplete(task);
+        await awardXP(xp, `Task completed: ${task.title}`);
+        await checkMilestoneUnlocks();
+      }
+
+      onTaskUpdate?.();
+    } finally {
+      toggleCompleteInFlight.current = false;
     }
-
-    onTaskUpdate?.();
   };
 
   const getDisplayStatus = (task: HomeTask) => {
@@ -571,11 +578,23 @@ export function HomeTasksTable({
                     >
                       <TableCell className="w-9 !p-0.5 align-middle md:w-14 md:!p-1">
                         <Button
+                          type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => handleToggleTaskComplete(task)}
-                          className="h-8 w-8 min-h-8 min-w-8 p-0 text-base font-medium leading-none rounded-md border-2 hover:bg-primary/10 md:h-12 md:w-12 md:min-h-12 md:min-w-12 md:text-lg"
-                          title={task.status === 'closed' ? 'Mark as open' : 'Mark as complete'}
+                          className="h-8 w-8 min-h-8 min-w-8 touch-manipulation p-0 text-base font-medium leading-none rounded-md border-2 hover:bg-primary/10 md:h-12 md:w-12 md:min-h-12 md:min-w-12 md:text-lg"
+                          title={task.status === 'closed' ? 'Mark as not complete' : 'Mark as complete'}
+                          aria-label={task.status === 'closed' ? 'Mark task as not complete' : 'Mark task complete'}
+                          {...(isMobile
+                            ? {
+                                onTouchStart: (e: React.TouchEvent) => e.stopPropagation(),
+                                onTouchMove: (e: React.TouchEvent) => e.stopPropagation(),
+                                onTouchEnd: (e: React.TouchEvent) => e.stopPropagation(),
+                              }
+                            : {})}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleToggleTaskComplete(task);
+                          }}
                         >
                           {task.status === 'closed' ? '✓' : '○'}
                         </Button>
