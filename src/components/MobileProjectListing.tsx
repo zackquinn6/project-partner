@@ -134,6 +134,7 @@ export function MobileProjectListing({
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <WorkspaceSubViewHeader
+        compactMobile
         screenTitle="Project Dashboard"
         screenIcon={<FolderKanban className="h-4 w-4 md:h-[18px] md:w-[18px]" aria-hidden />}
         helpTitle="About Project Dashboard"
@@ -144,7 +145,7 @@ export function MobileProjectListing({
         onHomeChange={setSelectedHomeId}
         onOpenHomeManager={() => setShowHomeManager(true)}
       >
-        <div className="flex items-center gap-1.5 md:flex-wrap md:gap-2">
+        <div className="flex items-center gap-1 md:flex-wrap md:gap-2">
           <div className="relative min-h-0 min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground md:left-2.5 md:h-4 md:w-4" />
             <Input
@@ -185,7 +186,7 @@ export function MobileProjectListing({
         </div>
 
         {currentProjectRun ? (
-          <div className="rounded-lg border border-primary/25 bg-primary/5 px-3 py-2">
+          <div className="rounded-md border border-primary/25 bg-primary/5 px-2 py-1.5 md:rounded-lg md:px-3 md:py-2">
             <div className="flex items-center gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -244,12 +245,13 @@ export function MobileProjectListing({
         showSelector={false}
       />
 
-      {/* Content */}
-      <div className="min-h-0 flex-1 space-y-2 overflow-auto px-2 pb-2 pt-1 md:space-y-3 md:px-6 md:py-4">
+      {/* Content — flex-1 + min-h-0 so the list uses remaining viewport below header + bottom nav */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto px-2 pb-1 pt-0 md:space-y-3 md:px-6 md:py-4 md:pb-2">
+        <div className="flex min-h-0 flex-1 flex-col space-y-1.5 md:space-y-3">
         {/* Active Projects Section */}
         {filteredProjectRuns.filter((run) => listingProgressPercent(run) < 100).length > 0 && (
           <>
-            <div className="text-sm font-medium text-muted-foreground px-1 mb-2">
+            <div className="px-0.5 text-xs font-medium text-muted-foreground md:mb-0 md:px-1 md:text-sm mb-1">
               Active Projects ({activeCount})
             </div>
             {filteredProjectRuns
@@ -269,7 +271,7 @@ export function MobileProjectListing({
         {/* Completed Projects Section */}
         {filteredProjectRuns.filter((run) => listingProgressPercent(run) >= 100).length > 0 && (
           <>
-            <div className="text-sm font-medium text-muted-foreground px-1 mb-2 mt-6">
+            <div className="mt-3 px-0.5 text-xs font-medium text-muted-foreground md:mt-6 md:mb-0 md:px-1 md:text-sm mb-1">
               Completed Projects ({completedCount})
             </div>
             {filteredProjectRuns
@@ -300,6 +302,7 @@ export function MobileProjectListing({
             onAction={() => onNewProject?.()}
           />
         )}
+        </div>
       </div>
     </div>
   );
@@ -315,12 +318,12 @@ interface EmptyStateProps {
 
 function EmptyState({ title, description, actionLabel, showAction, onAction }: EmptyStateProps) {
   return (
-    <div className="text-center py-12">
-      <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
-        <Plus className="h-8 w-8 text-muted-foreground" />
+    <div className="py-8 text-center md:py-12">
+      <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-muted md:mb-4 md:h-16 md:w-16">
+        <Plus className="h-7 w-7 text-muted-foreground md:h-8 md:w-8" />
       </div>
-      <h3 className="text-lg font-semibold text-card-foreground mb-2">{title}</h3>
-      <p className="text-muted-foreground mb-6 px-2">{description}</p>
+      <h3 className="mb-1.5 text-base font-semibold text-card-foreground md:mb-2 md:text-lg">{title}</h3>
+      <p className="mb-4 px-2 text-sm text-muted-foreground md:mb-6 md:text-base">{description}</p>
       {showAction && (
         <Button variant="outline" onClick={onAction}>
           {actionLabel}

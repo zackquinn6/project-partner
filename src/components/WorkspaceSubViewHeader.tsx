@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { HelpCircle, Home as HomeIcon, Bell, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -112,6 +113,8 @@ export interface WorkspaceSubViewHeaderProps {
   onOpenReminders?: () => void;
   /** Extra controls (e.g. project search row) rendered below the main toolbar */
   children?: ReactNode;
+  /** Tighter mobile padding/gaps (e.g. Project Dashboard list view). Desktop unchanged. */
+  compactMobile?: boolean;
 }
 
 export function WorkspaceSubViewHeader({
@@ -127,6 +130,7 @@ export function WorkspaceSubViewHeader({
   showReminders = false,
   onOpenReminders,
   children,
+  compactMobile = false,
 }: WorkspaceSubViewHeaderProps) {
   const showHelp = Boolean(helpTitle && helpBody);
 
@@ -173,8 +177,20 @@ export function WorkspaceSubViewHeader({
 
   /** Title + help sit in one cluster so the help icon stays next to the text, not the far edge of the header. */
   const titleBlockMobile = (
-    <div className="inline-flex max-w-full min-w-0 flex-wrap items-baseline gap-x-1 gap-y-0">
-      <h1 className="inline-block max-w-full min-w-0 text-sm font-semibold leading-snug tracking-tight text-foreground [overflow-wrap:anywhere] line-clamp-2 break-words">
+    <div
+      className={cn(
+        'inline-flex max-w-full min-w-0 flex-wrap items-baseline gap-x-1 gap-y-0',
+        compactMobile && 'items-center'
+      )}
+    >
+      <h1
+        className={cn(
+          'inline-block max-w-full min-w-0 font-semibold tracking-tight text-foreground [overflow-wrap:anywhere]',
+          compactMobile
+            ? 'line-clamp-1 text-xs leading-tight'
+            : 'line-clamp-2 break-words text-sm leading-snug'
+        )}
+      >
         {screenTitle}
       </h1>
       {renderHelpButton()}
@@ -183,13 +199,25 @@ export function WorkspaceSubViewHeader({
 
   return (
     <div className="flex-shrink-0 border-b border-border/80 bg-muted/20 backdrop-blur-sm supports-[backdrop-filter]:bg-muted/15">
-      <div className="flex flex-col gap-1.5 px-2 py-1.5 md:gap-2 md:px-6 md:py-3">
+      <div
+        className={
+          compactMobile
+            ? 'flex flex-col gap-1 px-2 py-1 md:gap-2 md:px-6 md:py-3'
+            : 'flex flex-col gap-1.5 px-2 py-1.5 md:gap-2 md:px-6 md:py-3'
+        }
+      >
         {/* Mobile: one row — title (left) + homes + home select + notifications + back */}
-        <div className="flex items-center gap-1.5 md:hidden">
+        <div className={compactMobile ? 'flex items-center gap-1 md:hidden' : 'flex items-center gap-1.5 md:hidden'}>
           <div className="min-w-0 flex-1 pr-0.5">{titleBlockMobile}</div>
-          <div className="flex min-w-0 shrink-0 items-center gap-1.5">
+          <div className={compactMobile ? 'flex min-w-0 shrink-0 items-center gap-1' : 'flex min-w-0 shrink-0 items-center gap-1.5'}>
             <HomeManagerButton onOpenHomeManager={onOpenHomeManager} compact />
-            <div className="min-w-0 w-[min(7.75rem,calc(100vw-13.5rem))] max-w-[7.75rem] shrink">
+            <div
+              className={
+                compactMobile
+                  ? 'min-w-0 w-[min(7rem,calc(100vw-12rem))] max-w-[7rem] shrink'
+                  : 'min-w-0 w-[min(7.75rem,calc(100vw-13.5rem))] max-w-[7.75rem] shrink'
+              }
+            >
               <HomeSelect
                 homes={homes}
                 selectedHomeId={selectedHomeId}
@@ -240,7 +268,15 @@ export function WorkspaceSubViewHeader({
         </div>
 
         {children ? (
-          <div className="mt-1 space-y-1.5 pt-0 md:mt-0 md:space-y-2 md:pt-0.5">{children}</div>
+          <div
+            className={
+              compactMobile
+                ? 'mt-0 space-y-1 pt-0 md:mt-0 md:space-y-2 md:pt-0.5'
+                : 'mt-1 space-y-1.5 pt-0 md:mt-0 md:space-y-2 md:pt-0.5'
+            }
+          >
+            {children}
+          </div>
         ) : null}
       </div>
     </div>
