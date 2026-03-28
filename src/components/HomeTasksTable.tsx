@@ -498,7 +498,7 @@ export function HomeTasksTable({
       <div className="border rounded-lg md:rounded-lg rounded-none border-x-0 md:border-x overflow-hidden flex-1">
         <div className="overflow-auto h-full">
           <Table>
-            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:px-2 [&_th]:md:px-4 [&_th]:py-2 [&_th]:md:py-3">
+            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:px-1.5 [&_th]:py-1 [&_th]:md:px-4 [&_th]:md:py-3 [&_th>button]:h-5 [&_th>button]:min-h-5 [&_th>button]:px-1 [&_th>button]:text-[10px] md:[&_th>button]:h-6 md:[&_th>button]:min-h-0 md:[&_th>button]:px-2 md:[&_th>button]:text-xs">
               <TableRow className="border-sky-500/50">
                 {!isMobile && <TableHead className="w-14 text-xs text-white"></TableHead>}
                 <TableHead className="min-w-0 md:min-w-[281px] md:w-[281px] text-xs text-white">

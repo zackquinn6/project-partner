@@ -682,18 +682,8 @@ export function HomeTaskList({
                     });
 
                     return (
-                      <div className="space-y-3">
-                        {/* Key metrics: mobile = single row with open + complete; desktop = cards */}
-                        <div className="flex md:hidden items-center gap-3 text-[11px]">
-                          <span className="flex items-center gap-1.5 font-medium text-emerald-700 dark:text-emerald-400">
-                            <span className="text-muted-foreground font-normal">Open</span>
-                            {openTasks.length}
-                          </span>
-                          <span className="flex items-center gap-1.5 font-medium text-slate-600 dark:text-slate-400">
-                            <span className="text-muted-foreground font-normal">Done</span>
-                            {completedTasks.length}
-                          </span>
-                        </div>
+                      <div className="space-y-0 md:space-y-3">
+                        {/* Desktop: Open/Done cards + expandable metrics (hidden on mobile) */}
                         <div className="hidden md:flex md:flex-wrap md:items-start md:gap-2">
                           <div className="flex shrink-0 gap-2">
                             <Card className="w-[5.75rem] shrink-0 border-border/60 shadow-sm">
