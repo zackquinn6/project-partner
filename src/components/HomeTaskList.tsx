@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMembership } from "@/contexts/MembershipContext";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -85,6 +87,9 @@ export function HomeTaskList({
   const [showTeamWindow, setShowTeamWindow] = useState(false);
   const [showAssignWindow, setShowAssignWindow] = useState(false);
   const [showPortfolioReminders, setShowPortfolioReminders] = useState(false);
+  const isMobileTaskForm = useIsMobile();
+  /** Mobile new-task only: name + due on top; other fields in accordion (avoids duplicate drag-drop trees). */
+  const compactNewTaskMobile = isMobileTaskForm && !editingTask;
   const [linkedProjectUpgradeOpen, setLinkedProjectUpgradeOpen] = useState(false);
   const [linkedProjectUpgradeFeature, setLinkedProjectUpgradeFeature] = useState('Projects membership');
   const [subtasks, setSubtasks] = useState<Array<{ 
@@ -593,6 +598,160 @@ export function HomeTaskList({
       </Alert>
     ) : null;
 
+  const renderSubtasksAndMaterials = () => (
+    <>
+      <div className="space-y-2 border-t pt-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium">Subtasks</label>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={subtasksOrdered ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSubtasksOrdered(!subtasksOrdered)}
+              className="h-7 text-xs"
+              aria-pressed={subtasksOrdered}
+              title={subtasksOrdered ? "Subtasks are ordered (toggle to unordered)" : "Subtasks are unordered (toggle to ordered)"}
+            >
+              {subtasksOrdered ? <ListOrdered className="h-3 w-3 mr-1" /> : <List className="h-3 w-3 mr-1" />}
+              {subtasksOrdered ? 'Ordered' : 'Unordered'}
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={addSubtask} className="h-7 text-xs">
+              <Plus className="h-3 w-3 mr-1" />
+              Add Sub-task
+            </Button>
+          </div>
+        </div>
+        {subtasks.length > 0 && (
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="border rounded-md overflow-hidden">
+              <div className={`grid grid-cols-[32px_auto_100px_120px_32px] ${subtasksOrdered ? 'md:grid-cols-[32px_48px_auto_100px_120px_32px]' : ''} gap-2 p-2 bg-muted text-xs font-medium`}>
+                <div></div>
+                {subtasksOrdered && <div>#</div>}
+                <div>Task Name</div>
+                <div>Hours</div>
+                <div>DIY Level</div>
+                <div></div>
+              </div>
+              <Droppable droppableId="subtasks">
+                {(provided) => (
+                  <div {...provided.droppableProps} ref={provided.innerRef}>
+                    {subtasks.map((subtask, index) => (
+                      <Draggable key={subtask.id} draggableId={subtask.id} index={index}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={`grid grid-cols-[32px_auto_100px_120px_32px] ${subtasksOrdered ? 'md:grid-cols-[32px_48px_auto_100px_120px_32px]' : ''} gap-2 p-2 border-t items-center ${snapshot.isDragging ? 'bg-accent' : ''}`}
+                          >
+                            <div {...provided.dragHandleProps} className="flex items-center">
+                              <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                            </div>
+                            {subtasksOrdered && (
+                              <div className="font-medium text-muted-foreground text-xs">
+                                {index + 1}
+                              </div>
+                            )}
+                            <Input
+                              value={subtask.title}
+                              onChange={(e) => updateSubtask(subtask.id, 'title', e.target.value)}
+                              placeholder="Subtask name"
+                              className="h-7 text-xs"
+                            />
+                            <Input
+                              type="number"
+                              min="0.25"
+                              step="0.25"
+                              value={subtask.estimated_hours}
+                              onChange={(e) => updateSubtask(subtask.id, 'estimated_hours', parseFloat(e.target.value))}
+                              className="h-7 text-xs"
+                            />
+                            <Select value={subtask.diy_level} onValueChange={(val) => updateSubtask(subtask.id, 'diy_level', val)}>
+                              <SelectTrigger className="h-7 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="beginner">Beginner</SelectItem>
+                                <SelectItem value="intermediate">Intermediate</SelectItem>
+                                <SelectItem value="advanced">Advanced</SelectItem>
+                                <SelectItem value="pro">Professional</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeSubtask(subtask.id)}
+                              className="h-6 w-6 p-0 text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </div>
+          </DragDropContext>
+        )}
+      </div>
+
+      <div className="space-y-2 border-t pt-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium">Materials</label>
+          <Button type="button" variant="outline" size="sm" onClick={addMaterial} className="h-7 text-xs">
+            <Plus className="h-3 w-3 mr-1" />
+            Add Material
+          </Button>
+        </div>
+        {materials.length > 0 && (
+          <div className="border rounded-md overflow-hidden">
+            <div className="grid grid-cols-[1fr_80px_32px] gap-2 p-2 bg-muted text-xs font-medium">
+              <div>Material Name</div>
+              <div>Quantity</div>
+              <div></div>
+            </div>
+            <div>
+              {materials.map((material) => (
+                <div
+                  key={material.id}
+                  className="grid grid-cols-[1fr_80px_32px] gap-2 p-2 border-t items-center"
+                >
+                  <Input
+                    value={material.material_name}
+                    onChange={(e) => updateMaterial(material.id, 'material_name', e.target.value)}
+                    placeholder="Material name"
+                    className="h-7 text-xs"
+                  />
+                  <Input
+                    type="number"
+                    min="1"
+                    value={material.quantity}
+                    onChange={(e) => updateMaterial(material.id, 'quantity', parseInt(e.target.value) || 1)}
+                    placeholder="Qty"
+                    className="h-7 text-xs"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeMaterial(material.id)}
+                    className="h-6 w-6 p-0 text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   const taskManagerTabs = (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex h-full flex-col">
               <div className="flex-shrink-0 border-b border-border/60 bg-background/95 px-2 pb-1 pt-0.5 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:pb-2 md:pt-1.5">
@@ -813,228 +972,173 @@ export function HomeTaskList({
                   {showAddTask && (
                     <Card>
                       <CardContent className="pt-3 pb-3 space-y-3">
-                        <Input
-                          placeholder="Task title *"
-                          value={formData.title}
-                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                          className="text-xs h-8"
-                        />
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                          <div className="min-w-0">
-                            <label className="text-xs font-medium mb-1 block">Priority</label>
-                            <Select value={formData.priority} onValueChange={(val) => setFormData({ ...formData, priority: val as any })}>
-                              <SelectTrigger className="text-xs h-8">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="high">High</SelectItem>
-                                <SelectItem value="medium">Medium</SelectItem>
-                                <SelectItem value="low">Low</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="min-w-0">
-                            <label className="text-xs font-medium mb-1 block">DIY Level</label>
-                            <Select value={formData.diy_level} onValueChange={(val) => setFormData({ ...formData, diy_level: val as any })}>
-                              <SelectTrigger className="text-xs h-8">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="beginner">Beginner</SelectItem>
-                                <SelectItem value="intermediate">Intermediate</SelectItem>
-                                <SelectItem value="advanced">Advanced</SelectItem>
-                                <SelectItem value="pro">Professional</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="min-w-0">
-                            <label className="text-xs font-medium mb-1 block">Due Date</label>
-                            <Input
-                              type="date"
-                              value={formData.due_date}
-                              onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                              className="text-xs h-8"
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            <label className="text-xs font-medium mb-1 block">Estimated duration</label>
-                            {subtasks.length > 0 ? (
-                              <div className="text-xs text-muted-foreground h-8 flex items-center">
-                                N/A (using sub-task hours)
+                        {compactNewTaskMobile ? (
+                          <>
+                            <div className="space-y-2">
+                              <div className="space-y-1">
+                                <Label htmlFor="home-new-task-name" className="text-xs font-medium">
+                                  Name
+                                </Label>
+                                <Input
+                                  id="home-new-task-name"
+                                  placeholder="Required"
+                                  value={formData.title}
+                                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                  className="h-9 text-sm"
+                                />
                               </div>
-                            ) : (
-                              <Input
-                                type="text"
-                                placeholder="0:00"
-                                value={formData.estimated_hours}
-                                onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
-                                className="text-xs h-8"
-                                aria-label="Duration in hours and minutes, e.g. 1:30"
-                              />
-                            )}
-                          </div>
-                        </div>
-                        
-                        <Textarea
-                          placeholder="Notes (optional)"
-                          value={formData.notes}
-                          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                          className="text-xs min-h-[60px]"
-                        />
-
-                        {/* Subtasks Section */}
-                        <div className="space-y-2 border-t pt-3">
-                          <div className="flex items-center justify-between">
-                            <label className="text-xs font-medium">Subtasks</label>
-                            <div className="flex gap-2">
-                              <Button 
-                                type="button"
-                                variant={subtasksOrdered ? "default" : "outline"}
-                                size="sm" 
-                                onClick={() => setSubtasksOrdered(!subtasksOrdered)} 
-                                className="h-7 text-xs"
-                                aria-pressed={subtasksOrdered}
-                                title={subtasksOrdered ? "Subtasks are ordered (toggle to unordered)" : "Subtasks are unordered (toggle to ordered)"}
-                              >
-                                {subtasksOrdered ? <ListOrdered className="h-3 w-3 mr-1" /> : <List className="h-3 w-3 mr-1" />}
-                                {subtasksOrdered ? 'Ordered' : 'Unordered'}
-                              </Button>
-                              <Button type="button" variant="outline" size="sm" onClick={addSubtask} className="h-7 text-xs">
-                                <Plus className="h-3 w-3 mr-1" />
-                                Add Sub-task
-                              </Button>
+                              <div className="space-y-1">
+                                <Label htmlFor="home-new-task-due" className="text-xs font-medium">
+                                  Due date
+                                </Label>
+                                <Input
+                                  id="home-new-task-due"
+                                  type="date"
+                                  value={formData.due_date}
+                                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                                  className="h-9 text-sm"
+                                />
+                              </div>
                             </div>
-                          </div>
-                          {subtasks.length > 0 && (
-                            <DragDropContext onDragEnd={handleDragEnd}>
-                              <div className="border rounded-md overflow-hidden">
-                                <div className={`grid grid-cols-[32px_auto_100px_120px_32px] ${subtasksOrdered ? 'md:grid-cols-[32px_48px_auto_100px_120px_32px]' : ''} gap-2 p-2 bg-muted text-xs font-medium`}>
-                                  <div></div>
-                                  {subtasksOrdered && <div>#</div>}
-                                  <div>Task Name</div>
-                                  <div>Hours</div>
-                                  <div>DIY Level</div>
-                                  <div></div>
-                                </div>
-                                  <Droppable droppableId="subtasks">
-                                    {(provided) => (
-                                      <div {...provided.droppableProps} ref={provided.innerRef}>
-                                        {subtasks.map((subtask, index) => (
-                                          <Draggable key={subtask.id} draggableId={subtask.id} index={index}>
-                                            {(provided, snapshot) => (
-                                              <div
-                                                ref={provided.innerRef}
-                                                {...provided.draggableProps}
-                                                className={`grid grid-cols-[32px_auto_100px_120px_32px] ${subtasksOrdered ? 'md:grid-cols-[32px_48px_auto_100px_120px_32px]' : ''} gap-2 p-2 border-t items-center ${snapshot.isDragging ? 'bg-accent' : ''}`}
-                                              >
-                                                <div {...provided.dragHandleProps} className="flex items-center">
-                                                  <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
-                                                </div>
-                                                {subtasksOrdered && (
-                                                  <div className="font-medium text-muted-foreground text-xs">
-                                                    {index + 1}
-                                                  </div>
-                                                )}
-                                                <Input
-                                                  value={subtask.title}
-                                                  onChange={(e) => updateSubtask(subtask.id, 'title', e.target.value)}
-                                                  placeholder="Subtask name"
-                                                  className="h-7 text-xs"
-                                                />
-                                                <Input
-                                                  type="number"
-                                                  min="0.25"
-                                                  step="0.25"
-                                                  value={subtask.estimated_hours}
-                                                  onChange={(e) => updateSubtask(subtask.id, 'estimated_hours', parseFloat(e.target.value))}
-                                                  className="h-7 text-xs"
-                                                />
-                                                <Select value={subtask.diy_level} onValueChange={(val) => updateSubtask(subtask.id, 'diy_level', val)}>
-                                                  <SelectTrigger className="h-7 text-xs">
-                                                    <SelectValue />
-                                                  </SelectTrigger>
-                                                  <SelectContent>
-                                                    <SelectItem value="beginner">Beginner</SelectItem>
-                                                    <SelectItem value="intermediate">Intermediate</SelectItem>
-                                                    <SelectItem value="advanced">Advanced</SelectItem>
-                                                    <SelectItem value="pro">Professional</SelectItem>
-                                                  </SelectContent>
-                                                </Select>
-                                                <Button
-                                                  type="button"
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  onClick={() => removeSubtask(subtask.id)}
-                                                  className="h-6 w-6 p-0 text-destructive"
-                                                >
-                                                  <X className="h-3 w-3" />
-                                                </Button>
-                                              </div>
-                                            )}
-                                          </Draggable>
-                                        ))}
-                                        {provided.placeholder}
-                                      </div>
-                                    )}
-                                  </Droppable>
-                                </div>
-                              </DragDropContext>
-                             )}
-                           </div>
-
-                        {/* Materials Section */}
-                        <div className="space-y-2 border-t pt-3">
-                          <div className="flex items-center justify-between">
-                            <label className="text-xs font-medium">Materials</label>
-                            <Button type="button" variant="outline" size="sm" onClick={addMaterial} className="h-7 text-xs">
-                              <Plus className="h-3 w-3 mr-1" />
-                              Add Material
-                            </Button>
-                          </div>
-                          {materials.length > 0 && (
-                            <div className="border rounded-md overflow-hidden">
-                              <div className="grid grid-cols-[1fr_80px_32px] gap-2 p-2 bg-muted text-xs font-medium">
-                                <div>Material Name</div>
-                                <div>Quantity</div>
-                                <div></div>
-                              </div>
-                              <div>
-                                {materials.map((material) => (
-                                  <div
-                                    key={material.id}
-                                    className="grid grid-cols-[1fr_80px_32px] gap-2 p-2 border-t items-center"
-                                  >
-                                    <Input
-                                      value={material.material_name}
-                                      onChange={(e) => updateMaterial(material.id, 'material_name', e.target.value)}
-                                      placeholder="Material name"
-                                      className="h-7 text-xs"
-                                    />
-                                    <Input
-                                      type="number"
-                                      min="1"
-                                      value={material.quantity}
-                                      onChange={(e) => updateMaterial(material.id, 'quantity', parseInt(e.target.value) || 1)}
-                                      placeholder="Qty"
-                                      className="h-7 text-xs"
-                                    />
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => removeMaterial(material.id)}
-                                      className="h-6 w-6 p-0 text-destructive"
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </Button>
+                            <Accordion type="single" collapsible className="rounded-md border border-border/80">
+                              <AccordionItem value="more" className="border-0">
+                                <AccordionTrigger className="px-3 py-2.5 text-sm font-medium hover:no-underline">
+                                  More Settings
+                                </AccordionTrigger>
+                                <AccordionContent className="space-y-3 px-3 pb-3 pt-2">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="min-w-0">
+                                      <label className="mb-1 block text-xs font-medium">Priority</label>
+                                      <Select value={formData.priority} onValueChange={(val) => setFormData({ ...formData, priority: val as any })}>
+                                        <SelectTrigger className="h-8 text-xs">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="high">High</SelectItem>
+                                          <SelectItem value="medium">Medium</SelectItem>
+                                          <SelectItem value="low">Low</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="min-w-0">
+                                      <label className="mb-1 block text-xs font-medium">DIY Level</label>
+                                      <Select value={formData.diy_level} onValueChange={(val) => setFormData({ ...formData, diy_level: val as any })}>
+                                        <SelectTrigger className="h-8 text-xs">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="beginner">Beginner</SelectItem>
+                                          <SelectItem value="intermediate">Intermediate</SelectItem>
+                                          <SelectItem value="advanced">Advanced</SelectItem>
+                                          <SelectItem value="pro">Professional</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
                                   </div>
-                                ))}
+                                  <div className="min-w-0">
+                                    <label className="mb-1 block text-xs font-medium">Estimated duration</label>
+                                    {subtasks.length > 0 ? (
+                                      <div className="flex h-8 items-center text-xs text-muted-foreground">
+                                        N/A (using sub-task hours)
+                                      </div>
+                                    ) : (
+                                      <Input
+                                        type="text"
+                                        placeholder="0:00"
+                                        value={formData.estimated_hours}
+                                        onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
+                                        className="h-8 text-xs"
+                                        aria-label="Duration in hours and minutes, e.g. 1:30"
+                                      />
+                                    )}
+                                  </div>
+                                  <Textarea
+                                    placeholder="Notes (optional)"
+                                    value={formData.notes}
+                                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                    className="min-h-[60px] text-xs"
+                                  />
+                                  {renderSubtasksAndMaterials()}
+                                </AccordionContent>
+                              </AccordionItem>
+                            </Accordion>
+                          </>
+                        ) : (
+                          <>
+                            <Input
+                              placeholder="Task title *"
+                              value={formData.title}
+                              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                              className="h-8 text-xs"
+                            />
+                            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                              <div className="min-w-0">
+                                <label className="mb-1 block text-xs font-medium">Priority</label>
+                                <Select value={formData.priority} onValueChange={(val) => setFormData({ ...formData, priority: val as any })}>
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="high">High</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="low">Low</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="min-w-0">
+                                <label className="mb-1 block text-xs font-medium">DIY Level</label>
+                                <Select value={formData.diy_level} onValueChange={(val) => setFormData({ ...formData, diy_level: val as any })}>
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="beginner">Beginner</SelectItem>
+                                    <SelectItem value="intermediate">Intermediate</SelectItem>
+                                    <SelectItem value="advanced">Advanced</SelectItem>
+                                    <SelectItem value="pro">Professional</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="min-w-0">
+                                <label className="mb-1 block text-xs font-medium">Due Date</label>
+                                <Input
+                                  type="date"
+                                  value={formData.due_date}
+                                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <label className="mb-1 block text-xs font-medium">Estimated duration</label>
+                                {subtasks.length > 0 ? (
+                                  <div className="flex h-8 items-center text-xs text-muted-foreground">
+                                    N/A (using sub-task hours)
+                                  </div>
+                                ) : (
+                                  <Input
+                                    type="text"
+                                    placeholder="0:00"
+                                    value={formData.estimated_hours}
+                                    onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
+                                    className="h-8 text-xs"
+                                    aria-label="Duration in hours and minutes, e.g. 1:30"
+                                  />
+                                )}
                               </div>
                             </div>
-                          )}
-                        </div>
 
-                         <div className="flex gap-2 justify-end flex-wrap">
+                            <Textarea
+                              placeholder="Notes (optional)"
+                              value={formData.notes}
+                              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                              className="min-h-[60px] text-xs"
+                            />
+
+                            {renderSubtasksAndMaterials()}
+                          </>
+                        )}
+
+                        <div className="flex flex-wrap justify-end gap-2">
                           {editingTask?.project_run_id && (
                             <div className="w-full flex items-center gap-2">
                               <span className="text-xs text-muted-foreground">
