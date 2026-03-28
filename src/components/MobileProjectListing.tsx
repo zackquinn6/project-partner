@@ -144,21 +144,21 @@ export function MobileProjectListing({
         onHomeChange={setSelectedHomeId}
         onOpenHomeManager={() => setShowHomeManager(true)}
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-0 flex-1 basis-[min(100%,12rem)]">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="flex items-center gap-1.5 md:flex-wrap md:gap-2">
+          <div className="relative min-h-0 min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground md:left-2.5 md:h-4 md:w-4" />
             <Input
               placeholder="Search projects..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 pl-9 text-sm md:h-10"
+              className="h-8 pl-8 text-xs md:h-10 md:pl-9 md:text-sm"
             />
           </div>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="h-9 shrink-0 px-3 md:h-10"
+            className="h-8 shrink-0 px-2.5 md:h-10 md:px-3"
             title="Sort order"
             aria-label="Sort projects"
             onClick={() => {
@@ -166,20 +166,20 @@ export function MobileProjectListing({
               setSortBy(nextSort);
             }}
           >
-            <SortAsc className="h-4 w-4" />
+            <SortAsc className="h-3.5 w-3.5 md:h-4 md:w-4" />
           </Button>
           {catalogNewProjectEnabled && onNewProject ? (
             <Button
               type="button"
               variant="default"
               size="sm"
-              className="h-9 shrink-0 px-3 md:h-10"
+              className="h-8 shrink-0 px-2.5 md:h-10 md:px-3"
               onClick={() => {
                 onNewProject();
               }}
               aria-label="New project"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
             </Button>
           ) : null}
         </div>
@@ -245,7 +245,7 @@ export function MobileProjectListing({
       />
 
       {/* Content */}
-      <div className="min-h-0 flex-1 space-y-3 overflow-auto px-3 py-3 md:px-6 md:py-4">
+      <div className="min-h-0 flex-1 space-y-2 overflow-auto px-2 pb-2 pt-1 md:space-y-3 md:px-6 md:py-4">
         {/* Active Projects Section */}
         {filteredProjectRuns.filter((run) => listingProgressPercent(run) < 100).length > 0 && (
           <>
