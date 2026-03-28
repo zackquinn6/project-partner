@@ -494,31 +494,35 @@ export function HomeTasksTable({
         </div>
       </div>
 
-      {/* Table: mobile = Task + Due date only; desktop = full columns */}
+      {/* Table: mobile = check + task + due; desktop = full columns */}
       <div className="border rounded-lg md:rounded-lg rounded-none border-x-0 md:border-x overflow-hidden flex-1">
         <div className="overflow-auto h-full">
           <Table>
-            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:px-1 [&_th]:py-0.5 [&_th]:md:px-2.5 [&_th]:md:py-1">
+            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:!h-auto [&_th]:!min-h-0 [&_th]:!px-0.5 [&_th]:!py-0 [&_th]:leading-none [&_th]:md:!px-2.5 [&_th]:md:!py-0.5">
               <TableRow className="border-sky-500/50">
-                {!isMobile && <TableHead className="w-14 text-xs text-white"></TableHead>}
+                <TableHead className="w-9 shrink-0 text-center text-xs leading-none text-white md:w-14" aria-label="Complete">
+                  <span className="sr-only">Complete</span>
+                </TableHead>
                 <TableHead className="min-w-0 md:min-w-[281px] md:w-[281px] text-xs text-white">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleSort('title')}
-                    className="h-auto min-h-0 py-0.5 px-1 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
+                    className="h-auto min-h-0 py-0 px-0.5 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
                   >
                     Task <SortIcon field="title" />
                   </Button>
                 </TableHead>
-                {!isMobile && <TableHead className="w-[180px] text-xs text-white">Notes</TableHead>}
+                {!isMobile && (
+                  <TableHead className="w-[180px] text-xs leading-none text-white">Notes</TableHead>
+                )}
                 {!isMobile && (
                   <TableHead className="w-24 md:w-20 text-xs text-white">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort('priority')}
-                      className="h-auto min-h-0 py-0.5 px-1 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
+                      className="h-auto min-h-0 py-0 px-0.5 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
                     >
                       Priority <SortIcon field="priority" />
                     </Button>
@@ -530,7 +534,7 @@ export function HomeTasksTable({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort('diy_level')}
-                      className="h-auto min-h-0 py-0.5 px-1 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
+                      className="h-auto min-h-0 py-0 px-0.5 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
                     >
                       DIY Level <SortIcon field="diy_level" />
                     </Button>
@@ -541,7 +545,7 @@ export function HomeTasksTable({
                     variant="ghost"
                     size="sm"
                     onClick={() => handleSort('due_date')}
-                    className="h-auto min-h-0 py-0.5 px-1 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
+                    className="h-auto min-h-0 py-0 px-0.5 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
                   >
                     Due <SortIcon field="due_date" />
                   </Button>
@@ -549,9 +553,9 @@ export function HomeTasksTable({
                 {!isMobile && <TableHead className="w-[150px] text-xs text-right text-white">Actions</TableHead>}
               </TableRow>
             </TableHeader>
-            <TableBody className="[&_td]:px-2 [&_td]:md:px-4 [&_td]:py-2 [&_td]:md:py-3">
+            <TableBody className="max-md:[&_td]:!p-1 md:[&_td]:!px-4 md:[&_td]:!py-3">
               {filteredAndSortedTasks.length === 0 ? <TableRow>
-                  <TableCell colSpan={isMobile ? 2 : 7} className="text-center py-6 md:py-8 text-sm md:text-[18px] text-muted-foreground">
+                  <TableCell colSpan={isMobile ? 3 : 7} className="text-center py-6 md:py-8 text-sm md:text-[18px] text-muted-foreground">
                     No tasks found. Add your first task to get started!
                   </TableCell>
                 </TableRow> : filteredAndSortedTasks.map(task => (
@@ -565,26 +569,25 @@ export function HomeTasksTable({
                         onTouchEnd: () => handleTouchEnd(task.id),
                       } : {})}
                     >
-                      {!isMobile && (
-                        <TableCell className="w-14 p-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleToggleTaskComplete(task)}
-                            className="h-12 w-12 min-h-12 min-w-12 p-0 text-lg font-medium rounded-md border-2 hover:bg-primary/10"
-                            title={task.status === 'closed' ? 'Mark as open' : 'Mark as complete'}
-                          >
-                            {task.status === 'closed' ? '✓' : '○'}
-                          </Button>
-                        </TableCell>
-                      )}
-                     <TableCell className="min-w-0">
-                      <div className="flex items-center gap-1.5 md:gap-2 flex-wrap min-w-0">
-                        <span 
+                      <TableCell className="w-9 !p-0.5 align-middle md:w-14 md:!p-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleToggleTaskComplete(task)}
+                          className="h-8 w-8 min-h-8 min-w-8 p-0 text-base font-medium leading-none rounded-md border-2 hover:bg-primary/10 md:h-12 md:w-12 md:min-h-12 md:min-w-12 md:text-lg"
+                          title={task.status === 'closed' ? 'Mark as open' : 'Mark as complete'}
+                        >
+                          {task.status === 'closed' ? '✓' : '○'}
+                        </Button>
+                      </TableCell>
+                      <TableCell className="min-w-0">
+                      <div className="flex items-center gap-1 md:gap-2 flex-wrap min-w-0">
+                        <span
                           className={`text-sm md:text-[18px] font-medium cursor-pointer leading-tight min-w-0 truncate ${task.status === 'closed' ? 'line-through text-muted-foreground' : ''}`}
                           onClick={() => handleToggleTaskComplete(task)}
                         >
-                          {task.status === 'closed' ? '✓ ' : ''}{task.title}
+                          {task.status === 'closed' && !isMobile ? '✓ ' : ''}
+                          {task.title}
                         </span>
                         {isMobile && (
                           <Badge variant={getDiyLevelColor(task.diy_level)} className="text-xs px-1 py-0 shrink-0">
@@ -685,7 +688,7 @@ export function HomeTasksTable({
                   </TableRow>
                   {isMobile && swipedTaskId === task.id && (
                     <TableRow key={`${task.id}-swipe-actions`} className="bg-muted/50">
-                      <TableCell colSpan={2} className="py-2">
+                      <TableCell colSpan={3} className="py-2">
                         <div className="flex flex-wrap gap-2 justify-end">
                           <Button
                             variant="outline"
@@ -747,7 +750,7 @@ export function HomeTasksTable({
                   )}
                    {expandedRows.has(task.id) && subtasks[task.id]?.length > 0 && (
                     <TableRow key={`${task.id}-subtasks`}>
-                      <TableCell colSpan={isMobile ? 2 : 7} className="bg-muted/30 p-2 md:p-4 border-l-4 border-l-primary/20">
+                      <TableCell colSpan={isMobile ? 3 : 7} className="bg-muted/30 p-2 md:p-4 border-l-4 border-l-primary/20">
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <div className="text-[18px] font-semibold text-primary">Subtasks</div>
