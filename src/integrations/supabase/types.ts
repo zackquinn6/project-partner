@@ -2275,6 +2275,66 @@ export type Database = {
           },
         ]
       }
+      pfmea_scoring: {
+        Row: {
+          id: string
+          criterion_type: string
+          score: number
+          process_effects: string | null
+          process_examples: string | null
+          quality_effects: string | null
+          quality_examples: string | null
+          occurrence_time_scale: string | null
+          occurrence_frequency_scale: string | null
+          mistake_proofing_requirement: string | null
+          prevention_control_examples: string | null
+          typical_occurrence_note: string | null
+          failure_mode_detection: string | null
+          cause_detection: string | null
+          detection_method_guidance: string | null
+          typical_detection_note: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          criterion_type: string
+          score: number
+          process_effects?: string | null
+          process_examples?: string | null
+          quality_effects?: string | null
+          quality_examples?: string | null
+          occurrence_time_scale?: string | null
+          occurrence_frequency_scale?: string | null
+          mistake_proofing_requirement?: string | null
+          prevention_control_examples?: string | null
+          typical_occurrence_note?: string | null
+          failure_mode_detection?: string | null
+          cause_detection?: string | null
+          detection_method_guidance?: string | null
+          typical_detection_note?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          criterion_type?: string
+          score?: number
+          process_effects?: string | null
+          process_examples?: string | null
+          quality_effects?: string | null
+          quality_examples?: string | null
+          occurrence_time_scale?: string | null
+          occurrence_frequency_scale?: string | null
+          mistake_proofing_requirement?: string | null
+          prevention_control_examples?: string | null
+          typical_occurrence_note?: string | null
+          failure_mode_detection?: string | null
+          cause_detection?: string | null
+          detection_method_guidance?: string | null
+          typical_detection_note?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       project_plans: {
         Row: {
           contingency_percent: number

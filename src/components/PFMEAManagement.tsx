@@ -32,7 +32,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, FileText, Info, Plus, Target, Trash2 } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, FileText, Info, Plus, Scale, Target, Trash2 } from 'lucide-react';
+import { PfmeaScoringCriteriaDialog } from '@/components/PfmeaScoringCriteriaDialog';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Output } from '@/interfaces/Project';
@@ -265,6 +266,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   });
   const [pfmeaLineDeleteTarget, setPfmeaLineDeleteTarget] = useState<PfmeaLineDeleteTarget | null>(null);
   const [pfmeaDeletePending, setPfmeaDeletePending] = useState(false);
+  const [pfmeaScoringCriteriaOpen, setPfmeaScoringCriteriaOpen] = useState(false);
   const pfmeaIsEditable = selectedPfmeaProject?.publish_status === 'draft';
 
   type PfmeaSortKey =
@@ -1780,6 +1782,16 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
               </span>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 px-2 text-xs"
+                onClick={() => setPfmeaScoringCriteriaOpen(true)}
+              >
+                <Scale className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                Scoring Criteria
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-xs">
@@ -3044,6 +3056,8 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           </div>
         </CardContent>
       </Card>
+
+      <PfmeaScoringCriteriaDialog open={pfmeaScoringCriteriaOpen} onOpenChange={setPfmeaScoringCriteriaOpen} />
 
       <Dialog
         open={addOutputDialogStepId !== null}
