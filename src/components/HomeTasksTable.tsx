@@ -498,31 +498,51 @@ export function HomeTasksTable({
       <div className="border rounded-lg md:rounded-lg rounded-none border-x-0 md:border-x overflow-hidden flex-1">
         <div className="overflow-auto h-full">
           <Table>
-            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:px-1.5 [&_th]:py-1 [&_th]:md:px-4 [&_th]:md:py-3 [&_th>button]:h-5 [&_th>button]:min-h-5 [&_th>button]:px-1 [&_th>button]:text-[10px] md:[&_th>button]:h-6 md:[&_th>button]:min-h-0 md:[&_th>button]:px-2 md:[&_th>button]:text-xs">
+            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:px-1 [&_th]:py-0.5 [&_th]:md:px-2.5 [&_th]:md:py-1">
               <TableRow className="border-sky-500/50">
                 {!isMobile && <TableHead className="w-14 text-xs text-white"></TableHead>}
                 <TableHead className="min-w-0 md:min-w-[281px] md:w-[281px] text-xs text-white">
-                  <Button variant="ghost" size="sm" onClick={() => handleSort('title')} className="h-6 px-1 md:px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('title')}
+                    className="h-auto min-h-0 py-0.5 px-1 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
+                  >
                     Task <SortIcon field="title" />
                   </Button>
                 </TableHead>
                 {!isMobile && <TableHead className="w-[180px] text-xs text-white">Notes</TableHead>}
                 {!isMobile && (
                   <TableHead className="w-24 md:w-20 text-xs text-white">
-                    <Button variant="ghost" size="sm" onClick={() => handleSort('priority')} className="h-6 px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('priority')}
+                      className="h-auto min-h-0 py-0.5 px-1 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
+                    >
                       Priority <SortIcon field="priority" />
                     </Button>
                   </TableHead>
                 )}
                 {!isMobile && (
                   <TableHead className="w-24 md:w-20 text-xs text-white">
-                    <Button variant="ghost" size="sm" onClick={() => handleSort('diy_level')} className="h-6 px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('diy_level')}
+                      className="h-auto min-h-0 py-0.5 px-1 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
+                    >
                       DIY Level <SortIcon field="diy_level" />
                     </Button>
                   </TableHead>
                 )}
                 <TableHead className="w-[80px] md:w-24 text-xs text-white whitespace-nowrap">
-                  <Button variant="ghost" size="sm" onClick={() => handleSort('due_date')} className="h-6 px-1 md:px-2 text-xs font-medium text-white hover:bg-white/20 hover:text-white">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('due_date')}
+                    className="h-auto min-h-0 py-0.5 px-1 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
+                  >
                     Due <SortIcon field="due_date" />
                   </Button>
                 </TableHead>

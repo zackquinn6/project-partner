@@ -71,8 +71,8 @@ function HomeSelect({
       <SelectTrigger
         className={
           compact
-            ? 'h-7 w-[5.5rem] max-w-[28vw] shrink-0 px-1.5 text-[10px] leading-tight'
-            : 'h-8 min-w-0 flex-1 text-[11px] md:h-9 md:min-w-[11rem] md:flex-none md:text-xs'
+            ? 'h-7 w-[9.625rem] max-w-[49vw] shrink-0 px-1.5 text-[10px] leading-tight'
+            : 'h-8 min-w-0 flex-1 text-[11px] md:h-9 md:min-w-[19.25rem] md:flex-none md:text-xs'
         }
         aria-label="Home"
       >
@@ -82,7 +82,7 @@ function HomeSelect({
         align="end"
         sideOffset={4}
         collisionPadding={16}
-        className="max-w-[min(20rem,calc(100vw-2rem))]"
+        className="max-w-[min(35rem,calc(100vw-2rem))]"
       >
         <SelectItem value="all">All Homes</SelectItem>
         {homes.map((home) => (
