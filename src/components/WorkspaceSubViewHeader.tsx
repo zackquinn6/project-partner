@@ -115,6 +115,11 @@ export interface WorkspaceSubViewHeaderProps {
   children?: ReactNode;
   /** Tighter mobile padding/gaps (e.g. Project Dashboard list view). Desktop unchanged. */
   compactMobile?: boolean;
+  /**
+   * Mobile: row 1 = title + notifications + back; row 2 = homes button + home dropdown (full width).
+   * When false, mobile keeps a single crowded toolbar row (e.g. Project Dashboard).
+   */
+  mobileTwoRowHomeControls?: boolean;
 }
 
 export function WorkspaceSubViewHeader({
@@ -131,6 +136,7 @@ export function WorkspaceSubViewHeader({
   onOpenReminders,
   children,
   compactMobile = false,
+  mobileTwoRowHomeControls = false,
 }: WorkspaceSubViewHeaderProps) {
   const showHelp = Boolean(helpTitle && helpBody);
 
@@ -206,39 +212,68 @@ export function WorkspaceSubViewHeader({
             : 'flex flex-col gap-1.5 px-2 py-1.5 md:gap-2 md:px-6 md:py-3'
         }
       >
-        {/* Mobile: one row — title (left) + homes + home select + notifications + back */}
-        <div className={compactMobile ? 'flex items-center gap-1 md:hidden' : 'flex items-center gap-1.5 md:hidden'}>
-          <div className="min-w-0 flex-1 pr-0.5">{titleBlockMobile}</div>
-          <div className={compactMobile ? 'flex min-w-0 shrink-0 items-center gap-1' : 'flex min-w-0 shrink-0 items-center gap-1.5'}>
-            <HomeManagerButton onOpenHomeManager={onOpenHomeManager} compact />
-            <div
-              className={
-                compactMobile
-                  ? 'min-w-0 w-[min(7rem,calc(100vw-12rem))] max-w-[7rem] shrink'
-                  : 'min-w-0 w-[min(7.75rem,calc(100vw-13.5rem))] max-w-[7.75rem] shrink'
-              }
-            >
-              <HomeSelect
-                homes={homes}
-                selectedHomeId={selectedHomeId}
-                onHomeChange={onHomeChange}
-                compact
-              />
+        {/* Mobile: Project & Task Manager — title + notifications + back, then homes + selector */}
+        {mobileTwoRowHomeControls ? (
+          <>
+            <div className={cn('flex items-center md:hidden', compactMobile ? 'gap-1' : 'gap-1.5')}>
+              <div className="min-w-0 flex-1 pr-0.5">{titleBlockMobile}</div>
+              <div className="flex shrink-0 items-center gap-1">
+                {showReminders && onOpenReminders ? (
+                  <RemindersButton onOpenReminders={onOpenReminders} compact />
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 max-w-[5.25rem] shrink-0 whitespace-normal px-1.5 py-1 text-center text-[9px] font-medium leading-tight"
+                  onClick={onGoToWorkspace}
+                >
+                  {BACK_LABEL}
+                </Button>
+              </div>
             </div>
-            {showReminders && onOpenReminders ? (
-              <RemindersButton onOpenReminders={onOpenReminders} compact />
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 max-w-[5.25rem] shrink-0 whitespace-normal px-1.5 py-1 text-center text-[9px] font-medium leading-tight"
-              onClick={onGoToWorkspace}
-            >
-              {BACK_LABEL}
-            </Button>
+            <div className={cn('flex w-full min-w-0 items-center md:hidden', compactMobile ? 'gap-1' : 'gap-1.5')}>
+              <HomeManagerButton onOpenHomeManager={onOpenHomeManager} compact />
+              <div className="min-w-0 flex-1">
+                <HomeSelect homes={homes} selectedHomeId={selectedHomeId} onHomeChange={onHomeChange} compact />
+              </div>
+            </div>
+          </>
+        ) : (
+          /* Mobile: one row — title + homes + home select + notifications + back */
+          <div className={compactMobile ? 'flex items-center gap-1 md:hidden' : 'flex items-center gap-1.5 md:hidden'}>
+            <div className="min-w-0 flex-1 pr-0.5">{titleBlockMobile}</div>
+            <div className={compactMobile ? 'flex min-w-0 shrink-0 items-center gap-1' : 'flex min-w-0 shrink-0 items-center gap-1.5'}>
+              <HomeManagerButton onOpenHomeManager={onOpenHomeManager} compact />
+              <div
+                className={
+                  compactMobile
+                    ? 'min-w-0 w-[min(7rem,calc(100vw-12rem))] max-w-[7rem] shrink'
+                    : 'min-w-0 w-[min(7.75rem,calc(100vw-13.5rem))] max-w-[7.75rem] shrink'
+                }
+              >
+                <HomeSelect
+                  homes={homes}
+                  selectedHomeId={selectedHomeId}
+                  onHomeChange={onHomeChange}
+                  compact
+                />
+              </div>
+              {showReminders && onOpenReminders ? (
+                <RemindersButton onOpenReminders={onOpenReminders} compact />
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 max-w-[5.25rem] shrink-0 whitespace-normal px-1.5 py-1 text-center text-[9px] font-medium leading-tight"
+                onClick={onGoToWorkspace}
+              >
+                {BACK_LABEL}
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Desktop: title upper-left + reminders/back; homes + compact selector on second row (left-aligned) */}
         <div className="hidden md:flex md:flex-col md:items-stretch md:gap-2">

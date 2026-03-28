@@ -550,6 +550,8 @@ export function HomeTaskList({
 
   const workspaceHeader = (
     <WorkspaceSubViewHeader
+      compactMobile
+      mobileTwoRowHomeControls
       screenTitle="Project & Task Manager"
       screenIcon={<List className="h-4 w-4 md:h-[18px] md:w-[18px]" aria-hidden />}
       helpTitle="About Project & Task Manager"
@@ -566,7 +568,7 @@ export function HomeTaskList({
 
   const connectionProblemBanner =
     dataLoadError ? (
-      <Alert variant="destructive" className="mx-3 mt-2 shrink-0 md:mx-4">
+      <Alert variant="destructive" className="mx-2 mt-1 shrink-0 md:mx-4 md:mt-2">
         <AlertTitle>Connection problem</AlertTitle>
         <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <span>{dataLoadError}</span>
@@ -592,8 +594,8 @@ export function HomeTaskList({
     ) : null;
 
   const taskManagerTabs = (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <div className="flex-shrink-0 border-b border-border/60 bg-background/95 px-3 pb-1.5 pt-1 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:pb-2 md:pt-1.5">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex h-full flex-col">
+              <div className="flex-shrink-0 border-b border-border/60 bg-background/95 px-2 pb-1 pt-0.5 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:pb-2 md:pt-1.5">
                 <div className="overflow-hidden">
                   <TabsList className="w-full inline-flex h-8 md:h-9 p-0.5 gap-0.5 md:gap-1 bg-muted/50 rounded-full">
                     <TabsTrigger value="tasks" className="text-[11px] md:text-xs px-2 md:px-3 py-1.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0 truncate">
@@ -611,7 +613,7 @@ export function HomeTaskList({
                 </div>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-auto bg-gradient-to-b from-background to-muted/30 px-3 pb-3 pt-1 md:px-6 md:pb-4 md:pt-0">
+              <div className="min-h-0 flex-1 overflow-auto bg-gradient-to-b from-background to-muted/30 px-2 pb-2 pt-0 md:px-6 md:pb-4 md:pt-0">
                 <TabsContent value="tasks" className="mt-0 space-y-0.5 md:space-y-3 h-full">
                   {/* Project Dashboard metrics (Project & Task Manager) */}
                   {(() => {
