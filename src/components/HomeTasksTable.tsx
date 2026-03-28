@@ -498,7 +498,7 @@ export function HomeTasksTable({
       <div className="border rounded-lg md:rounded-lg rounded-none border-x-0 md:border-x overflow-hidden flex-1">
         <div className="overflow-auto h-full">
           <Table>
-            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:!h-auto [&_th]:!min-h-0 [&_th]:!px-0.5 [&_th]:!py-0 [&_th]:leading-none [&_th]:md:!px-2.5 [&_th]:md:!py-0.5">
+            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:!h-auto [&_th]:!min-h-9 [&_th]:!px-1 [&_th]:!py-2 [&_th]:leading-none [&_th]:md:!min-h-11 [&_th]:md:!px-3 [&_th]:md:!py-2.5">
               <TableRow className="border-sky-500/50">
                 <TableHead className="w-9 shrink-0 text-center text-xs leading-none text-white md:w-14" aria-label="Complete">
                   <span className="sr-only">Complete</span>
@@ -508,7 +508,7 @@ export function HomeTasksTable({
                     variant="ghost"
                     size="sm"
                     onClick={() => handleSort('title')}
-                    className="h-auto min-h-0 py-0 px-0.5 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
+                    className="h-auto min-h-0 py-1 px-0.5 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-2 md:py-1.5 md:text-xs"
                   >
                     Task <SortIcon field="title" />
                   </Button>
@@ -522,7 +522,7 @@ export function HomeTasksTable({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort('priority')}
-                      className="h-auto min-h-0 py-0 px-0.5 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
+                      className="h-auto min-h-0 py-1 px-0.5 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-2 md:py-1.5 md:text-xs"
                     >
                       Priority <SortIcon field="priority" />
                     </Button>
@@ -545,7 +545,7 @@ export function HomeTasksTable({
                     variant="ghost"
                     size="sm"
                     onClick={() => handleSort('due_date')}
-                    className="h-auto min-h-0 py-0 px-0.5 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
+                    className="h-auto min-h-0 py-1 px-0.5 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-2 md:py-1.5 md:text-xs"
                   >
                     Due <SortIcon field="due_date" />
                   </Button>
