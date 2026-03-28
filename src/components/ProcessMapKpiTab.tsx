@@ -426,11 +426,11 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
 
       <div className="relative max-h-[min(70vh,640px)] w-full overflow-auto rounded-md border">
         <table
-          className="w-full min-w-0 caption-bottom text-sm"
+          className="w-full min-w-0 border-separate border-spacing-0 caption-bottom text-sm"
           style={{ minWidth: `${kpiTableMinWidthPx}px` }}
         >
-          <TableHeader>
-            <TableRow className="border-b border-sky-700/60 bg-sky-600 hover:bg-sky-600">
+          <TableHeader className="[&_tr]:border-b-0">
+            <TableRow className="border-0 border-b border-sky-700/60 bg-sky-600 hover:bg-sky-600">
               <TableHead
                 className={cn(kpiThClass, 'relative whitespace-nowrap')}
                 style={kpiColStyle('phase')}
