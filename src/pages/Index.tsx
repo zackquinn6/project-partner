@@ -516,6 +516,18 @@ const Index = () => {
     }
   };
 
+  useEffect(() => {
+    const onMobileAdmin = () => {
+      if (showAdminPanel) {
+        setCurrentView('admin');
+      } else {
+        toast.error('Access denied. Admin or Project Owner role required.');
+      }
+    };
+    window.addEventListener('open-admin-panel-mobile', onMobileAdmin);
+    return () => window.removeEventListener('open-admin-panel-mobile', onMobileAdmin);
+  }, [showAdminPanel]);
+
   // CONDITIONAL LOGIC AFTER ALL HOOKS
   // Show Home component as landing page for non-authenticated users
   if (!user) {

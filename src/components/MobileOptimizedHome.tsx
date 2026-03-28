@@ -2,6 +2,12 @@ import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { 
   Accordion,
@@ -10,15 +16,24 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useProjectOwner } from '@/hooks/useProjectOwner';
+import { MembershipWindow } from '@/components/MembershipWindow';
+import { DataPrivacyManager } from '@/components/DataPrivacyManager';
 import { useProject } from '@/contexts/ProjectContext';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { countDueSoon } from '@/utils/maintenanceProgress';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
 import { 
-  Home as HomeIcon, 
-  User, 
+  Home as HomeIcon,
+  User,
   Users,
+  Settings,
+  LogOut,
+  Shield,
+  Lock,
+  Crown,
   Wrench, 
   BookOpen, 
   MapPin,
@@ -34,7 +49,10 @@ import {
 } from 'lucide-react';
 
 export function MobileOptimizedHome() {
-  const { user } = useAuth();
+  const { user, signOut, signingOut } = useAuth();
+  const { isAdmin } = useUserRole();
+  const { hasProjectOwnerRole } = useProjectOwner();
+  const showAdminPanel = isAdmin || hasProjectOwnerRole;
   const { projectRuns, currentProjectRun } = useProject();
   const navigate = useNavigate();
   const { projectCatalogEnabled, workshopLabsAccordionEnabled } = useGlobalPublicSettings();
@@ -47,7 +65,18 @@ export function MobileOptimizedHome() {
   });
   
   const [userNickname, setUserNickname] = useState<string>('');
+  const [isMembershipOpen, setIsMembershipOpen] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    try {
+      await signOut();
+    } catch (e) {
+      console.error('Error signing out:', e);
+    }
+  };
 
   const activeProjectProgressPercent = useMemo(() => {
     if (!currentProjectRun) return 0;
@@ -247,14 +276,51 @@ export function MobileOptimizedHome() {
                 className="h-8 w-auto"
               />
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}
-              className="p-2 touch-target"
-            >
-              <User className="h-5 w-5" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 w-9 shrink-0 p-0 touch-target"
+                  aria-label="Settings menu"
+                >
+                  <Settings className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                side="bottom"
+                sideOffset={5}
+                className="z-[9999] min-w-[200px] border border-gray-200 bg-white shadow-2xl !opacity-100 dark:border-gray-700 dark:bg-gray-900"
+              >
+                <DropdownMenuItem
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsMembershipOpen(true)}>
+                  <Crown className="mr-2 h-4 w-4" />
+                  Membership
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsPrivacyOpen(true)}>
+                  <Lock className="mr-2 h-4 w-4" />
+                  Password & Privacy
+                </DropdownMenuItem>
+                {showAdminPanel ? (
+                  <DropdownMenuItem
+                    onClick={() => window.dispatchEvent(new CustomEvent('open-admin-panel-mobile'))}
+                  >
+                    <Shield className="mr-2 h-4 w-4" />
+                    Admin Panel
+                  </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuItem onClick={() => void handleSignOut()} disabled={signingOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {signingOut ? 'Signing Out…' : 'Sign Out'}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           
           <div className="text-center">
@@ -432,6 +498,9 @@ export function MobileOptimizedHome() {
         </div>
         )}
       </div>
+
+      <DataPrivacyManager open={isPrivacyOpen} onOpenChange={setIsPrivacyOpen} />
+      <MembershipWindow open={isMembershipOpen} onOpenChange={setIsMembershipOpen} />
     </div>
   );
 }
