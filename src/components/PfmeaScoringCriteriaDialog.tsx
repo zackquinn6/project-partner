@@ -53,13 +53,9 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(88vh,900px)] w-[min(96vw,1200px)] max-w-[min(96vw,1200px)] flex-col gap-0 overflow-hidden p-0">
+      <DialogContent className="flex max-h-[min(88vh,900px)] w-[60vw] max-w-[60vw] flex-col gap-0 overflow-hidden p-0 md:max-w-[60vw]">
         <DialogHeader className="shrink-0 border-b px-6 py-4 text-left">
           <DialogTitle>Scoring criteria</DialogTitle>
-          <p className="text-sm font-normal text-muted-foreground">
-            Reference scales for severity (S), occurrence (O), and detection (D) in home-improvement PFMEA. Values load from{' '}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">pfmea_scoring</code>.
-          </p>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-auto px-4 pb-4 pt-3 sm:px-6">
