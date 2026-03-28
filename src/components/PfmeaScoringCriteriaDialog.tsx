@@ -65,17 +65,20 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[90vh] max-h-[90vh] w-[80vw] max-w-[80vw] flex-col gap-0 overflow-hidden p-0 md:max-w-[80vw]">
+      <DialogContent className="!flex h-[90vh] max-h-[90vh] w-[80vw] max-w-[80vw] flex-col gap-0 overflow-hidden p-0 md:max-w-[80vw]">
         <DialogHeader className="shrink-0 border-b px-6 py-4 text-left">
           <DialogTitle>Scoring criteria</DialogTitle>
         </DialogHeader>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-3 sm:px-6">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 pt-3 sm:px-6">
           {loading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : (
-            <Tabs defaultValue="severity" className="flex min-h-0 flex-1 flex-col gap-0">
-              <TabsList className="mb-3 grid h-10 w-full shrink-0 grid-cols-3 gap-1 rounded-md bg-muted p-1 text-muted-foreground">
+            <Tabs
+              defaultValue="severity"
+              className="grid h-full min-h-0 min-w-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-0"
+            >
+              <TabsList className="col-span-full row-start-1 mb-3 grid h-10 w-full shrink-0 grid-cols-3 gap-1 rounded-md bg-muted p-1 text-muted-foreground">
                 <TabsTrigger className="w-full" value="severity">
                   Severity
                 </TabsTrigger>
@@ -89,7 +92,7 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
 
               <TabsContent
                 value="severity"
-                className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="col-start-1 row-start-2 mt-0 flex h-full min-h-0 w-full flex-col overflow-hidden focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
               >
                 <ScoringTableScroll>
                   <table className="w-full min-w-0 border-separate border-spacing-0 caption-bottom text-sm">
@@ -121,7 +124,7 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
 
               <TabsContent
                 value="occurrence"
-                className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="col-start-1 row-start-2 mt-0 flex h-full min-h-0 w-full flex-col overflow-hidden focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
               >
                 <ScoringTableScroll>
                   <table className="w-full min-w-0 border-separate border-spacing-0 caption-bottom text-sm">
@@ -155,7 +158,7 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
 
               <TabsContent
                 value="detection"
-                className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="col-start-1 row-start-2 mt-0 flex h-full min-h-0 w-full flex-col overflow-hidden focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
               >
                 <ScoringTableScroll>
                   <table className="w-full min-w-0 border-separate border-spacing-0 caption-bottom text-sm">
