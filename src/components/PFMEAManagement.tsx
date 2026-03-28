@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -161,12 +162,19 @@ interface PFMEAManagementProps {
   refreshTrigger?: number;
 }
 
-type PfmeaLineDeleteTarget = {
-  kind: 'failure_mode' | 'effect' | 'cause' | 'control' | 'action';
-  id: string;
-  title: string;
-  description: string;
-};
+type PfmeaLineDeleteTarget =
+  | {
+      kind: 'failure_mode' | 'effect' | 'cause' | 'control' | 'action';
+      id: string;
+      title: string;
+      description: string;
+    }
+  | {
+      kind: 'requirement_output';
+      requirement: PFMEARequirement;
+      title: string;
+      description: string;
+    };
 
 function requirementPhaseName(r: PFMEARequirement): string {
   return r.project_phases?.name ?? '—';
@@ -231,7 +239,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     phase: true,
     operation: true,
     step: true,
-    step_description: true,
+    step_description: false,
   });
   const [colWidths, setColWidths] = useState<Record<string, number>>({
     phase: 120,
@@ -439,6 +447,56 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       toast.error('PFMEA is locked. Switch this revision to draft to edit.');
       return;
     }
+    if (pfmeaLineDeleteTarget.kind === 'requirement_output') {
+      const req = pfmeaLineDeleteTarget.requirement;
+      const outputKey = requirementOutputKey(req);
+      setPfmeaDeletePending(true);
+      try {
+        const { error: fmErr } = await supabase
+          .from('pfmea_failure_modes')
+          .delete()
+          .eq('operation_step_id', req.operation_step_id)
+          .eq('requirement_output_id', outputKey);
+        if (fmErr) throw fmErr;
+
+        const { data: stepRow, error: stepErr } = await supabase
+          .from('operation_steps')
+          .select('id, outputs')
+          .eq('id', req.operation_step_id)
+          .single();
+        if (stepErr) throw stepErr;
+
+        const outputs = parseStepOutputs(stepRow?.outputs);
+        const ref = req.output_reference;
+        let next: Output[];
+        if (ref.output_id) {
+          next = outputs.filter((o) => String(o.id) !== String(ref.output_id));
+        } else {
+          const idx = ref.output_index;
+          if (idx < 0 || idx >= outputs.length) {
+            throw new Error('Output index out of range for this step');
+          }
+          next = outputs.filter((_, i) => i !== idx);
+        }
+
+        const { error: upErr } = await supabase
+          .from('operation_steps')
+          .update({ outputs: next })
+          .eq('id', req.operation_step_id);
+        if (upErr) throw upErr;
+
+        await fetchPfmeaDetails(selectedPfmeaProject.project_id);
+        toast.success('Output removed');
+        setPfmeaLineDeleteTarget(null);
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to remove output');
+      } finally {
+        setPfmeaDeletePending(false);
+      }
+      return;
+    }
+
     const { kind, id } = pfmeaLineDeleteTarget;
     const table =
       kind === 'failure_mode'
@@ -718,11 +776,19 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     column: string,
     type: string,
     isDropdown = false,
-    opts?: { fullWidth?: boolean }
+    opts?: {
+      fullWidth?: boolean;
+      editFooter?: {
+        addLabel: string;
+        onAdd: () => void | Promise<void>;
+        onDelete: () => void;
+      };
+    }
   ) => {
     const isEditing =
       editingCell?.entityId === rowId && editingCell?.column === column && editingCell?.rowIndex === rowIndex;
     const fw = opts?.fullWidth;
+    const footer = opts?.editFooter;
 
     if (isEditing) {
       if (isDropdown) {
@@ -731,11 +797,11 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
             value={editingValue}
             onValueChange={(newValue) => {
               setEditingValue(newValue);
-              setTimeout(() => saveEdit(), 0);
+              setTimeout(() => void saveEdit(), 0);
             }}
             onOpenChange={(open) => {
               if (!open && editingValue !== value) {
-                saveEdit();
+                void saveEdit();
               }
             }}
           >
@@ -753,18 +819,65 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         );
       }
       return (
-        <Input
-          value={editingValue}
-          onChange={(e) => setEditingValue(e.target.value)}
+        <div
+          className={cn(
+            'flex w-full flex-col overflow-hidden rounded-none border border-input bg-background -m-1',
+            footer ? 'min-h-[140px]' : 'min-h-24',
+            fw && 'min-w-0'
+          )}
           onMouseDown={(e) => e.stopPropagation()}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') saveEdit();
-            if (e.key === 'Escape') cancelEdit();
-          }}
-          onBlur={saveEdit}
-          className={cn('h-8 text-sm', fw && 'w-full min-w-0')}
-          autoFocus
-        />
+        >
+          <Textarea
+            value={editingValue}
+            onChange={(e) => setEditingValue(e.target.value)}
+            onMouseDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') cancelEdit();
+            }}
+            onBlur={() => void saveEdit()}
+            className="min-h-0 flex-1 resize-none rounded-none border-0 px-2 py-2 text-sm shadow-none ring-offset-0 focus-visible:ring-1 focus-visible:ring-ring"
+            autoFocus
+          />
+          {footer ? (
+            <div className="flex shrink-0 items-stretch border-t border-border bg-muted/40">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 min-h-0 flex-1 justify-start gap-1 rounded-none border-0 border-r border-border px-2 py-0 text-xs font-normal leading-none text-foreground shadow-none ring-offset-0 hover:!bg-muted/30 hover:!text-foreground hover:font-semibold focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                disabled={!pfmeaIsEditable}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void (async () => {
+                    await saveEdit();
+                    await Promise.resolve(footer.onAdd());
+                  })();
+                }}
+              >
+                <Plus className="h-3 w-3 shrink-0" />
+                {footer.addLabel}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0 rounded-none border-0 text-muted-foreground shadow-none ring-offset-0 hover:!bg-muted/30 hover:!text-destructive hover:font-semibold focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                disabled={!pfmeaIsEditable}
+                title="Delete line"
+                aria-label="Delete line"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  cancelEdit();
+                  footer.onDelete();
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ) : null}
+        </div>
       );
     }
 
@@ -873,11 +986,21 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     onChange?: (value: string) => void
   ) => {
     if (value == null) return '';
-    if (!onChange || !pfmeaIsEditable) return value;
+    if (!onChange || !pfmeaIsEditable) {
+      return (
+        <div className="flex h-full min-h-8 w-full items-center justify-center text-sm font-bold tabular-nums text-foreground">
+          {value}
+        </div>
+      );
+    }
     return (
       <Select value={String(value)} onValueChange={onChange}>
         <SelectTrigger
-          className="mx-auto h-7 w-[62px] border-0 bg-transparent px-1 text-center text-sm font-bold shadow-none ring-0 hover:bg-muted/50 [&_svg]:hidden"
+          className={cn(
+            'box-border h-full min-h-8 w-full min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 text-center text-sm font-bold tabular-nums text-foreground shadow-none',
+            'flex items-center justify-center ring-0 ring-offset-0 focus:ring-2 focus:ring-ring focus:ring-offset-0 focus-visible:rounded-none',
+            'hover:bg-muted/40 data-[state=open]:bg-muted/40 [&_svg]:hidden'
+          )}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
@@ -1446,12 +1569,21 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   const focusCellClass = (rowIndex: number, col: PfmeaNavColumn) =>
     gridFocus.rowIndex === rowIndex && gridFocus.col === col ? 'ring-2 ring-primary ring-inset' : '';
 
-  const pfmeaTrashButton = (label: string, onRequest: () => void) => (
+  const pfmeaTrashButton = (
+    label: string,
+    onRequest: () => void,
+    opts?: { variant?: 'inline' | 'toolbar' }
+  ) => (
     <Button
       type="button"
       variant="ghost"
       size="icon"
-      className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+      className={cn(
+        'shrink-0 rounded-none text-muted-foreground shadow-none ring-offset-0 hover:!bg-muted/30 hover:!text-muted-foreground hover:font-semibold focus-visible:ring-1 focus-visible:ring-ring',
+        opts?.variant === 'toolbar'
+          ? 'h-7 w-7 border-0 hover:!text-destructive'
+          : 'h-6 w-6 hover:bg-transparent hover:!text-destructive'
+      )}
       title={label}
       aria-label={label}
       onMouseDown={(e) => e.stopPropagation()}
@@ -1577,7 +1709,13 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   const renderPfmeaTable = () => {
     if (!selectedPfmeaProject) return null;
 
-    const td = 'p-1 align-top';
+    const isPfmeaCellEditing = (rowIndex: number, entityId: string, column: string) =>
+      editingCell?.rowIndex === rowIndex && editingCell?.entityId === entityId && editingCell?.column === column;
+
+    const td = 'p-1 align-top h-full';
+    const pfmeaCellToolbar = 'mt-auto flex w-full shrink-0 border-t border-border -mx-1 -mb-1';
+    const pfmeaCellToolbarAdd =
+      'h-7 min-h-0 flex-1 justify-start gap-1 rounded-none border-0 border-r border-border bg-transparent px-2 py-0 text-xs font-normal leading-none text-foreground shadow-none ring-offset-0 hover:!bg-muted/30 hover:!text-foreground hover:font-semibold focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50';
     const frozenBg = 'bg-background';
     const frozenCellBase = 'sticky z-10 border-r border-border/50';
 
@@ -1934,24 +2072,39 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         style={{ width: `${colWidths.requirements}px`, minWidth: `${colWidths.requirements}px` }}
                         onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'requirements')}
                       >
-                        <div className="flex w-full min-w-0 flex-col gap-1">
-                          <div className="w-full min-w-0 px-1.5 py-1 text-sm break-words">{requirement.requirement_text}</div>
+                        <div className="flex h-full min-h-0 w-full min-w-0 flex-col">
+                          <div className="min-w-0 flex-1">
+                            <div className="w-full min-w-0 px-1.5 py-1 text-sm break-words">{requirement.requirement_text}</div>
+                          </div>
                           {gridFocus.rowIndex === rowIndex && gridFocus.col === 'requirements' ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              disabled={!pfmeaIsEditable}
-                              onMouseDown={(e) => e.stopPropagation()}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openAddOutputDialog(requirement.operation_step_id);
-                              }}
-                              className="h-6 px-1 text-xs self-start"
-                            >
-                              <Plus className="w-3 h-3 mr-1" />
-                              Add Output
-                            </Button>
+                            <div className={pfmeaCellToolbar}>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                disabled={!pfmeaIsEditable}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openAddOutputDialog(requirement.operation_step_id);
+                                }}
+                                className={pfmeaCellToolbarAdd}
+                              >
+                                <Plus className="h-3 w-3 shrink-0" />
+                                Add Output
+                              </Button>
+                              {pfmeaTrashButton(
+                                'Remove this output from the process step',
+                                () =>
+                                  setPfmeaLineDeleteTarget({
+                                    kind: 'requirement_output',
+                                    requirement,
+                                    title: 'Remove this output?',
+                                    description: `This removes "${requirement.requirement_text}" from the step. All PFMEA data for this output (failure modes and linked rows) will be deleted.`,
+                                  }),
+                                { variant: 'toolbar' }
+                              )}
+                            </div>
                           ) : null}
                         </div>
                       </TableCell>
@@ -1962,40 +2115,79 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'failure_mode')}
                       >
                         {failureMode ? (
-                          <div className="flex w-full min-w-0 items-start gap-0.5">
-                            <div className="min-w-0 flex-1">
-                              {renderEditableCell(rowIndex, failureMode.failure_mode, failureMode.id, 'failure_mode', 'failure_mode', false, {
-                                fullWidth: true,
-                              })}
+                          <div className="flex h-full min-h-0 w-full min-w-0 flex-col">
+                            <div className="flex min-h-0 min-w-0 flex-1 items-start gap-0.5">
+                              <div className="min-w-0 flex-1">
+                                {renderEditableCell(rowIndex, failureMode.failure_mode, failureMode.id, 'failure_mode', 'failure_mode', false, {
+                                  fullWidth: true,
+                                  editFooter: {
+                                    addLabel: 'Add',
+                                    onAdd: () => void addFailureMode(requirement),
+                                    onDelete: () =>
+                                      setPfmeaLineDeleteTarget({
+                                        kind: 'failure_mode',
+                                        id: failureMode.id,
+                                        title: 'Delete this failure mode?',
+                                        description: `This removes "${failureMode.failure_mode}" and all potential effects, causes, controls, and action items linked to it. Process steps stay unchanged — edit those in Process Map.`,
+                                      }),
+                                  },
+                                })}
+                              </div>
                             </div>
-                            {pfmeaTrashButton('Delete failure mode and all lines under it', () =>
-                              setPfmeaLineDeleteTarget({
-                                kind: 'failure_mode',
-                                id: failureMode.id,
-                                title: 'Delete this failure mode?',
-                                description: `This removes "${failureMode.failure_mode}" and all potential effects, causes, controls, and action items linked to it. Process steps stay unchanged — edit those in Process Map.`,
-                              })
-                            )}
+                            {gridFocus.rowIndex === rowIndex && gridFocus.col === 'failure_mode' ? (
+                              <div className={pfmeaCellToolbar}>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={!pfmeaIsEditable}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void addFailureMode(requirement);
+                                  }}
+                                  className={pfmeaCellToolbarAdd}
+                                >
+                                  <Plus className="h-3 w-3 shrink-0" />
+                                  Add Failure Mode
+                                </Button>
+                                {!isPfmeaCellEditing(rowIndex, failureMode.id, 'failure_mode')
+                                  ? pfmeaTrashButton(
+                                      'Delete failure mode and all lines under it',
+                                      () =>
+                                        setPfmeaLineDeleteTarget({
+                                          kind: 'failure_mode',
+                                          id: failureMode.id,
+                                          title: 'Delete this failure mode?',
+                                          description: `This removes "${failureMode.failure_mode}" and all potential effects, causes, controls, and action items linked to it. Process steps stay unchanged — edit those in Process Map.`,
+                                        }),
+                                      { variant: 'toolbar' }
+                                    )
+                                  : null}
+                              </div>
+                            ) : null}
                           </div>
                         ) : (
-                          <div className="flex flex-col gap-1">
-                            <div className="text-sm text-muted-foreground italic">No failure modes</div>
+                          <div className="flex h-full min-h-0 flex-col">
+                            <div className="min-w-0 flex-1 text-sm text-muted-foreground italic">No failure modes</div>
                             {gridFocus.rowIndex === rowIndex && gridFocus.col === 'failure_mode' ? (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                disabled={!pfmeaIsEditable}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void addFailureMode(requirement);
-                                }}
-                                className="h-6 px-1 text-xs self-start"
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Add Failure Mode
-                              </Button>
+                              <div className={pfmeaCellToolbar}>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={!pfmeaIsEditable}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void addFailureMode(requirement);
+                                  }}
+                                  className={cn(pfmeaCellToolbarAdd, 'border-r-0')}
+                                >
+                                  <Plus className="h-3 w-3 shrink-0" />
+                                  Add Failure Mode
+                                </Button>
+                              </div>
                             ) : null}
                           </div>
                         )}
@@ -2007,54 +2199,85 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'effects')}
                       >
                         {failureMode ? (
-                          <div className="flex w-full min-w-0 flex-col gap-1">
-                            {failureMode.pfmea_potential_effects.map((effect) => (
-                              <div
-                                key={effect.id}
-                                className="flex w-full min-w-0 flex-wrap items-baseline gap-x-1 gap-y-0.5 border-b border-border/50 pb-1 last:border-b-0 last:pb-0"
-                              >
-                                <div className="min-w-0 flex-1">
-                                  {renderEditableCell(rowIndex, effect.effect_description, effect.id, 'effect_description', 'effect', false, {
-                                    fullWidth: true,
-                                  })}
+                          <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-0">
+                            <div className="min-w-0 flex-1">
+                              {failureMode.pfmea_potential_effects.map((effect) => (
+                                <div
+                                  key={effect.id}
+                                  className="flex w-full min-w-0 flex-wrap items-baseline gap-x-1 gap-y-0.5 border-b border-border/50 pb-1 last:border-b-0 last:pb-0"
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    {renderEditableCell(rowIndex, effect.effect_description, effect.id, 'effect_description', 'effect', false, {
+                                      fullWidth: true,
+                                      editFooter: {
+                                        addLabel: 'Add',
+                                        onAdd: () => void addPotentialEffect(failureMode.id),
+                                        onDelete: () =>
+                                          setPfmeaLineDeleteTarget({
+                                            kind: 'effect',
+                                            id: effect.id,
+                                            title: 'Delete this potential effect?',
+                                            description: 'This line will be removed from the PFMEA table.',
+                                          }),
+                                      },
+                                    })}
+                                  </div>
+                                  <div className="flex shrink-0 items-baseline gap-0.5">
+                                    {renderEffectSeverityInParens(effect)}
+                                    {gridFocus.rowIndex === rowIndex &&
+                                    gridFocus.col === 'effects' &&
+                                    !isPfmeaCellEditing(rowIndex, effect.id, 'effect_description')
+                                      ? pfmeaTrashButton('Delete potential effect', () =>
+                                          setPfmeaLineDeleteTarget({
+                                            kind: 'effect',
+                                            id: effect.id,
+                                            title: 'Delete this potential effect?',
+                                            description: 'This line will be removed from the PFMEA table.',
+                                          })
+                                        )
+                                      : null}
+                                  </div>
                                 </div>
-                                <div className="flex shrink-0 items-baseline gap-0.5">
-                                  {renderEffectSeverityInParens(effect)}
-                                  {pfmeaTrashButton('Delete potential effect', () =>
-                                    setPfmeaLineDeleteTarget({
-                                      kind: 'effect',
-                                      id: effect.id,
-                                      title: 'Delete this potential effect?',
-                                      description: 'This line will be removed from the PFMEA table.',
-                                    })
-                                  )}
-                                </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                             {gridFocus.rowIndex === rowIndex && gridFocus.col === 'effects' ? (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => addPotentialEffect(failureMode.id)}
-                                className="h-6 px-1 text-xs self-start"
-                                disabled={!pfmeaIsEditable}
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Add Effect
-                              </Button>
+                              <div className={pfmeaCellToolbar}>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void addPotentialEffect(failureMode.id);
+                                  }}
+                                  className={cn(pfmeaCellToolbarAdd, 'border-r-0')}
+                                  disabled={!pfmeaIsEditable}
+                                >
+                                  <Plus className="h-3 w-3 shrink-0" />
+                                  Add Effect
+                                </Button>
+                              </div>
                             ) : null}
                           </div>
                         ) : null}
                       </TableCell>
 
                       <TableCell
-                        className={cn(td, band('s'), 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 's'))}
+                        className={cn(
+                          td,
+                          band('s'),
+                          'p-0 align-middle text-center text-sm font-bold tabular-nums',
+                          focusCellClass(rowIndex, 's')
+                        )}
                         style={{ width: `${colWidths.s}px`, minWidth: `${colWidths.s}px` }}
                         onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 's')}
                       >
-                        {failureMode
-                          ? renderScoreCell(failureMode.severity_score, (value) => void updateFailureModeSeverity(failureMode.id, value))
-                          : ''}
+                        <div className="flex h-full min-h-8 w-full items-stretch">
+                          {failureMode
+                            ? renderScoreCell(failureMode.severity_score, (value) => void updateFailureModeSeverity(failureMode.id, value))
+                            : null}
+                        </div>
                       </TableCell>
 
                       <TableCell
@@ -2063,38 +2286,63 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'causes')}
                       >
                         {failureMode ? (
-                          <div className="flex w-full min-w-0 flex-col gap-1">
-                            {cause ? (
-                              <div className="flex items-start gap-0.5">
-                                <div className="min-w-0 flex-1">
-                                  {renderEditableCell(rowIndex, cause.cause_description, cause.id, 'cause_description', 'cause', false, {
-                                    fullWidth: true,
-                                  })}
+                          <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-0">
+                            <div className="min-w-0 flex-1">
+                              {cause ? (
+                                <div className="flex items-start gap-0.5">
+                                  <div className="min-w-0 flex-1">
+                                    {renderEditableCell(rowIndex, cause.cause_description, cause.id, 'cause_description', 'cause', false, {
+                                      fullWidth: true,
+                                      editFooter: {
+                                        addLabel: 'Add',
+                                        onAdd: () => void addPotentialCause(failureMode.id),
+                                        onDelete: () =>
+                                          setPfmeaLineDeleteTarget({
+                                            kind: 'cause',
+                                            id: cause.id,
+                                            title: 'Delete this potential cause?',
+                                            description:
+                                              'This line will be removed. Controls tied only to this cause are removed by the database.',
+                                          }),
+                                      },
+                                    })}
+                                  </div>
+                                  {gridFocus.rowIndex === rowIndex &&
+                                  gridFocus.col === 'causes' &&
+                                  !isPfmeaCellEditing(rowIndex, cause.id, 'cause_description')
+                                    ? pfmeaTrashButton('Delete potential cause', () =>
+                                        setPfmeaLineDeleteTarget({
+                                          kind: 'cause',
+                                          id: cause.id,
+                                          title: 'Delete this potential cause?',
+                                          description:
+                                            'This line will be removed. Controls tied only to this cause are removed by the database.',
+                                        })
+                                      )
+                                    : null}
                                 </div>
-                                {pfmeaTrashButton('Delete potential cause', () =>
-                                  setPfmeaLineDeleteTarget({
-                                    kind: 'cause',
-                                    id: cause.id,
-                                    title: 'Delete this potential cause?',
-                                    description:
-                                      'This line will be removed. Controls tied only to this cause are removed by the database.',
-                                  })
-                                )}
-                              </div>
-                            ) : (
-                              <div className="text-sm text-muted-foreground italic">No causes</div>
-                            )}
+                              ) : (
+                                <div className="text-sm text-muted-foreground italic">No causes</div>
+                              )}
+                            </div>
                             {gridFocus.rowIndex === rowIndex && gridFocus.col === 'causes' ? (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => addPotentialCause(failureMode.id)}
-                                className="h-6 px-1 text-xs self-start"
-                                disabled={!pfmeaIsEditable}
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Add Cause
-                              </Button>
+                              <div className={pfmeaCellToolbar}>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void addPotentialCause(failureMode.id);
+                                  }}
+                                  className={cn(pfmeaCellToolbarAdd, 'border-r-0')}
+                                  disabled={!pfmeaIsEditable}
+                                >
+                                  <Plus className="h-3 w-3 shrink-0" />
+                                  Add Cause
+                                </Button>
+                              </div>
                             ) : null}
                           </div>
                         ) : null}
@@ -2105,59 +2353,94 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         style={{ width: `${colWidths.prevention_controls}px`, minWidth: `${colWidths.prevention_controls}px` }}
                         onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'prevention_controls')}
                       >
-                        <div className="flex w-full min-w-0 flex-col gap-1">
-                          {cause && preventionControls.length > 0 ? (
-                            preventionControls.map((control) => (
-                              <div key={control.id} className="rounded border p-1 text-sm">
-                                <div className="flex items-start gap-0.5">
-                                  <Badge variant="outline" className="mt-0.5 mr-1 shrink-0 text-xs">
-                                    Prev
-                                  </Badge>
-                                  <div className="min-w-0 flex-1">
-                                    {renderEditableCell(rowIndex, control.control_description, control.id, 'control_description', 'control', false, {
-                                      fullWidth: true,
-                                    })}
+                        <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-0">
+                          <div className="min-w-0 flex-1">
+                            {cause && preventionControls.length > 0 ? (
+                              preventionControls.map((control) => (
+                                <div key={control.id} className="rounded border p-1 text-sm">
+                                  <div className="flex items-start gap-0.5">
+                                    <Badge variant="outline" className="mt-0.5 mr-1 shrink-0 text-xs">
+                                      Prev
+                                    </Badge>
+                                    <div className="min-w-0 flex-1">
+                                      {renderEditableCell(rowIndex, control.control_description, control.id, 'control_description', 'control', false, {
+                                        fullWidth: true,
+                                        editFooter: {
+                                          addLabel: 'Add',
+                                          onAdd: () => {
+                                            void addControl(failureMode.id, 'prevention', cause.id);
+                                          },
+                                          onDelete: () =>
+                                            setPfmeaLineDeleteTarget({
+                                              kind: 'control',
+                                              id: control.id,
+                                              title: 'Delete this prevention control?',
+                                              description: 'This line will be removed from the PFMEA table.',
+                                            }),
+                                        },
+                                      })}
+                                    </div>
+                                    {gridFocus.rowIndex === rowIndex &&
+                                    gridFocus.col === 'prevention_controls' &&
+                                    !isPfmeaCellEditing(rowIndex, control.id, 'control_description')
+                                      ? pfmeaTrashButton('Delete prevention control', () =>
+                                          setPfmeaLineDeleteTarget({
+                                            kind: 'control',
+                                            id: control.id,
+                                            title: 'Delete this prevention control?',
+                                            description: 'This line will be removed from the PFMEA table.',
+                                          })
+                                        )
+                                      : null}
                                   </div>
-                                  {pfmeaTrashButton('Delete prevention control', () =>
-                                    setPfmeaLineDeleteTarget({
-                                      kind: 'control',
-                                      id: control.id,
-                                      title: 'Delete this prevention control?',
-                                      description: 'This line will be removed from the PFMEA table.',
-                                    })
-                                  )}
                                 </div>
-                              </div>
-                            ))
-                          ) : cause ? (
-                            <div className="text-sm text-muted-foreground italic">No prevention controls</div>
-                          ) : (
-                            <div className="text-sm text-muted-foreground italic">Select a cause</div>
-                          )}
+                              ))
+                            ) : cause ? (
+                              <div className="text-sm text-muted-foreground italic">No prevention controls</div>
+                            ) : (
+                              <div className="text-sm text-muted-foreground italic">Select a cause</div>
+                            )}
+                          </div>
                           {gridFocus.rowIndex === rowIndex &&
                           gridFocus.col === 'prevention_controls' &&
                           failureMode &&
                           cause ? (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => addControl(failureMode.id, 'prevention', cause.id)}
-                              className="h-6 px-1 text-xs self-start"
-                              disabled={!pfmeaIsEditable}
-                            >
-                              <Plus className="w-3 h-3 mr-1" />
-                              Add Prevention
-                            </Button>
+                            <div className={pfmeaCellToolbar}>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void addControl(failureMode.id, 'prevention', cause.id);
+                                }}
+                                className={cn(pfmeaCellToolbarAdd, 'border-r-0')}
+                                disabled={!pfmeaIsEditable}
+                              >
+                                <Plus className="h-3 w-3 shrink-0" />
+                                Add Prevention
+                              </Button>
+                            </div>
                           ) : null}
                         </div>
                       </TableCell>
 
                       <TableCell
-                        className={cn(td, band('o'), 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 'o'))}
+                        className={cn(
+                          td,
+                          band('o'),
+                          'p-0 align-middle text-center text-sm font-bold tabular-nums',
+                          focusCellClass(rowIndex, 'o')
+                        )}
                         style={{ width: `${colWidths.o}px`, minWidth: `${colWidths.o}px` }}
                         onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'o')}
                       >
-                        {cause ? renderScoreCell(cause.occurrence_score, (value) => void updateCauseOccurrence(cause.id, value)) : ''}
+                        <div className="flex h-full min-h-8 w-full items-stretch">
+                          {cause
+                            ? renderScoreCell(cause.occurrence_score, (value) => void updateCauseOccurrence(cause.id, value))
+                            : null}
+                        </div>
                       </TableCell>
 
                       <TableCell
@@ -2166,64 +2449,95 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'detection_controls')}
                       >
                         {failureMode ? (
-                          <div className="flex w-full min-w-0 flex-col gap-1">
-                            {detectionControls.map((control) => (
-                              <div key={control.id} className="rounded border p-1 text-sm">
-                                <div className="flex items-start gap-0.5">
-                                  <Badge variant="outline" className="mt-0.5 mr-1 shrink-0 text-xs">
-                                    Det
-                                  </Badge>
-                                  <div className="min-w-0 flex-1">
-                                    {renderEditableCell(rowIndex, control.control_description, control.id, 'control_description', 'control', false, {
-                                      fullWidth: true,
-                                    })}
+                          <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-0">
+                            <div className="min-w-0 flex-1">
+                              {detectionControls.map((control) => (
+                                <div key={control.id} className="rounded border p-1 text-sm">
+                                  <div className="flex items-start gap-0.5">
+                                    <Badge variant="outline" className="mt-0.5 mr-1 shrink-0 text-xs">
+                                      Det
+                                    </Badge>
+                                    <div className="min-w-0 flex-1">
+                                      {renderEditableCell(rowIndex, control.control_description, control.id, 'control_description', 'control', false, {
+                                        fullWidth: true,
+                                        editFooter: {
+                                          addLabel: 'Add',
+                                          onAdd: () => void addControl(failureMode.id, 'detection'),
+                                          onDelete: () =>
+                                            setPfmeaLineDeleteTarget({
+                                              kind: 'control',
+                                              id: control.id,
+                                              title: 'Delete this detection control?',
+                                              description: 'This line will be removed from the PFMEA table.',
+                                            }),
+                                        },
+                                      })}
+                                    </div>
+                                    {gridFocus.rowIndex === rowIndex &&
+                                    gridFocus.col === 'detection_controls' &&
+                                    !isPfmeaCellEditing(rowIndex, control.id, 'control_description')
+                                      ? pfmeaTrashButton('Delete detection control', () =>
+                                          setPfmeaLineDeleteTarget({
+                                            kind: 'control',
+                                            id: control.id,
+                                            title: 'Delete this detection control?',
+                                            description: 'This line will be removed from the PFMEA table.',
+                                          })
+                                        )
+                                      : null}
                                   </div>
-                                  {pfmeaTrashButton('Delete detection control', () =>
-                                    setPfmeaLineDeleteTarget({
-                                      kind: 'control',
-                                      id: control.id,
-                                      title: 'Delete this detection control?',
-                                      description: 'This line will be removed from the PFMEA table.',
-                                    })
-                                  )}
+                                  <div className="mt-0.5 text-xs text-muted-foreground">
+                                    D:{' '}
+                                    {renderEditableCell(
+                                      rowIndex,
+                                      (control.detection_score ?? 5).toString(),
+                                      control.id,
+                                      'detection_score',
+                                      'control_detection',
+                                      true
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="mt-0.5 text-xs text-muted-foreground">
-                                  D:{' '}
-                                  {renderEditableCell(
-                                    rowIndex,
-                                    (control.detection_score ?? 5).toString(),
-                                    control.id,
-                                    'detection_score',
-                                    'control_detection',
-                                    true
-                                  )}
-                                </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                             {gridFocus.rowIndex === rowIndex && gridFocus.col === 'detection_controls' ? (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => addControl(failureMode.id, 'detection')}
-                                className="h-6 px-1 text-xs self-start"
-                                disabled={!pfmeaIsEditable}
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Add Detection
-                              </Button>
+                              <div className={pfmeaCellToolbar}>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void addControl(failureMode.id, 'detection');
+                                  }}
+                                  className={cn(pfmeaCellToolbarAdd, 'border-r-0')}
+                                  disabled={!pfmeaIsEditable}
+                                >
+                                  <Plus className="h-3 w-3 shrink-0" />
+                                  Add Detection
+                                </Button>
+                              </div>
                             ) : null}
                           </div>
                         ) : null}
                       </TableCell>
 
                       <TableCell
-                        className={cn(td, band('d'), 'text-center text-sm font-bold tabular-nums', focusCellClass(rowIndex, 'd'))}
+                        className={cn(
+                          td,
+                          band('d'),
+                          'p-0 align-middle text-center text-sm font-bold tabular-nums',
+                          focusCellClass(rowIndex, 'd')
+                        )}
                         style={{ width: `${colWidths.d}px`, minWidth: `${colWidths.d}px` }}
                         onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'd')}
                       >
-                        {failureMode
-                          ? renderScoreCell(minDetection ?? 10, (value) => void updateDetectionScoreForRow(failureMode, value))
-                          : ''}
+                        <div className="flex h-full min-h-8 w-full items-stretch">
+                          {failureMode
+                            ? renderScoreCell(minDetection ?? 10, (value) => void updateDetectionScoreForRow(failureMode, value))
+                            : null}
+                        </div>
                       </TableCell>
 
                       <TableCell
@@ -2254,44 +2568,68 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'recommended_actions')}
                       >
                         {failureMode ? (
-                          <div className="flex w-full min-w-0 flex-col gap-1">
-                            {failureMode.pfmea_action_items.map((action) => (
-                              <div key={action.id} className="rounded border p-2 text-sm">
-                                <div className="flex items-start gap-0.5">
-                                  <div className="min-w-0 flex-1">
-                                    {renderEditableCell(rowIndex, action.recommended_action, action.id, 'recommended_action', 'action', false, {
-                                      fullWidth: true,
-                                    })}
+                          <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-0">
+                            <div className="min-w-0 flex-1">
+                              {failureMode.pfmea_action_items.map((action) => (
+                                <div key={action.id} className="rounded border p-2 text-sm">
+                                  <div className="flex items-start gap-0.5">
+                                    <div className="min-w-0 flex-1">
+                                      {renderEditableCell(rowIndex, action.recommended_action, action.id, 'recommended_action', 'action', false, {
+                                        fullWidth: true,
+                                        editFooter: {
+                                          addLabel: 'Add',
+                                          onAdd: () => void addActionItem(failureMode.id),
+                                          onDelete: () =>
+                                            setPfmeaLineDeleteTarget({
+                                              kind: 'action',
+                                              id: action.id,
+                                              title: 'Delete this recommended action?',
+                                              description: 'This action line will be removed from the PFMEA table.',
+                                            }),
+                                        },
+                                      })}
+                                    </div>
+                                    {gridFocus.rowIndex === rowIndex &&
+                                    gridFocus.col === 'recommended_actions' &&
+                                    !isPfmeaCellEditing(rowIndex, action.id, 'recommended_action')
+                                      ? pfmeaTrashButton('Delete recommended action', () =>
+                                          setPfmeaLineDeleteTarget({
+                                            kind: 'action',
+                                            id: action.id,
+                                            title: 'Delete this recommended action?',
+                                            description: 'This action line will be removed from the PFMEA table.',
+                                          })
+                                        )
+                                      : null}
                                   </div>
-                                  {pfmeaTrashButton('Delete recommended action', () =>
-                                    setPfmeaLineDeleteTarget({
-                                      kind: 'action',
-                                      id: action.id,
-                                      title: 'Delete this recommended action?',
-                                      description: 'This action line will be removed from the PFMEA table.',
-                                    })
-                                  )}
+                                  <div className="mt-1 text-xs text-muted-foreground">
+                                    {action.responsible_person && `Assigned: ${action.responsible_person}`}
+                                    {action.target_completion_date && ` | Due: ${action.target_completion_date}`}
+                                  </div>
+                                  <Badge variant="secondary" className="text-xs mt-1">
+                                    {action.status.replace('_', ' ')}
+                                  </Badge>
                                 </div>
-                                <div className="mt-1 text-xs text-muted-foreground">
-                                  {action.responsible_person && `Assigned: ${action.responsible_person}`}
-                                  {action.target_completion_date && ` | Due: ${action.target_completion_date}`}
-                                </div>
-                                <Badge variant="secondary" className="text-xs mt-1">
-                                  {action.status.replace('_', ' ')}
-                                </Badge>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                             {gridFocus.rowIndex === rowIndex && gridFocus.col === 'recommended_actions' ? (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => addActionItem(failureMode.id)}
-                                className="h-6 px-1 text-xs self-start"
-                                disabled={!pfmeaIsEditable}
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Add Action
-                              </Button>
+                              <div className={pfmeaCellToolbar}>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void addActionItem(failureMode.id);
+                                  }}
+                                  className={cn(pfmeaCellToolbarAdd, 'border-r-0')}
+                                  disabled={!pfmeaIsEditable}
+                                >
+                                  <Plus className="h-3 w-3 shrink-0" />
+                                  Add Action
+                                </Button>
+                              </div>
                             ) : null}
                           </div>
                         ) : null}

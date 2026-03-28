@@ -989,6 +989,17 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     },
     [loadPhases, validatePhaseOrdering]
   );
+
+  const refreshPhasesAfterKpiChange = useCallback(async () => {
+    if (!currentProject?.id) return;
+    try {
+      const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: true });
+      setPhases(sortedPhases);
+    } catch (e) {
+      console.error(e);
+      toast.error(e instanceof Error ? e.message : 'Failed to refresh process map');
+    }
+  }, [currentProject?.id, reloadPhasesWithPositions]);
   
   /**
    * Load and validate phases on component mount or project change
@@ -2844,12 +2855,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         </div>
 
         {/* Main Content */}
-        <div className="container mx-auto px-6 py-8">
-          <Tabs defaultValue="structure" className="w-full">
-            <TabsList className="mb-6">
-              <TabsTrigger value="structure">Structure</TabsTrigger>
-              <TabsTrigger value="kpi">KPI / KPO</TabsTrigger>
-            </TabsList>
+        <Tabs defaultValue="structure" className="w-full">
+          <TabsList className="grid h-12 w-full grid-cols-2 gap-0 rounded-none border-b border-t border-border bg-muted p-0 text-muted-foreground shadow-none">
+            <TabsTrigger
+              value="structure"
+              className="h-full w-full rounded-none border-r border-border/80 px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-none"
+            >
+              Structure
+            </TabsTrigger>
+            <TabsTrigger
+              value="kpi"
+              className="h-full w-full rounded-none px-4 py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-none"
+            >
+              KPI / KPO
+            </TabsTrigger>
+          </TabsList>
+          <div className="container mx-auto px-6 py-8">
             <TabsContent value="structure" className="mt-0 space-y-4">
           {/* Add Phase Button */}
           <div className="flex items-center gap-2 mb-4">
@@ -3449,10 +3470,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           </div>
             </TabsContent>
             <TabsContent value="kpi" className="mt-0">
-              <ProcessMapKpiTab phases={phases} />
+              <ProcessMapKpiTab
+                phases={phases}
+                isEditingStandardProject={isEditingStandardProject}
+                onDataChanged={refreshPhasesAfterKpiChange}
+              />
             </TabsContent>
-          </Tabs>
-        </div>
+          </div>
+        </Tabs>
       </div>
 
       {/* Delete Phase Confirmation Dialog */}

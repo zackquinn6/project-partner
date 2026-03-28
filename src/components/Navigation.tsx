@@ -17,7 +17,7 @@ import { ContactUsWindow } from './ContactUsWindow';
 import { UpgradePrompt } from './UpgradePrompt';
 import { MembershipWindow } from './MembershipWindow';
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { DataPrivacyManager } from './DataPrivacyManager';
 import { FeatureRoadmapWindow } from './FeatureRoadmapWindow';
 import { AppDocumentationWindow } from './AppDocumentationWindow';
@@ -83,6 +83,20 @@ export default function Navigation({
   const { isBetaMode } = useBetaMode();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  /** Risk-Less runs: open full-screen register only — same as Project Dashboard listing (must not set location projectRunId / workflow). */
+  const openRiskLessRegisterForRun = (runId: string) => {
+    const prev = (location.state ?? {}) as Record<string, unknown>;
+    const next = { ...prev };
+    delete next.projectRunId;
+    navigate('.', { replace: true, state: next });
+    window.dispatchEvent(
+      new CustomEvent('open-risk-focus-register-for-run', {
+        detail: { projectRunId: runId },
+      })
+    );
+  };
 
   // Listen for user documentation request from admin guide
   useEffect(() => {
@@ -182,6 +196,10 @@ export default function Navigation({
             setShowUpgradePrompt(true);
             return;
           }
+        }
+        if (isRiskFocusRun(selectedRun)) {
+          openRiskLessRegisterForRun(selectedRun.id);
+          return;
         }
         setCurrentProjectRun(selectedRun);
         onViewChange('user');
@@ -303,6 +321,11 @@ export default function Navigation({
         return;
       }
     }
+
+    if (isRiskFocusRun(projectRun)) {
+      openRiskLessRegisterForRun(projectRun.id);
+      return;
+    }
     
     // CRITICAL: Clear reset flags immediately BEFORE setting project run
     // This prevents UserView useEffect from forcing listing mode
@@ -375,20 +398,31 @@ export default function Navigation({
                 Home
               </Button>
               
-              {/* Combined Project Dashboard / Project Selector Dropdown */}
-              <DropdownMenu>
+              {/* Project Dashboard (primary) + chevron opens project picker — avoids Radix trigger swallowing the main click */}
+              <div className="flex items-stretch">
+                <Button
+                  variant={currentView === 'user' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="text-xs rounded-r-none border-r-0 pr-2"
+                  onClick={() => {
+                    setCurrentProjectRun(null);
+                    setCurrentProject(null);
+                    onViewChange('user');
+                    onProjectsView?.();
+                  }}
+                >
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  Project Dashboard
+                </Button>
+                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant={currentView === 'user' ? 'default' : 'ghost'} size="sm" className="text-xs" onClick={() => {
-                      // CRITICAL: Force listing mode when Project Dashboard button clicked
-                      // Clear global context first, then dispatch event (Index.tsx will also handle it)
-                      setCurrentProjectRun(null);
-                      setCurrentProject(null);
-                      window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'));
-                      onViewChange('user');
-                    }}>
-                      <FolderOpen className="h-4 w-4 mr-2" />
-                      Project Dashboard
-                      <ChevronDown className="h-4 w-4 ml-2" />
+                    <Button
+                      variant={currentView === 'user' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="text-xs rounded-l-none px-2"
+                      aria-label="Open project list"
+                    >
+                      <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-80 z-50 bg-background border shadow-lg" sideOffset={8}>
@@ -432,7 +466,8 @@ export default function Navigation({
                       No active projects
                     </DropdownMenuItem>}
                 </DropdownMenuContent>
-              </DropdownMenu>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
 

@@ -85,7 +85,7 @@ export function useAchievements(userId?: string) {
         supabase
           .from('project_runs')
           .select(
-            'id, progress, status, effort_level, skill_level, budget_data, category, actual_end_date, end_date'
+            'id, progress, status, budget_data, category, actual_end_date, end_date, instruction_level_preference, customization_decisions, completed_steps'
           )
           .eq('user_id', userId),
         fetchUserAchievementStats(userId),

@@ -604,7 +604,10 @@ export const KICKOFF_UI_STEP_IDS = [
   'kickoff-step-4',
 ] as const;
 
-export const isKickoffPhaseComplete = (completedSteps: string[]): boolean => {
+export const isKickoffPhaseComplete = (completedSteps: string[] | null | undefined): boolean => {
+  if (!completedSteps || !Array.isArray(completedSteps)) {
+    return false;
+  }
   const kickoffStepIds = KICKOFF_UI_STEP_IDS;
 
   // STRICT CHECK: All 4 UI kickoff step IDs must be present

@@ -10,8 +10,6 @@ import { Pencil, ChevronDown, ChevronUp, Plus, Link2, ExternalLink } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/useResponsive";
-import { useAuth } from "@/contexts/AuthContext";
-import { useEnhancedAchievements } from "@/hooks/useEnhancedAchievements";
 
 interface HomeTask {
   id: string;
@@ -22,25 +20,9 @@ interface HomeTask {
   diy_level: 'beginner' | 'intermediate' | 'advanced' | 'pro';
   notes: string | null;
   due_date: string | null;
-  task_type: 'general' | 'pre_sale' | 'diy' | 'contractor';
   created_at: string;
   project_run_id: string | null;
   ordered: boolean;
-}
-
-function xpForHomeTaskComplete(task: HomeTask): number {
-  const base = 18;
-  const diyMult =
-    task.diy_level === "beginner"
-      ? 1
-      : task.diy_level === "intermediate"
-        ? 1.2
-        : task.diy_level === "advanced"
-          ? 1.45
-          : 1.65;
-  const priMult =
-    task.priority === "low" ? 1 : task.priority === "medium" ? 1.1 : 1.22;
-  return Math.round(base * diyMult * priMult);
 }
 
 interface Subtask {
@@ -76,14 +58,11 @@ export function HomeTasksTable({
 }: HomeTasksTableProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { user } = useAuth();
-  const { awardXP, checkMilestoneUnlocks } = useEnhancedAchievements(user?.id);
   const [sortField, setSortField] = useState<SortField>('due_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterDiyLevel, setFilterDiyLevel] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [projectStatuses, setProjectStatuses] = useState<Record<string, string>>({});
   const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>({});
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showCompleted, setShowCompleted] = useState(false);
@@ -107,30 +86,8 @@ export function HomeTasksTable({
   };
 
   useEffect(() => {
-    fetchProjectStatuses();
     fetchSubtasks();
   }, [tasks]);
-
-  const fetchProjectStatuses = async () => {
-    const projectRunIds = tasks
-      .filter(t => t.project_run_id)
-      .map(t => t.project_run_id as string);
-    
-    if (projectRunIds.length === 0) return;
-
-    const { data } = await supabase
-      .from("project_runs")
-      .select("id, status")
-      .in("id", projectRunIds);
-
-    if (data) {
-      const statusMap: Record<string, string> = {};
-      data.forEach(pr => {
-        statusMap[pr.id] = pr.status;
-      });
-      setProjectStatuses(statusMap);
-    }
-  };
 
   const fetchSubtasks = async () => {
     const taskIds = tasks.map(t => t.id);
@@ -188,24 +145,12 @@ export function HomeTasksTable({
 
       if (error) return;
 
-      if (newStatus === "closed") {
-        const xp = xpForHomeTaskComplete(task);
-        await awardXP(xp, `Task completed: ${task.title}`);
-        await checkMilestoneUnlocks();
-      }
-
       onTaskUpdate?.();
     } finally {
       toggleCompleteInFlight.current = false;
     }
   };
 
-  const getDisplayStatus = (task: HomeTask) => {
-    if (task.project_run_id && projectStatuses[task.project_run_id]) {
-      return projectStatuses[task.project_run_id];
-    }
-    return task.status;
-  };
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -279,18 +224,6 @@ export function HomeTasksTable({
       case 'medium':
         return 'default';
       case 'low':
-        return 'secondary';
-      default:
-        return 'default';
-    }
-  };
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
-        return 'default';
-      case 'in_progress':
-        return 'default';
-      case 'closed':
         return 'secondary';
       default:
         return 'default';
@@ -505,9 +438,9 @@ export function HomeTasksTable({
       <div className="border rounded-lg md:rounded-lg rounded-none border-x-0 md:border-x overflow-hidden flex-1">
         <div className="overflow-auto h-full">
           <Table>
-            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:!h-auto [&_th]:!min-h-9 [&_th]:!px-1 [&_th]:!py-2 [&_th]:leading-none [&_th]:md:!min-h-11 [&_th]:md:!px-3 [&_th]:md:!py-2.5">
+            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:!h-auto [&_th]:!min-h-[4.25rem] [&_th]:!px-1 [&_th]:!py-3 [&_th]:leading-none md:[&_th]:!min-h-11 md:[&_th]:!px-3 md:[&_th]:!py-2.5">
               <TableRow className="border-sky-500/50">
-                <TableHead className="w-9 shrink-0 text-center text-xs leading-none text-white md:w-14" aria-label="Complete">
+                <TableHead className="w-11 shrink-0 text-center text-xs leading-none text-white md:w-14" aria-label="Complete">
                   <span className="sr-only">Complete</span>
                 </TableHead>
                 <TableHead className="min-w-0 md:min-w-[281px] md:w-[281px] text-xs text-white">
@@ -560,7 +493,7 @@ export function HomeTasksTable({
                 {!isMobile && <TableHead className="w-[150px] text-xs text-right text-white">Actions</TableHead>}
               </TableRow>
             </TableHeader>
-            <TableBody className="max-md:[&_td]:!p-1 md:[&_td]:!px-4 md:[&_td]:!py-3">
+            <TableBody className="max-md:[&_td]:!px-1.5 max-md:[&_td]:!py-3 md:[&_td]:!px-4 md:[&_td]:!py-3">
               {filteredAndSortedTasks.length === 0 ? <TableRow>
                   <TableCell colSpan={isMobile ? 3 : 7} className="text-center py-6 md:py-8 text-sm md:text-[18px] text-muted-foreground">
                     No tasks found. Add your first task to get started!
@@ -569,19 +502,25 @@ export function HomeTasksTable({
                   <React.Fragment key={task.id}>
                     <TableRow
                       key={task.id}
-                      className={task.status === 'closed' ? 'opacity-60' : ''}
-                      {...(isMobile ? {
-                        onTouchStart: handleTouchStart,
-                        onTouchMove: handleTouchMove,
-                        onTouchEnd: () => handleTouchEnd(task.id),
-                      } : {})}
+                      className={`${task.status === 'closed' ? 'opacity-60' : ''}${isMobile ? ' cursor-pointer' : ''}`}
+                      {...(isMobile
+                        ? {
+                            onTouchStart: handleTouchStart,
+                            onTouchMove: handleTouchMove,
+                            onTouchEnd: () => handleTouchEnd(task.id),
+                            onClick: (e: React.MouseEvent) => {
+                              if ((e.target as HTMLElement).closest('button')) return;
+                              onEdit(task);
+                            },
+                          }
+                        : {})}
                     >
-                      <TableCell className="w-9 !p-0.5 align-middle md:w-14 md:!p-1">
+                      <TableCell className="w-11 !p-1 align-middle md:w-14 md:!p-1">
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="h-8 w-8 min-h-8 min-w-8 touch-manipulation p-0 text-base font-medium leading-none rounded-md border-2 hover:bg-primary/10 md:h-12 md:w-12 md:min-h-12 md:min-w-12 md:text-lg"
+                          className="h-10 w-10 min-h-10 min-w-10 touch-manipulation p-0 text-base font-medium leading-none rounded-md border-2 hover:bg-primary/10 md:h-12 md:w-12 md:min-h-12 md:min-w-12 md:text-lg"
                           title={task.status === 'closed' ? 'Mark as not complete' : 'Mark as complete'}
                           aria-label={task.status === 'closed' ? 'Mark task as not complete' : 'Mark task complete'}
                           {...(isMobile
@@ -602,8 +541,8 @@ export function HomeTasksTable({
                       <TableCell className="min-w-0">
                       <div className="flex items-center gap-1 md:gap-2 flex-wrap min-w-0">
                         <span
-                          className={`text-sm md:text-[18px] font-medium cursor-pointer leading-tight min-w-0 truncate ${task.status === 'closed' ? 'line-through text-muted-foreground' : ''}`}
-                          onClick={() => handleToggleTaskComplete(task)}
+                          className={`text-sm md:text-[18px] font-medium leading-tight min-w-0 truncate ${task.status === 'closed' ? 'line-through text-muted-foreground' : ''} ${isMobile ? '' : 'cursor-pointer'}`}
+                          onClick={isMobile ? undefined : () => handleToggleTaskComplete(task)}
                         >
                           {task.status === 'closed' && !isMobile ? '✓ ' : ''}
                           {task.title}

@@ -1,5 +1,24 @@
 import type { StepInput } from '@/interfaces/Project';
 
+/** Persist `StepInput[]` to `operation_steps.process_variables` (shape aligned with parse). */
+export function serializeProcessVariablesForDb(inputs: StepInput[]): Record<string, unknown>[] {
+  return inputs.map((v) => {
+    const row: Record<string, unknown> = {
+      id: v.id,
+      name: v.name,
+      type: v.type === 'upstream' ? 'upstream' : 'process',
+    };
+    if (v.description !== undefined && v.description !== '') row.description = v.description;
+    if (v.required === true) row.required = true;
+    if (v.options !== undefined && v.options.length > 0) row.options = v.options;
+    if (v.unit !== undefined && v.unit !== '') row.unit = v.unit;
+    if (v.sourceStepId !== undefined && v.sourceStepId !== '') row.sourceStepId = v.sourceStepId;
+    if (v.sourceStepName !== undefined && v.sourceStepName !== '') row.sourceStepName = v.sourceStepName;
+    if (v.targetValue !== undefined && v.targetValue !== '') row.targetValue = v.targetValue;
+    return row;
+  });
+}
+
 /** Parse `operation_steps.process_variables` JSON the same way as the workflow editor. */
 export function parseProcessVariablesFromDb(raw: unknown): StepInput[] {
   if (!Array.isArray(raw)) return [];

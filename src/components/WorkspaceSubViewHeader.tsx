@@ -5,8 +5,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
-const LOGO_SRC = '/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png';
-
 const BACK_LABEL = 'Back to Workshop';
 
 function RemindersButton({
@@ -71,8 +69,8 @@ function HomeSelect({
       <SelectTrigger
         className={
           compact
-            ? 'h-7 w-[9.625rem] max-w-[49vw] shrink-0 px-1.5 text-[10px] leading-tight'
-            : 'h-8 min-w-0 flex-1 text-[11px] md:h-9 md:min-w-[19.25rem] md:flex-none md:text-xs'
+            ? 'h-7 w-full min-w-0 max-w-full shrink px-1.5 text-[10px] leading-tight'
+            : 'h-8 w-full min-w-0 max-w-full text-[11px] md:h-9 md:text-xs'
         }
         aria-label="Home"
       >
@@ -132,7 +130,36 @@ export function WorkspaceSubViewHeader({
 }: WorkspaceSubViewHeaderProps) {
   const showHelp = Boolean(helpTitle && helpBody);
 
-  const titleBlock = (
+  const renderHelpButton = () =>
+    showHelp && helpTitle && helpBody ? (
+      <TooltipProvider delayDuration={400}>
+        <Popover>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="shrink-0 rounded-md p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:p-1"
+                  aria-label={helpTitle}
+                >
+                  <HelpCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                </button>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-xs">
+              <p>{helpTitle}</p>
+            </TooltipContent>
+          </Tooltip>
+          <PopoverContent side="bottom" className="max-w-sm" align="start">
+            <p className="mb-1 font-medium">{helpTitle}</p>
+            <p className="text-sm text-muted-foreground">{helpBody}</p>
+          </PopoverContent>
+        </Popover>
+      </TooltipProvider>
+    ) : null;
+
+  const titleBlockDesktop = (
     <div className="flex min-w-0 items-center gap-1.5 md:gap-2">
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-background text-primary shadow-sm ring-1 ring-border/60 md:h-9 md:w-9">
         {screenIcon ?? <LayoutGrid className="h-3.5 w-3.5 md:h-[18px] md:w-[18px]" aria-hidden />}
@@ -140,77 +167,36 @@ export function WorkspaceSubViewHeader({
       <h1 className="min-w-0 truncate text-sm font-semibold tracking-tight text-foreground md:text-base lg:text-lg">
         {screenTitle}
       </h1>
-      {showHelp ? (
-        <TooltipProvider delayDuration={400}>
-          <Popover>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    className="shrink-0 rounded-md p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:p-1"
-                    aria-label={helpTitle}
-                  >
-                    <HelpCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                  </button>
-                </PopoverTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs">
-                <p>{helpTitle}</p>
-              </TooltipContent>
-            </Tooltip>
-            <PopoverContent side="bottom" className="max-w-sm" align="start">
-              <p className="mb-1 font-medium">{helpTitle}</p>
-              <p className="text-sm text-muted-foreground">{helpBody}</p>
-            </PopoverContent>
-          </Popover>
-        </TooltipProvider>
-      ) : null}
+      {renderHelpButton()}
+    </div>
+  );
+
+  /** Title + help sit in one cluster so the help icon stays next to the text, not the far edge of the header. */
+  const titleBlockMobile = (
+    <div className="inline-flex max-w-full min-w-0 flex-wrap items-baseline gap-x-1 gap-y-0">
+      <h1 className="inline-block max-w-full min-w-0 text-sm font-semibold leading-snug tracking-tight text-foreground [overflow-wrap:anywhere] line-clamp-2 break-words">
+        {screenTitle}
+      </h1>
+      {renderHelpButton()}
     </div>
   );
 
   return (
     <div className="flex-shrink-0 border-b border-border/80 bg-muted/20 backdrop-blur-sm supports-[backdrop-filter]:bg-muted/15">
-      <div className="px-2 py-1.5 md:space-y-3 md:px-6 md:py-4">
-        {/* Desktop: logo + notifications + back */}
-        <div className="hidden items-center justify-between gap-3 md:flex">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <img
-              src={LOGO_SRC}
-              alt=""
-              className="h-7 w-auto shrink-0 opacity-95 dark:opacity-90"
-              width={112}
-              height={28}
-            />
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {showReminders && onOpenReminders ? (
-              <RemindersButton onOpenReminders={onOpenReminders} />
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8 shrink-0 px-3 text-xs font-medium md:h-9 md:text-sm"
-              onClick={onGoToWorkspace}
-            >
-              {BACK_LABEL}
-            </Button>
-          </div>
-        </div>
-
+      <div className="flex flex-col gap-1.5 px-2 py-1.5 md:gap-2 md:px-6 md:py-3">
         {/* Mobile: one row — title (left) + homes + home select + notifications + back */}
-        <div className="flex items-center gap-1 md:hidden">
-          <div className="min-w-0 flex-1">{titleBlock}</div>
-          <div className="flex shrink-0 items-center gap-0.5">
+        <div className="flex items-center gap-1.5 md:hidden">
+          <div className="min-w-0 flex-1 pr-0.5">{titleBlockMobile}</div>
+          <div className="flex min-w-0 shrink-0 items-center gap-1.5">
             <HomeManagerButton onOpenHomeManager={onOpenHomeManager} compact />
-            <HomeSelect
-              homes={homes}
-              selectedHomeId={selectedHomeId}
-              onHomeChange={onHomeChange}
-              compact
-            />
+            <div className="min-w-0 w-[min(7.75rem,calc(100vw-13.5rem))] max-w-[7.75rem] shrink">
+              <HomeSelect
+                homes={homes}
+                selectedHomeId={selectedHomeId}
+                onHomeChange={onHomeChange}
+                compact
+              />
+            </div>
             {showReminders && onOpenReminders ? (
               <RemindersButton onOpenReminders={onOpenReminders} compact />
             ) : null}
@@ -226,12 +212,30 @@ export function WorkspaceSubViewHeader({
           </div>
         </div>
 
-        {/* Desktop: screen title + home controls (no duplicate reminders) */}
-        <div className="hidden md:flex md:flex-col md:items-stretch md:gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0 lg:flex-1">{titleBlock}</div>
-          <div className="flex shrink-0 items-center gap-2 md:justify-end lg:justify-start">
+        {/* Desktop: title upper-left + reminders/back; homes + compact selector on second row (left-aligned) */}
+        <div className="hidden md:flex md:flex-col md:items-stretch md:gap-2">
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">{titleBlockDesktop}</div>
+            <div className="flex shrink-0 items-center gap-2">
+              {showReminders && onOpenReminders ? (
+                <RemindersButton onOpenReminders={onOpenReminders} />
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 shrink-0 px-3 text-xs font-medium md:h-9 md:text-sm"
+                onClick={onGoToWorkspace}
+              >
+                {BACK_LABEL}
+              </Button>
+            </div>
+          </div>
+          <div className="flex min-w-0 items-center gap-2">
             <HomeManagerButton onOpenHomeManager={onOpenHomeManager} />
-            <HomeSelect homes={homes} selectedHomeId={selectedHomeId} onHomeChange={onHomeChange} />
+            <div className="min-w-0 w-[min(100%,11rem)] max-w-[11rem] shrink">
+              <HomeSelect homes={homes} selectedHomeId={selectedHomeId} onHomeChange={onHomeChange} />
+            </div>
           </div>
         </div>
 

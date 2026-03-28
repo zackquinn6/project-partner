@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 import { useMembership } from '@/contexts/MembershipContext';
@@ -46,6 +46,15 @@ import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 // Force rebuild to clear cache
 
+/** True when this page load was a full reload (F5 / refresh). Used to avoid restoring `history.state` (e.g. `view: 'user'` from UserView) so refresh lands on My Workshop. */
+function isPageReload(): boolean {
+  if (typeof window === 'undefined') return false;
+  const nav = performance.getEntriesByType?.('navigation')?.[0] as PerformanceNavigationTiming | undefined;
+  if (nav) return nav.type === 'reload';
+  const legacy = (performance as unknown as { navigation?: { type: number } }).navigation;
+  return legacy?.type === 1;
+}
+
 const Index = () => {
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL RETURNS
   const { user } = useAuth();
@@ -66,7 +75,8 @@ const Index = () => {
   const [mobileActiveTab, setMobileActiveTab] = useState<'home' | 'projects' | 'tasks' | 'profile' | 'help' | 'expert'>('home');
   const [mobileUpgradeOpen, setMobileUpgradeOpen] = useState(false);
   const [mobileUpgradeFeature, setMobileUpgradeFeature] = useState('Projects membership');
-  
+  const reloadWorkshopResetDoneRef = useRef(false);
+
   // Modal states - moved from Navigation to work on both mobile and desktop
   const [showKCExplainer, setShowKCExplainer] = useState(false);
   const [isHomeManagerOpen, setIsHomeManagerOpen] = useState(false);
@@ -142,6 +152,32 @@ const Index = () => {
 
   // Handle navigation state changes (including view parameter)
   useEffect(() => {
+    if (isPageReload()) {
+      if (!reloadWorkshopResetDoneRef.current) {
+        reloadWorkshopResetDoneRef.current = true;
+        setCurrentView('home');
+        setForceListingMode(false);
+        setResetUserView(false);
+        setCurrentProjectRun(null);
+        setCurrentProject(null);
+        navigate('/', { replace: true, state: {} });
+      }
+      const openFromStorage = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('openTaskList') === '1';
+      if (openFromStorage) {
+        if (isMobile) {
+          setMobileView('tasks');
+          setMobileActiveTab('tasks');
+        } else {
+          setIsHomeTaskListOpen(true);
+        }
+        sessionStorage.removeItem('openTaskList');
+      } else {
+        setMobileView('home');
+        setMobileActiveTab('home');
+      }
+      return;
+    }
+
     const openFromState = location.state?.openTaskList === true;
     const openFromStorage = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('openTaskList') === '1';
     if (openFromState || openFromStorage) {
@@ -183,13 +219,14 @@ const Index = () => {
         setForceListingMode(true);
       }
     }
-  }, [location.state, location.pathname, projectRuns, isMobile, setCurrentProjectRun, navigate]);
+  }, [location.state, location.pathname, projectRuns, isMobile, setCurrentProjectRun, setCurrentProject, navigate]);
 
   // Prevent constant re-renders by memoizing navigation handlers
   const [hasHandledInitialState, setHasHandledInitialState] = useState(false);
 
   // Listen for edit workflow navigation event
   useEffect(() => {
+    if (isPageReload()) return;
     // Only handle state changes once per location change
     if (location.state?.view && !hasHandledInitialState) {
       console.log('🎯 Index: Setting view from navigation state:', location.state.view);
@@ -334,15 +371,24 @@ const Index = () => {
       console.log('🔄 Index: Force Project Dashboard listing event received - clearing project and forcing listing mode');
       setCurrentProjectRun(null);
       setCurrentProject(null);
+      setResetUserView(true);
       setForceListingMode(true);
       setCurrentView('user');
-      // Clear projectRunId from location state so UserView never opens a project when showing Project Dashboard
-      navigate('/', { state: { view: 'user' }, replace: true });
+      // Align with handleProjectsView: clear projectRunId from history so UserView opens listing, not a stale run
+      navigate('/', { replace: true, state: { view: 'user' } });
     };
 
     window.addEventListener('force-project-dashboard-listing', handleForceProgressBoardListing);
     return () => window.removeEventListener('force-project-dashboard-listing', handleForceProgressBoardListing);
   }, [setCurrentProjectRun, setCurrentProject, navigate]);
+
+  // Leaving the project workspace clears listing-only flags so we do not auto-reopen the dashboard on next visit
+  useEffect(() => {
+    if (currentView !== 'user') {
+      setForceListingMode(false);
+      setResetUserView(false);
+    }
+  }, [currentView]);
 
   // Listen for clear reset flags event and sync with Index
   useEffect(() => {

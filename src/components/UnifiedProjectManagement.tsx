@@ -1734,38 +1734,61 @@ export function UnifiedProjectManagement({
       <div className="space-y-6 h-full flex flex-col min-h-0">
         <Card className="flex-1 flex flex-col min-h-0">
           <CardHeader className="flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
+            <div className="flex min-w-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <CardTitle className="flex min-w-0 items-center gap-2">
+                <Settings className="h-5 w-5 shrink-0" />
                 Project Management
               </CardTitle>
-              <div className="flex gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-1 xl:justify-end xl:gap-2">
                 {isAdmin && (
-                  <Button onClick={handleEditStandardProject} variant="outline" className="flex items-center gap-2">
-                    <Lock className="w-4 h-4" />
+                  <Button
+                    onClick={handleEditStandardProject}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 shrink-0 gap-1 px-2 text-xs xl:h-9 xl:gap-2 xl:px-3 xl:text-sm"
+                  >
+                    <Lock className="h-3.5 w-3.5 shrink-0 xl:h-4 xl:w-4" />
                     Edit Standard
                   </Button>
                 )}
-                <Button onClick={() => setPlanningGuideOpen(true)} variant="outline" className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" />
+                <Button
+                  onClick={() => setPlanningGuideOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0 gap-1 px-2 text-xs xl:h-9 xl:gap-2 xl:px-3 xl:text-sm"
+                >
+                  <BookOpen className="h-3.5 w-3.5 shrink-0 xl:h-4 xl:w-4" />
                   Planning Guide
                 </Button>
                 <Button
                   onClick={() => setAiProjectGeneratorOpen(true)}
                   variant="outline"
-                  className="hidden lg:flex items-center gap-2"
+                  size="sm"
+                  className="hidden h-8 shrink-0 gap-1 px-2 text-xs lg:flex xl:h-9 xl:gap-2 xl:px-3 xl:text-sm"
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="h-3.5 w-3.5 shrink-0 xl:h-4 xl:w-4" />
                   AI Generator
                 </Button>
                 {onOpenAnalytics && (
-                  <Button onClick={onOpenAnalytics} variant="outline" className="flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4" />
-                    Project Analytics
+                  <Button
+                    onClick={onOpenAnalytics}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 shrink-0 gap-1 px-2 text-xs xl:h-9 xl:gap-2 xl:px-3 xl:text-sm"
+                  >
+                    <BarChart3 className="h-3.5 w-3.5 shrink-0 xl:h-4 xl:w-4" />
+                    <span className="xl:hidden">Analytics</span>
+                    <span className="hidden xl:inline">Project Analytics</span>
                   </Button>
                 )}
-                <Button onClick={fetchProjects} variant="outline" size="icon" title="Refresh">
-                  <RefreshCw className="w-4 h-4" />
+                <Button
+                  onClick={fetchProjects}
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0 xl:h-9 xl:w-9"
+                  title="Refresh"
+                >
+                  <RefreshCw className="h-3.5 w-3.5 xl:h-4 xl:w-4" />
                 </Button>
               </div>
             </div>

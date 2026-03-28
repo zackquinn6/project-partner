@@ -39,7 +39,6 @@ interface HomeTask {
   notes: string | null;
   due_date: string | null;
   home_id: string | null;
-  task_type: 'general' | 'pre_sale' | 'diy' | 'contractor';
   project_run_id: string | null;
   estimated_hours?: number | null;
   ordered: boolean;
@@ -108,7 +107,6 @@ export function HomeTaskList({
     diy_level: 'beginner' | 'intermediate' | 'advanced' | 'pro';
     notes: string;
     due_date: string;
-    task_type: 'diy' | 'contractor';
     estimated_hours: string;
   }>({
     title: "",
@@ -117,7 +115,6 @@ export function HomeTaskList({
     diy_level: "intermediate",
     notes: "",
     due_date: "",
-    task_type: "diy",
     estimated_hours: "",
   });
 
@@ -265,7 +262,6 @@ export function HomeTaskList({
       status: formData.status,
       diy_level: formData.diy_level,
       notes: formData.notes,
-      task_type: formData.task_type,
       user_id: user.id,
       home_id: selectedHomeId,
       due_date: formData.due_date || null,
@@ -385,7 +381,6 @@ export function HomeTaskList({
       diy_level: "intermediate",
       notes: "",
       due_date: "",
-      task_type: "diy",
       estimated_hours: "",
     });
     setSubtasks([]);
@@ -403,7 +398,6 @@ export function HomeTaskList({
       diy_level: task.diy_level as 'beginner' | 'intermediate' | 'advanced' | 'pro',
       notes: task.notes || "",
       due_date: task.due_date || "",
-      task_type: task.task_type === 'general' || task.task_type === 'pre_sale' ? 'diy' : task.task_type as 'diy' | 'contractor',
       estimated_hours: task.estimated_hours == null ? "" : decimalHoursToHhMm(task.estimated_hours),
     });
     

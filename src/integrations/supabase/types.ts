@@ -1258,7 +1258,6 @@ export type Database = {
           priority: string | null
           project_run_id: string | null
           status: string | null
-          task_type: string | null
           title: string
           updated_at: string
           user_id: string
@@ -1275,7 +1274,6 @@ export type Database = {
           priority?: string | null
           project_run_id?: string | null
           status?: string | null
-          task_type?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -1292,7 +1290,6 @@ export type Database = {
           priority?: string | null
           project_run_id?: string | null
           status?: string | null
-          task_type?: string | null
           title?: string
           updated_at?: string
           user_id?: string

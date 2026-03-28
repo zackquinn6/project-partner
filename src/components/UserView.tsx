@@ -149,6 +149,7 @@ export default function UserView({
     updateProjectRun,
     deleteProjectRun
   } = useProject();
+  const safeProjectRuns = projectRuns ?? [];
   const { refetchProjectRuns, updateProjectRunsCache } = useProjectData();
   const [viewMode, setViewMode] = useState<'listing' | 'workflow'>('listing');
   const [workflowMainView, setWorkflowMainView] = useState<'overview' | 'steps'>('overview');
@@ -256,7 +257,9 @@ export default function UserView({
   const [instructionLevel, setInstructionLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
 
   // Check if kickoff phase is complete for project runs - MOVED UP to fix TypeScript error
-  const isKickoffComplete = currentProjectRun ? isKickoffPhaseComplete(currentProjectRun.completedSteps) : true;
+  const isKickoffComplete = currentProjectRun
+    ? isKickoffPhaseComplete(currentProjectRun.completedSteps ?? [])
+    : true;
 
   // When entering a workflow, default to the overview page (per project run).
   useEffect(() => {
@@ -859,13 +862,13 @@ export default function UserView({
     // CRITICAL: If projectRunId is provided, we MUST load it regardless of current viewMode
     // This ensures new projects from ProjectCatalog open to kickoff even if we're in listing mode
     if (projectRunId) {
-      const projectRun = projectRuns.find(run => run.id === projectRunId);
+      const projectRun = safeProjectRuns.find(run => run.id === projectRunId);
       
       // If projectRunId doesn't exist in projectRuns, it might have been deleted
       // Check if projectRuns have been loaded (either empty or with items) to avoid fetching deleted projects
       // If projectRuns is an empty array, it means they haven't loaded yet, so we should try to fetch
       // If projectRuns has items but this one isn't there, it was likely deleted
-      if (!projectRun && projectRuns.length > 0) {
+      if (!projectRun && safeProjectRuns.length > 0) {
         setCurrentProjectRun(null);
         setViewMode('listing');
         onProjectSelected?.('listing' as any);
@@ -1373,7 +1376,7 @@ export default function UserView({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const startUserProjectRuntime = useCallback(async (stepId: string, stepKey: string) => {
+  const startUserProjectRuntime = React.useCallback(async (stepId: string, stepKey: string) => {
     if (!currentProjectRun?.id) return;
     const now = new Date().toISOString();
     const { data: existing, error: readError } = await supabase
@@ -1404,7 +1407,7 @@ export default function UserView({
     if (updateError) console.error('Failed updating user_projects_runtime start time:', updateError);
   }, [currentProjectRun?.id]);
 
-  const endUserProjectRuntime = useCallback(async (stepId: string, stepKey: string) => {
+  const endUserProjectRuntime = React.useCallback(async (stepId: string, stepKey: string) => {
     if (!currentProjectRun?.id) return;
     const now = new Date().toISOString();
     const { data: existing, error: readError } = await supabase
@@ -2410,8 +2413,8 @@ export default function UserView({
     completedSteps: currentProjectRun?.completedSteps,
     isKickoffComplete,
     projectRunId,
-    projectRunsCount: projectRuns.length,
-    projectRunsIds: projectRuns.map(pr => pr.id)
+    projectRunsCount: safeProjectRuns.length,
+    projectRunsIds: safeProjectRuns.map(pr => pr.id)
   });
   
   // Fix My Projects navigation - mobile is handled by Index component
@@ -2460,9 +2463,9 @@ export default function UserView({
       </div>
     );
   }
-  if (projectRunId && !currentProjectRun && projectRuns.length > 0) {
+  if (projectRunId && !currentProjectRun && safeProjectRuns.length > 0) {
     console.log("❌ UserView: Have projectRunId but currentProjectRun not found in loaded runs");
-    console.log("Available project run IDs:", projectRuns.map(pr => pr.id));
+    console.log("Available project run IDs:", safeProjectRuns.map(pr => pr.id));
     console.log("Looking for projectRunId:", projectRunId);
     
     // MOBILE FIX: Never show ProjectListing error recovery on mobile
@@ -2495,7 +2498,7 @@ export default function UserView({
     />;
   }
   
-  if (projectRunId && !currentProjectRun && projectRuns.length === 0) {
+  if (projectRunId && !currentProjectRun && safeProjectRuns.length === 0) {
     console.log("⏳ UserView: Have projectRunId but project runs not loaded yet, showing loading...");
     return (
       <div className="container mx-auto px-6 py-8">
@@ -2510,7 +2513,13 @@ export default function UserView({
   }
   
   // THIRD: If no projects at all or explicitly in listing mode, show project listing
-  if (viewMode === 'listing' || (!currentProject && !currentProjectRun && !projectRunId && projectRuns.length === 0)) {
+  // Include forceListingMode: after clearing currentProjectRun, viewMode can still be 'workflow' for a frame;
+  // without this, users with projectRuns.length > 0 skip listing and see a blank workflow shell.
+  if (
+    viewMode === 'listing' ||
+    (forceListingMode && !projectRunId) ||
+    (!currentProject && !currentProjectRun && !projectRunId && safeProjectRuns.length === 0)
+  ) {
     console.log("📋 UserView: Checking if should show project listing...");
     console.log("📋 viewMode:", viewMode, "currentProject:", !!currentProject, "currentProjectRun:", !!currentProjectRun, "projectRunId:", projectRunId);
     

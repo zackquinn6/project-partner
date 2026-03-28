@@ -9,6 +9,10 @@ import {
   type UserAchievementStats,
 } from '@/constants/achievementDefinitions';
 
+/** `project_runs` columns for achievement passes (must match live PostgREST schema). */
+const PROJECT_RUNS_ACHIEVEMENT_SELECT =
+  'id, progress, status, budget_data, category, actual_end_date, end_date, instruction_level_preference, customization_decisions, completed_steps';
+
 /** Loads counts used for photo / task / tool / risk milestones. */
 export async function fetchUserAchievementStats(userId: string): Promise<UserAchievementStats> {
   const [
@@ -359,12 +363,7 @@ export function useEnhancedAchievements(userId?: string) {
     try {
       const [stats, projectsRes] = await Promise.all([
         fetchUserAchievementStats(userId),
-        supabase
-          .from('project_runs')
-          .select(
-            'id, progress, status, effort_level, skill_level, budget_data, category, actual_end_date, end_date'
-          )
-          .eq('user_id', userId),
+        supabase.from('project_runs').select(PROJECT_RUNS_ACHIEVEMENT_SELECT).eq('user_id', userId),
       ]);
 
       const { data: projects, error } = projectsRes;
@@ -389,12 +388,7 @@ export function useEnhancedAchievements(userId?: string) {
     try {
       const [stats, projectsRes] = await Promise.all([
         fetchUserAchievementStats(userId),
-        supabase
-          .from('project_runs')
-          .select(
-            'id, progress, status, effort_level, skill_level, budget_data, category, actual_end_date, end_date'
-          )
-          .eq('user_id', userId),
+        supabase.from('project_runs').select(PROJECT_RUNS_ACHIEVEMENT_SELECT).eq('user_id', userId),
       ]);
       const { data: projects, error } = projectsRes;
       if (error) throw error;
