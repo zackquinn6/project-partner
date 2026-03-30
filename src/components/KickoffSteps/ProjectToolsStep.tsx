@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
@@ -20,12 +20,19 @@ export const PLANNING_TOOL_IDS = [
   'expert_support'
 ] as const;
 
-export const PLANNING_TOOLS: { id: (typeof PLANNING_TOOL_IDS)[number]; label: string; benefit: string }[] = [
+export const PLANNING_TOOLS: {
+  id: (typeof PLANNING_TOOL_IDS)[number];
+  label: string;
+  benefit: string;
+  /** Short label for the project planning wizard step strip (icons); defaults to `label`. */
+  trackerLabel?: string;
+}[] = [
   { id: 'scope', label: 'Customize', benefit: 'Shape the work to fit your situation' },
   { id: 'schedule', label: 'Schedule', benefit: 'Set a realistic timeline' },
   {
     id: 'communication_plan',
     label: 'Communication Plan',
+    trackerLabel: 'Comms',
     benefit: 'Decide who gets updates and how you will share progress',
   },
   { id: 'risk', label: 'Risk-Less', benefit: 'Proactively avoid issues' },
@@ -234,12 +241,12 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     return projectFocus === buttonKey;
   };
 
-  return (
-    <div className={compact ? 'space-y-2' : 'space-y-4'}>
+  const inner = (
+    <>
       {/* Select all - best for optimized project */}
-      <div className={compact ? 'space-y-0.5' : 'space-y-1'}>
+      <div className="space-y-1">
         {isAlignedToPreference('all_three') && (
-          <p className={compact ? 'text-[10px] font-medium text-muted-foreground' : 'text-xs font-medium text-muted-foreground'}>
+          <p className="text-xs font-medium text-muted-foreground">
             Aligned to your preference
           </p>
         )}
@@ -247,22 +254,22 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
           <Button
             type="button"
             variant="outline"
-            size={compact ? 'sm' : 'lg'}
+            size={compact ? 'default' : 'lg'}
             className={
               compact
-                ? 'h-9 w-full justify-center gap-1.5 border-blue-600 px-2 text-xs text-blue-700 bg-blue-50/60 hover:bg-blue-100/80 hover:text-blue-800 dark:border-blue-500 dark:text-blue-300 dark:bg-blue-950/35 dark:hover:bg-blue-950/55 dark:hover:text-blue-200'
+                ? 'h-10 min-h-10 w-full justify-center gap-2 border-blue-600 px-3 text-sm text-blue-700 bg-blue-50/60 hover:bg-blue-100/80 hover:text-blue-800 dark:border-blue-500 dark:text-blue-300 dark:bg-blue-950/35 dark:hover:bg-blue-950/55 dark:hover:text-blue-200'
                 : 'w-full h-12 justify-center text-center gap-2 border-blue-600 text-blue-700 bg-blue-50/60 hover:bg-blue-100/80 hover:text-blue-800 dark:border-blue-500 dark:text-blue-300 dark:bg-blue-950/35 dark:hover:bg-blue-950/55 dark:hover:text-blue-200'
             }
             onClick={handleSelectAll}
           >
-            <FolderKanban className={compact ? 'h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400' : 'h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400'} />
+            <FolderKanban className={compact ? 'h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400' : 'h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400'} />
             <span className="text-left leading-tight">Select all – best for optimized project</span>
           </Button>
         </div>
       </div>
 
       {/* Best for cost / quality / schedule focus */}
-      <div className={compact ? 'flex flex-col gap-1.5 sm:flex-row' : 'flex flex-col sm:flex-row gap-2'}>
+      <div className={compact ? 'flex flex-col gap-2 sm:flex-row' : 'flex flex-col sm:flex-row gap-2'}>
         {[
           { key: 'savings' as const, label: 'Best for cost-focus', icon: PiggyBank },
           { key: 'quality' as const, label: 'Best for quality-focus', icon: Award },
@@ -275,30 +282,30 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
               className={
                 aligned
                   ? compact
-                    ? 'flex-1 space-y-0.5 rounded-md border-2 border-dashed border-primary p-0.5'
+                    ? 'flex-1 space-y-1 rounded-md border-2 border-dashed border-primary p-0.5'
                     : 'rounded-lg border-2 border-dashed border-primary p-1 flex-1 space-y-1'
                   : compact
-                    ? 'flex-1 space-y-0.5'
+                    ? 'flex-1 space-y-1'
                     : 'flex-1 space-y-1'
               }
             >
               {aligned && (
-                <p className={compact ? 'text-[10px] font-medium text-muted-foreground' : 'text-xs font-medium text-muted-foreground'}>
+                <p className="text-xs font-medium text-muted-foreground">
                   Aligned to your preference
                 </p>
               )}
               <Button
                 type="button"
                 variant="outline"
-                size={compact ? 'sm' : 'default'}
+                size="default"
                 className={
                   compact
-                    ? 'h-8 w-full justify-center gap-1 px-2 text-[11px] leading-tight'
+                    ? 'h-10 min-h-10 w-full justify-center gap-2 px-3 text-sm leading-tight'
                     : 'w-full justify-center gap-2 text-center'
                 }
                 onClick={() => handleFocusPreset(key)}
               >
-                <Icon className={compact ? 'h-3.5 w-3.5 shrink-0 text-muted-foreground' : 'h-4 w-4 shrink-0 text-muted-foreground'} />
+                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span>{label}</span>
               </Button>
             </div>
@@ -320,8 +327,8 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
               }
               onClick={isScope ? undefined : () => handleToggle(id)}
             >
-              <CardHeader className={compact ? 'p-2 pb-1.5 sm:p-2.5 sm:pb-1.5' : 'p-4 pb-2'}>
-                <div className={compact ? 'flex items-start gap-2' : 'flex items-start gap-3'}>
+              <CardHeader className={compact ? 'p-2 sm:p-3' : 'p-4 pb-2'}>
+                <div className="flex items-start gap-2 sm:gap-3">
                   <Checkbox
                     id={id}
                     checked={isChecked}
@@ -331,10 +338,10 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
                     disabled={isScope}
                   />
                   <div className="min-w-0 space-y-0">
-                    <CardTitle className={compact ? 'text-sm font-medium whitespace-normal' : 'text-base font-medium whitespace-normal'}>
+                    <CardTitle className={compact ? 'text-sm font-medium whitespace-normal sm:text-base' : 'text-base font-medium whitespace-normal'}>
                       {label}
                     </CardTitle>
-                    <p className={compact ? 'text-[11px] leading-snug text-muted-foreground' : 'text-sm text-muted-foreground'}>{benefit}</p>
+                    <p className={compact ? 'text-xs leading-snug text-muted-foreground sm:text-sm' : 'text-sm text-muted-foreground'}>{benefit}</p>
                   </div>
                 </div>
               </CardHeader>
@@ -344,12 +351,28 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
       </div>
 
       {selected.size > 1 && (
-        <div className={compact ? 'flex flex-wrap items-center justify-center gap-1' : 'flex flex-wrap items-center justify-center gap-2'}>
-          <Button variant="ghost" size="sm" className={compact ? 'h-7 text-xs' : undefined} onClick={handleClearAll}>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <Button variant="ghost" size="sm" className="h-9 text-sm" onClick={handleClearAll}>
             Clear
           </Button>
         </div>
       )}
-    </div>
+    </>
   );
+
+  if (compact) {
+    return (
+      <Card>
+        <CardHeader className="p-2 sm:p-3">
+          <CardTitle className="text-sm sm:text-base">Workflow Setup</CardTitle>
+          <CardDescription className="text-xs mt-0.5">
+            Choose which planning tools to use for this project
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 p-2 sm:space-y-3 sm:p-3">{inner}</CardContent>
+      </Card>
+    );
+  }
+
+  return <div className="space-y-4">{inner}</div>;
 };

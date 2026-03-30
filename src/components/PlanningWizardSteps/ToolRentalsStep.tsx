@@ -3,7 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Hammer } from 'lucide-react';
-import { PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
+import {
+  PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
+  PLANNING_WIZARD_STEP_BODY_CLASSNAME,
+  PLANNING_WIZARD_STEP_CARD_CLASSNAME,
+  PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
+  PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
+  PLANNING_WIZARD_STEP_HEADER_CLASSNAME,
+  PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME,
+  PLANNING_WIZARD_STEP_TITLE_CLASSNAME,
+} from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 
 interface ToolRentalsStepProps {
   onComplete: () => void;
@@ -29,17 +38,17 @@ export const ToolRentalsStep: React.FC<ToolRentalsStepProps> = ({
 
   return (
     <div className="space-y-3">
-      <Card>
-        <CardHeader className="p-3 sm:p-4">
-          <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
-            <Hammer className="w-5 h-5" />
+      <Card className={PLANNING_WIZARD_STEP_CARD_CLASSNAME}>
+        <CardHeader className={PLANNING_WIZARD_STEP_HEADER_CLASSNAME}>
+          <CardTitle className={PLANNING_WIZARD_STEP_TITLE_CLASSNAME}>
+            <Hammer className="h-5 w-5" aria-hidden />
             Tool Rental
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 p-3 sm:p-4">
-          <div className="text-center space-y-4 py-6">
-            <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
+        <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
+          <div className={PLANNING_WIZARD_STEP_BODY_CLASSNAME}>
+            <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
               Create an account to align your project to the tool rental period
             </p>
 
@@ -53,9 +62,9 @@ export const ToolRentalsStep: React.FC<ToolRentalsStepProps> = ({
               Open Tool Rental
             </Button>
 
-            {isCompleted && (
-              <p className="text-xs sm:text-sm font-medium text-green-600">✓ Tool Rental reviewed</p>
-            )}
+            <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
+              {isCompleted ? '✓ Tool Rental reviewed' : '\u00a0'}
+            </p>
           </div>
         </CardContent>
       </Card>

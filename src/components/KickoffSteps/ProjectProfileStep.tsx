@@ -867,7 +867,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-2 p-2 sm:p-3">
+        <CardContent className="space-y-2 p-2 sm:space-y-3 sm:p-3">
           <div className="space-y-2">
             <div>
               <div className="flex items-center gap-1.5 mb-1">

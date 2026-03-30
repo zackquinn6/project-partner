@@ -3,7 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MessagesSquare } from 'lucide-react';
-import { PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
+import {
+  PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
+  PLANNING_WIZARD_STEP_BODY_CLASSNAME,
+  PLANNING_WIZARD_STEP_CARD_CLASSNAME,
+  PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
+  PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
+  PLANNING_WIZARD_STEP_HEADER_CLASSNAME,
+  PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME,
+  PLANNING_WIZARD_STEP_TITLE_CLASSNAME,
+} from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 
 interface CommunicationPlanStepProps {
   onComplete: () => void;
@@ -29,10 +38,10 @@ export const CommunicationPlanStep: React.FC<CommunicationPlanStepProps> = ({
 
   return (
     <div className="space-y-3">
-      <Card>
-        <CardHeader className="p-3 sm:p-4">
-          <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
-            <MessagesSquare className="w-5 h-5" aria-hidden />
+      <Card className={PLANNING_WIZARD_STEP_CARD_CLASSNAME}>
+        <CardHeader className={PLANNING_WIZARD_STEP_HEADER_CLASSNAME}>
+          <CardTitle className={PLANNING_WIZARD_STEP_TITLE_CLASSNAME}>
+            <MessagesSquare className="h-5 w-5" aria-hidden />
             Communication Plan
             {isCompleted && (
               <Badge variant="secondary" className="flex-shrink-0 text-xs">
@@ -41,11 +50,10 @@ export const CommunicationPlanStep: React.FC<CommunicationPlanStepProps> = ({
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 p-3 sm:p-4">
-          <div className="text-center space-y-4 py-6">
-            <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
-              Set up who needs updates, how often, and send email or copy summaries for group chats — optional
-              for this project.
+        <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
+          <div className={PLANNING_WIZARD_STEP_BODY_CLASSNAME}>
+            <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
+              Set up who needs updates, how often, and send email or copy summaries for group chats.
             </p>
 
             <Button
@@ -58,9 +66,9 @@ export const CommunicationPlanStep: React.FC<CommunicationPlanStepProps> = ({
               Open Communication Plan
             </Button>
 
-            {isCompleted && (
-              <p className="text-xs sm:text-sm text-green-600 font-medium">✓ Communication Plan step completed</p>
-            )}
+            <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
+              {isCompleted ? '✓ Communication Plan step completed' : '\u00a0'}
+            </p>
           </div>
         </CardContent>
       </Card>

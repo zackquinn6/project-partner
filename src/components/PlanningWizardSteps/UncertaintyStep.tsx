@@ -4,7 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle } from 'lucide-react';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
-import { PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
+import {
+  PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
+  PLANNING_WIZARD_STEP_BODY_CLASSNAME,
+  PLANNING_WIZARD_STEP_CARD_CLASSNAME,
+  PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
+  PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
+  PLANNING_WIZARD_STEP_HEADER_CLASSNAME,
+  PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME,
+  PLANNING_WIZARD_STEP_TITLE_CLASSNAME,
+} from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 import { useProject } from '@/contexts/ProjectContext';
 
 interface UncertaintyStepProps {
@@ -33,17 +42,17 @@ export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
 
   return (
     <div className="space-y-3">
-      <Card>
-        <CardHeader className="p-3 sm:p-4">
-          <CardTitle className="text-base sm:text-lg md:text-xl flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5" />
+      <Card className={PLANNING_WIZARD_STEP_CARD_CLASSNAME}>
+        <CardHeader className={PLANNING_WIZARD_STEP_HEADER_CLASSNAME}>
+          <CardTitle className={PLANNING_WIZARD_STEP_TITLE_CLASSNAME}>
+            <AlertTriangle className="h-5 w-5" aria-hidden />
             Risk-Less
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 p-3 sm:p-4">
-          <div className="text-center space-y-4 py-6">
-            <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
+        <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
+          <div className={PLANNING_WIZARD_STEP_BODY_CLASSNAME}>
+            <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
               Identify and plan for things that could impact your timeline and budget
             </p>
 
@@ -57,14 +66,13 @@ export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
               Open Risk-Less
             </Button>
 
-            {isCompleted && (
-              <p className="text-xs sm:text-sm font-medium text-green-600">✓ Risk-Less step completed</p>
-            )}
+            <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
+              {isCompleted ? '✓ Risk-Less step completed' : '\u00a0'}
+            </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Risk Management Window: only when host does not provide onOpenRiskManagement (avoids nested dialog) */}
       {!onOpenRiskManagement && (
         <RiskManagementWindow
           open={riskManagementOpen}
@@ -77,4 +85,3 @@ export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
     </div>
   );
 };
-

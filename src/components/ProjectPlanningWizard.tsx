@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -10,7 +11,7 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import { ChevronLeft, ChevronRight, CheckCircle, Settings2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, Settings2, Trash2 } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { PLANNING_TOOLS } from './KickoffSteps/ProjectToolsStep';
 import type { PlanningToolId } from './KickoffSteps/ProjectToolsStep';
@@ -27,6 +28,16 @@ import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
 import { PlanningConfirmationStep } from '@/components/PlanningWizardSteps/PlanningConfirmationStep';
+import {
+  PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
+  PLANNING_WIZARD_STEP_BODY_CLASSNAME,
+  PLANNING_WIZARD_STEP_CARD_CLASSNAME,
+  PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
+  PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
+  PLANNING_WIZARD_STEP_HEADER_CLASSNAME,
+  PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME,
+  PLANNING_WIZARD_STEP_TITLE_CLASSNAME,
+} from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 import type { Phase } from '@/interfaces/Project';
 
 const WIZARD_TOOL_ORDER: PlanningToolId[] = [
@@ -130,7 +141,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     }
     return ordered.map(toolId => {
       const meta = PLANNING_TOOLS.find(t => t.id === toolId);
-      const title = meta?.label ?? toolId;
+      const title = meta?.trackerLabel ?? meta?.label ?? toolId;
       return {
         id: `planning-${toolId}`,
         toolId,
@@ -336,22 +347,45 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         return <ToolRentalsStep {...stepProps} onOpenToolRentals={onOpenToolRentals} />;
       case 'waste_removal':
         return (
-          <Card>
-            <CardContent className="space-y-3 p-4">
-              <p className="text-sm text-muted-foreground">
-                Open Waste Removal to track cleanup and disposal planning for this project.
-              </p>
-              <Button
-                type="button"
-                onClick={() => {
-                  window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey: 'waste-removal' } }));
-                  stepProps.onComplete();
-                }}
-              >
-                Open Waste Removal
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="space-y-3">
+            <Card className={PLANNING_WIZARD_STEP_CARD_CLASSNAME}>
+              <CardHeader className={PLANNING_WIZARD_STEP_HEADER_CLASSNAME}>
+                <CardTitle className={PLANNING_WIZARD_STEP_TITLE_CLASSNAME}>
+                  <Trash2 className="h-5 w-5" aria-hidden />
+                  Waste Removal
+                  {stepProps.isCompleted && (
+                    <Badge variant="secondary" className="flex-shrink-0 text-xs">
+                      Complete
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
+                <div className={PLANNING_WIZARD_STEP_BODY_CLASSNAME}>
+                  <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
+                    Open Waste Removal to track cleanup and disposal planning for this project.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="default"
+                    className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
+                    onClick={() => {
+                      window.dispatchEvent(
+                        new CustomEvent('open-app', { detail: { actionKey: 'waste-removal' } })
+                      );
+                      stepProps.onComplete();
+                    }}
+                  >
+                    <Trash2 className="shrink-0" aria-hidden />
+                    Open Waste Removal
+                  </Button>
+                  <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
+                    {stepProps.isCompleted ? '✓ Waste Removal reviewed' : '\u00a0'}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         );
       case 'quality_control':
         return (

@@ -53,10 +53,16 @@ const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string
 interface KickoffWorkflowProps {
   onKickoffComplete: (persist?: KickoffCompletePersist) => void | Promise<void>;
   onExit?: () => void; // Add optional exit handler
+  /**
+   * Called synchronously immediately before the final DB save that marks all kickoff steps complete.
+   * Use this to open the planning wizard so a render never sees kickoff-complete with the wizard still closed.
+   */
+  onBeforeFinalKickoffPersistence?: () => void;
 }
 export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   onKickoffComplete,
   onExit,
+  onBeforeFinalKickoffPersistence,
 }) => {
   const {
     currentProjectRun,
@@ -242,6 +248,18 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         updatedAt: new Date()
       };
 
+      const finishingEntireKickoff = newCompletedKickoffSteps.size === kickoffSteps.length;
+      const kickoffUiIds = [
+        'kickoff-step-1',
+        'kickoff-step-2',
+        'kickoff-step-3',
+        'kickoff-step-4',
+      ] as const;
+      const allKickoffUiPresent = kickoffUiIds.every((id) => newCompletedSteps.includes(id));
+      if (finishingEntireKickoff && allKickoffUiPresent) {
+        onBeforeFinalKickoffPersistence?.();
+      }
+
       // Wait for database update to complete
       await updateProjectRun(updatedProjectRun);
 
@@ -296,9 +314,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   };
 
   const currentStepId = kickoffSteps[currentKickoffStep]?.id;
-  /** Tighter chrome + taller scroll region so steps 1 & 4 show more without scrolling */
-  const kickoffDenseStep =
-    currentStepId === 'kickoff-step-1' || currentStepId === 'kickoff-step-4';
 
   const currentStepPurpose = (() => {
     switch (currentStepId) {
@@ -396,11 +411,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   }
 
   return (
-    <div
-      className={`mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col overflow-hidden md:h-auto md:overflow-visible ${
-        kickoffDenseStep ? 'gap-1.5 p-1.5 sm:gap-2 sm:p-2' : 'gap-2 p-2 sm:gap-3 sm:p-3'
-      }`}
-    >
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-auto md:overflow-visible">
       <ProjectPlanningCountdownBanner
         minimal
         projectCreatedAt={currentProjectRun.createdAt}
@@ -408,7 +419,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       />
       {/* Step Navigation (no separate project-name header) */}
       <Card className="shrink-0">
-        <CardContent className="p-1.5 sm:p-2 md:p-2.5">
+        <CardContent className="p-2 sm:p-2.5 md:p-3">
           <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
             <div className="flex min-w-0 flex-1 items-start gap-1">
               <Button
@@ -521,12 +532,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       {/* Step Purpose Sub-header - white box like project kickoff header */}
       {currentStepPurpose && (
         <Card className="shrink-0">
-          <CardContent
-            className={`flex flex-row items-center justify-between gap-2 ${kickoffDenseStep ? 'p-1.5 sm:p-2' : 'p-2 sm:p-3'}`}
-          >
-            <h2
-              className={`min-w-0 flex-1 break-words pr-2 font-semibold ${kickoffDenseStep ? 'text-sm sm:text-base' : 'text-base sm:text-lg'}`}
-            >
+          <CardContent className="flex flex-row items-center justify-between gap-2 p-2 sm:p-3">
+            <h2 className="min-h-[2.75rem] sm:min-h-[3.25rem] min-w-0 flex-1 break-words py-1 pr-2 text-base font-semibold leading-snug sm:text-lg sm:py-1.5">
               {currentStepPurpose}
             </h2>
             {currentStepId === 'kickoff-step-1' && (
@@ -553,10 +560,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
       {/* Primary actions: fixed slot below purpose so Continue / Not a match stay in the same place every step */}
       <Card className="shrink-0">
-        <CardContent className={kickoffDenseStep ? 'p-2 sm:p-3' : 'p-2.5 sm:p-4'}>
+        <CardContent className="p-2.5 sm:p-4">
           {!isStepCompleted(currentKickoffStep) ? (
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
-              <div className="flex min-h-12 min-w-0 flex-1 flex-col justify-center">
+            <div className="flex min-h-[3rem] flex-col gap-2 sm:min-h-[3.25rem] sm:flex-row sm:items-stretch sm:gap-3">
+              <div className="flex min-h-12 min-w-0 flex-1 flex-col justify-center sm:min-h-[3.25rem]">
                 {currentStepId === 'kickoff-step-1' ? (
                   <Button
                     onClick={async () => {
@@ -568,30 +575,32 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                     }}
                     variant="outline"
                     size="lg"
-                    className="h-12 w-full border-red-300 px-2 text-xs text-red-700 hover:bg-red-50 sm:h-auto sm:min-h-12 sm:py-3 sm:text-sm"
+                    className="h-12 min-h-12 w-full border-red-300 px-3 text-sm text-red-700 hover:bg-red-50 sm:h-full sm:min-h-[3.25rem] sm:py-3"
                   >
-                    <ArrowLeft className="mr-1.5 h-4 w-4 shrink-0 sm:mr-2" />
-                    <span className="hidden text-left leading-tight sm:inline sm:line-clamp-2">
-                      Not a match — back to catalog
+                    <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
+                    <span className="text-left leading-tight sm:line-clamp-2">
+                      <span className="hidden sm:inline">Not a match — back to catalog</span>
+                      <span className="sm:hidden">Not a match — back</span>
                     </span>
-                    <span className="sm:hidden">Not a match — back</span>
                   </Button>
                 ) : (
                   <Button
                     type="button"
                     variant="outline"
                     size="lg"
-                    className="h-12 w-full border-muted-foreground/40 px-2 text-xs text-muted-foreground hover:bg-muted/40 sm:h-auto sm:min-h-12 sm:py-3 sm:text-sm"
+                    className="h-12 min-h-12 w-full border-muted-foreground/40 px-3 text-sm text-muted-foreground hover:bg-muted/40 sm:h-full sm:min-h-[3.25rem] sm:py-3"
                     onClick={() => {
                       onKickoffComplete();
                     }}
                   >
-                    <span className="hidden sm:inline sm:line-clamp-2 sm:text-left">Skip direct to project workflow</span>
-                    <span className="sm:hidden">Skip to workflow</span>
+                    <span className="text-left leading-tight sm:line-clamp-2">
+                      <span className="hidden sm:inline">Skip direct to project workflow</span>
+                      <span className="sm:hidden">Skip to workflow</span>
+                    </span>
                   </Button>
                 )}
               </div>
-              <div className="flex w-full shrink-0 flex-col sm:w-[17.5rem] sm:self-stretch">
+              <div className="flex w-full shrink-0 flex-col sm:w-[17.5rem] sm:min-h-[3.25rem]">
                 <Button
                   onClick={async () => {
                     if (currentStepId === 'kickoff-step-3' && (window as any).__projectProfileStepSave) {
@@ -615,47 +624,41 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                     handleStepComplete(currentKickoffStep);
                   }}
                   size="lg"
-                  className="h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:h-full sm:min-h-12 sm:py-3"
+                  className="h-12 min-h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:h-full sm:min-h-[3.25rem] sm:py-3"
                 >
-                  <CheckCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
-                  {currentStepId === 'kickoff-step-3' ? (
-                    <>
-                      <span className="hidden sm:inline sm:line-clamp-2 sm:text-left">Continue to Workflow Setup</span>
-                      <span className="sm:hidden">Continue</span>
-                    </>
-                  ) : currentStepId === 'kickoff-step-4' ? (
-                    <>
-                      <span className="hidden sm:inline sm:line-clamp-2 sm:text-left">Complete & Start Planning</span>
-                      <span className="sm:hidden">Complete</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="hidden sm:inline sm:line-clamp-2 sm:text-left">Complete & Continue</span>
-                      <span className="sm:hidden">Continue</span>
-                    </>
-                  )}
+                  <CheckCircle className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="text-left leading-tight sm:line-clamp-2">
+                    {currentStepId === 'kickoff-step-3' ? (
+                      <>
+                        <span className="hidden sm:inline">Continue to Workflow Setup</span>
+                        <span className="sm:hidden">Continue</span>
+                      </>
+                    ) : currentStepId === 'kickoff-step-4' ? (
+                      <>
+                        <span className="hidden sm:inline">Complete & Start Planning</span>
+                        <span className="sm:hidden">Complete</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="hidden sm:inline">Complete & Continue</span>
+                        <span className="sm:hidden">Continue</span>
+                      </>
+                    )}
+                  </span>
                 </Button>
               </div>
             </div>
           ) : (
-            <div className="rounded-lg border border-green-200 bg-green-50 p-2 text-center sm:p-3">
-              <p className="text-xs text-green-800 sm:text-sm">Step Completed ✓</p>
+            <div className="flex min-h-[3rem] items-center justify-center rounded-lg border border-green-200 bg-green-50 p-2 sm:min-h-[3.25rem] sm:p-3">
+              <p className="text-sm text-green-800">Step Completed ✓</p>
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* Step body: scrollable content only; actions stay above */}
-      <div
-        className={`flex min-h-0 flex-1 flex-col ${
-          kickoffDenseStep ? 'md:min-h-[min(72vh,720px)]' : 'md:min-h-[min(520px,70vh)]'
-        }`}
-      >
-        <div
-          className={`min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] -mx-2 px-2 sm:mx-0 sm:px-0 md:flex-none md:overflow-visible md:pb-0 ${
-            kickoffDenseStep ? 'pb-1 sm:pb-2' : 'pb-2 sm:pb-4'
-          }`}
-        >
+      <div className="flex min-h-0 flex-1 flex-col md:min-h-[min(560px,70vh)]">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] -mx-2 px-2 pb-2 sm:mx-0 sm:px-0 sm:pb-4 md:flex-none md:overflow-visible md:pb-0">
           {renderCurrentStep()}
         </div>
       </div>

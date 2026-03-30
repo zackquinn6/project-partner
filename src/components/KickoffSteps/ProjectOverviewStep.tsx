@@ -805,7 +805,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
 
   if (mode === 'workflow') {
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         {projectDetailsFields}
         {templateProject && (
           <RiskManagementWindow
@@ -828,17 +828,17 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const TierIcon = tierVisual.Icon;
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-3">
       <Card>
-        <CardHeader className="p-1.5 sm:p-2">
-          <div className="flex flex-wrap items-center justify-between gap-1.5">
-            <CardTitle className="flex items-center gap-1.5 text-xs sm:text-sm">
+        <CardHeader className="p-2 sm:p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
               Project Match: {currentProjectRun.name}
-              {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-[10px] sm:text-xs">Complete</Badge>}
+              {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
             </CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="space-y-2 p-1.5 sm:space-y-2.5 sm:p-2.5">
+        <CardContent className="space-y-2 p-2 sm:space-y-3 sm:p-3">
           <div className="space-y-0.5">
             <Label className="text-[10px] sm:text-xs">Description</Label>
             <p className="text-xs text-muted-foreground leading-snug whitespace-pre-line sm:text-sm">

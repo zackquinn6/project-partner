@@ -2631,7 +2631,8 @@ export default function UserView({
           updatedSteps.push(stepId);
         }
       });
-      
+      setProjectPlanningWizardOpen(true);
+
       // Update project run with all steps complete
       updateProjectRun({
         ...currentProjectRun,
@@ -2649,11 +2650,13 @@ export default function UserView({
     return (
       <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden md:h-auto md:min-h-0 md:flex-none md:overflow-visible">
       <KickoffWorkflow 
+        onBeforeFinalKickoffPersistence={() => {
+          // Must run before updateProjectRun marks kickoff complete in context; otherwise UserView
+          // renders main workflow for one frame with the wizard still closed.
+          setProjectPlanningWizardOpen(true);
+        }}
         onKickoffComplete={async persist => {
           console.log("🎯 onKickoffComplete called - closing kickoff and switching to workflow");
-          // Open planning workflow immediately after kickoff completion.
-          setProjectPlanningWizardOpen(true);
-          
             if (currentProjectRun && updateProjectRun) {
              // Ensure ALL kickoff steps are marked complete (prevent duplicates)
              const existingSteps = currentProjectRun.completedSteps || [];

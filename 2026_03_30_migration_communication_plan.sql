@@ -95,6 +95,8 @@ ALTER TABLE public.communication_schedule_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.communication_trigger_rules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.communication_outbound_log ENABLE ROW LEVEL SECURITY;
 
+-- Idempotent: safe if migration is re-run after partial apply
+DROP POLICY IF EXISTS "project_communication_plans_owner_all" ON public.project_communication_plans;
 CREATE POLICY "project_communication_plans_owner_all"
   ON public.project_communication_plans
   FOR ALL
@@ -113,6 +115,7 @@ CREATE POLICY "project_communication_plans_owner_all"
     )
   );
 
+DROP POLICY IF EXISTS "communication_stakeholders_owner_all" ON public.communication_stakeholders;
 CREATE POLICY "communication_stakeholders_owner_all"
   ON public.communication_stakeholders
   FOR ALL
@@ -135,6 +138,7 @@ CREATE POLICY "communication_stakeholders_owner_all"
     )
   );
 
+DROP POLICY IF EXISTS "communication_schedule_items_owner_all" ON public.communication_schedule_items;
 CREATE POLICY "communication_schedule_items_owner_all"
   ON public.communication_schedule_items
   FOR ALL
@@ -157,6 +161,7 @@ CREATE POLICY "communication_schedule_items_owner_all"
     )
   );
 
+DROP POLICY IF EXISTS "communication_trigger_rules_owner_all" ON public.communication_trigger_rules;
 CREATE POLICY "communication_trigger_rules_owner_all"
   ON public.communication_trigger_rules
   FOR ALL
@@ -179,6 +184,7 @@ CREATE POLICY "communication_trigger_rules_owner_all"
     )
   );
 
+DROP POLICY IF EXISTS "communication_outbound_log_owner_all" ON public.communication_outbound_log;
 CREATE POLICY "communication_outbound_log_owner_all"
   ON public.communication_outbound_log
   FOR ALL

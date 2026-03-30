@@ -287,19 +287,19 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
+        <CardHeader className="p-2 sm:p-3">
+          <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+            <User className="h-4 w-4 flex-shrink-0" />
             Personalize
-            {isCompleted && <Badge variant="secondary">Complete</Badge>}
+            {isCompleted && <Badge variant="secondary" className="text-xs">Complete</Badge>}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs mt-0.5">
             Your profile helps us customize your project to fit your tools, skillset, and build style.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 sm:p-3">
           <div className="flex items-center justify-center py-8">
-            <div className="text-center">Loading profile...</div>
+            <div className="text-center text-sm text-muted-foreground">Loading profile...</div>
           </div>
         </CardContent>
       </Card>
@@ -323,7 +323,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-1.5 p-2 sm:p-3">
+        <CardContent className="space-y-2 p-2 sm:space-y-3 sm:p-3">
           {renderProfileView()}
           
           {!isCompleted && !existingProfile && (
