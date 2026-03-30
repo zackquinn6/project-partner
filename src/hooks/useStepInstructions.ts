@@ -86,7 +86,15 @@ function normalizeContent(row: StepInstructionRow | null, instructionLevel: Step
   };
 }
 
-export function useStepInstructions(stepId: string, instructionLevel: 'beginner' | 'intermediate' | 'advanced') {
+/**
+ * When projectRunId is set, reads immutable snapshot from project_run_step_instructions
+ * (template_step_id matches step ids embedded in project_runs.phases).
+ */
+export function useStepInstructions(
+  stepId: string,
+  instructionLevel: 'beginner' | 'intermediate' | 'advanced',
+  projectRunId?: string | null
+) {
   const [instruction, setInstruction] = useState<StepInstruction | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -99,12 +107,21 @@ export function useStepInstructions(stepId: string, instructionLevel: 'beginner'
         setLoading(true);
         setError(null);
 
-        const { data, error: fetchError } = await supabase
-          .from('step_instructions')
-          .select('content')
-          .eq('step_id', stepId)
-          .eq('instruction_level', instructionLevel)
-          .maybeSingle();
+        const fromRunSnapshot = Boolean(projectRunId);
+        const { data, error: fetchError } = fromRunSnapshot
+          ? await supabase
+              .from('project_run_step_instructions')
+              .select('content')
+              .eq('project_run_id', projectRunId as string)
+              .eq('template_step_id', stepId)
+              .eq('instruction_level', instructionLevel)
+              .maybeSingle()
+          : await supabase
+              .from('step_instructions')
+              .select('content')
+              .eq('step_id', stepId)
+              .eq('instruction_level', instructionLevel)
+              .maybeSingle();
 
         if (fetchError) throw fetchError;
 
@@ -125,7 +142,7 @@ export function useStepInstructions(stepId: string, instructionLevel: 'beginner'
     if (stepId) {
       fetchInstruction();
     }
-  }, [stepId, instructionLevel]);
+  }, [stepId, instructionLevel, projectRunId]);
 
   return { instruction, loading, error };
 }

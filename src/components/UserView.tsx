@@ -863,20 +863,10 @@ export default function UserView({
     // This ensures new projects from ProjectCatalog open to kickoff even if we're in listing mode
     if (projectRunId) {
       const projectRun = safeProjectRuns.find(run => run.id === projectRunId);
-      
-      // If projectRunId doesn't exist in projectRuns, it might have been deleted
-      // Check if projectRuns have been loaded (either empty or with items) to avoid fetching deleted projects
-      // If projectRuns is an empty array, it means they haven't loaded yet, so we should try to fetch
-      // If projectRuns has items but this one isn't there, it was likely deleted
-      if (!projectRun && safeProjectRuns.length > 0) {
-        setCurrentProjectRun(null);
-        setViewMode('listing');
-        onProjectSelected?.('listing' as any);
-        return;
-      }
-      
-      // Note: We can't check location.state here directly as it's passed as a prop
-      // The deletion check above should handle most cases
+
+      // Never treat "not in projectRuns yet" as deleted: refetch resolves before React
+      // re-renders context (e.g. after create_project_run_snapshot), so the new id can be
+      // missing briefly even though it exists. Always load via DB when absent from the list.
       if (projectRun) {
         // Don't open cancelled projects
         if (projectRun.status === 'cancelled') {
@@ -2062,13 +2052,14 @@ export default function UserView({
   // Fetch step instructions based on instruction level
   const { instruction, loading: instructionLoading } = useStepInstructions(
     currentStep?.id || '',
-    instructionLevel
+    instructionLevel,
+    currentProjectRun?.id
   );
 
   const renderContent = (step: typeof currentStep) => {
     if (!step) return null;
 
-    // If we have instruction data for this level, render from step_instructions content.
+    // If we have instruction data for this level, render from step_instructions or project_run_step_instructions (via hook).
     if (instruction && !instructionLoading) {
       const sectionRows = Array.isArray(instruction.content.sections) ? instruction.content.sections : [];
       const textRows = instruction.content.text ? [{
@@ -3006,6 +2997,7 @@ export default function UserView({
       ) : isMobile ? (
         <MobileWorkflowView
           projectName={activeProject?.name || 'Project'}
+          projectRunId={currentProjectRun?.id}
           currentStep={currentStep}
           currentStepIndex={currentStepIndex}
           totalSteps={allSteps.length}

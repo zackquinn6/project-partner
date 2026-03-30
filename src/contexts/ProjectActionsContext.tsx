@@ -856,15 +856,20 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
       // Refetch to get the complete project run data
       await refetchProjectRuns();
-      
-      // Call success callback with the new ID
-      if (newProjectRunId && onSuccess) {
-        onSuccess(newProjectRunId);
-      } else if (newProjectRunId) {
-        window.dispatchEvent(new CustomEvent('navigate-to-kickoff', { 
-          detail: { projectRunId: newProjectRunId } 
-        }));
-      }
+
+      // Defer navigation until after React applies context updates from refetch (setState is async).
+      const notifySuccess = () => {
+        if (newProjectRunId && onSuccess) {
+          onSuccess(newProjectRunId);
+        } else if (newProjectRunId) {
+          window.dispatchEvent(
+            new CustomEvent('navigate-to-kickoff', {
+              detail: { projectRunId: newProjectRunId },
+            })
+          );
+        }
+      };
+      queueMicrotask(notifySuccess);
     } catch (error) {
       console.error('Error adding project run:', error);
       toast({

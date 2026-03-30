@@ -2608,6 +2608,41 @@ export type Database = {
           },
         ]
       }
+      project_run_step_instructions: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          instruction_level: string
+          project_run_id: string
+          template_step_id: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          id?: string
+          instruction_level: string
+          project_run_id: string
+          template_step_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          instruction_level?: string
+          project_run_id?: string
+          template_step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_step_instructions_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_runs: {
         Row: {
           accountability_partner: string | null

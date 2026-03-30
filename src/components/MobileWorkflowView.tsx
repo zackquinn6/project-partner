@@ -15,6 +15,8 @@ import { WorkflowThemeSelector } from './WorkflowThemeSelector';
 
 interface MobileWorkflowViewProps {
   projectName: string;
+  /** When set, step instructions load from project_run_step_instructions (immutable run snapshot). */
+  projectRunId?: string | null;
   currentStep: any;
   currentStepIndex: number;
   totalSteps: number;
@@ -37,6 +39,7 @@ interface MobileWorkflowViewProps {
 
 export function MobileWorkflowView({
   projectName,
+  projectRunId,
   currentStep,
   currentStepIndex,
   totalSteps,
@@ -65,7 +68,8 @@ export function MobileWorkflowView({
   // Fetch instructions based on level
   const { instruction, loading: instructionLoading } = useStepInstructions(
     currentStep?.id || '',
-    instructionLevel
+    instructionLevel,
+    projectRunId
   );
 
   // Auto-scroll to top when step changes

@@ -200,16 +200,16 @@ const Index = () => {
       if (location.state.projectRunId) {
         setForceListingMode(false);
         setResetUserView(false);
+        const run = projectRuns.find((r) => r.id === location.state.projectRunId);
+        if (run) {
+          setCurrentProjectRun(run);
+        }
       }
 
-      // Handle projectRunId on mobile - open workflow (kickoff) immediately when coming from catalog
+      // Mobile: open workflow (kickoff) immediately when coming from catalog
       if (location.state.projectRunId && isMobile) {
         console.log('📱 Index: Mobile navigation with projectRunId:', location.state.projectRunId);
-        const projectRun = projectRuns.find(run => run.id === location.state.projectRunId);
-        if (projectRun) {
-          setCurrentProjectRun(projectRun);
-        }
-        // Always open workflow (kickoff) when projectRunId is in state; UserView will fetch run by ID if needed
+        // Always open workflow when projectRunId is in state; UserView will fetch run by ID if needed
         setMobileView('workflow');
       }
       
