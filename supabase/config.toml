@@ -364,3 +364,6 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # Cron: POST with header x-cron-secret: CRON_SECRET (schedule every ~10 minutes in Supabase Dashboard).
 [functions.daily-workflow-task-digest]
 verify_jwt = false
+
+[functions.send-communication-plan-email]
+verify_jwt = true

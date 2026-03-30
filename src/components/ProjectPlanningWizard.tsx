@@ -22,6 +22,7 @@ import { ShoppingStep } from './PlanningWizardSteps/ShoppingStep';
 import { ToolRentalsStep } from './PlanningWizardSteps/ToolRentalsStep';
 import { QualityControlStep } from './PlanningWizardSteps/QualityControlStep';
 import { ExpertSupportStep } from './PlanningWizardSteps/ExpertSupportStep';
+import { CommunicationPlanStep } from './PlanningWizardSteps/CommunicationPlanStep';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
@@ -31,6 +32,7 @@ import type { Phase } from '@/interfaces/Project';
 const WIZARD_TOOL_ORDER: PlanningToolId[] = [
   'scope',
   'schedule',
+  'communication_plan',
   'risk',
   'shopping_list',
   'quality_control',
@@ -54,6 +56,8 @@ interface ProjectPlanningWizardProps {
   onOpenToolRentals?: () => void;
   /** Opens Expert Support at host level (e.g. UserView). */
   onOpenExpertSupport?: () => void;
+  /** Opens Communication Plan at host level (e.g. UserView). */
+  onOpenCommunicationPlan?: () => void;
   /** Persist workflow step completion + outputs when the user finishes every wizard step */
   onWorkflowFullyComplete?: (selectedTools: PlanningToolId[]) => void | Promise<void>;
   /** `fullscreen` = same shell as project kickoff (desktop). `dialog` = modal (e.g. mobile). */
@@ -69,6 +73,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   onOpenQualityControl,
   onOpenToolRentals,
   onOpenExpertSupport,
+  onOpenCommunicationPlan,
   onWorkflowFullyComplete,
   layout = 'dialog',
 }) => {
@@ -312,6 +317,13 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
               onOpenChange(false);
               if (onGoToWorkflow) onGoToWorkflow();
             }}
+          />
+        );
+      case 'communication_plan':
+        return (
+          <CommunicationPlanStep
+            {...stepProps}
+            onOpenCommunicationPlan={onOpenCommunicationPlan}
           />
         );
       case 'risk':

@@ -10,6 +10,7 @@ import { FolderKanban, PiggyBank, Award, Calendar } from 'lucide-react';
 export const PLANNING_TOOL_IDS = [
   'scope',
   'schedule',
+  'communication_plan',
   'risk',
   'budget',
   'shopping_list',
@@ -22,6 +23,11 @@ export const PLANNING_TOOL_IDS = [
 export const PLANNING_TOOLS: { id: (typeof PLANNING_TOOL_IDS)[number]; label: string; benefit: string }[] = [
   { id: 'scope', label: 'Customize', benefit: 'Shape the work to fit your situation' },
   { id: 'schedule', label: 'Schedule', benefit: 'Set a realistic timeline' },
+  {
+    id: 'communication_plan',
+    label: 'Communication Plan',
+    benefit: 'Decide who gets updates and how you will share progress',
+  },
   { id: 'risk', label: 'Risk-Less', benefit: 'Proactively avoid issues' },
   { id: 'budget', label: 'Budget', benefit: 'Spend what you want' },
   { id: 'shopping_list', label: 'Shopping', benefit: 'Track tool & material shopping' },
@@ -37,6 +43,7 @@ export type PlanningToolId = (typeof PLANNING_TOOL_IDS)[number];
 const KICKOFF_TOOLS_GRID_ORDER: PlanningToolId[] = [
   'scope',
   'schedule',
+  'communication_plan',
   'risk',
   'shopping_list',
   'quality_control',
@@ -52,7 +59,7 @@ export const DEFAULT_PLANNING_TOOLS_SELECTION: PlanningToolId[] = ['scope', 'ris
 const FOCUS_PRESETS: Record<string, PlanningToolId[]> = {
   savings: ['scope', 'budget', 'shopping_list', 'tool_rentals', 'waste_removal', 'risk'],
   quality: ['scope', 'quality_control', 'risk'],
-  schedule: ['scope', 'schedule', 'risk'],
+  schedule: ['scope', 'schedule', 'communication_plan', 'risk'],
 };
 
 interface ProjectToolsStepProps {

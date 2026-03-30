@@ -130,6 +130,15 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     actionKey: 'after-action-review',
     displayOrder: 10.6
   },
+  'communication-plan': {
+    appName: 'Communication Plan',
+    appType: 'native',
+    icon: 'MessagesSquare',
+    description:
+      'Decide who gets updates, how often, and send email or copy summaries for group chat',
+    actionKey: 'communication-plan',
+    displayOrder: 10.65
+  },
   'waste-removal': {
     appName: 'Waste Removal',
     appType: 'native',

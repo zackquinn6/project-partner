@@ -82,6 +82,7 @@ import { ProjectBudgetingWindow } from './ProjectBudgetingWindow';
 import { AfterActionReviewWindow } from './AfterActionReviewWindow';
 import { ProjectPerformanceWindow } from './ProjectPerformanceWindow';
 import { RiskManagementWindow } from './RiskManagementWindow';
+import { CommunicationPlanWindow } from './communication-plan/CommunicationPlanWindow';
 import { QualityCheckWindow } from './QualityCheckWindow';
 import { getSafeEmbedUrl } from '@/utils/videoEmbedSanitizer';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
@@ -246,6 +247,7 @@ export default function UserView({
   const [aarProjectRun, setAarProjectRun] = useState<ProjectRun | null>(null);
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
   const [projectPerformanceOpen, setProjectPerformanceOpen] = useState(false);
+  const [communicationPlanOpen, setCommunicationPlanOpen] = useState(false);
   const [qualityCheckOpen, setQualityCheckOpen] = useState(false);
   const [qualityCheckExpandSettingsAccordion, setQualityCheckExpandSettingsAccordion] = useState(false);
   const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false);
@@ -2035,6 +2037,13 @@ export default function UserView({
         setAarProjectRun(currentProjectRun);
         setAfterActionReviewOpen(true);
         break;
+      case 'communication-plan':
+        if (!currentProjectRun) {
+          toast.error('Open a project run first.');
+          break;
+        }
+        setCommunicationPlanOpen(true);
+        break;
       case 'waste-removal':
         toast.info('Waste Removal is coming soon.');
         break;
@@ -3054,6 +3063,7 @@ export default function UserView({
             }}
             onOpenToolRentals={() => setToolRentalsOpen(true)}
             onOpenExpertSupport={() => setExpertHelpOpen(true)}
+            onOpenCommunicationPlan={() => setCommunicationPlanOpen(true)}
           />
         </div>
       ) : isMobile ? (
@@ -3991,6 +4001,7 @@ export default function UserView({
           }}
           onOpenToolRentals={() => setToolRentalsOpen(true)}
           onOpenExpertSupport={() => setExpertHelpOpen(true)}
+          onOpenCommunicationPlan={() => setCommunicationPlanOpen(true)}
         />
       ) : null}
       
@@ -4068,6 +4079,11 @@ export default function UserView({
       <ProjectPerformanceWindow
         open={projectPerformanceOpen}
         onOpenChange={setProjectPerformanceOpen}
+      />
+
+      <CommunicationPlanWindow
+        open={communicationPlanOpen}
+        onOpenChange={setCommunicationPlanOpen}
       />
 
       {/* Risk Management Window */}

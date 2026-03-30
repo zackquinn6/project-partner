@@ -433,6 +433,194 @@ export type Database = {
           },
         ]
       }
+      communication_outbound_log: {
+        Row: {
+          id: string
+          plan_id: string
+          project_run_id: string
+          stakeholder_id: string | null
+          channel: string
+          recipient_email: string | null
+          subject: string
+          body_text: string
+          template_key: string
+          sent_at: string
+          created_by_user_id: string
+        }
+        Insert: {
+          id?: string
+          plan_id: string
+          project_run_id: string
+          stakeholder_id?: string | null
+          channel: string
+          recipient_email?: string | null
+          subject: string
+          body_text: string
+          template_key: string
+          sent_at?: string
+          created_by_user_id: string
+        }
+        Update: {
+          id?: string
+          plan_id?: string
+          project_run_id?: string
+          stakeholder_id?: string | null
+          channel?: string
+          recipient_email?: string | null
+          subject?: string
+          body_text?: string
+          template_key?: string
+          sent_at?: string
+          created_by_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_outbound_log_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "project_communication_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_outbound_log_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_outbound_log_stakeholder_id_fkey"
+            columns: ["stakeholder_id"]
+            isOneToOne: false
+            referencedRelation: "communication_stakeholders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_schedule_items: {
+        Row: {
+          id: string
+          plan_id: string
+          stakeholder_id: string | null
+          template_key: string
+          cadence: string
+          next_due_at: string | null
+          last_sent_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          plan_id: string
+          stakeholder_id?: string | null
+          template_key: string
+          cadence: string
+          next_due_at?: string | null
+          last_sent_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          plan_id?: string
+          stakeholder_id?: string | null
+          template_key?: string
+          cadence?: string
+          next_due_at?: string | null
+          last_sent_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_schedule_items_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "project_communication_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_schedule_items_stakeholder_id_fkey"
+            columns: ["stakeholder_id"]
+            isOneToOne: false
+            referencedRelation: "communication_stakeholders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_stakeholders: {
+        Row: {
+          id: string
+          plan_id: string
+          display_name: string
+          role_label: string
+          concerns: string[]
+          preferred_frequency: string
+          delivery_method: string
+          email: string | null
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          plan_id: string
+          display_name: string
+          role_label: string
+          concerns?: string[]
+          preferred_frequency: string
+          delivery_method: string
+          email?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          plan_id?: string
+          display_name?: string
+          role_label?: string
+          concerns?: string[]
+          preferred_frequency?: string
+          delivery_method?: string
+          email?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_stakeholders_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "project_communication_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_trigger_rules: {
+        Row: {
+          id: string
+          plan_id: string
+          trigger_type: string
+          enabled: boolean
+        }
+        Insert: {
+          id?: string
+          plan_id: string
+          trigger_type: string
+          enabled?: boolean
+        }
+        Update: {
+          id?: string
+          plan_id?: string
+          trigger_type?: string
+          enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_trigger_rules_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "project_communication_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupon_codes: {
         Row: {
           code: string
@@ -2429,6 +2617,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      project_communication_plans: {
+        Row: {
+          id: string
+          project_run_id: string
+          enabled: boolean
+          sms_early_access_opt_in: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_run_id: string
+          enabled?: boolean
+          sms_early_access_opt_in?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_run_id?: string
+          enabled?: boolean
+          sms_early_access_opt_in?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_communication_plans_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: true
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_run_planning_change_events: {
         Row: {
