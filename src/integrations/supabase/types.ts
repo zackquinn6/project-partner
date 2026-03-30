@@ -2933,6 +2933,7 @@ export type Database = {
           revision_notes: string | null
           revision_number: number | null
           scaling_unit: string | null
+          scheduling_prerequisites: Json | null
           skill_level: string | null
           tags: string[] | null
           typical_project_size: number | null
@@ -2966,6 +2967,7 @@ export type Database = {
           revision_notes?: string | null
           revision_number?: number | null
           scaling_unit?: string | null
+          scheduling_prerequisites?: Json
           skill_level?: string | null
           tags?: string[] | null
           typical_project_size?: number | null
@@ -2999,6 +3001,7 @@ export type Database = {
           revision_notes?: string | null
           revision_number?: number | null
           scaling_unit?: string | null
+          scheduling_prerequisites?: Json
           skill_level?: string | null
           tags?: string[] | null
           typical_project_size?: number | null

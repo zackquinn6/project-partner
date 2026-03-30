@@ -66,41 +66,57 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
   const loadFlowConfigs = async () => {
     try {
-      // CRITICAL: Decision tree data is scoped to specific project revisions
-      // Each revision has its own phase_operations with unique flow configurations
-      // When a revision is deleted, its phase_operations and decision tree data are CASCADE deleted
       console.log('🔍 Loading decision tree config for project:', currentProject.id, 'Name:', currentProject.name);
-      
-      // Load flow configurations from phase_operations
-      // Note: phase_operations only has flow_type column (user_prompt, alternate_group, dependent_on do not exist)
-      const { data: operations, error } = await supabase
-        .from('phase_operations')
-        .select('id, flow_type')
-        .in('phase_id', 
-          (await supabase
-            .from('project_phases')
-            .select('id')
-            .eq('project_id', currentProject.id)
-          ).data?.map(p => p.id) || []
-        );
 
-      if (error) throw error;
+      const phasesRes = await supabase
+        .from('project_phases')
+        .select('id')
+        .eq('project_id', currentProject.id);
 
-      console.log('📊 Loaded operations:', operations?.length, 'for project', currentProject.id);
+      if (phasesRes.error) throw phasesRes.error;
+
+      const phaseIds = phasesRes.data?.map((p) => p.id) || [];
+
+      const [operationsRes, projectRes] = await Promise.all([
+        phaseIds.length > 0
+          ? supabase.from('phase_operations').select('id, flow_type').in('phase_id', phaseIds)
+          : Promise.resolve({ data: [] as { id: string; flow_type: string | null }[], error: null }),
+        supabase.from('projects').select('scheduling_prerequisites').eq('id', currentProject.id).maybeSingle(),
+      ]);
+
+      if (operationsRes.error) throw operationsRes.error;
+      if (projectRes.error) throw projectRes.error;
 
       const configs: Record<string, FlowTypeConfig> = {};
-      
-      operations?.forEach(op => {
+
+      operationsRes.data?.forEach((op) => {
         if (op.flow_type) {
           configs[op.id] = {
             type: op.flow_type as 'if-necessary' | 'alternate' | 'dependent',
-            decisionPrompt: undefined, // Not stored in phase_operations
-            alternateIds: undefined, // Not stored in phase_operations
-            dependentOn: undefined, // Not stored in phase_operations
-            predecessorIds: []
+            decisionPrompt: undefined,
+            alternateIds: undefined,
+            dependentOn: undefined,
+            predecessorIds: [],
           };
         }
       });
+
+      const rawPrereq = projectRes.data?.scheduling_prerequisites;
+      if (rawPrereq && typeof rawPrereq === 'object' && !Array.isArray(rawPrereq)) {
+        for (const [entityId, preds] of Object.entries(rawPrereq as Record<string, unknown>)) {
+          if (!Array.isArray(preds)) continue;
+          const ids = preds.filter((x): x is string => typeof x === 'string' && x.length > 0);
+          if (ids.length === 0) continue;
+          const existing = configs[entityId];
+          configs[entityId] = {
+            type: existing?.type ?? null,
+            decisionPrompt: existing?.decisionPrompt,
+            alternateIds: existing?.alternateIds,
+            dependentOn: existing?.dependentOn,
+            predecessorIds: ids,
+          };
+        }
+      }
 
       setFlowConfigs(configs);
     } catch (error) {
@@ -502,16 +518,36 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
         }
       }
       
+      const scheduling_prerequisites: Record<string, string[]> = {};
+      for (const [itemId, config] of Object.entries(flowConfigs)) {
+        const preds = config.predecessorIds?.filter((id) => typeof id === 'string' && id.length > 0);
+        if (preds && preds.length > 0) {
+          scheduling_prerequisites[itemId] = preds;
+        }
+      }
+
+      const { error: prereqError } = await supabase
+        .from('projects')
+        .update({
+          scheduling_prerequisites,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentProject.id);
+
+      if (prereqError) {
+        console.error('Error saving scheduling prerequisites:', prereqError);
+        toast.error('Flow types may have saved, but scheduling prerequisites failed to save.');
+        return;
+      }
+
       if (errorCount > 0) {
         toast.error(`Failed to save ${errorCount} operation(s)`);
       } else {
         console.log('✅ Successfully saved decision tree configurations');
         toast.success('Decision tree saved successfully');
-        
-        // The trigger_rebuild_phases_json trigger will automatically rebuild the phases JSON
-        // Wait a moment for the trigger to complete
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
+
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
         onOpenChange(false);
       }
     } catch (error) {
@@ -996,7 +1032,6 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                           )}
                         </Button>
                         <span>{phase.name}</span>
-                        <Badge variant="outline" className="text-xs">Phase</Badge>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -1033,7 +1068,6 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                               )}
                             </Button>
                             <span className="font-medium">{operation.name}</span>
-                            <Badge variant="secondary" className="text-xs">Operation</Badge>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -1062,7 +1096,6 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                           <TableCell>
                             <div className="flex items-center gap-2 pl-16">
                               <span className="text-sm">{step.step}</span>
-                              <Badge variant="outline" className="text-xs">Step</Badge>
                             </div>
                           </TableCell>
                           <TableCell>

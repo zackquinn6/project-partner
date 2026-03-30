@@ -24,6 +24,11 @@ import { useProject } from '@/contexts/ProjectContext';
 import { useToast } from '@/hooks/use-toast';
 import { useResponsive } from '@/hooks/useResponsive';
 import { schedulingEngine } from '@/utils/schedulingEngine';
+import {
+  applySchedulingPrerequisiteDependencies,
+  parsePrerequisites,
+  type SchedulingTask,
+} from '@/utils/schedulingPrerequisiteDeps';
 import { SchedulingInputs, SchedulingResult, Task, Worker, PlanningMode, ScheduleTempo, RemediationSuggestion } from '@/interfaces/Scheduling';
 import { supabase } from '@/integrations/supabase/client';
 import { PhaseAssignment } from '@/components/PhaseAssignment';
@@ -117,6 +122,34 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [showRiskManager, setShowRiskManager] = useState(false);
   // Contractors dialog state
   const [showContractors, setShowContractors] = useState(false);
+  /** Phase / operation / step prerequisite map from projects.scheduling_prerequisites (template project). */
+  const [schedulingPrerequisites, setSchedulingPrerequisites] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    if (!open || !projectRun?.projectId) {
+      setSchedulingPrerequisites({});
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('scheduling_prerequisites')
+        .eq('id', projectRun.projectId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        console.warn('ProjectScheduler: scheduling_prerequisites load failed', error);
+        setSchedulingPrerequisites({});
+        return;
+      }
+      setSchedulingPrerequisites(parsePrerequisites(data?.scheduling_prerequisites));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, projectRun?.projectId]);
+
   // Schedule sensitivity dialog state
   const [showSensitivity, setShowSensitivity] = useState(false);
 
@@ -667,9 +700,15 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       });
     });
 
+    const tasksWithPrereqs = applySchedulingPrerequisiteDependencies(
+      tasks as SchedulingTask[],
+      schedulingPrerequisites,
+      project
+    );
+
     // Sort tasks by space priority (lower number = higher priority)
     // Tasks without space metadata come last
-    const sortedTasks = tasks.sort((a, b) => {
+    const sortedTasks = tasksWithPrereqs.sort((a, b) => {
       const aMetadata = (a as any).metadata;
       const bMetadata = (b as any).metadata;
       
@@ -689,7 +728,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         high: highTotal
       }
     };
-  }, [project, projectRun, spaces, scheduleOptimizationMethod, scheduleTempo]);
+  }, [project, projectRun, spaces, scheduleOptimizationMethod, scheduleTempo, schedulingPrerequisites]);
 
   // Calculate available hours per week from team members
   const availableHoursPerWeek = useMemo(() => {
