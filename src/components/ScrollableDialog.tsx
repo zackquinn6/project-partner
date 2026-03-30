@@ -3,6 +3,7 @@ import { useEffect } from "react"
 import { Dialog, DialogPortal, DialogOverlay, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { PlanningToolWindowHeaderActions } from "@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions"
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden"
 
 interface ScrollableDialogProps {
@@ -12,6 +13,8 @@ interface ScrollableDialogProps {
   description?: string;
   children: React.ReactNode;
   className?: string;
+  /** Replace default Close with Cancel + Save and Close (planning tool windows). */
+  planningToolHeader?: boolean;
 }
 
 export function ScrollableDialog({ 
@@ -20,7 +23,8 @@ export function ScrollableDialog({
   title, 
   description, 
   children, 
-  className 
+  className,
+  planningToolHeader = false,
 }: ScrollableDialogProps) {
   // Enable scrolling within modal by preventing pointer events on overlay for wheel events
   useEffect(() => {
@@ -105,20 +109,27 @@ export function ScrollableDialog({
               )}
             </div>
             
-            {/* Close button */}
-            {(title || description) && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenChange(false);
-                }}
-                className="ml-4 flex-shrink-0"
-              >
-                Close
-              </Button>
-            )}
+            {/* Close / planning tool header actions */}
+            {(title || description) &&
+              (planningToolHeader ? (
+                <PlanningToolWindowHeaderActions
+                  className="ml-4"
+                  onCancel={() => onOpenChange(false)}
+                  onSaveAndClose={() => onOpenChange(false)}
+                />
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenChange(false);
+                  }}
+                  className="ml-4 flex-shrink-0"
+                >
+                  Close
+                </Button>
+              ))}
           </div>
           
           {/* Scrollable content area */}

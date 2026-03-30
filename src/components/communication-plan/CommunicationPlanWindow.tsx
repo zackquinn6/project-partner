@@ -43,6 +43,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   TEMPLATE_KEYS,
   TEMPLATE_LABELS,
@@ -54,6 +55,7 @@ import {
   buildUpdateDraft,
   templateKeyForTrigger,
 } from './buildUpdateDraft';
+import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
 
 type PlanRow = {
   id: string;
@@ -167,6 +169,8 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
   const [openRisks, setOpenRisks] = useState<{ risk_title: string; status: string | null }[]>([]);
 
   const [tab, setTab] = useState('overview');
+  const isMobile = useIsMobile();
+  const tabBodyPad = isMobile ? 'p-3' : 'p-4';
 
   const [composeTemplate, setComposeTemplate] = useState<TemplateKey>('weekly_summary');
   const [composeSubject, setComposeSubject] = useState('');
@@ -620,16 +624,20 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
           <DialogOverlay />
           <DialogPrimitive.Content
             className={cn(
-              'fixed left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] rounded-lg border bg-background p-6 shadow-lg',
+              'fixed z-50 rounded-lg border bg-background p-6 shadow-lg',
+              'inset-4 flex max-h-[calc(100dvh-2rem)] flex-col overflow-auto md:inset-auto md:left-1/2 md:top-1/2 md:max-h-[90vh] md:w-[90vw] md:max-w-[90vw] md:-translate-x-1/2 md:-translate-y-1/2',
             )}
           >
-            <DialogHeader>
+            <DialogHeader className="flex flex-row items-start justify-between gap-3 text-left">
               <DialogTitle>Communication Plan</DialogTitle>
+              <PlanningToolWindowHeaderActions
+                onCancel={() => onOpenChange(false)}
+                onSaveAndClose={() => onOpenChange(false)}
+              />
             </DialogHeader>
             <p className="text-sm text-muted-foreground py-4">
               Open a project from your dashboard first, then launch Communication Plan again.
             </p>
-            <Button onClick={() => onOpenChange(false)}>Close</Button>
           </DialogPrimitive.Content>
         </DialogPortal>
       </Dialog>
@@ -643,26 +651,39 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
         <DialogOverlay />
         <DialogPrimitive.Content
           className={cn(
-            'fixed left-[50%] top-[50%] z-50 flex max-h-[min(90vh,900px)] w-[min(96vw,920px)] translate-x-[-50%] translate-y-[-50%] flex-col rounded-lg border bg-background shadow-lg',
+            'fixed z-50 flex flex-col overflow-hidden border bg-background shadow-lg',
+            'duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out',
+            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+            'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+            'inset-0 h-[100dvh] w-full max-h-[100dvh] max-w-full rounded-none',
+            'md:inset-auto md:left-[50%] md:top-[50%] md:h-[90vh] md:max-h-[90vh] md:w-[90vw] md:max-w-[90vw] md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-lg',
           )}
         >
-          <DialogHeader className="shrink-0 border-b px-6 py-4 pr-14 text-left">
-            <DialogTitle className="flex items-center gap-2 font-serif text-xl">
-              <MessagesSquare className="h-6 w-6 text-amber-800" aria-hidden />
-              Communication Plan
-            </DialogTitle>
-            <p className="text-sm text-muted-foreground font-normal mt-1">
-              Keep the right people in the loop — without replacing your group chat.
-            </p>
+          <DialogHeader className="flex shrink-0 flex-row items-start justify-between gap-3 border-b px-4 py-3 text-left sm:px-6 sm:py-4">
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="flex items-center gap-2 text-lg font-bold md:text-xl">
+                <MessagesSquare className="h-5 w-5 text-primary md:h-6 md:w-6" aria-hidden />
+                Communication Plan
+              </DialogTitle>
+              <p className="mt-1 text-sm font-normal text-muted-foreground">
+                Keep the right people in the loop — without replacing your group chat.
+              </p>
+            </div>
+            <PlanningToolWindowHeaderActions
+              onCancel={() => onOpenChange(false)}
+              onSaveAndClose={() => onOpenChange(false)}
+            />
           </DialogHeader>
 
-          <ScrollArea className="flex-1 min-h-0 max-h-[calc(90vh-8rem)]">
-            <div className="px-6 py-4 space-y-4">
-              {loading ? (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {loading ? (
+              <div className={tabBodyPad}>
                 <p className="text-sm text-muted-foreground">Loading…</p>
-              ) : (
-                <Tabs value={tab} onValueChange={setTab} className="w-full">
-                  <TabsList className="flex flex-wrap h-auto gap-1">
+              </div>
+            ) : (
+              <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
+                <div className="shrink-0 border-b bg-background px-4 pb-3 pt-0 md:px-6 md:pb-4 md:pt-1">
+                  <TabsList className="flex h-auto w-full flex-wrap gap-1">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="people">People</TabsTrigger>
                     <TabsTrigger value="compose">Compose & send</TabsTrigger>
@@ -670,8 +691,15 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
                     <TabsTrigger value="triggers">Triggers</TabsTrigger>
                     <TabsTrigger value="sent">Sent & copied</TabsTrigger>
                   </TabsList>
+                </div>
 
-                  <TabsContent value="overview" className="space-y-4 mt-4">
+                <div className="relative min-h-0 flex-1">
+                  <TabsContent
+                    value="overview"
+                    className="absolute inset-0 mt-0 data-[state=active]:block data-[state=inactive]:hidden"
+                  >
+                    <ScrollArea className="h-full">
+                      <div className={`${tabBodyPad} space-y-4`}>
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-base">Use for this project</CardTitle>
@@ -777,9 +805,16 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
                         )}
                       </>
                     )}
+                      </div>
+                    </ScrollArea>
                   </TabsContent>
 
-                  <TabsContent value="people" className="mt-4 space-y-4">
+                  <TabsContent
+                    value="people"
+                    className="absolute inset-0 mt-0 data-[state=active]:block data-[state=inactive]:hidden"
+                  >
+                    <ScrollArea className="h-full">
+                      <div className={`${tabBodyPad} space-y-4`}>
                     {!plan?.enabled ? (
                       <p className="text-sm text-muted-foreground">
                         Turn on Communication Plan on the Overview tab first.
@@ -858,9 +893,16 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
                         )}
                       </>
                     )}
+                      </div>
+                    </ScrollArea>
                   </TabsContent>
 
-                  <TabsContent value="compose" className="mt-4 space-y-4">
+                  <TabsContent
+                    value="compose"
+                    className="absolute inset-0 mt-0 data-[state=active]:block data-[state=inactive]:hidden"
+                  >
+                    <ScrollArea className="h-full">
+                      <div className={`${tabBodyPad} space-y-4`}>
                     {!plan?.enabled ? (
                       <p className="text-sm text-muted-foreground">
                         Enable Communication Plan on the Overview tab to compose and log sends.
@@ -958,9 +1000,16 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
                         </div>
                       </>
                     )}
+                      </div>
+                    </ScrollArea>
                   </TabsContent>
 
-                  <TabsContent value="schedule" className="mt-4 space-y-4">
+                  <TabsContent
+                    value="schedule"
+                    className="absolute inset-0 mt-0 data-[state=active]:block data-[state=inactive]:hidden"
+                  >
+                    <ScrollArea className="h-full">
+                      <div className={`${tabBodyPad} space-y-4`}>
                     {!plan?.enabled ? (
                       <p className="text-sm text-muted-foreground">Enable the plan on Overview first.</p>
                     ) : (
@@ -1020,9 +1069,16 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
                         )}
                       </>
                     )}
+                      </div>
+                    </ScrollArea>
                   </TabsContent>
 
-                  <TabsContent value="triggers" className="mt-4 space-y-4">
+                  <TabsContent
+                    value="triggers"
+                    className="absolute inset-0 mt-0 data-[state=active]:block data-[state=inactive]:hidden"
+                  >
+                    <ScrollArea className="h-full">
+                      <div className={`${tabBodyPad} space-y-4`}>
                     {!plan?.enabled ? (
                       <p className="text-sm text-muted-foreground">Enable the plan on Overview first.</p>
                     ) : (
@@ -1069,9 +1125,16 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
                         </Table>
                       </>
                     )}
+                      </div>
+                    </ScrollArea>
                   </TabsContent>
 
-                  <TabsContent value="sent" className="mt-4 space-y-4">
+                  <TabsContent
+                    value="sent"
+                    className="absolute inset-0 mt-0 data-[state=active]:block data-[state=inactive]:hidden"
+                  >
+                    <ScrollArea className="h-full">
+                      <div className={`${tabBodyPad} space-y-4`}>
                     {!plan?.enabled ? (
                       <p className="text-sm text-muted-foreground">Enable the plan to start logging.</p>
                     ) : log.length === 0 ? (
@@ -1106,18 +1169,13 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
                         </TableBody>
                       </Table>
                     )}
+                      </div>
+                    </ScrollArea>
                   </TabsContent>
-                </Tabs>
-              )}
-            </div>
-          </ScrollArea>
-
-          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
-            <span className="sr-only">Close</span>
-            <span aria-hidden className="text-lg leading-none">
-              ×
-            </span>
-          </DialogPrimitive.Close>
+                </div>
+              </Tabs>
+            )}
+          </div>
         </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>

@@ -5,7 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { DollarSign } from 'lucide-react';
 import {
   PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
+  PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME,
   PLANNING_WIZARD_STEP_BODY_CLASSNAME,
+  PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME,
   PLANNING_WIZARD_STEP_CARD_CLASSNAME,
   PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
   PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
@@ -52,15 +54,19 @@ export const BudgetStep: React.FC<BudgetStepProps> = ({
               Manage finances for this project.
             </p>
 
-            <Button
-              type="button"
-              variant="default"
-              onClick={handleOpenBudgeting}
-              className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
-            >
-              <DollarSign className="shrink-0" aria-hidden />
-              Open Project Budgeting
-            </Button>
+            <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
+              <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
+                <Button
+                  type="button"
+                  variant="default"
+                  onClick={handleOpenBudgeting}
+                  className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
+                >
+                  <DollarSign className="shrink-0" aria-hidden />
+                  Open Project Budgeting
+                </Button>
+              </div>
+            </div>
 
             <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
               {isCompleted ? '✓ Budget completed' : '\u00a0'}

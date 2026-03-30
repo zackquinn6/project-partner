@@ -40,6 +40,7 @@ import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import { ScheduleSensitivity } from './Scheduler/ScheduleSensitivity';
 import { ScheduleViewDialog } from '@/components/ScheduleViewDialog';
 import { autoRegenerateSchedule } from '@/utils/autoScheduleRegeneration';
+import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
 interface ProjectSchedulerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -1468,9 +1469,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                 Calendar View
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
+            <PlanningToolWindowHeaderActions
+              onCancel={() => onOpenChange(false)}
+              onSaveAndClose={async () => {
+                if (schedulingResult) {
+                  await saveSchedule();
+                } else {
+                  onOpenChange(false);
+                }
+              }}
+            />
           </div>
         </div>
         
@@ -1568,12 +1576,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                   </AlertDescription>
                 </Alert>
 
-                {/* Action Buttons */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <Button onClick={saveSchedule} className="h-11 md:h-10 text-xs md:text-sm">
-                    <Save className="w-4 h-4 mr-1 md:mr-2" />
-                    <span className="truncate">Save & Commit</span>
-                  </Button>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Button variant="outline" onClick={printToPDF} className="h-11 md:h-10 text-xs md:text-sm">
                     <Printer className="w-4 h-4 mr-1 md:mr-2" />
                     <span className="truncate">Print PDF</span>
@@ -1818,11 +1821,15 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       {/* Enhanced Calendar Dialog for Team Member Availability */}
       {calendarOpen && <Dialog open={!!calendarOpen} onOpenChange={cancelCalendarChanges}>
           <DialogContent className="max-w-[95vw] md:max-w-[1000px] max-h-[90vh] p-0">
-            <DialogHeader className="p-6 pb-0">
+            <DialogHeader className="flex flex-row items-start justify-between gap-3 p-6 pb-4">
               <DialogTitle className="flex items-center gap-2">
                 <CalendarIcon className="w-5 h-5 text-primary" />
                 {teamMembers.find(m => m.id === calendarOpen)?.name} - Availability Settings
               </DialogTitle>
+              <PlanningToolWindowHeaderActions
+                onCancel={cancelCalendarChanges}
+                onSaveAndClose={saveCalendarChanges}
+              />
             </DialogHeader>
             
             <div className="flex flex-col md:flex-row flex-1 min-h-0">
@@ -1970,20 +1977,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               </div>
             </div>
             
-            {/* Action Buttons */}
-            <div className="flex justify-between items-center p-6 pt-0 border-t">
-              <div className="text-sm text-muted-foreground">
-                {selectedDates.length} dates with custom availability
-              </div>
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={cancelCalendarChanges}>
-                  Cancel
-                </Button>
-                <Button onClick={saveCalendarChanges} className="min-w-[120px]">
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </Button>
-              </div>
+            <div className="border-t px-6 py-3 text-sm text-muted-foreground">
+              {selectedDates.length} dates with custom availability
             </div>
           </DialogContent>
         </Dialog>}
@@ -2019,18 +2014,12 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     {/* Add Contractor Scheduling Dialog */}
     <Dialog open={showContractors} onOpenChange={setShowContractors}>
       <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
-        <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0">
-          <div className="flex items-center justify-between gap-2">
-            <DialogTitle className="text-lg md:text-xl font-bold">Add contractor scheduling</DialogTitle>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setShowContractors(false)} 
-              className="h-7 px-2 text-[9px] md:text-xs"
-            >
-              Close
-            </Button>
-          </div>
+        <DialogHeader className="flex flex-shrink-0 flex-row items-start justify-between gap-3 border-b px-2 py-1.5 md:px-4 md:py-2">
+          <DialogTitle className="text-lg md:text-xl font-bold">Add contractor scheduling</DialogTitle>
+          <PlanningToolWindowHeaderActions
+            onCancel={() => setShowContractors(false)}
+            onSaveAndClose={() => setShowContractors(false)}
+          />
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
           {projectRun?.id && (

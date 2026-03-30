@@ -5,7 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { MessagesSquare } from 'lucide-react';
 import {
   PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
+  PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME,
   PLANNING_WIZARD_STEP_BODY_CLASSNAME,
+  PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME,
   PLANNING_WIZARD_STEP_CARD_CLASSNAME,
   PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
   PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
@@ -56,15 +58,19 @@ export const CommunicationPlanStep: React.FC<CommunicationPlanStepProps> = ({
               Set up who needs updates, how often, and send email or copy summaries for group chats.
             </p>
 
-            <Button
-              type="button"
-              variant="default"
-              onClick={handleOpen}
-              className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
-            >
-              <MessagesSquare className="shrink-0" aria-hidden />
-              Open Communication Plan
-            </Button>
+            <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
+              <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
+                <Button
+                  type="button"
+                  variant="default"
+                  onClick={handleOpen}
+                  className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
+                >
+                  <MessagesSquare className="shrink-0" aria-hidden />
+                  Open Communication Plan
+                </Button>
+              </div>
+            </div>
 
             <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
               {isCompleted ? '✓ Communication Plan step completed' : '\u00a0'}

@@ -8,7 +8,16 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { CheckCircle2, Target, RefreshCw, FileUp, Info } from 'lucide-react';
+import {
+  CheckCircle2,
+  Target,
+  RefreshCw,
+  FileUp,
+  Info,
+  FileText,
+  FileImage,
+  File,
+} from 'lucide-react';
 import { WorkflowStep } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { isStepCompleted } from '@/utils/projectUtils';
@@ -42,6 +51,19 @@ type QualityOutputRow = {
   outputType: string;
   isComplete: boolean;
 };
+
+type QualityControlDocumentEntry = {
+  name: string;
+  storage_path: string;
+  uploaded_at: string;
+};
+
+function iconForDocumentName(fileName: string) {
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
+  if (['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext)) return FileImage;
+  if (ext === 'pdf' || ext === 'txt') return FileText;
+  return File;
+}
 
 interface QualityCheckWindowProps {
   open: boolean;
@@ -216,6 +238,33 @@ export function QualityCheckWindow({
     ? projectRun.customProjectName?.trim() || projectRun.name?.trim() || projectRun.id
     : '';
 
+  const qualityDocuments = useMemo((): QualityControlDocumentEntry[] => {
+    const ir = projectRun?.issue_reports;
+    if (!ir || typeof ir !== 'object' || Array.isArray(ir)) return [];
+    const raw = (ir as Record<string, unknown>).quality_control_documents;
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((d): d is QualityControlDocumentEntry => {
+      if (!d || typeof d !== 'object') return false;
+      const o = d as Record<string, unknown>;
+      return (
+        typeof o.name === 'string' &&
+        typeof o.storage_path === 'string' &&
+        typeof o.uploaded_at === 'string'
+      );
+    });
+  }, [projectRun?.issue_reports]);
+
+  const openQualityDocument = useCallback(async (doc: QualityControlDocumentEntry) => {
+    const { data, error } = await supabase.storage
+      .from('project-photos')
+      .createSignedUrl(doc.storage_path, 3600);
+    if (error || !data?.signedUrl) {
+      toast.error('Could not open document');
+      return;
+    }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  }, []);
+
   const handleDocumentUpload = useCallback(async (file: File | null) => {
     if (!file) return;
     if (!projectRun) {
@@ -302,60 +351,77 @@ export function QualityCheckWindow({
             'flex flex-col overflow-hidden'
           )}
         >
-          <DialogHeader className="px-4 md:px-6 pt-5 pb-3 md:pt-6 md:pb-4 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 text-left space-y-3">
+          <DialogHeader className="flex-shrink-0 space-y-3 border-b bg-background/95 px-4 pb-3 pt-5 text-left backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:pb-4 md:pt-6">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-                <DialogTitle className="text-lg md:text-xl font-bold leading-tight truncate">
-                  {appTitle}
-                </DialogTitle>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="relative">
-                  <input
-                    id="quality-doc-upload-input"
-                    type="file"
-                    className="sr-only"
-                    accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp"
-                    onChange={(event) => {
-                      const nextFile = event.target.files?.[0] ?? null;
-                      void handleDocumentUpload(nextFile);
-                      event.currentTarget.value = '';
-                    }}
-                    disabled={uploadingDocument || !projectRun}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const input = document.getElementById('quality-doc-upload-input') as HTMLInputElement | null;
-                      input?.click();
-                    }}
-                    disabled={uploadingDocument || !projectRun}
-                    className="h-8 px-3 text-xs font-medium"
-                  >
-                    <FileUp className="w-3.5 h-3.5 mr-1" />
-                    {uploadingDocument ? 'Uploading...' : 'Upload Document'}
-                  </Button>
+              <div className="min-w-0 flex-1 space-y-3">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
+                  <DialogTitle className="truncate text-lg font-bold leading-tight md:text-xl">
+                    {appTitle}
+                  </DialogTitle>
+                  <TooltipProvider delayDuration={150}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted"
+                          aria-label="Document upload help"
+                        >
+                          <Info className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-xs">
+                        Upload reference documents for this run, such as manufacturer manuals, permits,
+                        inspection records, or design documents.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-                <TooltipProvider delayDuration={150}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
+                <DialogDescription className="text-sm text-muted-foreground">
+                  Track outputs for this project. Settings apply only to this project run.
+                </DialogDescription>
+                {projectRun ? (
+                  <div className="flex flex-wrap items-center gap-3 pt-0.5">
+                    <QualityControlPdfPrinter
+                      rows={pdfRows}
+                      reportTitle={appTitle}
+                      projectName={projectDisplayName}
+                      userDisplayName={userDisplayName}
+                    />
+                    <div className="relative">
+                      <input
+                        id="quality-doc-upload-input"
+                        type="file"
+                        className="sr-only"
+                        accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp"
+                        onChange={(event) => {
+                          const nextFile = event.target.files?.[0] ?? null;
+                          void handleDocumentUpload(nextFile);
+                          event.currentTarget.value = '';
+                        }}
+                        disabled={uploadingDocument || !projectRun}
+                      />
+                      <Button
                         type="button"
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted"
-                        aria-label="Document upload help"
+                        variant="outline"
+                        onClick={() => {
+                          const input = document.getElementById(
+                            'quality-doc-upload-input'
+                          ) as HTMLInputElement | null;
+                          input?.click();
+                        }}
+                        disabled={uploadingDocument || !projectRun}
+                        className="flex h-9 items-center gap-2 px-4 text-sm font-medium"
                       >
-                        <Info className="h-3.5 w-3.5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs text-xs">
-                      Upload reference documents for this run, such as manufacturer manuals, permits, inspection records, or design documents.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                {onRefresh && (
+                        <FileUp className="h-4 w-4 shrink-0" />
+                        {uploadingDocument ? 'Uploading...' : 'Upload Documents'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                {onRefresh ? (
                   <TooltipProvider delayDuration={150}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -367,7 +433,7 @@ export function QualityCheckWindow({
                           aria-label={`Refresh ${appTitle}`}
                           className="h-8 w-8"
                         >
-                          <RefreshCw className="w-4 h-4" />
+                          <RefreshCw className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs text-xs">
@@ -375,7 +441,7 @@ export function QualityCheckWindow({
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                )}
+                ) : null}
                 <Button
                   type="button"
                   variant="outline"
@@ -387,19 +453,6 @@ export function QualityCheckWindow({
                 </Button>
               </div>
             </div>
-            <DialogDescription className="text-sm text-muted-foreground text-left">
-              Track outputs for this project. Settings apply only to this project run.
-            </DialogDescription>
-            {projectRun ? (
-              <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                <QualityControlPdfPrinter
-                  rows={pdfRows}
-                  reportTitle={appTitle}
-                  projectName={projectDisplayName}
-                  userDisplayName={userDisplayName}
-                />
-              </div>
-            ) : null}
           </DialogHeader>
 
           <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 pt-6 md:pt-8 pb-4 md:pb-6 space-y-4">
@@ -567,6 +620,48 @@ export function QualityCheckWindow({
                         </Table>
                       </div>
                     )}
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="qc-documents" className="rounded-lg border px-3">
+                <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline">
+                  Document Viewer
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 pb-4 pt-0">
+                  {qualityDocuments.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No documents uploaded yet. Use Upload Documents above to add manuals, permits, or
+                      other files.
+                    </p>
+                  ) : (
+                    <TooltipProvider delayDuration={150}>
+                      <div className="flex flex-wrap gap-3">
+                        {qualityDocuments.map((doc) => {
+                          const Icon = iconForDocumentName(doc.name);
+                          return (
+                            <Tooltip key={`${doc.storage_path}-${doc.uploaded_at}`}>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="flex h-14 w-14 flex-col items-center justify-center rounded-lg border bg-muted/40 p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                  onClick={() => void openQualityDocument(doc)}
+                                  aria-label={`Open ${doc.name}`}
+                                >
+                                  <Icon className="h-7 w-7 shrink-0" aria-hidden />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="max-w-xs text-xs">
+                                <p className="font-medium">{doc.name}</p>
+                                <p className="text-muted-foreground">
+                                  {new Date(doc.uploaded_at).toLocaleString()}
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })}
+                      </div>
+                    </TooltipProvider>
+                  )}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

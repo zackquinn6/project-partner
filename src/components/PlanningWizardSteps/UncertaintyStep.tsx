@@ -6,7 +6,9 @@ import { AlertTriangle } from 'lucide-react';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import {
   PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
+  PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME,
   PLANNING_WIZARD_STEP_BODY_CLASSNAME,
+  PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME,
   PLANNING_WIZARD_STEP_CARD_CLASSNAME,
   PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
   PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
@@ -56,15 +58,19 @@ export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
               Identify and plan for things that could impact your timeline and budget
             </p>
 
-            <Button
-              type="button"
-              variant="default"
-              onClick={handleOpenRiskManagement}
-              className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
-            >
-              <AlertTriangle className="shrink-0" aria-hidden />
-              Open Risk-Less
-            </Button>
+            <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
+              <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
+                <Button
+                  type="button"
+                  variant="default"
+                  onClick={handleOpenRiskManagement}
+                  className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
+                >
+                  <AlertTriangle className="shrink-0" aria-hidden />
+                  Open Risk-Less
+                </Button>
+              </div>
+            </div>
 
             <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
               {isCompleted ? '✓ Risk-Less step completed' : '\u00a0'}

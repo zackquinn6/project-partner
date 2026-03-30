@@ -30,7 +30,9 @@ import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCoun
 import { PlanningConfirmationStep } from '@/components/PlanningWizardSteps/PlanningConfirmationStep';
 import {
   PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
+  PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME,
   PLANNING_WIZARD_STEP_BODY_CLASSNAME,
+  PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME,
   PLANNING_WIZARD_STEP_CARD_CLASSNAME,
   PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
   PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
@@ -365,20 +367,24 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                   <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
                     Open Waste Removal to track cleanup and disposal planning for this project.
                   </p>
-                  <Button
-                    type="button"
-                    variant="default"
-                    className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
-                    onClick={() => {
-                      window.dispatchEvent(
-                        new CustomEvent('open-app', { detail: { actionKey: 'waste-removal' } })
-                      );
-                      stepProps.onComplete();
-                    }}
-                  >
-                    <Trash2 className="shrink-0" aria-hidden />
-                    Open Waste Removal
-                  </Button>
+                  <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
+                    <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
+                      <Button
+                        type="button"
+                        variant="default"
+                        className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
+                        onClick={() => {
+                          window.dispatchEvent(
+                            new CustomEvent('open-app', { detail: { actionKey: 'waste-removal' } })
+                          );
+                          stepProps.onComplete();
+                        }}
+                      >
+                        <Trash2 className="shrink-0" aria-hidden />
+                        Open Waste Removal
+                      </Button>
+                    </div>
+                  </div>
                   <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
                     {stepProps.isCompleted ? '✓ Waste Removal reviewed' : '\u00a0'}
                   </p>

@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { TrendingUp, Plus, Trash2, Upload, DollarSign, Edit, Save } from 'lucide-react';
+import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
 import { useToast } from '@/hooks/use-toast';
 import { useProject } from '@/contexts/ProjectContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -578,18 +579,12 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             }
           }}
         >
-        <DialogHeader className="px-4 md:px-6 py-2 md:py-3 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex items-center justify-between gap-2">
-            <DialogTitle className="text-lg md:text-xl font-bold">Project Budgeting</DialogTitle>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => onOpenChange(false)} 
-              className="h-7 px-2 text-[9px] md:text-xs"
-            >
-              Close
-            </Button>
-          </div>
+        <DialogHeader className="flex flex-shrink-0 flex-row items-start justify-between gap-3 border-b bg-background/95 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:py-3">
+          <DialogTitle className="text-lg md:text-xl font-bold">Project Budgeting</DialogTitle>
+          <PlanningToolWindowHeaderActions
+            onCancel={() => onOpenChange(false)}
+            onSaveAndClose={() => onOpenChange(false)}
+          />
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6">
           {/* Budget Goal Header */}

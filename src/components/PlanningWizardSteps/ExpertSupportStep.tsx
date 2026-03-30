@@ -5,7 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Headphones } from 'lucide-react';
 import {
   PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
+  PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME,
   PLANNING_WIZARD_STEP_BODY_CLASSNAME,
+  PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME,
   PLANNING_WIZARD_STEP_CARD_CLASSNAME,
   PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
   PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
@@ -51,15 +53,19 @@ export const ExpertSupportStep: React.FC<ExpertSupportStepProps> = ({
             <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
               Configure expert support so you can get guidance when you need it during your project.
             </p>
-            <Button
-              type="button"
-              variant="default"
-              className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
-              onClick={handleOpen}
-            >
-              <Headphones className="shrink-0" aria-hidden />
-              Open Expert Support
-            </Button>
+            <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
+              <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
+                <Button
+                  type="button"
+                  variant="default"
+                  className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
+                  onClick={handleOpen}
+                >
+                  <Headphones className="shrink-0" aria-hidden />
+                  Open Expert Support
+                </Button>
+              </div>
+            </div>
             <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
               {isCompleted ? '✓ Support reviewed' : '\u00a0'}
             </p>

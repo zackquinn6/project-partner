@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { responsiveDialogClasses } from "@/utils/responsive"
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { PlanningToolWindowHeaderActions } from "@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions"
 
 interface ResponsiveDialogProps {
   open: boolean;
@@ -14,6 +15,8 @@ interface ResponsiveDialogProps {
   size?: 'default' | 'large' | 'xlarge' | 'modal-sm' | 'modal-md' | 'content-large' | 'content-full' | 'standard-window';
   children: React.ReactNode;
   className?: string;
+  /** Cancel + Save and Close in header (planning tool windows). */
+  planningToolHeader?: boolean;
 }
 
 export function ResponsiveDialog({ 
@@ -23,7 +26,8 @@ export function ResponsiveDialog({
   description, 
   size = 'default',
   children, 
-  className 
+  className,
+  planningToolHeader = false,
 }: ResponsiveDialogProps) {
   // Use ScrollableDialog for content-large for proper scrolling and blur
   if (size === 'content-large') {
@@ -39,6 +43,7 @@ export function ResponsiveDialog({
         title={title}
         description={description}
         className={className}
+        planningToolHeader={planningToolHeader}
       >
         {children}
       </ScrollableDialog>
@@ -92,25 +97,35 @@ export function ResponsiveDialog({
               className
             )}
           >
-            <DialogHeader className={`${title || description ? 'px-4 pt-4 pb-2' : 'sr-only'} flex flex-col space-y-1 text-center sm:text-left`}>
-              {title ? (
-                <DialogTitle className="text-lg md:text-xl font-bold">
-                  {title}
-                </DialogTitle>
-              ) : (
-                <VisuallyHidden.Root>
-                  <DialogTitle>Dialog</DialogTitle>
-                </VisuallyHidden.Root>
-              )}
-              {description ? (
-                <DialogDescription className="text-sm md:text-base">
-                  {description}
-                </DialogDescription>
-              ) : (
-                <VisuallyHidden.Root>
-                  <DialogDescription>Dialog content</DialogDescription>
-                </VisuallyHidden.Root>
-              )}
+            <DialogHeader
+              className={`${title || description ? 'px-4 pt-4 pb-2' : 'sr-only'} ${planningToolHeader ? 'flex flex-row items-start justify-between gap-3 border-b text-left' : 'flex flex-col space-y-1 text-center sm:text-left'}`}
+            >
+              <div className={planningToolHeader ? 'min-w-0 flex-1 space-y-1' : ''}>
+                {title ? (
+                  <DialogTitle className="text-lg md:text-xl font-bold">
+                    {title}
+                  </DialogTitle>
+                ) : (
+                  <VisuallyHidden.Root>
+                    <DialogTitle>Dialog</DialogTitle>
+                  </VisuallyHidden.Root>
+                )}
+                {description ? (
+                  <DialogDescription className="text-sm md:text-base">
+                    {description}
+                  </DialogDescription>
+                ) : (
+                  <VisuallyHidden.Root>
+                    <DialogDescription>Dialog content</DialogDescription>
+                  </VisuallyHidden.Root>
+                )}
+              </div>
+              {planningToolHeader ? (
+                <PlanningToolWindowHeaderActions
+                  onCancel={() => onOpenChange(false)}
+                  onSaveAndClose={() => onOpenChange(false)}
+                />
+              ) : null}
             </DialogHeader>
             
             <div className={`flex flex-col min-h-0 flex-1`}>
@@ -135,25 +150,35 @@ export function ResponsiveDialog({
           className
         )}
       >
-        <DialogHeader className={`${size === 'content-full' ? 'px-4 pt-4 pb-0' : title || description ? 'pb-2' : 'sr-only'} flex flex-col space-y-1 text-center sm:text-left`}>
-          {title ? (
-            <DialogTitle className="text-lg md:text-xl font-bold">
-              {title}
-            </DialogTitle>
-          ) : (
-            <VisuallyHidden.Root>
-              <DialogTitle>Dialog</DialogTitle>
-            </VisuallyHidden.Root>
-          )}
-          {description ? (
-            <DialogDescription className="text-sm md:text-base">
-              {description}
-            </DialogDescription>
-          ) : (
-            <VisuallyHidden.Root>
-              <DialogDescription>Dialog content</DialogDescription>
-            </VisuallyHidden.Root>
-          )}
+        <DialogHeader
+          className={`${size === 'content-full' ? 'px-4 pt-4 pb-0' : title || description ? 'pb-2' : 'sr-only'} ${planningToolHeader ? 'flex flex-row items-start justify-between gap-3 border-b px-4 pb-3 pt-4 text-left' : 'flex flex-col space-y-1 text-center sm:text-left'}`}
+        >
+          <div className={planningToolHeader ? 'min-w-0 flex-1 space-y-1' : ''}>
+            {title ? (
+              <DialogTitle className="text-lg md:text-xl font-bold">
+                {title}
+              </DialogTitle>
+            ) : (
+              <VisuallyHidden.Root>
+                <DialogTitle>Dialog</DialogTitle>
+              </VisuallyHidden.Root>
+            )}
+            {description ? (
+              <DialogDescription className="text-sm md:text-base">
+                {description}
+              </DialogDescription>
+            ) : (
+              <VisuallyHidden.Root>
+                <DialogDescription>Dialog content</DialogDescription>
+              </VisuallyHidden.Root>
+            )}
+          </div>
+          {planningToolHeader ? (
+            <PlanningToolWindowHeaderActions
+              onCancel={() => onOpenChange(false)}
+              onSaveAndClose={() => onOpenChange(false)}
+            />
+          ) : null}
         </DialogHeader>
         
         <div className={`flex flex-col min-h-0 flex-1`}>

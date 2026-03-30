@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShoppingCart, Package, Wrench, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { ShoppingCart, Package, Wrench, AlertCircle, CheckCircle } from 'lucide-react';
+import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
 import { Project } from '@/interfaces/Project';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -261,11 +262,15 @@ export function MaterialsSelectionWindow({
           ? "w-full h-full max-w-full max-h-full rounded-none border-0 p-0 [&>button]:hidden" 
           : "max-w-md max-h-[85vh] p-0 [&>button]:hidden"
         }>
-          <DialogHeader className="px-6 pt-6 pb-4 border-b">
+          <DialogHeader className="flex flex-row items-start justify-between gap-3 border-b px-6 pt-6 pb-4">
             <DialogTitle className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-orange-500" />
               No Materials Found
             </DialogTitle>
+            <PlanningToolWindowHeaderActions
+              onCancel={() => onOpenChange(false)}
+              onSaveAndClose={() => onOpenChange(false)}
+            />
           </DialogHeader>
           <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
             <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-50 text-muted-foreground" />
@@ -276,9 +281,6 @@ export function MaterialsSelectionWindow({
                 : "All steps are completed, or no materials are needed for remaining steps."
               }
             </p>
-            <Button onClick={() => onOpenChange(false)} variant="outline">
-              Close
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -291,21 +293,21 @@ export function MaterialsSelectionWindow({
         ? "w-full h-full max-w-full max-h-full rounded-none border-0 p-0 [&>button]:hidden flex flex-col" 
         : "max-w-6xl w-[90vw] max-h-[90vh] h-[90vh] p-0 [&>button]:hidden flex flex-col"
       }>
-        <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-                <ShoppingCart className="w-5 h-5 text-primary" />
-                Select Materials & Tools Needed
-              </DialogTitle>
-              <DialogDescription className="mt-2 text-base">
-                Choose items you need to purchase for your project. All items are shown by default.
-              </DialogDescription>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="ml-2">
-              <X className="w-4 h-4" />
-            </Button>
+        <DialogHeader className="flex flex-shrink-0 flex-row items-start justify-between gap-3 border-b px-6 pb-4 pt-6">
+          <div className="min-w-0 flex-1">
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+              <ShoppingCart className="w-5 h-5 text-primary" />
+              Select Materials & Tools Needed
+            </DialogTitle>
+            <DialogDescription className="mt-2 text-base">
+              Choose items you need to purchase for your project. All items are shown by default.
+            </DialogDescription>
           </div>
+          <PlanningToolWindowHeaderActions
+            onCancel={() => onOpenChange(false)}
+            onSaveAndClose={handleContinueToShopping}
+            saveDisabled={selectedMaterials.size === 0 && selectedTools.size === 0}
+          />
         </DialogHeader>
 
         <div className="flex-1 flex flex-col min-h-0 px-6 pb-6">
@@ -349,14 +351,6 @@ export function MaterialsSelectionWindow({
                   {selectedTools.size} tools
                 </Badge>
               </div>
-              <Button 
-                onClick={handleContinueToShopping}
-                className="bg-green-600 hover:bg-green-700 text-white"
-                size="sm"
-              >
-                <ShoppingCart className="w-4 h-4 mr-2" />
-                Continue to Shopping
-              </Button>
             </div>
           )}
 
@@ -455,21 +449,6 @@ export function MaterialsSelectionWindow({
               </ScrollArea>
             </TabsContent>
           </Tabs>
-
-          {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleContinueToShopping}
-              disabled={selectedMaterials.size === 0 && selectedTools.size === 0}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Continue to Shopping ({selectedMaterials.size + selectedTools.size} items)
-            </Button>
-          </div>
         </div>
       </DialogContent>
     </Dialog>

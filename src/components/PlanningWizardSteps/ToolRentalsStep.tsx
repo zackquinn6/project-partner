@@ -5,7 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Hammer } from 'lucide-react';
 import {
   PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
+  PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME,
   PLANNING_WIZARD_STEP_BODY_CLASSNAME,
+  PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME,
   PLANNING_WIZARD_STEP_CARD_CLASSNAME,
   PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
   PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
@@ -52,15 +54,19 @@ export const ToolRentalsStep: React.FC<ToolRentalsStepProps> = ({
               Create an account to align your project to the tool rental period
             </p>
 
-            <Button
-              type="button"
-              variant="default"
-              onClick={handleOpen}
-              className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
-            >
-              <Hammer className="shrink-0" aria-hidden />
-              Open Tool Rental
-            </Button>
+            <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
+              <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
+                <Button
+                  type="button"
+                  variant="default"
+                  onClick={handleOpen}
+                  className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
+                >
+                  <Hammer className="shrink-0" aria-hidden />
+                  Open Tool Rental
+                </Button>
+              </div>
+            </div>
 
             <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
               {isCompleted ? '✓ Tool Rental reviewed' : '\u00a0'}

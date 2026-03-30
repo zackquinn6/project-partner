@@ -154,7 +154,7 @@ export const QualityControlPdfPrinter: React.FC<QualityControlPdfPrinterProps> =
           id={buttonId}
           variant="outline"
           onClick={generatePDF}
-          className={cn('h-8 w-8 p-0 shrink-0', triggerClassName)}
+          className={cn('h-9 w-9 shrink-0 p-0', triggerClassName)}
           title="Export PDF"
         >
           <Download className="h-4 w-4 text-primary" />
@@ -164,10 +164,10 @@ export const QualityControlPdfPrinter: React.FC<QualityControlPdfPrinterProps> =
           id={buttonId}
           variant="outline"
           onClick={generatePDF}
-          className={cn('flex items-center gap-1.5 text-[10px] h-7 px-2 font-medium', triggerClassName)}
+          className={cn('flex h-9 items-center gap-2 px-4 text-sm font-medium', triggerClassName)}
           title="Export PDF"
         >
-          <Download className="h-3.5 w-3.5 text-primary shrink-0" />
+          <Download className="h-4 w-4 shrink-0 text-primary" />
           Export PDF
         </Button>
       )}
