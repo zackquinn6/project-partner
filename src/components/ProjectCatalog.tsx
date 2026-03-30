@@ -24,7 +24,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem
 } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, Clock, Layers, Target, Hammer, Home, Palette, Zap, Shield, Search, Filter, AlertTriangle, Plus, Info } from 'lucide-react';
+import { ArrowLeft, Clock, Layers, Target, Hammer, Home, Palette, Zap, Shield, Search, Filter, AlertTriangle, Plus, Info, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DIYSurveyPopup from '@/components/DIYSurveyPopup';
 import ProfileManager from '@/components/ProfileManager';
@@ -844,7 +844,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       }
     }
   };
-  return <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-y-auto">
+  return (
+    <>
+  <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-y-auto">
       <div className="container mx-auto min-h-screen px-4 pt-3 pb-5 md:px-6 md:py-8 md:pb-8">
             <div className="hidden md:flex items-center gap-4 mb-6">
               <Button
@@ -1442,7 +1444,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         </div>
 
         {/* Project Setup Dialog - Only show in user mode */}
-        {!isAdminMode && <Dialog open={isProjectSetupOpen} onOpenChange={setIsProjectSetupOpen}>
+        {!isAdminMode && <Dialog open={isProjectSetupOpen && !isCreatingNewProject} onOpenChange={setIsProjectSetupOpen}>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Let's get this project going! 🚀</DialogTitle>
@@ -1564,7 +1566,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         {/* DIY Survey Dialog - Only show in user mode */}
         {!isAdminMode && (
           <DIYSurveyPopup 
-            open={isDIYSurveyOpen} 
+            open={isDIYSurveyOpen && !isCreatingNewProject} 
             onOpenChange={(open) => {
               if (!open) {
                 handleDIYSurveyComplete(true);
@@ -1578,7 +1580,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         {/* Profile Manager Dialog - Only show in user mode */}
         {!isAdminMode && (
           <ProfileManager
-            open={isProfileManagerOpen}
+            open={isProfileManagerOpen && !isCreatingNewProject}
             onOpenChange={(open) => {
               if (!open) {
                 handleProfileManagerComplete();
@@ -1590,7 +1592,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
          {/* Home Manager Dialog - Only show in user mode */}
          {!isAdminMode && (
            <HomeManager
-             open={showHomeManager}
+             open={showHomeManager && !isCreatingNewProject}
              onOpenChange={(open) => {
                setShowHomeManager(open);
                if (!open) {
@@ -1602,17 +1604,30 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
         {/* Project & Task Manager (opened from Project Catalog) */}
         {!isAdminMode && (
-          <HomeTaskList open={taskManagerOpen} onOpenChange={setTaskManagerOpen} />
+          <HomeTaskList open={taskManagerOpen && !isCreatingNewProject} onOpenChange={setTaskManagerOpen} />
         )}
         {!isAdminMode && selectedTemplate && (
           <BetaProjectWarning
             projectName={selectedTemplate.name}
-            open={isBetaWarningOpen}
+            open={isBetaWarningOpen && !isCreatingNewProject}
             onOpenChange={setIsBetaWarningOpen}
             onAccept={handleBetaAccept}
           />
         )}
       </div>
-    </div>;
+    </div>
+    {isCreatingNewProject ? (
+      <div
+        className="fixed inset-0 z-[200] flex flex-col items-center justify-center gap-4 bg-background/95 backdrop-blur-sm"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <Loader2 className="h-10 w-10 animate-spin text-primary" aria-hidden />
+        <p className="text-sm font-medium text-foreground">Starting your project…</p>
+      </div>
+    ) : null}
+    </>
+  );
 };
 export default ProjectCatalog;

@@ -55,6 +55,31 @@ function isPageReload(): boolean {
   return legacy?.type === 1;
 }
 
+type IndexLocationState = {
+  view?: string;
+  mobileView?: string;
+  projectRunId?: string;
+};
+
+function initialCurrentViewFromLocation(state: unknown): 'home' | 'admin' | 'user' | 'editWorkflow' {
+  const v = (state as IndexLocationState)?.view;
+  if (v === 'admin' || v === 'user' || v === 'editWorkflow') return v;
+  return 'home';
+}
+
+function initialMobileViewFromLocation(
+  state: unknown,
+  isMobile: boolean
+): 'home' | 'projects' | 'workflow' | 'catalog' | 'tasks' {
+  const st = state as IndexLocationState;
+  const mv = st?.mobileView;
+  if (mv === 'projects' || mv === 'workflow' || mv === 'catalog' || mv === 'tasks') return mv;
+  if (isMobile && typeof st?.projectRunId === 'string' && st.projectRunId.length > 0 && st?.view === 'user') {
+    return 'workflow';
+  }
+  return 'home';
+}
+
 const Index = () => {
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL RETURNS
   const { user } = useAuth();
@@ -68,8 +93,12 @@ const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
-  const [currentView, setCurrentView] = useState<'home' | 'admin' | 'user' | 'editWorkflow'>('home');
-  const [mobileView, setMobileView] = useState<'home' | 'projects' | 'workflow' | 'catalog' | 'tasks'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'admin' | 'user' | 'editWorkflow'>(() =>
+    initialCurrentViewFromLocation(location.state)
+  );
+  const [mobileView, setMobileView] = useState<'home' | 'projects' | 'workflow' | 'catalog' | 'tasks'>(() =>
+    initialMobileViewFromLocation(location.state, isMobile)
+  );
   const [resetUserView, setResetUserView] = useState(false);
   const [forceListingMode, setForceListingMode] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState<'home' | 'projects' | 'tasks' | 'profile' | 'help' | 'expert'>('home');

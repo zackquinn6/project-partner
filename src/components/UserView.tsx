@@ -151,7 +151,9 @@ export default function UserView({
   } = useProject();
   const safeProjectRuns = projectRuns ?? [];
   const { refetchProjectRuns, updateProjectRunsCache } = useProjectData();
-  const [viewMode, setViewMode] = useState<'listing' | 'workflow'>('listing');
+  const [viewMode, setViewMode] = useState<'listing' | 'workflow'>(() =>
+    typeof projectRunId === 'string' && projectRunId.length > 0 ? 'workflow' : 'listing'
+  );
   const [workflowMainView, setWorkflowMainView] = useState<'overview' | 'steps'>('overview');
   const lastWorkflowProjectRunIdRef = useRef<string | null>(null);
   const handleLaunchAppRef = useRef<(app: AppReference) => void>(() => {});
@@ -873,12 +875,7 @@ export default function UserView({
           return;
         }
         setCurrentProjectRun(projectRun);
-        // CRITICAL: Set viewMode to 'workflow' for new project runs so kickoff can display
-        // Kickoff only shows when viewMode === 'workflow' and !isKickoffComplete
-        // Use setTimeout to ensure state updates are processed
-        setTimeout(() => {
-          setViewMode('workflow');
-        }, 0);
+        setViewMode('workflow');
       } else {
         // Project run not in array yet - fetch directly from database
         const fetchProjectRun = async () => {
@@ -992,12 +989,7 @@ export default function UserView({
             }
             
             setCurrentProjectRun(transformedRun);
-            // CRITICAL: Set viewMode to 'workflow' for new project runs so kickoff can display
-            // Kickoff only shows when viewMode === 'workflow' and !isKickoffComplete
-            // Use setTimeout to ensure state updates are processed
-            setTimeout(() => {
-              setViewMode('workflow');
-            }, 0);
+            setViewMode('workflow');
           } catch (error) {
             console.error('❌ Error in fetchProjectRun:', error);
           }
