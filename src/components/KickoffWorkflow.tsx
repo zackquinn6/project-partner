@@ -296,6 +296,9 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   };
 
   const currentStepId = kickoffSteps[currentKickoffStep]?.id;
+  /** Tighter chrome + taller scroll region so steps 1 & 4 show more without scrolling */
+  const kickoffDenseStep =
+    currentStepId === 'kickoff-step-1' || currentStepId === 'kickoff-step-4';
 
   const currentStepPurpose = (() => {
     switch (currentStepId) {
@@ -361,6 +364,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         return (
           <ProjectToolsStep
             {...stepProps}
+            compact
             onComplete={() => handleStepComplete(currentKickoffStep, selectedPlanningTools)}
             initialSelected={initialTools}
             onSelectionChange={setSelectedPlanningTools}
@@ -392,7 +396,11 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   }
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-auto md:overflow-visible">
+    <div
+      className={`mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col overflow-hidden md:h-auto md:overflow-visible ${
+        kickoffDenseStep ? 'gap-1.5 p-1.5 sm:gap-2 sm:p-2' : 'gap-2 p-2 sm:gap-3 sm:p-3'
+      }`}
+    >
       <ProjectPlanningCountdownBanner
         minimal
         projectCreatedAt={currentProjectRun.createdAt}
@@ -513,8 +521,12 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       {/* Step Purpose Sub-header - white box like project kickoff header */}
       {currentStepPurpose && (
         <Card className="shrink-0">
-          <CardContent className="p-2 sm:p-3 flex flex-row items-center justify-between gap-2">
-            <h2 className="min-w-0 flex-1 break-words pr-2 text-base font-semibold sm:text-lg">
+          <CardContent
+            className={`flex flex-row items-center justify-between gap-2 ${kickoffDenseStep ? 'p-1.5 sm:p-2' : 'p-2 sm:p-3'}`}
+          >
+            <h2
+              className={`min-w-0 flex-1 break-words pr-2 font-semibold ${kickoffDenseStep ? 'text-sm sm:text-base' : 'text-base sm:text-lg'}`}
+            >
               {currentStepPurpose}
             </h2>
             {currentStepId === 'kickoff-step-1' && (
@@ -541,7 +553,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
       {/* Primary actions: fixed slot below purpose so Continue / Not a match stay in the same place every step */}
       <Card className="shrink-0">
-        <CardContent className="p-2.5 sm:p-4">
+        <CardContent className={kickoffDenseStep ? 'p-2 sm:p-3' : 'p-2.5 sm:p-4'}>
           {!isStepCompleted(currentKickoffStep) ? (
             <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
               <div className="flex min-h-12 min-w-0 flex-1 flex-col justify-center">
@@ -634,8 +646,16 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       </Card>
 
       {/* Step body: scrollable content only; actions stay above */}
-      <div className="flex min-h-0 flex-1 flex-col md:min-h-[min(520px,70vh)]">
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] -mx-2 px-2 pb-2 sm:mx-0 sm:px-0 sm:pb-4 md:flex-none md:overflow-visible md:pb-0">
+      <div
+        className={`flex min-h-0 flex-1 flex-col ${
+          kickoffDenseStep ? 'md:min-h-[min(72vh,720px)]' : 'md:min-h-[min(520px,70vh)]'
+        }`}
+      >
+        <div
+          className={`min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] -mx-2 px-2 sm:mx-0 sm:px-0 md:flex-none md:overflow-visible md:pb-0 ${
+            kickoffDenseStep ? 'pb-1 sm:pb-2' : 'pb-2 sm:pb-4'
+          }`}
+        >
           {renderCurrentStep()}
         </div>
       </div>

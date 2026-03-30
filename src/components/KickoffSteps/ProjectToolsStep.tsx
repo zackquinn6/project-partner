@@ -60,6 +60,8 @@ interface ProjectToolsStepProps {
   isCompleted: boolean;
   initialSelected?: PlanningToolId[];
   onSelectionChange?: (selected: PlanningToolId[]) => void;
+  /** Kickoff step 4: smaller type and spacing so more fits in the viewport */
+  compact?: boolean;
 }
 
 /** Exported for kickoff step 4 save when parent state has not received onSelectionChange yet. */
@@ -90,7 +92,8 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   onComplete,
   isCompleted,
   initialSelected = [],
-  onSelectionChange
+  onSelectionChange,
+  compact = false,
 }) => {
   const { user } = useAuth();
   const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled, wasteRemovalEnabled } = usePartnerAppSettings();
@@ -225,28 +228,34 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className={compact ? 'space-y-2' : 'space-y-4'}>
       {/* Select all - best for optimized project */}
-      <div className="space-y-1">
+      <div className={compact ? 'space-y-0.5' : 'space-y-1'}>
         {isAlignedToPreference('all_three') && (
-          <p className="text-xs font-medium text-muted-foreground">Aligned to your preference</p>
+          <p className={compact ? 'text-[10px] font-medium text-muted-foreground' : 'text-xs font-medium text-muted-foreground'}>
+            Aligned to your preference
+          </p>
         )}
-        <div className={isAlignedToPreference('all_three') ? 'rounded-lg border-2 border-dashed border-primary p-1' : undefined}>
+        <div className={isAlignedToPreference('all_three') ? 'rounded-lg border-2 border-dashed border-primary p-0.5' : undefined}>
           <Button
             type="button"
             variant="outline"
-            size="lg"
-            className="w-full h-12 justify-center text-center gap-2 border-blue-600 text-blue-700 bg-blue-50/60 hover:bg-blue-100/80 hover:text-blue-800 dark:border-blue-500 dark:text-blue-300 dark:bg-blue-950/35 dark:hover:bg-blue-950/55 dark:hover:text-blue-200"
+            size={compact ? 'sm' : 'lg'}
+            className={
+              compact
+                ? 'h-9 w-full justify-center gap-1.5 border-blue-600 px-2 text-xs text-blue-700 bg-blue-50/60 hover:bg-blue-100/80 hover:text-blue-800 dark:border-blue-500 dark:text-blue-300 dark:bg-blue-950/35 dark:hover:bg-blue-950/55 dark:hover:text-blue-200'
+                : 'w-full h-12 justify-center text-center gap-2 border-blue-600 text-blue-700 bg-blue-50/60 hover:bg-blue-100/80 hover:text-blue-800 dark:border-blue-500 dark:text-blue-300 dark:bg-blue-950/35 dark:hover:bg-blue-950/55 dark:hover:text-blue-200'
+            }
             onClick={handleSelectAll}
           >
-            <FolderKanban className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" />
-            <span>Select all – best for optimized project</span>
+            <FolderKanban className={compact ? 'h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400' : 'h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400'} />
+            <span className="text-left leading-tight">Select all – best for optimized project</span>
           </Button>
         </div>
       </div>
 
       {/* Best for cost / quality / schedule focus */}
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className={compact ? 'flex flex-col gap-1.5 sm:flex-row' : 'flex flex-col sm:flex-row gap-2'}>
         {[
           { key: 'savings' as const, label: 'Best for cost-focus', icon: PiggyBank },
           { key: 'quality' as const, label: 'Best for quality-focus', icon: Award },
@@ -254,16 +263,35 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
         ].map(({ key, label, icon: Icon }) => {
           const aligned = isAlignedToPreference(key);
           return (
-            <div key={key} className={aligned ? 'rounded-lg border-2 border-dashed border-primary p-1 flex-1 space-y-1' : 'flex-1 space-y-1'}>
-              {aligned && <p className="text-xs font-medium text-muted-foreground">Aligned to your preference</p>}
+            <div
+              key={key}
+              className={
+                aligned
+                  ? compact
+                    ? 'flex-1 space-y-0.5 rounded-md border-2 border-dashed border-primary p-0.5'
+                    : 'rounded-lg border-2 border-dashed border-primary p-1 flex-1 space-y-1'
+                  : compact
+                    ? 'flex-1 space-y-0.5'
+                    : 'flex-1 space-y-1'
+              }
+            >
+              {aligned && (
+                <p className={compact ? 'text-[10px] font-medium text-muted-foreground' : 'text-xs font-medium text-muted-foreground'}>
+                  Aligned to your preference
+                </p>
+              )}
               <Button
                 type="button"
                 variant="outline"
-                size="default"
-                className="w-full justify-center text-center gap-2"
+                size={compact ? 'sm' : 'default'}
+                className={
+                  compact
+                    ? 'h-8 w-full justify-center gap-1 px-2 text-[11px] leading-tight'
+                    : 'w-full justify-center gap-2 text-center'
+                }
                 onClick={() => handleFocusPreset(key)}
               >
-                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <Icon className={compact ? 'h-3.5 w-3.5 shrink-0 text-muted-foreground' : 'h-4 w-4 shrink-0 text-muted-foreground'} />
                 <span>{label}</span>
               </Button>
             </div>
@@ -271,7 +299,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
         })}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2">
+      <div className={compact ? 'grid gap-2 sm:grid-cols-1 md:grid-cols-2' : 'grid gap-3 sm:grid-cols-1 md:grid-cols-2'}>
         {toolsToShow.map(({ id, label, benefit }) => {
           const isScope = id === 'scope';
           const isChecked = selected.has(id);
@@ -285,8 +313,8 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
               }
               onClick={isScope ? undefined : () => handleToggle(id)}
             >
-              <CardHeader className="p-4 pb-2">
-                <div className="flex items-start gap-3">
+              <CardHeader className={compact ? 'p-2 pb-1.5 sm:p-2.5 sm:pb-1.5' : 'p-4 pb-2'}>
+                <div className={compact ? 'flex items-start gap-2' : 'flex items-start gap-3'}>
                   <Checkbox
                     id={id}
                     checked={isChecked}
@@ -295,9 +323,11 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
                     className="mt-0.5"
                     disabled={isScope}
                   />
-                  <div className="space-y-0.5 min-w-0">
-                    <CardTitle className="text-base font-medium whitespace-normal">{label}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{benefit}</p>
+                  <div className="min-w-0 space-y-0">
+                    <CardTitle className={compact ? 'text-sm font-medium whitespace-normal' : 'text-base font-medium whitespace-normal'}>
+                      {label}
+                    </CardTitle>
+                    <p className={compact ? 'text-[11px] leading-snug text-muted-foreground' : 'text-sm text-muted-foreground'}>{benefit}</p>
                   </div>
                 </div>
               </CardHeader>
@@ -307,8 +337,8 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
       </div>
 
       {selected.size > 1 && (
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <Button variant="ghost" size="sm" onClick={handleClearAll}>
+        <div className={compact ? 'flex flex-wrap items-center justify-center gap-1' : 'flex flex-wrap items-center justify-center gap-2'}>
+          <Button variant="ghost" size="sm" className={compact ? 'h-7 text-xs' : undefined} onClick={handleClearAll}>
             Clear
           </Button>
         </div>

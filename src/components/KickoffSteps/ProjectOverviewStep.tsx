@@ -64,11 +64,11 @@ function MatchReasonRow({ axis, text }: { axis: MatchAxisSentiment | null; text:
           ? 'Mixed or matched signal'
           : 'Incomplete comparison';
   return (
-    <li className="flex gap-2.5">
+    <li className="flex gap-2">
       <span className="inline-flex shrink-0" title={label}>
         {icon}
       </span>
-      <span className="min-w-0 leading-relaxed">{text}</span>
+      <span className="min-w-0 leading-snug">{text}</span>
     </li>
   );
 }
@@ -828,67 +828,65 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const TierIcon = tierVisual.Icon;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <Card>
-        <CardHeader className="p-2 sm:p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+        <CardHeader className="p-1.5 sm:p-2">
+          <div className="flex flex-wrap items-center justify-between gap-1.5">
+            <CardTitle className="flex items-center gap-1.5 text-xs sm:text-sm">
               Project Match: {currentProjectRun.name}
-              {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
+              {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-[10px] sm:text-xs">Complete</Badge>}
             </CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 p-2 sm:p-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Description</Label>
-            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+        <CardContent className="space-y-2 p-1.5 sm:space-y-2.5 sm:p-2.5">
+          <div className="space-y-0.5">
+            <Label className="text-[10px] sm:text-xs">Description</Label>
+            <p className="text-xs text-muted-foreground leading-snug whitespace-pre-line sm:text-sm">
               {resolvedProjectDescription || 'No description provided'}
             </p>
           </div>
 
-          <section className="space-y-4" aria-label="Project fit recommendation">
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground text-center">
+          <section className="space-y-2 sm:space-y-3" aria-label="Project fit recommendation">
+            <h2 className="text-center text-lg font-bold tracking-tight text-foreground sm:text-xl">
               Recommendation
             </h2>
-            <div className="flex justify-center w-full">
+            <div className="flex w-full justify-center">
               <div
-                className={`flex w-full max-w-md flex-col items-center text-center rounded-xl border-2 px-5 py-6 gap-3 shadow-sm ${tierVisual.cardClass}`}
+                className={`flex w-full max-w-md flex-col items-center gap-2 rounded-lg border-2 px-3 py-3 text-center shadow-sm sm:gap-2.5 sm:rounded-xl sm:px-4 sm:py-4 ${tierVisual.cardClass}`}
               >
                 <div
-                  className={`flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full ${tierVisual.iconWrapClass}`}
+                  className={`flex h-11 w-11 items-center justify-center rounded-full sm:h-12 sm:w-12 ${tierVisual.iconWrapClass}`}
                   aria-hidden
                 >
-                  <TierIcon className="h-7 w-7 sm:h-8 sm:w-8 stroke-[2.5]" />
+                  <TierIcon className="h-6 w-6 stroke-[2.5] sm:h-7 sm:w-7" />
                 </div>
-                <div className="space-y-1 min-w-0">
-                  <p
-                    className={`text-base sm:text-lg font-semibold leading-snug ${tierVisual.titleClass}`}
-                  >
+                <div className="min-w-0 space-y-0.5">
+                  <p className={`text-sm font-semibold leading-snug sm:text-base ${tierVisual.titleClass}`}>
                     {tierVisual.title}
                   </p>
-                  <p className={`text-xs ${tierVisual.subtitleClass}`}>
+                  <p className={`text-[11px] leading-snug sm:text-xs ${tierVisual.subtitleClass}`}>
                     {tierVisual.subtitle}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-lg border bg-muted/20 px-4 py-4 text-left space-y-4">
-              <h3 className="text-sm font-semibold text-foreground sm:text-base">Summary</h3>
-              <p className="text-sm text-foreground leading-relaxed">{matchExplanation.summary}</p>
-              <div className="space-y-1.5">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="space-y-2 rounded-lg border bg-muted/20 px-2.5 py-2 text-left sm:space-y-2.5 sm:px-3 sm:py-3">
+              <h3 className="text-xs font-semibold text-foreground sm:text-sm">Summary</h3>
+              <p className="text-xs leading-snug text-foreground sm:text-sm sm:leading-relaxed">{matchExplanation.summary}</p>
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs">
                   Project challenges
                 </p>
-                <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
+                <p className="text-xs leading-snug text-muted-foreground whitespace-pre-line sm:text-sm sm:leading-relaxed">
                   {matchExplanation.challengesParagraph}
                 </p>
               </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs">
                   Why this recommendation
                 </p>
-                <ul className="list-none space-y-2.5 pl-0 text-sm text-muted-foreground">
+                <ul className="list-none space-y-1.5 pl-0 text-xs text-muted-foreground sm:space-y-2 sm:text-sm">
                   <MatchReasonRow axis={matchExplanation.skillAxis} text={matchExplanation.reasonSkill} />
                   <MatchReasonRow axis={matchExplanation.effortAxis} text={matchExplanation.reasonEffort} />
                 </ul>
@@ -896,12 +894,12 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </div>
           </section>
 
-          <Accordion type="single" collapsible className="w-full rounded-lg border bg-muted/20 px-2 sm:px-3">
+          <Accordion type="single" collapsible className="w-full rounded-lg border bg-muted/20 px-1.5 sm:px-2">
             <AccordionItem value="project-details" className="border-none">
-              <AccordionTrigger className="text-sm sm:text-base font-semibold py-3 hover:no-underline">
+              <AccordionTrigger className="py-2 text-xs font-semibold hover:no-underline sm:py-2.5 sm:text-sm">
                 More Project Details
               </AccordionTrigger>
-              <AccordionContent className="pb-4 pt-0">{projectDetailsFields}</AccordionContent>
+              <AccordionContent className="pb-2 pt-0 sm:pb-3">{projectDetailsFields}</AccordionContent>
             </AccordionItem>
           </Accordion>
         </CardContent>
