@@ -43,6 +43,7 @@ import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import type { ProjectRun } from '@/interfaces/ProjectRun';
 import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { ProjectPortfolioRemindersDialog } from '@/components/ProjectPortfolioRemindersDialog';
 
 // Force rebuild to clear cache
 
@@ -80,6 +81,11 @@ function initialMobileViewFromLocation(
   return 'home';
 }
 
+const PP_INITIAL_ENTRY_PATH_KEY = 'pp_initial_entry_path';
+
+/** One-time workshop reset per JS document (survives Index unmount when leaving for `/projects`). */
+let indexWorkshopReloadResetApplied = false;
+
 const Index = () => {
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL RETURNS
   const { user } = useAuth();
@@ -104,7 +110,6 @@ const Index = () => {
   const [mobileActiveTab, setMobileActiveTab] = useState<'home' | 'projects' | 'tasks' | 'profile' | 'help' | 'expert'>('home');
   const [mobileUpgradeOpen, setMobileUpgradeOpen] = useState(false);
   const [mobileUpgradeFeature, setMobileUpgradeFeature] = useState('Projects membership');
-  const reloadWorkshopResetDoneRef = useRef(false);
 
   // Modal states - moved from Navigation to work on both mobile and desktop
   const [showKCExplainer, setShowKCExplainer] = useState(false);
@@ -121,6 +126,7 @@ const Index = () => {
   const [isRiskFocusLauncherOpen, setIsRiskFocusLauncherOpen] = useState(false);
   /** Risk-Less: full-screen register only (no workflow); set after Start from launcher. */
   const [riskFocusRegisterRunId, setRiskFocusRegisterRunId] = useState<string | null>(null);
+  const [portfolioRemindersOpen, setPortfolioRemindersOpen] = useState(false);
 
   // CRITICAL: All hooks must be at the top - before any conditional logic
   const handleMobileProjectSelect = useCallback(
@@ -177,34 +183,55 @@ const Index = () => {
     }
   }, [projectCatalogEnabled, mobileView]);
 
+  useEffect(() => {
+    const openPortfolioReminders = () => setPortfolioRemindersOpen(true);
+    window.addEventListener('open-portfolio-reminders', openPortfolioReminders);
+    return () =>
+      window.removeEventListener('open-portfolio-reminders', openPortfolioReminders);
+  }, []);
+
   // Removed debug logging - no longer tracking duplicate modals
 
   // Handle navigation state changes (including view parameter)
   useEffect(() => {
+    // Full reload (F5) on My Workshop `/` only: clear stale history state once. If the user reloaded on `/projects`
+    // or is returning from the catalog with `navigate('/', { state })`, do NOT return early — apply location.state.
     if (isPageReload()) {
-      if (!reloadWorkshopResetDoneRef.current) {
-        reloadWorkshopResetDoneRef.current = true;
+      let initialEntryPath = '';
+      try {
+        initialEntryPath =
+          typeof sessionStorage !== 'undefined'
+            ? sessionStorage.getItem(PP_INITIAL_ENTRY_PATH_KEY) ?? ''
+            : '';
+      } catch {
+        initialEntryPath = '';
+      }
+      const reloadLandedOnWorkshop = initialEntryPath === '/' || initialEntryPath === '';
+
+      if (reloadLandedOnWorkshop && !indexWorkshopReloadResetApplied) {
+        indexWorkshopReloadResetApplied = true;
         setCurrentView('home');
         setForceListingMode(false);
         setResetUserView(false);
         setCurrentProjectRun(null);
         setCurrentProject(null);
         navigate('/', { replace: true, state: {} });
-      }
-      const openFromStorage = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('openTaskList') === '1';
-      if (openFromStorage) {
-        if (isMobile) {
-          setMobileView('tasks');
-          setMobileActiveTab('tasks');
+        const openFromStorage =
+          typeof sessionStorage !== 'undefined' && sessionStorage.getItem('openTaskList') === '1';
+        if (openFromStorage) {
+          if (isMobile) {
+            setMobileView('tasks');
+            setMobileActiveTab('tasks');
+          } else {
+            setIsHomeTaskListOpen(true);
+          }
+          sessionStorage.removeItem('openTaskList');
         } else {
-          setIsHomeTaskListOpen(true);
+          setMobileView('home');
+          setMobileActiveTab('home');
         }
-        sessionStorage.removeItem('openTaskList');
-      } else {
-        setMobileView('home');
-        setMobileActiveTab('home');
+        return;
       }
-      return;
     }
 
     const openFromState = location.state?.openTaskList === true;
@@ -885,6 +912,11 @@ const Index = () => {
           variant="risk-focus"
         />
       ) : null}
+
+      <ProjectPortfolioRemindersDialog
+        open={portfolioRemindersOpen}
+        onOpenChange={setPortfolioRemindersOpen}
+      />
     </div>
   );
 };

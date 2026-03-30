@@ -18,7 +18,7 @@ interface ContentSection {
   width?: 'full' | 'half' | 'third' | 'two-thirds';
   alignment?: 'left' | 'center' | 'right';
   // Button-specific properties
-  buttonAction?: 'project-customizer' | 'project-scheduler' | 'shopping-checklist' | 'materials-selection' | 'project-budgeting' | 'project-performance';
+  buttonAction?: 'project-customizer' | 'project-scheduler' | 'shopping-checklist' | 'materials-selection' | 'project-budgeting' | 'project-performance' | 'after-action-review';
   buttonLabel?: string;
   buttonIcon?: string;
   buttonVariant?: 'default' | 'outline' | 'secondary';

@@ -360,3 +360,7 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+# Cron: POST with header x-cron-secret: CRON_SECRET (schedule every ~10 minutes in Supabase Dashboard).
+[functions.daily-workflow-task-digest]
+verify_jwt = false

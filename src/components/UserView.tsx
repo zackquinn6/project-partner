@@ -52,6 +52,7 @@ import { DecisionRollupWindow } from './DecisionRollupWindow';
 import { KeyCharacteristicsWindow } from './KeyCharacteristicsWindow';
 import { ProjectCustomizer } from './ProjectCustomizer/ProjectCustomizer';
 import { ProjectScheduler } from './ProjectScheduler';
+import { ChangeManagementWindow } from './ChangeManagementWindow';
 import { ProgressViewsWindow } from './ProgressViewsWindow';
 import { ScaledStepProgressDialog } from './ScaledStepProgressDialog';
 import { MultiContentRenderer } from './MultiContentRenderer';
@@ -78,6 +79,7 @@ import { markOrderingStepIncompleteIfNeeded, extractProjectToolsAndMaterials } f
 import { MobileDIYDropdown } from './MobileDIYDropdown';
 import { ProjectCompletionHandler } from './ProjectCompletionHandler';
 import { ProjectBudgetingWindow } from './ProjectBudgetingWindow';
+import { AfterActionReviewWindow } from './AfterActionReviewWindow';
 import { ProjectPerformanceWindow } from './ProjectPerformanceWindow';
 import { RiskManagementWindow } from './RiskManagementWindow';
 import { QualityCheckWindow } from './QualityCheckWindow';
@@ -234,11 +236,14 @@ export default function UserView({
   const [projectCustomizerOpen, setProjectCustomizerOpen] = useState(false);
   const [projectCustomizerMode, setProjectCustomizerMode] = useState<'initial-plan' | 'final-plan' | 'unplanned-work' | 'replan'>('replan');
   const [projectSchedulerOpen, setProjectSchedulerOpen] = useState(false);
+  const [changeManagementOpen, setChangeManagementOpen] = useState(false);
   const [projectPlanningWizardOpen, setProjectPlanningWizardOpen] = useState(false);
   const [materialsSelectionOpen, setMaterialsSelectionOpen] = useState(false);
   const [toolRentalsOpen, setToolRentalsOpen] = useState(false);
   const [homeManagerOpen, setHomeManagerOpen] = useState(false);
   const [projectBudgetingOpen, setProjectBudgetingOpen] = useState(false);
+  const [afterActionReviewOpen, setAfterActionReviewOpen] = useState(false);
+  const [aarProjectRun, setAarProjectRun] = useState<ProjectRun | null>(null);
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
   const [projectPerformanceOpen, setProjectPerformanceOpen] = useState(false);
   const [qualityCheckOpen, setQualityCheckOpen] = useState(false);
@@ -413,6 +418,9 @@ export default function UserView({
     const handleOpenProjectScheduler = () => {
       setProjectSchedulerOpen(true);
     };
+    const handleOpenChangeManagement = () => {
+      setChangeManagementOpen(true);
+    };
     const handleOpenMaterialsSelection = () => {
       setMaterialsSelectionOpen(true);
     };
@@ -436,25 +444,41 @@ export default function UserView({
     const handleOpenProjectBudgeting = () => {
       setProjectBudgetingOpen(true);
     };
+    const handleOpenAfterActionReview = (event: Event) => {
+      const id = (event as CustomEvent<{ projectRunId?: string }>).detail?.projectRunId;
+      if (!id) return;
+      const runs = projectRuns ?? [];
+      const run = runs.find((r) => r.id === id);
+      if (!run) {
+        toast.error('Project not found. Refresh the dashboard and try again.');
+        return;
+      }
+      setAarProjectRun(run);
+      setAfterActionReviewOpen(true);
+    };
 
     window.addEventListener('openProjectScheduler', handleOpenProjectScheduler);
     window.addEventListener('open-project-scheduler', handleOpenProjectScheduler);
+    window.addEventListener('open-change-management', handleOpenChangeManagement);
     window.addEventListener('openMaterialsSelection', handleOpenMaterialsSelection);
     window.addEventListener('openOrderingWindow', handleOpenOrderingWindow);
     window.addEventListener('openProjectCustomizer', handleOpenProjectCustomizer as EventListener);
     window.addEventListener('open-project-customizer', handleOpenProjectCustomizer as EventListener);
     window.addEventListener('open-project-budgeting', handleOpenProjectBudgeting);
+    window.addEventListener('open-after-action-review', handleOpenAfterActionReview as EventListener);
 
     return () => {
       window.removeEventListener('openProjectScheduler', handleOpenProjectScheduler);
       window.removeEventListener('open-project-scheduler', handleOpenProjectScheduler);
+      window.removeEventListener('open-change-management', handleOpenChangeManagement);
       window.removeEventListener('openMaterialsSelection', handleOpenMaterialsSelection);
       window.removeEventListener('openOrderingWindow', handleOpenOrderingWindow);
       window.removeEventListener('openProjectCustomizer', handleOpenProjectCustomizer);
       window.removeEventListener('open-project-customizer', handleOpenProjectCustomizer);
       window.removeEventListener('open-project-budgeting', handleOpenProjectBudgeting);
+      window.removeEventListener('open-after-action-review', handleOpenAfterActionReview as EventListener);
     };
-  }, []);
+  }, [projectRuns]);
 
   
   // Get the active project data from either currentProject or currentProjectRun
@@ -981,7 +1005,15 @@ export default function UserView({
               progress_reporting_style: freshRun.progress_reporting_style
                 ? (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
                 : undefined,
-              quality_control_settings: parseQualityControlSettingsColumn(freshRun.quality_control_settings)
+              quality_control_settings: parseQualityControlSettingsColumn(freshRun.quality_control_settings),
+              planningCompletedAt: freshRun.planning_completed_at
+                ? new Date(freshRun.planning_completed_at)
+                : undefined,
+              planningScopeBaseline:
+                freshRun.planning_scope_baseline != null &&
+                typeof freshRun.planning_scope_baseline === 'object'
+                  ? (freshRun.planning_scope_baseline as Record<string, unknown>)
+                  : undefined
             };
             
             if (transformedRun.status === 'cancelled') {
@@ -1219,7 +1251,14 @@ export default function UserView({
       if (!currentProjectRun) return;
       const phases = Array.isArray(currentProjectRun.phases) ? (currentProjectRun.phases as Phase[]) : [];
       const { stepIds, outputEntries } = collectPlanningWizardWorkflowCompletion(phases, tools);
+      const planningCompletedAt = new Date();
+
       if (stepIds.length === 0) {
+        await updateProjectRun({
+          ...currentProjectRun,
+          planningCompletedAt,
+          updatedAt: new Date(),
+        });
         return;
       }
 
@@ -1254,8 +1293,8 @@ export default function UserView({
         progress: Math.round(calculatedProgress),
         status: newStatus,
         planEndDate: new Date(),
-        // Mark Planning complete by advancing current_phase_id to Ordering (when present).
         currentPhaseId: orderingPhase?.id ?? currentProjectRun.currentPhaseId,
+        planningCompletedAt,
         updatedAt: new Date(),
       });
     },
@@ -1940,6 +1979,13 @@ export default function UserView({
       case 'project-scheduler':
         setProjectSchedulerOpen(true);
         break;
+      case 'change-management':
+        if (!currentProjectRun) {
+          toast.error('Open a project run first.');
+          break;
+        }
+        setChangeManagementOpen(true);
+        break;
       case 'shopping-checklist':
         setOrderingWindowOpen(true);
         break;
@@ -1980,6 +2026,14 @@ export default function UserView({
       case 'quality-check':
         setQualityCheckExpandSettingsAccordion(false);
         setQualityCheckOpen(true);
+        break;
+      case 'after-action-review':
+        if (!currentProjectRun) {
+          toast.error('Open a project run first.');
+          break;
+        }
+        setAarProjectRun(currentProjectRun);
+        setAfterActionReviewOpen(true);
         break;
       case 'waste-removal':
         toast.info('Waste Removal is coming soon.');
@@ -2104,6 +2158,14 @@ export default function UserView({
           case 'shopping-checklist':
             setMaterialsSelectionOpen(true);
             break;
+          case 'after-action-review':
+            if (!currentProjectRun) {
+              toast.error('Open a project run first.');
+              break;
+            }
+            setAarProjectRun(currentProjectRun);
+            setAfterActionReviewOpen(true);
+            break;
           default:
             console.warn('Unknown button action:', action);
         }
@@ -2128,6 +2190,14 @@ export default function UserView({
             break;
           case 'shopping-checklist':
             setMaterialsSelectionOpen(true);
+            break;
+          case 'after-action-review':
+            if (!currentProjectRun) {
+              toast.error('Open a project run first.');
+              break;
+            }
+            setAarProjectRun(currentProjectRun);
+            setAfterActionReviewOpen(true);
             break;
           default:
             console.warn('Unknown button action:', action);
@@ -3895,6 +3965,14 @@ export default function UserView({
         />
       )}
 
+      {changeManagementOpen && (
+        <ChangeManagementWindow
+          open={changeManagementOpen}
+          onOpenChange={setChangeManagementOpen}
+          projectRun={currentProjectRun}
+        />
+      )}
+
       {/* Project Planning Wizard — dialog on mobile only; desktop uses fullscreen shell above */}
       {isMobile ? (
         <ProjectPlanningWizard
@@ -3975,6 +4053,15 @@ export default function UserView({
       <ProjectBudgetingWindow
         open={projectBudgetingOpen}
         onOpenChange={setProjectBudgetingOpen}
+      />
+
+      <AfterActionReviewWindow
+        open={afterActionReviewOpen}
+        onOpenChange={(next) => {
+          setAfterActionReviewOpen(next);
+          if (!next) setAarProjectRun(null);
+        }}
+        projectRun={aarProjectRun}
       />
 
       {/* Project Performance Window */}

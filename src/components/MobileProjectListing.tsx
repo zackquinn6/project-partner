@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { AfterActionReviewWindow } from '@/components/AfterActionReviewWindow';
+import { useAfterActionReviewRunIds } from '@/hooks/useAfterActionReviewRunIds';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +16,9 @@ import { calculateProjectProgress } from '@/utils/progressCalculation';
 import { getRiskFocusAwareDisplayName, isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 import { WorkspaceSubViewHeader } from '@/components/WorkspaceSubViewHeader';
 import { HomeManager } from '@/components/HomeManager';
+import {
+  dashboardStatusFromProgressPercent,
+} from '@/utils/projectDashboardStatus';
 
 function listingProgressPercent(run: ProjectRun): number {
   try {
@@ -45,6 +50,9 @@ export function MobileProjectListing({
   const [homes, setHomes] = useState<{ id: string; name: string }[]>([]);
   const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
   const [showHomeManager, setShowHomeManager] = useState(false);
+  const [aarWindowOpen, setAarWindowOpen] = useState(false);
+  const [aarTargetRun, setAarTargetRun] = useState<ProjectRun | null>(null);
+  const aarRunIds = useAfterActionReviewRunIds(projectRuns);
 
   const fetchHomes = useCallback(async () => {
     if (!user) return;
@@ -126,6 +134,15 @@ export function MobileProjectListing({
 
   const activeCount = runsInHomeScope.filter((run) => listingProgressPercent(run) < 100).length;
   const completedCount = runsInHomeScope.filter((run) => listingProgressPercent(run) >= 100).length;
+
+  const showAarForRun = useCallback(
+    (run: ProjectRun) => {
+      const p = listingProgressPercent(run);
+      const dash = dashboardStatusFromProgressPercent(p);
+      return dash === 'complete' || aarRunIds.has(run.id);
+    },
+    [aarRunIds]
+  );
 
   const goToWorkspace = () => {
     onClose?.();
@@ -245,6 +262,15 @@ export function MobileProjectListing({
         showSelector={false}
       />
 
+      <AfterActionReviewWindow
+        open={aarWindowOpen}
+        onOpenChange={(open) => {
+          setAarWindowOpen(open);
+          if (!open) setAarTargetRun(null);
+        }}
+        projectRun={aarTargetRun}
+      />
+
       {/* Content — flex-1 + min-h-0 so the list uses remaining viewport below header + bottom nav */}
       <div className="flex min-h-0 flex-1 flex-col overflow-auto px-2 pb-1 pt-0 md:space-y-3 md:px-6 md:py-4 md:pb-2">
         <div className="flex min-h-0 flex-1 flex-col space-y-1.5 md:space-y-3">
@@ -262,6 +288,11 @@ export function MobileProjectListing({
                   project={run}
                   variant="run"
                   onSelect={() => onProjectSelect(run)}
+                  aarButtonVisible={showAarForRun(run)}
+                  onOpenAar={() => {
+                    setAarTargetRun(run);
+                    setAarWindowOpen(true);
+                  }}
                 />
               ))
             }
@@ -282,6 +313,11 @@ export function MobileProjectListing({
                   project={run}
                   variant="run"
                   onSelect={() => onProjectSelect(run)}
+                  aarButtonVisible={showAarForRun(run)}
+                  onOpenAar={() => {
+                    setAarTargetRun(run);
+                    setAarWindowOpen(true);
+                  }}
                 />
               ))
             }

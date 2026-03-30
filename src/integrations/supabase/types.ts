@@ -98,6 +98,47 @@ export type Database = {
         }
         Relationships: []
       }
+      after_action_reviews: {
+        Row: {
+          id: string
+          project_run_id: string
+          intent: string
+          experience: string
+          reasons: string
+          changes: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_run_id: string
+          intent?: string
+          experience?: string
+          reasons?: string
+          changes?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_run_id?: string
+          intent?: string
+          experience?: string
+          reasons?: string
+          changes?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "after_action_reviews_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_sensitive_data_access: {
         Row: {
           access_type: string
@@ -1862,9 +1903,11 @@ export type Database = {
       portfolio_notification_settings: {
         Row: {
           created_at: string
+          daily_notification_local_time: string | null
           email_address: string | null
           email_enabled: boolean
           id: string
+          last_daily_task_digest_for_local_date: string | null
           notify_daily_celebrations: boolean
           notify_daily_task_status: boolean
           notify_weekly_budget: boolean
@@ -1875,9 +1918,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          daily_notification_local_time?: string | null
           email_address?: string | null
           email_enabled?: boolean
           id?: string
+          last_daily_task_digest_for_local_date?: string | null
           notify_daily_celebrations?: boolean
           notify_daily_task_status?: boolean
           notify_weekly_budget?: boolean
@@ -1888,9 +1933,11 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          daily_notification_local_time?: string | null
           email_address?: string | null
           email_enabled?: boolean
           id?: string
+          last_daily_task_digest_for_local_date?: string | null
           notify_daily_celebrations?: boolean
           notify_daily_task_status?: boolean
           notify_weekly_budget?: boolean
@@ -1922,6 +1969,7 @@ export type Database = {
           roles: string[]
           skill_level: string | null
           survey_completed_at: string | null
+          time_zone: string | null
           updated_at: string
           user_id: string
         }
@@ -1945,6 +1993,7 @@ export type Database = {
           roles?: string[]
           skill_level?: string | null
           survey_completed_at?: string | null
+          time_zone?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1968,6 +2017,7 @@ export type Database = {
           roles?: string[]
           skill_level?: string | null
           survey_completed_at?: string | null
+          time_zone?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -2380,6 +2430,44 @@ export type Database = {
         }
         Relationships: []
       }
+      project_run_planning_change_events: {
+        Row: {
+          id: string
+          project_run_id: string
+          user_id: string
+          occurred_at: string
+          planning_tool: string
+          change_summary: string
+          change_detail: Json | null
+        }
+        Insert: {
+          id?: string
+          project_run_id: string
+          user_id: string
+          occurred_at?: string
+          planning_tool: string
+          change_summary: string
+          change_detail?: Json | null
+        }
+        Update: {
+          id?: string
+          project_run_id?: string
+          user_id?: string
+          occurred_at?: string
+          planning_tool?: string
+          change_summary?: string
+          change_detail?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_planning_change_events_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_run_photos: {
         Row: {
           caption: string | null
@@ -2658,7 +2746,9 @@ export type Database = {
           customization_decisions: Json | null
           description: string | null
           end_date: string | null
+          effort_level: string | null
           estimated_time: string | null
+          estimated_total_time: string | null
           home_id: string | null
           id: string
           initial_budget: string | null
@@ -2667,21 +2757,28 @@ export type Database = {
           instruction_level_preference: string | null
           is_manual_entry: boolean | null
           issue_reports: Json | null
+          item_type: string | null
           name: string
           phase_ratings: Json | null
           phases: Json | null
           plan_end_date: string | null
+          planning_completed_at: string | null
+          planning_scope_baseline: Json | null
           progress: number | null
           progress_reporting_style: string | null
+          project_challenges: string | null
           project_leader: string | null
           project_photos: Json | null
+          scaling_unit: string | null
           schedule_events: Json | null
           schedule_optimization_method: string | null
           shopping_checklist_data: Json | null
+          skill_level: string | null
           start_date: string | null
           status: string | null
           project_id: string | null
           time_tracking: Json | null
+          typical_project_size: string | null
           updated_at: string
           user_id: string
         }
@@ -2699,7 +2796,9 @@ export type Database = {
           customization_decisions?: Json | null
           description?: string | null
           end_date?: string | null
+          effort_level?: string | null
           estimated_time?: string | null
+          estimated_total_time?: string | null
           home_id?: string | null
           id?: string
           initial_budget?: string | null
@@ -2708,21 +2807,28 @@ export type Database = {
           instruction_level_preference?: string | null
           is_manual_entry?: boolean | null
           issue_reports?: Json | null
+          item_type?: string | null
           name: string
           phase_ratings?: Json | null
           phases?: Json | null
           plan_end_date?: string | null
+          planning_completed_at?: string | null
+          planning_scope_baseline?: Json | null
           progress?: number | null
           progress_reporting_style?: string | null
+          project_challenges?: string | null
           project_leader?: string | null
           project_photos?: Json | null
+          scaling_unit?: string | null
           schedule_events?: Json | null
           schedule_optimization_method?: string | null
           shopping_checklist_data?: Json | null
+          skill_level?: string | null
           start_date?: string | null
           status?: string | null
           project_id?: string | null
           time_tracking?: Json | null
+          typical_project_size?: string | null
           updated_at?: string
           user_id: string
         }
@@ -2740,7 +2846,9 @@ export type Database = {
           customization_decisions?: Json | null
           description?: string | null
           end_date?: string | null
+          effort_level?: string | null
           estimated_time?: string | null
+          estimated_total_time?: string | null
           home_id?: string | null
           id?: string
           initial_budget?: string | null
@@ -2749,21 +2857,28 @@ export type Database = {
           instruction_level_preference?: string | null
           is_manual_entry?: boolean | null
           issue_reports?: Json | null
+          item_type?: string | null
           name?: string
           phase_ratings?: Json | null
           phases?: Json | null
           plan_end_date?: string | null
+          planning_completed_at?: string | null
+          planning_scope_baseline?: Json | null
           progress?: number | null
           progress_reporting_style?: string | null
+          project_challenges?: string | null
           project_leader?: string | null
           project_photos?: Json | null
+          scaling_unit?: string | null
           schedule_events?: Json | null
           schedule_optimization_method?: string | null
           shopping_checklist_data?: Json | null
+          skill_level?: string | null
           start_date?: string | null
           status?: string | null
           project_id?: string | null
           time_tracking?: Json | null
+          typical_project_size?: string | null
           updated_at?: string
           user_id?: string
         }

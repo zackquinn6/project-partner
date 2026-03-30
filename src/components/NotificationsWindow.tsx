@@ -61,6 +61,20 @@ export function NotificationsWindow({
             <Bell className="h-5 w-5" />
             Notifications
           </DialogTitle>
+          <p className="text-sm text-muted-foreground pt-1">
+            Daily workflow emails (tasks due today &amp; overdue) use your{' '}
+            <button
+              type="button"
+              className="text-primary underline underline-offset-2 font-medium"
+              onClick={() => {
+                onOpenChange(false);
+                window.dispatchEvent(new CustomEvent('open-portfolio-reminders'));
+              }}
+            >
+              notification delivery settings
+            </button>
+            — time zone and send time are stored on your profile and reminder preferences.
+          </p>
         </DialogHeader>
         {unreadCount > 0 && (
           <Button

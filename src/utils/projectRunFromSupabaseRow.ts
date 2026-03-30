@@ -118,5 +118,13 @@ export function projectRunFromSupabaseRow(freshRun: Record<string, unknown>): Pr
       ? (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
       : undefined,
     quality_control_settings: parseQualityControlSettingsColumn(freshRun.quality_control_settings),
+    planningCompletedAt:
+      typeof freshRun.planning_completed_at === 'string' && freshRun.planning_completed_at
+        ? new Date(freshRun.planning_completed_at)
+        : undefined,
+    planningScopeBaseline:
+      freshRun.planning_scope_baseline != null && typeof freshRun.planning_scope_baseline === 'object'
+        ? (freshRun.planning_scope_baseline as Record<string, unknown>)
+        : undefined,
   };
 }

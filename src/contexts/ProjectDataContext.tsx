@@ -259,7 +259,12 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         progress_reporting_style: run.progress_reporting_style
           ? (run.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
           : undefined,
-        quality_control_settings: parseQualityControlSettingsColumn(run.quality_control_settings)
+        quality_control_settings: parseQualityControlSettingsColumn(run.quality_control_settings),
+        planningCompletedAt: run.planning_completed_at ? new Date(run.planning_completed_at) : undefined,
+        planningScopeBaseline:
+          run.planning_scope_baseline != null && typeof run.planning_scope_baseline === 'object'
+            ? (run.planning_scope_baseline as Record<string, unknown>)
+            : undefined
       } as ProjectRun;
     });
   }, []);

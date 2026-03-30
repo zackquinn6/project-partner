@@ -25,6 +25,8 @@ import { ExpertSupportStep } from './PlanningWizardSteps/ExpertSupportStep';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
+import { PlanningConfirmationStep } from '@/components/PlanningWizardSteps/PlanningConfirmationStep';
+import type { Phase } from '@/interfaces/Project';
 
 const WIZARD_TOOL_ORDER: PlanningToolId[] = [
   'scope',
@@ -75,6 +77,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const validToolIds = useMemo(() => new Set(PLANNING_TOOLS.map(t => t.id)), []);
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  /** Final review screen after all tool steps are marked complete */
+  const [wizardPhase, setWizardPhase] = useState<'steps' | 'confirm'>('steps');
   const stepNavRef = useRef<HTMLDivElement | null>(null);
   /** Local copy of selected tools so dropdown changes apply immediately without waiting for context */
   const [localSelectedTools, setLocalSelectedTools] = useState<PlanningToolId[] | null>(null);
@@ -142,6 +146,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     if (open) {
       setCurrentStep(0);
       setCompletedSteps(new Set());
+      setWizardPhase('steps');
       // Do not clear localSelectedTools here: a stale full array from a prior open would paint
       // every step for one frame, then this effect nulls local state and empty context would
       // collapse the wizard. Local overrides are cleared when the dialog closes instead.
@@ -162,6 +167,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     setCompletedSteps(newCompletedSteps);
     if (stepIndex < wizardSteps.length - 1) {
       setCurrentStep(stepIndex + 1);
+    } else {
+      setWizardPhase('confirm');
     }
   };
 
@@ -176,12 +183,18 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   };
 
   const handleNext = () => {
+    if (wizardPhase === 'confirm') return;
     if (currentStep < wizardSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
 
   const handlePrevious = () => {
+    if (wizardPhase === 'confirm') {
+      setWizardPhase('steps');
+      setCurrentStep(Math.max(0, wizardSteps.length - 1));
+      return;
+    }
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
@@ -191,6 +204,13 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const allStepsComplete = wizardSteps.length > 0 && completedSteps.size === wizardSteps.length;
   const progress = wizardSteps.length > 0 ? completedSteps.size / wizardSteps.length * 100 : 0;
   const currentToolId = wizardSteps[currentStep]?.toolId ?? null;
+
+  const phasesForSummary = useMemo(
+    () => (Array.isArray(currentProjectRun?.phases) ? (currentProjectRun!.phases as Phase[]) : []),
+    [currentProjectRun?.phases]
+  );
+
+  const effectiveSelectedTools = localSelectedTools ?? selectedToolsFromContext;
 
   const planningToolsForWizard = useMemo(() => {
     const orderIdx = (id: PlanningToolId) => WIZARD_TOOL_ORDER.indexOf(id);
@@ -251,6 +271,18 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   );
 
   const renderCurrentStep = () => {
+    if (wizardPhase === 'confirm') {
+      return (
+        <PlanningConfirmationStep
+          selectedTools={effectiveSelectedTools}
+          phases={phasesForSummary}
+          customizationDecisionsRaw={currentProjectRun?.customization_decisions}
+          initialBudget={currentProjectRun?.initial_budget}
+          initialTimeline={currentProjectRun?.initial_timeline}
+        />
+      );
+    }
+
     const stepProps = {
       onComplete: () => handleStepComplete(currentStep),
       isCompleted: isStepCompleted(currentStep)
@@ -332,9 +364,11 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   };
 
   const currentStepPurpose =
-    wizardSteps[currentStep]?.description?.trim() ||
-    wizardSteps[currentStep]?.title ||
-    '';
+    wizardPhase === 'confirm'
+      ? 'Review your planning, then start the project or go back to make changes.'
+      : wizardSteps[currentStep]?.description?.trim() ||
+        wizardSteps[currentStep]?.title ||
+        '';
 
   if (layout === 'fullscreen' && !open) {
     return null;
@@ -394,10 +428,18 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                       <div
                         className={`
                           flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors sm:h-7 sm:w-7 md:h-8 md:w-8
-                          ${index === currentStep ? 'border-primary bg-primary text-primary-foreground' : isStepCompleted(index) ? 'border-green-500 bg-green-500 text-white' : 'border-muted-foreground bg-background'}
+                          ${
+                            wizardPhase === 'confirm'
+                              ? 'border-green-500 bg-green-500 text-white'
+                              : index === currentStep
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : isStepCompleted(index)
+                                  ? 'border-green-500 bg-green-500 text-white'
+                                  : 'border-muted-foreground bg-background'
+                          }
                         `}
                       >
-                        {isStepCompleted(index) ? (
+                        {wizardPhase === 'confirm' || isStepCompleted(index) ? (
                           <CheckCircle className="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
                         ) : (
                           <span className="text-[11px] font-medium sm:text-xs md:text-sm">{index + 1}</span>
@@ -405,11 +447,13 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                       </div>
                       <p
                         className={`mt-1 w-full text-center text-[9px] font-medium leading-[1.15] sm:text-[10px] md:text-xs line-clamp-3 break-words hyphens-auto ${
-                          index === currentStep
-                            ? 'text-primary'
-                            : isStepCompleted(index)
-                              ? 'text-green-700 dark:text-green-400'
-                              : 'text-muted-foreground'
+                          wizardPhase === 'confirm'
+                            ? 'text-green-700 dark:text-green-400'
+                            : index === currentStep
+                              ? 'text-primary'
+                              : isStepCompleted(index)
+                                ? 'text-green-700 dark:text-green-400'
+                                : 'text-muted-foreground'
                         }`}
                       >
                         {step.title}
@@ -471,16 +515,20 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                   size="sm"
                   aria-label="Previous step"
                   onClick={handlePrevious}
-                  disabled={currentStep === 0}
+                  disabled={wizardPhase === 'steps' && currentStep === 0}
                   className="h-9 w-9 shrink-0 p-0 lg:h-9 lg:w-auto lg:px-3 lg:flex-initial"
                 >
                   <ChevronLeft className="h-4 w-4 lg:mr-1" />
                   <span className="hidden lg:inline">Previous</span>
                 </Button>
                 <div className="min-w-[70px] px-1 text-center leading-tight">
-                  <div className="text-[10px] font-medium text-foreground sm:text-xs">Step</div>
+                  <div className="text-[10px] font-medium text-foreground sm:text-xs">
+                    {wizardPhase === 'confirm' ? 'Review' : 'Step'}
+                  </div>
                   <div className="text-[10px] text-muted-foreground sm:text-xs">
-                    {currentStep + 1} of {wizardSteps.length}
+                    {wizardPhase === 'confirm'
+                      ? 'Confirmation'
+                      : `${currentStep + 1} of ${wizardSteps.length}`}
                   </div>
                   <Progress value={progress} className="mx-auto mt-1 h-1.5 w-16 sm:h-2 sm:w-20" />
                   {allStepsComplete ? (
@@ -496,7 +544,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                   size="sm"
                   aria-label="Next step"
                   onClick={handleNext}
-                  disabled={currentStep === wizardSteps.length - 1}
+                  disabled={wizardPhase === 'confirm' || currentStep === wizardSteps.length - 1}
                   className="h-9 w-9 shrink-0 p-0 lg:h-9 lg:w-auto lg:px-3 lg:flex-initial"
                 >
                   <span className="hidden lg:inline lg:mr-1">Next</span>
@@ -526,24 +574,35 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         <div className="mt-2 shrink-0 border-t bg-background px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:mt-4 sm:px-0 sm:pb-2 sm:pt-4">
           <Card>
             <CardContent className="p-2.5 sm:p-4">
-              {allStepsComplete ? (
-                <Button
-                  onClick={async () => {
-                    const isNoToolsPlaceholder =
-                      wizardSteps.length === 1 && wizardSteps[0].toolId === null;
-                    if (!isNoToolsPlaceholder && onWorkflowFullyComplete) {
-                      const tools = localSelectedTools ?? selectedToolsFromContext;
-                      await onWorkflowFullyComplete(tools);
-                    }
-                    onOpenChange(false);
-                  }}
-                  size="lg"
-                  className="min-h-[48px] w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:col-start-2 sm:row-start-1"
-                >
-                  <CheckCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Complete planning</span>
-                  <span className="sm:hidden">Complete</span>
-                </Button>
+              {wizardPhase === 'confirm' ? (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    className="min-h-[48px] w-full sm:w-auto sm:min-w-[140px]"
+                    onClick={() => {
+                      setWizardPhase('steps');
+                      setCurrentStep(0);
+                    }}
+                  >
+                    Make changes
+                  </Button>
+                  <Button
+                    type="button"
+                    size="lg"
+                    className="min-h-[48px] w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:w-auto sm:min-w-[160px]"
+                    onClick={async () => {
+                      if (onWorkflowFullyComplete) {
+                        await onWorkflowFullyComplete(effectiveSelectedTools);
+                      }
+                      onOpenChange(false);
+                    }}
+                  >
+                    <CheckCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
+                    Start project
+                  </Button>
+                </div>
               ) : (
                 <div className="p-2 text-center text-sm text-muted-foreground">
                   Complete all steps to finish planning

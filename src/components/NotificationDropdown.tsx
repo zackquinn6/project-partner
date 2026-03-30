@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, AlertCircle, CheckCheck } from 'lucide-react';
+import { Bell, AlertCircle, CheckCheck, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -28,16 +28,29 @@ export function NotificationDropdown() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="z-[9999] w-[320px] p-0" sideOffset={5}>
-          <div className="p-2 border-b flex items-center justify-between">
+          <div className="p-2 border-b flex items-center justify-between gap-2">
             <span className="font-semibold text-sm">Notifications</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => setWindowOpen(true)}
-            >
-              View all
-            </Button>
+            <div className="flex items-center gap-1 shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1 px-2"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('open-portfolio-reminders'));
+                }}
+              >
+                <Settings2 className="h-3.5 w-3.5" />
+                Settings
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setWindowOpen(true)}
+              >
+                View all
+              </Button>
+            </div>
           </div>
           <ScrollArea className="max-h-[280px]">
             {loading && notifications.length === 0 ? (

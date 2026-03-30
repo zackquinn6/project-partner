@@ -30,9 +30,19 @@ interface MobileProjectCardProps {
   onSelect: () => void;
   variant?: 'project' | 'run';
   onDelete?: (projectId: string) => void;
+  /** When set with onOpenAar, shows an AAR control on project run cards. */
+  aarButtonVisible?: boolean;
+  onOpenAar?: () => void;
 }
 
-export function MobileProjectCard({ project, onSelect, variant = 'project', onDelete }: MobileProjectCardProps) {
+export function MobileProjectCard({
+  project,
+  onSelect,
+  variant = 'project',
+  onDelete,
+  aarButtonVisible,
+  onOpenAar,
+}: MobileProjectCardProps) {
   const { deleteProjectRun } = useProject();
   const { trackClick } = useButtonTracker();
   const [swipeOffset, setSwipeOffset] = useState(0);
@@ -207,6 +217,21 @@ export function MobileProjectCard({ project, onSelect, variant = 'project', onDe
                     <Progress value={progress} className="h-1.5 min-w-[4rem] flex-1" />
                     <span className="shrink-0 text-xs font-semibold tabular-nums text-foreground">{progress}%</span>
                     <ActionButton status={status} progress={progress} onSelect={onSelect} compact />
+                    {aarButtonVisible && onOpenAar ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-[11px]"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onOpenAar();
+                        }}
+                      >
+                        AAR
+                      </Button>
+                    ) : null}
                   </div>
                   <p className="truncate text-[11px] text-muted-foreground">
                     <span>Started {formatDate((project as ProjectRun).createdAt)}</span>

@@ -11,6 +11,10 @@ import { ensureStandardPhasesForNewProject, isKickoffPhaseComplete, KICKOFF_UI_S
 import { useOptimizedState } from '@/hooks/useOptimizedState';
 import { mergeQualityControlSettings, parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
+import {
+  buildPlanningScopeBaseline,
+  collectPlanningToolChangeSummaries,
+} from '@/utils/planningChangeTracking';
 import type { Json } from '@/integrations/supabase/types';
 import { getDefaultHomeIdForUser } from '@/utils/ensureDefaultHome';
 
@@ -851,6 +855,11 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         
         if (updateError) {
           console.error('⚠️ Error updating project run metadata:', updateError);
+          toast({
+            title: 'Could not save project run details',
+            description: updateError.message,
+            variant: 'destructive',
+          });
         }
       }
 
@@ -1238,6 +1247,31 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           home_id: (projectRun as any).home_id
         });
 
+        const isPlanningCompletionTransition =
+          projectRun.planningCompletedAt != null && currentProjectRun?.planningCompletedAt == null;
+
+        let planningBaselinePayload: ReturnType<typeof buildPlanningScopeBaseline> | null = null;
+        if (projectRun.planningCompletedAt != null) {
+          if (isPlanningCompletionTransition) {
+            planningBaselinePayload = buildPlanningScopeBaseline(
+              projectRun,
+              projectRun.planningCompletedAt
+            );
+          } else {
+            const { data: baselineCheck, error: baselineCheckError } = await supabase
+              .from('project_runs')
+              .select('planning_scope_baseline')
+              .eq('id', projectRun.id)
+              .single();
+            if (!baselineCheckError && baselineCheck?.planning_scope_baseline == null) {
+              planningBaselinePayload = buildPlanningScopeBaseline(
+                projectRun,
+                projectRun.planningCompletedAt
+              );
+            }
+          }
+        }
+
         const updateData = {
           name: projectRun.name,
           description: projectRun.description,
@@ -1272,6 +1306,14 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           initial_timeline: preservedTimeline !== undefined ? preservedTimeline : null,
           initial_sizing: preservedSizing !== undefined ? preservedSizing : null,
           updated_at: new Date().toISOString(),
+          ...(projectRun.planningCompletedAt != null
+            ? {
+                planning_completed_at: projectRun.planningCompletedAt.toISOString()
+              }
+            : {}),
+          ...(planningBaselinePayload != null
+            ? { planning_scope_baseline: planningBaselinePayload as unknown as Json }
+            : {}),
           ...(preservedQualityControlSettings !== undefined
             ? {
                 quality_control_settings:
@@ -1291,6 +1333,42 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         if (error) {
           console.error('❌ ProjectActions - Database update error:', error.message, error);
           throw error;
+        }
+
+        if (planningBaselinePayload != null) {
+          const merged = { ...projectRun, planningScopeBaseline: planningBaselinePayload };
+          const updatedRuns = projectRuns.map((r) => (r.id === projectRun.id ? merged : r));
+          updateProjectRunsCache(updatedRuns);
+          if (currentProjectRun?.id === projectRun.id) {
+            setCurrentProjectRun(merged);
+          }
+        }
+
+        const shouldLogPlanningChanges =
+          currentProjectRun?.planningCompletedAt != null && !isPlanningCompletionTransition;
+        if (shouldLogPlanningChanges) {
+          const summaries = collectPlanningToolChangeSummaries(currentProjectRun, projectRun);
+          if (summaries.length > 0) {
+            const rows = summaries.map((s) => ({
+              project_run_id: projectRun.id,
+              user_id: user.id,
+              planning_tool: s.planning_tool,
+              change_summary: s.change_summary,
+              change_detail: (s.change_detail ?? null) as Json | null,
+            }));
+            const { error: logError } = await supabase
+              .from('project_run_planning_change_events')
+              .insert(rows);
+            if (logError) {
+              console.error('❌ ProjectActions - planning change log insert failed:', logError);
+            } else {
+              window.dispatchEvent(
+                new CustomEvent('planning-change-events-updated', {
+                  detail: { projectRunId: projectRun.id },
+                })
+              );
+            }
+          }
         }
 
         console.log("✅ ProjectActions - Project run updated successfully in database for user:", user.id);
@@ -1468,7 +1546,15 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           initial_budget: freshRun.initial_budget || null,
           initial_timeline: freshRun.initial_timeline || null,
           initial_sizing: freshRun.initial_sizing || null,
-          quality_control_settings: parseQualityControlSettingsColumn(freshRun.quality_control_settings)
+          quality_control_settings: parseQualityControlSettingsColumn(freshRun.quality_control_settings),
+          planningCompletedAt: freshRun.planning_completed_at
+            ? new Date(freshRun.planning_completed_at)
+            : undefined,
+          planningScopeBaseline:
+            freshRun.planning_scope_baseline != null &&
+            typeof freshRun.planning_scope_baseline === 'object'
+              ? (freshRun.planning_scope_baseline as Record<string, unknown>)
+              : undefined
         };
 
         // Update cache and current project run

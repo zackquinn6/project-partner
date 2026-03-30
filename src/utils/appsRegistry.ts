@@ -33,6 +33,14 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     actionKey: 'project-scheduler',
     displayOrder: 2
   },
+  'change-management': {
+    appName: 'Change Management',
+    appType: 'native',
+    icon: 'GitBranch',
+    description: 'Track scope, schedule, and budget changes after planning',
+    actionKey: 'change-management',
+    displayOrder: 2.25
+  },
   'shopping-checklist': {
     appName: 'Shopping',
     appType: 'native',
@@ -113,6 +121,14 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     description: 'Verify workflow outputs are completed',
     actionKey: 'quality-check',
     displayOrder: 10.5
+  },
+  'after-action-review': {
+    appName: 'After Action Review',
+    appType: 'native',
+    icon: 'ClipboardList',
+    description: 'Capture what happened and what to change after the work',
+    actionKey: 'after-action-review',
+    displayOrder: 10.6
   },
   'waste-removal': {
     appName: 'Waste Removal',

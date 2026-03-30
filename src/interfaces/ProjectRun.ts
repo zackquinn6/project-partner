@@ -260,6 +260,8 @@ export interface ProjectRun {
     customPlannedWork: any[];
     customUnplannedWork: any[];
     workflowOrder: string[];
+    /** Kickoff step 4 + planning wizard: which planning tools are active for this run. */
+    selected_planning_tools?: string[];
     /** When true, this run was started from Risk-Less (kickoff UI skipped; risks-only session). */
     risk_focus?: boolean;
   };
@@ -276,4 +278,10 @@ export interface ProjectRun {
 
   /** Per-run Quality Control rules (project_runs.quality_control_settings) */
   quality_control_settings?: QualityControlSettings;
+
+  /** When the user confirmed planning complete (`project_runs.planning_completed_at`). */
+  planningCompletedAt?: Date;
+
+  /** Baseline snapshot JSON when planning first completed (`project_runs.planning_scope_baseline`). */
+  planningScopeBaseline?: Record<string, unknown>;
 }

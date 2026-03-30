@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Mail,
   MessageSquare,
   Bell,
   Calendar,
+  Globe,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,8 +32,29 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
   const [phoneNumber, setPhoneNumber] = useState("");
   const [notifyWeeklyBudget, setNotifyWeeklyBudget] = useState(false);
   const [notifyDailyTaskStatus, setNotifyDailyTaskStatus] = useState(false);
+  const [timeZone, setTimeZone] = useState("");
+  const [dailyLocalTime, setDailyLocalTime] = useState("09:00");
+  const [zipSuggestionNote, setZipSuggestionNote] = useState<string | null>(null);
+  const [resolvingZip, setResolvingZip] = useState(false);
 
   const [loadingSettings, setLoadingSettings] = useState(true);
+
+  const ianaTimeZones = useMemo(() => {
+    try {
+      return Intl.supportedValuesOf("timeZone");
+    } catch {
+      return [
+        "UTC",
+        "America/New_York",
+        "America/Chicago",
+        "America/Denver",
+        "America/Los_Angeles",
+        "America/Phoenix",
+        "America/Anchorage",
+        "Pacific/Honolulu",
+      ];
+    }
+  }, []);
 
   useEffect(() => {
     if (!user?.id) {
@@ -42,15 +65,31 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
     setLoadingSettings(true);
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from("portfolio_notification_settings")
-          .select(
-            "email_enabled, email_address, sms_enabled, phone_number, notify_weekly_budget, notify_daily_task_status, notify_daily_celebrations",
-          )
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if (error) throw error;
+        const [portfolioRes, profileRes] = await Promise.all([
+          supabase
+            .from("portfolio_notification_settings")
+            .select(
+              "email_enabled, email_address, sms_enabled, phone_number, notify_weekly_budget, notify_daily_task_status, notify_daily_celebrations, daily_notification_local_time",
+            )
+            .eq("user_id", user.id)
+            .maybeSingle(),
+          supabase
+            .from("user_profiles")
+            .select("time_zone")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+        ]);
+        if (portfolioRes.error) throw portfolioRes.error;
+        if (profileRes.error) {
+          console.warn("user_profiles time_zone load:", profileRes.error);
+        }
         if (cancelled) return;
+        const data = portfolioRes.data;
+        const profTz =
+          typeof profileRes.data?.time_zone === "string"
+            ? profileRes.data.time_zone.trim()
+            : "";
+
         if (data) {
           setEmailEnabled(data.email_enabled === true);
           setEmailAddress(
@@ -62,6 +101,10 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
           );
           setNotifyWeeklyBudget(data.notify_weekly_budget === true);
           setNotifyDailyTaskStatus(data.notify_daily_task_status === true);
+          const dlt = data.daily_notification_local_time;
+          if (typeof dlt === "string" && /^\d{2}:\d{2}$/.test(dlt)) {
+            setDailyLocalTime(dlt);
+          }
         } else {
           setEmailEnabled(!!user.email);
           setEmailAddress(user.email ?? "");
@@ -69,6 +112,39 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
           setPhoneNumber("");
           setNotifyWeeklyBudget(false);
           setNotifyDailyTaskStatus(false);
+        }
+
+        if (profTz) {
+          setTimeZone(profTz);
+          setZipSuggestionNote(null);
+        } else {
+          setTimeZone("");
+          const { data: home } = await supabase
+            .from("homes")
+            .select("ZIP_code")
+            .eq("user_id", user.id)
+            .eq("is_primary", true)
+            .maybeSingle();
+          const zip =
+            typeof home?.ZIP_code === "string" ? home.ZIP_code.trim() : "";
+          if (zip) {
+            const { data: tzBody, error: fnErr } =
+              await supabase.functions.invoke<{
+                time_zone?: string;
+                error?: string;
+              }>("resolve-timezone-from-zip", { body: { zip } });
+            if (
+              !cancelled &&
+              !fnErr &&
+              typeof tzBody?.time_zone === "string" &&
+              tzBody.time_zone
+            ) {
+              setTimeZone(tzBody.time_zone);
+              setZipSuggestionNote(
+                `Time zone was filled in from your primary home ZIP (${zip}). Save to store it on your profile, or pick a different zone below.`,
+              );
+            }
+          }
         }
       } catch (e) {
         if (!cancelled) console.error("Error loading portfolio notifications:", e);
@@ -86,6 +162,7 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
     setSaving(true);
     try {
       const trimmedEmail = emailAddress.trim();
+      const hm = dailyLocalTime.trim();
       const payload = {
         email_enabled: emailEnabled,
         email_address: trimmedEmail === "" ? null : trimmedEmail,
@@ -94,6 +171,7 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
         notify_weekly_budget: notifyWeeklyBudget,
         notify_daily_task_status: notifyDailyTaskStatus,
         notify_daily_celebrations: false,
+        daily_notification_local_time: /^\d{2}:\d{2}$/.test(hm) ? hm : null,
         updated_at: new Date().toISOString(),
       };
       const { data: existing } = await supabase
@@ -113,6 +191,17 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
           .insert({ user_id: user.id, ...payload });
         if (error) throw error;
       }
+
+      const tzTrim = timeZone.trim();
+      const { error: profErr } = await supabase
+        .from("user_profiles")
+        .update({
+          time_zone: tzTrim === "" ? null : tzTrim,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+      if (profErr) throw profErr;
+
       toast({
         title: "Settings Saved",
         description: "Your notification preferences have been updated.",
@@ -218,6 +307,81 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
       });
     } finally {
       setSendingTest(false);
+    }
+  };
+
+  const suggestTimeZoneFromZip = async () => {
+    if (!user?.id) return;
+    setResolvingZip(true);
+    try {
+      const { data: home } = await supabase
+        .from("homes")
+        .select("ZIP_code")
+        .eq("user_id", user.id)
+        .eq("is_primary", true)
+        .maybeSingle();
+      let zip =
+        typeof home?.ZIP_code === "string" ? home.ZIP_code.trim() : "";
+      if (!zip) {
+        const { data: anyHome } = await supabase
+          .from("homes")
+          .select("ZIP_code")
+          .eq("user_id", user.id)
+          .not("ZIP_code", "is", null)
+          .limit(1)
+          .maybeSingle();
+        zip =
+          typeof anyHome?.ZIP_code === "string" ? anyHome.ZIP_code.trim() : "";
+      }
+      if (!zip) {
+        toast({
+          title: "No ZIP on file",
+          description:
+            "Add a ZIP code to a home in My Homes first, then try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke<{
+        time_zone?: string;
+        error?: string;
+      }>("resolve-timezone-from-zip", { body: { zip } });
+      if (error) throw error;
+      if (typeof data?.time_zone === "string" && data.time_zone) {
+        setTimeZone(data.time_zone);
+        setZipSuggestionNote(
+          `Suggested from ZIP ${zip} (${data.time_zone}). Save to keep this on your profile.`,
+        );
+        toast({
+          title: "Time zone updated",
+          description: `Set to ${data.time_zone}. Click Save to persist.`,
+        });
+      } else {
+        toast({
+          title: "Could not resolve",
+          description:
+            data?.error ??
+            "Check the ZIP code on your home, or pick a time zone manually.",
+          variant: "destructive",
+        });
+      }
+    } catch (e) {
+      toast({
+        title: "Error",
+        description:
+          e instanceof Error ? e.message : "Failed to resolve time zone.",
+        variant: "destructive",
+      });
+    } finally {
+      setResolvingZip(false);
+    }
+  };
+
+  const useBrowserTimeZone = () => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz) {
+      setTimeZone(tz);
+      setZipSuggestionNote("Using this browser’s time zone. Save to store on your profile.");
     }
   };
 
@@ -404,6 +568,89 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
               Open task report (daily)
             </Label>
           </div>
+
+          {notifyDailyTaskStatus ? (
+            <div className="mt-4 space-y-3 rounded-md border border-border/60 bg-background/80 p-3 md:p-4">
+              <div className="flex items-center gap-2 text-xs md:text-sm font-medium">
+                <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+                Daily digest — time &amp; region
+              </div>
+              <p className="text-[11px] md:text-xs text-muted-foreground leading-relaxed">
+                The daily email lists workflow tasks from your Timekeeper schedule that are due
+                today and tasks that were due before today, with reminders to update status in the
+                app. Delivery uses your region&apos;s local date and the time you choose.
+              </p>
+              {zipSuggestionNote ? (
+                <Alert>
+                  <AlertTitle className="text-sm">Time zone</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    {zipSuggestionNote}
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="daily-local-time" className="text-xs md:text-sm">
+                    Daily notification time
+                  </Label>
+                  <Input
+                    id="daily-local-time"
+                    type="time"
+                    value={dailyLocalTime}
+                    onChange={(e) => setDailyLocalTime(e.target.value)}
+                    className="text-xs md:text-sm h-8 md:h-9 w-full max-w-[200px]"
+                  />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="workflow-time-zone" className="text-xs md:text-sm">
+                    Time zone (IANA)
+                  </Label>
+                  <select
+                    id="workflow-time-zone"
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-2 py-1 text-xs md:text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring max-h-[min(40vh,240px)]"
+                    value={timeZone}
+                    onChange={(e) => {
+                      setTimeZone(e.target.value);
+                      setZipSuggestionNote(null);
+                    }}
+                  >
+                    <option value="">Select time zone…</option>
+                    {ianaTimeZones.map((z) => (
+                      <option key={z} value={z}>
+                        {z}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8"
+                  disabled={resolvingZip || !user?.id}
+                  onClick={() => void suggestTimeZoneFromZip()}
+                >
+                  {resolvingZip ? "Looking up…" : "Suggest from home ZIP"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8"
+                  onClick={useBrowserTimeZone}
+                >
+                  Use this device’s time zone
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Email wording includes: &quot;These things were supposed to get done today, did
+                they?&quot; and a separate section for overdue work: &quot;These tasks are due as of
+                yesterday&quot; — plus a reminder to update task status in your workflow.
+              </p>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

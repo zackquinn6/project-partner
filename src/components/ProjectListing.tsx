@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Play, Trash2, Plus, User, Wrench, Home, Users, Zap, Folder, Calculator, HelpCircle, Hammer, BookOpen, MapPin, Edit, Camera, Bell } from "lucide-react";
+import { Play, Trash2, Plus, User, Wrench, Home, Users, Zap, Folder, Calculator, HelpCircle, Hammer, BookOpen, MapPin, Edit, Camera, Bell, ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useProject } from '@/contexts/ProjectContext';
 import { Project } from '@/interfaces/Project';
@@ -30,6 +30,8 @@ import { ProjectPortfolioRemindersDialog } from '@/components/ProjectPortfolioRe
 import { getRiskFocusAwareDisplayName, isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 import { useMembership } from '@/contexts/MembershipContext';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { AfterActionReviewWindow } from '@/components/AfterActionReviewWindow';
+import { useAfterActionReviewRunIds } from '@/hooks/useAfterActionReviewRunIds';
 
 interface ProjectListingProps {
   onProjectSelect?: (project: Project | null | 'workflow') => void;
@@ -52,6 +54,9 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
   const [showPortfolioReminders, setShowPortfolioReminders] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState('Projects membership');
+  const [aarWindowOpen, setAarWindowOpen] = useState(false);
+  const [aarTargetRun, setAarTargetRun] = useState<ProjectRun | null>(null);
+  const aarRunIds = useAfterActionReviewRunIds(projectRuns);
 
   const goToCatalog = () => {
     if (!membershipLoading && !hasProjectsTier) {
@@ -60,6 +65,11 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
       return;
     }
     navigate('/projects');
+  };
+
+  const shouldShowAarEntry = (projectRun: ProjectRun, progressPercent: number) => {
+    const dashStatus = dashboardStatusFromProgressPercent(progressPercent);
+    return dashStatus === 'complete' || aarRunIds.has(projectRun.id);
   };
 
   const calculateProgress = (projectRun: ProjectRun) => {
@@ -247,6 +257,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                 .map((projectRun) => {
                 const progress = calculateProgress(projectRun);
                 const dashStatus = dashboardStatusFromProgressPercent(progress);
+                const aarVisible = shouldShowAarEntry(projectRun, progress);
                 return (
                   <Card key={projectRun.id} className="p-4">
                     <div className="space-y-3">
@@ -321,6 +332,22 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                             Continue
                           </Button>
                         )}
+
+                        {aarVisible && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setAarTargetRun(projectRun);
+                              setAarWindowOpen(true);
+                            }}
+                            className="shrink-0"
+                            title="After Action Review"
+                          >
+                            <ClipboardList className="w-4 h-4 sm:mr-1" />
+                            <span className="hidden sm:inline">AAR</span>
+                          </Button>
+                        )}
                         
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -390,6 +417,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                   .map((projectRun) => {
                   const progress = calculateProgress(projectRun);
                   const dashStatus = dashboardStatusFromProgressPercent(progress);
+                  const aarVisible = shouldShowAarEntry(projectRun, progress);
 
                   return (
                     <TableRow key={projectRun.id}>
@@ -474,6 +502,22 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                               Continue
                             </Button>
                           )}
+
+                          {aarVisible && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="transition-fast"
+                              title="After Action Review"
+                              onClick={() => {
+                                setAarTargetRun(projectRun);
+                                setAarWindowOpen(true);
+                              }}
+                            >
+                              <ClipboardList className="w-4 h-4 mr-1" />
+                              AAR
+                            </Button>
+                          )}
                           
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -555,6 +599,14 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
         open={showUpgradePrompt}
         onOpenChange={setShowUpgradePrompt}
         feature={upgradeFeature}
+      />
+      <AfterActionReviewWindow
+        open={aarWindowOpen}
+        onOpenChange={(open) => {
+          setAarWindowOpen(open);
+          if (!open) setAarTargetRun(null);
+        }}
+        projectRun={aarTargetRun}
       />
       {/* Removed duplicate CommunityPostsWindow - handled by Navigation */}
     </div>
