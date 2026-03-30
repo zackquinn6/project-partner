@@ -539,103 +539,104 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         </Card>
       )}
 
-      {/* Step body: mobile = internal scroll + pinned actions; desktop = page scroll */}
+      {/* Primary actions: fixed slot below purpose so Continue / Not a match stay in the same place every step */}
+      <Card className="shrink-0">
+        <CardContent className="p-2.5 sm:p-4">
+          {!isStepCompleted(currentKickoffStep) ? (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
+              <div className="flex min-h-12 min-w-0 flex-1 flex-col justify-center">
+                {currentStepId === 'kickoff-step-1' ? (
+                  <Button
+                    onClick={async () => {
+                      if (currentProjectRun) {
+                        await deleteProjectRun(currentProjectRun.id);
+                        toast.success('Project removed');
+                        if (onExit) onExit();
+                      }
+                    }}
+                    variant="outline"
+                    size="lg"
+                    className="h-12 w-full border-red-300 px-2 text-xs text-red-700 hover:bg-red-50 sm:h-auto sm:min-h-12 sm:py-3 sm:text-sm"
+                  >
+                    <ArrowLeft className="mr-1.5 h-4 w-4 shrink-0 sm:mr-2" />
+                    <span className="hidden text-left leading-tight sm:inline sm:line-clamp-2">
+                      Not a match — back to catalog
+                    </span>
+                    <span className="sm:hidden">Not a match — back</span>
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    className="h-12 w-full border-muted-foreground/40 px-2 text-xs text-muted-foreground hover:bg-muted/40 sm:h-auto sm:min-h-12 sm:py-3 sm:text-sm"
+                    onClick={() => {
+                      onKickoffComplete();
+                    }}
+                  >
+                    <span className="hidden sm:inline sm:line-clamp-2 sm:text-left">Skip direct to project workflow</span>
+                    <span className="sm:hidden">Skip to workflow</span>
+                  </Button>
+                )}
+              </div>
+              <div className="flex w-full shrink-0 flex-col sm:w-[17.5rem] sm:self-stretch">
+                <Button
+                  onClick={async () => {
+                    if (currentStepId === 'kickoff-step-3' && (window as any).__projectProfileStepSave) {
+                      try {
+                        await (window as any).__projectProfileStepSave();
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        await handleStepComplete(currentKickoffStep);
+                        return;
+                      } catch (error) {
+                        console.error('❌ KickoffWorkflow: Error saving project profile:', error);
+                        toast.error('Failed to save project profile. Please try again.');
+                        return;
+                      }
+                    }
+
+                    if (currentStepId === 'kickoff-step-4') {
+                      await handleStepComplete(currentKickoffStep, selectedPlanningTools);
+                      return;
+                    }
+
+                    handleStepComplete(currentKickoffStep);
+                  }}
+                  size="lg"
+                  className="h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:h-full sm:min-h-12 sm:py-3"
+                >
+                  <CheckCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
+                  {currentStepId === 'kickoff-step-3' ? (
+                    <>
+                      <span className="hidden sm:inline sm:line-clamp-2 sm:text-left">Continue to Workflow Setup</span>
+                      <span className="sm:hidden">Continue</span>
+                    </>
+                  ) : currentStepId === 'kickoff-step-4' ? (
+                    <>
+                      <span className="hidden sm:inline sm:line-clamp-2 sm:text-left">Complete & Start Planning</span>
+                      <span className="sm:hidden">Complete</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="hidden sm:inline sm:line-clamp-2 sm:text-left">Complete & Continue</span>
+                      <span className="sm:hidden">Continue</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-2 text-center sm:p-3">
+              <p className="text-xs text-green-800 sm:text-sm">Step Completed ✓</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Step body: scrollable content only; actions stay above */}
       <div className="flex min-h-0 flex-1 flex-col md:min-h-[min(520px,70vh)]">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] -mx-2 px-2 pb-2 sm:mx-0 sm:px-0 sm:pb-4 md:flex-none md:overflow-visible md:pb-0">
           {renderCurrentStep()}
-        </div>
-        <div className="mt-2 shrink-0 border-t bg-background px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:mt-4 sm:px-0 sm:pb-2 sm:pt-4">
-          <Card>
-            <CardContent className="p-2.5 sm:p-4">
-              {!isStepCompleted(currentKickoffStep) ? (
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
-                  {/* Secondary: flexible width; Continue: fixed-width column on desktop so position matches every step */}
-                  <div className="flex min-h-[48px] min-w-0 flex-1 flex-col justify-center">
-                    {currentStepId === 'kickoff-step-1' ? (
-                      <Button 
-                        onClick={async () => {
-                          if (currentProjectRun) {
-                            await deleteProjectRun(currentProjectRun.id);
-                            toast.success('Project removed');
-                            if (onExit) onExit();
-                          }
-                        }} 
-                        variant="outline"
-                        size="lg"
-                        className="w-full min-h-[48px] border-red-300 text-red-700 hover:bg-red-50 text-xs sm:text-sm px-2"
-                      >
-                        <ArrowLeft className="w-4 h-4 mr-1.5 sm:mr-2 shrink-0" />
-                        <span className="hidden sm:inline sm:text-left sm:leading-tight">Not a match -<br />take me back to catalog</span>
-                        <span className="sm:hidden">Not a match — back</span>
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="lg"
-                        className="w-full min-h-[48px] border-muted-foreground/40 text-muted-foreground hover:bg-muted/40 text-xs sm:text-sm px-2"
-                        onClick={() => {
-                          onKickoffComplete();
-                        }}
-                      >
-                        <span className="hidden sm:inline">Skip direct to project workflow</span>
-                        <span className="sm:hidden">Skip to workflow</span>
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex w-full shrink-0 flex-col justify-center sm:w-[17.5rem]">
-                    <Button 
-                      onClick={async () => {
-                        if (currentStepId === 'kickoff-step-3' && (window as any).__projectProfileStepSave) {
-                          try {
-                            await (window as any).__projectProfileStepSave();
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                            await handleStepComplete(currentKickoffStep);
-                            return;
-                          } catch (error) {
-                            console.error('❌ KickoffWorkflow: Error saving project profile:', error);
-                            toast.error('Failed to save project profile. Please try again.');
-                            return;
-                          }
-                        }
-
-                        if (currentStepId === 'kickoff-step-4') {
-                          await handleStepComplete(currentKickoffStep, selectedPlanningTools);
-                          return;
-                        }
-                        
-                        handleStepComplete(currentKickoffStep);
-                      }} 
-                      size="lg"
-                      className="w-full min-h-[48px] bg-green-600 px-3 text-sm hover:bg-green-700"
-                    >
-                      <CheckCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
-                      {currentStepId === 'kickoff-step-3' ? (
-                        <>
-                          <span className="hidden sm:inline">Continue to Workflow Setup</span>
-                          <span className="sm:hidden">Continue</span>
-                        </>
-                      ) : currentStepId === 'kickoff-step-4' ? (
-                        <>
-                          <span className="hidden sm:inline">Complete & Start Planning</span>
-                          <span className="sm:hidden">Complete</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="hidden sm:inline">Complete & Continue</span>
-                          <span className="sm:hidden">Continue</span>
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-full p-2 bg-green-50 border border-green-200 rounded-lg text-center">
-                  <p className="text-green-800 text-xs sm:text-sm">Step Completed ✓</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
