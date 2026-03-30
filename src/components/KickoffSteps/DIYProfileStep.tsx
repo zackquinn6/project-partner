@@ -230,7 +230,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                     : "No tools specified"}
                 </p>
                 <div className="mt-2">
-                  <div className="flex flex-wrap gap-x-2 gap-y-3">
+                  <div className="flex flex-wrap gap-x-1 gap-y-2">
                     {(existingProfile.owned_tools || []).slice(0, 12).map((tool: any, index: number) => {
                       const toolId = tool?.id;
                       const toolName = toolDisplayName(tool as Record<string, unknown>);
@@ -246,24 +246,23 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
                       return (
                         <div
                           key={toolId ?? toolName ?? String(index)}
-                          className="flex w-[4.75rem] sm:w-20 flex-col items-center gap-1 flex-shrink-0"
+                          className="flex w-[4rem] sm:w-[4.25rem] flex-col items-center gap-0.5 flex-shrink-0"
                         >
-                          <div
-                            className="relative h-9 w-9 rounded-md border bg-background flex items-center justify-center overflow-hidden"
-                            title={label}
-                          >
-                            {photoUrl ? (
-                              <img src={photoUrl} alt={label} className="w-full h-full object-cover" />
-                            ) : (
-                              <Wrench className="w-4 h-4 text-muted-foreground" />
-                            )}
+                          <div className="relative h-9 w-9 shrink-0" title={label}>
+                            <div className="h-full w-full overflow-hidden rounded-md border bg-background flex items-center justify-center">
+                              {photoUrl ? (
+                                <img src={photoUrl} alt={label} className="h-full w-full object-cover" />
+                              ) : (
+                                <Wrench className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </div>
                             {typeof quantity === 'number' && quantity > 1 && (
-                              <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[10px] border border-primary/20">
+                              <div className="pointer-events-none absolute -right-1 -top-1 z-10 min-w-[1.125rem] rounded-full border border-primary/30 bg-primary px-1 py-0 text-center text-[10px] font-medium leading-none text-primary-foreground">
                                 {quantity}
                               </div>
                             )}
                           </div>
-                          <span className="text-[9px] sm:text-[10px] leading-tight text-center text-muted-foreground line-clamp-2 w-full px-0.5">
+                          <span className="line-clamp-2 w-full px-0.5 text-center text-[9px] leading-tight text-muted-foreground sm:text-[10px]">
                             {label}
                           </span>
                         </div>

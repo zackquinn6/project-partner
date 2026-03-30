@@ -73,6 +73,17 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   const [selectedPlanningTools, setSelectedPlanningTools] = useState<PlanningToolId[]>([]);
   // CRITICAL FIX: Use ref instead of state to avoid race conditions
   const isCompletingStepRef = useRef(false);
+  const kickoffStepNavRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollKickoffStepNav = (direction: 'left' | 'right') => {
+    const el = kickoffStepNavRef.current;
+    if (!el) return;
+    const amount = Math.max(160, Math.floor(el.clientWidth * 0.9));
+    el.scrollBy({
+      left: direction === 'left' ? -amount : amount,
+      behavior: 'smooth',
+    });
+  };
 
   const kickoffSteps = useMemo(() => {
     const copy = KICKOFF_STEP_DEFINITIONS.map((s) => ({ ...s }));
@@ -391,43 +402,107 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       <Card className="shrink-0">
         <CardContent className="p-1.5 sm:p-2 md:p-2.5">
           <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-            <div className="flex items-center space-x-2 sm:space-x-2 md:space-x-4 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 -mx-2 sm:mx-0 px-2 sm:px-0 scrollbar-hide">
-              {kickoffSteps.map((step, index) => <div key={step.id} className="flex items-center flex-shrink-0">
-                  <div className={`
-                    flex items-center justify-center w-8 h-8 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full border-2 transition-colors flex-shrink-0
-                    ${index === currentKickoffStep ? 'border-primary bg-primary text-primary-foreground' : isStepCompleted(index) ? 'border-green-500 bg-green-500 text-white' : 'border-muted-foreground bg-background'}
-                  `}>
-                    {isStepCompleted(index) ? <CheckCircle className="w-4 h-4 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" /> : <span className="text-xs sm:text-xs md:text-sm font-medium">{index + 1}</span>}
-                  </div>
-                  <div className="ml-1.5 sm:ml-1.5 md:ml-2 hidden sm:block">
-                    <p className={`text-xs sm:text-sm font-medium whitespace-nowrap ${index === currentKickoffStep ? 'text-primary' : isStepCompleted(index) ? 'text-green-700' : 'text-muted-foreground'}`}>
-                      {step.title}
-                    </p>
-                  </div>
-                  {index < kickoffSteps.length - 1 && <div className="mx-2 sm:mx-2 md:mx-4 w-4 sm:w-4 md:w-8 h-0.5 bg-muted-foreground/20 flex-shrink-0" />}
-                </div>)}
+            <div className="flex min-w-0 flex-1 items-start gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="mt-0.5 h-9 w-9 shrink-0 sm:hidden"
+                onClick={() => scrollKickoffStepNav('left')}
+                aria-label="Scroll steps left"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div
+                ref={kickoffStepNavRef}
+                className="scrollbar-hide flex min-w-0 flex-1 items-start overflow-x-auto px-0.5 pb-1 sm:overflow-visible sm:px-1 sm:pb-0"
+              >
+                {kickoffSteps.map((step, index) => (
+                  <React.Fragment key={step.id}>
+                    {index > 0 ? (
+                      <div
+                        className="mt-[13px] h-0.5 w-1 shrink-0 self-start bg-muted-foreground/25 sm:mt-[15px] sm:w-1.5"
+                        aria-hidden
+                      />
+                    ) : null}
+                    <div className="flex min-w-[4.25rem] flex-1 basis-0 flex-col items-center px-0.5 sm:min-w-[4.5rem] md:min-w-[5rem]">
+                      <div
+                        className={`
+                          flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors sm:h-7 sm:w-7 md:h-8 md:w-8
+                          ${
+                            index === currentKickoffStep
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : isStepCompleted(index)
+                                ? 'border-green-500 bg-green-500 text-white'
+                                : 'border-muted-foreground bg-background'
+                          }
+                        `}
+                      >
+                        {isStepCompleted(index) ? (
+                          <CheckCircle className="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                        ) : (
+                          <span className="text-[11px] font-medium sm:text-xs md:text-sm">{index + 1}</span>
+                        )}
+                      </div>
+                      <p
+                        className={`mt-1 w-full text-center text-[9px] font-medium leading-tight sm:text-[10px] md:text-xs break-normal [overflow-wrap:normal] [word-break:normal] ${
+                          index === currentKickoffStep
+                            ? 'text-primary'
+                            : isStepCompleted(index)
+                              ? 'text-green-700 dark:text-green-400'
+                              : 'text-muted-foreground'
+                        }`}
+                      >
+                        {step.title}
+                      </p>
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="mt-0.5 h-9 w-9 shrink-0 sm:hidden"
+                onClick={() => scrollKickoffStepNav('right')}
+                aria-label="Scroll steps right"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
 
-            <div className="w-full sm:w-auto">
-              <div className="flex items-center justify-center gap-1.5">
-                <Button variant="outline" size="sm" onClick={handlePrevious} disabled={currentKickoffStep === 0} className="flex-1 sm:flex-initial text-xs h-11 sm:h-9">
-                  <ChevronLeft className="w-4 h-4 sm:w-4 sm:h-4 mr-1" />
+            <div className="flex w-full flex-col gap-2 sm:w-auto">
+              <div className="flex w-full items-center justify-center gap-1.5 sm:w-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevious}
+                  disabled={currentKickoffStep === 0}
+                  className="h-9 w-9 shrink-0 p-0 sm:h-9 sm:w-auto sm:px-3"
+                  aria-label="Previous step"
+                >
+                  <ChevronLeft className="h-4 w-4 sm:mr-1" />
                   <span className="hidden sm:inline">Previous</span>
-                  <span className="sm:hidden">Prev</span>
                 </Button>
                 <div className="min-w-[70px] px-1 text-center leading-tight">
-                  <div className="text-[10px] sm:text-xs font-medium text-foreground">Step</div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground">
+                  <div className="text-[10px] font-medium text-foreground sm:text-xs">Step</div>
+                  <div className="text-[10px] text-muted-foreground sm:text-xs">
                     {currentKickoffStep + 1} of {kickoffSteps.length}
                   </div>
                   {allKickoffStepsComplete && (
                     <CheckCircle className="mx-auto mt-0.5 h-3.5 w-3.5 text-green-500" aria-label="Kickoff complete" />
                   )}
                 </div>
-                <Button variant="outline" size="sm" onClick={handleNext} disabled={currentKickoffStep === kickoffSteps.length - 1} className="flex-1 sm:flex-initial text-xs h-11 sm:h-9">
-                  <span className="hidden sm:inline">Next</span>
-                  <span className="sm:hidden">Next</span>
-                  <ChevronRight className="w-4 h-4 sm:w-4 sm:h-4 ml-1" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNext}
+                  disabled={currentKickoffStep === kickoffSteps.length - 1}
+                  className="h-9 w-9 shrink-0 p-0 sm:h-9 sm:w-auto sm:px-3"
+                  aria-label="Next step"
+                >
+                  <span className="hidden sm:inline sm:mr-1">Next</span>
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
