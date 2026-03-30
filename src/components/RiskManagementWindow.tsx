@@ -44,6 +44,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/contexts/ProjectContext';
@@ -1012,14 +1013,11 @@ export function RiskManagementWindow({
                 <Switch checked={advancedMode} onCheckedChange={setAdvancedMode} />
               </div>
               ) : null}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-                className="h-7 px-2 text-[9px] md:text-xs flex-shrink-0"
-              >
-                Close
-              </Button>
+              <PlanningToolWindowHeaderActions
+                className="flex-shrink-0"
+                onCancel={() => onOpenChange(false)}
+                onSaveAndClose={() => onOpenChange(false)}
+              />
             </div>
           </div>
         </DialogHeader>

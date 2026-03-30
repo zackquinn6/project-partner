@@ -571,6 +571,10 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         title={getModeTitle()}
         description={getModeDescription()}
         size={isMobile ? "content-full" : "large"}
+        planningToolHeader
+        planningToolOnCancel={() => onOpenChange(false)}
+        planningToolOnSave={() => void handleSaveCustomization()}
+        planningToolSaveLabel="Save & Apply"
       >
         <div className="flex flex-col h-full px-4 pb-4">
           {/* Project Sizing Estimate Header */}
@@ -627,6 +631,19 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
               )}
             </div>
           )}
+
+          <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4 shrink-0" />
+            <span>
+              {mode === 'initial-plan'
+                ? 'Planning Phase'
+                : mode === 'final-plan'
+                  ? 'Final Review'
+                  : mode === 'unplanned-work'
+                    ? 'Adding New Work'
+                    : 'Re-planning'}
+            </span>
+          </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
             {/* Tab Headers - Positioned directly after header */}
@@ -780,37 +797,6 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
             </TabsContent>
             </div>
           </Tabs>
-
-          {/* Footer with action buttons - Mobile optimized */}
-          <div className={`shrink-0 border-t ${isMobile ? 'p-3' : 'p-4'} bg-muted/30`}>
-            <div className={`flex ${isMobile ? 'flex-col' : 'justify-between items-center'} gap-3`}>
-              <div className={`flex items-center gap-2 ${isMobile ? 'justify-center' : ''}`}>
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">
-                  {mode === 'initial-plan' ? 'Planning Phase' : 
-                   mode === 'final-plan' ? 'Final Review' : 
-                   mode === 'unplanned-work' ? 'Adding New Work' : 'Re-planning'}
-                </span>
-              </div>
-              <div className={`flex gap-3 ${isMobile ? 'w-full' : ''}`}>
-                <Button 
-                  variant="outline" 
-                  onClick={() => onOpenChange(false)} 
-                  size="sm"
-                  className={isMobile ? 'flex-1' : ''}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleSaveCustomization} 
-                  size="sm"
-                  className={isMobile ? 'flex-1' : ''}
-                >
-                  Apply Changes
-                </Button>
-              </div>
-            </div>
-          </div>
         </div>
       </ResponsiveDialog>
 

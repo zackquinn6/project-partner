@@ -200,9 +200,19 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     });
   };
 
+  const allWorkflowStepsComplete =
+    wizardSteps.length > 0 && completedSteps.size === wizardSteps.length;
+
   const handleNext = () => {
     if (wizardPhase === 'confirm') return;
-    if (currentStep < wizardSteps.length - 1) {
+    const lastIndex = wizardSteps.length - 1;
+    if (currentStep === lastIndex) {
+      if (allWorkflowStepsComplete) {
+        setWizardPhase('confirm');
+      }
+      return;
+    }
+    if (currentStep < lastIndex) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -219,8 +229,20 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   };
 
   const isStepCompleted = (stepIndex: number) => completedSteps.has(stepIndex);
-  const allStepsComplete = wizardSteps.length > 0 && completedSteps.size === wizardSteps.length;
   const progress = wizardSteps.length > 0 ? completedSteps.size / wizardSteps.length * 100 : 0;
+
+  const nextButtonIsReview =
+    wizardPhase === 'steps' &&
+    wizardSteps.length > 0 &&
+    currentStep === wizardSteps.length - 1 &&
+    allWorkflowStepsComplete;
+
+  const nextButtonDisabled =
+    wizardPhase === 'confirm' ||
+    (wizardPhase === 'steps' &&
+      wizardSteps.length > 0 &&
+      currentStep === wizardSteps.length - 1 &&
+      !allWorkflowStepsComplete);
   const currentToolId = wizardSteps[currentStep]?.toolId ?? null;
 
   const phasesForSummary = useMemo(
@@ -417,7 +439,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
 
   const currentStepPurpose =
     wizardPhase === 'confirm'
-      ? 'Review your planning, then start the project or go back to make changes.'
+      ? 'Review your planning'
       : wizardSteps[currentStep]?.description?.trim() ||
         wizardSteps[currentStep]?.title ||
         '';
@@ -583,23 +605,17 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                       : `${currentStep + 1} of ${wizardSteps.length}`}
                   </div>
                   <Progress value={progress} className="mx-auto mt-1 h-1.5 w-16 sm:h-2 sm:w-20" />
-                  {allStepsComplete ? (
-                    <CheckCircle
-                      className="mx-auto mt-0.5 h-3.5 w-3.5 text-green-500"
-                      aria-label="Planning complete"
-                    />
-                  ) : null}
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  aria-label="Next step"
+                  aria-label={nextButtonIsReview ? 'Open planning review summary' : 'Next step'}
                   onClick={handleNext}
-                  disabled={wizardPhase === 'confirm' || currentStep === wizardSteps.length - 1}
+                  disabled={nextButtonDisabled}
                   className="h-9 w-9 shrink-0 p-0 lg:h-9 lg:w-auto lg:px-3 lg:flex-initial"
                 >
-                  <span className="hidden lg:inline lg:mr-1">Next</span>
+                  <span className="hidden lg:inline lg:mr-1">{nextButtonIsReview ? 'Review' : 'Next'}</span>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -619,50 +635,52 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         </Card>
       ) : null}
 
+      {wizardPhase === 'confirm' ? (
+        <div className="flex w-full shrink-0 gap-2 px-2 sm:px-0">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="min-h-[48px] min-w-0 flex-[3]"
+            onClick={() => {
+              setWizardPhase('steps');
+              setCurrentStep(0);
+            }}
+          >
+            Make changes
+          </Button>
+          <Button
+            type="button"
+            size="lg"
+            className="min-h-[48px] min-w-0 flex-[7] bg-green-600 px-3 text-sm hover:bg-green-700"
+            onClick={async () => {
+              if (onWorkflowFullyComplete) {
+                await onWorkflowFullyComplete(effectiveSelectedTools);
+              }
+              onOpenChange(false);
+            }}
+          >
+            <CheckCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
+            Start project
+          </Button>
+        </div>
+      ) : null}
+
       <div className="flex min-h-0 flex-1 flex-col md:min-h-[min(520px,70vh)]">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] -mx-2 px-2 pb-2 sm:mx-0 sm:px-0 sm:pb-4 md:flex-none md:overflow-visible md:pb-0">
           <div className="min-w-0">{renderCurrentStep()}</div>
         </div>
-        <div className="mt-2 shrink-0 border-t bg-background px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:mt-4 sm:px-0 sm:pb-2 sm:pt-4">
-          <Card>
-            <CardContent className="p-2.5 sm:p-4">
-              {wizardPhase === 'confirm' ? (
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="lg"
-                    className="min-h-[48px] w-full sm:w-auto sm:min-w-[140px]"
-                    onClick={() => {
-                      setWizardPhase('steps');
-                      setCurrentStep(0);
-                    }}
-                  >
-                    Make changes
-                  </Button>
-                  <Button
-                    type="button"
-                    size="lg"
-                    className="min-h-[48px] w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:w-auto sm:min-w-[160px]"
-                    onClick={async () => {
-                      if (onWorkflowFullyComplete) {
-                        await onWorkflowFullyComplete(effectiveSelectedTools);
-                      }
-                      onOpenChange(false);
-                    }}
-                  >
-                    <CheckCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
-                    Start project
-                  </Button>
-                </div>
-              ) : (
+        {wizardPhase !== 'confirm' ? (
+          <div className="mt-2 shrink-0 border-t bg-background px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:mt-4 sm:px-0 sm:pb-2 sm:pt-4">
+            <Card>
+              <CardContent className="p-2.5 sm:p-4">
                 <div className="p-2 text-center text-sm text-muted-foreground">
                   Complete all steps to finish planning
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
       </div>
     </div>
   );

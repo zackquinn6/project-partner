@@ -15,6 +15,10 @@ interface ScrollableDialogProps {
   className?: string;
   /** Replace default Close with Cancel + Save and Close (planning tool windows). */
   planningToolHeader?: boolean;
+  planningToolOnCancel?: () => void;
+  planningToolOnSave?: () => void | Promise<void>;
+  planningToolSaveLabel?: string;
+  planningToolSaveDisabled?: boolean;
 }
 
 export function ScrollableDialog({ 
@@ -25,6 +29,10 @@ export function ScrollableDialog({
   children, 
   className,
   planningToolHeader = false,
+  planningToolOnCancel,
+  planningToolOnSave,
+  planningToolSaveLabel,
+  planningToolSaveDisabled,
 }: ScrollableDialogProps) {
   // Enable scrolling within modal by preventing pointer events on overlay for wheel events
   useEffect(() => {
@@ -114,8 +122,10 @@ export function ScrollableDialog({
               (planningToolHeader ? (
                 <PlanningToolWindowHeaderActions
                   className="ml-4"
-                  onCancel={() => onOpenChange(false)}
-                  onSaveAndClose={() => onOpenChange(false)}
+                  onCancel={planningToolOnCancel ?? (() => onOpenChange(false))}
+                  onSaveAndClose={planningToolOnSave ?? (() => onOpenChange(false))}
+                  saveLabel={planningToolSaveLabel}
+                  saveDisabled={planningToolSaveDisabled}
                 />
               ) : (
                 <Button

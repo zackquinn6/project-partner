@@ -148,6 +148,10 @@ export const MaterialsSelectionDialog: React.FC<MaterialsSelectionDialogProps> =
       size="large"
       title="Select Materials to Purchase"
       description="Choose which materials you need to purchase for your project"
+      planningToolHeader
+      planningToolOnCancel={() => onOpenChange(false)}
+      planningToolOnSave={() => void handleConfirm()}
+      planningToolSaveDisabled={selectedCount === 0}
     >
       <ScrollArea className="h-[calc(100vh-16rem)] max-h-[600px]">
         <div className="space-y-4 pr-4">
@@ -328,20 +332,11 @@ export const MaterialsSelectionDialog: React.FC<MaterialsSelectionDialogProps> =
         </div>
       </ScrollArea>
 
-      {/* Actions - Fixed at bottom */}
-      <div className="flex justify-between items-center pt-4 mt-4 border-t">
-        <div className="text-sm text-muted-foreground">
+      {selectedCount > 0 ? (
+        <p className="pt-2 text-sm text-muted-foreground">
           {selectedCount} item{selectedCount !== 1 ? 's' : ''} selected
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleConfirm}>
-            Apply
-          </Button>
-        </div>
-      </div>
+        </p>
+      ) : null}
     </ResponsiveDialog>
   );
 };

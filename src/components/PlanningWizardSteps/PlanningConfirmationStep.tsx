@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PLANNING_TOOLS } from '@/components/KickoffSteps/ProjectToolsStep';
 import type { PlanningToolId } from '@/components/KickoffSteps/ProjectToolsStep';
@@ -54,10 +54,6 @@ export function PlanningConfirmationStep({
       <Card>
         <CardHeader className="p-4 sm:p-6">
           <CardTitle className="text-lg sm:text-xl">Review planning</CardTitle>
-          <CardDescription>
-            Confirm the planning tools you used and the scope decisions you made. When you start the project, we record the
-            time as the end of planning and the beginning of execution.
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 p-4 pt-0 sm:p-6 sm:pt-0">
           <section>

@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -81,6 +82,8 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
   const [performanceWindowOpen, setPerformanceWindowOpen] = useState(false);
   // State to hold the budget goal value
   const [budgetGoal, setBudgetGoal] = useState<string | number | null>(null);
+  const [projectBudgetDraft, setProjectBudgetDraft] = useState('');
+  const [advancedBudgetAccordionValue, setAdvancedBudgetAccordionValue] = useState<string | undefined>(undefined);
 
   // Listen for performance window open/close events
   useEffect(() => {
@@ -234,6 +237,73 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
       setBudgetGoal(budgetValue);
     }
   }, [currentProjectRun]);
+
+  useEffect(() => {
+    if (!open) return;
+    const v = budgetGoal ?? null;
+    if (v === null || v === undefined || v === '') {
+      setProjectBudgetDraft('');
+      return;
+    }
+    const s = typeof v === 'string' ? v.trim() : String(v).trim();
+    if (s === '') {
+      setProjectBudgetDraft('');
+      return;
+    }
+    const n = parseFloat(s);
+    if (!isNaN(n) && n >= 0) {
+      setProjectBudgetDraft(s);
+    } else {
+      setProjectBudgetDraft('');
+    }
+  }, [open, budgetGoal]);
+
+  useEffect(() => {
+    if (editingItem) {
+      setAdvancedBudgetAccordionValue('advanced-budget');
+    }
+  }, [editingItem]);
+
+  const applyProjectBudgetGoal = async () => {
+    if (!currentProjectRun) {
+      toast({ title: 'No project selected', variant: 'destructive' });
+      return;
+    }
+    const trimmed = projectBudgetDraft.trim();
+    if (!trimmed) {
+      toast({
+        title: 'Enter a budget amount',
+        description: 'Set a positive dollar amount for the project budget goal.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const n = parseFloat(trimmed);
+    if (isNaN(n) || n <= 0) {
+      toast({
+        title: 'Invalid amount',
+        description: 'Enter a valid positive number.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const asString = String(n);
+    try {
+      await updateProjectRun({
+        ...currentProjectRun,
+        initial_budget: asString,
+      });
+      setBudgetGoal(asString);
+      toast({ title: 'Project budget updated' });
+    } catch (error) {
+      console.error('Error updating project budget:', error);
+      toast({
+        title: 'Failed to update project budget',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const saveBudgetData = async (items: BudgetLineItem[], entries: ActualEntry[]) => {
     if (!currentProjectRun) {
@@ -638,6 +708,33 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             </div>
           </div>
 
+          <Card className="mb-4">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Set Project Budget</CardTitle>
+              <CardDescription>
+                This amount is stored as the project budget goal and drives Budgeted vs Goal comparisons.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="project-budget-goal-input">Amount (USD)</Label>
+                <Input
+                  id="project-budget-goal-input"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={projectBudgetDraft}
+                  onChange={(e) => setProjectBudgetDraft(e.target.value)}
+                  placeholder="0.00"
+                  className="h-11 md:h-10"
+                />
+              </div>
+              <Button type="button" className="h-11 md:h-10 w-full sm:w-auto shrink-0" onClick={() => void applyProjectBudgetGoal()}>
+                Save project budget
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Summary Section - Stacked on mobile, side-by-side on desktop */}
           <div className="mb-4 space-y-3 md:space-y-0">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
@@ -683,118 +780,126 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         </TabsList>
 
         <TabsContent value="budget" className="space-y-4 mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                {editingItem ? 'Edit Budget Line Item' : 'Add Budget Line Item'}
-              </CardTitle>
-              {editingItem && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Editing: {editingItem.item}
-                </p>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Section/Phase <span className="text-red-500">*</span></Label>
-                  <Select
-                    value={newItemSection}
-                    onValueChange={setNewItemSection}
-                  >
-                    <SelectTrigger className="h-11 md:h-10">
-                      <SelectValue placeholder="Select a phase" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availablePhases.length === 0 ? (
-                        <SelectItem value="" disabled>No phases available</SelectItem>
-                      ) : (
-                        availablePhases.map(phase => (
-                          <SelectItem key={phase.id} value={phase.name}>
-                            {phase.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Item Description <span className="text-red-500">*</span></Label>
-                  <Input
-                    value={newItemName}
-                    onChange={(e) => setNewItemName(e.target.value)}
-                    placeholder="e.g., 2x4 Lumber"
-                    className="h-11 md:h-10"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Budget Amount <span className="text-red-500">*</span></Label>
-                  <Input
-                    type="number"
-                    value={newItemAmount}
-                    onChange={(e) => setNewItemAmount(e.target.value)}
-                    placeholder="0.00"
-                    className="h-11 md:h-10"
-                  />
-                </div>
-                <div>
-                  <Label>Category</Label>
-                  <Select value={newItemCategory} onValueChange={(value: any) => setNewItemCategory(value)}>
-                    <SelectTrigger className="h-11 md:h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="material">Material</SelectItem>
-                      <SelectItem value="labor">Labor</SelectItem>
-                      <SelectItem value="tools">Tools</SelectItem>
-                      <SelectItem value="tool-rentals">Tool Rentals</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex flex-col gap-2">
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-red-500">*</span> Required fields
-                </p>
-                <div className="flex gap-2">
+          <Accordion
+            type="single"
+            collapsible
+            value={advancedBudgetAccordionValue}
+            onValueChange={setAdvancedBudgetAccordionValue}
+            className="w-full rounded-lg border bg-card"
+          >
+            <AccordionItem value="advanced-budget" className="border-0 px-4">
+              <AccordionTrigger className="text-lg font-semibold hover:no-underline py-4">
+                Advanced Budget Planning
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4 pb-2">
                   {editingItem && (
-                    <Button 
-                      onClick={cancelEditItem}
-                      variant="outline"
-                      className="h-11 md:h-10 w-full md:w-auto"
-                    >
-                      Cancel
-                    </Button>
+                    <p className="text-sm text-muted-foreground">
+                      Editing: {editingItem.item}
+                    </p>
                   )}
-                  <Button 
-                    onClick={editingItem ? updateBudgetItem : addBudgetItem}
-                    className="h-11 md:h-10 w-full md:w-auto"
-                  >
-                    {editingItem ? (
-                      <>
-                        <Save className="w-4 h-4 mr-2" />
-                        Update Line Item
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Line Item
-                      </>
-                    )}
-                  </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Section/Phase <span className="text-red-500">*</span></Label>
+                      <Select
+                        value={newItemSection}
+                        onValueChange={setNewItemSection}
+                      >
+                        <SelectTrigger className="h-11 md:h-10">
+                          <SelectValue placeholder="Select a phase" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availablePhases.length === 0 ? (
+                            <SelectItem value="" disabled>No phases available</SelectItem>
+                          ) : (
+                            availablePhases.map(phase => (
+                              <SelectItem key={phase.id} value={phase.name}>
+                                {phase.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Item Description <span className="text-red-500">*</span></Label>
+                      <Input
+                        value={newItemName}
+                        onChange={(e) => setNewItemName(e.target.value)}
+                        placeholder="e.g., 2x4 Lumber"
+                        className="h-11 md:h-10"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Budget Amount <span className="text-red-500">*</span></Label>
+                      <Input
+                        type="number"
+                        value={newItemAmount}
+                        onChange={(e) => setNewItemAmount(e.target.value)}
+                        placeholder="0.00"
+                        className="h-11 md:h-10"
+                      />
+                    </div>
+                    <div>
+                      <Label>Category</Label>
+                      <Select value={newItemCategory} onValueChange={(value: any) => setNewItemCategory(value)}>
+                        <SelectTrigger className="h-11 md:h-10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="material">Material</SelectItem>
+                          <SelectItem value="labor">Labor</SelectItem>
+                          <SelectItem value="tools">Tools</SelectItem>
+                          <SelectItem value="tool-rentals">Tool Rentals</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <p className="text-xs text-muted-foreground">
+                      <span className="text-red-500">*</span> Required fields
+                    </p>
+                    <div className="flex gap-2">
+                      {editingItem && (
+                        <Button 
+                          onClick={cancelEditItem}
+                          variant="outline"
+                          className="h-11 md:h-10 w-full md:w-auto"
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                      <Button 
+                        onClick={editingItem ? updateBudgetItem : addBudgetItem}
+                        className="h-11 md:h-10 w-full md:w-auto"
+                      >
+                        {editingItem ? (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Update Line Item
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Line Item
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
           <div className="space-y-4">
             {uniqueSections.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-8">
-                  <p className="text-sm text-muted-foreground">No budget items yet. Add your first line item above.</p>
+                  <p className="text-sm text-muted-foreground">No budget items yet. Add your first line item under Advanced Budget Planning.</p>
                 </CardContent>
               </Card>
             ) : (

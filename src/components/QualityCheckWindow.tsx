@@ -28,6 +28,7 @@ import {
   type QualityControlSettings
 } from '@/utils/qualityControlSettings';
 import { toast } from 'sonner';
+import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
 import { QualityControlPdfPrinter, type QualityControlPdfRow } from '@/components/QualityControlPdfPrinter';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -442,15 +443,11 @@ export function QualityCheckWindow({
                     </Tooltip>
                   </TooltipProvider>
                 ) : null}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onOpenChange(false)}
-                  className="h-8 px-3 text-xs font-medium"
-                >
-                  Close
-                </Button>
+                <PlanningToolWindowHeaderActions
+                  className="flex-shrink-0"
+                  onCancel={() => onOpenChange(false)}
+                  onSaveAndClose={() => onOpenChange(false)}
+                />
               </div>
             </div>
           </DialogHeader>

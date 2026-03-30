@@ -17,6 +17,12 @@ interface ResponsiveDialogProps {
   className?: string;
   /** Cancel + Save and Close in header (planning tool windows). */
   planningToolHeader?: boolean;
+  /** Override default header Cancel (e.g. only close). */
+  planningToolOnCancel?: () => void;
+  /** Override default header primary action (default: close dialog). */
+  planningToolOnSave?: () => void | Promise<void>;
+  planningToolSaveLabel?: string;
+  planningToolSaveDisabled?: boolean;
 }
 
 export function ResponsiveDialog({ 
@@ -28,6 +34,10 @@ export function ResponsiveDialog({
   children, 
   className,
   planningToolHeader = false,
+  planningToolOnCancel,
+  planningToolOnSave,
+  planningToolSaveLabel,
+  planningToolSaveDisabled,
 }: ResponsiveDialogProps) {
   // Use ScrollableDialog for content-large for proper scrolling and blur
   if (size === 'content-large') {
@@ -44,6 +54,10 @@ export function ResponsiveDialog({
         description={description}
         className={className}
         planningToolHeader={planningToolHeader}
+        planningToolOnCancel={planningToolOnCancel}
+        planningToolOnSave={planningToolOnSave}
+        planningToolSaveLabel={planningToolSaveLabel}
+        planningToolSaveDisabled={planningToolSaveDisabled}
       >
         {children}
       </ScrollableDialog>
@@ -122,8 +136,10 @@ export function ResponsiveDialog({
               </div>
               {planningToolHeader ? (
                 <PlanningToolWindowHeaderActions
-                  onCancel={() => onOpenChange(false)}
-                  onSaveAndClose={() => onOpenChange(false)}
+                  onCancel={planningToolOnCancel ?? (() => onOpenChange(false))}
+                  onSaveAndClose={planningToolOnSave ?? (() => onOpenChange(false))}
+                  saveLabel={planningToolSaveLabel}
+                  saveDisabled={planningToolSaveDisabled}
                 />
               ) : null}
             </DialogHeader>
@@ -175,8 +191,10 @@ export function ResponsiveDialog({
           </div>
           {planningToolHeader ? (
             <PlanningToolWindowHeaderActions
-              onCancel={() => onOpenChange(false)}
-              onSaveAndClose={() => onOpenChange(false)}
+              onCancel={planningToolOnCancel ?? (() => onOpenChange(false))}
+              onSaveAndClose={planningToolOnSave ?? (() => onOpenChange(false))}
+              saveLabel={planningToolSaveLabel}
+              saveDisabled={planningToolSaveDisabled}
             />
           ) : null}
         </DialogHeader>

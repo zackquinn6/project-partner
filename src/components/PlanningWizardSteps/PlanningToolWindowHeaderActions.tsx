@@ -11,16 +11,19 @@ export interface PlanningToolWindowHeaderActionsProps {
   onSaveAndClose: () => void | Promise<void>;
   className?: string;
   saveDisabled?: boolean;
+  /** Primary action label (default: Save and Close). */
+  saveLabel?: string;
 }
 
 /**
- * Upper-right actions for planning workflow tool windows: Cancel + Save and Close.
+ * Upper-right actions for planning workflow tool windows: Cancel + primary save action.
  */
 export function PlanningToolWindowHeaderActions({
   onCancel,
   onSaveAndClose,
   className,
   saveDisabled,
+  saveLabel = 'Save and Close',
 }: PlanningToolWindowHeaderActionsProps) {
   return (
     <div className={cn('flex shrink-0 items-center gap-2', className)}>
@@ -34,7 +37,7 @@ export function PlanningToolWindowHeaderActions({
         className={cn('text-xs md:text-sm', PLANNING_TOOL_SAVE_CLOSE_CLASSNAME)}
         onClick={() => void onSaveAndClose()}
       >
-        Save and Close
+        {saveLabel}
       </Button>
     </div>
   );

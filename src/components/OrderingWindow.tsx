@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronLeft, ChevronRight, ShoppingCart, Eye, EyeOff, ExternalLink, Globe, Check, Maximize, Info, Calendar, AlertTriangle, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShoppingCart, Eye, EyeOff, ExternalLink, Globe, Check, Maximize, Info, Calendar, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -410,35 +410,38 @@ export function OrderingWindow({
 
   // Handle case where no tools or materials exist
   if (uniqueTools.length === 0 && uniqueMaterials.length === 0) {
-    return <ResponsiveDialog open={open} onOpenChange={onOpenChange} title="No Items to Order" size="modal-sm">
+    return (
+      <ResponsiveDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        title="No Items to Order"
+        size="modal-sm"
+        planningToolHeader
+      >
         <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
           <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-medium mb-2">No Items to Order</h3>
-          <p className="text-sm text-center">This project doesn't have any tools or materials defined.</p>
+          <p className="text-sm text-center">This project doesn&apos;t have any tools or materials defined.</p>
         </div>
-      </ResponsiveDialog>;
+      </ResponsiveDialog>
+    );
   }
   const {
     isMobile
   } = useResponsive();
-  return <ResponsiveDialog open={open} onOpenChange={onOpenChange} title="" size={isMobile ? "content-full" : "large"}>
+  const shoppingTitle =
+    selectedMaterials && (selectedMaterials.materials.length > 0 || selectedMaterials.tools.length > 0)
+      ? 'Shopping Checklist - New Materials Needed'
+      : 'Shopping Checklist';
+  return (
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={shoppingTitle}
+      size={isMobile ? "content-full" : "large"}
+      planningToolHeader
+    >
       <div className="flex flex-col h-full space-y-2">
-        {/* Custom Title with Close Button */}
-        <div className="flex items-center justify-between mb-2 pb-3 border-b sticky top-0 bg-background z-10">
-          <h2 className="text-lg md:text-xl font-bold">
-            {selectedMaterials && (selectedMaterials.materials.length > 0 || selectedMaterials.tools.length > 0) ? 'Shopping Checklist - New Materials Needed' : 'Shopping Checklist'}
-          </h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            className="h-8 px-3 text-xs font-medium"
-          >
-            <X className="w-4 h-4 mr-1" />
-            Close
-          </Button>
-        </div>
-        
         {/* Schedule Status */}
         {!isScheduled && <Alert className="mb-2">
             <Calendar className="h-4 w-4" />
@@ -791,5 +794,6 @@ export function OrderingWindow({
           </div>
         </DialogContent>
       </Dialog>
-    </ResponsiveDialog>;
+    </ResponsiveDialog>
+  );
 }
