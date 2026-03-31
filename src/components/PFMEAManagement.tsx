@@ -262,7 +262,7 @@ const PFMEA_NAV_COLS: PfmeaNavColumn[] = [
   'recommended_actions',
 ];
 
-/** Solid background + classes for scroll-region header cells (`position: sticky; left` applied in `renderHeaderWithPlus`). */
+/** Solid background + border classes for Requirements→Recommended Actions headers (`sticky top` only — they scroll horizontally with the table). */
 const PFMEA_SCROLL_HEADER_STICKY: Record<
   PfmeaNavColumn,
   { backgroundColor: string; className: string }
@@ -1873,28 +1873,27 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       hidePlus?: boolean;
       sortKey?: PfmeaSortKey;
       sortDefaultDir?: 'asc' | 'desc';
-      /** When set, header stays fixed horizontally while scrolling (after frozen process columns). */
-      scrollStickyLeftPx?: number;
+      /** Sticky to top of scroll viewport only; column scrolls horizontally with body cells. */
+      stickyHeaderVerticalScrollRegion?: boolean;
     }
   ) => {
-    const sticky = opts?.scrollStickyLeftPx != null ? PFMEA_SCROLL_HEADER_STICKY[col] : null;
+    const vSticky = opts?.stickyHeaderVerticalScrollRegion ? PFMEA_SCROLL_HEADER_STICKY[col] : null;
     const w = colWidths[col];
     return (
     <TableHead
       className={cn(
-        sticky ? sticky.className : (opts?.barClassName ?? pfmeaHeaderBar.other),
+        vSticky ? vSticky.className : (opts?.barClassName ?? pfmeaHeaderBar.other),
         'relative h-auto px-1 py-1 align-bottom'
       )}
       style={{
         width: `${w}px`,
         minWidth: `${w}px`,
-        ...(sticky && opts?.scrollStickyLeftPx != null
+        ...(vSticky
           ? {
               position: 'sticky' as const,
-              left: opts.scrollStickyLeftPx,
               top: 0,
-              zIndex: 45,
-              backgroundColor: sticky.backgroundColor,
+              zIndex: 40,
+              backgroundColor: vSticky.backgroundColor,
             }
           : {}),
       }}
@@ -2156,39 +2155,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     };
     const band = (col: PfmeaNavColumn) => cn('border-l border-border/30', pfmeaColBand[col]);
 
-    let frozenEnd = 0;
-    if (pfmeaColVisibility.phase) frozenEnd += wPhase;
-    if (pfmeaColVisibility.operation) frozenEnd += wOp;
-    if (pfmeaColVisibility.step) frozenEnd += wStep;
-    if (pfmeaColVisibility.step_description) frozenEnd += wDesc;
-
-    let hSl = frozenEnd;
-    const scrollStickyRequirements = hSl;
-    hSl += colWidths.requirements;
-    const scrollStickyFailureMode = hSl;
-    hSl += colWidths.failure_mode;
-    const scrollStickyEffects = hSl;
-    hSl += colWidths.effects;
-    const scrollStickyS = hSl;
-    hSl += colWidths.s;
-    const scrollStickyProcessVariables = hSl;
-    if (pfmeaColVisibility.process_variables) hSl += colWidths.process_variables;
-    const scrollStickyCauses = hSl;
-    hSl += colWidths.causes;
-    const scrollStickyPrevention = hSl;
-    hSl += colWidths.prevention_controls;
-    const scrollStickyO = hSl;
-    hSl += colWidths.o;
-    const scrollStickyDetection = hSl;
-    hSl += colWidths.detection_controls;
-    const scrollStickyD = hSl;
-    hSl += colWidths.d;
-    const scrollStickyRpn = hSl;
-    hSl += colWidths.rpn;
-    const scrollStickyAp = hSl;
-    hSl += colWidths.ap;
-    const scrollStickyRecommended = hSl;
-
     return (
       <>
       <Card>
@@ -2374,68 +2340,68 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                     lightBar: true,
                     derived: !pfmeaIsEditable,
                     sortKey: 'requirement',
-                    scrollStickyLeftPx: scrollStickyRequirements,
+                    stickyHeaderVerticalScrollRegion: true,
                   })}
                   {renderHeaderWithPlus('Failure Mode', 'failure_mode', {
                     barClassName: pfmeaHeaderBar.failure,
                     lightBar: true,
                     derived: !pfmeaIsEditable,
                     sortKey: 'failure_mode',
-                    scrollStickyLeftPx: scrollStickyFailureMode,
+                    stickyHeaderVerticalScrollRegion: true,
                   })}
                   {renderHeaderWithPlus('Potential Effects', 'effects', {
                     barClassName: pfmeaHeaderBar.effectSeverity,
                     derived: !pfmeaIsEditable,
                     sortKey: 'severity',
                     sortDefaultDir: 'desc',
-                    scrollStickyLeftPx: scrollStickyEffects,
+                    stickyHeaderVerticalScrollRegion: true,
                   })}
                   {renderHeaderWithPlus('S', 's', {
                     barClassName: pfmeaHeaderBar.effectSeverity,
                     hidePlus: true,
                     sortKey: 'severity',
                     sortDefaultDir: 'desc',
-                    scrollStickyLeftPx: scrollStickyS,
+                    stickyHeaderVerticalScrollRegion: true,
                   })}
                   {pfmeaColVisibility.process_variables ? (
                     renderHeaderWithPlus('Process Variables', 'process_variables', {
                       barClassName: pfmeaHeaderBar.causeOccurrence,
                       hidePlus: true,
                       derived: true,
-                      scrollStickyLeftPx: scrollStickyProcessVariables,
+                      stickyHeaderVerticalScrollRegion: true,
                     })
                   ) : null}
                   {renderHeaderWithPlus('Potential Causes', 'causes', {
                     barClassName: pfmeaHeaderBar.causeOccurrence,
                     derived: !pfmeaIsEditable,
                     sortKey: 'cause',
-                    scrollStickyLeftPx: scrollStickyCauses,
+                    stickyHeaderVerticalScrollRegion: true,
                   })}
                   {renderHeaderWithPlus('Prevention Controls', 'prevention_controls', {
                     barClassName: pfmeaHeaderBar.causeOccurrence,
                     derived: !pfmeaIsEditable,
                     sortKey: 'prevention_controls',
-                    scrollStickyLeftPx: scrollStickyPrevention,
+                    stickyHeaderVerticalScrollRegion: true,
                   })}
                   {renderHeaderWithPlus('O', 'o', {
                     barClassName: pfmeaHeaderBar.causeOccurrence,
                     hidePlus: true,
                     sortKey: 'occurrence',
                     sortDefaultDir: 'desc',
-                    scrollStickyLeftPx: scrollStickyO,
+                    stickyHeaderVerticalScrollRegion: true,
                   })}
                   {renderHeaderWithPlus('Detection Controls', 'detection_controls', {
                     barClassName: pfmeaHeaderBar.detectionPurple,
                     derived: !pfmeaIsEditable,
                     sortKey: 'detection_controls',
-                    scrollStickyLeftPx: scrollStickyDetection,
+                    stickyHeaderVerticalScrollRegion: true,
                   })}
                   {renderHeaderWithPlus('D', 'd', {
                     barClassName: pfmeaHeaderBar.detectionPurple,
                     hidePlus: true,
                     sortKey: 'detection',
                     sortDefaultDir: 'desc',
-                    scrollStickyLeftPx: scrollStickyD,
+                    stickyHeaderVerticalScrollRegion: true,
                   })}
                   {renderHeaderWithPlus('RPN', 'rpn', {
                     derived: true,
@@ -2443,7 +2409,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                     hidePlus: true,
                     sortKey: 'rpn',
                     sortDefaultDir: 'desc',
-                    scrollStickyLeftPx: scrollStickyRpn,
+                    stickyHeaderVerticalScrollRegion: true,
                   })}
                   {renderHeaderWithPlus('Action Priority', 'ap', {
                     derived: true,
@@ -2451,13 +2417,13 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                     hidePlus: true,
                     sortKey: 'ap',
                     sortDefaultDir: 'desc',
-                    scrollStickyLeftPx: scrollStickyAp,
+                    stickyHeaderVerticalScrollRegion: true,
                   })}
                   {renderHeaderWithPlus('Recommended Actions', 'recommended_actions', {
                     barClassName: pfmeaHeaderBar.other,
                     derived: !pfmeaIsEditable,
                     sortKey: 'recommended_actions',
-                    scrollStickyLeftPx: scrollStickyRecommended,
+                    stickyHeaderVerticalScrollRegion: true,
                   })}
                 </TableRow>
               </TableHeader>
@@ -2843,9 +2809,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                   className="border-b border-border/40 px-1 py-1 text-sm last:border-b-0"
                                 >
                                   <div className="flex min-h-0 w-full items-start gap-0.5">
-                                    <span className="mt-0.5 mr-1 shrink-0 rounded bg-muted px-1 py-0 text-[10px] font-medium text-muted-foreground">
-                                      Prev
-                                    </span>
                                     <div className="min-h-0 min-w-0 flex-1">
                                       {renderEditableCell(rowIndex, control.control_description, control.id, 'control_description', 'control', false, {
                                         fullWidth: true,
@@ -2953,9 +2916,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                   className="border-b border-border/40 px-1 py-1 text-sm last:border-b-0"
                                 >
                                   <div className="flex min-h-0 w-full items-start gap-0.5">
-                                    <span className="mt-0.5 mr-1 shrink-0 rounded bg-muted px-1 py-0 text-[10px] font-medium text-muted-foreground">
-                                      Det
-                                    </span>
                                     <div className="min-h-0 min-w-0 flex-1">
                                       {renderEditableCell(rowIndex, control.control_description, control.id, 'control_description', 'control', false, {
                                         fullWidth: true,
@@ -3397,9 +3357,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                             .map((control) => (
                               <div key={control.id} className="rounded border p-1 text-sm">
                                 <div className="flex items-start gap-0.5">
-                                  <Badge variant="outline" className="mt-0.5 mr-1 shrink-0 text-xs">
-                                    Prev
-                                  </Badge>
                                   <div className="min-w-0 flex-1">
                                     {renderEditableCell(control.control_description, control.id, 'control_description', 'control', false, {
                                       fullWidth: true,
@@ -3423,7 +3380,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                             className="h-6 px-1 text-xs"
                           >
                             <Plus className="w-3 h-3 mr-1" />
-                            Prev
+                            Add Prevention
                           </Button>
                         </div>
                       </TableCell>
@@ -3448,9 +3405,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                             .map((control) => (
                               <div key={control.id} className="rounded border p-1 text-sm">
                                 <div className="flex items-start gap-0.5">
-                                  <Badge variant="outline" className="mt-0.5 mr-1 shrink-0 text-xs">
-                                    Det
-                                  </Badge>
                                   <div className="min-w-0 flex-1">
                                     {renderEditableCell(control.control_description, control.id, 'control_description', 'control', false, {
                                       fullWidth: true,
@@ -3484,7 +3438,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                             className="h-6 px-1 text-xs"
                           >
                             <Plus className="w-3 h-3 mr-1" />
-                            Det
+                            Add Detection
                           </Button>
                         </div>
                       </TableCell>
