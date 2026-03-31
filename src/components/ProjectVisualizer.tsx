@@ -640,7 +640,7 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
 
           <div className="rounded-lg border bg-card px-3 py-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Risk-Less — timeline &amp; budget</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Risk-Less — timeline & budget</div>
               {riskLessLoading && (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" />
