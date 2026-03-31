@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ interface ProjectImageManagerProps {
 }
 
 export const ProjectImageManager = ({ projectId, onImageUpdated }: ProjectImageManagerProps) => {
+  const { user } = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [uploading, setUploading] = useState(false);
@@ -65,7 +67,7 @@ export const ProjectImageManager = ({ projectId, onImageUpdated }: ProjectImageM
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !projectId) {
+    if (!selectedFile || !projectId || !user) {
       toast.error('Please select an image');
       return;
     }
@@ -75,8 +77,8 @@ export const ProjectImageManager = ({ projectId, onImageUpdated }: ProjectImageM
     try {
       // Create a unique filename
       const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${projectId}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${projectId}/${fileName}`;
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
