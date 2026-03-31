@@ -96,6 +96,8 @@ function finalizeStartedProgress(rawPercent: number, completedWeight: number): n
 }
 
 type ProgressMetrics = {
+  totalSteps: number;
+  completedSteps: number;
   totalWeight: number;
   completedWeight: number;
   totalTime: number;
@@ -107,6 +109,8 @@ function accumulateProgressMetrics(
   completedStepIds: Set<string>,
   speedSetting: 'fast_track' | 'steady' | 'extended'
 ): ProgressMetrics {
+  let totalSteps = 0;
+  let completedSteps = 0;
   let totalWeight = 0;
   let completedWeight = 0;
   let totalTime = 0;
@@ -115,10 +119,12 @@ function accumulateProgressMetrics(
   projectRun.phases?.forEach((phase) => {
     phase.operations?.forEach((op) => {
       op.steps?.forEach((step) => {
+        totalSteps += 1;
         const weight = getStepWeight(step.stepType);
         totalWeight += weight;
         const done = isStepCompletedInRun(step.id, completedStepIds);
         if (done) {
+          completedSteps += 1;
           completedWeight += weight;
         }
 
@@ -131,7 +137,7 @@ function accumulateProgressMetrics(
     });
   });
 
-  return { totalWeight, completedWeight, totalTime, completedTime };
+  return { totalSteps, completedSteps, totalWeight, completedWeight, totalTime, completedTime };
 }
 
 /**
@@ -176,14 +182,15 @@ export function calculateProjectProgress(
   const speedSetting = scheduleTempo as 'fast_track' | 'steady' | 'extended';
 
   const metrics = accumulateProgressMetrics(projectRun, completedStepIds, speedSetting);
-  const { totalWeight, completedWeight, totalTime, completedTime } = metrics;
+  const { totalSteps, completedSteps, totalWeight, completedWeight, totalTime, completedTime } = metrics;
 
-  if (totalWeight === 0) {
+  if (totalSteps === 0 || totalWeight === 0) {
     return 0;
   }
 
+  const linearStepPercent = (completedSteps / totalSteps) * 100;
   const linearWeightedPercent = (completedWeight / totalWeight) * 100;
-  const linearRounded = Math.round(linearWeightedPercent);
+  const linearRounded = Math.round(linearStepPercent);
 
   let raw: number;
 

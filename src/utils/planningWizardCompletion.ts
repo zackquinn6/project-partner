@@ -1,6 +1,14 @@
 import type { Phase, WorkflowStep } from '@/interfaces/Project';
 import type { PlanningToolId } from '@/components/KickoffSteps/ProjectToolsStep';
 
+const STANDARD_PHASE_IDS = {
+  planning: 'planning-phase',
+} as const;
+
+const PLANNING_COMPLETION_STEP_IDS = new Set([
+  'final-planning-step-1',
+]);
+
 /** Native app action keys used to match workflow steps to planning wizard tools. */
 const TOOL_TO_BUTTON_ACTIONS: Record<PlanningToolId, readonly string[]> = {
   scope: ['project-customizer'],
@@ -63,20 +71,39 @@ export function collectPlanningWizardWorkflowCompletion(
   phases: Phase[] | undefined | null,
   selectedTools: PlanningToolId[]
 ): { stepIds: string[]; outputEntries: { stepId: string; outputIds: string[] }[] } {
-  if (!phases?.length || !selectedTools.length) {
+  if (!phases?.length) {
     return { stepIds: [], outputEntries: [] };
   }
 
   const toolSet = new Set(selectedTools);
   const matched = new Map<string, Set<string>>();
+  const planningPhase = phases.find((phase) => phase?.id === STANDARD_PHASE_IDS.planning);
+
+  if (!planningPhase) {
+    return { stepIds: [], outputEntries: [] };
+  }
 
   const visitStep = (step: WorkflowStep) => {
     if (!step?.id) return;
+
+    if (PLANNING_COMPLETION_STEP_IDS.has(step.id)) {
+      matched.set(step.id, new Set((step.outputs || []).map((output) => output.id)));
+      return;
+    }
+
+    if (toolSet.size === 0) {
+      return;
+    }
+
     for (const tool of toolSet) {
-      if (!stepMatchesTool(step, tool)) continue;
+      if (!stepMatchesTool(step, tool)) {
+        continue;
+      }
+
       if (!matched.has(step.id)) {
         matched.set(step.id, new Set());
       }
+
       const outSet = matched.get(step.id)!;
       for (const o of step.outputs || []) {
         outSet.add(o.id);
@@ -85,11 +112,9 @@ export function collectPlanningWizardWorkflowCompletion(
     }
   };
 
-  for (const phase of phases) {
-    for (const op of phase.operations || []) {
-      for (const step of op.steps || []) {
-        visitStep(step);
-      }
+  for (const op of planningPhase.operations || []) {
+    for (const step of op.steps || []) {
+      visitStep(step);
     }
   }
 
