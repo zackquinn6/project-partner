@@ -343,31 +343,51 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
   const kpiThClass =
     'sticky top-0 z-20 bg-sky-600 px-2 py-2 text-left text-xs font-medium text-white border-b border-sky-700/60 shadow-[0_1px_0_0_rgba(0,0,0,0.08)] [&:not(:last-child)]:border-r [&:not(:last-child)]:border-white/25';
 
-  const startKpiResize = (colKey: KpiColKey, e: React.MouseEvent) => {
+  const startKpiResize = (colKey: KpiColKey, e: React.PointerEvent) => {
+    if (!e.isPrimary) return;
     e.preventDefault();
     e.stopPropagation();
+    const el = e.currentTarget as HTMLElement;
     const startX = e.clientX;
     const initialWidth = kpiColWidths[colKey];
-    const onMove = (ev: MouseEvent) => {
+    const onMove = (ev: PointerEvent) => {
       const next = Math.max(56, initialWidth + (ev.clientX - startX));
       setKpiColWidths((prev) => ({ ...prev, [colKey]: next }));
     };
-    const onUp = () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+    const onUp = (ev: PointerEvent) => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+      try {
+        el.releasePointerCapture(ev.pointerId);
+      } catch {
+        /* ignore */
+      }
     };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+    try {
+      el.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
   };
 
   const kpiResizeHandle = (colKey: KpiColKey) => (
     <span
       role="separator"
       aria-orientation="vertical"
-      onMouseDown={(e) => startKpiResize(colKey, e)}
-      className="absolute right-0 top-0 z-30 h-full w-1.5 cursor-col-resize select-none hover:bg-white/30"
+      onPointerDown={(e) => startKpiResize(colKey, e)}
+      className="pointer-events-auto absolute right-0 top-0 z-50 flex h-full w-4 cursor-col-resize touch-none select-none items-stretch justify-end hover:bg-white/25"
       title="Drag to resize column"
-    />
+    >
+      <span className="h-full w-1.5 shrink-0 cursor-col-resize hover:bg-white/40" aria-hidden />
+    </span>
+  );
+
+  const kpiHeaderLabel = (label: string) => (
+    <span className="pointer-events-none block min-w-0 truncate pr-3 text-left">{label}</span>
   );
 
   const kpiTableMinWidthPx =
@@ -426,35 +446,35 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
 
       <div className="relative max-h-[min(70vh,640px)] w-full overflow-auto rounded-md border">
         <table
-          className="w-full min-w-0 border-separate border-spacing-0 caption-bottom text-sm"
+          className="table-fixed w-full min-w-0 border-separate border-spacing-0 caption-bottom text-sm"
           style={{ minWidth: `${kpiTableMinWidthPx}px` }}
         >
           <TableHeader className="[&_tr]:border-b-0">
             <TableRow className="border-0 border-b border-sky-700/60 bg-sky-600 hover:bg-sky-600">
               <TableHead
-                className={cn(kpiThClass, 'relative whitespace-nowrap')}
+                className={cn(kpiThClass, 'relative overflow-hidden')}
                 style={kpiColStyle('phase')}
               >
-                Phase
+                {kpiHeaderLabel('Phase')}
                 {kpiResizeHandle('phase')}
               </TableHead>
               <TableHead
-                className={cn(kpiThClass, 'relative whitespace-nowrap')}
+                className={cn(kpiThClass, 'relative overflow-hidden')}
                 style={kpiColStyle('operation')}
               >
-                Operation
+                {kpiHeaderLabel('Operation')}
                 {kpiResizeHandle('operation')}
               </TableHead>
-              <TableHead className={cn(kpiThClass, 'relative')} style={kpiColStyle('step')}>
-                Step
+              <TableHead className={cn(kpiThClass, 'relative overflow-hidden')} style={kpiColStyle('step')}>
+                {kpiHeaderLabel('Step')}
                 {kpiResizeHandle('step')}
               </TableHead>
-              <TableHead className={cn(kpiThClass, 'relative')} style={kpiColStyle('kpo')}>
-                Outputs (KPO)
+              <TableHead className={cn(kpiThClass, 'relative overflow-hidden')} style={kpiColStyle('kpo')}>
+                {kpiHeaderLabel('Outputs (KPO)')}
                 {kpiResizeHandle('kpo')}
               </TableHead>
-              <TableHead className={cn(kpiThClass, 'relative')} style={kpiColStyle('kpi')}>
-                Process variables (KPI)
+              <TableHead className={cn(kpiThClass, 'relative overflow-hidden')} style={kpiColStyle('kpi')}>
+                {kpiHeaderLabel('Process variables (KPI)')}
                 {kpiResizeHandle('kpi')}
               </TableHead>
             </TableRow>

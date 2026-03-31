@@ -30,6 +30,7 @@ import { DeleteProjectDialog } from '@/components/DeleteProjectDialog';
 import { PlanningGuideWindow, type PlanningGuideTab } from '@/components/PlanningGuideWindow';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { calculateProjectTimeEstimate, formatScalingUnit } from '@/utils/projectTimeEstimation';
+import { stripRevisionMarkersFromProjectName } from '@/utils/stripRevisionMarkersFromProjectName';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
@@ -1498,6 +1499,14 @@ export function UnifiedProjectManagement({
       // BUT preserve all project information including name (no "(draft)" or revision_number suffix)
       // IMPORTANT: Do NOT create new phases - keep existing phases/structure
       console.log('🔄 Step 3: Updating latest revision to revision 0, preserving project info and phases:', latestRevision.id);
+      const rawResetName = projectInfoToPreserve.name ?? latestRevision.name;
+      if (rawResetName == null || String(rawResetName).trim() === '') {
+        throw new Error('Cannot reset revisions: project has no name in the database.');
+      }
+      let nameForReset = stripRevisionMarkersFromProjectName(String(rawResetName));
+      if (nameForReset.length === 0) {
+        nameForReset = String(rawResetName).trim();
+      }
       const updateData: any = {
         revision_number: 0,
         parent_project_id: null,
@@ -1505,8 +1514,8 @@ export function UnifiedProjectManagement({
         revision_notes: null,
         // Removed fields that don't exist in projects table:
         // published_at, beta_released_at, archived_at, created_from_revision, release_notes
-        // PRESERVE project name - do NOT add "(draft)" or revision_number suffix
-        name: projectInfoToPreserve.name || latestRevision.name,
+        // Base product name only — revision labels belong in revision_number / notes, not in `name`
+        name: nameForReset,
         // PRESERVE all other project information fields
         description: projectInfoToPreserve.description || latestRevision.description,
         category: projectInfoToPreserve.category || latestRevision.category,
@@ -1540,7 +1549,7 @@ export function UnifiedProjectManagement({
 
       console.log('✅ Revision reset complete');
       console.log('✅ Phases preserved - no new phases created');
-      console.log('✅ Project name preserved:', projectInfoToPreserve.name || latestRevision.name);
+      console.log('✅ Project name after reset (base name):', nameForReset);
       
       // IMPORTANT: Do NOT call rebuild_phases_json or any function that creates phases
       // Existing phases/structure are preserved and should remain unchanged
