@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 /** Border, blur, horizontal padding — use under custom header layouts (e.g. multi-row). */
 export const PLANNING_TOOL_WINDOW_HEADER_SURFACE_CLASSNAME =
-  'border-b border-border bg-background/95 px-4 py-3 text-left backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:py-3';
+  'border-b border-border bg-background/95 px-4 pt-4 pb-3 text-left backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:pt-5 md:pb-4';
 
 /** Standard single-row header (title + actions). */
 export const PLANNING_TOOL_WINDOW_HEADER_CLASSNAME = cn(

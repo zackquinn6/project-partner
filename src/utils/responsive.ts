@@ -14,10 +14,10 @@ export const responsiveDialogClasses = {
   modalMd: "max-w-[95vw] max-h-[95vh] md:max-w-2xl md:max-h-[85vh]",
   
   // Standard Window - matches Project & Task Manager design (90% screen on desktop, full on mobile)
-  standardWindow: "w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:max-h-[90vh]",
+  standardWindow: "w-full h-screen max-w-full max-h-full md:w-[90vw] md:h-[90vh] md:max-w-[90vw] md:max-h-[90vh]",
   
   // Large content - main feature windows (90% screen utilization)
-  contentLarge: "w-full h-full max-w-[100vw] max-h-[100vh] md:max-w-[90vw] md:max-h-[90vh]",
+  contentLarge: "w-full h-full max-w-[100vw] max-h-[100vh] md:w-[90vw] md:h-[90vh] md:max-w-[90vw] md:max-h-[90vh]",
   
   // Full experience - immersive full-screen
   contentFull: "w-full h-full max-w-[100vw] max-h-[100vh]",
