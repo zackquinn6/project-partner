@@ -38,7 +38,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Output } from '@/interfaces/Project';
 import {
-  buildPfmeaDisplayedProcessVariables,
+  buildUniquePfmeaProcessVariableNames,
   type WorkflowStepProcessVariableRow,
 } from '@/utils/processVariablesUtils';
 
@@ -183,8 +183,8 @@ function readOnlyActionStatusBadgeClassName(status: string): string {
 }
 
 /**
- * PFMEA grid: step-level process variables, shown only on rows that have a potential cause (same list repeated per cause line).
- * Prefers `workflow_step_process_variables`; if none for the step, uses `operation_steps.process_variables` JSON.
+ * PFMEA grid: unique process variable names only (bullets), no descriptions.
+ * Shown only on rows that have a potential cause. Prefers `workflow_step_process_variables`; else JSON on step.
  */
 function PfmeaProcessVariablesReadonlyCell({
   cause,
@@ -198,27 +198,18 @@ function PfmeaProcessVariablesReadonlyCell({
   if (!cause) {
     return <span className="text-xs italic text-muted-foreground">—</span>;
   }
-  const items = buildPfmeaDisplayedProcessVariables(
+  const names = buildUniquePfmeaProcessVariableNames(
     workflowRowsForStep,
     requirement.operation_steps?.process_variables
   );
-  if (items.length === 0) {
+  if (names.length === 0) {
     return <span className="text-xs italic text-muted-foreground">—</span>;
   }
   return (
-    <ul className="m-0 list-outside list-disc space-y-1.5 pl-4 text-xs leading-snug marker:text-muted-foreground">
-      {items.map((item) => (
-        <li key={item.id} className="break-words">
-          <span className="font-medium text-foreground">{item.title}</span>
-          {item.detailLines.length > 0 ? (
-            <div className="mt-0.5 space-y-0.5 text-[11px] text-muted-foreground">
-              {item.detailLines.map((line, i) => (
-                <div key={i} className="break-words">
-                  {line}
-                </div>
-              ))}
-            </div>
-          ) : null}
+    <ul className="m-0 list-outside list-disc space-y-1 pl-4 text-xs leading-snug marker:text-muted-foreground">
+      {names.map((name, i) => (
+        <li key={`${name}:${i}`} className="break-words font-medium text-foreground">
+          {name}
         </li>
       ))}
     </ul>
@@ -417,6 +408,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     operation: true,
     step: true,
     step_description: false,
+    process_variables: true,
   });
   const [colWidths, setColWidths] = useState<Record<string, number>>({
     phase: 120,
@@ -437,10 +429,25 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     ap: 120,
     recommended_actions: 260,
   });
+
+  const visiblePfmeaNavCols = useMemo(
+    () =>
+      PFMEA_NAV_COLS.filter(
+        (c) => c !== 'process_variables' || pfmeaColVisibility.process_variables
+      ),
+    [pfmeaColVisibility.process_variables]
+  );
+
   const [gridFocus, setGridFocus] = useState<{ rowIndex: number; col: PfmeaNavColumn }>({
     rowIndex: 0,
     col: 'failure_mode',
   });
+
+  useEffect(() => {
+    if (!pfmeaColVisibility.process_variables) {
+      setGridFocus((f) => (f.col === 'process_variables' ? { ...f, col: 'causes' } : f));
+    }
+  }, [pfmeaColVisibility.process_variables]);
   const [pfmeaLineDeleteTarget, setPfmeaLineDeleteTarget] = useState<PfmeaLineDeleteTarget | null>(null);
   const [pfmeaDeletePending, setPfmeaDeletePending] = useState(false);
   const [pfmeaScoringCriteriaOpen, setPfmeaScoringCriteriaOpen] = useState(false);
@@ -1765,17 +1772,20 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
         setGridFocus((f) => {
-          const idx = PFMEA_NAV_COLS.indexOf(f.col);
-          return { ...f, col: PFMEA_NAV_COLS[(idx + 1) % PFMEA_NAV_COLS.length] };
+          const cols = visiblePfmeaNavCols;
+          if (cols.length === 0) return f;
+          let idx = cols.indexOf(f.col);
+          if (idx === -1) idx = 0;
+          return { ...f, col: cols[(idx + 1) % cols.length] };
         });
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         setGridFocus((f) => {
-          const idx = PFMEA_NAV_COLS.indexOf(f.col);
-          return {
-            ...f,
-            col: PFMEA_NAV_COLS[(idx - 1 + PFMEA_NAV_COLS.length) % PFMEA_NAV_COLS.length],
-          };
+          const cols = visiblePfmeaNavCols;
+          if (cols.length === 0) return f;
+          let idx = cols.indexOf(f.col);
+          if (idx === -1) idx = 0;
+          return { ...f, col: cols[(idx - 1 + cols.length) % cols.length] };
         });
       } else if (e.key === 'Home' && !e.ctrlKey) {
         e.preventDefault();
@@ -1785,7 +1795,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         setGridFocus((f) => ({ ...f, rowIndex: sortedPfmeaRows.length - 1 }));
       }
     },
-    [sortedPfmeaRows.length]
+    [sortedPfmeaRows.length, visiblePfmeaNavCols]
   );
 
   const pfmeaGridCellMouseDown = useCallback((e: React.MouseEvent, rowIndex: number, col: PfmeaNavColumn) => {
@@ -2162,7 +2172,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     const scrollStickyS = hSl;
     hSl += colWidths.s;
     const scrollStickyProcessVariables = hSl;
-    hSl += colWidths.process_variables;
+    if (pfmeaColVisibility.process_variables) hSl += colWidths.process_variables;
     const scrollStickyCauses = hSl;
     hSl += colWidths.causes;
     const scrollStickyPrevention = hSl;
@@ -2230,6 +2240,12 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                     onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, step_description: Boolean(v) }))}
                   >
                     Step Description
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={pfmeaColVisibility.process_variables}
+                    onCheckedChange={(v) => setPfmeaColVisibility((s) => ({ ...s, process_variables: Boolean(v) }))}
+                  >
+                    Process Variables
                   </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -2381,12 +2397,14 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                     sortDefaultDir: 'desc',
                     scrollStickyLeftPx: scrollStickyS,
                   })}
-                  {renderHeaderWithPlus('Process Variables', 'process_variables', {
-                    barClassName: pfmeaHeaderBar.causeOccurrence,
-                    hidePlus: true,
-                    derived: true,
-                    scrollStickyLeftPx: scrollStickyProcessVariables,
-                  })}
+                  {pfmeaColVisibility.process_variables ? (
+                    renderHeaderWithPlus('Process Variables', 'process_variables', {
+                      barClassName: pfmeaHeaderBar.causeOccurrence,
+                      hidePlus: true,
+                      derived: true,
+                      scrollStickyLeftPx: scrollStickyProcessVariables,
+                    })
+                  ) : null}
                   {renderHeaderWithPlus('Potential Causes', 'causes', {
                     barClassName: pfmeaHeaderBar.causeOccurrence,
                     derived: !pfmeaIsEditable,
@@ -2722,20 +2740,22 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         </div>
                       </TableCell>
 
-                      <TableCell
-                        className={cn(td, band('process_variables'), 'min-w-0', focusCellClass(rowIndex, 'process_variables'))}
-                        style={{
-                          width: `${colWidths.process_variables}px`,
-                          minWidth: `${colWidths.process_variables}px`,
-                        }}
-                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'process_variables')}
-                      >
-                        <PfmeaProcessVariablesReadonlyCell
-                          cause={cause}
-                          requirement={requirement}
-                          workflowRowsForStep={workflowStepPvByStepId[requirement.operation_step_id]}
-                        />
-                      </TableCell>
+                      {pfmeaColVisibility.process_variables ? (
+                        <TableCell
+                          className={cn(td, band('process_variables'), 'min-w-0', focusCellClass(rowIndex, 'process_variables'))}
+                          style={{
+                            width: `${colWidths.process_variables}px`,
+                            minWidth: `${colWidths.process_variables}px`,
+                          }}
+                          onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'process_variables')}
+                        >
+                          <PfmeaProcessVariablesReadonlyCell
+                            cause={cause}
+                            requirement={requirement}
+                            workflowRowsForStep={workflowStepPvByStepId[requirement.operation_step_id]}
+                          />
+                        </TableCell>
+                      ) : null}
 
                       <TableCell
                         className={cn(td, band('causes'), 'min-w-0', focusCellClass(rowIndex, 'causes'))}

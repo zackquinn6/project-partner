@@ -94,3 +94,39 @@ export function buildPfmeaDisplayedProcessVariables(
       .filter((s) => s.length > 0),
   }));
 }
+
+/**
+ * PFMEA process-variables column: unique display names only (one bullet per name), no descriptions.
+ * Relational rows deduped by `variable_key`; JSON rows deduped by trimmed `name` (case-insensitive).
+ */
+export function buildUniquePfmeaProcessVariableNames(
+  workflowRows: WorkflowStepProcessVariableRow[] | undefined,
+  jsonFromStep: unknown
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  if (workflowRows && workflowRows.length > 0) {
+    for (const r of workflowRows) {
+      const display = ((r.label && r.label.trim()) || r.variable_key || '').trim();
+      if (!display) continue;
+      const key = (r.variable_key ?? '').trim().toLowerCase();
+      const dedupe = key || display.toLowerCase();
+      if (seen.has(dedupe)) continue;
+      seen.add(dedupe);
+      out.push(display);
+    }
+    return out;
+  }
+
+  const parsed = parseProcessVariablesFromDb(jsonFromStep);
+  for (const v of parsed) {
+    const name = v.name.trim();
+    if (!name) continue;
+    const dedupe = name.toLowerCase();
+    if (seen.has(dedupe)) continue;
+    seen.add(dedupe);
+    out.push(name);
+  }
+  return out;
+}
