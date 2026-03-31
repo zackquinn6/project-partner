@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown, Sparkles, Shield, Info, BookOpen, BarChart3, Network } from 'lucide-react';
+import { GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown, Sparkles, Shield, Info, BookOpen, BarChart3, Network, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database, Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
@@ -24,6 +24,7 @@ import { useProjectOwner } from '@/hooks/useProjectOwner';
 import { ProjectImageManager } from '@/components/ProjectImageManager';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
 import { PFMEAManagement } from '@/components/PFMEAManagement';
+import { ProjectVisualizer } from '@/components/ProjectVisualizer';
 import { StructureManager } from '@/components/StructureManager';
 import type { Project as AppContextProject } from '@/interfaces/Project';
 import { DeleteProjectDialog } from '@/components/DeleteProjectDialog';
@@ -170,6 +171,7 @@ export function UnifiedProjectManagement({
   const [planningGuideOpen, setPlanningGuideOpen] = useState(false);
   const [planningGuideInitialTab, setPlanningGuideInitialTab] = useState<PlanningGuideTab | null>(null);
   const [pfmeaOpen, setPfmeaOpen] = useState(false);
+  const [projectVisualizerOpen, setProjectVisualizerOpen] = useState(false);
   const closePfmeaProcessMap = useCallback(() => {
     if (pfmeaProcessMapDidStashRef.current) {
       setCurrentProject(pfmeaProcessMapRestoreRef.current);
@@ -1940,7 +1942,17 @@ export function UnifiedProjectManagement({
                       <CardHeader>
                         <div className="flex items-center justify-between">
                           <CardTitle>Project Information</CardTitle>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="flex items-center gap-1.5"
+                              disabled={!selectedProject}
+                              onClick={() => setProjectVisualizerOpen(true)}
+                            >
+                              <LayoutGrid className="h-4 w-4" />
+                              Project Visualizer
+                            </Button>
                             {editingProject ? <>
                                 <Button onClick={saveProjectEdit} size="icon" variant="outline">
                                   <Save className="w-4 h-4" />
@@ -3322,6 +3334,43 @@ export function UnifiedProjectManagement({
         }}
         initialTab={planningGuideInitialTab ?? undefined}
       />
+
+      {/* Project Visualizer — full-viewport horizontal process map */}
+      <Dialog open={projectVisualizerOpen} onOpenChange={setProjectVisualizerOpen}>
+        <DialogContent
+          className={cn(
+            'relative fixed inset-0 z-50 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 shadow-none overflow-hidden min-h-0',
+            'md:max-w-none md:max-h-none md:rounded-none',
+            '[&>button]:hidden',
+          )}
+        >
+          <DialogHeader className="flex-shrink-0 border-b bg-background px-2 py-1.5 md:px-4 md:py-2">
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="text-lg font-bold md:text-xl">Project Visualizer</DialogTitle>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-[9px] md:text-xs"
+                onClick={() => setProjectVisualizerOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </DialogHeader>
+          {selectedProject && (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <ProjectVisualizer
+                projectId={selectedProject.id}
+                projectName={selectedProject.name}
+                phases={selectedProject.phases}
+                typicalProjectSize={selectedProject.typical_project_size}
+                scalingUnit={selectedProject.scaling_unit}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* PFMEA — full-viewport surface (not a centered popout) */}
       <Dialog
