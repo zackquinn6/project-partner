@@ -2806,10 +2806,20 @@ export function UnifiedProjectManagement({
                                              Release to Production
                                            </Button>
                                           </div>
-                                           {revision.revision_number > 0 && <Button size="sm" variant="destructive" onClick={() => deleteDraftRevision(revision.id, revision.revision_number)} className="flex items-center gap-1">
-                                               <X className="w-3 h-3" />
-                                               Delete Draft
-                                             </Button>}
+                                           {revision.revision_number > 0 && (
+                                             <div className="flex justify-end pt-1">
+                                               <Button
+                                                 type="button"
+                                                 size="icon"
+                                                 variant="ghost"
+                                                 className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                                 aria-label="Delete draft revision"
+                                                 onClick={() => deleteDraftRevision(revision.id, revision.revision_number)}
+                                               >
+                                                 <Trash2 className="h-4 w-4" />
+                                               </Button>
+                                             </div>
+                                           )}
                                         </>}
                                       {revision.publish_status === 'beta-testing' && <Button size="sm" onClick={e => {
                                 e.preventDefault();
