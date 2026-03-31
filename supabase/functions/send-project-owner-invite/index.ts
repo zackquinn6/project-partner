@@ -17,12 +17,19 @@ serve(async (req) => {
   }
 
   try {
-    const requestingUser = await verifyAuth(req)
+    await verifyAuth(req)
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
+      throw new Error('Missing Supabase configuration')
+    }
     const authHeader = req.headers.get('Authorization')
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: authHeader ? { Authorization: authHeader } : {} }
+    })
+    const admin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: { persistSession: false }
     })
 
     const { invitation_id }: RequestBody = await req.json()
@@ -85,7 +92,7 @@ serve(async (req) => {
     }
 
     if (invitation.invited_user_id) {
-      await supabase.from('notifications').insert({
+      await admin.from('notifications').insert({
         user_id: invitation.invited_user_id,
         type: 'project_owner_invite',
         title: `Project Owner invitation: ${projectName}`,
