@@ -7,7 +7,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectData } from './ProjectDataContext';
 import { useGuest } from './GuestContext';
 import { toast } from '@/components/ui/use-toast';
-import { ensureStandardPhasesForNewProject, isKickoffPhaseComplete, KICKOFF_UI_STEP_IDS } from '@/utils/projectUtils';
+import { isKickoffPhaseComplete, KICKOFF_UI_STEP_IDS } from '@/utils/projectUtils';
 import { useOptimizedState } from '@/hooks/useOptimizedState';
 import { mergeQualityControlSettings, parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';

@@ -5,8 +5,11 @@ const STANDARD_PHASE_IDS = {
   planning: 'planning-phase',
 } as const;
 
-const PLANNING_COMPLETION_STEP_IDS = new Set([
-  'final-planning-step-1',
+const PLANNING_COMPLETION_STEP_IDS = new Set(['final-planning-step-1']);
+const PLANNING_COMPLETION_OUTPUT_IDS = new Set(['final-planning-output']);
+const PLANNING_COMPLETION_STEP_LABELS = new Set([
+  'build your plan',
+  'finalize project plan',
 ]);
 
 /** Native app action keys used to match workflow steps to planning wizard tools. */
@@ -18,7 +21,7 @@ const TOOL_TO_BUTTON_ACTIONS: Record<PlanningToolId, readonly string[]> = {
   budget: ['project-budgeting'],
   shopping_list: ['shopping-checklist'],
   tool_rentals: ['tool-access'],
-  quality_control: ['quality-check'],
+  quality_control: [],
   expert_support: [],
 };
 
@@ -62,6 +65,19 @@ function stepMatchesTool(step: WorkflowStep, tool: PlanningToolId): boolean {
   return actions.some((a) => stepReferencesAction(step, a));
 }
 
+function isPlanningCompletionStep(step: WorkflowStep): boolean {
+  if (PLANNING_COMPLETION_STEP_IDS.has(step.id)) {
+    return true;
+  }
+
+  const normalizedStepName = step.step?.trim().toLowerCase();
+  if (normalizedStepName && PLANNING_COMPLETION_STEP_LABELS.has(normalizedStepName)) {
+    return true;
+  }
+
+  return step.outputs?.some((output) => PLANNING_COMPLETION_OUTPUT_IDS.has(output.id)) ?? false;
+}
+
 /**
  * Finds workflow steps in the project run snapshot that correspond to tools
  * the user finished in the Project Planning Wizard, so they can be marked
@@ -86,7 +102,7 @@ export function collectPlanningWizardWorkflowCompletion(
   const visitStep = (step: WorkflowStep) => {
     if (!step?.id) return;
 
-    if (PLANNING_COMPLETION_STEP_IDS.has(step.id)) {
+    if (isPlanningCompletionStep(step)) {
       matched.set(step.id, new Set((step.outputs || []).map((output) => output.id)));
       return;
     }

@@ -1254,10 +1254,30 @@ export default function UserView({
       const phases = Array.isArray(currentProjectRun.phases) ? (currentProjectRun.phases as Phase[]) : [];
       const { stepIds, outputEntries } = collectPlanningWizardWorkflowCompletion(phases, tools);
       const planningCompletedAt = new Date();
+      const planningPhase = phases.find((phase) => phase?.id === 'planning-phase');
+      const orderingPhase = phases.find((phase) => phase?.id === 'ordering-phase');
+      const hasPlanningRating = (currentProjectRun.phase_ratings || []).some(
+        (rating) => rating.phaseId === planningPhase?.id
+      );
+      const planningRating =
+        planningPhase && !hasPlanningRating
+          ? {
+              phaseId: planningPhase.id,
+              phaseName: planningPhase.name,
+              rating: 5,
+              timestamp: planningCompletedAt.toISOString(),
+            }
+          : null;
+      const updatedPhaseRatings = planningRating
+        ? [...(currentProjectRun.phase_ratings || []), planningRating]
+        : currentProjectRun.phase_ratings;
 
       if (stepIds.length === 0) {
         await updateProjectRun({
           ...currentProjectRun,
+          phase_ratings: updatedPhaseRatings,
+          planEndDate: planningCompletedAt,
+          currentPhaseId: orderingPhase?.id ?? currentProjectRun.currentPhaseId,
           planningCompletedAt,
           updatedAt: new Date(),
         });
@@ -1286,15 +1306,18 @@ export default function UserView({
         return;
       }
       const newStatus = calculatedProgress >= 100 ? 'complete' : currentProjectRun.status;
-
-      const orderingPhase = phases.find((p) => p?.name === 'Ordering');
+      if (planningPhase) {
+        setCompletedPhase(planningPhase);
+        setCurrentCompletedPhaseName(planningPhase.name);
+      }
 
       await updateProjectRun({
         ...currentProjectRun,
         completedSteps: uniqueCompleted,
         progress: Math.round(calculatedProgress),
         status: newStatus,
-        planEndDate: new Date(),
+        phase_ratings: updatedPhaseRatings,
+        planEndDate: planningCompletedAt,
         currentPhaseId: orderingPhase?.id ?? currentProjectRun.currentPhaseId,
         planningCompletedAt,
         updatedAt: new Date(),
