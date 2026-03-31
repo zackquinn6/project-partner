@@ -273,43 +273,43 @@ export function ToolsLibrary() {
             {sortedTools.map((tool) => (
               <TableRow 
                 key={tool.id} 
-                className="cursor-pointer hover:bg-muted/50 h-16" 
+                className="cursor-pointer hover:bg-muted/50 h-[60px]" 
                 onClick={() => setViewingVariations(tool)}
               >
-                <TableCell className="py-2">
+                <TableCell className="py-0.5 px-2">
                   {tool.photo_url ? (
                     <img
                       src={tool.photo_url}
                       alt={tool.item}
-                      className="w-10 h-10 object-cover rounded-md"
+                      className="w-14 h-14 object-cover rounded-md"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-muted rounded-md flex items-center justify-center">
-                      <Image className="w-4 h-4 text-muted-foreground" />
+                    <div className="w-14 h-14 bg-muted rounded-md flex items-center justify-center">
+                      <Image className="w-5 h-5 text-muted-foreground" />
                     </div>
                   )}
                 </TableCell>
-                <TableCell className="font-medium capitalize py-2 w-32 break-words">
+                <TableCell className="font-medium capitalize py-0.5 px-2 w-32 break-words">
                   {tool.item}
-                  <Badge variant="secondary" className="text-[10px] px-1 py-0 mt-1">
+                  <Badge variant="secondary" className="text-[10px] px-1 py-0 mt-0.5">
                     {tool.category}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground py-2">
+                <TableCell className="text-xs text-muted-foreground py-0.5 px-2">
                   <div className="break-words" title={tool.description || '-'}>
                     {tool.description || '-'}
                   </div>
                 </TableCell>
-                <TableCell className="text-xs py-2">
+                <TableCell className="text-xs py-0.5 px-2">
                   {tool.variations && tool.variations.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-0.5">
                       {tool.variations.slice(0, 4).map((variation) => (
-                        <Badge key={variation.id} variant="secondary" className="text-xs whitespace-nowrap">
+                        <Badge key={variation.id} variant="secondary" className="text-xs whitespace-nowrap px-1 py-0">
                           {variation.name}
                         </Badge>
                       ))}
                       {tool.variations.length > 4 && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-xs px-1 py-0">
                           +{tool.variations.length - 4} more
                         </Badge>
                       )}
@@ -318,8 +318,8 @@ export function ToolsLibrary() {
                     <span className="text-muted-foreground text-xs">No variants</span>
                   )}
                 </TableCell>
-                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex justify-end gap-1">
+                <TableCell className="text-right py-0.5 px-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex justify-end gap-0.5">
                     <Button
                       variant="ghost"
                       size="sm"
