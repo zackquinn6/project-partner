@@ -1,13 +1,13 @@
 -- Step 2 of project development: Outputs for each step
 -- Project: Toilet Replacement
--- Project ID: 5d47a03d-df6e-4341-b61d-98090225c15d
+-- Project ID: f46b9b02-de31-42e0-ab04-5409ed1f21ee
 --
 -- Constraint: output name <= 50 chars (prefer < 30)
 -- Storage: public.operation_steps.outputs (JSONB)
 
 DO $$
 DECLARE
-  v_project_id CONSTANT uuid := '5d47a03d-df6e-4341-b61d-98090225c15d'::uuid;
+  v_project_id CONSTANT uuid := 'f46b9b02-de31-42e0-ab04-5409ed1f21ee'::uuid;
   v_step_count integer;
 BEGIN
   -- Verify steps exist for this project (fail loud, no silent defaults)
@@ -30,13 +30,13 @@ BEGIN
   SET outputs = jsonb_build_array(
     jsonb_build_object(
       'id', 'out-prep-verified-shutoff',
-      'name', 'Shutoff verified',
-      'description', 'Floor is protected and the shutoff valve reliably stops tank refilling.',
+      'name', 'Water isolated',
+      'description', 'Work area is protected and the toilet water supply is isolated so the tank does not refill.',
       'type', 'safety',
       'qualityChecks', 'After closing the shutoff, the tank does not refill while you wait 2 minutes.'
     )
   )
-  WHERE id = '2f9fbb53-357f-49f3-9f09-7b4a7d6a92f4'::uuid;
+  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e1'::uuid;
 
   UPDATE public.operation_steps
   SET outputs = jsonb_build_array(
@@ -48,7 +48,7 @@ BEGIN
       'qualityChecks', 'Tank is empty; bowl water is low enough that lifting will not slosh out.'
     )
   )
-  WHERE id = 'a5c0d9f9-6c7b-4d8c-9d5b-7b2342b6c6aa'::uuid;
+  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e2'::uuid;
 
   UPDATE public.operation_steps
   SET outputs = jsonb_build_array(
@@ -60,7 +60,7 @@ BEGIN
       'qualityChecks', 'No dripping from the shutoff; line is free and bucket/towel caught residual water.'
     )
   )
-  WHERE id = 'c1b7bff0-30c8-4d3f-8e0e-70f8a8f7e5aa'::uuid;
+  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e3'::uuid;
 
   -- ============================
   -- Removal → Remove toilet & prep flange
@@ -76,7 +76,7 @@ BEGIN
       'qualityChecks', 'Toilet is stable on the floor protection; no residual water spills.'
     )
   )
-  WHERE id = 'fba2316a-0110-4b9c-8a35-1e6a8c2f8c5b'::uuid;
+  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e4'::uuid;
 
   UPDATE public.operation_steps
   SET outputs = jsonb_build_array(
@@ -88,19 +88,19 @@ BEGIN
       'qualityChecks', 'No loose wax remains on the flange sealing surface; drain opening is covered.'
     )
   )
-  WHERE id = '6e6f2d2a-5b8d-4a76-a61a-0e7d4f5a2f31'::uuid;
+  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e5'::uuid;
 
   UPDATE public.operation_steps
   SET outputs = jsonb_build_array(
     jsonb_build_object(
       'id', 'out-flange-inspected',
-      'name', 'Flange condition confirmed',
-      'description', 'Flange is inspected and you know whether repairs are needed before install.',
+      'name', 'Flange and floor sound',
+      'description', 'Flange is solid, bolt support is intact, and the surrounding floor is stable for installation.',
       'type', 'performance-durability',
       'qualityChecks', 'Flange is solid, bolt slots are intact, and floor is stable with no rocking risk.'
     )
   )
-  WHERE id = '0b5b4b30-6bd8-45c8-90e0-21de7bb01c2a'::uuid;
+  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e6'::uuid;
 
   -- ============================
   -- Installation → Set the toilet
@@ -116,7 +116,7 @@ BEGIN
       'qualityChecks', 'Bolts are aligned symmetrically; seal is centered and not deformed before setting.'
     )
   )
-  WHERE id = 'd1db0a9d-61e2-46f2-9021-8b25ce1166a4'::uuid;
+  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e7'::uuid;
 
   UPDATE public.operation_steps
   SET outputs = jsonb_build_array(
@@ -128,7 +128,7 @@ BEGIN
       'qualityChecks', 'Toilet does not rock when pressed at rim; nuts are evenly tightened.'
     )
   )
-  WHERE id = '0b4bf2b3-3e63-4d88-b07f-186f8a20e9f4'::uuid;
+  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e8'::uuid;
 
   -- ============================
   -- Installation → Reconnect & verify
@@ -144,19 +144,19 @@ BEGIN
       'qualityChecks', 'No leaks at shutoff, supply connection, or tank connection during refill.'
     )
   )
-  WHERE id = '1f3460c3-6b7f-4e33-8c0b-6e4b70a5b1d3'::uuid;
+  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e9'::uuid;
 
   UPDATE public.operation_steps
   SET outputs = jsonb_build_array(
     jsonb_build_object(
       'id', 'out-leak-free-verified',
-      'name', 'Leak-free verified',
-      'description', 'Toilet flushes normally and remains leak-free at base and supply connections.',
+      'name', 'Leak-free installation',
+      'description', 'Toilet flushes normally and remains leak-free at the base and supply connections.',
       'type', 'performance-durability',
       'qualityChecks', 'No moisture at base perimeter after 3 flushes; no seepage at supply joints.'
     )
   )
-  WHERE id = 'c92bfe8f-2104-49ad-b4a4-0d4d927b3a72'::uuid;
+  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21ea'::uuid;
 
   -- Refresh project cached phases JSON
   UPDATE public.projects

@@ -54,8 +54,12 @@ function formatOutputLine(o: Output): string {
   return `${o.name}${typePart}`;
 }
 
+function isUpstreamVariableType(type: StepInput['type']): boolean {
+  return type === 'upstream' || type === 'input';
+}
+
 function kpiVariableTypeLabel(type: StepInput['type']): string {
-  return type === 'upstream' ? 'Input/Upstream' : 'Process';
+  return isUpstreamVariableType(type) ? 'Input/Upstream' : 'Process';
 }
 
 function formatProcessVariableLine(v: StepInput): string {
@@ -157,7 +161,7 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
     if (dialog.kind === 'variable_edit') {
       setVarName(dialog.variable.name);
       setVarDesc(dialog.variable.description ?? '');
-      setVarKpiType(dialog.variable.type === 'upstream' ? 'upstream' : 'process');
+      setVarKpiType(isUpstreamVariableType(dialog.variable.type) ? 'upstream' : 'process');
     }
   }, [dialog]);
 

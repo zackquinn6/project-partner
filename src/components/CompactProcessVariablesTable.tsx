@@ -13,6 +13,10 @@ interface CompactProcessVariablesTableProps {
   onAddVariable: () => void;
 }
 
+function isUpstreamVariableType(type: StepInput['type']): boolean {
+  return type === 'upstream' || type === 'input';
+}
+
 export function CompactProcessVariablesTable({ variables, onVariablesChange, onAddVariable }: CompactProcessVariablesTableProps) {
   // Ensure variables is always an array to prevent undefined errors
   const safeVariables = variables || [];
@@ -53,7 +57,7 @@ export function CompactProcessVariablesTable({ variables, onVariablesChange, onA
                 <TableRow key={variable.id} className="text-xs">
                   <TableCell className="py-2">
                     <div className="flex items-center gap-2">
-                      {variable.type === 'upstream' && (
+                      {isUpstreamVariableType(variable.type) && (
                         <Badge variant="outline" className="h-5 px-1.5 text-xs">
                           <ArrowUp className="w-3 h-3" />
                         </Badge>
@@ -68,7 +72,7 @@ export function CompactProcessVariablesTable({ variables, onVariablesChange, onA
                   </TableCell>
                   <TableCell className="py-2">
                     <Select
-                      value={variable.type === 'upstream' ? 'upstream' : 'process'}
+                      value={isUpstreamVariableType(variable.type) ? 'upstream' : 'process'}
                       onValueChange={(value) => handleVariableChange(index, 'type', value)}
                     >
                       <SelectTrigger className="h-7 text-xs">
@@ -81,7 +85,7 @@ export function CompactProcessVariablesTable({ variables, onVariablesChange, onA
                     </Select>
                   </TableCell>
                   <TableCell className="py-2">
-                    {variable.type === 'upstream' ? (
+                    {isUpstreamVariableType(variable.type) ? (
                       <div className="space-y-1">
                         <Input
                           value={variable.sourceStepName || ''}

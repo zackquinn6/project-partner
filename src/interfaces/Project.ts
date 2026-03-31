@@ -144,7 +144,8 @@ export interface StepInput {
   id: string;
   name: string;
   description?: string;
-  type: 'process' | 'upstream' | 'text' | 'number' | 'boolean' | 'file' | 'measurement' | 'selection';
+  /** `process` = in-scope execution factor (default). `upstream` or `input` = contextual factor outside project scope, assumed acceptable; stored as `upstream` in DB. */
+  type: 'process' | 'upstream' | 'input' | 'text' | 'number' | 'boolean' | 'file' | 'measurement' | 'selection';
   required?: boolean;
   options?: string[]; // For selection type
   unit?: string; // For measurement type

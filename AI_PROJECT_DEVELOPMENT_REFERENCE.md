@@ -140,7 +140,16 @@ Where **Step X** is one of the steps defined below.
   - **≤ 50 characters max**
   - **< 30 characters preferred**
 
-- **Name the output as the outcome itself, not as an inspection** — unless the step’s actual deliverable *is* an inspection or verification activity. A step may use inspections (for example, a flood test) to validate quality, but list the **installed or achieved result** as the output when that is what the step produces. Example: for shower waterproofing, a flood test inspection supports quality control; the output of the installation step is still something like **“waterproof shower assembly”** (the physical result), not “flood test passed,” unless the step is specifically defined as delivering that inspection outcome.
+- The output of a step should be a **physical condition / achieved state**, not an inspection label.
+- Do **not** name a normal installation/process-step output as **`verified`**, **`inspected`**, **`checked`**, **`confirmed`**, **`tested`**, etc. when the real deliverable is the physical condition produced by the work.
+- Only use a **verification/inspection output** when the step itself is explicitly a **separate inspection / test / validation step** beyond the normal execution of the work.
+- Example:
+  - Waterproofing install step output: **`100% sealing coverage`**
+  - Flood test step output: **`Verification of 100% sealing coverage`**
+- Toilet example:
+  - Prefer **`Water isolated`** over **`Shutoff verified`**
+  - Prefer **`Leak-free installation`** over **`Leak-free verified`**
+- A step may include inspection activities in its `qualityChecks`, but the output name should still be the **resulting condition** unless the step’s distinct deliverable is the verification itself.
 
 ### Step 3 — Project Risks
 
@@ -273,10 +282,12 @@ A **process variable** is a fundamental, theoretically measurable parameter that
 
 - The **`failure_mode`** string is **not** a free-form narrative of “what could go wrong” in abstract terms. It is the **negation of the requirement/output** for that row: what is **wrong** if the output is **not** actually achieved, stated **concisely** and **tied to that same requirement**.
 - Think: *Requirement / output (Step 2 `name`)* → *Failure mode* = the **opposite** or **unmet** state in short form.
+- The failure mode must stay **strictly inside the requirement text that actually exists**. Do **not** pull in extra standards, hidden quality criteria, or implied adverbs that are **not specified** in the output. If the requirement is **`Supply disconnected`**, valid failure text is **`Supply not disconnected`**. Invalid examples include **`Supply not safely disconnected`** or **`Supply disconnected improperly`** unless **safe disconnection** or **proper disconnection** is itself an explicit requirement/output.
+- If a distinct concept matters, make it a **separate requirement/output** first. Do **not** smuggle it into the failure-mode wording.
 - Examples (pattern only):
   - Output **“Toilet drained”** → Failure mode **“Toilet not drained”**.
   - Output **“Bolt torqued to 45 ft-lbs minimum”** → Failure mode **“Torque below 45 ft-lbs”** (or **“Below minimum torque”** if the number lives in the requirement text only).
-  - Output **“Shutoff verified”** → Failure mode **“Shutoff not verified”** / **“Water not isolated”**—still one line, same linkage to that output.
+  - Output **“Shutoff verified”** → Failure mode **“Shutoff not verified”**.
 - **Potential effects**, **causes**, and **controls** carry the richer explanation; the failure mode line stays **short** so the PFMEA grid shows an obvious **requirement ↔ anti-requirement** pair.
 
 **Grid completeness (avoid “blank” failure-mode rows)**
@@ -347,6 +358,7 @@ A **process variable** is a fundamental, theoretically measurable parameter that
   - PFMEA only—not timeline/budget risks (those are Step 3).
   - `requirement_output_id` matches Step 2 output **`id`** (or `index:<n>`), consistent with the PFMEA UI (`requirementOutputKey`).
   - **`failure_mode`** text = **anti-requirement**: concise **negation of that output’s requirement**, not a long independent scenario (see **Failure mode = anti-requirement** under Step 8 above).
+  - Do **not** add words that are not present in the requirement/output. No implied qualifiers such as **`safely`**, **`properly`**, **`fully`**, **`leak-free`**, **`securely`**, etc. unless the requirement explicitly includes them.
   - Cover **every** seeded Step 2 output with at least one failure mode so the PFMEA grid does not show blank failure-mode rows for those outputs; add multiple causes (and linked prevention controls) when a fuller reference table is desired.
   - **Detection** scores on `pfmea_controls` must follow **`pfmea_scoring`** / Scoring criteria: manual and subjective detection methods use **higher** numeric scores (worse detection) than justified automated or gage-based methods.
   - All inserted UUID literals must be syntactically valid: the **last group is exactly 12 hex digits** (see **UUID literals in migrations**).

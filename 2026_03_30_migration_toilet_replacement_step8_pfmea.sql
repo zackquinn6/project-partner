@@ -5,8 +5,9 @@
 -- Prerequisite: steps 1–7 applied (outputs exist with stable `id` keys from step 2; those ids are
 -- `requirement_output_id` in `pfmea_failure_modes`, matching requirementOutputKey() in PFMEAManagement.tsx).
 --
--- Failure modes: anti-requirements — concise negation of each Step 2 output name (see
--- AI_PROJECT_DEVELOPMENT_REFERENCE.md Step 8). Effects/causes/controls carry the detailed analysis.
+-- Failure modes: anti-requirements — concise negation of each Step 2 output name only (see
+-- AI_PROJECT_DEVELOPMENT_REFERENCE.md Step 8). Do not add implied qualifiers that are not in
+-- the requirement/output text. Effects/causes/controls carry the detailed analysis.
 --
 -- Tables: public.pfmea_failure_modes, pfmea_potential_effects, pfmea_potential_causes, pfmea_controls
 -- Scores: severity / occurrence / detection on 1–10 scale per app UI and public.pfmea_scoring.
@@ -45,7 +46,7 @@ BEGIN
       v_project_id,
       'f46b9b02-de31-42e0-ab04-5409ed1f21e1'::uuid,
       'out-prep-verified-shutoff',
-      'Shutoff not verified',
+      'Water not isolated',
       7
     ),
     (
@@ -61,7 +62,7 @@ BEGIN
       v_project_id,
       'f46b9b02-de31-42e0-ab04-5409ed1f21e3'::uuid,
       'out-supply-disconnected',
-      'Supply not safely disconnected',
+      'Supply not disconnected',
       8
     ),
     (
@@ -69,7 +70,7 @@ BEGIN
       v_project_id,
       'f46b9b02-de31-42e0-ab04-5409ed1f21e4'::uuid,
       'out-toilet-removed',
-      'Toilet not removed safely',
+      'Toilet not removed',
       8
     ),
     (
@@ -77,7 +78,7 @@ BEGIN
       v_project_id,
       'f46b9b02-de31-42e0-ab04-5409ed1f21e5'::uuid,
       'out-wax-removed-drain-blocked',
-      'Drain opening not protected',
+      'Drain not blocked',
       7
     ),
     (
@@ -85,7 +86,7 @@ BEGIN
       v_project_id,
       'f46b9b02-de31-42e0-ab04-5409ed1f21e6'::uuid,
       'out-flange-inspected',
-      'Flange soundness not confirmed',
+      'Flange and floor not sound',
       8
     ),
     (
@@ -93,7 +94,7 @@ BEGIN
       v_project_id,
       'f46b9b02-de31-42e0-ab04-5409ed1f21e7'::uuid,
       'out-bolts-seal-ready',
-      'Bolts/seal not ready for bowl set',
+      'Bolts + seal not ready',
       8
     ),
     (
@@ -109,7 +110,7 @@ BEGIN
       v_project_id,
       'f46b9b02-de31-42e0-ab04-5409ed1f21e9'::uuid,
       'out-water-restored',
-      'Water not restored leak-free',
+      'Water not restored',
       7
     ),
     (
@@ -117,7 +118,7 @@ BEGIN
       v_project_id,
       'f46b9b02-de31-42e0-ab04-5409ed1f21ea'::uuid,
       'out-leak-free-verified',
-      'Leak-free not verified',
+      'Installation not leak-free',
       7
     )
   ON CONFLICT (id) DO UPDATE SET
