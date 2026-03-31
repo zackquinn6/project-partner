@@ -49,9 +49,9 @@ export type PlanningToolId = (typeof PLANNING_TOOL_IDS)[number];
 /** Kickoff step 4 grid: budget & tool rentals last; partner-gated tools still omitted when disabled. */
 const KICKOFF_TOOLS_GRID_ORDER: PlanningToolId[] = [
   'scope',
+  'risk',
   'schedule',
   'communication_plan',
-  'risk',
   'shopping_list',
   'quality_control',
   'budget',
