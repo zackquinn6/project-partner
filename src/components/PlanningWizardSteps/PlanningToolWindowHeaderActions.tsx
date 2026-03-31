@@ -27,14 +27,23 @@ export function PlanningToolWindowHeaderActions({
 }: PlanningToolWindowHeaderActionsProps) {
   return (
     <div className={cn('flex shrink-0 items-center gap-2', className)}>
-      <Button type="button" variant="outline" size="sm" className="text-xs md:text-sm" onClick={onCancel}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="min-h-9 px-3 text-xs md:min-h-8 md:text-sm"
+        onClick={onCancel}
+      >
         Cancel
       </Button>
       <Button
         type="button"
         size="sm"
         disabled={saveDisabled}
-        className={cn('text-xs md:text-sm', PLANNING_TOOL_SAVE_CLOSE_CLASSNAME)}
+        className={cn(
+          'min-h-9 px-3 text-xs md:min-h-8 md:text-sm',
+          PLANNING_TOOL_SAVE_CLOSE_CLASSNAME
+        )}
         onClick={() => void onSaveAndClose()}
       >
         {saveLabel}

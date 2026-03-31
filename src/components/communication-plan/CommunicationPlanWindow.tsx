@@ -43,7 +43,6 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useIsMobile } from '@/hooks/use-mobile';
 import {
   TEMPLATE_KEYS,
   TEMPLATE_LABELS,
@@ -56,6 +55,13 @@ import {
   templateKeyForTrigger,
 } from './buildUpdateDraft';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
+import {
+  PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME,
+  PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
+  PLANNING_TOOL_WINDOW_SECONDARY_STRIP_CLASSNAME,
+  PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME,
+  PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
+} from '@/components/PlanningWizardSteps/planningToolWindowChrome';
 
 type PlanRow = {
   id: string;
@@ -169,8 +175,7 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
   const [openRisks, setOpenRisks] = useState<{ risk_title: string; status: string | null }[]>([]);
 
   const [tab, setTab] = useState('overview');
-  const isMobile = useIsMobile();
-  const tabBodyPad = isMobile ? 'p-3' : 'p-4';
+  const tabBodyPad = PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME;
 
   const [composeTemplate, setComposeTemplate] = useState<TemplateKey>('weekly_summary');
   const [composeSubject, setComposeSubject] = useState('');
@@ -628,14 +633,14 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
               'inset-4 flex max-h-[calc(100dvh-2rem)] flex-col overflow-auto md:inset-auto md:left-1/2 md:top-1/2 md:max-h-[90vh] md:w-[90vw] md:max-w-[90vw] md:-translate-x-1/2 md:-translate-y-1/2',
             )}
           >
-            <DialogHeader className="flex flex-row items-start justify-between gap-3 text-left">
-              <DialogTitle>Communication Plan</DialogTitle>
+            <DialogHeader className={PLANNING_TOOL_WINDOW_HEADER_CLASSNAME}>
+              <DialogTitle className={PLANNING_TOOL_WINDOW_TITLE_CLASSNAME}>Communication Plan</DialogTitle>
               <PlanningToolWindowHeaderActions
                 onCancel={() => onOpenChange(false)}
                 onSaveAndClose={() => onOpenChange(false)}
               />
             </DialogHeader>
-            <p className="text-sm text-muted-foreground py-4">
+            <p className={cn(PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME, PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME)}>
               Open a project from your dashboard first, then launch Communication Plan again.
             </p>
           </DialogPrimitive.Content>
@@ -659,13 +664,18 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
             'md:inset-auto md:left-[50%] md:top-[50%] md:h-[90vh] md:max-h-[90vh] md:w-[90vw] md:max-w-[90vw] md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-lg',
           )}
         >
-          <DialogHeader className="flex shrink-0 flex-row items-start justify-between gap-3 border-b px-4 py-3 text-left sm:px-6 sm:py-4">
-            <div className="min-w-0 flex-1">
-              <DialogTitle className="flex items-center gap-2 text-lg font-bold md:text-xl">
-                <MessagesSquare className="h-5 w-5 text-primary md:h-6 md:w-6" aria-hidden />
+          <DialogHeader className={cn(PLANNING_TOOL_WINDOW_HEADER_CLASSNAME, 'shrink-0')}>
+            <div className="min-w-0 flex-1 space-y-1">
+              <DialogTitle
+                className={cn(
+                  PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
+                  'flex items-center gap-2'
+                )}
+              >
+                <MessagesSquare className="h-5 w-5 shrink-0 text-primary md:h-6 md:w-6" aria-hidden />
                 Communication Plan
               </DialogTitle>
-              <p className="mt-1 text-sm font-normal text-muted-foreground">
+              <p className={PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME}>
                 Keep the right people in the loop — without replacing your group chat.
               </p>
             </div>
@@ -682,7 +692,12 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
               </div>
             ) : (
               <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
-                <div className="shrink-0 border-b bg-background px-4 pb-3 pt-0 md:px-6 md:pb-4 md:pt-1">
+                <div
+                  className={cn(
+                    PLANNING_TOOL_WINDOW_SECONDARY_STRIP_CLASSNAME,
+                    'pt-0 pb-3 md:pt-1 md:pb-4'
+                  )}
+                >
                   <TabsList className="flex h-auto w-full flex-wrap gap-1">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="people">People</TabsTrigger>

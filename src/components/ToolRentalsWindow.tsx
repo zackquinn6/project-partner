@@ -28,7 +28,9 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
         open={isOpen}
         onOpenChange={onClose}
         title="Tool Access & Rentals"
-        className="relative z-[61]"
+        description="Find rentals and plan tool access for your project"
+        planningToolHeader
+        className="relative z-[61] h-[100dvh] max-h-[100dvh] w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:w-[90vw] md:max-w-[min(90vw,calc(100vw-2rem))]"
       >
       <div className="flex items-center justify-between mb-6">
         <Button 

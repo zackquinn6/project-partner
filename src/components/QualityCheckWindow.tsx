@@ -29,6 +29,12 @@ import {
 } from '@/utils/qualityControlSettings';
 import { toast } from 'sonner';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
+import {
+  PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME,
+  PLANNING_TOOL_WINDOW_HEADER_SURFACE_CLASSNAME,
+  PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME,
+  PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
+} from '@/components/PlanningWizardSteps/planningToolWindowChrome';
 import { QualityControlPdfPrinter, type QualityControlPdfRow } from '@/components/QualityControlPdfPrinter';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -352,12 +358,19 @@ export function QualityCheckWindow({
             'flex flex-col overflow-hidden'
           )}
         >
-          <DialogHeader className="flex-shrink-0 space-y-3 border-b bg-background/95 px-4 pb-3 pt-5 text-left backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:pb-4 md:pt-6">
+          <DialogHeader
+            className={cn(
+              PLANNING_TOOL_WINDOW_HEADER_SURFACE_CLASSNAME,
+              'flex shrink-0 flex-col space-y-3'
+            )}
+          >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1 space-y-3">
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
-                  <DialogTitle className="truncate text-lg font-bold leading-tight md:text-xl">
+                  <DialogTitle
+                    className={cn(PLANNING_TOOL_WINDOW_TITLE_CLASSNAME, 'truncate')}
+                  >
                     {appTitle}
                   </DialogTitle>
                   <TooltipProvider delayDuration={150}>
@@ -378,7 +391,7 @@ export function QualityCheckWindow({
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <DialogDescription className="text-sm text-muted-foreground">
+                <DialogDescription className={PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME}>
                   Track outputs for this project. Settings apply only to this project run.
                 </DialogDescription>
                 {projectRun ? (
@@ -452,7 +465,12 @@ export function QualityCheckWindow({
             </div>
           </DialogHeader>
 
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 pt-6 md:pt-8 pb-4 md:pb-6 space-y-4">
+          <div
+            className={cn(
+              'min-h-0 flex-1 space-y-4 overflow-y-auto',
+              PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME
+            )}
+          >
             <Accordion
               type="multiple"
               value={accordionOpenValues}

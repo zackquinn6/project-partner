@@ -9,6 +9,13 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ShoppingCart, Package, Wrench, AlertCircle, CheckCircle } from 'lucide-react';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
+import {
+  PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME,
+  PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
+  PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME,
+  PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
+} from '@/components/PlanningWizardSteps/planningToolWindowChrome';
+import { cn } from '@/lib/utils';
 import { Project } from '@/interfaces/Project';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -260,11 +267,11 @@ export function MaterialsSelectionWindow({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className={isMobile 
           ? "w-full h-full max-w-full max-h-full rounded-none border-0 p-0 [&>button]:hidden" 
-          : "max-w-md max-h-[85vh] p-0 [&>button]:hidden"
+          : "flex h-[90vh] max-h-[90vh] w-[90vw] max-w-6xl flex-col overflow-hidden p-0 [&>button]:hidden"
         }>
-          <DialogHeader className="flex flex-row items-start justify-between gap-3 border-b px-6 pt-6 pb-4">
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-orange-500" />
+          <DialogHeader className={PLANNING_TOOL_WINDOW_HEADER_CLASSNAME}>
+            <DialogTitle className={cn(PLANNING_TOOL_WINDOW_TITLE_CLASSNAME, 'flex items-center gap-2')}>
+              <AlertCircle className="h-5 w-5 shrink-0 text-orange-500" />
               No Materials Found
             </DialogTitle>
             <PlanningToolWindowHeaderActions
@@ -272,7 +279,13 @@ export function MaterialsSelectionWindow({
               onSaveAndClose={() => onOpenChange(false)}
             />
           </DialogHeader>
-          <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+          <div
+            className={cn(
+              'flex flex-col items-center justify-center text-center',
+              PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME,
+              'py-12'
+            )}
+          >
             <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-50 text-muted-foreground" />
             <h3 className="text-lg font-medium mb-2">No Materials or Tools Available</h3>
             <p className="text-sm text-muted-foreground mb-6">
@@ -293,13 +306,15 @@ export function MaterialsSelectionWindow({
         ? "w-full h-full max-w-full max-h-full rounded-none border-0 p-0 [&>button]:hidden flex flex-col" 
         : "max-w-6xl w-[90vw] max-h-[90vh] h-[90vh] p-0 [&>button]:hidden flex flex-col"
       }>
-        <DialogHeader className="flex flex-shrink-0 flex-row items-start justify-between gap-3 border-b px-6 pb-4 pt-6">
-          <div className="min-w-0 flex-1">
-            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-              <ShoppingCart className="w-5 h-5 text-primary" />
+        <DialogHeader className={cn(PLANNING_TOOL_WINDOW_HEADER_CLASSNAME, 'flex-shrink-0')}>
+          <div className="min-w-0 flex-1 space-y-1">
+            <DialogTitle
+              className={cn(PLANNING_TOOL_WINDOW_TITLE_CLASSNAME, 'flex items-center gap-2')}
+            >
+              <ShoppingCart className="h-5 w-5 shrink-0 text-primary" />
               Select Materials & Tools Needed
             </DialogTitle>
-            <DialogDescription className="mt-2 text-base">
+            <DialogDescription className={PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME}>
               Choose items you need to purchase for your project. All items are shown by default.
             </DialogDescription>
           </div>
@@ -310,7 +325,12 @@ export function MaterialsSelectionWindow({
           />
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col min-h-0 px-6 pb-6">
+        <div
+          className={cn(
+            'flex min-h-0 flex-1 flex-col overflow-hidden',
+            PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME
+          )}
+        >
           {/* Project Stats & Controls */}
           <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30 mb-4 flex-shrink-0">
             <div className="flex items-center gap-4">

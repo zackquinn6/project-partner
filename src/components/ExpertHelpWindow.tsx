@@ -29,7 +29,8 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({ isOpen, onCl
         onOpenChange={onClose}
         title="Video Chat With a Pro"
         description="Get a human expert to guide you through your next project"
-        className="w-[90vw] max-w-md h-auto max-h-[90vh] relative z-[61]"
+        planningToolHeader
+        className="relative z-[61] h-[100dvh] max-h-[100dvh] w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:w-[90vw] md:max-w-[min(90vw,calc(100vw-2rem))]"
       >
       <div className="relative space-y-6">
         {/* Coming Soon Banner */}

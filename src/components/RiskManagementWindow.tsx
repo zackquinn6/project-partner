@@ -45,6 +45,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
+import {
+  PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
+  PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME,
+  PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
+} from '@/components/PlanningWizardSteps/planningToolWindowChrome';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/contexts/ProjectContext';
@@ -967,58 +972,63 @@ export function RiskManagementWindow({
             : 'h-screen max-h-full w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg'
         )}
       >
-        <DialogHeader className="flex-shrink-0 border-b bg-background/95 px-2 pb-2 pt-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-4 md:pb-3 md:pt-6">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <DialogTitle className="text-lg md:text-xl font-bold flex items-center gap-2">
-                {useRiskLessChrome ? (
-                  <Crosshair className="w-5 h-5" />
-                ) : (
-                  <Shield className="w-5 h-5" />
-                )}
-                {useRiskLessChrome ? 'Risk-Less' : 'Risk Management'}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        tabIndex={-1}
-                        className="ml-1 inline-flex items-center justify-center rounded-full border border-muted-foreground/20 bg-background/80 p-0.5 text-[10px] text-muted-foreground hover:bg-muted"
-                      >
-                        <Info className="w-3 h-3" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" sideOffset={8} className="max-w-sm text-xs">
-                      {workflowTemplateRiskLess
-                        ? 'Edit project risks for this template. Foundation risks may be included depending on the project.'
-                        : variant === 'risk-focus'
-                          ? 'This session is dedicated to risks for your template: foundation and project risks are on the run, and you can add run-specific risks anytime.'
-                          : 'A risk is simply something uncertain. Construction projects often go off-schedule due to uncertainty at the start. Projects come pre-loaded with risks and potential impact, and you can add your own when you see additional concerns.'}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </DialogTitle>
+        <DialogHeader className={cn(PLANNING_TOOL_WINDOW_HEADER_CLASSNAME, 'flex-shrink-0')}>
+          <div className="min-w-0 flex-1 space-y-1">
+            <DialogTitle
+              className={cn(
+                PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
+                'flex flex-wrap items-center gap-2'
+              )}
+            >
               {useRiskLessChrome ? (
-                <p className="mt-0.5 max-w-3xl text-sm font-normal leading-snug text-muted-foreground">
-                  {workflowTemplateRiskLess
-                    ? 'Review and edit risks for the project template you are working on'
-                    : `Spot what could go wrong, decide how much it matters, and plan how you'll handle it`}
-                </p>
-              ) : null}
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {showAdvancedToggle ? (
+                <Crosshair className="h-5 w-5 shrink-0" />
+              ) : (
+                <Shield className="h-5 w-5 shrink-0" />
+              )}
+              {useRiskLessChrome ? 'Risk-Less' : 'Risk Management'}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="ml-1 inline-flex items-center justify-center rounded-full border border-muted-foreground/20 bg-background/80 p-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+                    >
+                      <Info className="h-3 w-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" sideOffset={8} className="max-w-sm text-xs">
+                    {workflowTemplateRiskLess
+                      ? 'Edit project risks for this template. Foundation risks may be included depending on the project.'
+                      : variant === 'risk-focus'
+                        ? 'This session is dedicated to risks for your template: foundation and project risks are on the run, and you can add run-specific risks anytime.'
+                        : 'A risk is simply something uncertain. Construction projects often go off-schedule due to uncertainty at the start. Projects come pre-loaded with risks and potential impact, and you can add your own when you see additional concerns.'}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </DialogTitle>
+            {useRiskLessChrome ? (
+              <p
+                className={cn(PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME, 'max-w-3xl')}
+              >
+                {workflowTemplateRiskLess
+                  ? 'Review and edit risks for the project template you are working on'
+                  : `Spot what could go wrong, decide how much it matters, and plan how you'll handle it`}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
+            {showAdvancedToggle ? (
               <div className="flex items-center gap-2">
                 <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Advanced</span>
                 <Switch checked={advancedMode} onCheckedChange={setAdvancedMode} />
               </div>
-              ) : null}
-              <PlanningToolWindowHeaderActions
-                className="flex-shrink-0"
-                onCancel={() => onOpenChange(false)}
-                onSaveAndClose={() => onOpenChange(false)}
-              />
-            </div>
+            ) : null}
+            <PlanningToolWindowHeaderActions
+              className="flex-shrink-0"
+              onCancel={() => onOpenChange(false)}
+              onSaveAndClose={() => onOpenChange(false)}
+            />
           </div>
         </DialogHeader>
 

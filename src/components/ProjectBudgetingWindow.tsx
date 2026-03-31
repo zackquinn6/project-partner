@@ -14,6 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { TrendingUp, Plus, Trash2, Upload, DollarSign, Edit, Save } from 'lucide-react';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
+import {
+  PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME,
+  PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
+  PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
+} from '@/components/PlanningWizardSteps/planningToolWindowChrome';
 import { useToast } from '@/hooks/use-toast';
 import { useProject } from '@/contexts/ProjectContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -649,14 +654,14 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             }
           }}
         >
-        <DialogHeader className="flex flex-shrink-0 flex-row items-start justify-between gap-3 border-b bg-background/95 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:py-3">
-          <DialogTitle className="text-lg md:text-xl font-bold">Project Budgeting</DialogTitle>
+        <DialogHeader className={cn(PLANNING_TOOL_WINDOW_HEADER_CLASSNAME, 'flex-shrink-0')}>
+          <DialogTitle className={PLANNING_TOOL_WINDOW_TITLE_CLASSNAME}>Project Budgeting</DialogTitle>
           <PlanningToolWindowHeaderActions
             onCancel={() => onOpenChange(false)}
             onSaveAndClose={() => onOpenChange(false)}
           />
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6">
+        <div className={cn('flex-1 overflow-y-auto', PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME)}>
           {/* Budget Goal Header */}
           <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
             <div className="flex items-center justify-between">

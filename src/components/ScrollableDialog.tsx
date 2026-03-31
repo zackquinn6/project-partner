@@ -4,6 +4,11 @@ import { Dialog, DialogPortal, DialogOverlay, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { PlanningToolWindowHeaderActions } from "@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions"
+import {
+  PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME,
+  PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
+  PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
+} from "@/components/PlanningWizardSteps/planningToolWindowChrome"
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden"
 
 interface ScrollableDialogProps {
@@ -91,14 +96,22 @@ export function ScrollableDialog({
             position: 'fixed'
           }}
         >
-          {/* Header with title and close button */}
-          <div className={cn(
-            "px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0",
-            !title && !description && "sr-only"
-          )}>
-            <div className="flex-1 min-w-0">
+          {/* Header with title and close / planning actions */}
+          <div
+            className={cn(
+              !title && !description && "sr-only",
+              planningToolHeader
+                ? PLANNING_TOOL_WINDOW_HEADER_CLASSNAME
+                : "flex shrink-0 items-center justify-between border-b border-border px-4 py-4 md:px-6 md:py-4"
+            )}
+          >
+            <div className="min-w-0 flex-1">
               {title ? (
-                <DialogTitle className="text-lg md:text-xl font-bold truncate">
+                <DialogTitle
+                  className={cn(
+                    planningToolHeader ? PLANNING_TOOL_WINDOW_TITLE_CLASSNAME : "truncate text-lg font-bold md:text-xl"
+                  )}
+                >
                   {title}
                 </DialogTitle>
               ) : (
@@ -107,7 +120,13 @@ export function ScrollableDialog({
                 </VisuallyHidden.Root>
               )}
               {description ? (
-                <DialogDescription className="text-sm md:text-base mt-1">
+                <DialogDescription
+                  className={cn(
+                    planningToolHeader
+                      ? "mt-1 text-sm font-normal leading-snug text-muted-foreground md:text-base"
+                      : "mt-1 text-sm md:text-base"
+                  )}
+                >
                   {description}
                 </DialogDescription>
               ) : (
@@ -143,8 +162,13 @@ export function ScrollableDialog({
           </div>
           
           {/* Scrollable content area */}
-          <div 
-            className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6"
+          <div
+            className={cn(
+              "min-h-0 flex-1 overflow-y-auto",
+              planningToolHeader
+                ? PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME
+                : "p-4 md:p-6"
+            )}
             style={{ overscrollBehavior: 'contain' }}
           >
             {children}

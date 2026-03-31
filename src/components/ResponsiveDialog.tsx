@@ -6,6 +6,11 @@ import { responsiveDialogClasses } from "@/utils/responsive"
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { PlanningToolWindowHeaderActions } from "@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions"
+import {
+  PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
+  PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME,
+  PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
+} from "@/components/PlanningWizardSteps/planningToolWindowChrome"
 
 interface ResponsiveDialogProps {
   open: boolean;
@@ -112,11 +117,23 @@ export function ResponsiveDialog({
             )}
           >
             <DialogHeader
-              className={`${title || description ? 'px-4 pt-4 pb-2' : 'sr-only'} ${planningToolHeader ? 'flex flex-row items-start justify-between gap-3 border-b text-left' : 'flex flex-col space-y-1 text-center sm:text-left'}`}
+              className={cn(
+                !(title || description) && "sr-only",
+                planningToolHeader && (title || description) && PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
+                !planningToolHeader &&
+                  (title || description) &&
+                  "flex flex-col space-y-1 px-4 pb-2 pt-4 text-center sm:text-left"
+              )}
             >
-              <div className={planningToolHeader ? 'min-w-0 flex-1 space-y-1' : ''}>
+              <div className={planningToolHeader ? "min-w-0 flex-1 space-y-1" : ""}>
                 {title ? (
-                  <DialogTitle className="text-lg md:text-xl font-bold">
+                  <DialogTitle
+                    className={
+                      planningToolHeader
+                        ? PLANNING_TOOL_WINDOW_TITLE_CLASSNAME
+                        : "text-lg font-bold md:text-xl"
+                    }
+                  >
                     {title}
                   </DialogTitle>
                 ) : (
@@ -125,7 +142,13 @@ export function ResponsiveDialog({
                   </VisuallyHidden.Root>
                 )}
                 {description ? (
-                  <DialogDescription className="text-sm md:text-base">
+                  <DialogDescription
+                    className={
+                      planningToolHeader
+                        ? PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME
+                        : "text-sm md:text-base"
+                    }
+                  >
                     {description}
                   </DialogDescription>
                 ) : (
@@ -167,11 +190,28 @@ export function ResponsiveDialog({
         )}
       >
         <DialogHeader
-          className={`${size === 'content-full' ? 'px-4 pt-4 pb-0' : title || description ? 'pb-2' : 'sr-only'} ${planningToolHeader ? 'flex flex-row items-start justify-between gap-3 border-b px-4 pb-3 pt-4 text-left' : 'flex flex-col space-y-1 text-center sm:text-left'}`}
+          className={cn(
+            !(title || description) && "sr-only",
+            planningToolHeader && (title || description) && PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
+            !planningToolHeader &&
+              (title || description) &&
+              size === "content-full" &&
+              "flex flex-col space-y-1 px-4 pb-0 pt-4 text-center sm:text-left",
+            !planningToolHeader &&
+              (title || description) &&
+              size !== "content-full" &&
+              "flex flex-col space-y-1 pb-2 text-center sm:text-left"
+          )}
         >
-          <div className={planningToolHeader ? 'min-w-0 flex-1 space-y-1' : ''}>
+          <div className={planningToolHeader ? "min-w-0 flex-1 space-y-1" : ""}>
             {title ? (
-              <DialogTitle className="text-lg md:text-xl font-bold">
+              <DialogTitle
+                className={
+                  planningToolHeader
+                    ? PLANNING_TOOL_WINDOW_TITLE_CLASSNAME
+                    : "text-lg font-bold md:text-xl"
+                }
+              >
                 {title}
               </DialogTitle>
             ) : (
@@ -180,7 +220,13 @@ export function ResponsiveDialog({
               </VisuallyHidden.Root>
             )}
             {description ? (
-              <DialogDescription className="text-sm md:text-base">
+              <DialogDescription
+                className={
+                  planningToolHeader
+                    ? PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME
+                    : "text-sm md:text-base"
+                }
+              >
                 {description}
               </DialogDescription>
             ) : (
