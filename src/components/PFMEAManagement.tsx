@@ -231,6 +231,17 @@ function maxPfmeaSeverityForFailureMode(fm: PFMEAFailureMode): number {
   return fm.severity_score;
 }
 
+/**
+ * Lowest detection score for the failure mode row when every listed detection control has a score; otherwise null
+ * (D column shows em dash). Matches PFMEA practice: row D is the best (minimum) D among controls.
+ */
+function minPfmeaDetectionScoreForFailureMode(fm: PFMEAFailureMode): number | null {
+  const detection = fm.pfmea_controls.filter((c) => c.control_type === 'detection');
+  if (detection.length === 0) return null;
+  if (detection.some((c) => c.detection_score == null)) return null;
+  return Math.min(...detection.map((c) => c.detection_score!));
+}
+
 type PfmeaNavColumn =
   | 'requirements'
   | 'failure_mode'
@@ -683,6 +694,26 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     [selectedPfmeaProject, fetchPfmeaDetails, pfmeaIsEditable, syncFailureModeSeverityFromDb]
   );
 
+  const persistControlDetectionScore = useCallback(
+    async (controlId: string, scoreStr: string) => {
+      if (!pfmeaIsEditable) {
+        toast.error('PFMEA is locked. Switch this revision to draft to edit.');
+        return;
+      }
+      const parsed = parseInt(scoreStr, 10);
+      if (Number.isNaN(parsed)) return;
+      try {
+        const { error } = await supabase.from('pfmea_controls').update({ detection_score: parsed }).eq('id', controlId);
+        if (error) throw error;
+        if (selectedPfmeaProject) await fetchPfmeaDetails(selectedPfmeaProject.project_id);
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to update detection score');
+      }
+    },
+    [pfmeaIsEditable, selectedPfmeaProject, fetchPfmeaDetails]
+  );
+
   const executePfmeaLineDelete = useCallback(async () => {
     if (!pfmeaLineDeleteTarget || !selectedPfmeaProject) return;
     if (!pfmeaIsEditable) {
@@ -864,11 +895,8 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   const calculateRPN = (failureMode: PFMEAFailureMode, cause: PFMEAPotentialCause | null): number => {
     const severity = maxPfmeaSeverityForFailureMode(failureMode);
     const occurrence = cause?.occurrence_score ?? 10;
-    const detectionScores = failureMode.pfmea_controls
-      .filter((c) => c.control_type === 'detection' && c.detection_score != null)
-      .map((c) => c.detection_score!);
-    const minDetection =
-      detectionScores.length > 0 ? Math.min(...detectionScores, 10) : 10;
+    const rowD = minPfmeaDetectionScoreForFailureMode(failureMode);
+    const minDetection = rowD != null ? rowD : 10;
 
     return Math.round(severity * occurrence * minDetection);
   };
@@ -882,10 +910,8 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       : 10;
     const o = Math.round(avgOccurrence);
 
-    const detectionScores = failureMode.pfmea_controls
-      .filter((c) => c.control_type === 'detection' && c.detection_score != null)
-      .map((c) => c.detection_score!);
-    const d = detectionScores.length > 0 ? Math.min(...detectionScores) : 10;
+    const rowD = minPfmeaDetectionScoreForFailureMode(failureMode);
+    const d = rowD != null ? rowD : 10;
 
     // Severity bands
     if (s >= 9) {
@@ -1001,11 +1027,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         await supabase
           .from('pfmea_controls')
           .update({ control_description: editingValue })
-          .eq('id', entityId);
-      } else if (type === 'control_detection') {
-        await supabase
-          .from('pfmea_controls')
-          .update({ detection_score: parseInt(editingValue) })
           .eq('id', entityId);
       } else if (type === 'action') {
         await supabase
@@ -1195,6 +1216,46 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     </Select>
   );
 
+  const renderDetectionScoreInParens = (control: PFMEAControl) => {
+    const triggerClass =
+      'inline-flex h-auto w-auto min-h-0 items-baseline gap-0 border-0 bg-transparent p-0 text-sm font-semibold text-muted-foreground shadow-none ring-0 ring-offset-0 hover:bg-muted/50 hover:text-foreground focus:ring-1 focus:ring-ring data-[state=open]:bg-muted/50 [&_svg]:hidden [&>span]:line-clamp-none';
+    const items = Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+      <SelectItem key={num} value={String(num)}>
+        {num}
+      </SelectItem>
+    ));
+    if (control.detection_score != null) {
+      return (
+        <Select value={String(control.detection_score)} onValueChange={(v) => void persistControlDetectionScore(control.id, v)}>
+          <SelectTrigger
+            className={triggerClass}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            title="Change detection (1–10)"
+          >
+            <SelectValue>
+              <span className="tabular-nums">({control.detection_score})</span>
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>{items}</SelectContent>
+        </Select>
+      );
+    }
+    return (
+      <Select onValueChange={(v) => void persistControlDetectionScore(control.id, v)}>
+        <SelectTrigger
+          className={triggerClass}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          title="Set detection (1–10)"
+        >
+          <SelectValue placeholder="(—)" />
+        </SelectTrigger>
+        <SelectContent>{items}</SelectContent>
+      </Select>
+    );
+  };
+
   const updateFailureModeSeverity = useCallback(
     async (failureModeId: string, score: string) => {
       if (!pfmeaIsEditable) return;
@@ -1314,30 +1375,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         console.error(e);
         toast.error('Failed to save action');
       }
-    },
-    [pfmeaIsEditable, selectedPfmeaProject, fetchPfmeaDetails]
-  );
-
-  const updateDetectionScoreForRow = useCallback(
-    async (failureMode: PFMEAFailureMode, score: string) => {
-      if (!pfmeaIsEditable) return;
-      const parsed = parseInt(score, 10);
-      if (Number.isNaN(parsed)) return;
-      const detectionControls = failureMode.pfmea_controls.filter((c) => c.control_type === 'detection');
-      if (detectionControls.length === 0) {
-        toast.error('Add a detection control first');
-        return;
-      }
-      const ids = detectionControls.map((c) => c.id);
-      const { error } = await supabase
-        .from('pfmea_controls')
-        .update({ detection_score: parsed })
-        .in('id', ids);
-      if (error) {
-        toast.error('Failed to update detection');
-        return;
-      }
-      if (selectedPfmeaProject) await fetchPfmeaDetails(selectedPfmeaProject.project_id);
     },
     [pfmeaIsEditable, selectedPfmeaProject, fetchPfmeaDetails]
   );
@@ -1595,10 +1632,8 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     const occ = (r: PfmeaFlatRow) => (r.cause ? r.cause.occurrence_score : -1);
     const det = (r: PfmeaFlatRow) => {
       if (!r.failureMode) return -1;
-      const scores = r.failureMode.pfmea_controls
-        .filter((c) => c.control_type === 'detection' && c.detection_score != null)
-        .map((c) => c.detection_score as number);
-      return scores.length > 0 ? Math.min(...scores) : -1;
+      const m = minPfmeaDetectionScoreForFailureMode(r.failureMode);
+      return m != null ? m : -1;
     };
     const rpn = (r: PfmeaFlatRow) => (r.failureMode ? calculateRPN(r.failureMode, r.cause) : -1);
     const ap = (r: PfmeaFlatRow) => (r.failureMode ? calculateActionPriority(r.failureMode) : 'L');
@@ -2435,12 +2470,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                   const apColorClass = failureMode ? getActionPriorityRowClass(ap) : '';
                   const rpn = failureMode ? calculateRPN(failureMode, cause) : null;
 
-                  const detectionScores = failureMode
-                    ? failureMode.pfmea_controls
-                        .filter((c) => c.control_type === 'detection' && c.detection_score != null)
-                        .map((c) => c.detection_score as number)
-                    : [];
-                  const minDetection = detectionScores.length > 0 ? Math.min(...detectionScores) : null;
+                  const rowMinDetection = failureMode ? minPfmeaDetectionScoreForFailureMode(failureMode) : null;
 
                   const preventionControls =
                     failureMode && cause
@@ -2913,26 +2943,27 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                               {detectionControls.map((control) => (
                                 <div
                                   key={control.id}
-                                  className="border-b border-border/40 px-1 py-1 text-sm last:border-b-0"
+                                  className="flex w-full min-w-0 flex-wrap items-baseline gap-x-1 gap-y-0.5 border-b border-border/50 px-1 py-1 last:border-b-0"
                                 >
-                                  <div className="flex min-h-0 w-full items-start gap-0.5">
-                                    <div className="min-h-0 min-w-0 flex-1">
-                                      {renderEditableCell(rowIndex, control.control_description, control.id, 'control_description', 'control', false, {
-                                        fullWidth: true,
-                                        plainCell: true,
-                                        editFooter: {
-                                          addLabel: 'Add',
-                                          onAdd: () => void addControl(failureMode.id, 'detection'),
-                                          onDelete: () =>
-                                            setPfmeaLineDeleteTarget({
-                                              kind: 'control',
-                                              id: control.id,
-                                              title: 'Delete this detection control?',
-                                              description: 'This line will be removed from the PFMEA table.',
-                                            }),
-                                        },
-                                      })}
-                                    </div>
+                                  <div className="min-w-0 flex-1">
+                                    {renderEditableCell(rowIndex, control.control_description, control.id, 'control_description', 'control', false, {
+                                      fullWidth: true,
+                                      plainCell: true,
+                                      editFooter: {
+                                        addLabel: 'Add',
+                                        onAdd: () => void addControl(failureMode.id, 'detection'),
+                                        onDelete: () =>
+                                          setPfmeaLineDeleteTarget({
+                                            kind: 'control',
+                                            id: control.id,
+                                            title: 'Delete this detection control?',
+                                            description: 'This line will be removed from the PFMEA table.',
+                                          }),
+                                      },
+                                    })}
+                                  </div>
+                                  <div className="flex shrink-0 items-baseline gap-0.5">
+                                    {renderDetectionScoreInParens(control)}
                                     {gridFocus.rowIndex === rowIndex &&
                                     gridFocus.col === 'detection_controls' &&
                                     !isPfmeaCellEditing(rowIndex, control.id, 'control_description')
@@ -2945,18 +2976,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                           })
                                         )
                                       : null}
-                                  </div>
-                                  <div className="mt-0.5 text-xs text-muted-foreground">
-                                    D:{' '}
-                                    {renderEditableCell(
-                                      rowIndex,
-                                      (control.detection_score ?? 5).toString(),
-                                      control.id,
-                                      'detection_score',
-                                      'control_detection',
-                                      true,
-                                      { plainCell: true }
-                                    )}
                                   </div>
                                 </div>
                               ))}
@@ -2995,9 +3014,13 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'd')}
                       >
                         <div className="flex h-full min-h-8 w-full items-center justify-center">
-                          {failureMode
-                            ? renderScoreCell(minDetection ?? 10, (value) => void updateDetectionScoreForRow(failureMode, value))
-                            : null}
+                          {failureMode ? (
+                            rowMinDetection != null ? (
+                              renderScoreCell(rowMinDetection, undefined)
+                            ) : (
+                              <span className="text-sm font-bold tabular-nums text-muted-foreground">—</span>
+                            )
+                          ) : null}
                         </div>
                       </TableCell>
 
