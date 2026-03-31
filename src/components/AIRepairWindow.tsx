@@ -52,19 +52,20 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
   };
 
   const uploadPhotos = async (files: File[]): Promise<string[]> => {
+    if (!user?.id) {
+      throw new Error('User authentication required to upload photos');
+    }
+
     const uploadPromises = files.map(async (file) => {
-      const fileName = `ai-repair/${Date.now()}-${file.name}`;
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const fileName = `${user.id}/ai-repair/${Date.now()}-${sanitizedName}`;
       const { error: uploadError } = await supabase.storage
         .from('project-photos')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('project-photos')
-        .getPublicUrl(fileName);
-
-      return publicUrl;
+      return fileName;
     });
 
     return Promise.all(uploadPromises);

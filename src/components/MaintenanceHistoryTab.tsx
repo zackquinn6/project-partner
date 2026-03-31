@@ -38,6 +38,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [completions, setCompletions] = useState<MaintenanceCompletion[]>([]);
+  const [signedPhotoUrls, setSignedPhotoUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [editingCompletion, setEditingCompletion] = useState<MaintenanceCompletion | null>(null);
   const [editDate, setEditDate] = useState<Date | null>(null);
@@ -92,6 +93,29 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
       })) || [];
 
       setCompletions(transformedData);
+      const signedUrlResults = await Promise.all(
+        transformedData.map(async (completion) => {
+          const rawPath = completion.photo_url?.trim();
+          if (!rawPath) return { id: completion.id, url: null };
+          if (/^https?:\/\//i.test(rawPath)) return { id: completion.id, url: rawPath };
+
+          const { data: urlData, error: urlError } = await supabase.storage
+            .from('project-photos')
+            .createSignedUrl(rawPath, 3600);
+
+          if (urlError) {
+            console.error(`Error creating signed URL for completion ${completion.id}:`, urlError);
+            return { id: completion.id, url: null };
+          }
+
+          return { id: completion.id, url: urlData.signedUrl };
+        })
+      );
+      const signedUrlMap: Record<string, string> = {};
+      signedUrlResults.forEach(({ id, url }) => {
+        if (url) signedUrlMap[id] = url;
+      });
+      setSignedPhotoUrls(signedUrlMap);
     } catch (error) {
       console.error('Error fetching completion history:', error);
     } finally {
@@ -324,9 +348,9 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
                 )}
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                {completion.photo_url && (
+                {signedPhotoUrls[completion.id] && (
                   <img
-                    src={completion.photo_url}
+                    src={signedPhotoUrls[completion.id]}
                     alt="Completion"
                     className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover border"
                   />

@@ -76,9 +76,12 @@ export function TaskCompletionDialog({
 
   const uploadPhoto = async (file: File): Promise<string | null> => {
     try {
+      if (!user?.id) {
+        throw new Error('User authentication required to upload photo');
+      }
       const fileExt = file.name.split('.').pop();
       const fileName = `${task.id}_${Date.now()}.${fileExt}`;
-      const filePath = `maintenance-photos/${fileName}`;
+      const filePath = `${user.id}/${task.home_id}/maintenance-photos/${fileName}`;
 
       setUploadProgress(25);
 
@@ -90,12 +93,8 @@ export function TaskCompletionDialog({
 
       setUploadProgress(75);
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('project-photos')
-        .getPublicUrl(filePath);
-
       setUploadProgress(100);
-      return publicUrl;
+      return filePath;
     } catch (error) {
       console.error('Error uploading photo:', error);
       toast({

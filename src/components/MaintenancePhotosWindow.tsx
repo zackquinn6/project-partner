@@ -29,6 +29,7 @@ interface MaintenancePhotosWindowProps {
 export function MaintenancePhotosWindow({ open, onOpenChange }: MaintenancePhotosWindowProps) {
   const { user } = useAuth();
   const [items, setItems] = useState<MaintenancePhotoItem[]>([]);
+  const [signedPhotoUrls, setSignedPhotoUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<MaintenancePhotoItem | null>(null);
 
@@ -70,6 +71,29 @@ export function MaintenancePhotosWindow({ open, onOpenChange }: MaintenancePhoto
         };
       });
       setItems(list);
+      const signedUrlResults = await Promise.all(
+        list.map(async (item) => {
+          const rawPath = item.photo_url?.trim();
+          if (!rawPath) return { id: item.id, url: null };
+          if (/^https?:\/\//i.test(rawPath)) return { id: item.id, url: rawPath };
+
+          const { data: urlData, error: urlError } = await supabase.storage
+            .from('project-photos')
+            .createSignedUrl(rawPath, 3600);
+
+          if (urlError) {
+            console.error(`Error creating signed URL for maintenance photo ${item.id}:`, urlError);
+            return { id: item.id, url: null };
+          }
+
+          return { id: item.id, url: urlData.signedUrl };
+        })
+      );
+      const signedUrlMap: Record<string, string> = {};
+      signedUrlResults.forEach(({ id, url }) => {
+        if (url) signedUrlMap[id] = url;
+      });
+      setSignedPhotoUrls(signedUrlMap);
     } catch (e) {
       console.error('Error fetching maintenance photos:', e);
       setItems([]);
@@ -121,11 +145,13 @@ export function MaintenancePhotosWindow({ open, onOpenChange }: MaintenancePhoto
                   >
                     <CardContent className="p-1">
                       <div className="aspect-square bg-muted rounded overflow-hidden mb-1">
-                        <img
-                          src={item.photo_url}
-                          alt={item.task.title}
-                          className="w-full h-full object-cover"
-                        />
+                        {signedPhotoUrls[item.id] ? (
+                          <img
+                            src={signedPhotoUrls[item.id]}
+                            alt={item.task.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : null}
                       </div>
                       <div className="text-[9px] text-muted-foreground truncate text-center" title={item.task.title}>
                         {item.task.title}
@@ -147,11 +173,13 @@ export function MaintenancePhotosWindow({ open, onOpenChange }: MaintenancePhoto
             </DialogHeader>
             <div className="flex gap-4">
               <div className="flex-1">
-                <img
-                  src={selected.photo_url}
-                  alt={selected.task.title}
-                  className="w-full rounded-lg"
-                />
+                {signedPhotoUrls[selected.id] ? (
+                  <img
+                    src={signedPhotoUrls[selected.id]}
+                    alt={selected.task.title}
+                    className="w-full rounded-lg"
+                  />
+                ) : null}
               </div>
               <div className="w-64 space-y-4 flex flex-col">
                 <div>
@@ -175,7 +203,10 @@ export function MaintenancePhotosWindow({ open, onOpenChange }: MaintenancePhoto
                   variant="outline"
                   size="sm"
                   className="w-full mt-auto"
-                  onClick={() => window.open(selected.photo_url, '_blank')}
+                  onClick={() => {
+                    const signedUrl = signedPhotoUrls[selected.id];
+                    if (signedUrl) window.open(signedUrl, '_blank');
+                  }}
                 >
                   Open in new tab
                 </Button>
