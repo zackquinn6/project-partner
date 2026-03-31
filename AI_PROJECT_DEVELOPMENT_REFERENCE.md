@@ -32,14 +32,13 @@ Where **Step X** is one of the steps defined below.
 
 - **`public.operation_steps`**
   - Stores steps under an operation (`operation_id`).
-  - Holds step metadata and many “step-level” fields as JSON (e.g., `tools`, `materials`, `outputs`, `content_sections`, `apps`).
-  - Time estimates live here as numeric fields:
-    - `time_estimate_low`, `time_estimate_med`, `time_estimate_high`
+  - **Do not assume extra columns** (e.g. `content_type`, `content`, `content_sections`) exist unless the live schema or generated types say so. In this codebase, step copy lives in **`public.step_instructions`**, not on `operation_steps`.
+  - Columns that **`src/integrations/supabase/types.ts`** exposes for `operation_steps` include: `id`, `operation_id`, `step_title`, `description`, `display_order`, `materials`, `tools`, `outputs`, `apps`, `process_variables`, `flow_type`, `step_type`, `time_estimate_low`, `time_estimate_med`, `time_estimate_high`, `number_of_workers`, `skill_level`, `allow_content_edit`, timestamps.
 
 - **`public.step_instructions`**
-  - Stores **3-level instruction content** per step.
+  - Stores **3-level instruction content** per template step row in `operation_steps`.
   - Key columns:
-    - `template_step_id` → references `operation_steps.id`
+    - `step_id` → references `operation_steps.id` (**not** `template_step_id`; that name is used on `project_run_step_instructions` for run instances)
     - `instruction_level` ∈ {`beginner`, `intermediate`, `advanced`}
     - `content` (JSONB) → typically an array of sections (title/content/type)
 
@@ -55,7 +54,42 @@ Where **Step X** is one of the steps defined below.
 - When asked to “Create as a migration for direct database update,” produce **SQL** suitable for running directly (e.g., Supabase SQL editor / migration runner).
 - Behavior requirements:
   - **Fail loudly** if required upstream entities are missing (e.g., phase not found).
-  - Prefer **idempotent inserts** using stable UUIDs and `ON CONFLICT` on unique keys (e.g., `id`, or `(template_step_id, instruction_level)` for instructions).
+  - Prefer **idempotent inserts** using stable UUIDs and `ON CONFLICT` on unique keys (e.g., `id`, or `(step_id, instruction_level)` for `public.step_instructions`).
+
+### UUID literals in migrations (avoid `22P02` invalid input syntax)
+
+- PostgreSQL accepts UUIDs in the standard form `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` where the **last group must be exactly 12 hexadecimal characters** (not 11, not 13).
+- When hand-authoring stable IDs for `INSERT` … `::uuid`, **count the last segment** after the final hyphen. A mistake such as `…5409ed1f04003` (13 hex digits) or a truncated group will fail at runtime with **`ERROR: 22P02: invalid input syntax for type uuid`**.
+- Prefer a generator or copy a known-valid UUID pattern; if using a numeric suffix scheme, ensure each full UUID string remains valid (e.g. `…f0403` not `…f04003` when the latter makes the last group too long).
+
+### One migration file per project-development step (required)
+
+- **Exactly one SQL file per Step** (Step 1 … Step 8 as defined in section B). Do not split a single step across multiple migration files (for example, do not add a second “Step 1” file when another `project_id` needs the same workflow—extend the existing Step 1 file instead).
+- **Multiple template projects** that need the same step: put **one PostgreSQL `DO $$ … END $$;` block per `project_id`** in that step’s file, in stable order, with comments separating blocks. Each block uses its own stable operation/step UUIDs. If there is only one target `project_id`, use **one** `DO` block.
+- **Steps 2–8** for the same template must use the **same** `v_project_id` as Step 1, and any `UPDATE public.operation_steps … WHERE id = …` must reference the **same** `operation_steps.id` values created in Step 1 for that project (Step 8 PFMEA rows reference those steps via `operation_step_id`).
+- **Naming:** use a single slug and step number, e.g. `YYYY_MM_DD_migration_<project_slug>_step<N>[_<qualifier>].sql`. Use a **qualifier** only when two different migrations would both be “step N” by number but different in purpose (outputs vs risks vs tools). Example (Toilet Replacement, project `f46b9b02-de31-42e0-ab04-5409ed1f21ee`):
+  - `2026_03_30_migration_toilet_replacement_step1.sql` — Step 1
+  - `2026_03_26_migration_toilet_replacement_step2_outputs.sql` — Step 2
+  - `2026_03_26_migration_toilet_replacement_step3_project_risks.sql` — Step 3
+  - `2026_03_26_migration_toilet_replacement_step4_tools.sql` — Step 4
+  - `2026_03_30_migration_toilet_replacement_step5_materials.sql` — Step 5
+  - `2026_03_30_migration_toilet_replacement_step6_process_variables.sql` — Step 6
+  - `2026_03_30_migration_toilet_replacement_step7_time_estimates.sql` — Step 7
+  - `2026_03_30_migration_toilet_replacement_step8_pfmea.sql` — Step 8
+- Do **not** encode `project_id` in the **filename**; the project is identified inside the SQL (`v_project_id` or comments).
+
+### Library bootstrap inside steps 4–5 (tools + materials)
+
+- **Step 4 migrations** begin by **inserting missing `public.tools` rows** when no row with the same `name` exists (`INSERT … SELECT … WHERE NOT EXISTS (SELECT 1 FROM public.tools t WHERE t.name = v.n)`). Include every **NOT NULL** / check-constrained column the database enforces (e.g. **`category`** — the admin tools UI uses `PPE`, `Hand Tool`, `Power Tool`, `Other`; align inserts to that set). Use real `name` / `description` / required numeric fields (e.g. `specialty_scale`); do not invent silent defaults on step rows—only explicit catalog inserts.
+- **Step 5 migrations** do the same for **`public.materials`** (match on `name`), and **repeat the same tools list** as step 4 so running step 5 alone still leaves the tool catalog sufficient for step 4’s assignments if step 4 was skipped in a bad order (idempotent).
+- **Step 6 migrations do not** insert into **`public.tools`** or **`public.materials`**. Step 6 is **only** `operation_steps.process_variables` (plus project cache refresh). Catalog and step-level tools/materials belong in steps **4** and **5**.
+- After bootstrap in steps 4–5, migrations should still **resolve IDs** (or `RAISE`) if a row is missing—e.g. permissions, renamed catalog, or schema mismatch—so failures remain loud.
+
+### Schema alignment (avoid 42703 / “column does not exist”)
+
+- **Before writing `INSERT`/`UPDATE` SQL**, confirm column names against a **real source of truth**: e.g. `src/integrations/supabase/types.ts` (reflects the linked database) or `\d table_name` / information_schema in the target DB.
+- **Do not copy column lists from older migrations or from other products** unless you verify each column still exists.
+- **Lesson:** `public.operation_steps` in this project **does not** include `content_type`, `content`, or `content_sections`. Putting narrative instructions only in `step_instructions`; optional single-line context belongs in `operation_steps.description` if needed.
 
 ---
 
@@ -131,16 +165,13 @@ Where **Step X** is one of the steps defined below.
 
 **Hard requirement**
 
-- **Must use tools from the tools library.**
-  - Search the admin tools library and attempt to match each needed tool to an existing **tool / variant**.
-  - If either the tool or the needed variant is missing:
-    - **Notify the user exactly which tool/variant needs to be added.**
-    - Do not create a fake tool entry or default to a generic placeholder.
+- **Tools must exist in `public.tools`** (and `tool_variations` when a step references a variant).
+- **Migrations:** insert the canonical tool row **when missing** (see **Library bootstrap inside steps 4–5**), then attach library IDs to steps. If a row still cannot be resolved after insert, **fail with an explicit `RAISE`** listing what is wrong—do not leave orphan JSON with fake IDs.
 
 **DB placement**
 
 - Step-level tools live in `public.operation_steps.tools` (JSON).
-- Library tool/variant catalog is separate (must be used as the source of truth).
+- Library catalog: `public.tools` / `tool_variations`.
 
 ### Step 5 — Materials list
 
@@ -150,16 +181,13 @@ Where **Step X** is one of the steps defined below.
 
 **Hard requirement**
 
-- **Must use materials from the materials library.**
-  - Search the admin materials library and attempt to match each needed material to an existing library item / variant.
-  - If missing:
-    - **Notify the user exactly which material/variant needs to be added.**
-    - Do not create fake items or placeholders.
+- **Materials must exist in `public.materials`** (and `materials_variants` when a step references a variant).
+- **Migrations:** insert the canonical material row **when missing** (match on `name`, same pattern as tools), then attach IDs to steps. If still missing, **`RAISE`** with a clear message.
 
 **DB placement**
 
 - Step-level materials live in `public.operation_steps.materials` (JSON).
-- Library material/variant catalog is separate (must be used as the source of truth).
+- Library catalog: `public.materials` / `materials_variants`.
 
 ### Step 6 — Process variables
 
@@ -183,11 +211,23 @@ A **process variable** is a fundamental, theoretically measurable parameter that
   - what it controls
   - target range (with units)
   - what happens if too low vs too high (brief)
+- When you define variables for a step, include **at least one** with **`type`** = **`process`**. **`upstream`** entries are optional.
+
+**Variable `type` (required on each stored object)**
+
+- **`process`** (default): A parameter the worker or system **directly executes or measures within this project’s scope**—the thing you tune, time, or control on site.
+- **`upstream`**: Optional. A **contextual / input factor outside this project’s scope**—assumed **acceptable** for the job as defined (e.g. “typical residential pressure,” “manufacturer bowl geometry,” “assumed sound subfloor”). It is **not** something this project is chartered to redesign, but it may be **acknowledged as a source of variation** in outcomes. Use `description` and, when helpful, `targetValue` (assumed acceptable band or note) when you add an upstream variable.
+- **Authoring synonym:** In TypeScript, `StepInput.type` may use **`input`** as an alias for **`upstream`**; **`serializeProcessVariablesForDb`** persists **`upstream`** in JSON (see `src/utils/processVariablesUtils.ts`). SQL migrations should write **`'upstream'`** or **`'process'`** only.
+
+**Minimum counts**
+
+- Each step that needs process-variable coverage should have **at least one** variable with **`type`** = **`process`** (in-scope execution control).
+- **`upstream`** variables are **optional**—do not require them per step or per project.
 
 **DB placement**
 
-- Use the product’s canonical process-variable storage (tables/fields used by the admin UI).
-- If unknown, locate the canonical schema first; do not invent a new table.
+- In this codebase, template step process variables are stored on **`public.operation_steps.process_variables`** (JSON array). Each element matches the shape produced by `serializeProcessVariablesForDb` in `src/utils/processVariablesUtils.ts`: required **`id`**, **`name`**, **`type`** (`process` \| `upstream`), optional **`description`**, **`required`**, **`unit`**, **`targetValue`** (often used for upstream assumed bounds), **`sourceStepId`** / **`sourceStepName`** when linking to another step.
+- **Step 6 SQL migrations** contain **only** process-variable `UPDATE`s (and `rebuild_phases_json_from_project_phases`). Do **not** duplicate tools/materials library inserts here—that is steps **4** and **5**.
 
 ### Step 7 — Time estimates (low, med, high) for each step
 
@@ -217,13 +257,62 @@ A **process variable** is a fundamental, theoretically measurable parameter that
 - `public.operation_steps.time_estimate_med`
 - `public.operation_steps.time_estimate_high`
 
+### Step 8 — PFMEA (failure modes and related rows)
+
+**Role**
+
+- **Step 3** stores **project risks** (timeline / budget). **Quality** failure analysis belongs in **PFMEA** tables, not in `project_risks`.
+- Step 8 migrations seed **`pfmea_failure_modes`** and related rows linked to template **`operation_steps`** and to each step output’s stable **`id`** (see below).
+
+**Deliverables**
+
+- For each primary output (per step), at least one **failure mode** with defensible text; typically also **potential effects**, **potential causes**, **controls** (prevention / detection), and optionally **action items**—matching how the admin PFMEA UI expects rows.
+- **`requirement_output_id`** on `public.pfmea_failure_modes` must match the app’s key for that output: the output’s JSON **`id`** string when present, or the index form `index:<n>` (see `requirementOutputKey` in `src/components/PFMEAManagement.tsx`). Keep this aligned with **Step 2** output `id` values.
+
+**Failure mode = anti-requirement (direct negation of the output)**
+
+- The **`failure_mode`** string is **not** a free-form narrative of “what could go wrong” in abstract terms. It is the **negation of the requirement/output** for that row: what is **wrong** if the output is **not** actually achieved, stated **concisely** and **tied to that same requirement**.
+- Think: *Requirement / output (Step 2 `name`)* → *Failure mode* = the **opposite** or **unmet** state in short form.
+- Examples (pattern only):
+  - Output **“Toilet drained”** → Failure mode **“Toilet not drained”**.
+  - Output **“Bolt torqued to 45 ft-lbs minimum”** → Failure mode **“Torque below 45 ft-lbs”** (or **“Below minimum torque”** if the number lives in the requirement text only).
+  - Output **“Shutoff verified”** → Failure mode **“Shutoff not verified”** / **“Water not isolated”**—still one line, same linkage to that output.
+- **Potential effects**, **causes**, and **controls** carry the richer explanation; the failure mode line stays **short** so the PFMEA grid shows an obvious **requirement ↔ anti-requirement** pair.
+
+**Grid completeness (avoid “blank” failure-mode rows)**
+
+- In the admin PFMEA grid, each **requirement** (one per step output) is rendered as one or more rows. If **no** `pfmea_failure_modes` row exists for that step’s `operation_step_id` and output key, the grid still shows the requirement with **empty** failure-mode columns (`failureMode: null` in `pfmeaFlatRows` in `PFMEAManagement.tsx`). That looks like a **blank** line for that output.
+- Seed migrations for reference templates should ensure **every** Step 2 output you ship has **at least one** matching failure mode so those rows are not blank.
+- Multiple **failure modes** can share the same `(operation_step_id, requirement_output_id)`; multiple **causes** under one failure mode produce **one grid row per cause**. Reference migrations often include **two causes per failure mode** (with prevention controls tied to each cause) so the analysis is visibly populated, not a single sparse line.
+
+**Detection scores (`pfmea_controls.detection_score`, `control_type = 'detection'`)**
+
+- Severity, occurrence, and detection scoring definitions live in **`public.pfmea_scoring`** and are shown in the app under **PFMEA → Scoring criteria** (`PfmeaScoringCriteriaDialog.tsx`). Step 8 SQL must assign detection scores **using that scale**, not ad-hoc low numbers.
+- RPN in the app uses **severity × occurrence × minimum detection** among detection controls on the failure mode (`calculateRPN` in `PFMEAManagement.tsx`). **Lower** numeric detection score means **better** (easier) detection; **higher** means **worse** (harder to detect before impact).
+- **Manual checks** (visual inspection, paper-towel tests, smell, subjective “feel,” operator judgment) should carry **higher** detection scores than methods that behave like automated verification, gages, or hard mistake-proofing—when the criteria table for those score bands says so. Do **not** default manual checks to scores 1–3 unless the `pfmea_scoring` rows for those scores clearly apply.
+
+**DB placement** (see `src/integrations/supabase/types.ts`)
+
+- `public.pfmea_failure_modes` — `project_id`, `operation_step_id`, `requirement_output_id`, `failure_mode`, `severity_score`
+- `public.pfmea_potential_effects`, `public.pfmea_potential_causes`, `public.pfmea_controls`, `public.pfmea_action_items` — linked by foreign keys as in the schema.
+
+**Step 8 SQL migrations**
+
+- Use stable **`id`** UUIDs on inserted rows and **`ON CONFLICT (id) DO NOTHING`** (or equivalent) for idempotency. For **`pfmea_failure_modes`**, prefer **`ON CONFLICT (id) DO UPDATE`** on **`failure_mode`** (and **`severity_score`** if you revise it) so re-running a template migration refreshes anti-requirement wording without duplicating rows.
+- **Validate every UUID literal** per **UUID literals in migrations** above—invalid UUIDs fail the whole batch after earlier inserts may have committed inside the same transaction, depending on runner behavior.
+- Prerequisite: Steps **1–2** (steps + outputs with stable output `id`s) at minimum; typically run after **7** so workflow content is complete.
+
 ---
 
 ## C) Clarifications for steps (quick checklist)
 
+- **All steps (1–8)** — Ship **one** migration file per step for a given project slug (see **One migration file per project-development step** above). Never duplicate the same step number across multiple files.
+
 - **Step 1**
   - Must include instructions at **all 3 levels** (beginner/intermediate/advanced) for each step.
   - Instructions belong in `public.step_instructions`, not embedded as defaults elsewhere.
+  - `INSERT` into `public.operation_steps` must use only columns that exist in schema (see **Schema alignment** above).
+  - Deliver as **one** migration file for Step 1 (see **One migration file per project-development step**); add extra `DO` blocks for additional `project_id`s, not extra files.
 
 - **Step 2**
   - Output `name` length: **≤ 50 chars** (prefer **< 30**).
@@ -234,19 +323,32 @@ A **process variable** is a fundamental, theoretically measurable parameter that
   - Quality risks handled in **PFMEA** instead.
 
 - **Step 4**
-  - Tools **must** come from **tools library** (match tool + variant).
-  - If missing, **notify user what to add**; do not create placeholders.
+  - Tools **must** exist in **`public.tools`**; migrations insert missing rows by **`name`**, then assign to steps.
+  - Variants: if required, assert `tool_variations` or fail loudly.
 
 - **Step 5**
-  - Materials **must** come from **materials library** (match item + variant).
-  - If missing, **notify user what to add**; do not create placeholders.
+  - Materials **must** exist in **`public.materials`**; migrations insert missing rows by **`name`**, then assign to steps.
+  - Repeat tool bootstrap here (idempotent) so catalog is complete if step order is wrong.
 
 - **Step 6**
-  - Process variables are **intrinsic**, **measurable**, and have **target ranges** with units.
+  - Migration file = **process variables only** (no `INSERT` into tools/materials catalogs; those are steps 4–5).
+  - Include **at least one** **`process`** variable per step that needs coverage; **`upstream`** is **optional** (not required per step).
+  - Each entry sets **`type`** to **`process`** and/or **`upstream`**. Optional author **`input`** in app code maps to stored **`upstream`**.
+  - Process variables are **intrinsic**, **measurable**, and have **target ranges** with units (in prose/`unit` field) where applicable.
   - Not “tool choice,” not “brand,” not “material SKU.”
+  - Persist on **`operation_steps.process_variables`**. Run after steps 1–5 so template steps exist.
 
 - **Step 7**
   - Low = 10th percentile, High = 90th percentile, Med = average (with evidence rules).
   - Must normalize to scaling unit for scaled steps.
   - Must reason step-by-step; split into chunks if many steps.
+
+- **Step 8**
+  - PFMEA only—not timeline/budget risks (those are Step 3).
+  - `requirement_output_id` matches Step 2 output **`id`** (or `index:<n>`), consistent with the PFMEA UI (`requirementOutputKey`).
+  - **`failure_mode`** text = **anti-requirement**: concise **negation of that output’s requirement**, not a long independent scenario (see **Failure mode = anti-requirement** under Step 8 above).
+  - Cover **every** seeded Step 2 output with at least one failure mode so the PFMEA grid does not show blank failure-mode rows for those outputs; add multiple causes (and linked prevention controls) when a fuller reference table is desired.
+  - **Detection** scores on `pfmea_controls` must follow **`pfmea_scoring`** / Scoring criteria: manual and subjective detection methods use **higher** numeric scores (worse detection) than justified automated or gage-based methods.
+  - All inserted UUID literals must be syntactically valid: the **last group is exactly 12 hex digits** (see **UUID literals in migrations**).
+  - Idempotent inserts with explicit ids and `ON CONFLICT` where appropriate.
 
