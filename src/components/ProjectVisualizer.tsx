@@ -533,10 +533,6 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
       <Card className="mb-4 border-border/80 shadow-sm">
         <CardHeader className="pb-2 pt-4">
           <CardTitle className="text-base font-semibold">Project summary</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            PFMEA quality risks, workflow time from steps, and Risk-Less timeline / budget register (same merge as Risk-Less
-            template view: standard foundation + this template).
-          </p>
         </CardHeader>
         <CardContent className="space-y-4 pb-4 pt-0">
           <div className="rounded-lg border bg-muted/30 px-3 py-2.5">
@@ -718,7 +714,6 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
     <div className="flex min-h-0 flex-1 flex-col bg-muted/20">
       <header className="flex-shrink-0 border-b bg-background px-4 py-3 md:px-6 md:py-4">
         <h1 className="text-xl font-semibold tracking-tight text-foreground md:text-2xl">{projectName}</h1>
-        <p className="mt-0.5 text-xs text-muted-foreground md:text-sm">Project Visualizer</p>
       </header>
 
       <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-3 border-b bg-background px-4 py-3">

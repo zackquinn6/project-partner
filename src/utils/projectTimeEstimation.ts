@@ -67,7 +67,7 @@ function calculateStepTimeEstimate(step: WorkflowStep): {
 /**
  * Calculate time estimates for all steps in an operation
  */
-function calculateOperationTimeEstimate(operation: { steps: WorkflowStep[] }): {
+export function calculateOperationTimeEstimate(operation: { steps: WorkflowStep[] }): {
   fixedTime: { low: number; medium: number; high: number };
   timePerUnit: { low: number; medium: number; high: number };
 } {
@@ -105,7 +105,7 @@ function calculateOperationTimeEstimate(operation: { steps: WorkflowStep[] }): {
 /**
  * Calculate time estimates for a phase
  */
-function calculatePhaseTimeEstimate(phase: Phase): {
+export function calculatePhaseTimeEstimate(phase: Phase): {
   fixedTime: { low: number; medium: number; high: number };
   timePerUnit: { low: number; medium: number; high: number };
 } {
