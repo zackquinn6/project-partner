@@ -14,7 +14,6 @@ import {
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowRight, ScanSearch } from 'lucide-react';
 
 /** When fitting all steps in view, do not shrink below this scale (avoids unreadable tiny cards on huge projects). */
@@ -433,7 +432,7 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
     return () => ro.disconnect();
   }, [fitAllInView, recomputeFitAll]);
 
-  const stripClassName = 'flex min-h-[min(70vh,520px)] items-stretch gap-2 pb-2';
+  const stripClassName = 'flex min-h-[min(65vh,480px)] items-stretch gap-2 pb-1';
 
   const processMapStrip = (
     <div ref={stripRef} className={stripClassName}>
@@ -450,8 +449,8 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
               'min-w-[220px]'
             )}
           >
-            <div className="space-y-3 border-b bg-muted/40 px-3 py-3">
-              <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="space-y-2 border-b bg-muted/40 px-2 py-2">
+              <div className="grid grid-cols-3 gap-1.5 text-center">
                 <div>
                   <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Max RPN</div>
                   <div className="text-lg font-bold tabular-nums text-foreground">{col.metrics.maxRpn}</div>
@@ -493,11 +492,11 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
               </div>
             </div>
 
-            <div className="flex flex-1 flex-col px-3 py-3">
+            <div className="flex flex-1 flex-col px-2 py-2">
               <h3 className="text-center text-sm font-semibold leading-snug text-foreground">{col.title}</h3>
             </div>
 
-            <div className="mt-auto space-y-2 border-t bg-muted/20 px-3 py-3 text-xs">
+            <div className="mt-auto space-y-1.5 border-t bg-muted/20 px-2 py-2 text-xs">
               <div>
                 <div className="mb-0.5 font-medium text-muted-foreground">Time (low · med · high)</div>
                 <div className="font-mono text-[11px] text-foreground">
@@ -530,193 +529,132 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
 
   const summaryBlock =
     phases.length > 0 ? (
-      <Card className="mb-4 border-border/80 shadow-sm">
-        <CardHeader className="pb-2 pt-4">
-          <CardTitle className="text-base font-semibold">Project summary</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 pb-4 pt-0">
-          <div className="rounded-lg border bg-muted/30 px-3 py-2.5">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Typical project context</div>
-            <div className="mt-1 text-sm text-foreground">
-              {typicalProjectSize != null && typicalProjectSize > 0 ? (
-                <>
-                  <span className="font-medium">Typical size:</span> {typicalProjectSize} {scalingLabel}
-                </>
-              ) : (
-                <span className="text-muted-foreground">No typical size set — typical-project hours below use workflow steps only where shown.</span>
-              )}
-            </div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground/80">Scaling unit:</span> {scalingUnit ?? '—'}
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg border bg-card px-3 py-2.5">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">PFMEA — max RPN</div>
-              <div className="mt-1 text-2xl font-bold tabular-nums">
-                {loading ? <span className="text-muted-foreground">…</span> : projectPfmeaTotals.maxRpn}
-              </div>
-            </div>
-            <div className="rounded-lg border bg-card px-3 py-2.5">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">PFMEA — total risks</div>
-              <div className="mt-1 text-2xl font-bold tabular-nums">
-                {loading ? <span className="text-muted-foreground">…</span> : projectPfmeaTotals.lineCount}
-              </div>
-              <div className="mt-2 text-[10px] text-muted-foreground">Grid line count (failure mode × cause rows)</div>
-            </div>
-            <div className="rounded-lg border bg-card px-3 py-2.5 sm:col-span-2">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">PFMEA — action priority</div>
-              <table className="mt-2 w-full max-w-xs border-collapse text-center text-sm">
-                <thead>
-                  <tr>
-                    <th className="border-b border-border py-1.5 text-xs font-semibold text-red-700 dark:text-red-400">Hi</th>
-                    <th className="border-b border-border py-1.5 text-xs font-semibold text-orange-700 dark:text-orange-400">Med</th>
-                    <th className="border-b border-border py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">Low</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="py-2 font-bold tabular-nums">
-                      {loading ? '…' : projectPfmeaTotals.high}
-                    </td>
-                    <td className="py-2 font-bold tabular-nums">
-                      {loading ? '…' : projectPfmeaTotals.medium}
-                    </td>
-                    <td className="py-2 font-bold tabular-nums">
-                      {loading ? '…' : projectPfmeaTotals.low}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="rounded-lg border bg-card px-3 py-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Workflow time (main project)</div>
-            {!timeBreakdown ? (
-              <p className="mt-2 text-sm text-muted-foreground">No phase data for time estimate.</p>
+      <section
+        className="mb-2 rounded-md border border-border/70 bg-card px-2 py-1.5 text-xs shadow-sm"
+        aria-label="Project summary"
+      >
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 border-b border-border/50 pb-1 text-[11px] leading-tight">
+          <span className="shrink-0 font-semibold text-foreground">Summary</span>
+          <span className="hidden h-3 w-px shrink-0 bg-border sm:block" aria-hidden />
+          <span className="text-muted-foreground">
+            {typicalProjectSize != null && typicalProjectSize > 0 ? (
+              <>
+                Typical <span className="font-medium text-foreground">{typicalProjectSize}</span> {scalingLabel}
+              </>
             ) : (
-              <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
-                <div>
-                  <dt className="text-xs text-muted-foreground">Per {scalingLabel} (low · med · high)</dt>
-                  <dd className="mt-0.5 font-mono text-xs tabular-nums">
-                    {formatLowMedHigh(
-                      timeBreakdown.scaledTimePerUnit.low,
-                      timeBreakdown.scaledTimePerUnit.medium,
-                      timeBreakdown.scaledTimePerUnit.high
-                    )}
-                  </dd>
+              'No typical size'
+            )}
+          </span>
+          <span className="text-muted-foreground/70">·</span>
+          <span className="text-muted-foreground">
+            Scale <span className="font-mono text-[10px] text-foreground/90">{scalingUnit ?? '—'}</span>
+          </span>
+        </div>
+
+        <div className="mt-1.5 grid grid-cols-1 gap-1.5 sm:grid-cols-3 sm:gap-2">
+          <div className="rounded border border-border/50 bg-muted/20 px-1.5 py-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">PFMEA</div>
+            <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0 font-mono text-[11px] tabular-nums leading-none">
+              <span>
+                RPN{' '}
+                <span className="font-bold text-foreground">{loading ? '…' : projectPfmeaTotals.maxRpn}</span>
+              </span>
+              <span className="text-muted-foreground/40">|</span>
+              <span>
+                Lines{' '}
+                <span className="font-bold text-foreground">{loading ? '…' : projectPfmeaTotals.lineCount}</span>
+              </span>
+            </div>
+            <div className="mt-1 flex flex-wrap gap-x-2 text-[11px] font-semibold tabular-nums leading-none">
+              <span className="text-red-700 dark:text-red-400">H {loading ? '…' : projectPfmeaTotals.high}</span>
+              <span className="text-orange-700 dark:text-orange-400">M {loading ? '…' : projectPfmeaTotals.medium}</span>
+              <span className="text-emerald-700 dark:text-emerald-600">L {loading ? '…' : projectPfmeaTotals.low}</span>
+            </div>
+          </div>
+
+          <div className="rounded border border-border/50 bg-muted/20 px-1.5 py-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Workflow time</div>
+            {!timeBreakdown ? (
+              <div className="mt-0.5 text-[11px] text-muted-foreground">No phase data</div>
+            ) : (
+              <div className="mt-0.5 space-y-0.5 font-mono text-[10px] leading-tight tabular-nums">
+                <div className="min-w-0 break-all">
+                  <span className="text-muted-foreground">Per {scalingLabel} </span>
+                  {formatLowMedHigh(
+                    timeBreakdown.scaledTimePerUnit.low,
+                    timeBreakdown.scaledTimePerUnit.medium,
+                    timeBreakdown.scaledTimePerUnit.high
+                  )}
                 </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">Fixed time (low · med · high)</dt>
-                  <dd className="mt-0.5 font-mono text-xs tabular-nums">
-                    {formatLowMedHigh(timeBreakdown.fixedTime.low, timeBreakdown.fixedTime.medium, timeBreakdown.fixedTime.high)}
-                  </dd>
+                <div className="min-w-0 break-all">
+                  <span className="text-muted-foreground">Fx </span>
+                  {formatLowMedHigh(timeBreakdown.fixedTime.low, timeBreakdown.fixedTime.medium, timeBreakdown.fixedTime.high)}
                 </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-xs text-muted-foreground">Typical project total hours (low · med · high)</dt>
-                  <dd className="mt-0.5 font-mono text-xs tabular-nums">
-                    {typicalTotalHours ? (
-                      formatLowMedHigh(typicalTotalHours.low, typicalTotalHours.medium, typicalTotalHours.high)
-                    ) : (
-                      <span className="text-muted-foreground">Set typical size to compute total from scaled + fixed.</span>
-                    )}
-                  </dd>
+                <div className="min-w-0 break-all">
+                  <span className="text-muted-foreground">Tot </span>
+                  {typicalTotalHours ? (
+                    formatLowMedHigh(typicalTotalHours.low, typicalTotalHours.medium, typicalTotalHours.high)
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </div>
-                {timeBreakdown.incorporatedPhases.length > 0 && (
-                  <div className="sm:col-span-2 border-t pt-2 text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">Incorporated phases:</span>{' '}
-                    {timeBreakdown.incorporatedPhases.length} linked — see workflow editor for per-phase units.
-                  </div>
-                )}
-              </dl>
+                {timeBreakdown.incorporatedPhases.length > 0 ? (
+                  <div className="text-[10px] text-muted-foreground">+{timeBreakdown.incorporatedPhases.length} linked</div>
+                ) : null}
+              </div>
             )}
           </div>
 
-          <div className="rounded-lg border bg-card px-3 py-3">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Risk-Less — timeline & budget</div>
-              {riskLessLoading && (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Loading
-                </span>
-              )}
+          <div className="rounded border border-border/50 bg-muted/20 px-1.5 py-1">
+            <div className="flex items-center justify-between gap-1">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Risk-Less</div>
+              {riskLessLoading ? <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" aria-label="Loading" /> : null}
             </div>
             {riskLessError ? (
-              <p className="mt-2 text-sm text-destructive">{riskLessError}</p>
+              <p className="mt-0.5 text-[11px] text-destructive">{riskLessError}</p>
             ) : riskLessSummary ? (
-              <div className="mt-3 space-y-3">
-                <dl className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
-                  <div>
-                    <dt className="text-xs text-muted-foreground">Total register (merged)</dt>
-                    <dd className="mt-0.5 font-semibold tabular-nums">{riskLessSummary.totalMerged}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-muted-foreground">General (standard foundation)</dt>
-                    <dd className="mt-0.5 font-semibold tabular-nums">{riskLessSummary.generalCount}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-muted-foreground">This template only</dt>
-                    <dd className="mt-0.5 font-semibold tabular-nums">{riskLessSummary.projectSpecificCount}</dd>
-                  </div>
-                </dl>
-                <div>
-                  <div className="text-xs font-medium text-muted-foreground">Severity (register)</div>
-                  <table className="mt-1 w-full max-w-md border-collapse text-center text-sm">
-                    <thead>
-                      <tr>
-                        <th className="border-b border-border py-1 text-xs font-semibold">High</th>
-                        <th className="border-b border-border py-1 text-xs font-semibold">Medium</th>
-                        <th className="border-b border-border py-1 text-xs font-semibold">Low</th>
-                        <th className="border-b border-border py-1 text-xs font-semibold text-muted-foreground">Unset</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="py-1.5 font-bold tabular-nums">{riskLessSummary.severityHigh}</td>
-                        <td className="py-1.5 font-bold tabular-nums">{riskLessSummary.severityMedium}</td>
-                        <td className="py-1.5 font-bold tabular-nums">{riskLessSummary.severityLow}</td>
-                        <td className="py-1.5 font-bold tabular-nums text-muted-foreground">{riskLessSummary.severityUnset}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+              <div className="mt-0.5 space-y-0.5 text-[10px] leading-tight">
+                <div className="font-mono tabular-nums">
+                  <span className="font-semibold text-foreground">{riskLessSummary.totalMerged}</span>
+                  <span className="text-muted-foreground"> reg · </span>
+                  <span>
+                    G{riskLessSummary.generalCount}+P{riskLessSummary.projectSpecificCount}
+                  </span>
                 </div>
-                <dl className="grid gap-2 text-sm sm:grid-cols-2">
-                  <div>
-                    <dt className="text-xs text-muted-foreground">Schedule impact (summed days, low · high scenarios)</dt>
-                    <dd className="mt-0.5 font-mono text-xs tabular-nums">
-                      {riskLessSummary.risksWithSchedule > 0
-                        ? `${riskLessSummary.scheduleDaysLowSum} · ${riskLessSummary.scheduleDaysHighSum} days (${riskLessSummary.risksWithSchedule} risk${riskLessSummary.risksWithSchedule === 1 ? '' : 's'} with schedule fields)`
-                        : '—'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-muted-foreground">Budget impact (summed low · high)</dt>
-                    <dd className="mt-0.5 font-mono text-xs tabular-nums">
-                      {riskLessSummary.risksWithBudget > 0
-                        ? `${formatCurrency(riskLessSummary.budgetLowSum)} · ${formatCurrency(riskLessSummary.budgetHighSum)} (${riskLessSummary.risksWithBudget} risk${riskLessSummary.risksWithBudget === 1 ? '' : 's'} with budget fields)`
-                        : '—'}
-                    </dd>
-                  </div>
-                </dl>
+                <div className="tabular-nums">
+                  <span className="font-semibold text-red-700 dark:text-red-400">H{riskLessSummary.severityHigh}</span>
+                  <span className="text-muted-foreground"> </span>
+                  <span className="font-semibold text-orange-700 dark:text-orange-400">M{riskLessSummary.severityMedium}</span>
+                  <span className="text-muted-foreground"> </span>
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-600">L{riskLessSummary.severityLow}</span>
+                  <span className="text-muted-foreground"> </span>
+                  <span className="font-semibold text-muted-foreground">∅{riskLessSummary.severityUnset}</span>
+                </div>
+                <div className="font-mono text-[10px] text-muted-foreground">
+                  {riskLessSummary.risksWithSchedule > 0
+                    ? `Δ ${riskLessSummary.scheduleDaysLowSum}–${riskLessSummary.scheduleDaysHighSum}d · ${riskLessSummary.risksWithSchedule} w/sched`
+                    : 'Δ —'}
+                  <span className="text-muted-foreground/50"> · </span>
+                  {riskLessSummary.risksWithBudget > 0
+                    ? `${formatCurrency(riskLessSummary.budgetLowSum)}–${formatCurrency(riskLessSummary.budgetHighSum)} · ${riskLessSummary.risksWithBudget} w/$`
+                    : '$ —'}
+                </div>
               </div>
             ) : !riskLessLoading ? (
-              <p className="mt-2 text-sm text-muted-foreground">No risk data.</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">No risk data</p>
             ) : null}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     ) : null;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-muted/20">
-      <header className="flex-shrink-0 border-b bg-background px-4 py-3 md:px-6 md:py-4">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground md:text-2xl">{projectName}</h1>
+      <header className="flex-shrink-0 border-b bg-background px-3 py-2 md:px-5 md:py-2.5">
+        <h1 className="text-lg font-semibold tracking-tight text-foreground md:text-xl">{projectName}</h1>
       </header>
 
-      <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-3 border-b bg-background px-4 py-3">
+      <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-background px-3 py-2 md:px-5">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm font-medium text-muted-foreground">Group by</span>
           <div className="flex items-center gap-2">
@@ -748,7 +686,7 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
         </div>
       </div>
 
-      <div ref={viewportRef} className="min-h-0 flex-1 overflow-auto p-4">
+      <div ref={viewportRef} className="min-h-0 flex-1 overflow-auto px-3 py-2 md:px-4">
         {loading && (
           <div className="flex h-48 items-center justify-center gap-2 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -766,7 +704,12 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
         {!loading && !error && phases.length > 0 && (
           <>
             {summaryBlock}
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Process map</div>
+            <div className="mb-1 flex min-h-[1.25rem] items-center gap-2 pt-0.5">
+              <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Process map
+              </span>
+              <div className="h-px min-w-[1.5rem] flex-1 bg-border/70" aria-hidden />
+            </div>
             {fitAllInView && fitPack ? (
               <div className="flex justify-center">
                 <div
