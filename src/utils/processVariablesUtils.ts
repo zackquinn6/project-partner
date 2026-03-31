@@ -6,7 +6,7 @@ export function serializeProcessVariablesForDb(inputs: StepInput[]): Record<stri
     const row: Record<string, unknown> = {
       id: v.id,
       name: v.name,
-      type: v.type === 'upstream' ? 'upstream' : 'process',
+      type: v.type === 'upstream' || v.type === 'input' ? 'upstream' : 'process',
     };
     if (v.description !== undefined && v.description !== '') row.description = v.description;
     if (v.required === true) row.required = true;
@@ -27,7 +27,8 @@ export function parseProcessVariablesFromDb(raw: unknown): StepInput[] {
     .map((item, index) => {
       const name = typeof item.name === 'string' ? item.name.trim() : '';
       const id = typeof item.id === 'string' && item.id ? item.id : `input-${index}`;
-      const normalizedType = item.type === 'upstream' ? 'upstream' : 'process';
+      const normalizedType =
+        item.type === 'upstream' || item.type === 'input' ? 'upstream' : 'process';
       return {
         id,
         name,
@@ -42,4 +43,54 @@ export function parseProcessVariablesFromDb(raw: unknown): StepInput[] {
       };
     })
     .filter((item) => item.name.length > 0);
+}
+
+/** Row from `workflow_step_process_variables` (per-step links; optional join to `process_variables` in app layer). */
+export type WorkflowStepProcessVariableRow = {
+  id: string;
+  step_id: string;
+  variable_key: string;
+  label: string | null;
+  description: string | null;
+  variable_type: string | null;
+  unit: string | null;
+  required: boolean | null;
+};
+
+export type PfmeaDisplayedProcessVariable = {
+  id: string;
+  title: string;
+  detailLines: string[];
+};
+
+/**
+ * PFMEA display: prefer relational `workflow_step_process_variables` for the step;
+ * if none, use `operation_steps.process_variables` JSON (workflow editor shape).
+ */
+export function buildPfmeaDisplayedProcessVariables(
+  workflowRows: WorkflowStepProcessVariableRow[] | undefined,
+  jsonFromStep: unknown
+): PfmeaDisplayedProcessVariable[] {
+  if (workflowRows && workflowRows.length > 0) {
+    return workflowRows.map((r) => {
+      const title = (r.label && r.label.trim()) || r.variable_key;
+      const detailLines = [r.description, r.unit, r.variable_type]
+        .map((x) => (typeof x === 'string' ? x.trim() : ''))
+        .filter((s) => s.length > 0);
+      return { id: r.id, title, detailLines };
+    });
+  }
+  const parsed = parseProcessVariablesFromDb(jsonFromStep);
+  return parsed.map((v) => ({
+    id: v.id,
+    title: v.name,
+    detailLines: [
+      v.type === 'upstream' ? 'upstream' : '',
+      v.unit ?? '',
+      v.targetValue ?? '',
+      v.description ?? '',
+    ]
+      .map((s) => (typeof s === 'string' ? s.trim() : ''))
+      .filter((s) => s.length > 0),
+  }));
 }

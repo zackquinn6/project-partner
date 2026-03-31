@@ -32,11 +32,15 @@ import {
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, FileText, Info, Plus, Scale, Target, Trash2 } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, FileText, Info, Plus, Scale, Target, Trash2 } from 'lucide-react';
 import { PfmeaScoringCriteriaDialog } from '@/components/PfmeaScoringCriteriaDialog';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Output } from '@/interfaces/Project';
+import {
+  buildPfmeaDisplayedProcessVariables,
+  type WorkflowStepProcessVariableRow,
+} from '@/utils/processVariablesUtils';
 
 // Database types for PFMEA
 interface DatabaseProject {
@@ -71,7 +75,14 @@ interface PFMEARequirement {
     position_value?: number | null;
   } | null;
   phase_operations?: { id: string; operation_name: string; display_order: number } | null;
-  operation_steps?: { id: string; step_title: string; display_order: number; description?: string | null; outputs?: unknown } | null;
+  operation_steps?: {
+    id: string;
+    step_title: string;
+    display_order: number;
+    description?: string | null;
+    outputs?: unknown;
+    process_variables?: unknown;
+  } | null;
 }
 
 interface PFMEAFailureMode {
@@ -142,6 +153,78 @@ function actionItemDisplayFields(action: PFMEAActionItem): {
   };
 }
 
+/** Read-only status label for PFMEA grid (tracker uses dropdown without `blocked`). */
+function formatActionStatusLabel(status: string): string {
+  switch (status) {
+    case 'not_started':
+      return 'Not started';
+    case 'in_progress':
+      return 'In progress';
+    case 'complete':
+      return 'Complete';
+    case 'blocked':
+      return 'Blocked';
+    default:
+      return status.replace(/_/g, ' ');
+  }
+}
+
+function readOnlyActionStatusBadgeClassName(status: string): string {
+  if (status === 'complete') {
+    return 'border-emerald-600/35 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100';
+  }
+  if (status === 'in_progress') {
+    return 'border-blue-600/35 bg-blue-50 text-blue-900 dark:bg-blue-950/40 dark:text-blue-100';
+  }
+  if (status === 'blocked') {
+    return 'border-destructive/40 bg-destructive/10 text-destructive';
+  }
+  return 'border-muted-foreground/25 bg-muted/50 text-muted-foreground';
+}
+
+/**
+ * PFMEA grid: step-level process variables, shown only on rows that have a potential cause (same list repeated per cause line).
+ * Prefers `workflow_step_process_variables`; if none for the step, uses `operation_steps.process_variables` JSON.
+ */
+function PfmeaProcessVariablesReadonlyCell({
+  cause,
+  requirement,
+  workflowRowsForStep,
+}: {
+  cause: PFMEAPotentialCause | null;
+  requirement: PFMEARequirement;
+  workflowRowsForStep: WorkflowStepProcessVariableRow[] | undefined;
+}) {
+  if (!cause) {
+    return <span className="text-xs italic text-muted-foreground">—</span>;
+  }
+  const items = buildPfmeaDisplayedProcessVariables(
+    workflowRowsForStep,
+    requirement.operation_steps?.process_variables
+  );
+  if (items.length === 0) {
+    return <span className="text-xs italic text-muted-foreground">—</span>;
+  }
+  return (
+    <ul className="m-0 list-outside list-disc space-y-1.5 pl-4 text-xs leading-snug marker:text-muted-foreground">
+      {items.map((item) => (
+        <li key={item.id} className="break-words">
+          <span className="font-medium text-foreground">{item.title}</span>
+          {item.detailLines.length > 0 ? (
+            <div className="mt-0.5 space-y-0.5 text-[11px] text-muted-foreground">
+              {item.detailLines.map((line, i) => (
+                <div key={i} className="break-words">
+                  {line}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function getPotentialCauseSubtext(failureMode: PFMEAFailureMode, cause: PFMEAPotentialCause | null): string {
   if (cause?.cause_description) return cause.cause_description;
   const causes = failureMode.pfmea_potential_causes ?? [];
@@ -162,6 +245,7 @@ type PfmeaNavColumn =
   | 'failure_mode'
   | 'effects'
   | 's'
+  | 'process_variables'
   | 'causes'
   | 'prevention_controls'
   | 'o'
@@ -176,6 +260,7 @@ const PFMEA_NAV_COLS: PfmeaNavColumn[] = [
   'failure_mode',
   'effects',
   's',
+  'process_variables',
   'causes',
   'prevention_controls',
   'o',
@@ -185,6 +270,65 @@ const PFMEA_NAV_COLS: PfmeaNavColumn[] = [
   'ap',
   'recommended_actions',
 ];
+
+/** Solid background + classes for scroll-region header cells (`position: sticky; left` applied in `renderHeaderWithPlus`). */
+const PFMEA_SCROLL_HEADER_STICKY: Record<
+  PfmeaNavColumn,
+  { backgroundColor: string; className: string }
+> = {
+  requirements: {
+    backgroundColor: '#fde047',
+    className: 'border-b border-yellow-500/70 shadow-sm',
+  },
+  failure_mode: {
+    backgroundColor: '#fde047',
+    className: 'border-b border-yellow-500/70 shadow-sm',
+  },
+  effects: {
+    backgroundColor: '#722f37',
+    className: 'border-b border-[#5c262e] shadow-sm',
+  },
+  s: {
+    backgroundColor: '#722f37',
+    className: 'border-b border-[#5c262e] shadow-sm',
+  },
+  process_variables: {
+    backgroundColor: '#166534',
+    className: 'border-b border-green-950/70 shadow-sm',
+  },
+  causes: {
+    backgroundColor: '#166534',
+    className: 'border-b border-green-950/70 shadow-sm',
+  },
+  prevention_controls: {
+    backgroundColor: '#166534',
+    className: 'border-b border-green-950/70 shadow-sm',
+  },
+  o: {
+    backgroundColor: '#166534',
+    className: 'border-b border-green-950/70 shadow-sm',
+  },
+  detection_controls: {
+    backgroundColor: '#6b21a8',
+    className: 'border-b border-purple-950/80 shadow-sm',
+  },
+  d: {
+    backgroundColor: '#6b21a8',
+    className: 'border-b border-purple-950/80 shadow-sm',
+  },
+  rpn: {
+    backgroundColor: '#475569',
+    className: 'border-b border-slate-800 shadow-sm',
+  },
+  ap: {
+    backgroundColor: '#475569',
+    className: 'border-b border-slate-800 shadow-sm',
+  },
+  recommended_actions: {
+    backgroundColor: '#475569',
+    className: 'border-b border-slate-800 shadow-sm',
+  },
+};
 
 interface PFMEAManagementProps {
   projectId?: string;
@@ -254,6 +398,9 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   const [projects, setProjects] = useState<DatabaseProject[]>([]);
   const [requirements, setRequirements] = useState<PFMEARequirement[]>([]);
   const [failureModes, setFailureModes] = useState<PFMEAFailureMode[]>([]);
+  const [workflowStepPvByStepId, setWorkflowStepPvByStepId] = useState<
+    Record<string, WorkflowStepProcessVariableRow[]>
+  >({});
   const [loading, setLoading] = useState(true);
   const [editingCell, setEditingCell] = useState<{
     entityId: string;
@@ -280,6 +427,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     failure_mode: 220,
     effects: 260,
     s: 64,
+    process_variables: 220,
     causes: 240,
     prevention_controls: 230,
     o: 64,
@@ -344,7 +492,8 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
               step_title,
               display_order,
               description,
-              outputs
+              outputs,
+              process_variables
             )
           )
         `
@@ -408,6 +557,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                   display_order: step.display_order,
                   description: step.description,
                   outputs: step.outputs,
+                  process_variables: (step as { process_variables?: unknown }).process_variables,
                 },
               });
             }
@@ -417,9 +567,30 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       setRequirements(rows);
 
       if (rows.length === 0) {
+        setWorkflowStepPvByStepId({});
         setFailureModes([]);
         return;
       }
+
+      const stepIds = [...new Set(rows.map((r) => r.operation_step_id))];
+      const wfByStep: Record<string, WorkflowStepProcessVariableRow[]> = {};
+      if (stepIds.length > 0) {
+        const { data: wspv, error: wspvErr } = await supabase
+          .from('workflow_step_process_variables')
+          .select('id, step_id, variable_key, label, description, variable_type, unit, required')
+          .in('step_id', stepIds)
+          .order('variable_key', { ascending: true });
+        if (wspvErr) {
+          console.error('workflow_step_process_variables load:', wspvErr);
+        } else {
+          for (const row of wspv ?? []) {
+            const sid = row.step_id as string;
+            if (!wfByStep[sid]) wfByStep[sid] = [];
+            wfByStep[sid].push(row as WorkflowStepProcessVariableRow);
+          }
+        }
+      }
+      setWorkflowStepPvByStepId(wfByStep);
 
       const { data: fmData, error: fmError } = await supabase
         .from('pfmea_failure_modes')
@@ -449,6 +620,31 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     })();
   }, [refreshTrigger, projectId, fetchPfmeaDetails]);
 
+  const syncFailureModeSeverityFromDb = useCallback(async (failureModeId: string) => {
+    const { data: effs, error: effErr } = await supabase
+      .from('pfmea_potential_effects')
+      .select('severity_score')
+      .eq('failure_mode_id', failureModeId);
+    if (effErr) {
+      console.error(effErr);
+      return;
+    }
+    const { data: fmRow, error: fmErr } = await supabase
+      .from('pfmea_failure_modes')
+      .select('severity_score')
+      .eq('id', failureModeId)
+      .single();
+    if (fmErr || !fmRow) return;
+    const next =
+      effs && effs.length > 0 ? Math.max(...effs.map((r) => r.severity_score)) : fmRow.severity_score;
+    if (next === fmRow.severity_score) return;
+    const { error: upErr } = await supabase
+      .from('pfmea_failure_modes')
+      .update({ severity_score: next })
+      .eq('id', failureModeId);
+    if (upErr) console.error(upErr);
+  }, []);
+
   const persistEffectSeverity = useCallback(
     async (effectId: string, scoreStr: string) => {
       if (!pfmeaIsEditable) {
@@ -456,11 +652,19 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         return;
       }
       try {
+        const { data: effRow, error: selErr } = await supabase
+          .from('pfmea_potential_effects')
+          .select('failure_mode_id')
+          .eq('id', effectId)
+          .single();
+        if (selErr) throw selErr;
+
         const { error } = await supabase
           .from('pfmea_potential_effects')
           .update({ severity_score: parseInt(scoreStr, 10) })
           .eq('id', effectId);
         if (error) throw error;
+        if (effRow?.failure_mode_id) await syncFailureModeSeverityFromDb(effRow.failure_mode_id);
         if (selectedPfmeaProject) {
           await fetchPfmeaDetails(selectedPfmeaProject.project_id);
         }
@@ -469,7 +673,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         toast.error('Failed to update severity');
       }
     },
-    [selectedPfmeaProject, fetchPfmeaDetails, pfmeaIsEditable]
+    [selectedPfmeaProject, fetchPfmeaDetails, pfmeaIsEditable, syncFailureModeSeverityFromDb]
   );
 
   const executePfmeaLineDelete = useCallback(async () => {
@@ -539,10 +743,20 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
             : kind === 'control'
               ? 'pfmea_controls'
               : 'pfmea_action_items';
+    let effectFailureModeId: string | null = null;
+    if (kind === 'effect') {
+      const { data: effMeta } = await supabase
+        .from('pfmea_potential_effects')
+        .select('failure_mode_id')
+        .eq('id', id)
+        .single();
+      effectFailureModeId = effMeta?.failure_mode_id ?? null;
+    }
     setPfmeaDeletePending(true);
     try {
       const { error } = await supabase.from(table).delete().eq('id', id);
       if (error) throw error;
+      if (kind === 'effect' && effectFailureModeId) await syncFailureModeSeverityFromDb(effectFailureModeId);
       await fetchPfmeaDetails(selectedPfmeaProject.project_id);
       toast.success('Removed');
       setPfmeaLineDeleteTarget(null);
@@ -552,7 +766,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     } finally {
       setPfmeaDeletePending(false);
     }
-  }, [pfmeaLineDeleteTarget, selectedPfmeaProject, fetchPfmeaDetails, pfmeaIsEditable]);
+  }, [pfmeaLineDeleteTarget, selectedPfmeaProject, fetchPfmeaDetails, pfmeaIsEditable, syncFailureModeSeverityFromDb]);
 
   const fetchData = async () => {
     try {
@@ -641,7 +855,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   };
 
   const calculateRPN = (failureMode: PFMEAFailureMode, cause: PFMEAPotentialCause | null): number => {
-    const severity = failureMode.severity_score;
+    const severity = maxPfmeaSeverityForFailureMode(failureMode);
     const occurrence = cause?.occurrence_score ?? 10;
     const detectionScores = failureMode.pfmea_controls
       .filter((c) => c.control_type === 'detection' && c.detection_score != null)
@@ -760,6 +974,12 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           .from('pfmea_potential_effects')
           .update({ severity_score: parseInt(editingValue) })
           .eq('id', entityId);
+        const { data: effMeta } = await supabase
+          .from('pfmea_potential_effects')
+          .select('failure_mode_id')
+          .eq('id', entityId)
+          .single();
+        if (effMeta?.failure_mode_id) await syncFailureModeSeverityFromDb(effMeta.failure_mode_id);
       } else if (type === 'cause') {
         await supabase
           .from('pfmea_potential_causes')
@@ -809,6 +1029,8 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     isDropdown = false,
     opts?: {
       fullWidth?: boolean;
+      /** Borderless, full-bleed cell (e.g. prevention / detection control text). */
+      plainCell?: boolean;
       editFooter?: {
         addLabel: string;
         onAdd: () => void | Promise<void>;
@@ -820,6 +1042,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       editingCell?.entityId === rowId && editingCell?.column === column && editingCell?.rowIndex === rowIndex;
     const fw = opts?.fullWidth;
     const footer = opts?.editFooter;
+    const plain = opts?.plainCell;
 
     if (isEditing) {
       if (isDropdown) {
@@ -836,7 +1059,13 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
               }
             }}
           >
-            <SelectTrigger className={cn('h-8', fw && 'w-full min-w-0')}>
+            <SelectTrigger
+              className={cn(
+                'h-8',
+                fw && 'w-full min-w-0',
+                plain && 'border-0 bg-transparent shadow-none ring-0 ring-offset-0 focus:ring-1 focus:ring-ring'
+              )}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -852,8 +1081,10 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       return (
         <div
           className={cn(
-            'flex w-full flex-col overflow-hidden rounded-none border border-input bg-background -m-1',
-            footer ? 'min-h-[140px]' : 'min-h-24',
+            'flex w-full flex-col overflow-hidden rounded-none',
+            plain
+              ? cn('min-h-24 flex-1 border-0 bg-transparent shadow-none', footer && 'min-h-[140px]')
+              : cn('border border-input bg-background -m-1', footer ? 'min-h-[140px]' : 'min-h-24'),
             fw && 'min-w-0'
           )}
           onMouseDown={(e) => e.stopPropagation()}
@@ -866,7 +1097,10 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
               if (e.key === 'Escape') cancelEdit();
             }}
             onBlur={() => void saveEdit()}
-            className="min-h-0 flex-1 resize-none rounded-none border-0 px-2 py-2 text-sm shadow-none ring-offset-0 focus-visible:ring-1 focus-visible:ring-ring"
+            className={cn(
+              'min-h-0 flex-1 resize-none rounded-none border-0 px-2 py-2 text-sm shadow-none ring-offset-0 focus-visible:ring-1 focus-visible:ring-ring',
+              plain && 'min-h-[5rem] w-full'
+            )}
             autoFocus
           />
           {footer ? (
@@ -915,8 +1149,10 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     return (
       <div
         className={cn(
-          'cursor-pointer rounded-sm hover:bg-muted/40',
-          fw ? 'min-h-[22px] w-full min-w-0 py-0.5' : 'min-h-[22px] p-0.5'
+          'cursor-pointer hover:bg-muted/40',
+          plain
+            ? 'min-h-[22px] w-full min-w-0 rounded-none border-0 py-1'
+            : cn('rounded-sm', fw ? 'min-h-[22px] w-full min-w-0 py-0.5' : 'min-h-[22px] p-0.5')
         )}
         onMouseDown={(e) => e.stopPropagation()}
         onClick={() => startEdit(rowIndex, rowId, column, type, value)}
@@ -1151,6 +1387,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
       if (error) throw error;
 
+      await syncFailureModeSeverityFromDb(failureModeId);
       toast.success('Potential effect added successfully');
       if (selectedPfmeaProject) fetchPfmeaDetails(selectedPfmeaProject.project_id);
     } catch (error) {
@@ -1490,6 +1727,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           return;
         case 'rpn':
         case 'ap':
+        case 'process_variables':
           return;
         case 'recommended_actions':
           if (!fm) {
@@ -1625,11 +1863,31 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       hidePlus?: boolean;
       sortKey?: PfmeaSortKey;
       sortDefaultDir?: 'asc' | 'desc';
+      /** When set, header stays fixed horizontally while scrolling (after frozen process columns). */
+      scrollStickyLeftPx?: number;
     }
-  ) => (
+  ) => {
+    const sticky = opts?.scrollStickyLeftPx != null ? PFMEA_SCROLL_HEADER_STICKY[col] : null;
+    const w = colWidths[col];
+    return (
     <TableHead
-      className={cn(opts?.barClassName ?? pfmeaHeaderBar.other, 'relative h-auto px-1 py-1 align-bottom')}
-      style={{ width: `${colWidths[col]}px`, minWidth: `${colWidths[col]}px` }}
+      className={cn(
+        sticky ? sticky.className : (opts?.barClassName ?? pfmeaHeaderBar.other),
+        'relative h-auto px-1 py-1 align-bottom'
+      )}
+      style={{
+        width: `${w}px`,
+        minWidth: `${w}px`,
+        ...(sticky && opts?.scrollStickyLeftPx != null
+          ? {
+              position: 'sticky' as const,
+              left: opts.scrollStickyLeftPx,
+              top: 0,
+              zIndex: 45,
+              backgroundColor: sticky.backgroundColor,
+            }
+          : {}),
+      }}
     >
       <div className="flex min-h-9 flex-col items-stretch justify-center gap-0.5 py-0.5">
         <div className="flex items-center justify-center gap-0.5">
@@ -1680,7 +1938,8 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       </div>
       {resizeHandle(col, !(opts?.lightBar ?? false))}
     </TableHead>
-  );
+    );
+  };
 
   const focusCellClass = (rowIndex: number, col: PfmeaNavColumn) =>
     gridFocus.rowIndex === rowIndex && gridFocus.col === col ? 'ring-2 ring-primary ring-inset' : '';
@@ -1830,6 +2089,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
     const td = 'p-1 align-top h-full';
     const pfmeaCellToolbar = 'mt-auto flex w-full shrink-0 border-t border-border -mx-1 -mb-1';
+    const pfmeaCellToolbarFlush = 'mt-auto flex w-full shrink-0 border-t border-border';
     const pfmeaCellToolbarAdd =
       'h-7 min-h-0 flex-1 justify-start gap-1 rounded-none border-0 border-r border-border bg-transparent px-2 py-0 text-xs font-normal leading-none text-foreground shadow-none ring-offset-0 hover:!bg-muted/30 hover:!text-foreground hover:font-semibold focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50';
     const frozenBg = 'bg-background';
@@ -1874,6 +2134,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       failure_mode: '',
       effects: 'bg-rose-50/55',
       s: 'bg-rose-100/55',
+      process_variables: 'bg-amber-50/45',
       causes: 'bg-emerald-50/55',
       prevention_controls: 'bg-emerald-100/55',
       o: 'bg-emerald-50/55',
@@ -1884,6 +2145,39 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       recommended_actions: 'bg-slate-50/55',
     };
     const band = (col: PfmeaNavColumn) => cn('border-l border-border/30', pfmeaColBand[col]);
+
+    let frozenEnd = 0;
+    if (pfmeaColVisibility.phase) frozenEnd += wPhase;
+    if (pfmeaColVisibility.operation) frozenEnd += wOp;
+    if (pfmeaColVisibility.step) frozenEnd += wStep;
+    if (pfmeaColVisibility.step_description) frozenEnd += wDesc;
+
+    let hSl = frozenEnd;
+    const scrollStickyRequirements = hSl;
+    hSl += colWidths.requirements;
+    const scrollStickyFailureMode = hSl;
+    hSl += colWidths.failure_mode;
+    const scrollStickyEffects = hSl;
+    hSl += colWidths.effects;
+    const scrollStickyS = hSl;
+    hSl += colWidths.s;
+    const scrollStickyProcessVariables = hSl;
+    hSl += colWidths.process_variables;
+    const scrollStickyCauses = hSl;
+    hSl += colWidths.causes;
+    const scrollStickyPrevention = hSl;
+    hSl += colWidths.prevention_controls;
+    const scrollStickyO = hSl;
+    hSl += colWidths.o;
+    const scrollStickyDetection = hSl;
+    hSl += colWidths.detection_controls;
+    const scrollStickyD = hSl;
+    hSl += colWidths.d;
+    const scrollStickyRpn = hSl;
+    hSl += colWidths.rpn;
+    const scrollStickyAp = hSl;
+    hSl += colWidths.ap;
+    const scrollStickyRecommended = hSl;
 
     return (
       <>
@@ -1971,7 +2265,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
             onKeyDown={handlePfmeaGridKeyDown}
             className="h-[600px] w-full min-w-0 touch-pan-x overflow-x-auto overflow-y-auto overscroll-x-contain outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            <table className="w-full min-w-[1950px] border-separate border-spacing-0 caption-bottom text-sm">
+            <table className="w-full min-w-[2170px] border-separate border-spacing-0 caption-bottom text-sm">
               <TableHeader>
                 {/* Left-to-right: Phase, Operation, Process Step, Step Description, then Requirements, Failure Mode, Effects, … */}
                 <TableRow>
@@ -2064,51 +2358,66 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                     lightBar: true,
                     derived: !pfmeaIsEditable,
                     sortKey: 'requirement',
+                    scrollStickyLeftPx: scrollStickyRequirements,
                   })}
                   {renderHeaderWithPlus('Failure Mode', 'failure_mode', {
                     barClassName: pfmeaHeaderBar.failure,
                     lightBar: true,
                     derived: !pfmeaIsEditable,
                     sortKey: 'failure_mode',
+                    scrollStickyLeftPx: scrollStickyFailureMode,
                   })}
                   {renderHeaderWithPlus('Potential Effects', 'effects', {
                     barClassName: pfmeaHeaderBar.effectSeverity,
                     derived: !pfmeaIsEditable,
                     sortKey: 'severity',
                     sortDefaultDir: 'desc',
+                    scrollStickyLeftPx: scrollStickyEffects,
                   })}
                   {renderHeaderWithPlus('S', 's', {
                     barClassName: pfmeaHeaderBar.effectSeverity,
                     hidePlus: true,
                     sortKey: 'severity',
                     sortDefaultDir: 'desc',
+                    scrollStickyLeftPx: scrollStickyS,
+                  })}
+                  {renderHeaderWithPlus('Process Variables', 'process_variables', {
+                    barClassName: pfmeaHeaderBar.causeOccurrence,
+                    hidePlus: true,
+                    derived: true,
+                    scrollStickyLeftPx: scrollStickyProcessVariables,
                   })}
                   {renderHeaderWithPlus('Potential Causes', 'causes', {
                     barClassName: pfmeaHeaderBar.causeOccurrence,
                     derived: !pfmeaIsEditable,
                     sortKey: 'cause',
+                    scrollStickyLeftPx: scrollStickyCauses,
                   })}
                   {renderHeaderWithPlus('Prevention Controls', 'prevention_controls', {
                     barClassName: pfmeaHeaderBar.causeOccurrence,
                     derived: !pfmeaIsEditable,
                     sortKey: 'prevention_controls',
+                    scrollStickyLeftPx: scrollStickyPrevention,
                   })}
                   {renderHeaderWithPlus('O', 'o', {
                     barClassName: pfmeaHeaderBar.causeOccurrence,
                     hidePlus: true,
                     sortKey: 'occurrence',
                     sortDefaultDir: 'desc',
+                    scrollStickyLeftPx: scrollStickyO,
                   })}
                   {renderHeaderWithPlus('Detection Controls', 'detection_controls', {
                     barClassName: pfmeaHeaderBar.detectionPurple,
                     derived: !pfmeaIsEditable,
                     sortKey: 'detection_controls',
+                    scrollStickyLeftPx: scrollStickyDetection,
                   })}
                   {renderHeaderWithPlus('D', 'd', {
                     barClassName: pfmeaHeaderBar.detectionPurple,
                     hidePlus: true,
                     sortKey: 'detection',
                     sortDefaultDir: 'desc',
+                    scrollStickyLeftPx: scrollStickyD,
                   })}
                   {renderHeaderWithPlus('RPN', 'rpn', {
                     derived: true,
@@ -2116,6 +2425,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                     hidePlus: true,
                     sortKey: 'rpn',
                     sortDefaultDir: 'desc',
+                    scrollStickyLeftPx: scrollStickyRpn,
                   })}
                   {renderHeaderWithPlus('Action Priority', 'ap', {
                     derived: true,
@@ -2123,11 +2433,13 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                     hidePlus: true,
                     sortKey: 'ap',
                     sortDefaultDir: 'desc',
+                    scrollStickyLeftPx: scrollStickyAp,
                   })}
                   {renderHeaderWithPlus('Recommended Actions', 'recommended_actions', {
                     barClassName: pfmeaHeaderBar.other,
                     derived: !pfmeaIsEditable,
                     sortKey: 'recommended_actions',
+                    scrollStickyLeftPx: scrollStickyRecommended,
                   })}
                 </TableRow>
               </TableHeader>
@@ -2401,9 +2713,28 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       >
                         <div className="flex h-full min-h-8 w-full items-center justify-center">
                           {failureMode
-                            ? renderScoreCell(failureMode.severity_score, (value) => void updateFailureModeSeverity(failureMode.id, value))
+                            ? failureMode.pfmea_potential_effects.length > 0
+                              ? renderScoreCell(maxPfmeaSeverityForFailureMode(failureMode), undefined)
+                              : renderScoreCell(failureMode.severity_score, (value) =>
+                                  void updateFailureModeSeverity(failureMode.id, value)
+                                )
                             : null}
                         </div>
+                      </TableCell>
+
+                      <TableCell
+                        className={cn(td, band('process_variables'), 'min-w-0', focusCellClass(rowIndex, 'process_variables'))}
+                        style={{
+                          width: `${colWidths.process_variables}px`,
+                          minWidth: `${colWidths.process_variables}px`,
+                        }}
+                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'process_variables')}
+                      >
+                        <PfmeaProcessVariablesReadonlyCell
+                          cause={cause}
+                          requirement={requirement}
+                          workflowRowsForStep={workflowStepPvByStepId[requirement.operation_step_id]}
+                        />
                       </TableCell>
 
                       <TableCell
@@ -2475,22 +2806,30 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       </TableCell>
 
                       <TableCell
-                        className={cn(td, band('prevention_controls'), 'min-w-0', focusCellClass(rowIndex, 'prevention_controls'))}
+                        className={cn(
+                          'align-top h-full min-h-0 p-0',
+                          band('prevention_controls'),
+                          focusCellClass(rowIndex, 'prevention_controls')
+                        )}
                         style={{ width: `${colWidths.prevention_controls}px`, minWidth: `${colWidths.prevention_controls}px` }}
                         onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'prevention_controls')}
                       >
                         <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-0">
-                          <div className="min-w-0 flex-1">
+                          <div className="min-h-0 min-w-0 flex-1">
                             {cause && preventionControls.length > 0 ? (
                               preventionControls.map((control) => (
-                                <div key={control.id} className="rounded border p-1 text-sm">
-                                  <div className="flex items-start gap-0.5">
-                                    <Badge variant="outline" className="mt-0.5 mr-1 shrink-0 text-xs">
+                                <div
+                                  key={control.id}
+                                  className="border-b border-border/40 px-1 py-1 text-sm last:border-b-0"
+                                >
+                                  <div className="flex min-h-0 w-full items-start gap-0.5">
+                                    <span className="mt-0.5 mr-1 shrink-0 rounded bg-muted px-1 py-0 text-[10px] font-medium text-muted-foreground">
                                       Prev
-                                    </Badge>
-                                    <div className="min-w-0 flex-1">
+                                    </span>
+                                    <div className="min-h-0 min-w-0 flex-1">
                                       {renderEditableCell(rowIndex, control.control_description, control.id, 'control_description', 'control', false, {
                                         fullWidth: true,
+                                        plainCell: true,
                                         editFooter: {
                                           addLabel: 'Add',
                                           onAdd: () => {
@@ -2531,7 +2870,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                           gridFocus.col === 'prevention_controls' &&
                           failureMode &&
                           cause ? (
-                            <div className={pfmeaCellToolbar}>
+                            <div className={pfmeaCellToolbarFlush}>
                               <Button
                                 type="button"
                                 size="sm"
@@ -2577,22 +2916,30 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       </TableCell>
 
                       <TableCell
-                        className={cn(td, band('detection_controls'), 'min-w-0', focusCellClass(rowIndex, 'detection_controls'))}
+                        className={cn(
+                          'align-top h-full min-h-0 p-0',
+                          band('detection_controls'),
+                          focusCellClass(rowIndex, 'detection_controls')
+                        )}
                         style={{ width: `${colWidths.detection_controls}px`, minWidth: `${colWidths.detection_controls}px` }}
                         onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'detection_controls')}
                       >
                         {failureMode ? (
                           <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-0">
-                            <div className="min-w-0 flex-1">
+                            <div className="min-h-0 min-w-0 flex-1">
                               {detectionControls.map((control) => (
-                                <div key={control.id} className="rounded border p-1 text-sm">
-                                  <div className="flex items-start gap-0.5">
-                                    <Badge variant="outline" className="mt-0.5 mr-1 shrink-0 text-xs">
+                                <div
+                                  key={control.id}
+                                  className="border-b border-border/40 px-1 py-1 text-sm last:border-b-0"
+                                >
+                                  <div className="flex min-h-0 w-full items-start gap-0.5">
+                                    <span className="mt-0.5 mr-1 shrink-0 rounded bg-muted px-1 py-0 text-[10px] font-medium text-muted-foreground">
                                       Det
-                                    </Badge>
-                                    <div className="min-w-0 flex-1">
+                                    </span>
+                                    <div className="min-h-0 min-w-0 flex-1">
                                       {renderEditableCell(rowIndex, control.control_description, control.id, 'control_description', 'control', false, {
                                         fullWidth: true,
+                                        plainCell: true,
                                         editFooter: {
                                           addLabel: 'Add',
                                           onAdd: () => void addControl(failureMode.id, 'detection'),
@@ -2627,14 +2974,15 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                       control.id,
                                       'detection_score',
                                       'control_detection',
-                                      true
+                                      true,
+                                      { plainCell: true }
                                     )}
                                   </div>
                                 </div>
                               ))}
                             </div>
                             {gridFocus.rowIndex === rowIndex && gridFocus.col === 'detection_controls' ? (
-                              <div className={pfmeaCellToolbar}>
+                              <div className={pfmeaCellToolbarFlush}>
                                 <Button
                                   type="button"
                                   size="sm"
@@ -2738,67 +3086,17 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                             }}
                                           />
                                         </div>
-                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                          <div className="space-y-1">
-                                            <Label htmlFor={`${action.id}-pfmea-owner`} className="text-xs text-muted-foreground">
-                                              Owner
-                                            </Label>
-                                            <Input
-                                              id={`${action.id}-pfmea-owner`}
-                                              disabled={!pfmeaIsEditable}
-                                              defaultValue={fields.owner}
-                                              key={`${action.id}-o-${fields.owner}`}
-                                              onMouseDown={(e) => e.stopPropagation()}
-                                              onBlur={(e) => {
-                                                const v = e.target.value;
-                                                if (v !== fields.owner) {
-                                                  void updatePfmeaActionItemTracking(action, { owner: v });
-                                                }
-                                              }}
-                                            />
-                                          </div>
-                                          <div className="space-y-1">
-                                            <Label htmlFor={`${action.id}-pfmea-due`} className="text-xs text-muted-foreground">
-                                              Due date
-                                            </Label>
-                                            <Input
-                                              id={`${action.id}-pfmea-due`}
-                                              type="date"
-                                              disabled={!pfmeaIsEditable}
-                                              defaultValue={fields.dueYmd}
-                                              key={`${action.id}-d-${fields.dueYmd}`}
-                                              onMouseDown={(e) => e.stopPropagation()}
-                                              onBlur={(e) => {
-                                                const v = e.target.value;
-                                                if (v !== fields.dueYmd) {
-                                                  void updatePfmeaActionItemTracking(action, { dueYmd: v || null });
-                                                }
-                                              }}
-                                            />
-                                          </div>
-                                        </div>
                                         <div className="space-y-1">
-                                          <Label className="text-xs text-muted-foreground">Status</Label>
-                                          <Select
-                                            value={fields.status}
-                                            disabled={!pfmeaIsEditable}
-                                            onValueChange={(v) => {
-                                              void updatePfmeaActionItemTracking(action, { status: v });
-                                            }}
+                                          <span className="text-xs text-muted-foreground">Status</span>
+                                          <Badge
+                                            variant="outline"
+                                            className={cn(
+                                              'pointer-events-none select-none text-xs font-normal',
+                                              readOnlyActionStatusBadgeClassName(fields.status)
+                                            )}
                                           >
-                                            <SelectTrigger
-                                              className="h-8 text-xs"
-                                              onMouseDown={(e) => e.stopPropagation()}
-                                            >
-                                              <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              <SelectItem value="not_started">Not started</SelectItem>
-                                              <SelectItem value="in_progress">In progress</SelectItem>
-                                              <SelectItem value="complete">Complete</SelectItem>
-                                              <SelectItem value="blocked">Blocked</SelectItem>
-                                            </SelectContent>
-                                          </Select>
+                                            {formatActionStatusLabel(fields.status)}
+                                          </Badge>
                                         </div>
                                         <p className="text-xs text-muted-foreground border-t border-border/60 pt-2">
                                           <span className="font-medium text-foreground/80">Potential cause: </span>
@@ -3345,12 +3643,12 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       </div>
                       <div className="text-2xl font-bold text-orange-600">{failureModes.length}</div>
                     </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="bg-red-50 p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                        <AlertTriangle className="w-5 h-5 text-red-600" />
                         <span className="font-medium">High Priority (AP = H)</span>
                       </div>
-                      <div className="text-2xl font-bold text-green-600">
+                      <div className="text-2xl font-bold text-red-600">
                         {failureModes.filter(fm => calculateActionPriority(fm) === 'H').length}
                       </div>
                     </div>
@@ -3417,18 +3715,18 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                     <p className="text-muted-foreground">No action items found. Add actions through the PFMEA table.</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
+                  <div className="max-h-[min(70vh,560px)] overflow-auto rounded-md border">
+                    <Table wrapperClassName="overflow-visible">
+                      <TableHeader className="sticky top-0 z-20 bg-background shadow-[0_1px_0_0_hsl(var(--border))]">
                         <TableRow>
-                          <TableHead className="w-10 p-2" aria-label="Delete" />
-                          <TableHead className="cursor-pointer hover:bg-muted/50">Action</TableHead>
-                          <TableHead className="cursor-pointer hover:bg-muted/50">Owner</TableHead>
-                          <TableHead className="cursor-pointer hover:bg-muted/50">Due Date</TableHead>
-                          <TableHead className="cursor-pointer hover:bg-muted/50">Project</TableHead>
-                          <TableHead className="cursor-pointer hover:bg-muted/50">Status</TableHead>
-                          <TableHead className="cursor-pointer hover:bg-muted/50">RPN</TableHead>
-                          <TableHead className="cursor-pointer hover:bg-muted/50">Action Priority</TableHead>
+                          <TableHead className="w-10 bg-background p-2" aria-label="Delete" />
+                          <TableHead className="cursor-pointer bg-background hover:bg-muted/50">Action</TableHead>
+                          <TableHead className="cursor-pointer bg-background hover:bg-muted/50">Owner</TableHead>
+                          <TableHead className="cursor-pointer bg-background hover:bg-muted/50">Due Date</TableHead>
+                          <TableHead className="cursor-pointer bg-background hover:bg-muted/50">Project</TableHead>
+                          <TableHead className="cursor-pointer bg-background hover:bg-muted/50">Status</TableHead>
+                          <TableHead className="cursor-pointer bg-background hover:bg-muted/50">RPN</TableHead>
+                          <TableHead className="cursor-pointer bg-background hover:bg-muted/50">Action Priority</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -3517,33 +3815,59 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                   <div className="text-sm">{selectedPfmeaProject?.name}</div>
                                 </TableCell>
                                 <TableCell className="align-top w-[10rem]">
-                                  <Select
-                                    value={fields.status}
-                                    disabled={!pfmeaIsEditable}
-                                    onValueChange={(v) => {
-                                      void updatePfmeaActionItemTracking(actionItem, { status: v });
-                                    }}
-                                  >
-                                    <SelectTrigger className="h-9 text-xs" onMouseDown={(e) => e.stopPropagation()}>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="not_started">Not started</SelectItem>
-                                      <SelectItem value="in_progress">In progress</SelectItem>
-                                      <SelectItem value="complete">Complete</SelectItem>
-                                      <SelectItem value="blocked">Blocked</SelectItem>
-                                    </SelectContent>
-                                  </Select>
+                                  {fields.status === 'blocked' ? (
+                                    <div className="flex flex-col gap-2">
+                                      <Badge variant="destructive" className="w-fit text-xs">
+                                        {formatActionStatusLabel('blocked')}
+                                      </Badge>
+                                      <Select
+                                        disabled={!pfmeaIsEditable}
+                                        onValueChange={(v) => {
+                                          void updatePfmeaActionItemTracking(actionItem, { status: v });
+                                        }}
+                                      >
+                                        <SelectTrigger className="h-9 text-xs" onMouseDown={(e) => e.stopPropagation()}>
+                                          <SelectValue placeholder="Change status…" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="not_started">Not started</SelectItem>
+                                          <SelectItem value="in_progress">In progress</SelectItem>
+                                          <SelectItem value="complete">Complete</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  ) : (
+                                    <Select
+                                      value={fields.status}
+                                      disabled={!pfmeaIsEditable}
+                                      onValueChange={(v) => {
+                                        void updatePfmeaActionItemTracking(actionItem, { status: v });
+                                      }}
+                                    >
+                                      <SelectTrigger className="h-9 text-xs" onMouseDown={(e) => e.stopPropagation()}>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="not_started">Not started</SelectItem>
+                                        <SelectItem value="in_progress">In progress</SelectItem>
+                                        <SelectItem value="complete">Complete</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  )}
                                 </TableCell>
-                                <TableCell>
-                                  <Badge variant="outline" className={getActionPriorityBadgeClasses(ap)}>
-                                    {rpn}
-                                  </Badge>
+                                <TableCell className="align-middle">
+                                  <div className="flex min-h-[2.75rem] items-center justify-center">
+                                    <Badge variant="outline" className={cn('shrink-0 tabular-nums', getActionPriorityBadgeClasses(ap))}>
+                                      {rpn}
+                                    </Badge>
+                                  </div>
                                 </TableCell>
-                                <TableCell>
-                                  <Badge variant="outline" className={getActionPriorityBadgeClasses(ap)}>
-                                    {ap === 'H' ? 'High' : ap === 'M' ? 'Medium' : 'Low'}
-                                  </Badge>
+                                <TableCell className="align-middle">
+                                  <div className="flex min-h-[2.75rem] items-center justify-center">
+                                    <Badge variant="outline" className={cn('shrink-0', getActionPriorityBadgeClasses(ap))}>
+                                      {ap === 'H' ? 'High' : ap === 'M' ? 'Medium' : 'Low'}
+                                    </Badge>
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             );
