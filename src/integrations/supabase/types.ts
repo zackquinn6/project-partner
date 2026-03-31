@@ -4147,7 +4147,31 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      feature_requests_public: {
+        Row: {
+          admin_response: string | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          priority_request: string | null
+          roadmap_item_id: string | null
+          status: string | null
+          submitted_by: string | null
+          title: string | null
+          updated_at: string | null
+          votes: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_requests_roadmap_item_id_fkey"
+            columns: ["roadmap_item_id"]
+            isOneToOne: false
+            referencedRelation: "feature_roadmap"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       check_rate_limit: {

@@ -36,7 +36,7 @@ interface FeatureRequest {
   status: 'submitted' | 'under-review' | 'approved' | 'rejected' | 'implemented';
   votes: number;
   created_at: string;
-  admin_notes: string | null;
+  admin_response: string | null;
 }
 
 export const FeatureRoadmap: React.FC = () => {
@@ -76,7 +76,7 @@ export const FeatureRoadmap: React.FC = () => {
           .select('*')
           .order('display_order', { ascending: true }),
         supabase
-          .from('feature_requests')
+          .from('feature_requests_public')
           .select('*')
           .order('created_at', { ascending: false })
       ]);
@@ -497,10 +497,10 @@ export const FeatureRoadmap: React.FC = () => {
                       <span>{new Date(request.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  {request.admin_notes && (
+                  {request.admin_response && (
                     <div className="mt-3 p-3 bg-muted rounded-lg">
-                      <p className="text-sm font-medium">Admin Notes:</p>
-                      <p className="text-sm text-muted-foreground">{request.admin_notes}</p>
+                      <p className="text-sm font-medium">Admin Response:</p>
+                      <p className="text-sm text-muted-foreground">{request.admin_response}</p>
                     </div>
                   )}
                 </CardContent>

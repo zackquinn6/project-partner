@@ -35,7 +35,6 @@ interface FeatureRequest {
   status: 'submitted' | 'under-review' | 'approved' | 'rejected' | 'implemented';
   votes: number;
   created_at: string;
-  admin_notes: string | null;
   admin_response: string | null;
   submitted_by: string | null;
 }
@@ -103,7 +102,7 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
 
     try {
       const requestsResponse = await supabase
-        .from('feature_requests')
+        .from('feature_requests_public')
         .select('*')
         .order('created_at', { ascending: false });
 
