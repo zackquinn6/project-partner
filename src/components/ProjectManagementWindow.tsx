@@ -19,6 +19,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database, Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -456,6 +457,9 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
   };
 
   const createNewRevision = async () => {
+    type ProjectRow = Database['public']['Tables']['projects']['Row'];
+    type ProjectInsert = Database['public']['Tables']['projects']['Insert'];
+
     if (!currentProject) return;
     
     const revisionName = window.prompt(
@@ -463,21 +467,112 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
     );
     if (revisionName === null) return;
 
-    const newName =
-      (revisionName && revisionName.trim()) ||
-      `${currentProject.name} — Rev ${(currentProject.revision_number ?? 0) + 1}`;
+    const {
+      data: fullSource,
+      error: sourceFetchError,
+    } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', currentProject.id)
+      .single();
 
+    if (sourceFetchError || !fullSource) {
+      toast.error(
+        sourceFetchError?.message
+          ? `Could not load source project: ${sourceFetchError.message}`
+          : 'Could not load source project'
+      );
+      return;
+    }
+
+    const parentId = fullSource.parent_project_id ?? fullSource.id;
+    const { data: revisionRows, error: revCountError } = await supabase
+      .from('projects')
+      .select('revision_number')
+      .or(`parent_project_id.eq.${parentId},id.eq.${parentId}`);
+
+    if (revCountError) {
+      toast.error(`Could not resolve revision number: ${revCountError.message}`);
+      return;
+    }
+
+    const maxRevisionNumber =
+      revisionRows && revisionRows.length > 0
+        ? Math.max(...revisionRows.map((r) => r.revision_number ?? 0))
+        : 0;
+    const nextRevisionNumber = maxRevisionNumber + 1;
+
+    const trimmedPrompt = revisionName.trim();
+    let newName: string;
+    if (trimmedPrompt) {
+      newName = trimmedPrompt;
+    } else {
+      const base =
+        fullSource.name !== null && fullSource.name !== undefined
+          ? String(fullSource.name).trim()
+          : '';
+      if (!base) {
+        toast.error(
+          'Cannot create revision: this project has no name in the database. Enter a revision name or set a project name first.'
+        );
+        return;
+      }
+      newName = `${base} — Rev ${nextRevisionNumber}`;
+    }
+
+    const newRevisionId = crypto.randomUUID();
     try {
       console.log('🔄 Creating revision from project:', currentProject.id);
 
-      const { data: newRevisionId, error } = await supabase.rpc('create_project_revision', {
+      const {
+        id: _omitId,
+        created_at: _omitCa,
+        updated_at: _omitUa,
+        name: _omitName,
+        parent_project_id: _omitParent,
+        publish_status: _omitPub,
+        revision_number: _omitRev,
+        phases: _omitPhases,
+        revision_notes: _omitNotes,
+        ...rest
+      } = fullSource as ProjectRow;
+
+      const revisionName = String(newName).trim();
+      if (!revisionName) {
+        toast.error('Revision name resolved empty; enter a name or fix the source project name.');
+        return;
+      }
+
+      const insertRow: ProjectInsert = {
+        ...rest,
+        id: newRevisionId,
+        name: revisionName,
+        parent_project_id: parentId,
+        publish_status: 'draft',
+        revision_number: nextRevisionNumber,
+        phases: [] as Json,
+        revision_notes: null,
+      };
+
+      const payload = Object.fromEntries(
+        Object.entries(insertRow).filter(([, v]) => v !== undefined)
+      ) as ProjectInsert;
+
+      const { error: insertError } = await supabase.from('projects').insert(payload);
+      if (insertError) {
+        console.error('Error inserting revision row:', insertError);
+        toast.error(insertError.message || 'Failed to create revision');
+        return;
+      }
+
+      const { error: copyError } = await supabase.rpc('copy_draft_revision_workflow', {
         p_source_project_id: currentProject.id,
-        new_name: newName,
+        p_target_project_id: newRevisionId,
       });
-      
-      if (error) {
-        console.error('Error creating revision:', error);
-        toast.error('Failed to create revision');
+      if (copyError) {
+        console.error('copy_draft_revision_workflow:', copyError);
+        await supabase.from('projects').delete().eq('id', newRevisionId);
+        toast.error(copyError.message || 'Failed to copy workflow to revision');
         return;
       }
       

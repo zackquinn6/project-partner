@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown, Sparkles, Shield, Info, BookOpen, BarChart3, Network } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database, Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
 import { useButtonTracker } from '@/hooks/useButtonTracker';
@@ -890,45 +891,125 @@ export function UnifiedProjectManagement({
     await confirmStatusChangeDirect(selectedRevision, newStatus, releaseNotes);
   };
   const createNewRevision = async () => {
+    type ProjectRow = Database['public']['Tables']['projects']['Row'];
+    type ProjectInsert = Database['public']['Tables']['projects']['Insert'];
+
     if (!selectedProject) {
       toast.error("No project selected");
       return;
     }
 
-    // Determine the next revision number for validation
-    // Get all revisions for this project family
-    const parentId = selectedProject.parent_project_id || selectedProject.id;
-    const allRevisions = projectRevisions.length > 0 
-      ? projectRevisions 
-      : (selectedProject.revision_number !== null && selectedProject.revision_number !== undefined 
-          ? [selectedProject] 
-          : []);
-    
-    const maxRevisionNumber = allRevisions.length > 0
-      ? Math.max(...allRevisions.map(r => (r.revision_number ?? 0)))
-      : 0;
+    const {
+      data: fullSource,
+      error: sourceFetchError,
+    } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', selectedProject.id)
+      .single();
+
+    if (sourceFetchError || !fullSource) {
+      toast.error(
+        sourceFetchError?.message
+          ? `Could not load source project: ${sourceFetchError.message}`
+          : 'Could not load source project'
+      );
+      return;
+    }
+
+    const parentId = fullSource.parent_project_id ?? fullSource.id;
+    const {
+      data: revisionRows,
+      error: revCountError,
+    } = await supabase
+      .from('projects')
+      .select('revision_number')
+      .or(`parent_project_id.eq.${parentId},id.eq.${parentId}`);
+
+    if (revCountError) {
+      toast.error(`Could not resolve revision number: ${revCountError.message}`);
+      return;
+    }
+
+    const maxRevisionNumber =
+      revisionRows && revisionRows.length > 0
+        ? Math.max(...revisionRows.map((r) => r.revision_number ?? 0))
+        : 0;
     const nextRevisionNumber = maxRevisionNumber + 1;
 
-    // RPC create_project_revision(p_source_project_id, new_name) — name optional in UI; derive from project + rev # when blank
     const notesToUse = revisionNotes.trim();
-    const newName =
-      notesToUse ||
-      `${selectedProject.name} — Rev ${nextRevisionNumber}`;
+    let newName: string;
+    if (notesToUse) {
+      newName = notesToUse;
+    } else {
+      const base =
+        fullSource.name !== null && fullSource.name !== undefined
+          ? String(fullSource.name).trim()
+          : '';
+      if (!base) {
+        toast.error(
+          'Cannot create revision: this project has no name in the database. Add revision notes or set a project name first.'
+        );
+        return;
+      }
+      newName = `${base} — Rev ${nextRevisionNumber}`;
+    }
 
     const loadingToast = toast.loading("Creating revision...");
+    const newRevisionId = crypto.randomUUID();
     try {
+      // Omit columns we set explicitly — rest must not overwrite name/publish_status/etc.
+      // (Spread order is not enough if the client omits undefined keys and rest carried null.)
       const {
-        data,
-        error
-      } = await supabase.rpc('create_project_revision', {
-        p_source_project_id: selectedProject.id,
-        new_name: newName,
-      });
-      if (error) {
-        console.error('Revision creation error:', error.message, error.code, error.details, error.hint);
-        throw error;
+        id: _omitId,
+        created_at: _omitCa,
+        updated_at: _omitUa,
+        name: _omitName,
+        parent_project_id: _omitParent,
+        publish_status: _omitPub,
+        revision_number: _omitRev,
+        phases: _omitPhases,
+        revision_notes: _omitNotes,
+        ...rest
+      } = fullSource as ProjectRow;
+
+      const revisionName = String(newName).trim();
+      if (!revisionName) {
+        toast.dismiss(loadingToast);
+        toast.error('Revision name resolved empty; add notes or fix the source project name.');
+        return;
       }
-      const newRevisionId = data;
+
+      const insertRow: ProjectInsert = {
+        ...rest,
+        id: newRevisionId,
+        name: revisionName,
+        parent_project_id: parentId,
+        publish_status: 'draft',
+        revision_number: nextRevisionNumber,
+        phases: [] as Json,
+        revision_notes: null,
+      };
+
+      const payload = Object.fromEntries(
+        Object.entries(insertRow).filter(([, v]) => v !== undefined)
+      ) as ProjectInsert;
+
+      const { error: insertError } = await supabase.from('projects').insert(payload);
+      if (insertError) {
+        console.error('Revision insert error:', insertError.message, insertError.code, insertError.details);
+        throw insertError;
+      }
+
+      const { error: copyError } = await supabase.rpc('copy_draft_revision_workflow', {
+        p_source_project_id: selectedProject.id,
+        p_target_project_id: newRevisionId,
+      });
+      if (copyError) {
+        console.error('copy_draft_revision_workflow error:', copyError.message, copyError.code, copyError.details);
+        await supabase.from('projects').delete().eq('id', newRevisionId);
+        throw copyError;
+      }
 
       // Fetch the newly created revision with all related data
       const {
@@ -986,7 +1067,20 @@ export function UnifiedProjectManagement({
       console.error('❌ Error creating revision:', error);
       toast.dismiss(loadingToast);
       const msg = error?.message ?? error?.details;
-      toast.error(msg ? `Failed to create revision: ${msg}` : 'Failed to create revision');
+      if (
+        error?.code === 'PGRST202' ||
+        (typeof msg === 'string' && msg.includes('copy_draft_revision_workflow'))
+      ) {
+        toast.error(
+          'Database is missing copy_draft_revision_workflow. In Supabase SQL editor, run 2026_04_30_migration_draft_revision_single_apply.sql from the repo, then retry.'
+        );
+      } else if (error?.code === '23502') {
+        toast.error(
+          'Could not insert the revision row (NOT NULL failed). If name is set in the app, check projects table triggers or RLS in Supabase.'
+        );
+      } else {
+        toast.error(msg ? `Failed to create revision: ${msg}` : 'Failed to create revision');
+      }
     }
   };
   const handleDeleteProjectClick = (projectId: string, projectName: string) => {

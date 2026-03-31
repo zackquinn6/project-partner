@@ -4163,6 +4163,14 @@ export type Database = {
         Args: { p_project_run_id: string; p_template_project_id: string }
         Returns: number
       }
+      copy_draft_revision_workflow: {
+        Args: { p_source_project_id: string; p_target_project_id: string }
+        Returns: string
+      }
+      create_draft_project_revision: {
+        Args: { p_payload: Json }
+        Returns: string
+      }
       create_project_revision: {
         Args: { new_name: string; p_source_project_id: string }
         Returns: string
