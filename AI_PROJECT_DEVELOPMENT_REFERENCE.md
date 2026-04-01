@@ -119,6 +119,16 @@ Where **Step X** is one of the steps defined below.
 - Steps → `public.operation_steps` (title + description at minimum)
 - Instructions → `public.step_instructions` (3 rows per step)
 
+**Writing guidance for process map names and step copy**
+
+- Minimize use of the word **`the`** in operation names, step titles, and instructions when it is not needed for clarity.
+- Prefer concise naming:
+  - Use **`Reconnect water supply line`** instead of **`Reconnect the water supply line`**
+- **Describe, don't instruct** in `public.operation_steps.description`.
+- Step descriptions should name the work or resulting scope, not tell the user how to do it.
+- Prefer short descriptive phrases such as **`Toilet placement and bolt installation`** instead of instructional sentences such as **`Lower the toilet onto the bolts, compress the seal, and tighten nuts evenly until stable`**.
+- Put execution guidance, sequencing, cautions, and technique details in the 3 instruction levels under `public.step_instructions`, not in the step description.
+
 ### Step 2 — Outputs for each step
 
 **Deliverables**
@@ -323,6 +333,8 @@ A **process variable** is a fundamental, theoretically measurable parameter that
   - Must include instructions at **all 3 levels** (beginner/intermediate/advanced) for each step.
   - Instructions belong in `public.step_instructions`, not embedded as defaults elsewhere.
   - `INSERT` into `public.operation_steps` must use only columns that exist in schema (see **Schema alignment** above).
+  - Minimize unnecessary use of **`the`** across process map names and instructions.
+  - For `public.operation_steps.description`, follow **describe, don't instruct**: description = scope/state label; instructions = how-to guidance.
   - Deliver as **one** migration file for Step 1 (see **One migration file per project-development step**); add extra `DO` blocks for additional `project_id`s, not extra files.
 
 - **Step 2**

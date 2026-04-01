@@ -31,7 +31,6 @@ import { DeleteProjectDialog } from '@/components/DeleteProjectDialog';
 import { PlanningGuideWindow, type PlanningGuideTab } from '@/components/PlanningGuideWindow';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { calculateProjectTimeEstimate, formatScalingUnit } from '@/utils/projectTimeEstimation';
-import { stripRevisionMarkersFromProjectName } from '@/utils/stripRevisionMarkersFromProjectName';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
@@ -1221,349 +1220,27 @@ export function UnifiedProjectManagement({
     const loadingToast = toast.loading("Resetting revisions...");
     try {
       console.log('🔄 Starting reset revisions for project:', selectedProject.id, selectedProject.name);
-      
-      // Prefer using in-memory projectRevisions when available, since UI is already based on it
-      let allRevisions: Project[] | null = null;
-      
-      if (projectRevisions && projectRevisions.length > 0) {
-        console.log('📦 Using in-memory projectRevisions for reset:', projectRevisions.length);
-        allRevisions = projectRevisions;
-      } else {
-        // Fallback: query all revisions for this project family from the database
-        const parentId = selectedProject.parent_project_id || selectedProject.id;
-        console.log('🔍 Looking for revisions with parent_id (db fallback):', parentId);
-        
-        const { data, error: fetchError } = await supabase
-          .from('projects')
-          .select('*')
-          .or(`parent_project_id.eq.${parentId},id.eq.${parentId}`)
-          .order('revision_number', { ascending: false });
 
-        if (fetchError) {
-          console.error('❌ Error fetching revisions:', fetchError);
-          throw fetchError;
-        }
+      const { data: resetProjectId, error: resetError } = await supabase.rpc(
+        'reset_project_revisions_preserve_latest',
+        { p_project_id: selectedProject.id }
+      );
 
-        allRevisions = (data || []) as Project[];
+      if (resetError) {
+        console.error('❌ reset_project_revisions_preserve_latest error:', resetError);
+        throw resetError;
       }
 
-      console.log('📋 Found revisions to reset:', allRevisions?.length || 0, allRevisions);
-
-      if (!allRevisions || allRevisions.length === 0) {
-        toast.dismiss(loadingToast);
-        toast.error("No revisions found for this project");
-        setResetRevisionsDialogOpen(false);
-        return;
+      if (!resetProjectId) {
+        throw new Error('Reset revisions did not return a project id.');
       }
 
-      // Find the latest revision by highest revision_number
-      const latestRevision = allRevisions.reduce((latest, current) =>
-        current.revision_number > latest.revision_number ? current : latest
-      , allRevisions[0]);
-      if (!latestRevision) {
-        toast.dismiss(loadingToast);
-        toast.error("Could not find latest revision");
-        setResetRevisionsDialogOpen(false);
-        return;
-      }
-
-      console.log('✅ Latest revision found:', latestRevision.id, 'Rev', latestRevision.revision_number);
-
-      // Get all other revision IDs to delete
-      // IMPORTANT: If latest revision has a parent, exclude it from deletion to avoid FK constraint
-      // We'll delete the parent after removing the reference in the final update
-      let otherRevisionIds = allRevisions.filter(r => r.id !== latestRevision.id).map(r => r.id);
-      const parentIdToExclude = latestRevision.parent_project_id;
-      
-      if (parentIdToExclude) {
-        // Remove parent from deletion list - we'll handle it after removing the reference
-        otherRevisionIds = otherRevisionIds.filter(id => id !== parentIdToExclude);
-        console.log('⚠️ Excluding parent revision from deletion to avoid FK constraint:', parentIdToExclude);
-      }
-      
-      console.log('🗑️ Deleting', otherRevisionIds.length, 'other revisions:', otherRevisionIds);
-
-      // IMPORTANT: Delete all other revisions FIRST to avoid name constraint violations
-      // We'll handle parent_project_id in the final update after deletions are complete
-      // This avoids triggering the unique name constraint when updating the latest revision
-      if (otherRevisionIds.length > 0) {
-        for (const revisionId of otherRevisionIds) {
-          console.log('🗑️ Deleting revision:', revisionId);
-          
-          // Delete related data
-          const { data: phaseIds, error: phaseError } = await supabase
-            .from('project_phases')
-            .select('id')
-            .eq('project_id', revisionId);
-          
-          if (phaseError) {
-            console.error('Error fetching phases for deletion:', phaseError);
-            throw phaseError;
-          }
-          
-          if (phaseIds && phaseIds.length > 0) {
-            const { data: operations, error: opsError } = await supabase
-              .from('phase_operations')
-              .select('id')
-              .in('phase_id', phaseIds.map(p => p.id));
-            
-            if (opsError) {
-              console.error('Error fetching operations for deletion:', opsError);
-              throw opsError;
-            }
-            
-            if (operations && operations.length > 0) {
-              const operationIds = operations.map(op => op.id);
-              console.log('🗑️ Deleting', operationIds.length, 'operations and their steps');
-              
-              // Delete operation steps first
-              const { error: stepsError } = await supabase
-                .from('operation_steps')
-                .delete()
-                .in('operation_id', operationIds);
-              
-              if (stepsError) {
-                console.error('Error deleting operation steps:', stepsError);
-                throw stepsError;
-              }
-            }
-            
-            // Delete phase operations
-            const { error: opsDeleteError } = await supabase
-              .from('phase_operations')
-              .delete()
-              .in('phase_id', phaseIds.map(p => p.id));
-            
-            if (opsDeleteError) {
-              console.error('Error deleting phase operations:', opsDeleteError);
-              throw opsDeleteError;
-            }
-          }
-          
-          // Delete project_phases for this revision (NOT for latest revision - those are preserved)
-          const { error: phasesError } = await supabase
-            .from('project_phases')
-            .delete()
-            .eq('project_id', revisionId);
-          
-          if (phasesError) {
-            console.error('Error deleting project_phases:', phasesError);
-            throw phasesError;
-          }
-          
-          console.log('✅ Deleted phases for revision:', revisionId, '(latest revision phases are preserved)');
-          
-          // Delete project_runs that reference this template
-          const { error: runsError } = await supabase
-            .from('project_runs')
-            .delete()
-            .eq('project_id', revisionId);
-          
-          if (runsError) {
-            console.error('Error deleting project_runs:', runsError);
-            throw runsError;
-          }
-        }
-
-        // Delete all other projects
-        console.log('🗑️ Deleting projects:', otherRevisionIds);
-        const { error: deleteError } = await supabase
-          .from('projects')
-          .delete()
-          .in('id', otherRevisionIds);
-        
-        if (deleteError) {
-          console.error('❌ Error deleting revisions:', deleteError);
-          throw deleteError;
-        }
-        
-        console.log('✅ All other revisions deleted');
-      }
-
-      // CRITICAL: Preserve all project information (name, description, etc.) from the latest revision
-      // Find the parent project to preserve its information if it exists
-      let parentProjectInfo: any = null;
-      if (latestRevision.parent_project_id) {
-        const { data: parentData } = await supabase
-          .from('projects')
-          .select('*')
-          .eq('id', latestRevision.parent_project_id)
-          .single();
-        
-        if (parentData) {
-          parentProjectInfo = parentData;
-          console.log('📋 Found parent project to preserve info:', parentData.name);
-        }
-      }
-      
-      // Use parent project info if available, otherwise use latest revision info
-      // This ensures project name and other metadata are preserved
-      const projectInfoToPreserve = parentProjectInfo || latestRevision;
-      
-      // CRITICAL: If there's a parent, we must temporarily rename it to avoid name constraint
-      // violations when updating the latest revision. The database constraint checks on ANY
-      // update, not just when the name field is updated.
-      if (parentIdToExclude && parentProjectInfo) {
-        // Step 1: Temporarily rename the parent to avoid duplicate name constraint
-        const tempParentName = `${parentProjectInfo.name}_DELETING_${Date.now()}`;
-        console.log('🔄 Step 1: Temporarily renaming parent to avoid name constraint:', tempParentName);
-        const { error: renameParentError } = await supabase
-          .from('projects')
-          .update({ name: tempParentName })
-          .eq('id', parentIdToExclude);
-        
-        if (renameParentError) {
-          console.error('❌ Error renaming parent:', renameParentError);
-          throw renameParentError;
-        }
-        console.log('✅ Parent temporarily renamed');
-        
-        // Step 2: Now we can safely remove the parent reference from latest revision
-        console.log('🔄 Step 2: Removing parent_project_id reference');
-        const { error: removeParentRefError } = await supabase
-          .from('projects')
-          .update({ parent_project_id: null })
-          .eq('id', latestRevision.id);
-        
-        if (removeParentRefError) {
-          console.error('❌ Error removing parent_project_id reference:', removeParentRefError);
-          // Try to restore parent name before throwing
-          await supabase
-            .from('projects')
-            .update({ name: parentProjectInfo.name })
-            .eq('id', parentIdToExclude);
-          throw removeParentRefError;
-        }
-        console.log('✅ Parent reference removed');
-        
-        // Step 3: Now delete the parent (reference is removed, so this is safe)
-        console.log('🗑️ Step 3: Deleting excluded parent revision:', parentIdToExclude);
-        
-        // Delete related data for the parent
-        const { data: parentPhaseIds } = await supabase
-          .from('project_phases')
-          .select('id')
-          .eq('project_id', parentIdToExclude);
-        
-        if (parentPhaseIds && parentPhaseIds.length > 0) {
-          const { data: parentOperations } = await supabase
-            .from('phase_operations')
-            .select('id')
-            .in('phase_id', parentPhaseIds.map(p => p.id));
-          
-          if (parentOperations && parentOperations.length > 0) {
-            const parentOpIds = parentOperations.map(op => op.id);
-            
-            // Delete operation steps
-            await supabase
-              .from('operation_steps')
-              .delete()
-              .in('operation_id', parentOpIds);
-          }
-          
-          // Delete phase operations
-          await supabase
-            .from('phase_operations')
-            .delete()
-            .in('phase_id', parentPhaseIds.map(p => p.id));
-        }
-        
-        // Delete project_phases for parent (latest revision phases are preserved)
-        await supabase
-          .from('project_phases')
-          .delete()
-          .eq('project_id', parentIdToExclude);
-        
-        console.log('✅ Deleted phases for parent revision:', parentIdToExclude, '(latest revision phases are preserved)');
-        
-        // Delete project_runs
-        await supabase
-          .from('project_runs')
-          .delete()
-          .eq('project_id', parentIdToExclude);
-        
-        // Delete the parent project
-        const { error: parentDeleteError } = await supabase
-          .from('projects')
-          .delete()
-          .eq('id', parentIdToExclude);
-        
-        if (parentDeleteError) {
-          console.error('❌ Error deleting parent revision:', parentDeleteError);
-          throw parentDeleteError;
-        }
-        
-        console.log('✅ Parent revision deleted');
-      }
-      
-      // Now do the full update (parent is gone, so no name conflict)
-      // Update the latest revision to be revision 0, draft, with no parent
-      // BUT preserve all project information including name (no "(draft)" or revision_number suffix)
-      // IMPORTANT: Do NOT create new phases - keep existing phases/structure
-      console.log('🔄 Step 3: Updating latest revision to revision 0, preserving project info and phases:', latestRevision.id);
-      const rawResetName = projectInfoToPreserve.name ?? latestRevision.name;
-      if (rawResetName == null || String(rawResetName).trim() === '') {
-        throw new Error('Cannot reset revisions: project has no name in the database.');
-      }
-      let nameForReset = stripRevisionMarkersFromProjectName(String(rawResetName));
-      if (nameForReset.length === 0) {
-        nameForReset = String(rawResetName).trim();
-      }
-      const updateData: any = {
-        revision_number: 0,
-        parent_project_id: null,
-        publish_status: 'draft',
-        revision_notes: null,
-        // Removed fields that don't exist in projects table:
-        // published_at, beta_released_at, archived_at, created_from_revision, release_notes
-        // Base product name only — revision labels belong in revision_number / notes, not in `name`
-        name: nameForReset,
-        // PRESERVE all other project information fields
-        description: projectInfoToPreserve.description || latestRevision.description,
-        category: projectInfoToPreserve.category || latestRevision.category,
-        effort_level: projectInfoToPreserve.effort_level || latestRevision.effort_level,
-        skill_level: projectInfoToPreserve.skill_level || latestRevision.skill_level,
-        estimated_time: projectInfoToPreserve.estimated_time || latestRevision.estimated_time,
-        estimated_total_time: projectInfoToPreserve.estimated_total_time || latestRevision.estimated_total_time,
-        typical_project_size: projectInfoToPreserve.typical_project_size || latestRevision.typical_project_size,
-        scaling_unit: projectInfoToPreserve.scaling_unit || latestRevision.scaling_unit,
-        item_type: projectInfoToPreserve.item_type || latestRevision.item_type,
-        project_challenges: projectInfoToPreserve.project_challenges || projectInfoToPreserve.diy_length_challenges || latestRevision.project_challenges || latestRevision.diy_length_challenges,
-        project_type: projectInfoToPreserve.project_type || latestRevision.project_type,
-        owner_id: projectInfoToPreserve.owner_id || latestRevision.owner_id,
-        created_by: projectInfoToPreserve.created_by || latestRevision.created_by,
-        // Preserve images
-        images: projectInfoToPreserve.images || latestRevision.images,
-        cover_image: projectInfoToPreserve.cover_image || latestRevision.cover_image
-        // NOTE: Do NOT update phases - existing phases/structure are preserved
-        // Do NOT call rebuild_phases_json or create new phases
-      };
-      
-      const { error: updateError } = await supabase
-        .from('projects')
-        .update(updateData)
-        .eq('id', latestRevision.id);
-
-      if (updateError) {
-        console.error('❌ Error updating revision:', updateError);
-        throw updateError;
-      }
-
-      console.log('✅ Revision reset complete');
-      console.log('✅ Phases preserved - no new phases created');
-      console.log('✅ Project name after reset (base name):', nameForReset);
-      
-      // IMPORTANT: Do NOT call rebuild_phases_json or any function that creates phases
-      // Existing phases/structure are preserved and should remain unchanged
-      
-      // Refresh projects list first
       await fetchProjects();
-      
-      // Fetch the updated revision (now revision 1) from database
+
       const { data: updatedProject, error: selectError } = await supabase
         .from('projects')
         .select('*')
-        .eq('id', latestRevision.id)
+        .eq('id', resetProjectId)
         .single();
 
       if (selectError) {
@@ -1572,11 +1249,9 @@ export function UnifiedProjectManagement({
       }
 
       if (!updatedProject) {
-        console.error('❌ Updated project not found');
         throw new Error('Updated project not found');
       }
 
-      // Update selected project with the new revision 1 data
       const mappedProject = {
         ...updatedProject,
         project_challenges: updatedProject.project_challenges ?? updatedProject.diy_length_challenges ?? null,
@@ -1586,12 +1261,15 @@ export function UnifiedProjectManagement({
       } as Project;
 
       setSelectedProject(mappedProject);
-
-      // Refresh project revisions list (should now only show revision 1)
       await fetchProjectRevisions();
+
+      console.log('✅ Revision reset complete via database RPC:', resetProjectId);
+
+      // Refresh projects list first
+      await fetchProjects();
       
       toast.dismiss(loadingToast);
-      toast.success("Revisions reset successfully. Latest revision is now revision 1 (draft).");
+      toast.success("Revisions reset successfully.");
       setResetRevisionsDialogOpen(false);
       // Ensure the UI reflects the new root revision immediately.
       // Users reported it can look like the project was deleted until a refresh.

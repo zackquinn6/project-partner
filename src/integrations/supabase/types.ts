@@ -4286,6 +4286,10 @@ export type Database = {
         Args: { p_project_id: string }
         Returns: undefined
       }
+      reset_project_revisions_preserve_latest: {
+        Args: { p_project_id: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
