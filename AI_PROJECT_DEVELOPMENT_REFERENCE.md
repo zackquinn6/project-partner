@@ -293,6 +293,11 @@ A **process variable** is a fundamental, theoretically measurable parameter that
 - The **`failure_mode`** string is **not** a free-form narrative of “what could go wrong” in abstract terms. It is the **negation of the requirement/output** for that row: what is **wrong** if the output is **not** actually achieved, stated **concisely** and **tied to that same requirement**.
 - Think: *Requirement / output (Step 2 `name`)* → *Failure mode* = the **opposite** or **unmet** state in short form.
 - The failure mode must stay **strictly inside the requirement text that actually exists**. Do **not** pull in extra standards, hidden quality criteria, or implied adverbs that are **not specified** in the output. If the requirement is **`Supply disconnected`**, valid failure text is **`Supply not disconnected`**. Invalid examples include **`Supply not safely disconnected`** or **`Supply disconnected improperly`** unless **safe disconnection** or **proper disconnection** is itself an explicit requirement/output.
+- When the requirement/output is **quantified**, the failure mode should also be **quantified** as the unmet threshold, not generic "not achieved" wording.
+- Examples:
+  - Output **`100% coverage on intended zones`** → Failure mode **`<100% coverage`**
+  - Output **`No bead >1/4"`** → Failure mode **`Bead >1/4"`**
+  - Output **`Torque >= 45 ft-lbs`** → Failure mode **`Torque < 45 ft-lbs`**
 - If a distinct concept matters, make it a **separate requirement/output** first. Do **not** smuggle it into the failure-mode wording.
 - Examples (pattern only):
   - Output **“Toilet drained”** → Failure mode **“Toilet not drained”**.

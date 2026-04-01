@@ -36,9 +36,11 @@ import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, FileText, Info, Plus, S
 import { PfmeaScoringCriteriaDialog } from '@/components/PfmeaScoringCriteriaDialog';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import type { Output } from '@/interfaces/Project';
+import type { Output, StepInput } from '@/interfaces/Project';
 import {
   buildUniquePfmeaProcessVariableNames,
+  parseProcessVariablesFromDb,
+  serializeProcessVariablesForDb,
   type WorkflowStepProcessVariableRow,
 } from '@/utils/processVariablesUtils';
 
@@ -413,6 +415,11 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   const [editingValue, setEditingValue] = useState<string>('');
   const [addOutputDialogStepId, setAddOutputDialogStepId] = useState<string | null>(null);
   const [addOutputName, setAddOutputName] = useState('');
+  const [addProcessVariableDialogStepId, setAddProcessVariableDialogStepId] = useState<string | null>(null);
+  const [addProcessVariableName, setAddProcessVariableName] = useState('');
+  const [addProcessVariableDescription, setAddProcessVariableDescription] = useState('');
+  const [addProcessVariableUnit, setAddProcessVariableUnit] = useState('');
+  const [addProcessVariableTargetValue, setAddProcessVariableTargetValue] = useState('');
   const [currentTab, setCurrentTab] = useState('overview');
   const [pfmeaColVisibility, setPfmeaColVisibility] = useState({
     phase: true,
@@ -1525,6 +1532,18 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     setAddOutputName('');
   }, [pfmeaIsEditable]);
 
+  const openAddProcessVariableDialog = useCallback((operationStepId: string) => {
+    if (!pfmeaIsEditable) {
+      toast.error('PFMEA is locked. Switch this revision to draft to edit.');
+      return;
+    }
+    setAddProcessVariableDialogStepId(operationStepId);
+    setAddProcessVariableName('');
+    setAddProcessVariableDescription('');
+    setAddProcessVariableUnit('');
+    setAddProcessVariableTargetValue('');
+  }, [pfmeaIsEditable]);
+
   const submitAddOutput = useCallback(async () => {
     if (!addOutputDialogStepId) return;
     if (!pfmeaIsEditable) {
@@ -1578,6 +1597,82 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       toast.error('Failed to add output');
     }
   }, [addOutputDialogStepId, addOutputName, pfmeaIsEditable, selectedPfmeaProject, fetchPfmeaDetails]);
+
+  const submitAddProcessVariable = useCallback(async () => {
+    if (!addProcessVariableDialogStepId) return;
+    if (!pfmeaIsEditable) {
+      toast.error('PFMEA is locked. Switch this revision to draft to edit.');
+      return;
+    }
+
+    const name = addProcessVariableName.trim();
+    const description = addProcessVariableDescription.trim();
+    const unit = addProcessVariableUnit.trim();
+    const targetValue = addProcessVariableTargetValue.trim();
+
+    if (!name) {
+      toast.error('Enter a name for the process variable');
+      return;
+    }
+
+    const operationStepId = addProcessVariableDialogStepId;
+
+    try {
+      const { data: stepRow, error: stepErr } = await supabase
+        .from('operation_steps')
+        .select('id, process_variables')
+        .eq('id', operationStepId)
+        .single();
+      if (stepErr) throw stepErr;
+
+      const current = parseProcessVariablesFromDb(stepRow?.process_variables);
+      if (current.some((item) => item.name.trim().toLowerCase() === name.toLowerCase())) {
+        toast.error('A process variable with that name already exists for this step');
+        return;
+      }
+
+      const next: StepInput[] = [
+        ...current,
+        {
+          id: `process-variable-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          name,
+          type: 'process',
+          ...(description ? { description } : {}),
+          ...(unit ? { unit } : {}),
+          ...(targetValue ? { targetValue } : {}),
+        },
+      ];
+
+      const { error: updateErr } = await supabase
+        .from('operation_steps')
+        .update({ process_variables: serializeProcessVariablesForDb(next) })
+        .eq('id', operationStepId);
+      if (updateErr) throw updateErr;
+
+      setAddProcessVariableDialogStepId(null);
+      setAddProcessVariableName('');
+      setAddProcessVariableDescription('');
+      setAddProcessVariableUnit('');
+      setAddProcessVariableTargetValue('');
+
+      if (selectedPfmeaProject) {
+        await fetchPfmeaDetails(selectedPfmeaProject.project_id);
+      }
+      toast.success('Process variable added');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to add process variable');
+    }
+  }, [
+    addProcessVariableDescription,
+    addProcessVariableDialogStepId,
+    addProcessVariableName,
+    addProcessVariableTargetValue,
+    addProcessVariableUnit,
+    pfmeaIsEditable,
+    selectedPfmeaProject,
+    fetchPfmeaDetails,
+  ]);
 
   type PfmeaFlatRow = {
     requirement: PFMEARequirement;
@@ -1767,9 +1862,11 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           }
           void addControl(fm.id, 'detection');
           return;
+        case 'process_variables':
+          openAddProcessVariableDialog(requirement.operation_step_id);
+          return;
         case 'rpn':
         case 'ap':
-        case 'process_variables':
           return;
         case 'recommended_actions':
           if (!fm) {
@@ -1782,7 +1879,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           return;
       }
     },
-    [sortedPfmeaRows, gridFocus.rowIndex, openAddOutputDialog, addFailureMode]
+    [sortedPfmeaRows, gridFocus.rowIndex, openAddOutputDialog, addFailureMode, openAddProcessVariableDialog]
   );
 
   const handlePfmeaGridKeyDown = useCallback(
@@ -2173,12 +2270,11 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       backgroundColor: '#0c2744',
     });
     const pfmeaColBand: Record<PfmeaNavColumn, string> = {
-      // Note: requirements + failure_mode headers are colored; keep body un-tinted for those columns.
-      requirements: '',
-      failure_mode: '',
+      requirements: 'bg-yellow-50/55',
+      failure_mode: 'bg-yellow-50/55',
       effects: 'bg-rose-50/55',
       s: 'bg-rose-100/55',
-      process_variables: 'bg-amber-50/45',
+      process_variables: 'bg-emerald-50/55',
       causes: 'bg-emerald-50/55',
       prevention_controls: 'bg-emerald-100/55',
       o: 'bg-emerald-50/55',
@@ -2401,8 +2497,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                   {pfmeaColVisibility.process_variables ? (
                     renderHeaderWithPlus('Process Variables', 'process_variables', {
                       barClassName: pfmeaHeaderBar.causeOccurrence,
-                      hidePlus: true,
-                      derived: true,
+                      derived: !pfmeaIsEditable,
                       stickyHeaderVerticalScrollRegion: true,
                     })
                   ) : null}
@@ -2482,7 +2577,11 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                   return (
                     <TableRow
                       key={`${requirement.id}-${failureMode?.id ?? 'no-fm'}-${cause?.id ?? 'no-cause'}`}
-                      className={`${apColorClass} ${gridFocus.rowIndex === rowIndex ? 'outline outline-1 outline-primary/50' : ''}`}
+                      className={cn(
+                        apColorClass,
+                        gridFocus.rowIndex === rowIndex ? 'outline outline-1 outline-primary/50' : '',
+                        '[&>td]:border-b [&>td]:border-border/40'
+                      )}
                     >
                       {pfmeaColVisibility.phase ? (
                         <TableCell
@@ -2745,11 +2844,34 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                           }}
                           onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'process_variables')}
                         >
-                          <PfmeaProcessVariablesReadonlyCell
-                            cause={cause}
-                            requirement={requirement}
-                            workflowRowsForStep={workflowStepPvByStepId[requirement.operation_step_id]}
-                          />
+                          <div className="flex h-full min-h-0 w-full min-w-0 flex-col">
+                            <div className="min-w-0 flex-1">
+                              <PfmeaProcessVariablesReadonlyCell
+                                cause={cause}
+                                requirement={requirement}
+                                workflowRowsForStep={workflowStepPvByStepId[requirement.operation_step_id]}
+                              />
+                            </div>
+                            {gridFocus.rowIndex === rowIndex && gridFocus.col === 'process_variables' ? (
+                              <div className={pfmeaCellToolbar}>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={!pfmeaIsEditable}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openAddProcessVariableDialog(requirement.operation_step_id);
+                                  }}
+                                  className={cn(pfmeaCellToolbarAdd, 'border-r-0')}
+                                >
+                                  <Plus className="h-3 w-3 shrink-0" />
+                                  Add Process Variable
+                                </Button>
+                              </div>
+                            ) : null}
+                          </div>
                         </TableCell>
                       ) : null}
 
@@ -3585,6 +3707,83 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
               Cancel
             </Button>
             <Button type="button" onClick={() => void submitAddOutput()}>
+              Add
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={addProcessVariableDialogStepId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAddProcessVariableDialogStepId(null);
+            setAddProcessVariableName('');
+            setAddProcessVariableDescription('');
+            setAddProcessVariableUnit('');
+            setAddProcessVariableTargetValue('');
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add process variable</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 py-1">
+            <div className="grid gap-2">
+              <Label htmlFor="pfmea-add-process-variable-name">Name</Label>
+              <Input
+                id="pfmea-add-process-variable-name"
+                value={addProcessVariableName}
+                onChange={(e) => setAddProcessVariableName(e.target.value)}
+                placeholder="Tip diameter"
+                autoComplete="off"
+                autoFocus
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="pfmea-add-process-variable-description">Description</Label>
+              <Textarea
+                id="pfmea-add-process-variable-description"
+                value={addProcessVariableDescription}
+                onChange={(e) => setAddProcessVariableDescription(e.target.value)}
+                placeholder="What it controls and why it matters"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="pfmea-add-process-variable-unit">Unit</Label>
+                <Input
+                  id="pfmea-add-process-variable-unit"
+                  value={addProcessVariableUnit}
+                  onChange={(e) => setAddProcessVariableUnit(e.target.value)}
+                  placeholder="inches"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="pfmea-add-process-variable-target">Target value</Label>
+                <Input
+                  id="pfmea-add-process-variable-target"
+                  value={addProcessVariableTargetValue}
+                  onChange={(e) => setAddProcessVariableTargetValue(e.target.value)}
+                  placeholder="<= 1/4"
+                  autoComplete="off"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      void submitAddProcessVariable();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setAddProcessVariableDialogStepId(null)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={() => void submitAddProcessVariable()}>
               Add
             </Button>
           </DialogFooter>
