@@ -524,46 +524,46 @@ BEGIN
 
   UPDATE public.operation_steps
   SET tools = jsonb_build_array(
-        jsonb_build_object('coreItemId', t_utility_knife, 'item', 'Utility Knife', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true),
-        jsonb_build_object('coreItemId', t_putty_knife, 'item', 'Putty Knife', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false)
+        jsonb_build_object('id', t_utility_knife, 'name', 'Utility Knife', 'description', 'Cut and release old caulk and trim tube tips.', 'category', 'Hand Tool', 'alternates', '[]'::jsonb),
+        jsonb_build_object('id', t_putty_knife, 'name', 'Putty Knife', 'description', 'Lift old caulk and scrape remaining residue from the joint.', 'category', 'Hand Tool', 'alternates', '[]'::jsonb)
       ),
       materials = jsonb_build_array(
-        jsonb_build_object('coreItemId', m_nitrile_gloves, 'item', 'Nitrile gloves', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true)
+        jsonb_build_object('id', m_nitrile_gloves, 'name', 'Nitrile gloves', 'description', 'Disposable hand protection for removal, cleaning, and caulk application.', 'category', 'PPE', 'alternates', '[]'::jsonb, 'unit', 'box')
       )
   WHERE id = '9d9ebf39-3844-4e5c-9b0f-52336a8df201'::uuid;
 
   UPDATE public.operation_steps
   SET tools = jsonb_build_array(
-        jsonb_build_object('coreItemId', t_putty_knife, 'item', 'Putty Knife', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false)
+        jsonb_build_object('id', t_putty_knife, 'name', 'Putty Knife', 'description', 'Lift old caulk and scrape remaining residue from the joint.', 'category', 'Hand Tool', 'alternates', '[]'::jsonb)
       ),
       materials = jsonb_build_array(
-        jsonb_build_object('coreItemId', m_nitrile_gloves, 'item', 'Nitrile gloves', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true),
-        jsonb_build_object('coreItemId', m_spackle, 'item', 'Spackle', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false),
-        jsonb_build_object('coreItemId', m_sandpaper, 'item', 'Sandpaper', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false)
+        jsonb_build_object('id', m_nitrile_gloves, 'name', 'Nitrile gloves', 'description', 'Disposable hand protection for removal, cleaning, and caulk application.', 'category', 'PPE', 'alternates', '[]'::jsonb, 'unit', 'box'),
+        jsonb_build_object('id', m_spackle, 'name', 'Spackle', 'description', 'Minor patch material for small finish defects exposed during bead removal.', 'category', 'Consumable', 'alternates', '[]'::jsonb, 'unit', 'tub'),
+        jsonb_build_object('id', m_sandpaper, 'name', 'Sandpaper', 'description', 'Finish-prep abrasive for smoothing small patched areas before painters caulk.', 'category', 'Consumable', 'alternates', '[]'::jsonb, 'unit', 'pack')
       )
   WHERE id = '9d9ebf39-3844-4e5c-9b0f-52336a8df202'::uuid;
 
   UPDATE public.operation_steps
   SET tools = jsonb_build_array(
-        jsonb_build_object('coreItemId', t_utility_knife, 'item', 'Utility Knife', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false),
-        jsonb_build_object('coreItemId', t_caulk_gun, 'item', 'Caulk Gun', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true)
+        jsonb_build_object('id', t_utility_knife, 'name', 'Utility Knife', 'description', 'Cut and release old caulk and trim tube tips.', 'category', 'Hand Tool', 'alternates', '[]'::jsonb),
+        jsonb_build_object('id', t_caulk_gun, 'name', 'Caulk Gun', 'description', 'Dispense controlled bead output from caulk tubes.', 'category', 'Hand Tool', 'alternates', '[]'::jsonb)
       ),
       materials = jsonb_build_array(
-        jsonb_build_object('coreItemId', m_nitrile_gloves, 'item', 'Nitrile gloves', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false),
-        jsonb_build_object('coreItemId', m_silicon_caulk, 'item', 'Silicon caulk', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true)
+        jsonb_build_object('id', m_nitrile_gloves, 'name', 'Nitrile gloves', 'description', 'Disposable hand protection for removal, cleaning, and caulk application.', 'category', 'PPE', 'alternates', '[]'::jsonb, 'unit', 'box'),
+        jsonb_build_object('id', m_silicon_caulk, 'name', 'Silicon caulk', 'description', 'Flexible sealant used for waterproofing joints and gaps around wet-area fixtures and finished surfaces.', 'category', 'Consumable', 'alternates', '[]'::jsonb, 'unit', 'tube')
       )
   WHERE id = '9d9ebf39-3844-4e5c-9b0f-52336a8df203'::uuid;
 
   UPDATE public.operation_steps
   SET tools = jsonb_build_array(
-        jsonb_build_object('coreItemId', t_utility_knife, 'item', 'Utility Knife', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false),
-        jsonb_build_object('coreItemId', t_caulk_gun, 'item', 'Caulk Gun', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true),
-        jsonb_build_object('coreItemId', t_painter_multi_tool, 'item', 'Painter''s Multi-Tool', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false)
+        jsonb_build_object('id', t_utility_knife, 'name', 'Utility Knife', 'description', 'Cut and release old caulk and trim tube tips.', 'category', 'Hand Tool', 'alternates', '[]'::jsonb),
+        jsonb_build_object('id', t_caulk_gun, 'name', 'Caulk Gun', 'description', 'Dispense controlled bead output from caulk tubes.', 'category', 'Hand Tool', 'alternates', '[]'::jsonb),
+        jsonb_build_object('id', t_painter_multi_tool, 'name', 'Painter''s Multi-Tool', 'description', 'Clean edges and help finish narrow trim joints.', 'category', 'Hand Tool', 'alternates', '[]'::jsonb)
       ),
       materials = jsonb_build_array(
-        jsonb_build_object('coreItemId', m_nitrile_gloves, 'item', 'Nitrile gloves', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false),
-        jsonb_build_object('coreItemId', m_painters_caulk, 'item', 'Painters caulk', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true),
-        jsonb_build_object('coreItemId', m_painter_tape, 'item', 'Painters Tape', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false)
+        jsonb_build_object('id', m_nitrile_gloves, 'name', 'Nitrile gloves', 'description', 'Disposable hand protection for removal, cleaning, and caulk application.', 'category', 'PPE', 'alternates', '[]'::jsonb, 'unit', 'box'),
+        jsonb_build_object('id', m_painters_caulk, 'name', 'Painters caulk', 'description', 'Paintable acrylic-latex caulk used to seal trim, casing, and small finish gaps before painting.', 'category', 'Consumable', 'alternates', '[]'::jsonb, 'unit', 'tube'),
+        jsonb_build_object('id', m_painter_tape, 'name', 'Painters Tape', 'description', 'Temporary masking tape for clean bead edges on finish joints.', 'category', 'Consumable', 'alternates', '[]'::jsonb, 'unit', 'roll')
       )
   WHERE id = '9d9ebf39-3844-4e5c-9b0f-52336a8df204'::uuid;
 

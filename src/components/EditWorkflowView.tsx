@@ -1059,13 +1059,10 @@ export default function EditWorkflowView({
   const [pfmeaRefreshNonce, setPfmeaRefreshNonce] = useState(0);
   const [toolsLibraryOpen, setToolsLibraryOpen] = useState(false);
   const [materialsLibraryOpen, setMaterialsLibraryOpen] = useState(false);
-  const [ppeToolsLibraryOpen, setPpeToolsLibraryOpen] = useState(false);
-  const [ppeMaterialsLibraryOpen, setPpeMaterialsLibraryOpen] = useState(false);
+  const [ppeLibraryOpen, setPpeLibraryOpen] = useState(false);
   /** Step row id of primary tool/material when picking a substitute from the library */
   const [alternateToolParentId, setAlternateToolParentId] = useState<string | null>(null);
   const [alternateMaterialParentId, setAlternateMaterialParentId] = useState<string | null>(null);
-  const [alternatePpeToolParentId, setAlternatePpeToolParentId] = useState<string | null>(null);
-  const [alternatePpeMaterialParentId, setAlternatePpeMaterialParentId] = useState<string | null>(null);
   const [appsLibraryOpen, setAppsLibraryOpen] = useState(false);
   const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
   const [decisionTreeOpen, setDecisionTreeOpen] = useState(false);
@@ -2227,34 +2224,61 @@ export default function EditWorkflowView({
 
                           <div className="pt-2 border-t space-y-4">
                             <h3 className="text-sm font-medium">Personal Protective Equipment</h3>
-                            <CompactToolsTable
-                              title="PPE — Tools"
-                              tools={ppeTools}
-                              onToolsChange={tools => updateEditingStep('tools', [...nonPpeTools, ...tools])}
-                              onAddTool={() => {
-                                setAlternatePpeToolParentId(null);
-                                setPpeToolsLibraryOpen(true);
-                              }}
-                              onAddAlternate={parentId => {
-                                setAlternatePpeToolParentId(parentId);
-                                setPpeToolsLibraryOpen(true);
-                              }}
-                              addButtonLabel="Add PPE tool"
-                            />
-                            <CompactMaterialsTable
-                              title="PPE — Materials"
-                              materials={ppeMaterials}
-                              onMaterialsChange={materials => updateEditingStep('materials', [...nonPpeMaterials, ...materials])}
-                              onAddMaterial={() => {
-                                setAlternatePpeMaterialParentId(null);
-                                setPpeMaterialsLibraryOpen(true);
-                              }}
-                              onAddAlternate={parentId => {
-                                setAlternatePpeMaterialParentId(parentId);
-                                setPpeMaterialsLibraryOpen(true);
-                              }}
-                              addButtonLabel="Add PPE material"
-                            />
+                            <div className="rounded-lg border bg-background/50 p-3 space-y-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="text-sm text-muted-foreground">
+                                  Search one PPE library across both tools and materials.
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setPpeLibraryOpen(true)}
+                                >
+                                  Add PPE
+                                </Button>
+                              </div>
+                              {ppeTools.length === 0 && ppeMaterials.length === 0 ? (
+                                <div className="text-sm text-muted-foreground">No PPE added to this step.</div>
+                              ) : (
+                                <div className="space-y-2">
+                                  {ppeTools.map((tool) => (
+                                    <div key={tool.id} className="flex items-start justify-between gap-3 rounded border bg-background px-3 py-2">
+                                      <div className="min-w-0">
+                                        <div className="font-medium text-sm break-words">{tool.name}</div>
+                                        <div className="text-xs text-muted-foreground">PPE tool</div>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 shrink-0"
+                                        onClick={() => updateEditingStep('tools', [...nonPpeTools, ...ppeTools.filter((t) => t.id !== tool.id)])}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                  {ppeMaterials.map((material) => (
+                                    <div key={material.id} className="flex items-start justify-between gap-3 rounded border bg-background px-3 py-2">
+                                      <div className="min-w-0">
+                                        <div className="font-medium text-sm break-words">{material.name}</div>
+                                        <div className="text-xs text-muted-foreground">PPE material</div>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 shrink-0"
+                                        onClick={() => updateEditingStep('materials', [...nonPpeMaterials, ...ppeMaterials.filter((m) => m.id !== material.id)])}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -2675,47 +2699,24 @@ export default function EditWorkflowView({
       />
 
       <MultiSelectLibraryDialog
-        open={ppeToolsLibraryOpen}
-        onOpenChange={(open) => {
-          setPpeToolsLibraryOpen(open);
-          if (!open) setAlternatePpeToolParentId(null);
-        }}
-        type="tools"
-        categoryInclude="PPE"
-        titleOverride={alternatePpeToolParentId ? 'Select substitute PPE (tool)' : null}
-        availableStepTools={editingStep?.tools?.map((t) => ({
-          id: t.id,
-          name: t.name,
-        })) || []}
+        open={ppeLibraryOpen}
+        onOpenChange={setPpeLibraryOpen}
+        type="ppe"
+        titleOverride="Select PPE"
         onSelect={(selectedItems) => {
-          const parentId = alternatePpeToolParentId;
-          setAlternatePpeToolParentId(null);
-          const newPpeTools: StepTool[] = selectedItems.map((item) => ({
+          const selectedTools = selectedItems.filter((item) => item.sourceType === 'tools');
+          const selectedMaterials = selectedItems.filter((item) => item.sourceType === 'materials');
+
+          const newPpeTools: StepTool[] = selectedTools.map((item) => ({
             id: `ppe-tool-${Date.now()}-${Math.random()}`,
             name: item.item,
             description: item.description || '',
             category: item.category as StepTool['category'],
             alternates: [],
             quantity: item.quantity,
-            ...(parentId ? { parentId } : {}),
           }));
-          updateEditingStep('tools', [...(editingStep?.tools || []), ...newPpeTools]);
-        }}
-      />
 
-      <MultiSelectLibraryDialog
-        open={ppeMaterialsLibraryOpen}
-        onOpenChange={(open) => {
-          setPpeMaterialsLibraryOpen(open);
-          if (!open) setAlternatePpeMaterialParentId(null);
-        }}
-        type="materials"
-        categoryInclude="PPE"
-        titleOverride={alternatePpeMaterialParentId ? 'Select substitute PPE (material)' : null}
-        onSelect={(selectedItems) => {
-          const parentId = alternatePpeMaterialParentId;
-          setAlternatePpeMaterialParentId(null);
-          const newPpeMaterials: StepMaterial[] = selectedItems.map((item) => ({
+          const newPpeMaterials: StepMaterial[] = selectedMaterials.map((item) => ({
             id: `ppe-material-${Date.now()}-${Math.random()}`,
             name: item.item,
             description: item.description || '',
@@ -2723,9 +2724,20 @@ export default function EditWorkflowView({
             alternates: [],
             quantity: item.quantity,
             unit: item.unit || undefined,
-            ...(parentId ? { parentId } : {}),
           }));
-          updateEditingStep('materials', [...(editingStep?.materials || []), ...newPpeMaterials]);
+
+          if (!editingStep) {
+            return;
+          }
+
+          const updatedStep = {
+            ...editingStep,
+            tools: [...(editingStep.tools || []), ...newPpeTools],
+            materials: [...(editingStep.materials || []), ...newPpeMaterials],
+          };
+
+          setEditingStep(updatedStep);
+          editingStepRef.current = updatedStep;
         }}
       />
 

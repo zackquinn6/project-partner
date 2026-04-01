@@ -16,6 +16,7 @@ interface SelectedItem {
   coreItemId: string;
   variationId?: string;
   item: string;
+  sourceType?: 'tools' | 'materials';
   category?: string | null;
   quantity: number;
   description?: string | null;
@@ -28,7 +29,7 @@ interface SelectedItem {
 interface MultiSelectLibraryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  type: 'tools' | 'materials';
+  type: 'tools' | 'materials' | 'ppe';
   onSelect: (items: SelectedItem[]) => void;
   availableStepTools?: Array<{id: string; name: string}>;
   /** Optional library category filter (used by PPE step editor) */
@@ -71,46 +72,79 @@ export function MultiSelectLibraryDialog({
     try {
       // Materials table uses 'name' column, tools table uses 'name' column
       // Order by 'name' for both types
-      const { data, error } = await supabase
-        .from(type)
-        .select('*')
-        .order('name');
-      
-      if (error) {
-        console.error(`❌ Error fetching ${type}:`, error);
-        throw error;
-      }
-      
-      console.log(`✅ Fetched ${data?.length || 0} ${type} from database`);
-      
-      if (!data || data.length === 0) {
-        console.warn(`⚠️ No ${type} found in library! You need to add ${type} to the library first using the "Manage ${type === 'tools' ? 'Tools' : 'Materials'} Library" button.`);
-      }
-      
-      // Map database columns to UI format
-      // Materials: name -> item, unit -> unit_size
-      // Tools: name -> item (if needed)
-      const allItems = (data || []).map((row: any) => {
-        if (type === 'materials') {
-          return {
-            ...row,
-            item: row.name, // Map 'name' to 'item' for UI consistency
-            unit_size: row.unit // Map 'unit' to 'unit_size' for UI consistency
-          };
-        } else {
-          // Tools: use 'name' as 'item' if 'item' doesn't exist
-          return {
-            ...row,
-            item: row.item || row.name
-          };
+      let allItems: any[] = [];
+
+      if (type === 'ppe') {
+        const [toolsRes, materialsRes] = await Promise.all([
+          supabase.from('tools').select('*').eq('category', 'PPE').order('name'),
+          supabase.from('materials').select('*').eq('category', 'PPE').order('name'),
+        ]);
+
+        if (toolsRes.error) {
+          console.error('❌ Error fetching PPE tools:', toolsRes.error);
+          throw toolsRes.error;
         }
-      });
+        if (materialsRes.error) {
+          console.error('❌ Error fetching PPE materials:', materialsRes.error);
+          throw materialsRes.error;
+        }
+
+        const toolItems = (toolsRes.data || []).map((row: any) => ({
+          ...row,
+          item: row.item || row.name,
+          sourceType: 'tools' as const,
+        }));
+        const materialItems = (materialsRes.data || []).map((row: any) => ({
+          ...row,
+          item: row.name,
+          unit_size: row.unit,
+          sourceType: 'materials' as const,
+        }));
+
+        allItems = [...toolItems, ...materialItems].sort((a, b) => a.item.localeCompare(b.item));
+      } else {
+        const { data, error } = await supabase
+          .from(type)
+          .select('*')
+          .order('name');
+
+        if (error) {
+          console.error(`❌ Error fetching ${type}:`, error);
+          throw error;
+        }
+
+        console.log(`✅ Fetched ${data?.length || 0} ${type} from database`);
+
+        if (!data || data.length === 0) {
+          console.warn(`⚠️ No ${type} found in library! You need to add ${type} to the library first using the "Manage ${type === 'tools' ? 'Tools' : 'Materials'} Library" button.`);
+        }
+
+        allItems = (data || []).map((row: any) => {
+          if (type === 'materials') {
+            return {
+              ...row,
+              item: row.name,
+              unit_size: row.unit,
+              sourceType: 'materials' as const,
+            };
+          }
+          return {
+            ...row,
+            item: row.item || row.name,
+            sourceType: 'tools' as const,
+          };
+        });
+      }
       
       setItems(allItems);
       console.log(`📦 Processed ${allItems.length} items for UI:`, allItems.map(i => i.item));
       
       // Fetch variations for all items
-      await fetchItemVariations(allItems);
+      if (type !== 'ppe') {
+        await fetchItemVariations(allItems);
+      } else {
+        setItemVariations({});
+      }
     } catch (error) {
       console.error(`Error fetching ${type}:`, error);
     } finally {
@@ -122,7 +156,7 @@ export function MultiSelectLibraryDialog({
     if (!user) return;
     
     try {
-      const columnName = type === 'tools' ? 'owned_tools' : 'owned_materials';
+      const columnName = type === 'materials' ? 'owned_materials' : 'owned_tools';
       const { data, error } = await supabase
         .from('user_profiles')
         .select(columnName)
@@ -194,8 +228,8 @@ export function MultiSelectLibraryDialog({
       
       if (!matchesSearch) return false;
 
-      // For materials, always show all items (no ownership filtering)
-      if (type === 'materials') {
+      // For materials and PPE, always show all items (no ownership filtering)
+      if (type === 'materials' || type === 'ppe') {
         return true;
       }
 
@@ -346,7 +380,7 @@ export function MultiSelectLibraryDialog({
             <div className="flex items-center justify-between gap-2">
               <DialogTitle className="text-left">
                 {titleOverride ??
-                  `Select ${type === 'tools' ? 'Tools' : 'Materials'} from Library`}
+                  `Select ${type === 'tools' ? 'Tools' : type === 'materials' ? 'Materials' : 'PPE'} from Library`}
               </DialogTitle>
               <Button
                 variant="outline"
@@ -354,7 +388,7 @@ export function MultiSelectLibraryDialog({
                 onClick={() => setShowAdminLibrary(true)}
                 className="text-xs"
               >
-                Manage {type === 'tools' ? 'Tools' : 'Materials'} Library
+                Manage {type === 'tools' ? 'Tools' : type === 'materials' ? 'Materials' : 'Library'}
               </Button>
             </div>
           </DialogHeader>
@@ -363,7 +397,7 @@ export function MultiSelectLibraryDialog({
             <div className="relative flex-shrink-0">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={`Search ${type}...`}
+                placeholder={type === 'ppe' ? 'Search PPE...' : `Search ${type}...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -407,7 +441,7 @@ export function MultiSelectLibraryDialog({
                           <div className="text-sm min-w-[60px] text-center">
                             {item.quantity}
                             {/* Show unit size for materials */}
-                            {type === 'materials' && (
+                            {item.sourceType === 'materials' && (
                               <div className="text-xs text-muted-foreground">
                                 {(() => {
                                   const coreItem = items.find(i => i.id === item.coreItemId);
@@ -438,7 +472,7 @@ export function MultiSelectLibraryDialog({
                   <div className="text-center py-8 text-muted-foreground">Loading...</div>
                 ) : filteredItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    No {type} found{searchTerm && ` matching "${searchTerm}"`}
+                    No {type === 'ppe' ? 'PPE items' : type} found{searchTerm && ` matching "${searchTerm}"`}
                   </div>
                 ) : (
                   filteredItems.map((item) => {
@@ -461,7 +495,7 @@ export function MultiSelectLibraryDialog({
                               {item.description && (
                                 <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
                               )}
-                              {type === 'materials' && item.unit_size && (
+                              {item.sourceType === 'materials' && item.unit_size && (
                                 <p className="text-xs text-muted-foreground">Unit: {item.unit_size}</p>
                               )}
                               {selectedForItem.length > 0 && (
