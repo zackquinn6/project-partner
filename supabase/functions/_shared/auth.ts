@@ -28,6 +28,47 @@ export async function verifyAuth(req: Request) {
   return user;
 }
 
+export async function verifyAdmin(req: Request) {
+  const user = await verifyAuth(req);
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false },
+  });
+
+  const { data: profile, error } = await supabase
+    .from('user_profiles')
+    .select('roles')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error('Failed to verify admin access');
+  }
+
+  const roles = Array.isArray(profile?.roles) ? profile.roles : [];
+  if (!roles.includes('admin')) {
+    throw new Error('Admin access required');
+  }
+
+  return user;
+}
+
+export function verifyCronSecret(req: Request, envName = 'CRON_SECRET') {
+  const expected = Deno.env.get(envName);
+  const received = req.headers.get('x-cron-secret');
+
+  if (!expected) {
+    console.error(`Missing required secret: ${envName}`);
+    throw new Error('Service configuration error');
+  }
+
+  if (!received || received !== expected) {
+    throw new Error('Invalid cron secret');
+  }
+}
+
 /**
  * Get required secret from environment with proper error handling
  * Prevents exposing configuration details in error messages

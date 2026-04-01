@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resend } from "npm:resend@2.0.0";
+import { verifyCronSecret } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +16,8 @@ serve(async (req) => {
   }
 
   try {
+    verifyCronSecret(req);
+
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -173,9 +176,12 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Internal server error";
+    const status = message === "Invalid cron secret" ? 403 : 500;
+
     return new Response(
-      JSON.stringify({ error: (error as Error).message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      JSON.stringify({ error: status === 403 ? "Forbidden" : message }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status }
     );
   }
 });

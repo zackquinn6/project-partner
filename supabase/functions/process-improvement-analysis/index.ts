@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { verifyAuth } from "../_shared/auth.ts";
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
@@ -47,9 +48,11 @@ serve(async (req) => {
   }
 
   try {
+    await verifyAuth(req);
+
     if (!openAIApiKey) {
       console.error('OpenAI API key not configured');
-      return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
+      return new Response(JSON.stringify({ error: 'Service configuration error' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -81,11 +84,16 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in process improvement analysis:', error);
+    const message = error instanceof Error ? error.message : 'Failed to analyze workflow';
+    const status =
+      message === 'Missing authorization header' || message === 'Invalid or expired token'
+        ? 401
+        : 500;
+
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Failed to analyze workflow',
-      details: error instanceof Error ? error.stack : String(error)
+      error: status === 401 ? message : 'Failed to analyze workflow',
     }), {
-      status: 500,
+      status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { verifyAuth } from "../_shared/auth.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -27,6 +28,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    await verifyAuth(req);
     const { to_email, certificate_data }: CertificateEmailRequest = await req.json();
 
     // Convert base64 image to attachment
@@ -131,10 +133,16 @@ const handler = async (req: Request): Promise<Response> => {
     });
   } catch (error: any) {
     console.error("Error in send-certificate-email function:", error);
+    const message = error instanceof Error ? error.message : "Internal server error";
+    const status =
+      message === "Missing authorization header" || message === "Invalid or expired token"
+        ? 401
+        : 500;
+
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: status === 401 ? message : "Internal server error" }),
       {
-        status: 500,
+        status,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );

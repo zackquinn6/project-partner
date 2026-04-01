@@ -16,15 +16,14 @@ const logStep = (step: string, details?: any) => {
 type SubscriptionTier = "none" | "risk_less" | "projects";
 
 function subscriptionTierFromPriceId(priceId: string | undefined): SubscriptionTier {
-  if (!priceId) return "projects";
+  if (!priceId) return "none";
   const riskRaw = Deno.env.get("STRIPE_PRICE_IDS_RISK_LESS") ?? "";
   const projectsRaw = Deno.env.get("STRIPE_PRICE_IDS_PROJECTS") ?? "";
   const riskIds = riskRaw.split(",").map((s) => s.trim()).filter(Boolean);
   const projectIds = projectsRaw.split(",").map((s) => s.trim()).filter(Boolean);
   if (projectIds.length > 0 && projectIds.includes(priceId)) return "projects";
   if (riskIds.length > 0 && riskIds.includes(priceId)) return "risk_less";
-  // Legacy: env not set or unknown price ID → full Projects access (backward compatible)
-  return "projects";
+  return "none";
 }
 
 serve(async (req) => {

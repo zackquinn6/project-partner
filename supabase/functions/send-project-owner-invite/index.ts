@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    await verifyAuth(req)
+    const user = await verifyAuth(req)
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -40,9 +40,22 @@ serve(async (req) => {
       )
     }
 
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('roles')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (profileError) {
+      throw new Error('Failed to verify invitation permissions')
+    }
+
+    const roles = Array.isArray(profile?.roles) ? profile.roles : []
+    const isAdmin = roles.includes('admin')
+
     const { data: invitation, error: invError } = await supabase
       .from('project_owners')
-      .select('id, project_id, invited_email, invited_user_id, invitation_token, invitation_status, expires_at')
+      .select('id, project_id, invited_by, invited_email, invited_user_id, invitation_token, invitation_status, expires_at')
       .eq('id', invitation_id)
       .single()
 
@@ -50,6 +63,13 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Invitation not found or not pending' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!isAdmin && invitation.invited_by !== user.id) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -107,10 +127,15 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('send-project-owner-invite:', error)
+    const status =
+      error.message === 'Missing authorization header' || error.message === 'Invalid or expired token'
+        ? 401
+        : 500
+
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
+      JSON.stringify({ error: status === 401 ? error.message : 'Internal server error' }),
       {
-        status: error.message === 'Missing authorization header' || error.message === 'Invalid or expired token' ? 401 : 500,
+        status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
