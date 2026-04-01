@@ -733,17 +733,6 @@ BEGIN
   INSERT INTO public.pfmea_controls (
     id, failure_mode_id, cause_id, control_type, control_description, detection_score
   ) VALUES
-    ('9d9ebf39-3844-4e5c-9b0f-52336a8dfd01'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8df801'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8dfc01'::uuid, 'prevention', 'Final wipe and dry-surface check before loading the caulk gun', NULL),
-    ('9d9ebf39-3844-4e5c-9b0f-52336a8dfd02'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8df802'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8dfc02'::uuid, 'prevention', 'Apply the silicon bead in one continuous pass through each intended wet-area zone', NULL),
-    ('9d9ebf39-3844-4e5c-9b0f-52336a8dfd03'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8df803'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8dfc03'::uuid, 'prevention', 'Start with a small tip opening and enlarge only if flow is insufficient', NULL),
-    ('9d9ebf39-3844-4e5c-9b0f-52336a8dfd04'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8df804'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8dfc04'::uuid, 'prevention', 'Maintain one steady tooling pass rather than repeated partial smoothing strokes', NULL),
-    ('9d9ebf39-3844-4e5c-9b0f-52336a8dfd05'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8df805'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8dfc05'::uuid, 'prevention', 'Run the painters bead from start point to stop point without lifting mid-joint', NULL),
-    ('9d9ebf39-3844-4e5c-9b0f-52336a8dfd06'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8df806'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8dfc06'::uuid, 'prevention', 'Match tip diameter to the finish-joint target before application starts', NULL)
-  ON CONFLICT (id) DO NOTHING;
-
-  INSERT INTO public.pfmea_controls (
-    id, failure_mode_id, cause_id, control_type, control_description, detection_score
-  ) VALUES
     ('9d9ebf39-3844-4e5c-9b0f-52336a8df701'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8df801'::uuid, NULL, 'detection', 'Visual and wipe check confirms the joint is clean and dry before application', 7),
     ('9d9ebf39-3844-4e5c-9b0f-52336a8df702'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8df802'::uuid, NULL, 'detection', 'Continuous visual trace confirms the bead touches the full intended wet-area path', 7),
     ('9d9ebf39-3844-4e5c-9b0f-52336a8df703'::uuid, '9d9ebf39-3844-4e5c-9b0f-52336a8df803'::uuid, NULL, 'detection', 'Visual width check confirms no silicon section exceeds a quarter inch', 8),

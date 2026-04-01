@@ -304,6 +304,11 @@ A **process variable** is a fundamental, theoretically measurable parameter that
   - Output **“Bolt torqued to 45 ft-lbs minimum”** → Failure mode **“Torque below 45 ft-lbs”** (or **“Below minimum torque”** if the number lives in the requirement text only).
   - Output **“Shutoff verified”** → Failure mode **“Shutoff not verified”**.
 - **Potential effects**, **causes**, and **controls** carry the richer explanation; the failure mode line stays **short** so the PFMEA grid shows an obvious **requirement ↔ anti-requirement** pair.
+- **Prevention controls** must be a **specific control method**, not a general instruction or generic skill statement.
+- Valid prevention-control examples include explicit methods such as a named **tool**, a specific **work instruction**, a linked **video**, or a defined **training/certification method** such as **`2-day caulking course with demo certification`**.
+- Do **not** use generic prevention controls like **`follow instructions carefully`**, **`use experience`**, **`steady application`**, or broad craft advice with no concrete control method behind it.
+- Prefer a **tool-based** prevention control when one exists.
+- If there is **no specific prevention control method**, leave the prevention control **blank** rather than filling it with generic guidance.
 
 **Grid completeness (avoid “blank” failure-mode rows)**
 
