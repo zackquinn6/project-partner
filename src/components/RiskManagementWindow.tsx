@@ -257,8 +257,8 @@ function RiskFocusDashboard({
           Do What You Can - Every Step Reduces Risk
         </div>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-        <div className="min-w-0 sm:max-w-[38%] sm:flex-1">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+        <div className="min-w-0 sm:max-w-[38%] sm:flex-1 sm:pt-1">
           {name ? (
             <h2 className="text-center text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-left sm:text-2xl md:text-3xl">
               {name}
@@ -529,6 +529,8 @@ export function RiskManagementWindow({
   const wfTableFriendly = workflowTemplateRiskLess && !advancedMode;
   /** User workshop / home Risk-Less run (not workflow editor template). */
   const friendlyRiskLessRegisterUi = riskFocusRun && !workflowEditorRiskLess;
+  /** Risk-Less run without advanced register columns: combine risk + likelihood in one column. */
+  const riskFocusEasyMode = riskFocusRun && !advancedMode;
 
   /** Keep scroll position in Risk-Less: avoid full fetchRisks() after small mitigation edits. */
   const patchRunRiskMitigationActions = useCallback(
@@ -1676,6 +1678,20 @@ export function RiskManagementWindow({
                                     </Badge>
                                   ) : null}
                                 </div>
+                                {riskFocusEasyMode ? (
+                                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">Likelihood:</span>
+                                    <Badge
+                                      className={getRiskLevelColor(
+                                        risk.likelihood,
+                                        risk.schedule_impact_days,
+                                        risk.budget_impact_dollars
+                                      )}
+                                    >
+                                      {risk.likelihood}
+                                    </Badge>
+                                  </div>
+                                ) : null}
                               </div>
                               {!readOnly && !riskFocusRun ? (
                                 <div
@@ -1707,20 +1723,22 @@ export function RiskManagementWindow({
                             <div className={cn('space-y-3', riskFocusRun && 'space-y-2')}>
                               {riskFocusRun ? (
                                 <>
-                                  <div>
-                                    <div className="text-xs text-muted-foreground mb-1">
-                                      {friendlyRiskLessRegisterUi ? 'How likely is it?' : 'Likelihood'}
+                                  {!riskFocusEasyMode ? (
+                                    <div>
+                                      <div className="text-xs text-muted-foreground mb-1">
+                                        {friendlyRiskLessRegisterUi ? 'How likely is it?' : 'Likelihood'}
+                                      </div>
+                                      <Badge
+                                        className={getRiskLevelColor(
+                                          risk.likelihood,
+                                          risk.schedule_impact_days,
+                                          risk.budget_impact_dollars
+                                        )}
+                                      >
+                                        {risk.likelihood}
+                                      </Badge>
                                     </div>
-                                    <Badge
-                                      className={getRiskLevelColor(
-                                        risk.likelihood,
-                                        risk.schedule_impact_days,
-                                        risk.budget_impact_dollars
-                                      )}
-                                    >
-                                      {risk.likelihood}
-                                    </Badge>
-                                  </div>
+                                  ) : null}
                                   {advancedMode ? (
                                     <div className="grid grid-cols-3 gap-3">
                                       <div>
@@ -2029,16 +2047,22 @@ export function RiskManagementWindow({
                           <TableHead
                             className={cn(
                               'bg-background align-bottom font-semibold text-foreground',
-                              riskFocusRun ? 'min-w-[135px] max-w-[180px]' : 'min-w-[180px] max-w-[240px]'
+                              riskFocusRun
+                                ? riskFocusEasyMode
+                                  ? 'min-w-[180px] max-w-[min(28rem,40vw)]'
+                                  : 'min-w-[135px] max-w-[180px]'
+                                : 'min-w-[180px] max-w-[240px]'
                             )}
                           >
                             Risk
                           </TableHead>
                           {riskFocusRun ? (
                             <>
-                              <TableHead className="w-[100px] bg-background align-bottom font-semibold text-foreground">
-                                {friendlyRiskLessRegisterUi ? 'How likely is it?' : 'Likelihood'}
-                              </TableHead>
+                              {!riskFocusEasyMode ? (
+                                <TableHead className="w-[100px] bg-background align-bottom font-semibold text-foreground">
+                                  {friendlyRiskLessRegisterUi ? 'How likely is it?' : 'Likelihood'}
+                                </TableHead>
+                              ) : null}
                               {advancedMode ? (
                                 <TableHead className="w-[120px] bg-background align-bottom font-semibold text-foreground">
                                   Overall Severity
@@ -2136,27 +2160,51 @@ export function RiskManagementWindow({
                             }
                           >
                             <TableCell className="font-medium">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span>{risk.risk}</span>
-                                {riskFocusRun && risk.from_standard_foundation ? (
-                                  <Badge variant="outline" className="text-[10px] border-muted-foreground/40">
-                                    Standard
-                                  </Badge>
-                                ) : null}
-                                {riskFocusRun && risk.hidden_from_register ? (
-                                  <Badge variant="secondary" className="text-[10px]">
-                                    Hidden
-                                  </Badge>
+                              <div className="space-y-1.5">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span>{risk.risk}</span>
+                                  {riskFocusRun && risk.from_standard_foundation ? (
+                                    <Badge variant="outline" className="text-[10px] border-muted-foreground/40">
+                                      Standard
+                                    </Badge>
+                                  ) : null}
+                                  {riskFocusRun && risk.hidden_from_register ? (
+                                    <Badge variant="secondary" className="text-[10px]">
+                                      Hidden
+                                    </Badge>
+                                  ) : null}
+                                </div>
+                                {riskFocusEasyMode ? (
+                                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                                    <span className="text-muted-foreground">Likelihood:</span>
+                                    <Badge
+                                      className={getRiskLevelColor(
+                                        risk.likelihood,
+                                        risk.schedule_impact_days,
+                                        risk.budget_impact_dollars
+                                      )}
+                                    >
+                                      {risk.likelihood}
+                                    </Badge>
+                                  </div>
                                 ) : null}
                               </div>
                             </TableCell>
                             {riskFocusRun ? (
                               <>
-                                <TableCell>
-                                  <Badge className={getRiskLevelColor(risk.likelihood, risk.schedule_impact_days, risk.budget_impact_dollars)}>
-                                    {risk.likelihood}
-                                  </Badge>
-                                </TableCell>
+                                {!riskFocusEasyMode ? (
+                                  <TableCell>
+                                    <Badge
+                                      className={getRiskLevelColor(
+                                        risk.likelihood,
+                                        risk.schedule_impact_days,
+                                        risk.budget_impact_dollars
+                                      )}
+                                    >
+                                      {risk.likelihood}
+                                    </Badge>
+                                  </TableCell>
+                                ) : null}
                                 {advancedMode ? (
                                   <TableCell>
                                     {risk.severity ? (
