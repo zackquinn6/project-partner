@@ -11,6 +11,7 @@ import { isKickoffPhaseComplete, KICKOFF_UI_STEP_IDS } from '@/utils/projectUtil
 import { useOptimizedState } from '@/hooks/useOptimizedState';
 import { mergeQualityControlSettings, parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
+import { reportUserFacingError } from '@/utils/errorReporting';
 import {
   buildPlanningScopeBaseline,
   collectPlanningToolChangeSummaries,
@@ -463,11 +464,14 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       .ilike('name', projectData.name.trim());
 
     if (checkError) {
-      console.error('Error checking for duplicate project name:', checkError);
-      toast({
-        title: "Error",
-        description: "Failed to validate project name",
-        variant: "destructive",
+      await reportUserFacingError({
+        source: 'project_actions',
+        operation: 'validate_project_name_create',
+        userId: user.id,
+        error: checkError,
+        userMessage: 'Failed to validate project name.',
+        notificationTitle: 'Project name validation failed',
+        toastPresenter: 'ui-toast',
       });
       return;
     }
@@ -539,11 +543,14 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         description: "Project created successfully with standard foundation",
       });
     } catch (error) {
-      console.error('Error adding project:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create project",
-        variant: "destructive",
+      await reportUserFacingError({
+        source: 'project_actions',
+        operation: 'create_project',
+        userId: user.id,
+        error,
+        userMessage: 'Failed to create project.',
+        notificationTitle: 'Project creation failed',
+        toastPresenter: 'ui-toast',
       });
     }
   }, [user, isAdmin, refetchProjects]);
@@ -755,13 +762,15 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       await refetchProjectRuns();
       return data || null;
     } catch (error) {
-      console.error('Error creating project run:', error);
-      const message =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : null;
-      toast({
-        title: "Error",
-        description: message || "Failed to create project run",
-        variant: "destructive",
+      await reportUserFacingError({
+        source: 'project_actions',
+        operation: 'create_project_run',
+        userId: user.id,
+        projectId: project.id,
+        error,
+        userMessage: 'Failed to create project run.',
+        notificationTitle: 'Project run creation failed',
+        toastPresenter: 'ui-toast',
       });
       return null;
     }
@@ -811,10 +820,16 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         } catch (riskAssemblyError) {
           console.error('❌ Risk assembly failed; deleting created run:', riskAssemblyError);
           await supabase.from('project_runs').delete().eq('id', newProjectRunId);
-          toast({
-            title: 'Error',
-            description: RISK_ASSEMBLY_ACCESS_MESSAGE,
-            variant: 'destructive',
+          await reportUserFacingError({
+            source: 'project_actions',
+            operation: 'assemble_project_run_risks',
+            userId: user.id,
+            projectId: projectRunData.projectId,
+            projectRunId: newProjectRunId,
+            error: riskAssemblyError,
+            userMessage: RISK_ASSEMBLY_ACCESS_MESSAGE,
+            notificationTitle: 'Project risk assembly failed',
+            toastPresenter: 'ui-toast',
           });
           throw riskAssemblyError;
         }
@@ -854,11 +869,16 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           .eq('id', newProjectRunId);
         
         if (updateError) {
-          console.error('⚠️ Error updating project run metadata:', updateError);
-          toast({
-            title: 'Could not save project run details',
-            description: updateError.message,
-            variant: 'destructive',
+          await reportUserFacingError({
+            source: 'project_actions',
+            operation: 'update_project_run_metadata_after_create',
+            userId: user.id,
+            projectId: projectRunData.projectId,
+            projectRunId: newProjectRunId,
+            error: updateError,
+            userMessage: 'Could not save project run details.',
+            notificationTitle: 'Project run metadata update failed',
+            toastPresenter: 'ui-toast',
           });
         }
       }
@@ -880,11 +900,15 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       };
       queueMicrotask(notifySuccess);
     } catch (error) {
-      console.error('Error adding project run:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add project run",
-        variant: "destructive",
+      await reportUserFacingError({
+        source: 'project_actions',
+        operation: 'add_project_run',
+        userId: user.id,
+        projectId: projectRunData.projectId,
+        error,
+        userMessage: 'Failed to add project run.',
+        notificationTitle: 'Project run start failed',
+        toastPresenter: 'ui-toast',
       });
       // Re-throw error so caller can handle it
       throw error;
@@ -917,11 +941,15 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           .ilike('name', project.name.trim());
 
         if (checkError) {
-          console.error('Error checking for duplicate project name:', checkError);
-          toast({
-            title: "Error",
-            description: "Failed to validate project name",
-            variant: "destructive",
+          await reportUserFacingError({
+            source: 'project_actions',
+            operation: 'validate_project_name_update',
+            userId: user.id,
+            projectId: project.id,
+            error: checkError,
+            userMessage: 'Failed to validate project name.',
+            notificationTitle: 'Project name validation failed',
+            toastPresenter: 'ui-toast',
           });
           return;
         }
@@ -997,11 +1025,15 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         description: "Project updated successfully",
       });
     } catch (error) {
-      console.error('❌ Error updating project:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update project",
-        variant: "destructive",
+      await reportUserFacingError({
+        source: 'project_actions',
+        operation: 'update_project',
+        userId: user.id,
+        projectId: project.id,
+        error,
+        userMessage: 'Failed to update project.',
+        notificationTitle: 'Project update failed',
+        toastPresenter: 'ui-toast',
       });
     }
   }, [user, isAdmin, projects, updateProjectsCache, currentProject, setCurrentProject]);
@@ -1374,11 +1406,16 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         console.log("✅ ProjectActions - Project run updated successfully in database for user:", user.id);
         
       } catch (error) {
-        console.error('❌ Error updating project run:', error);
-        toast({
-          title: "Error",
-          description: "Failed to update project run",
-          variant: "destructive",
+        await reportUserFacingError({
+          source: 'project_actions',
+          operation: 'update_project_run',
+          userId: user.id,
+          projectId: projectRun.projectId,
+          projectRunId: projectRun.id,
+          error,
+          userMessage: 'Failed to update project run.',
+          notificationTitle: 'Project run update failed',
+          toastPresenter: 'ui-toast',
         });
       } finally {
         updateInProgressRef.current = false;
@@ -1425,11 +1462,15 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         description: "Project deleted successfully",
       });
     } catch (error) {
-      console.error('Error deleting project:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete project",
-        variant: "destructive",
+      await reportUserFacingError({
+        source: 'project_actions',
+        operation: 'delete_project',
+        userId: user.id,
+        projectId,
+        error,
+        userMessage: 'Failed to delete project.',
+        notificationTitle: 'Project deletion failed',
+        toastPresenter: 'ui-toast',
       });
     }
   }, [user, isAdmin, projects, updateProjectsCache, currentProject, setCurrentProject]);
@@ -1466,11 +1507,15 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
       // Success - no toast notification needed
     } catch (error) {
-      console.error('Error deleting project run:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete project run",
-        variant: "destructive",
+      await reportUserFacingError({
+        source: 'project_actions',
+        operation: 'delete_project_run',
+        userId: user.id,
+        projectRunId,
+        error,
+        userMessage: 'Failed to delete project run.',
+        notificationTitle: 'Project run deletion failed',
+        toastPresenter: 'ui-toast',
       });
     }
   }, [isGuest, deleteGuestProjectRun, user, projectRuns, updateProjectRunsCache, currentProjectRun, setCurrentProjectRun]);
@@ -1573,11 +1618,15 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         });
       }
     } catch (error) {
-      console.error('Error refreshing project run:', error);
-      toast({
-        title: "Error",
-        description: "Failed to refresh project run",
-        variant: "destructive",
+      await reportUserFacingError({
+        source: 'project_actions',
+        operation: 'refresh_project_run_from_template',
+        userId: user.id,
+        projectRunId: runId,
+        error,
+        userMessage: 'Failed to refresh project run.',
+        notificationTitle: 'Project refresh failed',
+        toastPresenter: 'ui-toast',
       });
     }
   }, [user, projectRuns, updateProjectRunsCache, currentProjectRun, setCurrentProjectRun]);

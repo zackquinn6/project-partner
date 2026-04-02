@@ -20,6 +20,7 @@ import { ensureDefaultHomeForUser } from '@/utils/ensureDefaultHome';
 import { toast } from 'sonner';
 import { HomeManager } from '../HomeManager';
 import { useProjectData } from '@/contexts/ProjectDataContext';
+import { reportUserFacingError } from '@/utils/errorReporting';
 import {
   Accordion,
   AccordionContent,
@@ -344,8 +345,15 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         }
       }
     } catch (error) {
-      console.error('Error fetching homes:', error);
-      toast.error('Failed to load homes');
+      await reportUserFacingError({
+        source: 'kickoff',
+        operation: 'load_homes_for_project_profile',
+        userId: user.id,
+        projectRunId: currentProjectRun?.id,
+        error,
+        userMessage: 'Failed to load homes.',
+        notificationTitle: 'Kickoff homes load failed',
+      });
     } finally {
       setLoading(false);
     }
@@ -659,8 +667,16 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       // This prevents double-calling handleStepComplete and ensures proper sequencing
       // The parent will call handleStepComplete after this save completes
     } catch (error) {
-      console.error('❌ ProjectProfileStep.handleSave: FAILED with error:', error);
-      toast.error('Failed to save project profile');
+      await reportUserFacingError({
+        source: 'kickoff',
+        operation: 'save_project_profile',
+        userId: user?.id,
+        projectRunId: currentProjectRun.id,
+        stepId: 'kickoff-step-3',
+        error,
+        userMessage: 'Failed to save project profile.',
+        notificationTitle: 'Kickoff project profile save failed',
+      });
       throw error; // Re-throw so KickoffWorkflow knows the save failed
     }
   }, [currentProjectRun, selectedHomeId, projectForm, homes, updateProjectRun, onComplete, user, scalingUnit, fetchHomes]);

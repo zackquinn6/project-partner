@@ -32,6 +32,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import { ProjectVisualizerDialog } from '@/components/ProjectVisualizerDialog';
+import { reportUserFacingError } from '@/utils/errorReporting';
 import {
   computeProjectMatchExplanation,
   physicalCapabilityToEffortSegment,
@@ -184,12 +185,32 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           .maybeSingle();
         if (cancelled) return;
         if (error) {
-          console.error('Error loading user profile:', error);
+          await reportUserFacingError({
+            source: 'kickoff',
+            operation: 'load_match_profile',
+            userId: user.id,
+            projectRunId: currentProjectRun?.id,
+            stepId: 'kickoff-step-1',
+            error,
+            userMessage: 'Failed to load project match profile.',
+            notificationTitle: 'Kickoff match profile load failed',
+          });
           return;
         }
         setUserProfile(data || null);
       } catch (error) {
-        if (!cancelled) console.error('Error loading user profile:', error);
+        if (!cancelled) {
+          await reportUserFacingError({
+            source: 'kickoff',
+            operation: 'load_match_profile',
+            userId: user.id,
+            projectRunId: currentProjectRun?.id,
+            stepId: 'kickoff-step-1',
+            error,
+            userMessage: 'Failed to load project match profile.',
+            notificationTitle: 'Kickoff match profile load failed',
+          });
+        }
       }
     })();
     return () => {
@@ -233,7 +254,17 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             .maybeSingle();
           
           if (error) {
-            console.error('Error fetching project info:', error);
+            await reportUserFacingError({
+              source: 'kickoff',
+              operation: 'load_project_overview_details',
+              userId: user?.id,
+              projectId: templateProject.id,
+              projectRunId: currentProjectRun?.id,
+              stepId: 'kickoff-step-1',
+              error,
+              userMessage: 'Failed to load project details.',
+              notificationTitle: 'Kickoff project details load failed',
+            });
             return;
           }
           
@@ -252,7 +283,17 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             });
           }
         } catch (error) {
-          console.error('Error fetching project info:', error);
+          await reportUserFacingError({
+            source: 'kickoff',
+            operation: 'load_project_overview_details',
+            userId: user?.id,
+            projectId: templateProject.id,
+            projectRunId: currentProjectRun?.id,
+            stepId: 'kickoff-step-1',
+            error,
+            userMessage: 'Failed to load project details.',
+            notificationTitle: 'Kickoff project details load failed',
+          });
         }
       }
     };
@@ -566,8 +607,16 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         navigate('/', { state: { view: 'user' } });
       }
     } catch (error) {
-      console.error('Error removing project:', error);
-      toast.error('Failed to remove project');
+      await reportUserFacingError({
+        source: 'kickoff',
+        operation: 'remove_project_from_match_step',
+        userId: user?.id,
+        projectRunId: currentProjectRun.id,
+        stepId: 'kickoff-step-1',
+        error,
+        userMessage: 'Failed to remove project.',
+        notificationTitle: 'Kickoff project removal failed',
+      });
     }
   };
   const handleSave = async () => {

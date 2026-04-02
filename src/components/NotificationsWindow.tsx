@@ -8,7 +8,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications, AppNotification } from '@/hooks/useNotifications';
-import { CheckCheck, Bell, AlertCircle } from 'lucide-react';
+import { CheckCheck, Bell, AlertCircle, TriangleAlert } from 'lucide-react';
+import { getNotificationSupportCode } from '@/utils/errorReporting';
 
 export function NotificationsWindow({
   open,
@@ -98,7 +99,9 @@ export function NotificationsWindow({
                 className={`rounded-lg border p-3 text-sm ${n.read_at ? 'opacity-80 bg-muted/50' : 'bg-background'}`}
               >
                 <div className="flex items-start gap-2">
-                  {n.type === 'issue_reported' ? (
+                  {n.type === 'runtime_error' ? (
+                    <TriangleAlert className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                  ) : n.type === 'issue_reported' ? (
                     <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                   ) : (
                     <Bell className="h-4 w-4 text-primary shrink-0 mt-0.5" />
@@ -106,6 +109,11 @@ export function NotificationsWindow({
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{n.title}</p>
                     {n.body && <p className="text-muted-foreground mt-0.5">{n.body}</p>}
+                    {getNotificationSupportCode(n.metadata) && (
+                      <p className="mt-1 text-xs font-medium text-red-600">
+                        Error code: {getNotificationSupportCode(n.metadata)}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground mt-1">
                       {new Date(n.created_at).toLocaleString()}
                     </p>

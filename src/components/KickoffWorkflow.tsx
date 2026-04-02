@@ -21,6 +21,7 @@ import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
 import type { ProjectRun } from '@/interfaces/ProjectRun';
+import { reportUserFacingError } from '@/utils/errorReporting';
 
 /** Passed when finishing kickoff on step 4 so UserView does not use a stale customization_decisions closure. */
 export type KickoffCompletePersist = {
@@ -120,7 +121,15 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         .maybeSingle();
       if (cancelled) return;
       if (error) {
-        console.error('KickoffWorkflow: could not load profile for step order', error);
+        await reportUserFacingError({
+          source: 'kickoff',
+          operation: 'load_step_order_profile',
+          userId: user.id,
+          projectRunId: currentProjectRun.id,
+          error,
+          userMessage: 'Failed to load kickoff setup.',
+          notificationTitle: 'Kickoff profile load failed',
+        });
         setKickoffStepOrder('match_first');
         setKickoffOrderResolved(true);
         return;
@@ -299,7 +308,16 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         }, 200);
       }
     } catch (error) {
-      console.error("❌ Error completing kickoff step:", error);
+      await reportUserFacingError({
+        source: 'kickoff',
+        operation: 'complete_kickoff_step',
+        userId: user?.id,
+        projectRunId: currentProjectRun.id,
+        stepId: kickoffSteps[stepIndex]?.id ?? null,
+        error,
+        userMessage: 'Failed to save kickoff progress.',
+        notificationTitle: 'Kickoff step save failed',
+      });
       // Clear flag on error
       isCompletingStepRef.current = false;
     }
@@ -610,8 +628,16 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                         await handleStepComplete(currentKickoffStep);
                         return;
                       } catch (error) {
-                        console.error('❌ KickoffWorkflow: Error saving project profile:', error);
-                        toast.error('Failed to save project profile. Please try again.');
+                        await reportUserFacingError({
+                          source: 'kickoff',
+                          operation: 'save_project_profile_step',
+                          userId: user?.id,
+                          projectRunId: currentProjectRun?.id,
+                          stepId: currentStepId,
+                          error,
+                          userMessage: 'Failed to save project profile.',
+                          notificationTitle: 'Kickoff project profile save failed',
+                        });
                         return;
                       }
                     }

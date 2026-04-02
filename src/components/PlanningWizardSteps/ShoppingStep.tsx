@@ -26,7 +26,11 @@ export const ShoppingStep: React.FC<ShoppingStepProps> = ({
   isCompleted
 }) => {
   const handleOpenShoppingList = () => {
-    window.dispatchEvent(new CustomEvent('openMaterialsSelection'));
+    window.dispatchEvent(
+      new CustomEvent('openMaterialsSelection', {
+        detail: { expandSettingsAccordionWhenOpen: true }
+      })
+    );
     onComplete();
   };
 

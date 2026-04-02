@@ -112,6 +112,7 @@ import {
 } from '@/utils/autoScheduleRegeneration';
 import { projectRunFromSupabaseRow } from '@/utils/projectRunFromSupabaseRow';
 import { instructionLevelFromProfileSkill } from '@/utils/instructionLevelFromProfile';
+import { reportUserFacingError } from '@/utils/errorReporting';
 interface UserViewProps {
   resetToListing?: boolean;
   forceListingMode?: boolean;
@@ -242,6 +243,7 @@ export default function UserView({
   const [changeManagementOpen, setChangeManagementOpen] = useState(false);
   const [projectPlanningWizardOpen, setProjectPlanningWizardOpen] = useState(false);
   const [materialsSelectionOpen, setMaterialsSelectionOpen] = useState(false);
+  const [shoppingChecklistExpandSettingsAccordion, setShoppingChecklistExpandSettingsAccordion] = useState(false);
   const [toolRentalsOpen, setToolRentalsOpen] = useState(false);
   const [homeManagerOpen, setHomeManagerOpen] = useState(false);
   const [projectBudgetingOpen, setProjectBudgetingOpen] = useState(false);
@@ -326,7 +328,15 @@ export default function UserView({
       }
 
       if (error) {
-        console.error('UserView: could not load profile for instruction level', error);
+        await reportUserFacingError({
+          source: 'project_workflow',
+          operation: 'load_instruction_level_profile',
+          userId: user.id,
+          projectRunId: runId,
+          error,
+          userMessage: 'Failed to load instruction preferences.',
+          notificationTitle: 'Instruction preference profile load failed',
+        });
         instructionLevelProfileInitRunIdsRef.current.delete(runId);
         setInstructionLevel('intermediate');
         return;
@@ -425,10 +435,14 @@ export default function UserView({
     const handleOpenChangeManagement = () => {
       setChangeManagementOpen(true);
     };
-    const handleOpenMaterialsSelection = () => {
+    const handleOpenMaterialsSelection = (event?: Event) => {
+      const detail = (event as CustomEvent<{ expandSettingsAccordionWhenOpen?: boolean }> | undefined)?.detail;
+      setShoppingChecklistExpandSettingsAccordion(detail?.expandSettingsAccordionWhenOpen === true);
       setMaterialsSelectionOpen(true);
     };
-    const handleOpenOrderingWindow = () => {
+    const handleOpenOrderingWindow = (event?: Event) => {
+      const detail = (event as CustomEvent<{ expandSettingsAccordionWhenOpen?: boolean }> | undefined)?.detail;
+      setShoppingChecklistExpandSettingsAccordion(detail?.expandSettingsAccordionWhenOpen === true);
       setOrderingWindowOpen(true);
     };
     const handleOpenProjectCustomizer = (event?: any) => {
@@ -527,7 +541,15 @@ export default function UserView({
           console.error('❌ CRITICAL: No spaces found for project run! Default "Room 1" should have been created by create_project_run_snapshot. This will prevent workflow navigation from working correctly.');
         }
       } catch (error) {
-        console.error('❌ Error loading project spaces:', error);
+        await reportUserFacingError({
+          source: 'project_workflow',
+          operation: 'load_project_spaces',
+          userId: user?.id,
+          projectRunId: currentProjectRun.id,
+          error,
+          userMessage: 'Failed to load project spaces.',
+          notificationTitle: 'Workflow spaces load failed',
+        });
         setProjectSpaces([]);
       } finally {
         setSpacesLoading(false);
@@ -915,7 +937,15 @@ export default function UserView({
               .single();
             
             if (error) {
-              console.error('❌ Error fetching project run from database:', error);
+              await reportUserFacingError({
+                source: 'project_workflow',
+                operation: 'load_project_run_from_database',
+                userId: user?.id,
+                projectRunId: projectRunId,
+                error,
+                userMessage: 'Failed to open project run.',
+                notificationTitle: 'Workflow project load failed',
+              });
               // If project run doesn't exist (was deleted), clear it and go to listing
               if (error.code === 'PGRST116' || error.message?.includes('0 rows')) {
                 setCurrentProjectRun(null);
@@ -1027,7 +1057,15 @@ export default function UserView({
             setCurrentProjectRun(transformedRun);
             setViewMode('workflow');
           } catch (error) {
-            console.error('❌ Error in fetchProjectRun:', error);
+            await reportUserFacingError({
+              source: 'project_workflow',
+              operation: 'transform_project_run_for_workflow',
+              userId: user?.id,
+              projectRunId: projectRunId,
+              error,
+              userMessage: 'Failed to open project run.',
+              notificationTitle: 'Workflow project open failed',
+            });
           }
         };
         
@@ -1123,11 +1161,37 @@ export default function UserView({
     void (async () => {
       const { count, error } = await supabase
         .from('project_run_photos')
-        .select('id', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .eq('project_run_id', currentProjectRun.id)
         .eq('step_title', currentStep.step);
-      if (!cancelled && !error) {
-        setStepPhotoCountForCompletion(count ?? 0);
+      if (!cancelled) {
+        if (error) {
+          await reportUserFacingError({
+            source: 'project_workflow',
+            operation: 'load_step_photo_count',
+            userId: user?.id,
+            projectRunId: currentProjectRun.id,
+            stepId: currentStep.id,
+            error,
+            userMessage: 'Failed to verify step photos.',
+            notificationTitle: 'Workflow step photo count failed',
+          });
+          return;
+        }
+        if (count === null) {
+          await reportUserFacingError({
+            source: 'project_workflow',
+            operation: 'load_step_photo_count',
+            userId: user?.id,
+            projectRunId: currentProjectRun.id,
+            stepId: currentStep.id,
+            error: new Error('Missing step photo count for completion check'),
+            userMessage: 'Failed to verify step photos.',
+            notificationTitle: 'Workflow step photo count missing',
+          });
+          return;
+        }
+        setStepPhotoCountForCompletion(count);
       }
     })();
     return () => {
@@ -1304,7 +1368,15 @@ export default function UserView({
       try {
         calculatedProgress = calculateProjectProgress(tempRun);
       } catch {
-        toast.error('Progress reporting style is missing for this project run.');
+        void reportUserFacingError({
+          source: 'project_workflow',
+          operation: 'complete_planning_wizard_progress_calculation',
+          userId: user?.id,
+          projectRunId: currentProjectRun.id,
+          error: new Error('Progress reporting style is missing for this project run'),
+          userMessage: 'Project progress settings are missing for this run.',
+          notificationTitle: 'Planning completion progress calculation failed',
+        });
         return;
       }
       const newStatus = calculatedProgress >= 100 ? 'complete' : currentProjectRun.status;
@@ -1360,8 +1432,15 @@ export default function UserView({
     try {
       return calculateProjectProgress(currentProjectRun);
     } catch (error) {
-      console.error('Failed to calculate project progress:', error);
-      toast.error('Progress reporting style is missing for this project run.');
+      void reportUserFacingError({
+        source: 'project_workflow',
+        operation: 'calculate_project_progress',
+        userId: user?.id,
+        projectRunId: currentProjectRun.id,
+        error,
+        userMessage: 'Project progress settings are missing for this run.',
+        notificationTitle: 'Workflow progress calculation failed',
+      });
       return 0;
     }
   })();
@@ -1651,15 +1730,36 @@ export default function UserView({
       if (qc.require_photos_per_step && currentProjectRun) {
         const { count, error: photoCountError } = await supabase
           .from('project_run_photos')
-          .select('id', { count: 'exact', head: true })
+          .select('id', { count: 'exact' })
           .eq('project_run_id', currentProjectRun.id)
           .eq('step_title', currentStep.step);
         if (photoCountError) {
-          console.error('Photo count check failed:', photoCountError);
-          toast.error('Could not verify photos for this step. Try again.');
+          await reportUserFacingError({
+            source: 'project_workflow',
+            operation: 'verify_required_step_photos',
+            userId: user?.id,
+            projectRunId: currentProjectRun.id,
+            stepId: currentStep.id,
+            error: photoCountError,
+            userMessage: 'Could not verify photos for this step.',
+            notificationTitle: 'Workflow photo verification failed',
+          });
           return;
         }
-        if (!count || count < 1) {
+        if (count === null) {
+          await reportUserFacingError({
+            source: 'project_workflow',
+            operation: 'verify_required_step_photos',
+            userId: user?.id,
+            projectRunId: currentProjectRun.id,
+            stepId: currentStep.id,
+            error: new Error('Photo count check returned no count'),
+            userMessage: 'Could not verify photos for this step.',
+            notificationTitle: 'Workflow photo verification failed',
+          });
+          return;
+        }
+        if (count < 1) {
           toast.error('Add at least one photo tagged to this step before completing it (Quality Control setting).');
           return;
         }
@@ -1699,8 +1799,16 @@ export default function UserView({
           try {
             calculatedProgress = calculateProjectProgress(tempProjectRun);
           } catch (error) {
-            console.error('Failed to calculate project progress:', error);
-            toast.error('Progress reporting style is missing for this project run.');
+            await reportUserFacingError({
+              source: 'project_workflow',
+              operation: 'calculate_step_completion_progress',
+              userId: user?.id,
+              projectRunId: currentProjectRun.id,
+              stepId: currentStep.id,
+              error,
+              userMessage: 'Project progress settings are missing for this run.',
+              notificationTitle: 'Workflow step progress calculation failed',
+            });
             calculatedProgress = 0;
           }
           
@@ -1819,7 +1927,16 @@ export default function UserView({
         console.log("❌ Cannot complete step - not all outputs are completed");
       }
     } catch (error) {
-      console.error("❌ Error completing step:", error);
+      await reportUserFacingError({
+        source: 'project_workflow',
+        operation: 'complete_workflow_step',
+        userId: user?.id,
+        projectRunId: currentProjectRun?.id,
+        stepId: currentStep?.id ?? null,
+        error,
+        userMessage: 'Failed to complete workflow step.',
+        notificationTitle: 'Workflow step completion failed',
+      });
     } finally {
       // Clear the flag regardless of success or failure
       // Use setTimeout to ensure database update propagates before clearing
@@ -2017,6 +2134,7 @@ export default function UserView({
         setChangeManagementOpen(true);
         break;
       case 'shopping-checklist':
+        setShoppingChecklistExpandSettingsAccordion(false);
         setOrderingWindowOpen(true);
         break;
       case 'materials-selection':
@@ -2193,6 +2311,7 @@ export default function UserView({
             setProjectSchedulerOpen(true);
             break;
           case 'shopping-checklist':
+            setShoppingChecklistExpandSettingsAccordion(false);
             setMaterialsSelectionOpen(true);
             break;
           case 'after-action-review':
@@ -2226,6 +2345,7 @@ export default function UserView({
             setProjectSchedulerOpen(true);
             break;
           case 'shopping-checklist':
+            setShoppingChecklistExpandSettingsAccordion(false);
             setMaterialsSelectionOpen(true);
             break;
           case 'after-action-review':
@@ -3856,7 +3976,11 @@ export default function UserView({
       {/* Ordering Window */}
       <OrderingWindow
         open={orderingWindowOpen}
-        onOpenChange={setOrderingWindowOpen}
+        onOpenChange={(open) => {
+          if (!open) setShoppingChecklistExpandSettingsAccordion(false);
+          setOrderingWindowOpen(open);
+        }}
+        expandSettingsAccordionWhenOpen={shoppingChecklistExpandSettingsAccordion}
         project={currentProject}
         projectRun={currentProjectRun}
         userOwnedTools={[]}

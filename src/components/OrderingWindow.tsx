@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Project, Material, Tool } from "@/interfaces/Project";
 import { supabase } from "@/integrations/supabase/client";
 import { useResponsive } from "@/hooks/useResponsive";
@@ -20,6 +21,7 @@ import { useProject } from "@/contexts/ProjectContext";
 import { toast } from "sonner";
 import { extractNeedDatesFromSchedule, detectScheduleChanges, createScheduleSnapshot } from "@/utils/shoppingUtils";
 import { format } from "date-fns";
+import { reportUserFacingError } from "@/utils/errorReporting";
 interface OrderingWindowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -32,6 +34,7 @@ interface OrderingWindowProps {
     tools: any[];
   };
   onOrderingComplete?: () => void;
+  expandSettingsAccordionWhenOpen?: boolean;
 }
 interface ShoppingSite {
   name: string;
@@ -67,7 +70,8 @@ export function OrderingWindow({
   userOwnedTools,
   completedSteps,
   selectedMaterials,
-  onOrderingComplete
+  onOrderingComplete,
+  expandSettingsAccordionWhenOpen = false
 }: OrderingWindowProps) {
   const {
     updateProjectRun
@@ -81,6 +85,15 @@ export function OrderingWindow({
   const [userProfile, setUserProfile] = useState<any>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [itemDetailsOpen, setItemDetailsOpen] = useState(false);
+  const [accordionOpenValues, setAccordionOpenValues] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      setAccordionOpenValues(
+        expandSettingsAccordionWhenOpen ? ['shopping-settings'] : ['shopping-checklist']
+      );
+    }
+  }, [open, expandSettingsAccordionWhenOpen]);
 
   // Calculate need dates and warnings
   const needDates = useMemo(() => {
@@ -165,8 +178,15 @@ export function OrderingWindow({
         }
       });
     } catch (error) {
-      console.error('Error saving shopping data:', error);
-      toast.error('Failed to save shopping checklist');
+      await reportUserFacingError({
+        source: 'shopping_checklist',
+        operation: 'save_shopping_checklist',
+        projectId: project?.id ?? projectRun?.projectId ?? null,
+        projectRunId: projectRun?.id ?? null,
+        error,
+        userMessage: 'Failed to save shopping checklist.',
+        notificationTitle: 'Shopping checklist save failed',
+      });
     }
   };
 
@@ -189,7 +209,15 @@ export function OrderingWindow({
           }
         }
       } catch (error) {
-        console.error('Error fetching user profile:', error);
+        await reportUserFacingError({
+          source: 'shopping_checklist',
+          operation: 'load_owned_tools_profile',
+          projectId: project?.id ?? projectRun?.projectId ?? null,
+          projectRunId: projectRun?.id ?? null,
+          error,
+          userMessage: 'Failed to load shopping checklist settings.',
+          notificationTitle: 'Shopping checklist profile load failed',
+        });
       }
     };
     if (open) {
@@ -442,81 +470,91 @@ export function OrderingWindow({
       planningToolHeader
     >
       <div className="flex flex-col h-full space-y-2">
-        {/* Schedule Status */}
-        {!isScheduled && <Alert className="mb-2">
-            <Calendar className="h-4 w-4" />
-            <AlertDescription className="text-xs">
-              Project not scheduled. Generate a schedule to see when items are needed - this can be beneficial for tool rentals / borrowing.                        
-            </AlertDescription>
-          </Alert>}
+        <Accordion
+          type="multiple"
+          value={accordionOpenValues}
+          onValueChange={setAccordionOpenValues}
+          className="w-full space-y-3"
+        >
+          <AccordionItem value="shopping-settings" className="rounded-lg border px-3">
+            <AccordionTrigger className="py-3 text-sm font-semibold hover:no-underline">
+              Shopping Settings
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pb-4 pt-0">
+              <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3">
+                <Checkbox id="show-shopped-main" checked={showShopped} onCheckedChange={checked => setShowShopped(checked === true)} />
+                <label htmlFor="show-shopped-main" className="text-sm font-medium">Show completed items</label>
+              </div>
 
-        {/* Schedule Warnings */}
-        {scheduleWarnings.length > 0 && <Alert variant="destructive" className="mb-2">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              <div className="font-semibold text-xs mb-1">Schedule Changes Detected:</div>
-              <ul className="list-disc list-inside space-y-0.5">
-                {scheduleWarnings.map((warning, idx) => <li key={idx} className="text-xs">{warning.message}</li>)}
-              </ul>
-            </AlertDescription>
-          </Alert>}
-        
-        {/* Shopping Sites and Search */}
-        <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
-          {/* Shopping Sites */}
-          <div>
-            <h4 className="font-medium text-xs mb-2">Shopping Websites</h4>
-            <div className="flex flex-wrap gap-1.5">
-              {SHOPPING_SITES.map(site => <Button key={site.name} onClick={() => window.open(site.url, '_blank')} size="sm" className={`text-xs px-2 py-1 h-auto ${site.color} text-white`}>
-                  <ExternalLink className="w-2.5 h-2.5 mr-1" />
-                  {site.name}
-                </Button>)}
-            </div>
-          </div>
+              <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+                <div>
+                  <h4 className="font-medium text-xs mb-2">Shopping Websites</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SHOPPING_SITES.map(site => <Button key={site.name} onClick={() => window.open(site.url, '_blank')} size="sm" className={`text-xs px-2 py-1 h-auto ${site.color} text-white`}>
+                        <ExternalLink className="w-2.5 h-2.5 mr-1" />
+                        {site.name}
+                      </Button>)}
+                  </div>
+                </div>
 
-          {/* Open New Tab Button */}
-          <div>
-            <Button onClick={() => window.open('about:blank', '_blank')} size="sm" variant="outline" className="w-full h-8 text-xs">
-              <ExternalLink className="w-3 h-3 mr-1.5" />
-              Open New Tab
-            </Button>
-          </div>
-        </div>
+                <div>
+                  <Button onClick={() => window.open('about:blank', '_blank')} size="sm" variant="outline" className="w-full h-8 text-xs">
+                    <ExternalLink className="w-3 h-3 mr-1.5" />
+                    Open New Tab
+                  </Button>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        {/* Shopping Checklist Stats with Complete Button */}
-        <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
-          <div className="flex items-center gap-4">
-            <Badge variant="secondary" className="text-xs">
-              {uniqueTools.length + uniqueMaterials.length} items
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              {shoppedToolsList.length + shoppedMaterialsList.length} shopped
-            </Badge>
-          </div>
-          
-          {/* Complete Shopping Button - Centered in window */}
-          {onOrderingComplete && <Button onClick={onOrderingComplete} disabled={shoppedTools.size + shoppedMaterials.size < uniqueTools.length + uniqueMaterials.length} className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 h-auto" size="sm">
-              <Check className="w-3 h-3 mr-1.5" />
-              Complete Shopping
-            </Button>}
-          
-          <div className="flex items-center gap-2">
-            <Checkbox id="show-shopped-main" checked={showShopped} onCheckedChange={checked => setShowShopped(checked === true)} />
-            <label htmlFor="show-shopped-main" className="text-xs">Show completed</label>
-          </div>
-        </div>
+          <AccordionItem value="shopping-checklist" className="rounded-lg border px-3">
+            <AccordionTrigger className="py-3 text-sm font-semibold hover:no-underline">
+              Shopping Checklist
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pb-4 pt-0">
+              {!isScheduled && <Alert className="mb-2">
+                  <Calendar className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    Project not scheduled. Generate a schedule to see when items are needed - this can be beneficial for tool rentals / borrowing.
+                  </AlertDescription>
+                </Alert>}
 
-        {/* Shopping Items - Mobile Optimized Tabs */}
-        <div className="flex-1 min-h-0">
-          <Tabs defaultValue="materials" className="flex flex-col h-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="materials" className="text-sm">
-                Materials ({activeMaterials.length + (showShopped ? shoppedMaterialsList.length : 0)})
-              </TabsTrigger>
-              <TabsTrigger value="tools" className="text-sm">
-                Tools ({activeTools.length + (showShopped ? shoppedToolsList.length : 0)})
-              </TabsTrigger>
-            </TabsList>
+              {scheduleWarnings.length > 0 && <Alert variant="destructive" className="mb-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="font-semibold text-xs mb-1">Schedule Changes Detected:</div>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {scheduleWarnings.map((warning, idx) => <li key={idx} className="text-xs">{warning.message}</li>)}
+                    </ul>
+                  </AlertDescription>
+                </Alert>}
+
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+                <div className="flex items-center gap-4">
+                  <Badge variant="secondary" className="text-xs">
+                    {uniqueTools.length + uniqueMaterials.length} items
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {shoppedToolsList.length + shoppedMaterialsList.length} shopped
+                  </Badge>
+                </div>
+                
+                {onOrderingComplete && <Button onClick={onOrderingComplete} disabled={shoppedTools.size + shoppedMaterials.size < uniqueTools.length + uniqueMaterials.length} className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 h-auto" size="sm">
+                    <Check className="w-3 h-3 mr-1.5" />
+                    Complete Shopping
+                  </Button>}
+              </div>
+
+              <div className="flex-1 min-h-0">
+                <Tabs defaultValue="materials" className="flex flex-col h-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="materials" className="text-sm">
+                      Materials ({activeMaterials.length + (showShopped ? shoppedMaterialsList.length : 0)})
+                    </TabsTrigger>
+                    <TabsTrigger value="tools" className="text-sm">
+                      Tools ({activeTools.length + (showShopped ? shoppedToolsList.length : 0)})
+                    </TabsTrigger>
+                  </TabsList>
             
             <TabsContent value="materials" className="flex-1">
               <ScrollArea className="h-[50vh] md:h-[45vh]">
@@ -747,6 +785,9 @@ export function OrderingWindow({
             </TabsContent>
           </Tabs>
         </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
       
       {/* Item Details Dialog */}

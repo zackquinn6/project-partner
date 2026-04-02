@@ -13,11 +13,12 @@ export async function ensureDefaultHomeForUser(userId: string): Promise<void> {
   const p = (async () => {
     const { count, error: countError } = await supabase
       .from('homes')
-      .select('id', { count: 'exact', head: true })
+      .select('id', { count: 'exact' })
       .eq('user_id', userId);
 
     if (countError) throw countError;
-    if (count !== null && count > 0) return;
+    if (count === null) throw new Error(`Missing homes count for user ${userId}`);
+    if (count > 0) return;
 
     const { data: newHome, error: insertError } = await supabase
       .from('homes')

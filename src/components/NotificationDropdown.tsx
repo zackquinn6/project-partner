@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, AlertCircle, CheckCheck, Settings2 } from 'lucide-react';
+import { Bell, AlertCircle, CheckCheck, Settings2, TriangleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,6 +9,7 @@ import {
 import { useNotifications } from '@/hooks/useNotifications';
 import { NotificationsWindow } from './NotificationsWindow';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { getNotificationSupportCode } from '@/utils/errorReporting';
 
 export function NotificationDropdown() {
   const { notifications, unreadCount, loading, refetch, markAsRead } = useNotifications();
@@ -65,7 +66,9 @@ export function NotificationDropdown() {
                     className={`rounded-md px-2 py-2 text-sm ${n.read_at ? 'opacity-80' : ''}`}
                   >
                     <div className="flex gap-2">
-                      {n.type === 'issue_reported' ? (
+                      {n.type === 'runtime_error' ? (
+                        <TriangleAlert className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                      ) : n.type === 'issue_reported' ? (
                         <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                       ) : (
                         <Bell className="h-4 w-4 text-primary shrink-0 mt-0.5" />
@@ -74,6 +77,11 @@ export function NotificationDropdown() {
                         <p className="font-medium leading-tight">{n.title}</p>
                         {n.body && (
                           <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2">{n.body}</p>
+                        )}
+                        {getNotificationSupportCode(n.metadata) && (
+                          <p className="mt-1 text-[10px] font-medium text-red-600">
+                            Error code: {getNotificationSupportCode(n.metadata)}
+                          </p>
                         )}
                         <p className="text-[10px] text-muted-foreground mt-1">
                           {new Date(n.created_at).toLocaleDateString()}

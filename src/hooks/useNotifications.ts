@@ -66,12 +66,22 @@ export function useNotifications() {
       fetchRecent(10),
       supabase
         .from('notifications')
-        .select('id', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .eq('user_id', user.id)
         .is('read_at', null)
     ]);
+    if (countResult.error) {
+      console.error('Error counting unread notifications:', countResult.error);
+      setLoading(false);
+      return;
+    }
+    if (countResult.count === null) {
+      console.error('Missing unread notifications count');
+      setLoading(false);
+      return;
+    }
     setList(recent);
-    setUnreadCount(countResult.count ?? 0);
+    setUnreadCount(countResult.count);
     setLoading(false);
   }, [user?.id, fetchRecent]);
 

@@ -24,22 +24,36 @@ export async function fetchUserAchievementStats(userId: string): Promise<UserAch
     maintRes,
     runsRes,
   ] = await Promise.all([
-    supabase.from('project_run_photos').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    supabase.from('project_run_photos').select('id', { count: 'exact' }).eq('user_id', userId),
     supabase.from('user_profiles').select('owned_tools').eq('user_id', userId).maybeSingle(),
-    supabase.from('home_tasks').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'closed'),
-    supabase.from('homes').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    supabase.from('home_tasks').select('id', { count: 'exact' }).eq('user_id', userId).eq('status', 'closed'),
+    supabase.from('homes').select('id', { count: 'exact' }).eq('user_id', userId),
     supabase
       .from('home_tasks')
-      .select('id', { count: 'exact', head: true })
+      .select('id', { count: 'exact' })
       .eq('user_id', userId)
       .not('project_run_id', 'is', null),
     supabase
       .from('user_maintenance_tasks')
-      .select('id', { count: 'exact', head: true })
+      .select('id', { count: 'exact' })
       .eq('user_id', userId)
       .not('last_completed', 'is', null),
     supabase.from('project_runs').select('id').eq('user_id', userId),
   ]);
+
+  if (photosRes.error) throw photosRes.error;
+  if (profileRes.error) throw profileRes.error;
+  if (tasksClosedRes.error) throw tasksClosedRes.error;
+  if (homesRes.error) throw homesRes.error;
+  if (linkedTasksRes.error) throw linkedTasksRes.error;
+  if (maintRes.error) throw maintRes.error;
+  if (runsRes.error) throw runsRes.error;
+
+  if (photosRes.count === null) throw new Error(`Missing photo count for user ${userId}`);
+  if (tasksClosedRes.count === null) throw new Error(`Missing closed task count for user ${userId}`);
+  if (homesRes.count === null) throw new Error(`Missing homes count for user ${userId}`);
+  if (linkedTasksRes.count === null) throw new Error(`Missing linked task count for user ${userId}`);
+  if (maintRes.count === null) throw new Error(`Missing maintenance count for user ${userId}`);
 
   const owned = profileRes.data?.owned_tools;
   const toolsInLibrary = Array.isArray(owned) ? owned.length : 0;
@@ -47,21 +61,25 @@ export async function fetchUserAchievementStats(userId: string): Promise<UserAch
   const runIds = (runsRes.data ?? []).map((r) => r.id);
   let risksLogged = 0;
   if (runIds.length > 0) {
-    const { count } = await supabase
+    const { count, error } = await supabase
       .from('project_run_risks')
-      .select('id', { count: 'exact', head: true })
+      .select('id', { count: 'exact' })
       .in('project_run_id', runIds);
-    risksLogged = count ?? 0;
+    if (error) throw error;
+    if (count === null) {
+      throw new Error(`Missing project risk count for user ${userId}`);
+    }
+    risksLogged = count;
   }
 
   return {
-    photoCount: photosRes.count ?? 0,
+    photoCount: photosRes.count,
     toolsInLibrary,
-    tasksClosed: tasksClosedRes.count ?? 0,
-    homesCount: homesRes.count ?? 0,
+    tasksClosed: tasksClosedRes.count,
+    homesCount: homesRes.count,
     risksLogged,
-    linkedTasksCount: linkedTasksRes.count ?? 0,
-    maintenanceCompletions: maintRes.count ?? 0,
+    linkedTasksCount: linkedTasksRes.count,
+    maintenanceCompletions: maintRes.count,
   };
 }
 

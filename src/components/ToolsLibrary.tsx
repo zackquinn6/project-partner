@@ -39,6 +39,7 @@ type ToolRow = {
   created_at: string;
   updated_at: string;
   instructions?: unknown;
+  variation_instance_id?: string | null;
 };
 
 type SortField = 'item' | 'description' | 'variations' | 'created_at';
@@ -62,9 +63,11 @@ export function ToolsLibrary() {
       // Cast entire query to bypass TypeScript type checking for column names
       const query = supabase
         .from('tools' as any)
-        .select('id, name, description, category, photo_url, created_at, updated_at, instructions') as any;
+        .select('id, name, description, category, photo_url, created_at, updated_at, instructions, variation_instance_id') as any;
       
-      const { data, error } = await query.order('name', { ascending: true }); // Database column is 'name', not 'item'
+      const { data, error } = await query
+        .is('variation_instance_id', null)
+        .order('name', { ascending: true }); // Database column is 'name', not 'item'
       
       if (error) throw error;
       

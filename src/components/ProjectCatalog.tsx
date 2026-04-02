@@ -35,6 +35,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { isKickoffPhaseComplete } from '@/utils/projectUtils';
 import { filterProjectsForCatalog } from '@/utils/catalogProjectFilters';
+import { reportUserFacingError } from '@/utils/errorReporting';
 interface ProjectTemplate {
   id: string;
   name: string;
@@ -187,7 +188,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       if (data && !error) {
         setPublicProjects(data);
       } else if (error) {
-        console.error('❌ Error fetching public projects:', error);
+        await reportUserFacingError({
+          source: 'project_catalog',
+          operation: 'load_public_projects',
+          error,
+          userMessage: 'Failed to load project catalog.',
+          notificationTitle: 'Project catalog load failed',
+        });
       }
       };
       
@@ -466,9 +473,16 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       await proceedToNewProject(project);
       
     } catch (error) {
-      console.error('❌ Error in handleSelectProject:', error);
+      await reportUserFacingError({
+        source: 'project_catalog',
+        operation: 'select_project',
+        userId: user?.id,
+        projectId: typeof project?.id === 'string' ? project.id : null,
+        error,
+        userMessage: 'Failed to start project.',
+        notificationTitle: 'Project start failed',
+      });
       setIsCreatingNewProject(false); // Reset flag on error
-      alert(`Failed to start project: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -548,7 +562,14 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         setProjectSetupForm(prev => ({ ...prev, selectedHomeId: primaryHome.id }));
       }
     } catch (error) {
-      console.error('Error fetching homes:', error);
+      await reportUserFacingError({
+        source: 'project_catalog',
+        operation: 'load_homes_for_setup',
+        userId: user.id,
+        error,
+        userMessage: 'Failed to load your homes.',
+        notificationTitle: 'Home load failed during project setup',
+      });
     }
   };
 
@@ -593,7 +614,15 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         setIsDIYSurveyOpen(true);
       }
     } catch (error) {
-      console.error('Error checking profile:', error);
+      await reportUserFacingError({
+        source: 'project_catalog',
+        operation: 'load_profile_for_setup',
+        userId: user.id,
+        projectId: selectedTemplate.id,
+        error,
+        userMessage: 'Failed to load your profile for project setup.',
+        notificationTitle: 'Project setup profile check failed',
+      });
       // Default to new survey on error
       setSurveyMode('new');
       setUserProfile(null);
@@ -735,15 +764,28 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
       }).catch((error) => {
         // Handle error from addProjectRun
         clearTimeout(resetTimeout);
-        console.error('❌ Error in addProjectRun:', error);
         setIsCreatingNewProject(false);
-        // Show error to user
-        alert(`Failed to start project: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        void reportUserFacingError({
+          source: 'project_catalog',
+          operation: 'start_project_run_from_catalog',
+          userId: user?.id,
+          projectId: projectTemplate.id,
+          error,
+          userMessage: 'Failed to start project.',
+          notificationTitle: 'Catalog project start failed',
+        });
       });
     } catch (error) {
-      console.error('❌ Error in proceedToNewProject:', error);
+      await reportUserFacingError({
+        source: 'project_catalog',
+        operation: 'prepare_project_run_from_catalog',
+        userId: user?.id,
+        projectId: projectTemplate.id,
+        error,
+        userMessage: 'Failed to start project.',
+        notificationTitle: 'Catalog project preparation failed',
+      });
       setIsCreatingNewProject(false);
-      alert(`Failed to start project: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 

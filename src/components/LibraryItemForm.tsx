@@ -15,6 +15,9 @@ import { MultiContentEditor } from './MultiContentEditor';
 import type { ContentSection } from '@/interfaces/Project';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  PLANNING_TOOL_SAVE_CLOSE_CLASSNAME,
+} from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
 
 interface LibraryItemFormProps {
   type: 'tools' | 'materials';
@@ -35,6 +38,7 @@ function parseInstructions(value: unknown): ContentSection[] {
 
 export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFooterActions = false }: LibraryItemFormProps) {
   const { user } = useAuth();
+  const effectiveFormId = formId ?? `${type}-library-item-form`;
   const [formData, setFormData] = useState({
     name: item?.name || item?.item || '',
     description: item?.description || '',
@@ -47,6 +51,8 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
   const [photoUrl, setPhotoUrl] = useState(item?.photo_url || '');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const toolCategoryOptions = ['PPE', 'Hand Tool', 'Power Tool', 'Other'];
+  const materialCategoryOptions = ['PPE', 'Consumable', 'Other'];
 
   useEffect(() => {
     setInstructions(parseInstructions(item?.instructions));
@@ -149,15 +155,37 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedName = formData.name.trim();
     
-    if (!formData.name.trim()) {
+    if (!trimmedName) {
       toast.error('Item name is required');
+      return;
+    }
+    if (!formData.category.trim()) {
+      toast.error('Category is required');
       return;
     }
 
     setUploading(true);
 
     try {
+      const duplicateNameQuery = supabase
+        .from(type)
+        .select('id, name')
+        .ilike('name', trimmedName);
+
+      const { data: duplicateRows, error: duplicateError } = item
+        ? await duplicateNameQuery.neq('id', item.id)
+        : await duplicateNameQuery;
+
+      if (duplicateError) throw duplicateError;
+      if (duplicateRows.length > 0) {
+        toast.error(
+          `A ${type === 'tools' ? 'tool' : 'material'} named "${trimmedName}" already exists. Use the existing item or choose a different name.`
+        );
+        return;
+      }
+
       // Never persist browser blob preview URLs to the database.
       let finalPhotoUrl =
         typeof photoUrl === 'string' && photoUrl.startsWith('blob:')
@@ -175,7 +203,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
       }
 
       const dataToSave = {
-        name: formData.name.trim(),
+        name: trimmedName,
         description: formData.description.trim() || null,
         photo_url: finalPhotoUrl || null,
         alternates: formData.alternates || null,
@@ -231,16 +259,39 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
 
   return (
     <Tabs defaultValue="basic" className="flex h-full min-h-0 w-full flex-col">
-      <TabsList className="grid w-full grid-cols-2 shrink-0">
+      {type === 'tools' && !hideFooterActions && (
+        <div className="flex justify-end gap-2 pb-4">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="min-h-9 px-3 text-xs md:min-h-8 md:text-sm"
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form={effectiveFormId}
+            size="sm"
+            disabled={uploading}
+            className={`min-h-9 px-3 text-xs md:min-h-8 md:text-sm ${PLANNING_TOOL_SAVE_CLOSE_CLASSNAME}`}
+          >
+            {uploading ? 'Saving...' : item ? 'Update Tool' : 'Add Tool'}
+          </Button>
+        </div>
+      )}
+      <TabsList className={`grid w-full shrink-0 ${type === 'tools' ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <TabsTrigger value="basic">{type === 'tools' ? 'Core Tool' : 'Core Material'}</TabsTrigger>
         <TabsTrigger value="variations" disabled={!item?.id}>
           Variations {!item?.id && '(Save item first)'}
         </TabsTrigger>
+        {type === 'tools' && <TabsTrigger value="alternates">Alternates</TabsTrigger>}
       </TabsList>
       
       <TabsContent value="basic" className="mt-0 min-h-0 flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto p-6">
-        <form id={formId} onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
+        <form id={effectiveFormId} onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
           <div>
             <Label htmlFor="name">
               {type === 'tools' ? 'Tool' : 'Material'} Name *
@@ -278,11 +329,22 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
           )}
 
           <div>
-            <AlternatesEditor
-              value={formData.alternates}
-              onChange={(value) => setFormData({ ...formData, alternates: value })}
-              itemType={type === 'tools' ? 'tool' : 'material'}
-            />
+            <Label>Category / Type</Label>
+            <Select
+              value={formData.category}
+              onValueChange={(value) => setFormData({ ...formData, category: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a category..." />
+              </SelectTrigger>
+              <SelectContent className="z-[1000]">
+                {(type === 'tools' ? toolCategoryOptions : materialCategoryOptions).map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
@@ -337,76 +399,43 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
             </div>
           </div>
 
-          <div>
-            <Label>Category / Type</Label>
-            <div className="flex gap-2">
-              <Select
-                value={formData.category || '__none__'}
-                onValueChange={(value) => setFormData({ ...formData, category: value === '__none__' ? '' : value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category..." />
-                </SelectTrigger>
-                <SelectContent className="z-[1000]">
-                  <SelectItem value="__none__">No category</SelectItem>
-                  {type === 'tools' ? (
-                    <>
-                      <SelectItem value="PPE">PPE</SelectItem>
-                      <SelectItem value="Hand Tool">Hand Tool</SelectItem>
-                      <SelectItem value="Power Tool">Power Tool</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </>
-                  ) : (
-                    <>
-                      <SelectItem value="PPE">PPE</SelectItem>
-                      <SelectItem value="Consumable">Consumable</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setFormData({ ...formData, category: '' })}
-              >
-                Clear
-              </Button>
+          {type === 'tools' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Tool instructions</CardTitle>
+                <CardDescription>Text, videos, photos, and links shown when users open instructions for this tool in the workflow.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MultiContentEditor sections={instructions} onChange={setInstructions} />
+              </CardContent>
+            </Card>
+          )}
+
+          {type === 'materials' && (
+            <div>
+              <AlternatesEditor
+                value={formData.alternates}
+                onChange={(value) => setFormData({ ...formData, alternates: value })}
+                itemType="material"
+              />
             </div>
-          </div>
+          )}
 
           {!hideFooterActions && (
-            <div className="flex gap-2 pt-4">
-              <Button type="submit" disabled={uploading} className="flex-1">
-                {uploading ? 'Saving...' : (item ? 'Update' : 'Add')} {type === 'tools' ? 'Tool' : 'Material'}
-              </Button>
-              <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
-                Cancel
-              </Button>
-            </div>
+            type === 'tools' ? null : (
+              <div className="flex gap-2 pt-4">
+                <Button type="submit" disabled={uploading} className="flex-1">
+                  {uploading ? 'Saving...' : (item ? 'Update' : 'Add')} {type === 'tools' ? 'Tool' : 'Material'}
+                </Button>
+                <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+                  Cancel
+                </Button>
+              </div>
+            )
           )}
         </form>
         </div>
       </TabsContent>
-
-      {type === 'tools' && (
-        <TabsContent value="instructions" className="p-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Tool instructions</CardTitle>
-              <CardDescription>Text, videos, photos, and links shown when users open instructions for this tool in the workflow.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MultiContentEditor sections={instructions} onChange={setInstructions} />
-            </CardContent>
-          </Card>
-          <div className="flex gap-2 pt-4">
-            <Button type="button" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={uploading}>
-              {uploading ? 'Saving...' : 'Save tool & instructions'}
-            </Button>
-          </div>
-        </TabsContent>
-      )}
 
       <TabsContent value="variations" className="mt-0 min-h-0 flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto">
@@ -430,6 +459,20 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
         )}
         </div>
       </TabsContent>
+
+      {type === 'tools' && (
+        <TabsContent value="alternates" className="mt-0 min-h-0 flex-1 overflow-hidden">
+          <div className="h-full overflow-y-auto p-6">
+            <div className="max-w-4xl mx-auto">
+              <AlternatesEditor
+                value={formData.alternates}
+                onChange={(value) => setFormData({ ...formData, alternates: value })}
+                itemType="tool"
+              />
+            </div>
+          </div>
+        </TabsContent>
+      )}
     </Tabs>
   );
 }
