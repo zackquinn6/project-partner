@@ -15,7 +15,7 @@ interface ProjectContextType {
   loading: boolean;
   setCurrentProject: (project: Project | null) => void;
   setCurrentProjectRun: (projectRun: ProjectRun | null) => void;
-  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string | null>;
   createProjectRun: (
     project: Project,
     customName?: string,

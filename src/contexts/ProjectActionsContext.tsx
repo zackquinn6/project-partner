@@ -4,6 +4,7 @@ import { ProjectRun } from '@/interfaces/ProjectRun';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useProjectOwner } from '@/hooks/useProjectOwner';
 import { useProjectData } from './ProjectDataContext';
 import { useGuest } from './GuestContext';
 import { toast } from '@/components/ui/use-toast';
@@ -403,7 +404,7 @@ interface ProjectActionsContextType {
   currentProjectRun: ProjectRun | null;
   setCurrentProject: (project: Project | null) => void;
   setCurrentProjectRun: (projectRun: ProjectRun | null) => void;
-  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string | null>;
   createProjectRun: (
     project: Project,
     customName?: string,
@@ -435,6 +436,7 @@ interface ProjectActionsProviderProps {
 export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
+  const { hasProjectOwnerRole } = useProjectOwner();
   const { refetchProjects, refetchProjectRuns, updateProjectsCache, updateProjectRunsCache, projects, projectRuns } = useProjectData();
   const { isGuest, addGuestProjectRun, updateGuestProjectRun, deleteGuestProjectRun } = useGuest();
   
@@ -446,14 +448,14 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastUpdateRef = useRef<string>('');
 
-  const addProject = useCallback(async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (!user || !isAdmin) {
+  const addProject = useCallback(async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
+    if (!user || (!isAdmin && !hasProjectOwnerRole)) {
       toast({
         title: "Error",
-        description: "Only administrators can create projects",
+        description: "Only administrators or project owners can create projects",
         variant: "destructive",
       });
-      return;
+      return null;
     }
 
     // Check for duplicate project name (case-insensitive)
@@ -473,7 +475,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         notificationTitle: 'Project name validation failed',
         toastPresenter: 'ui-toast',
       });
-      return;
+      return null;
     }
 
     if (existingProjects && existingProjects.length > 0) {
@@ -484,7 +486,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           description: `A project with the name "${projectData.name}" already exists. Please choose a unique name.`,
           variant: "destructive",
         });
-        return;
+        return null;
       }
     }
 
@@ -517,15 +519,18 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           .update({
             skill_level: projectData.skillLevel || 'Intermediate',
             effort_level: projectData.effortLevel || 'Medium',
+            estimated_time: projectData.estimatedTime || null,
+            estimated_total_time: projectData.estimatedTotalTime || null,
+            typical_project_size: projectData.typicalProjectSize || null,
             scaling_unit: projectData.scalingUnit || null,
+            item_type: projectData.scalingUnit === 'per item' ? (projectData as any).itemType || null : null,
             project_challenges: projectData.projectChallenges || null,
-            estimated_time_per_unit: projectData.estimatedTimePerUnit || null,
             project_type: projectData.projectType?.toLowerCase() === 'secondary' ? 'secondary' : 'primary'
           })
           .eq('id', projectId);
 
         if (updateError) {
-          console.error('Error updating additional project fields:', updateError);
+          throw updateError;
         }
       }
 
@@ -542,6 +547,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         title: "Success",
         description: "Project created successfully with standard foundation",
       });
+      return projectId ?? null;
     } catch (error) {
       await reportUserFacingError({
         source: 'project_actions',
@@ -552,8 +558,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         notificationTitle: 'Project creation failed',
         toastPresenter: 'ui-toast',
       });
+      return null;
     }
-  }, [user, isAdmin, refetchProjects]);
+  }, [user, isAdmin, hasProjectOwnerRole, refetchProjects]);
 
   const createProjectRun = useCallback(async (
     project: Project,
@@ -976,10 +983,12 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         description: project.description,
         category: Array.isArray(project.category) ? project.category : (project.category ? [project.category] : []),
         scaling_unit: project.scalingUnit,
-        estimated_time_per_unit: project.estimatedTimePerUnit,
+        item_type: project.scalingUnit === 'per item' ? (project as any).itemType ?? null : null,
         skill_level: project.skillLevel,
         effort_level: project.effortLevel,
         estimated_time: project.estimatedTime,
+        estimated_total_time: project.estimatedTotalTime ?? null,
+        typical_project_size: project.typicalProjectSize ?? null,
         project_challenges: project.projectChallenges,
         image: project.image,
         updated_at: new Date().toISOString()

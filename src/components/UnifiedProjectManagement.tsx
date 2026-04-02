@@ -1398,8 +1398,8 @@ export function UnifiedProjectManagement({
       return;
     }
 
-    if (!isAdmin) {
-      toast.error('Only administrators can create projects.');
+    if (!isAdmin && !hasProjectOwnerRole) {
+      toast.error('Only administrators or project owners can create projects.');
       return;
     }
 
@@ -1428,7 +1428,7 @@ export function UnifiedProjectManagement({
     try {
       setIsCreatingProject(true);
       console.log('🔨 Creating project:', { ...newProject, name: projectName });
-      await addProject({
+      const projectId = await addProject({
         name: projectName,
         description: newProject.description || '',
         category: newProject.categories,
@@ -1448,6 +1448,10 @@ export function UnifiedProjectManagement({
         phases: [],
       });
 
+      if (!projectId) {
+        return;
+      }
+
       await fetchProjects();
 
       const { data: createdProject } = await supabase
@@ -1455,7 +1459,7 @@ export function UnifiedProjectManagement({
         .select(
           'id, name, description, publish_status, revision_number, parent_project_id, created_at, updated_at, published_at, beta_released_at, archived_at, revision_notes, category, effort_level, skill_level, estimated_time, estimated_total_time, typical_project_size, scaling_unit, item_type, project_challenges, budget_per_unit, budget_per_typical_size, project_type, created_by, owner_id, phases, cover_image, is_popular, visibility_status, release_date'
         )
-        .ilike('name', projectName)
+        .eq('id', projectId)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -3013,7 +3017,7 @@ export function UnifiedProjectManagement({
                 disabled={
                   isCreatingProject ||
                   roleLoading ||
-                  !isAdmin ||
+                  (!isAdmin && !hasProjectOwnerRole) ||
                   !newProject.item?.trim() ||
                   (!newProject.action && !newProject.actionCustom?.trim())
                 }
