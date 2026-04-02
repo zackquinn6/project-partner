@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -95,7 +101,7 @@ interface SchedulerWizardProps {
   collapseAccordionSignal?: number;
 }
 
-type SchedulerAccordionKey = 'dates' | 'availability' | 'tempo' | 'advanced' | 'generate';
+type SchedulerAccordionKey = 'dates' | 'availability' | 'tempo' | 'advanced';
 
 export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   targetDate,
@@ -131,9 +137,10 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   onOpenContractorScheduling,
   collapseAccordionSignal = 0
 }) => {
-  // Design intent: keep "Generate Schedule" expanded by default.
-  const [openSection, setOpenSection] = useState<SchedulerAccordionKey | null>('generate');
+  /** Which collapsible step (1–4) is expanded; Generate is always visible below. */
+  const [openSection, setOpenSection] = useState<SchedulerAccordionKey | null>('dates');
   const [noWorkOnHolidays, setNoWorkOnHolidays] = useState(false);
+  const [schedulingAlgorithmHelpOpen, setSchedulingAlgorithmHelpOpen] = useState(false);
 
   useEffect(() => {
     if (collapseAccordionSignal <= 0) return;
@@ -342,18 +349,22 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
               <Clock className="w-3 h-3" />
               Schedule Tempo
             </Label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid min-w-0 grid-cols-3 gap-2">
               <Button
                 variant={scheduleTempo === 'fast_track' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setScheduleTempo('fast_track')}
-                className="h-auto flex flex-col items-start justify-start gap-1 p-3"
+                className="h-auto min-w-0 w-full flex flex-col items-stretch justify-start gap-1 overflow-hidden p-2 sm:p-3 text-left"
               >
-                <div className="flex items-center gap-1.5 w-full">
-                  <Zap className={`w-3.5 h-3.5 flex-shrink-0 ${scheduleTempo === 'fast_track' ? 'text-white' : ''}`} />
-                  <span className={`text-xs font-medium ${scheduleTempo === 'fast_track' ? 'text-white' : ''}`}>Fast-track</span>
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <Zap className={`h-3.5 w-3.5 shrink-0 ${scheduleTempo === 'fast_track' ? 'text-white' : ''}`} />
+                  <span className={`min-w-0 truncate text-xs font-medium ${scheduleTempo === 'fast_track' ? 'text-white' : ''}`}>
+                    Fast-track
+                  </span>
                 </div>
-                <span className={`text-[10px] text-left leading-tight ${scheduleTempo === 'fast_track' ? 'text-white/90' : 'text-muted-foreground'}`}>
+                <span
+                  className={`min-w-0 break-words text-[10px] leading-tight text-pretty ${scheduleTempo === 'fast_track' ? 'text-white/90' : 'text-muted-foreground'}`}
+                >
                   Top 10% speed; best for skilled teams.
                 </span>
               </Button>
@@ -361,13 +372,17 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 variant={scheduleTempo === 'steady' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setScheduleTempo('steady')}
-                className="h-auto flex flex-col items-start justify-start gap-1 p-3"
+                className="h-auto min-w-0 w-full flex flex-col items-stretch justify-start gap-1 overflow-hidden p-2 sm:p-3 text-left"
               >
-                <div className="flex items-center gap-1.5 w-full">
-                  <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${scheduleTempo === 'steady' ? 'text-white' : ''}`} />
-                  <span className={`text-xs font-medium ${scheduleTempo === 'steady' ? 'text-white' : ''}`}>Steady</span>
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <Clock className={`h-3.5 w-3.5 shrink-0 ${scheduleTempo === 'steady' ? 'text-white' : ''}`} />
+                  <span className={`min-w-0 truncate text-xs font-medium ${scheduleTempo === 'steady' ? 'text-white' : ''}`}>
+                    Steady
+                  </span>
                 </div>
-                <span className={`text-[10px] text-left leading-tight ${scheduleTempo === 'steady' ? 'text-white/90' : 'text-muted-foreground'}`}>
+                <span
+                  className={`min-w-0 break-words text-[10px] leading-tight text-pretty ${scheduleTempo === 'steady' ? 'text-white/90' : 'text-muted-foreground'}`}
+                >
                   Standard pace; balanced, not rushed.
                 </span>
               </Button>
@@ -375,14 +390,21 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 variant={scheduleTempo === 'extended' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setScheduleTempo('extended')}
-                className="h-auto flex flex-col items-start justify-start gap-1 p-3"
+                className="h-auto min-w-0 w-full flex flex-col items-stretch justify-start gap-1 overflow-hidden p-2 sm:p-3 text-left"
               >
-                <div className="flex items-center gap-1.5 w-full">
-                  <Settings className={`w-3.5 h-3.5 flex-shrink-0 ${scheduleTempo === 'extended' ? 'text-white' : ''}`} />
-                  <span className={`text-xs font-medium ${scheduleTempo === 'extended' ? 'text-white' : ''}`}>Extended</span>
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <Settings className={`h-3.5 w-3.5 shrink-0 ${scheduleTempo === 'extended' ? 'text-white' : ''}`} />
+                  <span className={`min-w-0 truncate text-xs font-medium ${scheduleTempo === 'extended' ? 'text-white' : ''}`}>
+                    Extended
+                  </span>
                 </div>
-                <span className={`text-[10px] text-left leading-tight ${scheduleTempo === 'extended' ? 'text-white/90' : 'text-muted-foreground'}`}>
-                  Longest timelines; ideal for beginners or low‑urgency projects.
+                <span
+                  className={`min-w-0 break-words text-[10px] leading-tight text-pretty ${scheduleTempo === 'extended' ? 'text-white/90' : 'text-muted-foreground'}`}
+                >
+                  <span className="block">Longest timelines</span>
+                  <span className="max-[420px]:hidden">
+                    ; ideal for beginners or low‑urgency projects.
+                  </span>
                 </span>
               </Button>
             </div>
@@ -744,110 +766,132 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
         </Collapsible>
       </Card>
 
-      {/* Generate Schedule */}
+      {/* Generate Schedule — always visible (not collapsible) */}
       <Card>
-        <Collapsible
-          open={openSection === 'generate'}
-          onOpenChange={(next) => {
-            if (next) setOpenSection('generate');
-            else setOpenSection((p) => (p === 'generate' ? null : p));
-          }}
-        >
-          <CardContent className="p-4 space-y-3">
-            <CollapsibleTrigger asChild>
-              <button
-                type="button"
-                className="w-full flex items-center justify-between gap-2 text-left rounded-md hover:bg-muted/50 -mx-1 px-1 py-0.5 mb-1"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <h3 className="text-sm font-medium">Generate Schedule</h3>
-                  <TooltipProvider delayDuration={100}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          aria-label="Scheduling algorithm info"
-                          className="inline-flex items-center justify-center rounded-full p-0.5 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-1 shrink-0"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                          onPointerDown={(e) => e.stopPropagation()}
-                        >
-                          <Info className="w-3.5 h-3.5 text-muted-foreground" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-md text-xs">
-                        <div className="space-y-2">
-                          <p className="font-semibold">Scheduling Algorithm</p>
-                          <p>The scheduler uses your settings to create an optimized schedule:</p>
-                          <div className="space-y-1.5 mt-2">
-                            <p><strong>Estimated Times:</strong></p>
-                            <p className="ml-2">Uses time estimates from your customized project workflow (only applicable phases that you&apos;ve included). Each step&apos;s low/medium/high time estimates are selected based on Schedule Tempo.</p>
-                            <p className="mt-2"><strong>Schedule Tempo:</strong></p>
-                            <ul className="list-disc list-inside space-y-0.5 ml-2">
-                              <li><strong>Fast-track:</strong> Uses low end of time estimates (10th percentile) - best for skilled teams</li>
-                              <li><strong>Steady:</strong> Uses medium time estimates (50th percentile) - balanced, not rushed</li>
-                              <li><strong>Extended:</strong> Uses high end of time estimates (90th percentile) - ideal for beginners or low-urgency projects</li>
-                            </ul>
-                            <p className="mt-2"><strong>Team Member Availability:</strong></p>
-                            <p className="ml-2">Schedules tasks based on each team member&apos;s availability calendar. The algorithm matches tasks to available time slots, respecting working hours, blackout dates, and site constraints.</p>
-                            <p className="mt-2"><strong>Schedule Optimization Method:</strong></p>
-                            <ul className="list-disc list-inside space-y-0.5 ml-2">
-                              <li><strong>Single-piece flow:</strong> Fastest first room ready — you&apos;ll see progress right away. Completes all phases of a space before moving to the next space.</li>
-                              <li><strong>Batch flow:</strong> Most efficient overall — but you won&apos;t see a finished room until the end. Completes each phase across all spaces before moving to the next phase.</li>
-                            </ul>
-                            <p className="mt-2"><strong>Planning Detail Level:</strong></p>
-                            <ul className="list-disc list-inside space-y-0.5 ml-2">
-                              <li><strong>Quick:</strong> Plans phases and major milestones</li>
-                              <li><strong>Standard:</strong> Plans daily tasks (recommended)</li>
-                              <li><strong>Detailed:</strong> Plans hour-by-hour tasks for each team member</li>
-                            </ul>
-                            <p className="mt-2"><strong>Resource Allocation:</strong></p>
-                            <p className="ml-2">Allocates workers based on step requirements (workers needed per step). Steps with 0 workers still require duration but workers can be assigned elsewhere.</p>
-                          </div>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                {openSection === 'generate' ? (
-                  <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />
-                )}
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="space-y-3 pt-1" onPointerDownCapture={focusSection('generate')}>
-                {!hasAvailabilitySelected && (
-                  <p className="text-xs text-muted-foreground">
-                    Select an availability option above to enable schedule generation
-                  </p>
-                )}
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-medium">Generate Schedule</h3>
+            <button
+              type="button"
+              aria-label="Open scheduling algorithm explanation"
+              className="inline-flex shrink-0 items-center justify-center rounded-full p-0.5 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              onClick={() => setSchedulingAlgorithmHelpOpen(true)}
+            >
+              <Info className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <div className="space-y-3 pt-1">
+            {!hasAvailabilitySelected && (
+              <p className="text-xs text-muted-foreground">
+                Select an availability option above to enable schedule generation
+              </p>
+            )}
 
-                <Button
-                  onClick={onGenerateSchedule}
-                  className="w-full h-9 text-sm"
-                  disabled={isComputing || teamMembers.length === 0 || !targetDate || !hasAvailabilitySelected}
-                >
-                  {isComputing ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                      Computing...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-3.5 h-3.5 mr-1.5" />
-                      Generate Schedule
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CollapsibleContent>
-          </CardContent>
-        </Collapsible>
+            <Button
+              onClick={onGenerateSchedule}
+              className="h-9 w-full text-sm"
+              disabled={isComputing || teamMembers.length === 0 || !targetDate || !hasAvailabilitySelected}
+            >
+              {isComputing ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  Computing...
+                </>
+              ) : (
+                <>
+                  <Zap className="mr-1.5 h-3.5 w-3.5" />
+                  Generate Schedule
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
       </Card>
+
+      <Dialog open={schedulingAlgorithmHelpOpen} onOpenChange={setSchedulingAlgorithmHelpOpen}>
+        <DialogContent
+          aria-describedby={undefined}
+          className="flex max-h-[min(85vh,calc(100dvh-2rem))] w-[min(100vw-1.5rem,42rem)] max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+        >
+          <DialogHeader className="shrink-0 border-b px-6 py-4 text-left">
+            <DialogTitle>Scheduling algorithm</DialogTitle>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 text-sm">
+            <div className="space-y-3 text-xs leading-relaxed text-muted-foreground">
+              <p className="text-foreground">
+                The scheduler uses your settings to create an optimized schedule:
+              </p>
+              <div>
+                <p className="font-semibold text-foreground">Estimated times</p>
+                <p className="mt-1">
+                  Uses time estimates from your customized project workflow (only applicable phases that
+                  you&apos;ve included). Each step&apos;s low/medium/high time estimates are selected based on
+                  schedule tempo.
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Schedule tempo</p>
+                <ul className="mt-1 list-inside list-disc space-y-1 pl-1">
+                  <li>
+                    <strong className="text-foreground">Fast-track:</strong> Low end of time estimates
+                    (10th percentile) — best for skilled teams.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Steady:</strong> Medium time estimates (50th
+                    percentile) — balanced, not rushed.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Extended:</strong> High end of time estimates (90th
+                    percentile) — ideal for beginners or low-urgency projects.
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Team member availability</p>
+                <p className="mt-1">
+                  Schedules tasks from each member&apos;s availability calendar. The algorithm matches tasks
+                  to available slots, respecting working hours, blackout dates, and site constraints.
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Schedule optimization method</p>
+                <ul className="mt-1 list-inside list-disc space-y-1 pl-1">
+                  <li>
+                    <strong className="text-foreground">Single-piece flow:</strong> Fastest first room ready
+                    — visible progress early. Completes all phases of a space before moving to the next space.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Batch flow:</strong> Most efficient overall — you
+                    won&apos;t see a finished room until the end. Completes each phase across all spaces before
+                    the next phase.
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Planning detail level</p>
+                <ul className="mt-1 list-inside list-disc space-y-1 pl-1">
+                  <li>
+                    <strong className="text-foreground">Quick:</strong> Phases and major milestones
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Standard:</strong> Daily tasks (recommended)
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Detailed:</strong> Hour-by-hour tasks per team member
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Resource allocation</p>
+                <p className="mt-1">
+                  Allocates workers from step requirements (workers needed per step). Steps with zero workers
+                  still use duration; workers can be assigned elsewhere.
+                </p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
