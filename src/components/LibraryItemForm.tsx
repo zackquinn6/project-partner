@@ -36,6 +36,16 @@ function parseInstructions(value: unknown): ContentSection[] {
   return [];
 }
 
+/** Persisted on `tools.specialty_scale`; labels are admin-only. */
+const TOOL_SPECIALTY_SCALE_DB_VALUES = [1, 2, 3] as const;
+
+function specialtyScaleFormValueFromItem(item: { specialty_scale?: number } | undefined): string {
+  if (typeof item?.specialty_scale !== 'number') return '';
+  return TOOL_SPECIALTY_SCALE_DB_VALUES.includes(item.specialty_scale as (typeof TOOL_SPECIALTY_SCALE_DB_VALUES)[number])
+    ? String(item.specialty_scale)
+    : '';
+}
+
 export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFooterActions = false }: LibraryItemFormProps) {
   const { user } = useAuth();
   const effectiveFormId = formId ?? `${type}-library-item-form`;
@@ -45,10 +55,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
     unit: item?.unit || item?.unit_size || '', // for materials
     alternates: item?.alternates || '', // JSON string of alternates
     category: typeof item?.category === 'string' ? item.category : '',
-    specialty_scale:
-      type === 'tools' && typeof item?.specialty_scale === 'number'
-        ? String(item.specialty_scale)
-        : '',
+    specialty_scale: type === 'tools' ? specialtyScaleFormValueFromItem(item) : '',
   });
   /** Keys: `core` for the tools row; otherwise tool_variations.id */
   const [toolInstructionMap, setToolInstructionMap] = useState<Record<string, ContentSection[]>>(() => ({
@@ -121,10 +128,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
       unit: item?.unit || item?.unit_size || '',
       alternates: item?.alternates || '',
       category: typeof item?.category === 'string' ? item.category : '',
-      specialty_scale:
-        type === 'tools' && typeof item?.specialty_scale === 'number'
-          ? String(item.specialty_scale)
-          : '',
+      specialty_scale: type === 'tools' ? specialtyScaleFormValueFromItem(item) : '',
     });
     setPhotoUrl(item?.photo_url || '');
     setPhotoFile(null);
@@ -228,17 +232,12 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
 
     let specialtyScaleValue: number | undefined;
     if (type === 'tools') {
-      const rawScale = formData.specialty_scale.trim();
-      if (rawScale === '') {
-        toast.error('Specialty scale is required');
+      const raw = formData.specialty_scale.trim();
+      if (raw !== '1' && raw !== '2' && raw !== '3') {
+        toast.error('Select specialty scale: Common, Typical, or Specialized');
         return;
       }
-      const parsed = Number(rawScale);
-      if (!Number.isInteger(parsed)) {
-        toast.error('Specialty scale must be a whole number');
-        return;
-      }
-      specialtyScaleValue = parsed;
+      specialtyScaleValue = Number(raw);
     }
 
     setUploading(true);
@@ -349,7 +348,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
   };
 
   return (
-    <Tabs defaultValue="basic" className="flex h-full min-h-0 w-full flex-col">
+    <Tabs defaultValue="basic" className="flex h-full min-h-0 w-full flex-col overflow-hidden">
       {type === 'tools' && !hideFooterActions && (
         <div className="flex justify-end gap-2 pb-4">
           <Button
@@ -446,23 +445,21 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
           {type === 'tools' && (
             <div>
               <Label htmlFor="specialty-scale">Specialty scale *</Label>
-              <Input
-                id="specialty-scale"
-                type="number"
-                inputMode="numeric"
-                step={1}
-                min={1}
-                value={formData.specialty_scale}
-                onChange={(e) =>
-                  setFormData({ ...formData, specialty_scale: e.target.value })
+              <Select
+                value={formData.specialty_scale || undefined}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, specialty_scale: value })
                 }
-                placeholder="e.g. 1 or 2"
-                required
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Whole number. The user tool library uses this to group tools (for example, scale 1 vs higher
-                values). Use the scale your catalog conventions define for this item.
-              </p>
+              >
+                <SelectTrigger id="specialty-scale" className="max-w-md">
+                  <SelectValue placeholder="Select Common, Typical, or Specialized" />
+                </SelectTrigger>
+                <SelectContent className="z-[1000]">
+                  <SelectItem value="1">Common</SelectItem>
+                  <SelectItem value="2">Typical</SelectItem>
+                  <SelectItem value="3">Specialized</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
 

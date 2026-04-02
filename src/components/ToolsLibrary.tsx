@@ -13,6 +13,13 @@ import { ToolsImportManager } from "./ToolsImportManager";
 import { ExportToolsData } from "./ExportToolsData";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+/** Add / Edit tool dialogs: fixed height for tab parity; 90vw on small screens, edge-to-edge from `md` up. */
+const ADMIN_TOOL_DIALOG_CONTENT_CLASS = cn(
+  "z-[101] flex h-[90dvh] max-h-[90dvh] w-[90vw] max-w-[90vw] flex-col gap-0 overflow-hidden p-0",
+  "md:inset-0 md:left-0 md:top-0 md:h-dvh md:max-h-dvh md:w-screen md:max-w-none md:translate-x-0 md:translate-y-0 md:rounded-none"
+);
 
 interface Tool {
   id: string;
@@ -217,11 +224,11 @@ export function ToolsLibrary() {
           </DialogTrigger>
           <DialogPortal>
             <DialogOverlay className="z-[100]" />
-            <DialogContent className="z-[101] flex w-full max-w-full max-h-[90dvh] flex-col overflow-hidden lg:w-[90vw] lg:max-w-[90vw]">
-              <DialogHeader>
+            <DialogContent className={ADMIN_TOOL_DIALOG_CONTENT_CLASS}>
+              <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
                 <DialogTitle>Add New Tool</DialogTitle>
               </DialogHeader>
-              <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-2 sm:px-6">
                 <LibraryItemForm
                   type="tools"
                   onSave={handleSave}
@@ -350,23 +357,25 @@ export function ToolsLibrary() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogPortal>
           <DialogOverlay className="z-[100]" />
-          <DialogContent className="z-[101] flex w-full max-w-full max-h-[90dvh] flex-col overflow-hidden lg:w-[90vw] lg:max-w-[90vw]">
-            <DialogHeader>
+          <DialogContent className={ADMIN_TOOL_DIALOG_CONTENT_CLASS}>
+            <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
               <DialogTitle>Edit Tool</DialogTitle>
             </DialogHeader>
-            <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-2 sm:px-6">
               {editingTool && (
-                <div className="space-y-4">
-                  <LibraryItemForm
-                    type="tools"
-                    item={{...editingTool, name: editingTool.item}}
-                    onSave={handleSave}
-                    onCancel={() => {
-                      setShowEditDialog(false);
-                      setEditingTool(null);
-                    }}
-                  />
-                  <div className="flex justify-end border-t border-border pt-4 pb-1">
+                <div className="flex min-h-0 flex-1 flex-col gap-3">
+                  <div className="min-h-0 flex-1 overflow-hidden">
+                    <LibraryItemForm
+                      type="tools"
+                      item={{...editingTool, name: editingTool.item}}
+                      onSave={handleSave}
+                      onCancel={() => {
+                        setShowEditDialog(false);
+                        setEditingTool(null);
+                      }}
+                    />
+                  </div>
+                  <div className="flex shrink-0 justify-end border-t border-border pt-3">
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="destructive" size="sm">
