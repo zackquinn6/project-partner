@@ -72,9 +72,6 @@ export interface CompletionForDashboard {
 }
 
 const ESTIMATED_SAVINGS_PER_COMPLETION = 45;
-const W_O = 5;
-const W_C = 3;
-const W_D = 1;
 const DEFAULT_CRITICALITY = 2;
 
 export function getSystemForCategory(category: string): SystemKey {
@@ -152,6 +149,12 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
   });
 
   const healthScore = computeMaintenanceHealthScore(tasks, now);
+
+  const overdue = tasks.filter((t) => getTaskProgress(t) >= 100);
+  const caution = tasks.filter((t) => {
+    const p = getTaskProgress(t);
+    return p >= 90 && p < 100;
+  });
 
   const gaugeRotation = -90 + (healthScore / 100) * 180;
   const totalCompletions = completions.length;
