@@ -83,6 +83,18 @@ function isPlanningCompletionStep(step: WorkflowStep): boolean {
  * the user finished in the Project Planning Wizard, so they can be marked
  * complete with outputs checked.
  */
+function matchedToResult(matched: Map<string, Set<string>>): {
+  stepIds: string[];
+  outputEntries: { stepId: string; outputIds: string[] }[];
+} {
+  const stepIds = [...matched.keys()];
+  const outputEntries = stepIds.map((stepId) => ({
+    stepId,
+    outputIds: [...(matched.get(stepId) || [])],
+  }));
+  return { stepIds, outputEntries };
+}
+
 export function collectPlanningWizardWorkflowCompletion(
   phases: Phase[] | undefined | null,
   selectedTools: PlanningToolId[]
@@ -95,50 +107,46 @@ export function collectPlanningWizardWorkflowCompletion(
   const matched = new Map<string, Set<string>>();
   const planningPhase = phases.find((phase) => phase?.id === STANDARD_PHASE_IDS.planning);
 
-  if (!planningPhase) {
-    return { stepIds: [], outputEntries: [] };
+  // Planning-completion steps (e.g. "Build your plan"): scan every phase so "Start project"
+  // still completes planning when the planning phase id is not the standard `planning-phase`.
+  for (const phase of phases) {
+    for (const op of phase.operations || []) {
+      for (const step of op.steps || []) {
+        if (!step?.id) continue;
+        if (isPlanningCompletionStep(step)) {
+          matched.set(step.id, new Set((step.outputs || []).map((output) => output.id)));
+        }
+      }
+    }
   }
 
-  const visitStep = (step: WorkflowStep) => {
-    if (!step?.id) return;
-
-    if (isPlanningCompletionStep(step)) {
-      matched.set(step.id, new Set((step.outputs || []).map((output) => output.id)));
-      return;
-    }
-
-    if (toolSet.size === 0) {
-      return;
-    }
-
-    for (const tool of toolSet) {
-      if (!stepMatchesTool(step, tool)) {
-        continue;
-      }
-
-      if (!matched.has(step.id)) {
-        matched.set(step.id, new Set());
-      }
-
-      const outSet = matched.get(step.id)!;
-      for (const o of step.outputs || []) {
-        outSet.add(o.id);
-      }
-      break;
-    }
-  };
+  if (toolSet.size === 0 || !planningPhase) {
+    return matchedToResult(matched);
+  }
 
   for (const op of planningPhase.operations || []) {
     for (const step of op.steps || []) {
-      visitStep(step);
+      if (!step?.id || isPlanningCompletionStep(step)) {
+        continue;
+      }
+
+      for (const tool of toolSet) {
+        if (!stepMatchesTool(step, tool)) {
+          continue;
+        }
+
+        if (!matched.has(step.id)) {
+          matched.set(step.id, new Set());
+        }
+
+        const outSet = matched.get(step.id)!;
+        for (const o of step.outputs || []) {
+          outSet.add(o.id);
+        }
+        break;
+      }
     }
   }
 
-  const stepIds = [...matched.keys()];
-  const outputEntries = stepIds.map((stepId) => ({
-    stepId,
-    outputIds: [...(matched.get(stepId) || [])],
-  }));
-
-  return { stepIds, outputEntries };
+  return matchedToResult(matched);
 }

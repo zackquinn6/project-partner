@@ -574,6 +574,24 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
 
   const { totalBudgeted, totalActual, variance } = calculateTotals();
 
+  /** Saved project budget goal (initial_budget); drives summary "Total Budget" when set. */
+  const projectBudgetGoalNumber = React.useMemo(() => {
+    const budgetValue =
+      budgetGoal ?? (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
+    if (budgetValue === null || budgetValue === undefined || budgetValue === '') {
+      return null;
+    }
+    const budgetStr = typeof budgetValue === 'string' ? budgetValue.trim() : String(budgetValue).trim();
+    if (!budgetStr) return null;
+    const budgetNum = parseFloat(budgetStr);
+    if (Number.isNaN(budgetNum) || budgetNum <= 0) return null;
+    return budgetNum;
+  }, [budgetGoal, currentProjectRun]);
+
+  const summaryTotalBudget =
+    projectBudgetGoalNumber !== null ? projectBudgetGoalNumber : totalBudgeted;
+  const summaryVariance = summaryTotalBudget - totalActual;
+
   const getSectionTotal = (section: string) => {
     if (!Array.isArray(budgetItems)) return { budgeted: 0, actual: 0 };
     const sectionItems = budgetItems.filter(item => item && item.section === section);
@@ -718,7 +736,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
               <div className="grid grid-cols-3 gap-3 md:gap-4 flex-1">
                 <div>
                   <div className="text-xs md:text-sm text-muted-foreground">Total Budget</div>
-                  <div className="text-xl md:text-2xl font-bold">${totalBudgeted.toFixed(2)}</div>
+                  <div className="text-xl md:text-2xl font-bold">${summaryTotalBudget.toFixed(2)}</div>
                 </div>
                 <div>
                   <div className="text-xs md:text-sm text-muted-foreground">Total Actual</div>
@@ -726,8 +744,8 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                 </div>
                 <div>
                   <div className="text-xs md:text-sm text-muted-foreground">Variance</div>
-                  <div className={`text-xl md:text-2xl font-bold ${variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ${variance.toFixed(2)}
+                  <div className={`text-xl md:text-2xl font-bold ${summaryVariance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${summaryVariance.toFixed(2)}
                   </div>
                 </div>
               </div>
