@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
+import { saveAttributeDefinitionsForCoreTool } from '@/utils/variationAttributeDefinitions';
 
 interface ParsedTool {
   name: string;
@@ -244,6 +245,7 @@ async function createAttributesAndValues(coreItemId: string, attributes: Record<
         continue;
       }
 
+      let lastDefs: any[] = [];
       for (const variation of variations || []) {
         const defs = (variation.attribute_definitions || []) as any[];
         let attr = defs.find((a: any) => a.name === attrKey);
@@ -274,10 +276,16 @@ async function createAttributesAndValues(coreItemId: string, attributes: Record<
           attr.values = values;
         }
 
+        lastDefs = defs;
+
         await supabase
           .from('tool_variations')
           .update({ attribute_definitions: defs })
           .eq('id', variation.id);
+      }
+
+      if ((variations || []).length > 0) {
+        await saveAttributeDefinitionsForCoreTool(supabase, coreItemId, lastDefs);
       }
 
     } catch (error) {

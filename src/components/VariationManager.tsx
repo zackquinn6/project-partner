@@ -10,9 +10,8 @@ import { Plus, X, Edit2, Trash2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
-  countVariationsForCoreItem,
   fetchAttributeDefinitionsForCoreItem,
-  syncAttributeDefinitionsToAllVariations,
+  persistAttributeDefinitionsForCoreItem,
 } from '@/utils/variationAttributeDefinitions';
 import { VariationEditor } from './VariationEditor';
 import {
@@ -173,12 +172,6 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
 
     setLoading(true);
     try {
-      const variationCount = await countVariationsForCoreItem(supabase, coreItemId);
-      if (variationCount === 0) {
-        toast.error('Create at least one variation before defining attribute types.');
-        return;
-      }
-
       const attributesToCreate = [];
       
       // Prepare selected common attributes
@@ -220,12 +213,13 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
         }
       }
 
-      await syncAttributeDefinitionsToAllVariations(supabase, coreItemId, defs);
+      await persistAttributeDefinitionsForCoreItem(supabase, coreItemId, defs);
 
       setNewAttributeName('');
       setSelectedCommonAttributes([]);
       setShowAttributeDialog(false);
       fetchAttributes();
+      toast.success('Attributes saved');
     } catch (error) {
       console.error('Error creating attribute:', error);
       toast.error('Failed to create attribute');
@@ -242,12 +236,6 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
 
     setLoading(true);
     try {
-      const variationCount = await countVariationsForCoreItem(supabase, coreItemId);
-      if (variationCount === 0) {
-        toast.error('Create at least one variation before adding attribute values.');
-        return;
-      }
-
       const defs = (await fetchAttributeDefinitionsForCoreItem(
         supabase,
         coreItemId
@@ -273,12 +261,13 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
 
       defs[attrIndex] = { ...attr, values };
 
-      await syncAttributeDefinitionsToAllVariations(supabase, coreItemId, defs);
-      
+      await persistAttributeDefinitionsForCoreItem(supabase, coreItemId, defs);
+
       setNewValueText('');
       setSelectedAttributeId('');
       setShowValueDialog(false);
       fetchAttributes();
+      toast.success('Attribute value saved');
     } catch (error) {
       console.error('Error creating attribute value:', error);
       toast.error('Failed to create attribute value');
@@ -394,16 +383,10 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
     if (!confirm('Are you sure you want to delete this attribute? This will also delete all its values.')) return;
 
     try {
-      const variationCount = await countVariationsForCoreItem(supabase, coreItemId);
-      if (variationCount === 0) {
-        toast.error('No variations to update.');
-        return;
-      }
-
       const defs = (
         (await fetchAttributeDefinitionsForCoreItem(supabase, coreItemId)) as any[]
       ).filter((a: any) => a.id !== attributeId);
-      await syncAttributeDefinitionsToAllVariations(supabase, coreItemId, defs);
+      await persistAttributeDefinitionsForCoreItem(supabase, coreItemId, defs);
 
       fetchAttributes();
     } catch (error) {
@@ -416,12 +399,6 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
     if (!confirm('Are you sure you want to delete this attribute value?')) return;
 
     try {
-      const variationCount = await countVariationsForCoreItem(supabase, coreItemId);
-      if (variationCount === 0) {
-        toast.error('No variations to update.');
-        return;
-      }
-
       const defs = (await fetchAttributeDefinitionsForCoreItem(
         supabase,
         coreItemId
@@ -431,7 +408,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
         values: (attr.values || []).filter((v: any) => v.id !== valueId)
       }));
 
-      await syncAttributeDefinitionsToAllVariations(supabase, coreItemId, nextDefs);
+      await persistAttributeDefinitionsForCoreItem(supabase, coreItemId, nextDefs);
 
       fetchAttributes();
     } catch (error) {
@@ -533,11 +510,10 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                       <DialogTitle>Create New Attribute</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
-                      {variations.length === 0 ? (
-                        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-                          Create at least one variation first. Attribute definitions are stored on variation rows.
-                        </p>
-                      ) : null}
+                      <p className="text-xs text-muted-foreground">
+                        Attributes and allowed values are saved on the tool first. When variants exist, they
+                        receive the same definition set so each variant can pick a value per attribute.
+                      </p>
                       <div>
                         <Label>Common Attributes</Label>
                         <div className="grid grid-cols-2 gap-2 mt-2 max-h-40 overflow-y-auto">

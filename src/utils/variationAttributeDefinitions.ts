@@ -1,24 +1,39 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
- * Attribute type/value schema for a tool lives on each `tool_variations` row (kept in sync).
- * Read from any one row for the core tool (latest updated_at).
+ * Canonical attribute definitions for a catalog tool live on `tools.attribute_definitions`.
+ * Each `tool_variations` row keeps a copy for historical/runtime use; mirror via
+ * `syncAttributeDefinitionsToAllVariations` when variants exist.
  */
 export async function fetchAttributeDefinitionsForCoreItem(
   supabase: SupabaseClient,
   coreItemId: string
 ): Promise<unknown[]> {
   const { data, error } = await supabase
-    .from('tool_variations')
+    .from('tools')
     .select('attribute_definitions')
-    .eq('core_item_id', coreItemId)
-    .order('updated_at', { ascending: false })
-    .limit(1)
+    .eq('id', coreItemId)
     .maybeSingle();
 
   if (error) throw error;
   const raw = data?.attribute_definitions;
   return Array.isArray(raw) ? raw : [];
+}
+
+export async function saveAttributeDefinitionsForCoreTool(
+  supabase: SupabaseClient,
+  coreItemId: string,
+  defs: unknown[]
+): Promise<void> {
+  const { error } = await supabase
+    .from('tools')
+    .update({
+      attribute_definitions: defs,
+      updated_at: new Date().toISOString(),
+    } as Record<string, unknown>)
+    .eq('id', coreItemId);
+
+  if (error) throw error;
 }
 
 export async function syncAttributeDefinitionsToAllVariations(
@@ -35,6 +50,16 @@ export async function syncAttributeDefinitionsToAllVariations(
     .eq('core_item_id', coreItemId);
 
   if (error) throw error;
+}
+
+/** Save canonical defs on `tools`, then copy to all rows in `tool_variations` for this core tool (if any). */
+export async function persistAttributeDefinitionsForCoreItem(
+  supabase: SupabaseClient,
+  coreItemId: string,
+  defs: unknown[]
+): Promise<void> {
+  await saveAttributeDefinitionsForCoreTool(supabase, coreItemId, defs);
+  await syncAttributeDefinitionsToAllVariations(supabase, coreItemId, defs);
 }
 
 export async function countVariationsForCoreItem(
