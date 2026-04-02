@@ -251,7 +251,7 @@ export function HomeTasksTable({
     { id: 'pro', label: 'Pro', labelDesktop: 'Professional' },
   ];
 
-  return <div className="space-y-2 md:space-y-3 flex flex-col h-full">
+  return <div className="flex h-full min-h-0 flex-1 flex-col space-y-2 md:space-y-3">
       {/* Full-width desktop (xl+): DIY level pills + inline “Show completed” */}
       <div className="hidden xl:flex flex-row gap-4 items-center pt-3">
         {onAddTask && (
@@ -435,8 +435,8 @@ export function HomeTasksTable({
       </div>
 
       {/* Table: mobile = check + task + due; desktop = full columns */}
-      <div className="border rounded-lg md:rounded-lg rounded-none border-x-0 md:border-x overflow-hidden flex-1">
-        <div className="overflow-auto h-full">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-none border border-x-0 border-border md:rounded-lg md:border-x">
+        <div className="h-full min-h-0 flex-1 overflow-auto">
           <Table>
             <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:!h-auto [&_th]:!min-h-[4.25rem] [&_th]:!px-1 [&_th]:!py-3 [&_th]:leading-none md:[&_th]:!min-h-11 md:[&_th]:!px-3 md:[&_th]:!py-2.5">
               <TableRow className="border-sky-500/50">
