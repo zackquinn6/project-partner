@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,7 +17,7 @@ interface PhaseIncorporationDialogProps {
     sourceProjectId: string;
     sourceProjectName: string;
     incorporatedRevision: number;
-  }) => void;
+  }) => boolean | Promise<boolean>;
 }
 interface PublishedProject {
   id: string;
@@ -167,7 +167,7 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
     const phase = selectedProject?.phases.find(p => p.id === phaseId);
     setSelectedPhase(phase || null);
   };
-  const handleIncorporate = () => {
+  const handleIncorporate = async () => {
     if (!selectedProject || !selectedPhase) {
       toast({
         title: "Selection Required",
@@ -183,18 +183,10 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
       incorporatedRevision: selectedProject.revision_number,
       isLinked: true
     };
-    onIncorporatePhase(incorporatedPhase);
-
-    // Reset dialog state
-    setSearchQuery('');
-    setProjects([]);
-    setSelectedProject(null);
-    setSelectedPhase(null);
-    onOpenChange(false);
-    toast({
-      title: "Phase Incorporated",
-      description: `Phase "${selectedPhase.name}" from project "${selectedProject.name}" has been incorporated.`
-    });
+    const ok = await onIncorporatePhase(incorporatedPhase);
+    if (ok) {
+      setSelectedPhase(null);
+    }
   };
 
   // Filter out standard phases and ensure phases have valid names
@@ -205,12 +197,14 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
     return phase.isStandard !== true || phase.isLinked === true;
   }) || [];
   return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent
+        className="flex max-h-[min(100dvh,100vh)] w-full max-w-[min(98vw,70rem)] flex-col gap-4 overflow-y-auto md:!max-w-[min(98vw,70rem)]"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Incorporate Phase from Another Project</DialogTitle>
-          <DialogDescription>
-            Select a project and phase to incorporate into the current project. The phase will be linked to the source project and will update automatically when the source is modified.
-          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">
@@ -234,7 +228,7 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
           ) : projects.length > 0 ? (
             <div className="space-y-2">
               <label className="text-sm font-medium">Select Project ({projects.length} available)</label>
-              <div className="border rounded-md max-h-64 overflow-y-auto">
+              <div className="border rounded-md max-h-80 overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -320,7 +314,11 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button onClick={handleIncorporate} disabled={!selectedProject || !selectedPhase}>
+            <Button
+              type="button"
+              onClick={() => void handleIncorporate()}
+              disabled={!selectedProject || !selectedPhase}
+            >
               Add to Project
             </Button>
           </div>

@@ -757,7 +757,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           resolvedIncorporated = await resolveIncorporatedSourcePhase(
             sourceProject.id,
             phaseData.source_phase_id,
-            phaseData.name
+            phaseData.name,
+            phaseData.source_project_id
           );
 
           const priorName = phaseData.name;
@@ -3583,13 +3584,13 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         onIncorporatePhase={async (phaseToIncorporate) => {
           if (!currentProject?.id) {
             toast.error('No project selected');
-            return;
+            return false;
           }
           
           try {
             if (!phaseToIncorporate.id) {
               toast.error('Incorporation requires a source phase id');
-              return;
+              return false;
             }
 
             const { data: existingDup } = await supabase
@@ -3601,7 +3602,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
 
             if (existingDup) {
               toast.error('This source phase is already incorporated into this project');
-              return;
+              return false;
             }
 
             const { data: existingPhases } = await supabase
@@ -3612,7 +3613,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
 
             if (existingPhases && existingPhases.length > 0) {
               toast.error(`A phase named "${phaseToIncorporate.name}" already exists in this project`);
-              return;
+              return false;
             }
             
             // Get current phases to determine position
@@ -3671,11 +3672,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             loadedProjectIdRef.current = null;
             setPhases(sortedPhases);
             
-            setShowIncorporationDialog(false);
             toast.success(`Phase "${phaseToIncorporate.name}" incorporated successfully`);
+            return true;
           } catch (error: any) {
             console.error('Error incorporating phase:', error);
             toast.error(`Failed to incorporate phase: ${error.message || 'Unknown error'}`);
+            return false;
           }
         }}
       />
