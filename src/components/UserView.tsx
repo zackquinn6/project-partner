@@ -986,6 +986,10 @@ export default function UserView({
                 setCurrentProjectRun(null);
                 setViewMode('listing');
                 onProjectSelected?.('listing' as any);
+                navigate('/', {
+                  replace: true,
+                  state: isMobile ? { view: 'user', mobileView: 'projects' } : { view: 'user' },
+                });
               }
               return;
             }
@@ -997,6 +1001,10 @@ export default function UserView({
               setCurrentProjectRun(null);
               setViewMode('listing');
               onProjectSelected?.('listing' as any);
+              navigate('/', {
+                replace: true,
+                state: isMobile ? { view: 'user', mobileView: 'projects' } : { view: 'user' },
+              });
               return;
             }
             
@@ -1116,7 +1124,17 @@ export default function UserView({
         }
       }
     }
-  }, [projectRunId, projectRuns, setCurrentProjectRun, viewMode, onProjectSelected, currentProjectRun, isKickoffComplete]);
+  }, [
+    projectRunId,
+    projectRuns,
+    setCurrentProjectRun,
+    viewMode,
+    onProjectSelected,
+    currentProjectRun,
+    isKickoffComplete,
+    navigate,
+    isMobile,
+  ]);
 
   // SIMPLIFIED VIEW MODE LOGIC - Single effect to prevent race conditions
   useEffect(() => {
@@ -1995,6 +2013,13 @@ export default function UserView({
     // CRITICAL FIX: Use the step's stored phaseName first as it's most reliable
     if (currentStep.phaseName) {
       const processedPhases = activeProject.phases;
+      if (!Array.isArray(processedPhases)) {
+        console.error("❌ getCurrentPhase: project phases missing or not an array", {
+          stepId: currentStep.id,
+          projectId: activeProject.id,
+        });
+        return null;
+      }
       const phaseByName = processedPhases.find(phase => phase.name === currentStep.phaseName);
       
       if (phaseByName) {
@@ -2013,7 +2038,9 @@ export default function UserView({
       stepId: currentStep.id,
       stepName: currentStep.step,
       stepPhaseName: currentStep.phaseName,
-      availablePhases: activeProject.phases.map(p => p.name)
+      availablePhases: Array.isArray(activeProject.phases)
+        ? activeProject.phases.map(p => p.name)
+        : []
     });
     return null;
   };
@@ -2549,7 +2576,7 @@ export default function UserView({
             return;
           }
           
-          const operationNamesOrdered = originalPhase.operations.map(op => op.name);
+          const operationNamesOrdered = (originalPhase.operations ?? []).map(op => op.name);
           
           // Add operations in their original order
           operationNamesOrdered.forEach(operationName => {
@@ -2583,7 +2610,7 @@ export default function UserView({
         });
         
         // Add operations in their original order from the phase
-        const operationNamesOrdered = item.phase.operations.map(op => op.name);
+        const operationNamesOrdered = (item.phase.operations ?? []).map(op => op.name);
         operationNamesOrdered.forEach(operationName => {
           if (stepsByOperation.has(operationName)) {
             grouped[phaseName][operationName] = stepsByOperation.get(operationName)!;
@@ -2638,7 +2665,7 @@ export default function UserView({
   });
   
   console.log("🔍 Debug phase structure:", {
-    originalPhases: activeProject?.phases.length || 0,
+    originalPhases: Array.isArray(activeProject?.phases) ? activeProject.phases.length : 0,
     workflowPhases: workflowPhases.length,
     phaseNames: workflowPhases.map(p => p.name),
     currentStepId: currentStep?.id,
@@ -2708,43 +2735,9 @@ export default function UserView({
       </div>
     );
   }
-  if (projectRunId && !currentProjectRun && safeProjectRuns.length > 0) {
-    console.log("❌ UserView: Have projectRunId but currentProjectRun not found in loaded runs");
-    console.log("Available project run IDs:", safeProjectRuns.map(pr => pr.id));
-    console.log("Looking for projectRunId:", projectRunId);
-    
-    // MOBILE FIX: Never show ProjectListing error recovery on mobile
-    if (isMobile) {
-      console.log("🚨 SECOND WINDOW BLOCKED - Mobile error recovery should not render ProjectListing");
-      return null;
-    }
-    
-    // Clear the invalid projectRunId and go to listing
-    console.log("🧹 Clearing invalid projectRunId and redirecting to listing");
-    window.history.replaceState({ view: 'user' }, document.title, window.location.pathname);
-    
-    return <ProjectListing 
-      onProjectSelect={project => {
-        console.log("🎯 Project selected from error recovery:", project, {currentProjectRun: !!currentProjectRun});
-        if (project === null) {
-          setViewMode('listing');
-          return;
-        }
-          if (project === 'workflow') {
-            console.log("🎯 Received workflow signal from error recovery - FORCING WORKFLOW MODE NOW!");
-            setViewMode('workflow');
-            onProjectSelected?.();
-            return;
-          }
-        console.log("🎯 Setting workflow mode for project selection from error recovery");
-        setViewMode('workflow');
-        onProjectSelected?.();
-      }}
-    />;
-  }
-  
-  if (projectRunId && !currentProjectRun && safeProjectRuns.length === 0) {
-    console.log("⏳ UserView: Have projectRunId but project runs not loaded yet, showing loading...");
+  // New run from catalog: refetch may not have merged into context yet, or fetch-by-id is in flight.
+  // Never treat "not in projectRuns yet" as invalid (same rule as the load effect above).
+  if (projectRunId && !currentProjectRun) {
     return (
       <div className="container mx-auto px-6 py-8">
         <div className="flex items-center justify-center min-h-96">
@@ -2848,12 +2841,14 @@ export default function UserView({
              const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
              
              // Find all actual Kickoff phase operation steps to mark complete
-             const kickoffPhase = currentProjectRun.phases.find(p => p.name === 'Kickoff');
+             const kickoffPhase = Array.isArray(currentProjectRun.phases)
+               ? currentProjectRun.phases.find(p => p.name === 'Kickoff')
+               : undefined;
              
              // CRITICAL: Collect ALL step IDs from ALL operations in the Kickoff phase
              const allKickoffStepIds: string[] = [];
              if (kickoffPhase) {
-               kickoffPhase.operations.forEach(operation => {
+               (kickoffPhase.operations ?? []).forEach(operation => {
                  if (operation.steps && Array.isArray(operation.steps)) {
                    operation.steps.forEach(step => {
                      if (step.id) {
@@ -2971,7 +2966,18 @@ export default function UserView({
               });
               
               // Update project status to in-progress with all steps and phase rating
-              const planningPhase = currentProjectRun.phases.find((p) => p?.name === 'Planning');
+              const phasesForProgress = Array.isArray(currentProjectRun.phases) ? currentProjectRun.phases : [];
+              const planningPhase = phasesForProgress.find((p) => p?.name === 'Planning');
+              let totalWorkflowSteps = 0;
+              for (const phase of phasesForProgress) {
+                for (const operation of phase?.operations ?? []) {
+                  totalWorkflowSteps += (operation?.steps ?? []).length;
+                }
+              }
+              const progressAfterKickoff =
+                totalWorkflowSteps > 0
+                  ? Math.round((uniqueSteps.length / totalWorkflowSteps) * 100)
+                  : currentProjectRun.progress;
               const updatedRun = {
                 ...currentProjectRun,
                 completedSteps: uniqueSteps,
@@ -2987,11 +2993,7 @@ export default function UserView({
                 ...(preservedBudget !== null && { initial_budget: preservedBudget }),
                 ...(preservedTimeline !== null && { initial_timeline: preservedTimeline }),
                 ...(preservedSizing !== null && { initial_sizing: preservedSizing }),
-                progress: Math.round((uniqueSteps.length / (currentProjectRun.phases.reduce((total, phase) => {
-                  return total + phase.operations.reduce((opTotal, operation) => {
-                    return opTotal + operation.steps.length;
-                  }, 0);
-                }, 0))) * 100),
+                progress: progressAfterKickoff,
                 updatedAt: new Date()
               };
               
@@ -3033,6 +3035,17 @@ export default function UserView({
               setCompletedSteps(new Set(uniqueSteps));
             } else {
               // Update project run if kickoff phase not found
+              const phasesForProgressElse = Array.isArray(currentProjectRun.phases) ? currentProjectRun.phases : [];
+              let totalWorkflowStepsElse = 0;
+              for (const phase of phasesForProgressElse) {
+                for (const operation of phase?.operations ?? []) {
+                  totalWorkflowStepsElse += (operation?.steps ?? []).length;
+                }
+              }
+              const progressAfterKickoffElse =
+                totalWorkflowStepsElse > 0
+                  ? Math.round((uniqueSteps.length / totalWorkflowStepsElse) * 100)
+                  : currentProjectRun.progress;
               const updatedRun = {
                 ...currentProjectRun,
                 completedSteps: uniqueSteps,
@@ -3040,11 +3053,7 @@ export default function UserView({
                 ...(persist?.customization_decisions !== undefined
                   ? { customization_decisions: persist.customization_decisions }
                   : {}),
-                progress: Math.round((uniqueSteps.length / (currentProjectRun.phases.reduce((total, phase) => {
-                  return total + phase.operations.reduce((opTotal, operation) => {
-                    return opTotal + operation.steps.length;
-                  }, 0);
-                }, 0))) * 100),
+                progress: progressAfterKickoffElse,
                 updatedAt: new Date()
               };
               
