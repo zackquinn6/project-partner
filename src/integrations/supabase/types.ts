@@ -2881,41 +2881,54 @@ export type Database = {
       project_run_spaces: {
         Row: {
           created_at: string
+          home_space_id: string | null
           id: string
           is_from_home: boolean | null
           priority: number | null
           project_run_id: string
           scale_unit: string | null
           scale_value: number | null
+          sizing_by_unit: Json | null
           space_name: string
           space_type: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          home_space_id?: string | null
           id?: string
           is_from_home?: boolean | null
           priority?: number | null
           project_run_id: string
           scale_unit?: string | null
           scale_value?: number | null
+          sizing_by_unit?: Json | null
           space_name: string
           space_type?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          home_space_id?: string | null
           id?: string
           is_from_home?: boolean | null
           priority?: number | null
           project_run_id?: string
           scale_unit?: string | null
           scale_value?: number | null
+          sizing_by_unit?: Json | null
           space_name?: string
           space_type?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "project_run_spaces_home_space_id_fkey"
+            columns: ["home_space_id"]
+            isOneToOne: false
+            referencedRelation: "home_spaces"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_run_spaces_project_run_id_fkey"
             columns: ["project_run_id"]

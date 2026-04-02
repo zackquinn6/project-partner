@@ -233,33 +233,31 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
         ? Math.max(...selectedSpaces.map(s => s.priority || 0)) + 1
         : 1;
 
-      // Save to database - this creates a reference to the home space, not a copy
-      // The home_space_id links to the home_spaces table, but we don't modify home_spaces
+      // Save to database - reference home_spaces via home_space_id (requires DB column + sizing_by_unit).
+      const sizingByUnit =
+        homeSpace.square_footage !== null &&
+        homeSpace.square_footage !== undefined &&
+        projectScaleUnit
+          ? { [projectScaleUnit]: homeSpace.square_footage }
+          : null;
+
       const { data, error } = await supabase
         .from('project_run_spaces')
         .insert({
           project_run_id: projectRunId,
-          home_space_id: homeSpace.id, // Reference to home space, not a copy
+          home_space_id: homeSpace.id,
           space_name: homeSpace.space_name,
           space_type: homeSpace.space_type || 'room',
-          scale_value: homeSpace.square_footage, // Legacy column
-          scale_unit: projectScaleUnit, // Legacy column
-          is_from_home: true, // Mark as imported from home
-          priority: nextPriority
+          scale_value: homeSpace.square_footage,
+          scale_unit: projectScaleUnit,
+          is_from_home: true,
+          priority: nextPriority,
+          ...(sizingByUnit ? { sizing_by_unit: sizingByUnit } : {}),
         })
         .select()
         .single();
 
       if (error) throw error;
-
-      // Update sizing on the space if square_footage exists
-      if (data.id && homeSpace.square_footage !== null && homeSpace.square_footage !== undefined && projectScaleUnit) {
-        const next = { [projectScaleUnit]: homeSpace.square_footage };
-        await supabase
-          .from('project_run_spaces')
-          .update({ sizing_by_unit: next })
-          .eq('id', data.id);
-      }
 
       const newSpace: ProjectSpace = {
         id: data.id,
@@ -312,30 +310,29 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
         ? Math.max(...selectedSpaces.map(s => s.priority || 0)) + 1
         : 1;
 
-      // Save to database
+      const customSizingByUnit =
+        customScaleValue !== undefined &&
+        customScaleValue !== null &&
+        projectScaleUnit
+          ? { [projectScaleUnit]: customScaleValue }
+          : null;
+
       const { data, error } = await supabase
         .from('project_run_spaces')
         .insert({
           project_run_id: projectRunId,
           space_name: customSpaceName,
           space_type: customSpaceType || 'custom',
-          scale_value: customScaleValue, // Legacy column for backward compatibility
-          scale_unit: projectScaleUnit, // Legacy column for backward compatibility
+          scale_value: customScaleValue,
+          scale_unit: projectScaleUnit,
           is_from_home: false,
-          priority: nextPriority
+          priority: nextPriority,
+          ...(customSizingByUnit ? { sizing_by_unit: customSizingByUnit } : {}),
         })
         .select()
         .single();
 
       if (error) throw error;
-
-      // Set sizing on the space
-      if (data.id && customScaleValue !== undefined && customScaleValue !== null && projectScaleUnit) {
-        await supabase
-          .from('project_run_spaces')
-          .update({ sizing_by_unit: { [projectScaleUnit]: customScaleValue } })
-          .eq('id', data.id);
-      }
 
       const newSpace: ProjectSpace = {
         id: data.id,
