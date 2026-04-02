@@ -20,7 +20,7 @@ interface CommunicationPlanStepProps {
   onComplete: () => void;
   isCompleted: boolean;
   /** Opens Communication Plan at host level (e.g. UserView) */
-  onOpenCommunicationPlan?: () => void;
+  onOpenCommunicationPlan?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
 }
 
 export const CommunicationPlanStep: React.FC<CommunicationPlanStepProps> = ({
@@ -31,11 +31,10 @@ export const CommunicationPlanStep: React.FC<CommunicationPlanStepProps> = ({
   const handleOpen = (e: React.MouseEvent) => {
     e.preventDefault();
     if (onOpenCommunicationPlan) {
-      onOpenCommunicationPlan();
+      onOpenCommunicationPlan({ fromPlanningWizard: true, onComplete });
     } else {
       window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey: 'communication-plan' } }));
     }
-    onComplete();
   };
 
   return (

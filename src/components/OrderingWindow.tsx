@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Slider } from "@/components/ui/slider";
 import { Project, Material, Tool } from "@/interfaces/Project";
 import { supabase } from "@/integrations/supabase/client";
 import { useResponsive } from "@/hooks/useResponsive";
@@ -41,6 +42,18 @@ interface ShoppingSite {
   url: string;
   color: string;
 }
+const MATERIAL_RISK_LEVELS = [
+  { value: 'basics-only', label: 'Basics only', description: 'Buy only the basics.' },
+  { value: 'balanced', label: 'Balanced', description: 'Carry a practical amount of extra material.' },
+  { value: 'contingency-on-everything', label: 'Contingency on everything', description: 'Buy contingency on everything.' },
+] as const;
+const QUALITY_TIER_OPTIONS = [
+  { value: 'economy', label: 'Economy' },
+  { value: 'mid', label: 'Mid' },
+  { value: 'premium', label: 'Premium' },
+] as const;
+type MaterialRiskLevel = typeof MATERIAL_RISK_LEVELS[number]['value'];
+type QualityTierPreference = typeof QUALITY_TIER_OPTIONS[number]['value'];
 const SHOPPING_SITES: ShoppingSite[] = [{
   name: "Lowe's",
   url: "https://lowes.com",
@@ -86,6 +99,8 @@ export function OrderingWindow({
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [itemDetailsOpen, setItemDetailsOpen] = useState(false);
   const [accordionOpenValues, setAccordionOpenValues] = useState<string[]>([]);
+  const [materialRiskLevel, setMaterialRiskLevel] = useState<MaterialRiskLevel>('basics-only');
+  const [qualityTierPreference, setQualityTierPreference] = useState<QualityTierPreference>('mid');
 
   useEffect(() => {
     if (open) {
@@ -120,6 +135,16 @@ export function OrderingWindow({
     if (savedData.materialLeadTimes && typeof savedData.materialLeadTimes === 'object') {
       setMaterialLeadTimes(savedData.materialLeadTimes);
     }
+    setMaterialRiskLevel(
+      savedData.materialRiskLevel === 'balanced' || savedData.materialRiskLevel === 'contingency-on-everything'
+        ? savedData.materialRiskLevel
+        : 'basics-only'
+    );
+    setQualityTierPreference(
+      savedData.qualityTierPreference === 'economy' || savedData.qualityTierPreference === 'premium'
+        ? savedData.qualityTierPreference
+        : 'mid'
+    );
     if (savedData.orderedItems && Array.isArray(savedData.orderedItems)) {
       const shoppedToolIds = new Set<string>();
       const shoppedMaterialIds = new Set<string>();
@@ -139,12 +164,18 @@ export function OrderingWindow({
   const saveShoppingData = async (
     shoppedToolsSet: Set<string>,
     shoppedMaterialsSet: Set<string>,
-    leadTimesOverride?: Record<string, number>
+    overrides?: {
+      materialLeadTimes?: Record<string, number>;
+      materialRiskLevel?: MaterialRiskLevel;
+      qualityTierPreference?: QualityTierPreference;
+    }
   ) => {
     if (!projectRun) return;
     try {
       const prevShoppingData = projectRun.shopping_checklist_data || {};
-      const nextMaterialLeadTimes = leadTimesOverride ? leadTimesOverride : materialLeadTimes;
+      const nextMaterialLeadTimes = overrides?.materialLeadTimes ?? materialLeadTimes;
+      const nextMaterialRiskLevel = overrides?.materialRiskLevel ?? materialRiskLevel;
+      const nextQualityTierPreference = overrides?.qualityTierPreference ?? qualityTierPreference;
 
       const orderedItems = [...Array.from(shoppedToolsSet).map(toolId => {
         const tool = uniqueTools.find(t => t.id === toolId);
@@ -174,7 +205,9 @@ export function OrderingWindow({
           orderedItems,
           completedDate: allItemsOrdered ? new Date().toISOString() : null,
           scheduleSnapshot: scheduleSnapshot,
-          materialLeadTimes: nextMaterialLeadTimes
+          materialLeadTimes: nextMaterialLeadTimes,
+          materialRiskLevel: nextMaterialRiskLevel,
+          qualityTierPreference: nextQualityTierPreference,
         }
       });
     } catch (error) {
@@ -430,6 +463,27 @@ export function OrderingWindow({
     return needDates.find(nd => (nd.itemId === itemId || nd.itemName === itemName) && nd.itemType === itemType);
   };
 
+  const materialRiskIndex = MATERIAL_RISK_LEVELS.findIndex(level => level.value === materialRiskLevel);
+  const qualityTierIndex = QUALITY_TIER_OPTIONS.findIndex(level => level.value === qualityTierPreference);
+  const selectedMaterialRisk = MATERIAL_RISK_LEVELS[Math.max(materialRiskIndex, 0)];
+  const selectedQualityTier = QUALITY_TIER_OPTIONS[Math.max(qualityTierIndex, 0)];
+
+  const updateMaterialLeadTime = (materialId: string, rawValue: string) => {
+    const parsed = Number(rawValue);
+    if (Number.isNaN(parsed) || parsed < 0) {
+      toast.error('Lead days must be 0 or greater');
+      return;
+    }
+    const nextLeadTimes = { ...materialLeadTimes };
+    if (parsed === 0) {
+      delete nextLeadTimes[materialId];
+    } else {
+      nextLeadTimes[materialId] = parsed;
+    }
+    setMaterialLeadTimes(nextLeadTimes);
+    saveShoppingData(shoppedTools, shoppedMaterials, { materialLeadTimes: nextLeadTimes });
+  };
+
   // Filter items for display
   const activeTools = uniqueTools.filter(tool => !shoppedTools.has(tool.id));
   const activeMaterials = uniqueMaterials.filter(material => !shoppedMaterials.has(material.id));
@@ -481,9 +535,136 @@ export function OrderingWindow({
               Shopping Settings
             </AccordionTrigger>
             <AccordionContent className="space-y-4 pb-4 pt-0">
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h4 className="font-medium text-sm">Tool library</h4>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Open your personal tools library to review what you already own.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))}
+                  >
+                    Edit Tool Library
+                  </Button>
+                </div>
+              </div>
+
               <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3">
                 <Checkbox id="show-shopped-main" checked={showShopped} onCheckedChange={checked => setShowShopped(checked === true)} />
                 <label htmlFor="show-shopped-main" className="text-sm font-medium">Show completed items</label>
+              </div>
+
+              <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h4 className="font-medium text-sm">Material risk level</h4>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Choose how aggressively to buy extra materials.
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    {selectedMaterialRisk.label}
+                  </Badge>
+                </div>
+                <Slider
+                  value={[Math.max(materialRiskIndex, 0)]}
+                  min={0}
+                  max={MATERIAL_RISK_LEVELS.length - 1}
+                  step={1}
+                  onValueChange={(value) => {
+                    const nextLevel = MATERIAL_RISK_LEVELS[value[0] ?? 0];
+                    if (!nextLevel || nextLevel.value === materialRiskLevel) return;
+                    setMaterialRiskLevel(nextLevel.value);
+                    saveShoppingData(shoppedTools, shoppedMaterials, { materialRiskLevel: nextLevel.value });
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">{selectedMaterialRisk.description}</p>
+              </div>
+
+              <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h4 className="font-medium text-sm">Quality tier preference</h4>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Set your default quality target for materials in this project.
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    {selectedQualityTier.label}
+                  </Badge>
+                </div>
+                <Slider
+                  value={[Math.max(qualityTierIndex, 0)]}
+                  min={0}
+                  max={QUALITY_TIER_OPTIONS.length - 1}
+                  step={1}
+                  onValueChange={(value) => {
+                    const nextTier = QUALITY_TIER_OPTIONS[value[0] ?? 0];
+                    if (!nextTier || nextTier.value === qualityTierPreference) return;
+                    setQualityTierPreference(nextTier.value);
+                    saveShoppingData(shoppedTools, shoppedMaterials, { qualityTierPreference: nextTier.value });
+                  }}
+                />
+              </div>
+
+              <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+                <div>
+                  <h4 className="font-medium text-sm">Material lead times</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Review every project material and set lead time in days. Default is 0 days.
+                  </p>
+                </div>
+                {uniqueMaterials.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No materials found for this project.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {uniqueMaterials.map((material) => {
+                      const rawLeadDays = materialLeadTimes[material.id];
+                      const leadDaysValue = typeof rawLeadDays === 'number' && !Number.isNaN(rawLeadDays) ? rawLeadDays : 0;
+                      const needDate = getNeedDate(material.id, material.name, 'material');
+                      return (
+                        <div key={`settings-${material.id}`} className="rounded-md border bg-background p-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">{material.name}</span>
+                                {material.totalQuantity ? (
+                                  <Badge variant="outline" className="text-[10px]">
+                                    Qty: {material.totalQuantity} {material.unit || 'pieces'}
+                                  </Badge>
+                                ) : null}
+                              </div>
+                              {needDate?.startDate ? (
+                                <p className="mt-1 text-xs text-blue-700">
+                                  Needed by {format(needDate.startDate, 'MM/dd/yyyy')}
+                                </p>
+                              ) : null}
+                            </div>
+                            <div className="w-24 shrink-0">
+                              <Label htmlFor={`lead-time-${material.id}`} className="text-[10px] text-muted-foreground">
+                                Lead days
+                              </Label>
+                              <Input
+                                id={`lead-time-${material.id}`}
+                                type="number"
+                                min={0}
+                                step={1}
+                                value={leadDaysValue}
+                                onChange={(e) => updateMaterialLeadTime(material.id, e.target.value)}
+                                className="mt-1 h-8 text-xs"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
@@ -583,45 +764,9 @@ export function OrderingWindow({
                                   <span>Needed by: {format(needDate.startDate, 'MM/dd/yyyy')}</span>
                                 </div>}
                               <div className="flex items-center gap-2 mt-2 ml-7">
-                                <span className="text-[10px] text-muted-foreground whitespace-nowrap">Lead days</span>
-                                <TooltipProvider delayDuration={100}>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="max-w-xs text-xs">
-                                      <p className="font-semibold">How it affects scheduling</p>
-                                      <p className="mt-1 text-muted-foreground">
-                                        This delays the start of any workflow step that requires this material.
-                                      </p>
-                                      <p className="mt-1 text-muted-foreground">
-                                        Set to `0` for no delay.
-                                      </p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  step={1}
-                                  value={leadDaysValue}
-                                  onChange={(e) => {
-                                    const parsed = Number(e.target.value);
-                                    if (Number.isNaN(parsed) || parsed < 0) {
-                                      toast.error('Lead days must be 0 or greater');
-                                      return;
-                                    }
-                                    const nextLeadTimes = { ...materialLeadTimes };
-                                    if (parsed === 0) {
-                                      delete nextLeadTimes[material.id];
-                                    } else {
-                                      nextLeadTimes[material.id] = parsed;
-                                    }
-                                    setMaterialLeadTimes(nextLeadTimes);
-                                    saveShoppingData(shoppedTools, shoppedMaterials, nextLeadTimes);
-                                  }}
-                                  className="h-7 text-xs w-20"
-                                />
+                                <Badge variant="outline" className="text-[10px]">
+                                  Lead days: {leadDaysValue}
+                                </Badge>
                               </div>
                               {material.totalQuantity && <Badge variant="secondary" className="text-xs mt-2 ml-7">
                                   Qty: {material.totalQuantity} {material.unit || 'pieces'}
@@ -656,45 +801,9 @@ export function OrderingWindow({
                                   </p>
 
                                   <div className="flex items-center gap-2 mt-2 ml-7">
-                                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">Lead days</span>
-                                    <TooltipProvider delayDuration={100}>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-                                        </TooltipTrigger>
-                                        <TooltipContent className="max-w-xs text-xs">
-                                          <p className="font-semibold">How it affects scheduling</p>
-                                          <p className="mt-1 text-muted-foreground">
-                                            This delays the start of any workflow step that requires this material.
-                                          </p>
-                                          <p className="mt-1 text-muted-foreground">
-                                            Set to `0` for no delay.
-                                          </p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                    <Input
-                                      type="number"
-                                      min={0}
-                                      step={1}
-                                      value={leadDaysValue}
-                                      onChange={(e) => {
-                                        const parsed = Number(e.target.value);
-                                        if (Number.isNaN(parsed) || parsed < 0) {
-                                          toast.error('Lead days must be 0 or greater');
-                                          return;
-                                        }
-                                        const nextLeadTimes = { ...materialLeadTimes };
-                                        if (parsed === 0) {
-                                          delete nextLeadTimes[material.id];
-                                        } else {
-                                          nextLeadTimes[material.id] = parsed;
-                                        }
-                                        setMaterialLeadTimes(nextLeadTimes);
-                                        saveShoppingData(shoppedTools, shoppedMaterials, nextLeadTimes);
-                                      }}
-                                      className="h-7 text-xs w-20"
-                                    />
+                                    <Badge variant="outline" className="text-[10px]">
+                                      Lead days: {leadDaysValue}
+                                    </Badge>
                                   </div>
 
                                   {material.totalQuantity && <Badge variant="secondary" className="text-xs mt-2 ml-7 line-through">

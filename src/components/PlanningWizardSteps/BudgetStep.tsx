@@ -20,7 +20,7 @@ interface BudgetStepProps {
   onComplete: () => void;
   isCompleted: boolean;
   /** When provided (e.g. from UserView), opens Project Budgeting directly so the link works from the wizard */
-  onOpenBudgeting?: () => void;
+  onOpenBudgeting?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
 }
 
 export const BudgetStep: React.FC<BudgetStepProps> = ({
@@ -31,11 +31,12 @@ export const BudgetStep: React.FC<BudgetStepProps> = ({
   const handleOpenBudgeting = (e: React.MouseEvent) => {
     e.preventDefault();
     if (onOpenBudgeting) {
-      onOpenBudgeting();
+      onOpenBudgeting({ fromPlanningWizard: true, onComplete });
     } else {
-      window.dispatchEvent(new CustomEvent('open-project-budgeting'));
+      window.dispatchEvent(new CustomEvent('open-project-budgeting', {
+        detail: { fromPlanningWizard: true, onComplete }
+      }));
     }
-    onComplete();
   };
 
   return (

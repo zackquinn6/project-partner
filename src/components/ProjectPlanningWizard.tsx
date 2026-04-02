@@ -60,17 +60,17 @@ interface ProjectPlanningWizardProps {
   onOpenChange: (open: boolean) => void;
   onGoToWorkflow?: () => void;
   /** When provided, opens Project Budgeting from the Budget step without relying on window event */
-  onOpenBudgeting?: () => void;
+  onOpenBudgeting?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
   /** When provided, opens Risk Management at the host level (avoids nested dialog) */
-  onOpenRiskManagement?: () => void;
+  onOpenRiskManagement?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
   /** Opens Quality Control with settings expanded (planning wizard quality tab). */
-  onOpenQualityControl?: () => void;
+  onOpenQualityControl?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
   /** Opens Tool Access / rentals at host level (e.g. UserView). */
-  onOpenToolRentals?: () => void;
+  onOpenToolRentals?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
   /** Opens Expert Support at host level (e.g. UserView). */
-  onOpenExpertSupport?: () => void;
+  onOpenExpertSupport?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
   /** Opens Communication Plan at host level (e.g. UserView). */
-  onOpenCommunicationPlan?: () => void;
+  onOpenCommunicationPlan?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
   /** Persist workflow step completion + outputs when the user finishes every wizard step */
   onWorkflowFullyComplete?: (selectedTools: PlanningToolId[]) => void | Promise<void>;
   /** `fullscreen` = same shell as project kickoff (desktop). `dialog` = modal (e.g. mobile). */
@@ -98,6 +98,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   /** Final review screen after all tool steps are marked complete */
   const [wizardPhase, setWizardPhase] = useState<'steps' | 'confirm'>('steps');
   const stepNavRef = useRef<HTMLDivElement | null>(null);
+  const autoOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Local copy of selected tools so dropdown changes apply immediately without waiting for context */
   const [localSelectedTools, setLocalSelectedTools] = useState<PlanningToolId[] | null>(null);
 
@@ -121,6 +122,11 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     wasteRemovalEnabled,
     validToolIds,
   ]);
+
+  const planningWizardFirstPassCompleted = useMemo(() => {
+    const decisions = parseCustomizationDecisions(currentProjectRun?.customization_decisions);
+    return decisions.planning_wizard_first_pass_completed === true;
+  }, [currentProjectRun?.customization_decisions]);
 
   const wizardSteps = useMemo(() => {
     const selected = localSelectedTools ?? selectedToolsFromContext;
@@ -174,21 +180,127 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   }, [open]);
 
   useEffect(() => {
+    return () => {
+      if (autoOpenTimerRef.current) {
+        clearTimeout(autoOpenTimerRef.current);
+        autoOpenTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (currentStep >= wizardSteps.length) {
       setCurrentStep(Math.max(0, wizardSteps.length - 1));
     }
   }, [wizardSteps.length, currentStep]);
 
-  const handleStepComplete = (stepIndex: number) => {
-    const newCompletedSteps = new Set(completedSteps);
-    newCompletedSteps.add(stepIndex);
-    setCompletedSteps(newCompletedSteps);
-    if (stepIndex < wizardSteps.length - 1) {
-      setCurrentStep(stepIndex + 1);
-    } else {
-      setWizardPhase('confirm');
+  const markPlanningWizardFirstPassComplete = useCallback(() => {
+    if (!currentProjectRun || planningWizardFirstPassCompleted) return;
+    const decisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
+    void updateProjectRun({
+      ...currentProjectRun,
+      customization_decisions: {
+        ...decisions,
+        planning_wizard_first_pass_completed: true,
+      },
+      updatedAt: new Date(),
+    });
+  }, [currentProjectRun, planningWizardFirstPassCompleted, updateProjectRun]);
+
+  const openPlanningTool = useCallback(
+    (toolId: PlanningToolId | null, onComplete?: () => void) => {
+      if (!toolId) return;
+      const detail = { fromPlanningWizard: true, onComplete };
+
+      switch (toolId) {
+        case 'scope':
+          window.dispatchEvent(new CustomEvent('open-project-customizer', { detail }));
+          return;
+        case 'schedule':
+          window.dispatchEvent(new CustomEvent('open-project-scheduler', { detail }));
+          return;
+        case 'communication_plan':
+          if (onOpenCommunicationPlan) onOpenCommunicationPlan(detail);
+          else window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey: 'communication-plan' } }));
+          return;
+        case 'risk':
+          onOpenRiskManagement?.(detail);
+          return;
+        case 'budget':
+          if (onOpenBudgeting) onOpenBudgeting(detail);
+          else window.dispatchEvent(new CustomEvent('open-project-budgeting', { detail }));
+          return;
+        case 'shopping_list':
+          window.dispatchEvent(
+            new CustomEvent('openMaterialsSelection', {
+              detail: { ...detail, expandSettingsAccordionWhenOpen: true }
+            })
+          );
+          return;
+        case 'quality_control':
+          onOpenQualityControl?.(detail);
+          return;
+        case 'tool_rentals':
+          if (onOpenToolRentals) onOpenToolRentals(detail);
+          else window.dispatchEvent(new CustomEvent('show-tool-rentals'));
+          return;
+        case 'expert_support':
+          if (onOpenExpertSupport) onOpenExpertSupport(detail);
+          else window.dispatchEvent(new CustomEvent('show-expert-help'));
+          return;
+        case 'waste_removal':
+          window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey: 'waste-removal' } }));
+          return;
+        default:
+          return;
+      }
+    },
+    [
+      onOpenBudgeting,
+      onOpenCommunicationPlan,
+      onOpenExpertSupport,
+      onOpenQualityControl,
+      onOpenRiskManagement,
+      onOpenToolRentals,
+    ]
+  );
+
+  const handleStepComplete = useCallback((stepIndex: number) => {
+    if (autoOpenTimerRef.current) {
+      clearTimeout(autoOpenTimerRef.current);
+      autoOpenTimerRef.current = null;
     }
-  };
+
+    setCompletedSteps(prev => {
+      const nextCompleted = new Set(prev);
+      nextCompleted.add(stepIndex);
+      return nextCompleted;
+    });
+
+    if (stepIndex < wizardSteps.length - 1) {
+      const nextStepIndex = stepIndex + 1;
+      setCurrentStep(nextStepIndex);
+
+      if (!planningWizardFirstPassCompleted) {
+        const nextToolId = wizardSteps[nextStepIndex]?.toolId ?? null;
+        if (nextToolId) {
+          autoOpenTimerRef.current = setTimeout(() => {
+            autoOpenTimerRef.current = null;
+            openPlanningTool(nextToolId, () => handleStepComplete(nextStepIndex));
+          }, 1000);
+        }
+      }
+      return;
+    }
+
+    markPlanningWizardFirstPassComplete();
+    setWizardPhase('confirm');
+  }, [
+    wizardSteps,
+    planningWizardFirstPassCompleted,
+    openPlanningTool,
+    markPlanningWizardFirstPassComplete,
+  ]);
 
   const scrollStepNav = (direction: 'left' | 'right') => {
     const el = stepNavRef.current;
@@ -204,6 +316,10 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     wizardSteps.length > 0 && completedSteps.size === wizardSteps.length;
 
   const handleNext = () => {
+    if (autoOpenTimerRef.current) {
+      clearTimeout(autoOpenTimerRef.current);
+      autoOpenTimerRef.current = null;
+    }
     if (wizardPhase === 'confirm') return;
     const lastIndex = wizardSteps.length - 1;
     if (currentStep === lastIndex) {
@@ -218,6 +334,10 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   };
 
   const handlePrevious = () => {
+    if (autoOpenTimerRef.current) {
+      clearTimeout(autoOpenTimerRef.current);
+      autoOpenTimerRef.current = null;
+    }
     if (wizardPhase === 'confirm') {
       setWizardPhase('steps');
       setCurrentStep(Math.max(0, wizardSteps.length - 1));
@@ -347,11 +467,6 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         return (
           <ScheduleStep
             {...stepProps}
-            onNext={() => setCurrentStep(currentStep + 1)}
-            onGoToWorkflow={() => {
-              onOpenChange(false);
-              if (onGoToWorkflow) onGoToWorkflow();
-            }}
           />
         );
       case 'communication_plan':
@@ -396,10 +511,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                         variant="default"
                         className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
                         onClick={() => {
-                          window.dispatchEvent(
-                            new CustomEvent('open-app', { detail: { actionKey: 'waste-removal' } })
-                          );
-                          stepProps.onComplete();
+                          openPlanningTool('waste_removal', stepProps.onComplete);
                         }}
                       >
                         <Trash2 className="shrink-0" aria-hidden />

@@ -20,7 +20,7 @@ interface ToolRentalsStepProps {
   onComplete: () => void;
   isCompleted: boolean;
   /** Opens Tool Access / rentals at host level (e.g. UserView) to avoid relying on window events */
-  onOpenToolRentals?: () => void;
+  onOpenToolRentals?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
 }
 
 export const ToolRentalsStep: React.FC<ToolRentalsStepProps> = ({
@@ -31,11 +31,10 @@ export const ToolRentalsStep: React.FC<ToolRentalsStepProps> = ({
   const handleOpen = (e: React.MouseEvent) => {
     e.preventDefault();
     if (onOpenToolRentals) {
-      onOpenToolRentals();
+      onOpenToolRentals({ fromPlanningWizard: true, onComplete });
     } else {
       window.dispatchEvent(new CustomEvent('show-tool-rentals'));
     }
-    onComplete();
   };
 
   return (

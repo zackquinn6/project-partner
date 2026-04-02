@@ -19,8 +19,6 @@ import {
 interface ScheduleStepProps {
   onComplete: () => void;
   isCompleted: boolean;
-  onNext?: () => void;
-  onGoToWorkflow?: () => void;
 }
 
 export const ScheduleStep: React.FC<ScheduleStepProps> = ({
@@ -28,8 +26,9 @@ export const ScheduleStep: React.FC<ScheduleStepProps> = ({
   isCompleted,
 }) => {
   const handleOpenScheduler = () => {
-    window.dispatchEvent(new CustomEvent('open-project-scheduler'));
-    onComplete();
+    window.dispatchEvent(new CustomEvent('open-project-scheduler', {
+      detail: { fromPlanningWizard: true, onComplete }
+    }));
   };
 
   return (

@@ -221,11 +221,14 @@ export interface ProjectRun {
       itemType?: 'tool' | 'material';
     }>;
     completedDate?: string;
+    scheduleSnapshot?: unknown;
     /**
      * Project-specific material lead times.
      * Keyed by `material.id` as used in the shopping checklist.
      */
     materialLeadTimes?: Record<string, number>;
+    materialRiskLevel?: 'basics-only' | 'balanced' | 'contingency-on-everything';
+    qualityTierPreference?: 'economy' | 'mid' | 'premium';
   };
 
   // Step notes saved for the workflow (JSONB mapping stepId -> note text)

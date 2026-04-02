@@ -20,7 +20,7 @@ interface QualityControlStepProps {
   onComplete: () => void;
   isCompleted: boolean;
   /** Opens the full Quality Control app with settings accordion expanded */
-  onOpenQualityControlApp?: () => void;
+  onOpenQualityControlApp?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
 }
 
 export const QualityControlStep: React.FC<QualityControlStepProps> = ({
@@ -50,8 +50,7 @@ export const QualityControlStep: React.FC<QualityControlStepProps> = ({
                   variant="default"
                   className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
                   onClick={() => {
-                    onOpenQualityControlApp?.();
-                    onComplete();
+                    onOpenQualityControlApp?.({ fromPlanningWizard: true, onComplete });
                   }}
                 >
                   <ClipboardCheck className="shrink-0" aria-hidden />

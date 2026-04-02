@@ -21,6 +21,8 @@ import { HomeManager } from '../HomeManager';
 import { useAuth } from '../../contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
+import { PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME } from '../PlanningWizardSteps/planningToolWindowChrome';
+import { cn } from '@/lib/utils';
 
 interface ProjectCustomizerProps {
   open: boolean;
@@ -569,8 +571,26 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   }
 
   const StepCircle = ({ step }: { step: number }) => (
-    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground">
       {step}
+    </div>
+  );
+
+  const StepHeading = ({
+    step,
+    title,
+    description,
+  }: {
+    step: number;
+    title: string;
+    description: string;
+  }) => (
+    <div className="flex items-start gap-3 text-left">
+      <StepCircle step={step} />
+      <div className="min-w-0">
+        <div className="text-sm font-semibold text-foreground md:text-base">{title}</div>
+        <div className="mt-1 text-xs leading-relaxed text-muted-foreground md:text-sm">{description}</div>
+      </div>
     </div>
   );
 
@@ -587,38 +607,41 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         planningToolOnSave={() => void handleSaveCustomization()}
         planningToolSaveLabel="Save & Apply"
       >
-        <div className="flex flex-col h-full px-4 pb-4">
+        <div className="flex flex-col h-full">
           {/* Project Sizing Estimate Header */}
           {currentProjectRun?.initial_sizing && (
-            <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs text-muted-foreground mb-1">Project Size Estimate</div>
-                  <div className="text-xl font-bold text-primary">
-                    {currentProjectRun.initial_sizing} {getScalingUnitDisplay()}
+            <div className={cn('pb-2 pt-4 md:pt-5', PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME)}>
+              <div className="rounded-lg border border-primary/20 bg-primary/10 p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Project Size Estimate</div>
+                    <div className="text-xl font-bold text-primary">
+                      {currentProjectRun.initial_sizing} {getScalingUnitDisplay()}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          <ScrollArea className="flex-1 min-h-0">
+          <ScrollArea className={cn('flex-1 min-h-0', PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME)}>
             <Accordion
               type="single"
               collapsible
               value={activeStep}
               onValueChange={setActiveStep}
-              className="space-y-4"
+              className="space-y-4 pb-4"
             >
-              <AccordionItem value="step-1" className="rounded-lg border bg-background px-4">
-                <AccordionTrigger className="py-4 hover:no-underline">
-                  <div className="flex items-center gap-3 text-left">
-                    <StepCircle step={1} />
-                    <span className="font-semibold">Select / Edit Project Home</span>
-                  </div>
+              <AccordionItem value="step-1" className="overflow-hidden rounded-xl border bg-card shadow-sm">
+                <AccordionTrigger className="px-4 py-4 hover:no-underline md:px-5">
+                  <StepHeading
+                    step={1}
+                    title="Select / Edit Project Home"
+                    description="Choose the home this project belongs to before customizing spaces and work."
+                  />
                 </AccordionTrigger>
-                <AccordionContent className="pb-4">
-                  <div className="space-y-3">
+                <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
+                  <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Home className="w-4 h-4 text-muted-foreground" />
@@ -658,14 +681,15 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="step-2" className="rounded-lg border bg-background px-4">
-                <AccordionTrigger className="py-4 hover:no-underline">
-                  <div className="flex items-center gap-3 text-left">
-                    <StepCircle step={2} />
-                    <span className="font-semibold">Select / Edit Project Spaces</span>
-                  </div>
+              <AccordionItem value="step-2" className="overflow-hidden rounded-xl border bg-card shadow-sm">
+                <AccordionTrigger className="px-4 py-4 hover:no-underline md:px-5">
+                  <StepHeading
+                    step={2}
+                    title="Select / Edit Project Spaces"
+                    description="Define the spaces that are part of this project so the workflow can be customized correctly."
+                  />
                 </AccordionTrigger>
-                <AccordionContent className="pb-4">
+                <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
                   <Card className="bg-blue-50 border-blue-200">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
@@ -690,14 +714,15 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="step-3" className="rounded-lg border bg-background px-4">
-                <AccordionTrigger className="py-4 hover:no-underline">
-                  <div className="flex items-center gap-3 text-left">
-                    <StepCircle step={3} />
-                    <span className="font-semibold">Make Project Choices for each Space</span>
-                  </div>
+              <AccordionItem value="step-3" className="overflow-hidden rounded-xl border bg-card shadow-sm">
+                <AccordionTrigger className="px-4 py-4 hover:no-underline md:px-5">
+                  <StepHeading
+                    step={3}
+                    title="Make Project Choices for each Space"
+                    description="Review each selected space and choose the workflow options that apply to it."
+                  />
                 </AccordionTrigger>
-                <AccordionContent className="pb-4">
+                <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
                   <SpaceDecisionFlow
                     spaces={customizationState.spaces}
                     projectRun={currentProjectRun}
@@ -707,14 +732,15 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="step-4" className="rounded-lg border bg-background px-4">
-                <AccordionTrigger className="py-4 hover:no-underline">
-                  <div className="flex items-center gap-3 text-left">
-                    <StepCircle step={4} />
-                    <span className="font-semibold">Add Custom Work</span>
-                  </div>
+              <AccordionItem value="step-4" className="overflow-hidden rounded-xl border bg-card shadow-sm">
+                <AccordionTrigger className="px-4 py-4 hover:no-underline md:px-5">
+                  <StepHeading
+                    step={4}
+                    title="Add Custom Work"
+                    description="Append related workflow steps or fully custom work after the main project decisions are set."
+                  />
                 </AccordionTrigger>
-                <AccordionContent className="pb-4">
+                <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
                   <div className="space-y-4">
                     <Card>
                       <CardHeader className={isMobile ? 'pb-3' : ''}>

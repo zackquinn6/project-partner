@@ -225,6 +225,11 @@ function RiskFocusDashboard({
   const name = projectDisplayName?.trim() || null;
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 py-2 md:px-4">
+      <div className="mb-3 rounded-xl border border-amber-300/70 bg-amber-100 px-4 py-3 text-center shadow-sm">
+        <div className="text-base font-bold leading-tight text-amber-950 md:text-lg">
+          Do What You Can - Every Step Reduces Risk
+        </div>
+      </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <div className="min-w-0 sm:max-w-[38%] sm:flex-1">
           {name ? (
@@ -1135,7 +1140,7 @@ export function RiskManagementWindow({
                             aria-label={`Project progress ${riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%`}
                           >
                             <div className="flex items-center justify-between gap-1 text-[10px] text-muted-foreground">
-                              <span>Progress</span>
+                              <span>Project Progress</span>
                               <span className="tabular-nums font-medium text-foreground">
                                 {riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%
                               </span>
@@ -1183,9 +1188,9 @@ export function RiskManagementWindow({
                         </DropdownMenu>
                       ) : null}
                     </div>
-                    <div className="flex shrink-0 items-center gap-1">
+                    <div className="flex shrink-0 flex-col items-start gap-1.5">
                       {showRiskFocusHiddenToggle ? (
-                        <div className="flex max-w-[9rem] items-start gap-1">
+                        <div className="flex items-center gap-1.5">
                           <Checkbox
                             id="show-hidden-risks-riskless-mobile"
                             className="mt-0.5 h-3 w-3 shrink-0 rounded-sm border-[1.5px] [&_svg]:h-2.5 [&_svg]:w-2.5"
@@ -1196,13 +1201,12 @@ export function RiskManagementWindow({
                             htmlFor="show-hidden-risks-riskless-mobile"
                             className="cursor-pointer text-[10px] font-normal leading-tight"
                           >
-                            <span className="block leading-tight">Show</span>
-                            <span className="block leading-tight">Hidden risks</span>
+                            Show hidden risks
                           </Label>
                         </div>
                       ) : null}
                       {riskFocusRun ? (
-                        <div className="flex max-w-[9rem] items-start gap-1">
+                        <div className="flex items-center gap-1.5">
                           <Checkbox
                             id="hide-standard-risks-riskless-mobile"
                             className="mt-0.5 h-3 w-3 shrink-0 rounded-sm border-[1.5px] [&_svg]:h-2.5 [&_svg]:w-2.5"
@@ -1213,8 +1217,7 @@ export function RiskManagementWindow({
                             htmlFor="hide-standard-risks-riskless-mobile"
                             className="cursor-pointer text-[10px] font-normal leading-tight"
                           >
-                            <span className="block leading-tight">Hide</span>
-                            <span className="block leading-tight">Standard risks</span>
+                            Hide standard risks
                           </Label>
                         </div>
                       ) : null}

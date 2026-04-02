@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -88,7 +87,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
   // State to hold the budget goal value
   const [budgetGoal, setBudgetGoal] = useState<string | number | null>(null);
   const [projectBudgetDraft, setProjectBudgetDraft] = useState('');
-  const [advancedBudgetAccordionValue, setAdvancedBudgetAccordionValue] = useState<string | undefined>(undefined);
+  const [budgetingAccordionValue, setBudgetingAccordionValue] = useState<string>('set-project-budget');
 
   // Listen for performance window open/close events
   useEffect(() => {
@@ -265,7 +264,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
 
   useEffect(() => {
     if (editingItem) {
-      setAdvancedBudgetAccordionValue('advanced-budget');
+      setBudgetingAccordionValue('advanced-budget');
     }
   }, [editingItem]);
 
@@ -713,33 +712,6 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             </div>
           </div>
 
-          <Card className="mb-4">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Set Project Budget</CardTitle>
-              <CardDescription>
-                This amount is stored as the project budget goal and drives Budgeted vs Goal comparisons.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="project-budget-goal-input">Amount (USD)</Label>
-                <Input
-                  id="project-budget-goal-input"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={projectBudgetDraft}
-                  onChange={(e) => setProjectBudgetDraft(e.target.value)}
-                  placeholder="0.00"
-                  className="h-11 md:h-10"
-                />
-              </div>
-              <Button type="button" className="h-11 md:h-10 w-full sm:w-auto shrink-0" onClick={() => void applyProjectBudgetGoal()}>
-                Save project budget
-              </Button>
-            </CardContent>
-          </Card>
-
           {/* Summary Section - Stacked on mobile, side-by-side on desktop */}
           <div className="mb-4 space-y-3 md:space-y-0">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
@@ -770,7 +742,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                   // Open performance window without closing budgeting window
                   window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey: 'project-performance' } }));
                 }}
-                className="w-full md:w-auto h-11 md:h-9"
+                className="h-11 w-full md:h-9 md:w-auto"
               >
                 <TrendingUp className="w-4 h-4 mr-2" />
                 View Performance
@@ -778,32 +750,54 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             </div>
           </div>
 
-      <Tabs defaultValue="budget" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="budget">Budget</TabsTrigger>
-          <TabsTrigger value="actual">Actual Spend</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="budget" className="space-y-4 mt-6">
           <Accordion
             type="single"
             collapsible
-            value={advancedBudgetAccordionValue}
-            onValueChange={setAdvancedBudgetAccordionValue}
-            className="w-full rounded-lg border bg-card"
+            value={budgetingAccordionValue}
+            onValueChange={(value) => setBudgetingAccordionValue(value || '')}
+            className="w-full space-y-4"
           >
-            <AccordionItem value="advanced-budget" className="border-0 px-4">
-              <AccordionTrigger className="text-lg font-semibold hover:no-underline py-4">
-                Advanced Budget Planning
+            <AccordionItem value="set-project-budget" className="rounded-lg border bg-card px-4">
+              <AccordionTrigger className="py-4 text-lg font-semibold hover:no-underline">
+                Set project budget
               </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-4 pb-2">
+              <AccordionContent className="pb-4">
+                <CardDescription className="mb-4">
+                  This amount is stored as the project budget goal and drives Budgeted vs Goal comparisons.
+                </CardDescription>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="project-budget-goal-input">Amount (USD)</Label>
+                    <Input
+                      id="project-budget-goal-input"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={projectBudgetDraft}
+                      onChange={(e) => setProjectBudgetDraft(e.target.value)}
+                      placeholder="0.00"
+                      className="h-11 md:h-10"
+                    />
+                  </div>
+                  <Button type="button" className="h-11 w-full shrink-0 sm:w-auto md:h-10" onClick={() => void applyProjectBudgetGoal()}>
+                    Save project budget
+                  </Button>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="advanced-budget" className="rounded-lg border bg-card px-4">
+              <AccordionTrigger className="py-4 text-lg font-semibold hover:no-underline">
+                Advanced budget planning
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
+                <div className="space-y-4">
                   {editingItem && (
                     <p className="text-sm text-muted-foreground">
                       Editing: {editingItem.item}
                     </p>
                   )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <Label>Section/Phase <span className="text-red-500">*</span></Label>
                       <Select
@@ -836,7 +830,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <Label>Budget Amount <span className="text-red-500">*</span></Label>
                       <Input
@@ -867,19 +861,19 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                     <p className="text-xs text-muted-foreground">
                       <span className="text-red-500">*</span> Required fields
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row">
                       {editingItem && (
-                        <Button 
+                        <Button
                           onClick={cancelEditItem}
                           variant="outline"
-                          className="h-11 md:h-10 w-full md:w-auto"
+                          className="h-11 w-full md:h-10 sm:w-auto"
                         >
                           Cancel
                         </Button>
                       )}
-                      <Button 
+                      <Button
                         onClick={editingItem ? updateBudgetItem : addBudgetItem}
-                        className="h-11 md:h-10 w-full md:w-auto"
+                        className="h-11 w-full md:h-10 sm:w-auto"
                       >
                         {editingItem ? (
                           <>
@@ -895,76 +889,236 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                       </Button>
                     </div>
                   </div>
+
+                  <div className="space-y-4 pt-2">
+                    {uniqueSections.length === 0 ? (
+                      <Card>
+                        <CardContent className="text-center py-8">
+                          <p className="text-sm text-muted-foreground">No budget items yet. Add your first line item under Advanced Budget Planning.</p>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      uniqueSections.map(section => {
+                        if (!section) return null;
+                        const sectionTotals = getSectionTotal(section);
+                        const sectionItems = Array.isArray(budgetItems)
+                          ? budgetItems.filter(item => item && item.section === section)
+                          : [];
+
+                        return (
+                          <Card key={section}>
+                            <CardHeader>
+                              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                                <CardTitle className="text-base md:text-lg">{section}</CardTitle>
+                                <div className="text-xs md:text-sm text-muted-foreground">
+                                  Budget: ${sectionTotals.budgeted.toFixed(2)} | Actual: ${sectionTotals.actual.toFixed(2)}
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-2">
+                                {sectionItems.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground">No items in this section</p>
+                                ) : (
+                                  sectionItems.map(item => {
+                                    if (!item || !item.id) return null;
+                                    const budgetedAmount = typeof item.budgetedAmount === 'number' ? item.budgetedAmount : parseFloat(String(item.budgetedAmount || 0)) || 0;
+                                    const actualAmount = typeof item.actualAmount === 'number' ? item.actualAmount : parseFloat(String(item.actualAmount || 0)) || 0;
+
+                                    return (
+                                      <div key={item.id} className="flex items-center justify-between gap-2 rounded border p-2 md:p-3">
+                                        <div className="flex-1 min-w-0">
+                                          <div className="font-medium text-sm md:text-base truncate">{item.item || 'Untitled Item'}</div>
+                                          <div className="text-xs md:text-sm text-muted-foreground mt-1">
+                                            <Badge variant="outline" className="mr-2 text-[10px] md:text-xs">{item.category || 'other'}</Badge>
+                                            <span className="block md:inline">Budget: ${budgetedAmount.toFixed(2)}</span>
+                                            <span className="hidden md:inline"> | </span>
+                                            <span className="block md:inline">Actual: ${actualAmount.toFixed(2)}</span>
+                                          </div>
+                                        </div>
+                                        <div className="flex gap-1 flex-shrink-0">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => startEditItem(item)}
+                                            className="h-11 w-11 p-0 md:h-9 md:w-9"
+                                            title="Edit item"
+                                          >
+                                            <Edit className="w-4 h-4" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => removeBudgetItem(item.id)}
+                                            className="h-11 w-11 p-0 md:h-9 md:w-9"
+                                            title="Delete item"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
-          </Accordion>
 
-          <div className="space-y-4">
-            {uniqueSections.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <p className="text-sm text-muted-foreground">No budget items yet. Add your first line item under Advanced Budget Planning.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              uniqueSections.map(section => {
-                if (!section) return null;
-                const sectionTotals = getSectionTotal(section);
-                const sectionItems = Array.isArray(budgetItems) 
-                  ? budgetItems.filter(item => item && item.section === section)
-                  : [];
-                
-                return (
-                  <Card key={section}>
+            <AccordionItem value="budget-vs-actual-spend" className="rounded-lg border bg-card px-4">
+              <AccordionTrigger className="py-4 text-lg font-semibold hover:no-underline">
+                Budget vs Actual Spend
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
+                <div className="space-y-4">
+                  <Card>
                     <CardHeader>
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                        <CardTitle className="text-base md:text-lg">{section}</CardTitle>
-                        <div className="text-xs md:text-sm text-muted-foreground">
-                          Budget: ${sectionTotals.budgeted.toFixed(2)} | Actual: ${sectionTotals.actual.toFixed(2)}
+                      <CardTitle className="text-lg">Record Actual Spend</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                          <Label>Description</Label>
+                          <Input
+                            value={newActualDescription}
+                            onChange={(e) => setNewActualDescription(e.target.value)}
+                            placeholder="What did you buy?"
+                            className="h-11 md:h-10"
+                          />
+                        </div>
+                        <div>
+                          <Label>Amount</Label>
+                          <Input
+                            type="number"
+                            value={newActualAmount}
+                            onChange={(e) => setNewActualAmount(e.target.value)}
+                            placeholder="0.00"
+                            className="h-11 md:h-10"
+                          />
                         </div>
                       </div>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div>
+                          <Label>Date</Label>
+                          <Input
+                            type="date"
+                            value={newActualDate}
+                            onChange={(e) => setNewActualDate(e.target.value)}
+                            className="h-11 md:h-10"
+                          />
+                        </div>
+                        <div>
+                          <Label>Category</Label>
+                          <Select value={newActualCategory} onValueChange={(value: any) => setNewActualCategory(value)}>
+                            <SelectTrigger className="h-11 md:h-10">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="material">Material</SelectItem>
+                              <SelectItem value="labor">Labor</SelectItem>
+                              <SelectItem value="tools">Tools</SelectItem>
+                              <SelectItem value="tool-rentals">Tool Rentals</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Match to Budget Item (Optional)</Label>
+                          <Select value={selectedLineItemForActual || 'none'} onValueChange={(value) => setSelectedLineItemForActual(value === 'none' ? '' : value)}>
+                            <SelectTrigger className="h-11 md:h-10">
+                              <SelectValue placeholder="Select item" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None (New expense)</SelectItem>
+                              {Array.isArray(budgetItems) && budgetItems.map(item => (
+                                item && item.id ? (
+                                  <SelectItem key={item.id} value={item.id}>
+                                    {item.section || 'Uncategorized'} - {item.item || 'Untitled Item'}
+                                  </SelectItem>
+                                ) : null
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={async () => {
+                          try {
+                            await addActualEntry();
+                          } catch (error) {
+                            console.error('❌ Error adding actual entry:', error);
+                            toast({
+                              title: 'Failed to record spend',
+                              description: error instanceof Error ? error.message : 'Unknown error',
+                              variant: 'destructive'
+                            });
+                          }
+                        }}
+                        className="h-11 w-full md:h-10 md:w-auto"
+                      >
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        Record Spend
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Actual Spending History</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
-                        {sectionItems.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">No items in this section</p>
+                        {!actualEntries || actualEntries.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No spending recorded yet</p>
                         ) : (
-                          sectionItems.map(item => {
-                            if (!item || !item.id) return null;
-                            const budgetedAmount = typeof item.budgetedAmount === 'number' ? item.budgetedAmount : parseFloat(String(item.budgetedAmount || 0)) || 0;
-                            const actualAmount = typeof item.actualAmount === 'number' ? item.actualAmount : parseFloat(String(item.actualAmount || 0)) || 0;
-                            
+                          actualEntries.map(entry => {
+                            if (!entry || !entry.id) return null;
+
+                            const amount = typeof entry.amount === 'number' ? entry.amount : parseFloat(String(entry.amount || 0)) || 0;
+                            const date = entry.date || new Date().toISOString().split('T')[0];
+                            const matchedItem = entry.lineItemId && Array.isArray(budgetItems)
+                              ? budgetItems.find(i => i && i.id === entry.lineItemId)
+                              : null;
+
                             return (
-                              <div key={item.id} className="flex items-center justify-between p-2 md:p-3 border rounded gap-2">
+                              <div key={entry.id} className="flex items-center justify-between gap-2 rounded border p-2 md:p-3">
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-sm md:text-base truncate">{item.item || 'Untitled Item'}</div>
+                                  <div className="font-medium text-sm md:text-base truncate">{entry.description || 'Untitled Entry'}</div>
                                   <div className="text-xs md:text-sm text-muted-foreground mt-1">
-                                    <Badge variant="outline" className="mr-2 text-[10px] md:text-xs">{item.category || 'other'}</Badge>
-                                    <span className="block md:inline">Budget: ${budgetedAmount.toFixed(2)}</span>
+                                    <Badge variant="outline" className="mr-2 text-[10px] md:text-xs">{entry.category || 'other'}</Badge>
+                                    <span className="block md:inline">{date}</span>
                                     <span className="hidden md:inline"> | </span>
-                                    <span className="block md:inline">Actual: ${actualAmount.toFixed(2)}</span>
+                                    <span className="block md:inline">${amount.toFixed(2)}</span>
+                                    {matchedItem && (
+                                      <span className="ml-2 text-blue-600 block md:inline">
+                                        (Matched to: {matchedItem.item || 'Unknown Item'})
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
-                                <div className="flex gap-1 flex-shrink-0">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => startEditItem(item)}
-                                    className="h-11 w-11 md:h-9 md:w-9 p-0"
-                                    title="Edit item"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removeBudgetItem(item.id)}
-                                    className="h-11 w-11 md:h-9 md:w-9 p-0"
-                                    title="Delete item"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
+                                <div className="flex gap-2 flex-shrink-0">
+                                  <label>
+                                    <input
+                                      type="file"
+                                      className="hidden"
+                                      accept="image/*,.pdf"
+                                      onChange={(e) => e.target.files?.[0] && handleReceiptUpload(entry.id, e.target.files[0])}
+                                    />
+                                    <Button variant="outline" size="sm" asChild className="h-11 w-11 p-0 md:h-9 md:w-9">
+                                      <span>
+                                        <Upload className="w-4 h-4" />
+                                      </span>
+                                    </Button>
+                                  </label>
+                                  {entry.receiptUrl && (
+                                    <Badge variant="secondary" className="text-[10px] md:text-xs">Receipt</Badge>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -973,165 +1127,10 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                       </div>
                     </CardContent>
                   </Card>
-                );
-              })
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="actual" className="space-y-4 mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Record Actual Spend</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Description</Label>
-                  <Input
-                    value={newActualDescription}
-                    onChange={(e) => setNewActualDescription(e.target.value)}
-                    placeholder="What did you buy?"
-                    className="h-11 md:h-10"
-                  />
                 </div>
-                <div>
-                  <Label>Amount</Label>
-                  <Input
-                    type="number"
-                    value={newActualAmount}
-                    onChange={(e) => setNewActualAmount(e.target.value)}
-                    placeholder="0.00"
-                    className="h-11 md:h-10"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label>Date</Label>
-                  <Input
-                    type="date"
-                    value={newActualDate}
-                    onChange={(e) => setNewActualDate(e.target.value)}
-                    className="h-11 md:h-10"
-                  />
-                </div>
-                <div>
-                  <Label>Category</Label>
-                  <Select value={newActualCategory} onValueChange={(value: any) => setNewActualCategory(value)}>
-                    <SelectTrigger className="h-11 md:h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="material">Material</SelectItem>
-                      <SelectItem value="labor">Labor</SelectItem>
-                      <SelectItem value="tools">Tools</SelectItem>
-                      <SelectItem value="tool-rentals">Tool Rentals</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Match to Budget Item (Optional)</Label>
-                  <Select value={selectedLineItemForActual || 'none'} onValueChange={(value) => setSelectedLineItemForActual(value === 'none' ? '' : value)}>
-                    <SelectTrigger className="h-11 md:h-10">
-                      <SelectValue placeholder="Select item" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None (New expense)</SelectItem>
-                      {Array.isArray(budgetItems) && budgetItems.map(item => (
-                        item && item.id ? (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.section || 'Uncategorized'} - {item.item || 'Untitled Item'}
-                          </SelectItem>
-                        ) : null
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <Button 
-                onClick={async () => {
-                  try {
-                    await addActualEntry();
-                  } catch (error) {
-                    console.error('❌ Error adding actual entry:', error);
-                    toast({
-                      title: 'Failed to record spend',
-                      description: error instanceof Error ? error.message : 'Unknown error',
-                      variant: 'destructive'
-                    });
-                  }
-                }}
-                className="h-11 md:h-10 w-full md:w-auto"
-              >
-                <DollarSign className="w-4 h-4 mr-2" />
-                Record Spend
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Actual Spending History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {!actualEntries || actualEntries.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No spending recorded yet</p>
-                ) : (
-                  actualEntries.map(entry => {
-                    if (!entry || !entry.id) return null;
-                    
-                    const amount = typeof entry.amount === 'number' ? entry.amount : parseFloat(String(entry.amount || 0)) || 0;
-                    const date = entry.date || new Date().toISOString().split('T')[0];
-                    const matchedItem = entry.lineItemId && Array.isArray(budgetItems) 
-                      ? budgetItems.find(i => i && i.id === entry.lineItemId) 
-                      : null;
-                    
-                    return (
-                      <div key={entry.id} className="flex items-center justify-between p-2 md:p-3 border rounded gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm md:text-base truncate">{entry.description || 'Untitled Entry'}</div>
-                          <div className="text-xs md:text-sm text-muted-foreground mt-1">
-                            <Badge variant="outline" className="mr-2 text-[10px] md:text-xs">{entry.category || 'other'}</Badge>
-                            <span className="block md:inline">{date}</span>
-                            <span className="hidden md:inline"> | </span>
-                            <span className="block md:inline">${amount.toFixed(2)}</span>
-                            {matchedItem && (
-                              <span className="ml-2 text-blue-600 block md:inline">
-                                (Matched to: {matchedItem.item || 'Unknown Item'})
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-2 flex-shrink-0">
-                          <label>
-                            <input
-                              type="file"
-                              className="hidden"
-                              accept="image/*,.pdf"
-                              onChange={(e) => e.target.files?.[0] && handleReceiptUpload(entry.id, e.target.files[0])}
-                            />
-                            <Button variant="outline" size="sm" asChild className="h-11 w-11 md:h-9 md:w-9 p-0">
-                              <span>
-                                <Upload className="w-4 h-4" />
-                              </span>
-                            </Button>
-                          </label>
-                          {entry.receiptUrl && (
-                            <Badge variant="secondary" className="text-[10px] md:text-xs">Receipt</Badge>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
         </div>
       </DialogPortal>

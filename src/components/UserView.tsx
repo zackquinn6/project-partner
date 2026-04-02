@@ -265,6 +265,31 @@ export default function UserView({
     tools: any[];
   }>({ materials: [], tools: [] });
   const [previousToolsAndMaterials, setPreviousToolsAndMaterials] = useState<{ tools: any[], materials: any[] } | null>(null);
+  const planningWizardToolCloseCallbacksRef = useRef<Partial<Record<
+    'customizer' | 'scheduler' | 'shopping' | 'budget' | 'risk' | 'quality' | 'toolRentals' | 'expertSupport' | 'communicationPlan',
+    () => void
+  >>>({});
+
+  const registerPlanningWizardToolCloseCallback = useCallback((
+    key: 'customizer' | 'scheduler' | 'shopping' | 'budget' | 'risk' | 'quality' | 'toolRentals' | 'expertSupport' | 'communicationPlan',
+    callback?: unknown
+  ) => {
+    if (typeof callback === 'function') {
+      planningWizardToolCloseCallbacksRef.current[key] = callback as () => void;
+      return;
+    }
+    delete planningWizardToolCloseCallbacksRef.current[key];
+  }, []);
+
+  const completePlanningWizardToolCloseCallback = useCallback((
+    key: 'customizer' | 'scheduler' | 'shopping' | 'budget' | 'risk' | 'quality' | 'toolRentals' | 'expertSupport' | 'communicationPlan'
+  ) => {
+    const callback = planningWizardToolCloseCallbacksRef.current[key];
+    delete planningWizardToolCloseCallbacksRef.current[key];
+    if (typeof callback === 'function') {
+      callback();
+    }
+  }, []);
   
   // Detail level state - defaults to 'intermediate' for balanced detail
   const [instructionLevel, setInstructionLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
@@ -429,14 +454,21 @@ export default function UserView({
 
   // Add event listeners for Re-plan window actions
   useEffect(() => {
-    const handleOpenProjectScheduler = () => {
+    const handleOpenProjectScheduler = (event?: Event) => {
+      const detail = (event as CustomEvent<{ fromPlanningWizard?: boolean; onComplete?: () => void }> | undefined)?.detail;
+      if (detail?.fromPlanningWizard) {
+        registerPlanningWizardToolCloseCallback('scheduler', detail.onComplete);
+      }
       setProjectSchedulerOpen(true);
     };
     const handleOpenChangeManagement = () => {
       setChangeManagementOpen(true);
     };
     const handleOpenMaterialsSelection = (event?: Event) => {
-      const detail = (event as CustomEvent<{ expandSettingsAccordionWhenOpen?: boolean }> | undefined)?.detail;
+      const detail = (event as CustomEvent<{ expandSettingsAccordionWhenOpen?: boolean; fromPlanningWizard?: boolean; onComplete?: () => void }> | undefined)?.detail;
+      if (detail?.fromPlanningWizard) {
+        registerPlanningWizardToolCloseCallback('shopping', detail.onComplete);
+      }
       setShoppingChecklistExpandSettingsAccordion(detail?.expandSettingsAccordionWhenOpen === true);
       setMaterialsSelectionOpen(true);
     };
@@ -452,14 +484,17 @@ export default function UserView({
       
       // Store the onComplete callback if opened from planning wizard
       if (fromPlanningWizard && onComplete) {
-        // Store it in a ref or state to call when customizer closes
-        (window as any).__planningWizardCustomizerComplete = onComplete;
+        registerPlanningWizardToolCloseCallback('customizer', onComplete);
       }
       
       setProjectCustomizerMode(mode);
       setProjectCustomizerOpen(true);
     };
-    const handleOpenProjectBudgeting = () => {
+    const handleOpenProjectBudgeting = (event?: Event) => {
+      const detail = (event as CustomEvent<{ fromPlanningWizard?: boolean; onComplete?: () => void }> | undefined)?.detail;
+      if (detail?.fromPlanningWizard) {
+        registerPlanningWizardToolCloseCallback('budget', detail.onComplete);
+      }
       setProjectBudgetingOpen(true);
     };
     const handleOpenAfterActionReview = (event: Event) => {
@@ -496,7 +531,7 @@ export default function UserView({
       window.removeEventListener('open-project-budgeting', handleOpenProjectBudgeting);
       window.removeEventListener('open-after-action-review', handleOpenAfterActionReview as EventListener);
     };
-  }, [projectRuns]);
+  }, [projectRuns, registerPlanningWizardToolCloseCallback]);
 
   
   // Get the active project data from either currentProject or currentProjectRun
@@ -3206,15 +3241,43 @@ export default function UserView({
             onGoToWorkflow={() => {
               setProjectPlanningWizardOpen(false);
             }}
-            onOpenBudgeting={() => setProjectBudgetingOpen(true)}
-            onOpenRiskManagement={() => setRiskManagementOpen(true)}
-            onOpenQualityControl={() => {
+            onOpenBudgeting={(options) => {
+              if (options?.fromPlanningWizard) {
+                registerPlanningWizardToolCloseCallback('budget', options.onComplete);
+              }
+              setProjectBudgetingOpen(true);
+            }}
+            onOpenRiskManagement={(options) => {
+              if (options?.fromPlanningWizard) {
+                registerPlanningWizardToolCloseCallback('risk', options.onComplete);
+              }
+              setRiskManagementOpen(true);
+            }}
+            onOpenQualityControl={(options) => {
+              if (options?.fromPlanningWizard) {
+                registerPlanningWizardToolCloseCallback('quality', options.onComplete);
+              }
               setQualityCheckExpandSettingsAccordion(true);
               setQualityCheckOpen(true);
             }}
-            onOpenToolRentals={() => setToolRentalsOpen(true)}
-            onOpenExpertSupport={() => setExpertHelpOpen(true)}
-            onOpenCommunicationPlan={() => setCommunicationPlanOpen(true)}
+            onOpenToolRentals={(options) => {
+              if (options?.fromPlanningWizard) {
+                registerPlanningWizardToolCloseCallback('toolRentals', options.onComplete);
+              }
+              setToolRentalsOpen(true);
+            }}
+            onOpenExpertSupport={(options) => {
+              if (options?.fromPlanningWizard) {
+                registerPlanningWizardToolCloseCallback('expertSupport', options.onComplete);
+              }
+              setExpertHelpOpen(true);
+            }}
+            onOpenCommunicationPlan={(options) => {
+              if (options?.fromPlanningWizard) {
+                registerPlanningWizardToolCloseCallback('communicationPlan', options.onComplete);
+              }
+              setCommunicationPlanOpen(true);
+            }}
           />
         </div>
       ) : isMobile ? (
@@ -3979,6 +4042,7 @@ export default function UserView({
         onOpenChange={(open) => {
           if (!open) setShoppingChecklistExpandSettingsAccordion(false);
           setOrderingWindowOpen(open);
+          if (!open) completePlanningWizardToolCloseCallback('shopping');
         }}
         expandSettingsAccordionWhenOpen={shoppingChecklistExpandSettingsAccordion}
         project={currentProject}
@@ -4023,7 +4087,10 @@ export default function UserView({
       {/* Expert Help Window */}
       <ExpertHelpWindow
         isOpen={expertHelpOpen}
-        onClose={() => setExpertHelpOpen(false)}
+        onClose={() => {
+          setExpertHelpOpen(false);
+          completePlanningWizardToolCloseCallback('expertSupport');
+        }}
       />
 
       {toolInstructions && (
@@ -4084,13 +4151,8 @@ export default function UserView({
             setProjectCustomizerOpen(open);
             
             // If customizer was opened from planning wizard and is now closing, mark step as complete
-            if (!open && (window as any).__planningWizardCustomizerComplete) {
-              const onComplete = (window as any).__planningWizardCustomizerComplete;
-              delete (window as any).__planningWizardCustomizerComplete;
-              // Call the completion callback
-              if (typeof onComplete === 'function') {
-                onComplete();
-              }
+            if (!open) {
+              completePlanningWizardToolCloseCallback('customizer');
             }
             
             // When customizer closes, check if shopping is needed
@@ -4135,7 +4197,10 @@ export default function UserView({
       {projectSchedulerOpen && currentProjectRun && (
         <ProjectScheduler
           open={projectSchedulerOpen}
-          onOpenChange={setProjectSchedulerOpen}
+          onOpenChange={(open) => {
+            setProjectSchedulerOpen(open);
+            if (!open) completePlanningWizardToolCloseCallback('scheduler');
+          }}
           project={activeProject as Project}
           projectRun={currentProjectRun}
         />
@@ -4159,15 +4224,43 @@ export default function UserView({
           onGoToWorkflow={() => {
             setProjectPlanningWizardOpen(false);
           }}
-          onOpenBudgeting={() => setProjectBudgetingOpen(true)}
-          onOpenRiskManagement={() => setRiskManagementOpen(true)}
-          onOpenQualityControl={() => {
+          onOpenBudgeting={(options) => {
+            if (options?.fromPlanningWizard) {
+              registerPlanningWizardToolCloseCallback('budget', options.onComplete);
+            }
+            setProjectBudgetingOpen(true);
+          }}
+          onOpenRiskManagement={(options) => {
+            if (options?.fromPlanningWizard) {
+              registerPlanningWizardToolCloseCallback('risk', options.onComplete);
+            }
+            setRiskManagementOpen(true);
+          }}
+          onOpenQualityControl={(options) => {
+            if (options?.fromPlanningWizard) {
+              registerPlanningWizardToolCloseCallback('quality', options.onComplete);
+            }
             setQualityCheckExpandSettingsAccordion(true);
             setQualityCheckOpen(true);
           }}
-          onOpenToolRentals={() => setToolRentalsOpen(true)}
-          onOpenExpertSupport={() => setExpertHelpOpen(true)}
-          onOpenCommunicationPlan={() => setCommunicationPlanOpen(true)}
+          onOpenToolRentals={(options) => {
+            if (options?.fromPlanningWizard) {
+              registerPlanningWizardToolCloseCallback('toolRentals', options.onComplete);
+            }
+            setToolRentalsOpen(true);
+          }}
+          onOpenExpertSupport={(options) => {
+            if (options?.fromPlanningWizard) {
+              registerPlanningWizardToolCloseCallback('expertSupport', options.onComplete);
+            }
+            setExpertHelpOpen(true);
+          }}
+          onOpenCommunicationPlan={(options) => {
+            if (options?.fromPlanningWizard) {
+              registerPlanningWizardToolCloseCallback('communicationPlan', options.onComplete);
+            }
+            setCommunicationPlanOpen(true);
+          }}
         />
       ) : null}
       
@@ -4217,7 +4310,10 @@ export default function UserView({
       {/* Tool Rentals Window */}
       <ToolRentalsWindow
         isOpen={toolRentalsOpen}
-        onClose={() => setToolRentalsOpen(false)}
+        onClose={() => {
+          setToolRentalsOpen(false);
+          completePlanningWizardToolCloseCallback('toolRentals');
+        }}
       />
 
       {/* Home Manager */}
@@ -4229,7 +4325,10 @@ export default function UserView({
       {/* Project Budgeting Window */}
       <ProjectBudgetingWindow
         open={projectBudgetingOpen}
-        onOpenChange={setProjectBudgetingOpen}
+        onOpenChange={(open) => {
+          setProjectBudgetingOpen(open);
+          if (!open) completePlanningWizardToolCloseCallback('budget');
+        }}
       />
 
       <AfterActionReviewWindow
@@ -4249,14 +4348,20 @@ export default function UserView({
 
       <CommunicationPlanWindow
         open={communicationPlanOpen}
-        onOpenChange={setCommunicationPlanOpen}
+        onOpenChange={(open) => {
+          setCommunicationPlanOpen(open);
+          if (!open) completePlanningWizardToolCloseCallback('communicationPlan');
+        }}
       />
 
       {/* Risk Management Window */}
       {currentProjectRun && (
         <RiskManagementWindow
           open={riskManagementOpen}
-          onOpenChange={setRiskManagementOpen}
+          onOpenChange={(open) => {
+            setRiskManagementOpen(open);
+            if (!open) completePlanningWizardToolCloseCallback('risk');
+          }}
           projectRunId={currentProjectRun.id}
           mode="run"
           variant="risk-focus"
@@ -4269,6 +4374,7 @@ export default function UserView({
         onOpenChange={(open) => {
           if (!open) setQualityCheckExpandSettingsAccordion(false);
           setQualityCheckOpen(open);
+          if (!open) completePlanningWizardToolCloseCallback('quality');
         }}
         expandSettingsAccordionWhenOpen={qualityCheckExpandSettingsAccordion}
         appTitle={qualityControlAppTitle}

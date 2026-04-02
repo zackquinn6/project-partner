@@ -22,7 +22,7 @@ interface UncertaintyStepProps {
   onComplete: () => void;
   isCompleted: boolean;
   /** When provided (e.g. from UserView), opens Risk Management at host level to avoid nested dialog */
-  onOpenRiskManagement?: () => void;
+  onOpenRiskManagement?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
 }
 
 export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
@@ -35,11 +35,10 @@ export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
 
   const handleOpenRiskManagement = () => {
     if (onOpenRiskManagement) {
-      onOpenRiskManagement();
+      onOpenRiskManagement({ fromPlanningWizard: true, onComplete });
     } else {
       setRiskManagementOpen(true);
     }
-    onComplete();
   };
 
   return (

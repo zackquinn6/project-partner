@@ -20,7 +20,7 @@ interface ExpertSupportStepProps {
   onComplete: () => void;
   isCompleted: boolean;
   /** When provided (e.g. from UserView), opens Expert Support at host level */
-  onOpenExpertSupport?: () => void;
+  onOpenExpertSupport?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
 }
 
 export const ExpertSupportStep: React.FC<ExpertSupportStepProps> = ({
@@ -31,11 +31,10 @@ export const ExpertSupportStep: React.FC<ExpertSupportStepProps> = ({
   const handleOpen = (e: React.MouseEvent) => {
     e.preventDefault();
     if (onOpenExpertSupport) {
-      onOpenExpertSupport();
+      onOpenExpertSupport({ fromPlanningWizard: true, onComplete });
     } else {
       window.dispatchEvent(new CustomEvent('show-expert-help'));
     }
-    onComplete();
   };
 
   return (
