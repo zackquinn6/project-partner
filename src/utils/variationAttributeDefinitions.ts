@@ -43,11 +43,15 @@ export async function countVariationsForCoreItem(
 ): Promise<number> {
   const { count, error } = await supabase
     .from('tool_variations')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact' })
     .eq('core_item_id', coreItemId);
 
   if (error) throw error;
-  return count ?? 0;
+  if (count === null) {
+    throw new Error(`Missing tool variation count for core item ${coreItemId}`);
+  }
+
+  return count;
 }
 
 /** Attribute definitions for material variants live on each `materials_variants` row (kept in sync). */
@@ -90,9 +94,13 @@ export async function countMaterialVariantsForMaterial(
 ): Promise<number> {
   const { count, error } = await supabase
     .from('materials_variants')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact' })
     .eq('material_id', materialId);
 
   if (error) throw error;
-  return count ?? 0;
+  if (count === null) {
+    throw new Error(`Missing material variation count for material ${materialId}`);
+  }
+
+  return count;
 }
