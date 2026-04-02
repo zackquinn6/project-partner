@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { ResponsiveDialog } from '../ResponsiveDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
-import { WorkflowDecisionEngine } from './WorkflowDecisionEngine';
 import { SimplifiedCustomWorkManager } from './SimplifiedCustomWorkManager';
 import { PhaseBrowser } from './PhaseBrowser';
 import { SpaceSelector } from './SpaceSelector';
 import { SpaceDecisionFlow } from './SpaceDecisionFlow';
 import { ProjectRun } from '../../interfaces/ProjectRun';
-import { Project, Phase } from '../../interfaces/Project';
+import { Phase } from '../../interfaces/Project';
 import { useProject } from '../../contexts/ProjectContext';
-import { Settings, GitBranch, Plus, Clock, AlertTriangle, Home, Edit2 } from 'lucide-react';
+import { Settings, GitBranch, Home, Edit2 } from 'lucide-react';
 import { useIsMobile } from '../../hooks/use-mobile';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +20,7 @@ import { KickoffWorkflow } from '../KickoffWorkflow';
 import { HomeManager } from '../HomeManager';
 import { useAuth } from '../../contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 
 interface ProjectCustomizerProps {
   open: boolean;
@@ -63,7 +62,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 }) => {
   const { projects, updateProjectRun } = useProject();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState(mode === 'unplanned-work' ? 'custom-work' : 'decisions');
+  const [activeStep, setActiveStep] = useState(mode === 'unplanned-work' ? 'step-4' : 'step-1');
   const [customizationState, setCustomizationState] = useState<CustomizationState>({
     spaces: [],
     spaceDecisions: {},
@@ -84,6 +83,12 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   const [homes, setHomes] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
   const [itemType, setItemType] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setActiveStep(mode === 'unplanned-work' ? 'step-4' : 'step-1');
+    }
+  }, [open, mode]);
 
   // Get template project to access scaling unit and item type
   const templateProject = currentProjectRun?.projectId
@@ -563,6 +568,12 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     return null;
   }
 
+  const StepCircle = ({ step }: { step: number }) => (
+    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+      {step}
+    </div>
+  );
+
   return (
     <>
       <ResponsiveDialog 
@@ -591,212 +602,186 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
             </div>
           )}
 
-          {/* Home Selection Display */}
-          {currentProjectRun?.home_id && (
-            <div className="mb-3 py-2 px-3 bg-muted/50 rounded-lg border">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Home className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Project Home:</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowHomeManager(true)}
-                  className="h-6 px-2 text-xs"
-                  title="Manage homes"
-                >
-                  <Edit2 className="w-3 h-3 mr-1" />
-                  Manage
-                </Button>
-              </div>
-              {homes.length > 0 ? (
-                <Select
-                  value={selectedHomeId || currentProjectRun.home_id}
-                  onValueChange={handleHomeChange}
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Select a home" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {homes.map((home) => (
-                      <SelectItem key={home.id} value={home.id}>
-                        {home.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Badge variant="outline" className="text-xs">{homeName || 'Unknown Home'}</Badge>
-              )}
-            </div>
-          )}
-
-          <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4 shrink-0" />
-            <span>
-              {mode === 'initial-plan'
-                ? 'Planning Phase'
-                : mode === 'final-plan'
-                  ? 'Final Review'
-                  : mode === 'unplanned-work'
-                    ? 'Adding New Work'
-                    : 'Re-planning'}
-            </span>
-          </div>
-
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
-            {/* Tab Headers - Positioned directly after header */}
-            <div className="shrink-0 border-b bg-background pb-4">
-              <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} ${isMobile ? 'h-auto' : 'h-12'}`}>
-                {isMobile ? (
-                  // Mobile: Dropdown-style tab selection
-                  <div className="space-y-2 p-2">
-                    <Button
-                      variant={activeTab === 'decisions' ? 'default' : 'outline'}
-                      onClick={() => setActiveTab('decisions')}
-                      className="w-full justify-start text-sm py-3"
-                      size="sm"
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Project Choices
-                    </Button>
-                    <Button
-                      variant={activeTab === 'custom-work' ? 'default' : 'outline'}
-                      onClick={() => setActiveTab('custom-work')}
-                      className="w-full justify-start text-sm py-3"
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Custom Work
-                    </Button>
+          <ScrollArea className="flex-1 min-h-0">
+            <Accordion
+              type="single"
+              collapsible
+              value={activeStep}
+              onValueChange={setActiveStep}
+              className="space-y-4"
+            >
+              <AccordionItem value="step-1" className="rounded-lg border bg-background px-4">
+                <AccordionTrigger className="py-4 hover:no-underline">
+                  <div className="flex items-center gap-3 text-left">
+                    <StepCircle step={1} />
+                    <span className="font-semibold">Select / Edit Project Home</span>
                   </div>
-                ) : (
-                  // Desktop: Traditional tabs
-                  <>
-                    <TabsTrigger value="decisions" className="text-xs md:text-sm px-2 py-2">
-                      <Settings className="w-4 h-4 mr-2" />
-                      Project Choices
-                    </TabsTrigger>
-                    <TabsTrigger value="custom-work" className="text-xs md:text-sm px-2 py-2">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Custom Work
-                    </TabsTrigger>
-                  </>
-                )}
-              </TabsList>
-            </div>
-
-            {/* Tab Content - Consistent height containers */}
-            <div className="flex-1 min-h-0 relative">
-              <TabsContent value="decisions" className="absolute inset-0 data-[state=active]:block data-[state=inactive]:hidden">
-                <ScrollArea className="h-full">
-                  <div className={`${isMobile ? 'p-3' : 'p-4'} space-y-4`}>
-                    {/* Project Spaces Button */}
-                    <Card className="bg-blue-50 border-blue-200">
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-sm mb-1">Project Spaces</h4>
-                            <p className="text-xs text-muted-foreground mb-3">
-                              Use this when the project will have unique spaces or rooms
-                            </p>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setShowSpacesWindow(true)}
-                              className="text-xs"
-                            >
-                              <Settings className="w-3 h-3 mr-2" />
-                              Manage Project Spaces
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <SpaceDecisionFlow
-                      spaces={customizationState.spaces}
-                      projectRun={currentProjectRun}
-                      spaceDecisions={customizationState.spaceDecisions}
-                      onSpaceDecision={handleSpaceDecision}
-                    />
-                  </div>
-                </ScrollArea>
-              </TabsContent>
-
-              <TabsContent value="custom-work" className="absolute inset-0 data-[state=active]:block data-[state=inactive]:hidden">
-              <ScrollArea className="h-full">
-                <div className={`${isMobile ? 'p-3' : 'p-4'} space-y-4`}>
-                  {/* Planned Work Section */}
-                  <Card>
-                    <CardHeader className={isMobile ? 'pb-3' : ''}>
-                      <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : ''}`}>
-                        <GitBranch className="w-5 h-5" />
-                        Add Workflow Steps
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className={`text-muted-foreground mb-4 ${isMobile ? 'text-sm' : 'text-sm'}`}>
-                        Browse phases from related projects and add them to your workflow.
-                      </p>
-                      <Button 
-                        onClick={() => setShowPhaseBrowser(true)} 
-                        variant="outline" 
-                        size={isMobile ? "default" : "sm"}
-                        className="w-full sm:w-auto"
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Home className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Project Home</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowHomeManager(true)}
+                        className="h-7 px-2 text-xs"
+                        title="Manage homes"
                       >
-                        Browse Related Project Phases
+                        <Edit2 className="w-3 h-3 mr-1" />
+                        Manage
                       </Button>
+                    </div>
+                    {currentProjectRun?.home_id && homes.length > 0 ? (
+                      <Select
+                        value={selectedHomeId || currentProjectRun.home_id}
+                        onValueChange={handleHomeChange}
+                      >
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue placeholder="Select a home" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {homes.map((home) => (
+                            <SelectItem key={home.id} value={home.id}>
+                              {home.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">{homeName || 'Unknown Home'}</Badge>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="step-2" className="rounded-lg border bg-background px-4">
+                <AccordionTrigger className="py-4 hover:no-underline">
+                  <div className="flex items-center gap-3 text-left">
+                    <StepCircle step={2} />
+                    <span className="font-semibold">Select / Edit Project Spaces</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <Card className="bg-blue-50 border-blue-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-sm mb-1">Project Spaces</h4>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            Use this when the project will have unique spaces or rooms.
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowSpacesWindow(true)}
+                            className="text-xs"
+                          >
+                            <Settings className="w-3 h-3 mr-2" />
+                            Manage Project Spaces
+                          </Button>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
+                </AccordionContent>
+              </AccordionItem>
 
-                  {/* Added Planned Work */}
-                  {customizationState.customPlannedWork.length > 0 && (
+              <AccordionItem value="step-3" className="rounded-lg border bg-background px-4">
+                <AccordionTrigger className="py-4 hover:no-underline">
+                  <div className="flex items-center gap-3 text-left">
+                    <StepCircle step={3} />
+                    <span className="font-semibold">Make Project Choices for each Space</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <SpaceDecisionFlow
+                    spaces={customizationState.spaces}
+                    projectRun={currentProjectRun}
+                    spaceDecisions={customizationState.spaceDecisions}
+                    onSpaceDecision={handleSpaceDecision}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="step-4" className="rounded-lg border bg-background px-4">
+                <AccordionTrigger className="py-4 hover:no-underline">
+                  <div className="flex items-center gap-3 text-left">
+                    <StepCircle step={4} />
+                    <span className="font-semibold">Add Custom Work</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <div className="space-y-4">
                     <Card>
                       <CardHeader className={isMobile ? 'pb-3' : ''}>
-                        <CardTitle className={isMobile ? 'text-base' : ''}>Added Planned Work</CardTitle>
+                        <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : ''}`}>
+                          <GitBranch className="w-5 h-5" />
+                          Add Workflow Steps
+                        </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-3">
-                        {customizationState.customPlannedWork.map((phase, index) => (
-                          <div key={index} className={`flex flex-col sm:flex-row sm:items-center justify-between ${isMobile ? 'p-4' : 'p-3'} bg-muted rounded-lg gap-3`}>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-sm">{phase.name}</h4>
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{phase.description}</p>
-                            </div>
-                            <Badge variant="secondary" className="self-start sm:self-center">Planned</Badge>
-                          </div>
-                        ))}
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Browse phases from related projects and add them to your workflow.
+                        </p>
+                        <Button
+                          onClick={() => setShowPhaseBrowser(true)}
+                          variant="outline"
+                          size={isMobile ? "default" : "sm"}
+                          className="w-full sm:w-auto"
+                        >
+                          Browse Related Project Phases
+                        </Button>
                       </CardContent>
                     </Card>
-                  )}
 
-                  {/* Added Custom Work */}
-                  {customizationState.customUnplannedWork.length > 0 && (
-                    <Card>
-                      <CardHeader className={isMobile ? 'pb-3' : ''}>
-                        <CardTitle className={isMobile ? 'text-base' : ''}>Added Custom Work</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {customizationState.customUnplannedWork.map((phase, index) => (
-                          <div key={index} className={`flex flex-col sm:flex-row sm:items-center justify-between ${isMobile ? 'p-4' : 'p-3'} bg-muted rounded-lg gap-3`}>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-sm">{phase.name}</h4>
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{phase.description}</p>
+                    {customizationState.customPlannedWork.length > 0 && (
+                      <Card>
+                        <CardHeader className={isMobile ? 'pb-3' : ''}>
+                          <CardTitle className={isMobile ? 'text-base' : ''}>Added Planned Work</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {customizationState.customPlannedWork.map((phase, index) => (
+                            <div key={index} className={`flex flex-col sm:flex-row sm:items-center justify-between ${isMobile ? 'p-4' : 'p-3'} bg-muted rounded-lg gap-3`}>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-sm">{phase.name}</h4>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{phase.description}</p>
+                              </div>
+                              <Badge variant="secondary" className="self-start sm:self-center">Planned</Badge>
                             </div>
-                            <Badge variant="secondary" className="bg-orange-100 text-orange-800 self-start sm:self-center">
-                              Custom
-                            </Badge>
-                          </div>
-                        ))}
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </ScrollArea>
-            </TabsContent>
-            </div>
-          </Tabs>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {customizationState.customUnplannedWork.length > 0 && (
+                      <Card>
+                        <CardHeader className={isMobile ? 'pb-3' : ''}>
+                          <CardTitle className={isMobile ? 'text-base' : ''}>Added Custom Work</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {customizationState.customUnplannedWork.map((phase, index) => (
+                            <div key={index} className={`flex flex-col sm:flex-row sm:items-center justify-between ${isMobile ? 'p-4' : 'p-3'} bg-muted rounded-lg gap-3`}>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-sm">{phase.name}</h4>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{phase.description}</p>
+                              </div>
+                              <Badge variant="secondary" className="bg-orange-100 text-orange-800 self-start sm:self-center">
+                                Custom
+                              </Badge>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </ScrollArea>
         </div>
       </ResponsiveDialog>
 
