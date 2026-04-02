@@ -150,7 +150,6 @@ export function UnifiedProjectManagement({
     categories: string[];
     effort_level: string;
     skill_level: string;
-    estimated_time: string;
     scaling_unit: string;
     item_type: string;
     project_type: 'primary' | 'secondary';
@@ -162,7 +161,6 @@ export function UnifiedProjectManagement({
     categories: [],
     effort_level: 'Medium',
     skill_level: 'Intermediate',
-    estimated_time: '',
     scaling_unit: '',
     item_type: '',
     project_type: 'primary'
@@ -1434,7 +1432,6 @@ export function UnifiedProjectManagement({
         category: newProject.categories,
         effortLevel: (newProject.effort_level || 'Medium') as 'Low' | 'Medium' | 'High',
         skillLevel: (newProject.skill_level || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
-        estimatedTime: newProject.estimated_time || undefined,
         scalingUnit:
           (newProject.scaling_unit || undefined) as
             | 'per square feet'
@@ -1483,7 +1480,6 @@ export function UnifiedProjectManagement({
         categories: [],
         effort_level: 'Medium',
         skill_level: 'Intermediate',
-        estimated_time: '',
         scaling_unit: '',
         item_type: '',
         project_type: 'primary'
@@ -2968,33 +2964,23 @@ export function UnifiedProjectManagement({
             </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="project-time">Estimated Time</Label>
-                <Input id="project-time" placeholder="e.g., 2-4 hours" value={newProject.estimated_time || ''} onChange={e => setNewProject(prev => ({
-                ...prev,
-                estimated_time: e.target.value
-              }))} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="project-scaling">Scaling Unit</Label>
-                <Select value={newProject.scaling_unit || ''} onValueChange={value => setNewProject(prev => ({
-                ...prev,
-                scaling_unit: value
-              }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select scaling unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="per square feet">per square feet</SelectItem>
-                    <SelectItem value="per 10x10 room">per 10x10 room</SelectItem>
-                    <SelectItem value="per linear feet">per linear feet</SelectItem>
-                    <SelectItem value="per cubic yard">per cubic yard</SelectItem>
-                    <SelectItem value="per item">per item</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="project-scaling">Scaling Unit</Label>
+              <Select value={newProject.scaling_unit || ''} onValueChange={value => setNewProject(prev => ({
+              ...prev,
+              scaling_unit: value
+            }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select scaling unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="per square feet">per square feet</SelectItem>
+                  <SelectItem value="per 10x10 room">per 10x10 room</SelectItem>
+                  <SelectItem value="per linear feet">per linear feet</SelectItem>
+                  <SelectItem value="per cubic yard">per cubic yard</SelectItem>
+                  <SelectItem value="per item">per item</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {newProject.scaling_unit === 'per item' && (
