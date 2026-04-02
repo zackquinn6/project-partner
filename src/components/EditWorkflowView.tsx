@@ -35,6 +35,10 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
 import { parseProcessVariablesFromDb } from '@/utils/processVariablesUtils';
+import {
+  resolveIncorporatedSourcePhase,
+  type ResolvedIncorporatedSourcePhase
+} from '@/utils/incorporatedPhaseResolution';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -262,7 +266,8 @@ export default function EditWorkflowView({
           is_linked,
           position_rule,
           position_value,
-          source_project_id
+          source_project_id,
+          source_phase_id
         `)
         .eq('project_id', projectId)
         .order('position_rule', { ascending: true })
@@ -402,22 +407,37 @@ export default function EditWorkflowView({
         const isLinked = !!phaseData.source_project_id;
         let operationsWithSteps: any[] = [];
         let sourceProjectName: string | undefined;
-        
+        let resolvedIncorporated: ResolvedIncorporatedSourcePhase | null = null;
+
         if (isLinked) {
           const sourceProject = sourceProjectsMap.get(phaseData.source_project_id);
           if (!sourceProject) {
             throw new Error(`Could not resolve incorporated source project for phase "${phaseData.name}"`);
           }
 
-          const { data: sourcePhase, error: sourcePhaseError } = await supabase
-            .from('project_phases')
-            .select('id')
-            .eq('project_id', sourceProject.id)
-            .eq('name', phaseData.name)
-            .single();
+          resolvedIncorporated = await resolveIncorporatedSourcePhase(
+            sourceProject.id,
+            phaseData.source_phase_id,
+            phaseData.name
+          );
 
-          if (sourcePhaseError) {
-            throw new Error(`Failed to resolve incorporated phase "${phaseData.name}": ${sourcePhaseError.message}`);
+          const priorName = phaseData.name;
+          const priorDesc = phaseData.description;
+          if (
+            phaseData.id &&
+            (priorName !== resolvedIncorporated.name ||
+              (priorDesc ?? null) !== (resolvedIncorporated.description ?? null))
+          ) {
+            const { error: syncErr } = await supabase
+              .from('project_phases')
+              .update({
+                name: resolvedIncorporated.name,
+                description: resolvedIncorporated.description
+              })
+              .eq('id', phaseData.id);
+            if (syncErr) {
+              throw new Error(`Failed to sync incorporated phase label from source: ${syncErr.message}`);
+            }
           }
 
           const { data: sourceOperations, error: sourceOperationsError } = await supabase
@@ -430,7 +450,7 @@ export default function EditWorkflowView({
               display_order,
               estimated_time
             `)
-            .eq('phase_id', sourcePhase.id)
+            .eq('phase_id', resolvedIncorporated.sourcePhaseId)
             .order('display_order');
 
           if (sourceOperationsError) {
@@ -746,11 +766,14 @@ export default function EditWorkflowView({
         
         return {
           id: phaseData.id,
-          name: phaseData.name,
-          description: phaseData.description,
+          name: resolvedIncorporated ? resolvedIncorporated.name : phaseData.name,
+          description: resolvedIncorporated
+            ? resolvedIncorporated.description ?? ''
+            : phaseData.description,
           isStandard: false,
           isLinked,
           sourceProjectId: phaseData.source_project_id,
+          sourcePhaseId: resolvedIncorporated?.sourcePhaseId,
           sourceProjectName,
           phaseOrderNumber,
           position_rule: phaseData.position_rule,

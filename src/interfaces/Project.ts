@@ -208,6 +208,8 @@ export interface Phase {
   // Linked phase properties
   isLinked?: boolean;
   sourceProjectId?: string;
+  /** Resolved source template phase UUID (project_phases.id in the source project). */
+  sourcePhaseId?: string;
   sourceProjectName?: string;
   incorporatedRevision?: number;
   sourceScalingUnit?: string; // Original project's scaling unit for incorporated phases

@@ -48,6 +48,10 @@ import { PhaseIncorporationDialog } from './PhaseIncorporationDialog';
 import { DecisionTreeManager } from './DecisionTreeManager';
 import { supabase } from '@/integrations/supabase/client';
 import { parseProcessVariablesFromDb } from '@/utils/processVariablesUtils';
+import {
+  resolveIncorporatedSourcePhase,
+  type ResolvedIncorporatedSourcePhase
+} from '@/utils/incorporatedPhaseResolution';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProcessMapKpiTab } from '@/components/ProcessMapKpiTab';
 
@@ -517,7 +521,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           is_standard,
           position_rule,
           position_value,
-          source_project_id
+          source_project_id,
+          source_phase_id
         `)
         .eq('project_id', projectId)
         .eq('is_standard', false)
@@ -669,7 +674,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         const isStandardPhase = phaseData.is_standard === true && !isIncorporated;
         
         let operationsWithSteps: any[] = [];
-        
+        let resolvedIncorporated: ResolvedIncorporatedSourcePhase | null = null;
+
         if (isStandardPhase) {
           // For standard phases: fetch operations from the standard project's phase
           console.log(`🔍 Loading operations for standard phase "${phaseData.name}" (phase_id: ${phaseData.id})`);
@@ -748,81 +754,43 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             throw new Error(`Could not resolve incorporated source project for phase "${phaseData.name}"`);
           }
 
-          // For incorporated phases: dynamically fetch operations/steps from source project
-          // First, find the source phase by matching name in the source project
-          const { data: sourcePhase } = await supabase
-            .from('project_phases')
-            .select('id')
-            .eq('project_id', sourceProject.id)
-            .eq('name', phaseData.name)
-            .single();
-          
-          if (!sourcePhase?.id) {
-            console.warn(`⚠️ Source phase not found for incorporated phase "${phaseData.name}" in project ${sourceProject.id}`);
-            // Fall back to using the phase's own ID
+          resolvedIncorporated = await resolveIncorporatedSourcePhase(
+            sourceProject.id,
+            phaseData.source_phase_id,
+            phaseData.name
+          );
+
+          const priorName = phaseData.name;
+          const priorDesc = phaseData.description;
+          if (
+            phaseData.id &&
+            (priorName !== resolvedIncorporated.name ||
+              (priorDesc ?? null) !== (resolvedIncorporated.description ?? null))
+          ) {
+            const { error: syncErr } = await supabase
+              .from('project_phases')
+              .update({
+                name: resolvedIncorporated.name,
+                description: resolvedIncorporated.description
+              })
+              .eq('id', phaseData.id);
+            if (syncErr) {
+              throw new Error(`Failed to sync incorporated phase label from source: ${syncErr.message}`);
+            }
+          }
+
           const { data: operations } = await supabase
-              .from('phase_operations')
+            .from('phase_operations')
             .select(`
               id,
               operation_name,
               operation_description,
               flow_type,
-                display_order
-              `)
-              .eq('phase_id', phaseData.id)
-              .order('display_order');
-            
-            operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
-              const { data: steps } = await supabase
-                .from('operation_steps')
-                .select(`
-                  id,
-                  step_title,
-                  description,
-                  display_order,
-                  materials,
-                  tools,
-                  outputs,
-                  process_variables
-                `)
-                .eq('operation_id', op.id)
-                .order('display_order');
-              
-              return {
-                id: op.id,
-                name: op.operation_name,
-                description: op.operation_description || '',
-                flowType: op.flow_type || 'prime',
-                displayOrder: op.display_order || 0,
-                steps: (steps || []).map((s: any) => ({
-                  id: s.id,
-                  step: s.step_title,
-                  description: s.description || '',
-                  contentType: 'text',
-                  content: '',
-                  displayOrder: s.display_order || 0,
-                  materials: s.materials || [],
-                  tools: s.tools || [],
-                  outputs: s.outputs || [],
-                  inputs: parseProcessVariablesFromDb(s.process_variables)
-                })).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
-              };
-            }));
-          } else {
-            // Use source phase ID to get operations from the source phase
-            const { data: operations } = await supabase
-              .from('phase_operations')
-              .select(`
-                id,
-                operation_name,
-                operation_description,
-                flow_type,
-                display_order
-              `)
-              .eq('phase_id', sourcePhase.id) // Use source phase ID
+              display_order
+            `)
+            .eq('phase_id', resolvedIncorporated.sourcePhaseId)
             .order('display_order');
-          
-          // Get steps for each operation from source
+
           operationsWithSteps = await Promise.all((operations || []).map(async (op: any) => {
             const { data: steps } = await supabase
               .from('operation_steps')
@@ -838,14 +806,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               `)
               .eq('operation_id', op.id)
               .order('display_order');
-            
+
             return {
               id: op.id,
               name: op.operation_name,
               description: op.operation_description,
               flowType: op.flow_type,
               displayOrder: op.display_order,
-              isStandard: true, // Mark as standard/read-only for incorporated content
+              isStandard: true,
               steps: (steps || [])
                 .map((s: any) => ({
                   id: s.id,
@@ -860,21 +828,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                   displayOrder: s.display_order
                 }))
                 .sort((a, b) => {
-                  // Explicitly sort by displayOrder to ensure correct order
                   const aOrder = a.displayOrder ?? 999;
                   const bOrder = b.displayOrder ?? 999;
                   return aOrder - bOrder;
                 })
             };
           }));
-          
-          // Sort operations by displayOrder
+
           operationsWithSteps.sort((a, b) => {
             const aOrder = a.displayOrder ?? 999;
             const bOrder = b.displayOrder ?? 999;
             return aOrder - bOrder;
           });
-          }
         } else {
           // For regular phases: get operations from current phase
           console.log(`🔍 Loading operations for custom phase "${phaseData.name}" (phase_id: ${phaseData.id})`);
@@ -963,11 +928,14 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         
         const phaseResult = {
           id: phaseData.id,
-          name: phaseData.name,
-          description: phaseData.description,
+          name: resolvedIncorporated ? resolvedIncorporated.name : phaseData.name,
+          description: resolvedIncorporated
+            ? resolvedIncorporated.description ?? ''
+            : phaseData.description,
           isStandard: phaseData.is_standard,
           isLinked: isIncorporated, // Mark as linked if incorporated
           sourceProjectId: phaseData.source_project_id || undefined,
+          sourcePhaseId: resolvedIncorporated?.sourcePhaseId,
           sourceProjectName: isIncorporated ? sourceProjectsMap.get(phaseData.source_project_id)?.name : undefined,
           phaseOrderNumber,
           position_rule: phaseData.position_rule,
@@ -975,7 +943,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           operations: operationsWithSteps
         } as Phase;
         
-        console.log(`✅ Built phase "${phaseData.name}":`, {
+        console.log(`✅ Built phase "${phaseResult.name}":`, {
           isStandard: phaseResult.isStandard,
           isLinked: phaseResult.isLinked,
           phaseOrderNumber: phaseResult.phaseOrderNumber,
@@ -3618,28 +3586,31 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           }
           
           try {
-            // Check if phase with same name already exists
+            if (!phaseToIncorporate.id) {
+              toast.error('Incorporation requires a source phase id');
+              return;
+            }
+
+            const { data: existingDup } = await supabase
+              .from('project_phases')
+              .select('id')
+              .eq('project_id', currentProject.id)
+              .eq('source_phase_id', phaseToIncorporate.id)
+              .maybeSingle();
+
+            if (existingDup) {
+              toast.error('This source phase is already incorporated into this project');
+              return;
+            }
+
             const { data: existingPhases } = await supabase
               .from('project_phases')
               .select('name')
               .eq('project_id', currentProject.id)
               .eq('name', phaseToIncorporate.name);
-            
+
             if (existingPhases && existingPhases.length > 0) {
               toast.error(`A phase named "${phaseToIncorporate.name}" already exists in this project`);
-              return;
-            }
-            
-            // Get the source phase ID from the source project
-            const { data: sourcePhase } = await supabase
-              .from('project_phases')
-              .select('id')
-              .eq('project_id', phaseToIncorporate.sourceProjectId)
-              .eq('name', phaseToIncorporate.name)
-              .single();
-            
-            if (!sourcePhase?.id) {
-              toast.error('Source phase not found');
               return;
             }
             
@@ -3677,11 +3648,12 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               .insert({
                 project_id: currentProject.id,
                 name: phaseToIncorporate.name,
-                description: phaseToIncorporate.description || null, // Keep original description, no revision info
+                description: phaseToIncorporate.description || null,
                 is_standard: false,
                 position_rule: positionRule,
                 position_value: positionValue,
-                source_project_id: phaseToIncorporate.sourceProjectId
+                source_project_id: phaseToIncorporate.sourceProjectId,
+                source_phase_id: phaseToIncorporate.id
               })
               .select('id')
               .single();

@@ -2257,6 +2257,7 @@ export type Database = {
           position_rule: string | null
           position_value: number | null
           project_id: string
+          source_phase_id: string | null
           source_project_id: string | null
           updated_at: string
         }
@@ -2270,6 +2271,7 @@ export type Database = {
           position_rule?: string | null
           position_value?: number | null
           project_id: string
+          source_phase_id?: string | null
           source_project_id?: string | null
           updated_at?: string
         }
@@ -2283,6 +2285,7 @@ export type Database = {
           position_rule?: string | null
           position_value?: number | null
           project_id?: string
+          source_phase_id?: string | null
           source_project_id?: string | null
           updated_at?: string
         }
