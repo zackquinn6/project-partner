@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, Shield, DollarSign, ShoppingCart, ClipboardCheck, ClipboardList, Handshake, Crosshair, Trash2 } from "lucide-react";
+import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, Shield, DollarSign, ShoppingCart, ClipboardCheck, ClipboardList, Handshake, Crosshair, Trash2, Eye } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -49,6 +49,7 @@ interface WorkflowSidebarProps {
   onProgressViewsClick?: () => void;
   onToolRentalsClick?: () => void;
   onProjectNameClick?: () => void;
+  onProjectVisualizerClick?: () => void;
   /** When true, project planning dialog is open — workflow tutorial must not auto-open. */
   projectPlanningWizardOpen?: boolean;
 }
@@ -77,6 +78,7 @@ export function WorkflowSidebar({
   onProgressViewsClick,
   onToolRentalsClick,
   onProjectNameClick,
+  onProjectVisualizerClick,
   projectPlanningWizardOpen = false,
 }: WorkflowSidebarProps) {
   const { updateProjectRun } = useProject();
@@ -650,6 +652,13 @@ export function WorkflowSidebar({
                         >
                           <DollarSign className="h-3.5 w-3.5 shrink-0" />
                           Budget
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-xs gap-2 cursor-pointer"
+                          onClick={() => onProjectVisualizerClick?.()}
+                        >
+                          <Eye className="h-3.5 w-3.5 shrink-0" />
+                          Project Visualizer
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"

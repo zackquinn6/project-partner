@@ -36,6 +36,7 @@ import { MaterialsSelectionWindow } from './MaterialsSelectionWindow';
 import { MaterialsSelectionDialog } from './MaterialsSelectionDialog';
 import { KickoffWorkflow } from './KickoffWorkflow';
 import { ProjectWorkflowOverviewPage } from './ProjectWorkflowOverviewPage';
+import { ProjectVisualizerDialog } from './ProjectVisualizerDialog';
 import { ProjectPlanningWizard } from './ProjectPlanningWizard';
 import { UnplannedWorkWindow } from './UnplannedWorkWindow';
 import { ProjectSurvey } from './ProjectSurvey';
@@ -174,6 +175,7 @@ export default function UserView({
   const [stepPhotosRefreshNonce, setStepPhotosRefreshNonce] = useState(0);
   const [stepPhotoCountForCompletion, setStepPhotoCountForCompletion] = useState<number | null>(null);
   const [toolInstructions, setToolInstructions] = useState<{ id: string; name: string } | null>(null);
+  const [projectVisualizerOpen, setProjectVisualizerOpen] = useState(false);
   
   // Project spaces state for workflow navigation
   const [projectSpaces, setProjectSpaces] = useState<WorkflowProjectSpace[]>([]);
@@ -1421,6 +1423,9 @@ export default function UserView({
     setWorkflowMainView('overview');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const workflowTemplateProject =
+    currentProject || projects.find(project => project.id === currentProjectRun?.projectId) || null;
 
   const startUserProjectRuntime = React.useCallback(async (stepId: string, stepKey: string) => {
     if (!currentProjectRun?.id) return;
@@ -3189,6 +3194,7 @@ export default function UserView({
             onProgressViewsClick={() => setProgressViewsOpen(true)}
             onToolRentalsClick={() => setToolRentalsOpen(true)}
             onProjectNameClick={handleProjectNameClick}
+            onProjectVisualizerClick={() => setProjectVisualizerOpen(true)}
             projectPlanningWizardOpen={projectPlanningWizardOpen}
           />
 
@@ -3904,6 +3910,16 @@ export default function UserView({
           toolName={toolInstructions.name}
         />
       )}
+
+      <ProjectVisualizerDialog
+        open={projectVisualizerOpen}
+        onOpenChange={setProjectVisualizerOpen}
+        projectId={workflowTemplateProject?.id ?? null}
+        projectName={currentProjectRun?.customProjectName ?? currentProjectRun?.name ?? workflowTemplateProject?.name ?? ''}
+        phases={workflowTemplateProject?.phases ?? null}
+        typicalProjectSize={workflowTemplateProject?.typicalProjectSize ?? (workflowTemplateProject as any)?.typical_project_size ?? null}
+        scalingUnit={workflowTemplateProject?.scalingUnit ?? (workflowTemplateProject as any)?.scaling_unit ?? null}
+      />
 
       {/* Unplanned Work Window */}
       <UnplannedWorkWindow

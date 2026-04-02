@@ -24,7 +24,7 @@ import { useProjectOwner } from '@/hooks/useProjectOwner';
 import { ProjectImageManager } from '@/components/ProjectImageManager';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
 import { PFMEAManagement } from '@/components/PFMEAManagement';
-import { ProjectVisualizer } from '@/components/ProjectVisualizer';
+import { ProjectVisualizerDialog } from '@/components/ProjectVisualizerDialog';
 import { StructureManager } from '@/components/StructureManager';
 import type { Project as AppContextProject } from '@/interfaces/Project';
 import { DeleteProjectDialog } from '@/components/DeleteProjectDialog';
@@ -3013,42 +3013,15 @@ export function UnifiedProjectManagement({
         initialTab={planningGuideInitialTab ?? undefined}
       />
 
-      {/* Project Visualizer — full-viewport horizontal process map */}
-      <Dialog open={projectVisualizerOpen} onOpenChange={setProjectVisualizerOpen}>
-        <DialogContent
-          className={cn(
-            'relative fixed inset-0 z-50 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 shadow-none overflow-hidden min-h-0',
-            'md:max-w-none md:max-h-none md:rounded-none',
-            '[&>button]:hidden',
-          )}
-        >
-          <DialogHeader className="flex-shrink-0 border-b bg-background px-2 py-1.5 md:px-4 md:py-2">
-            <div className="flex items-center justify-between gap-2">
-              <DialogTitle className="text-lg font-bold md:text-xl">Project Visualizer</DialogTitle>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-[9px] md:text-xs"
-                onClick={() => setProjectVisualizerOpen(false)}
-              >
-                Close
-              </Button>
-            </div>
-          </DialogHeader>
-          {selectedProject && (
-            <div className="flex min-h-0 flex-1 flex-col">
-              <ProjectVisualizer
-                projectId={selectedProject.id}
-                projectName={selectedProject.name}
-                phases={selectedProject.phases}
-                typicalProjectSize={selectedProject.typical_project_size}
-                scalingUnit={selectedProject.scaling_unit}
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ProjectVisualizerDialog
+        open={projectVisualizerOpen}
+        onOpenChange={setProjectVisualizerOpen}
+        projectId={selectedProject?.id ?? null}
+        projectName={selectedProject?.name ?? ''}
+        phases={selectedProject?.phases ?? null}
+        typicalProjectSize={selectedProject?.typical_project_size ?? null}
+        scalingUnit={selectedProject?.scaling_unit ?? null}
+      />
 
       {/* PFMEA — full-viewport surface (not a centered popout) */}
       <Dialog

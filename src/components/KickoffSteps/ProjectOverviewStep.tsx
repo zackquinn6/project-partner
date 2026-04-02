@@ -31,6 +31,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
+import { ProjectVisualizerDialog } from '@/components/ProjectVisualizerDialog';
 import {
   computeProjectMatchExplanation,
   physicalCapabilityToEffortSegment,
@@ -164,6 +165,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     physical_capability?: string;
   } | null>(null);
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
+  const [projectVisualizerOpen, setProjectVisualizerOpen] = useState(false);
 
   // General DIY skill + physical capability from user_profiles.skill_level / physical_capability
   // (Profile manager, DIY survey, onboarding — same fields the recommendation logic uses).
@@ -615,6 +617,19 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
 
   const projectDetailsFields = (
     <>
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!templateProject?.id}
+              onClick={() => setProjectVisualizerOpen(true)}
+              className="h-7 gap-2 text-[11px]"
+            >
+              <Eye className="h-3.5 w-3.5" />
+              Project Visualizer
+            </Button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             <div className="flex-1 min-w-0">
               <Label className="text-xs">Description</Label>
@@ -816,6 +831,15 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             readOnly={true}
           />
         )}
+        <ProjectVisualizerDialog
+          open={projectVisualizerOpen}
+          onOpenChange={setProjectVisualizerOpen}
+          projectId={templateProject?.id ?? null}
+          projectName={currentProjectRun?.customProjectName ?? currentProjectRun?.name ?? templateProject?.name ?? ''}
+          phases={templateProject?.phases ?? null}
+          typicalProjectSize={typeof rawTypicalProjectSize === 'number' ? rawTypicalProjectSize : null}
+          scalingUnit={formattedScalingUnit}
+        />
       </div>
     );
   }
@@ -914,6 +938,15 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           readOnly={true}
         />
       )}
+      <ProjectVisualizerDialog
+        open={projectVisualizerOpen}
+        onOpenChange={setProjectVisualizerOpen}
+        projectId={templateProject?.id ?? null}
+        projectName={currentProjectRun?.customProjectName ?? currentProjectRun?.name ?? templateProject?.name ?? ''}
+        phases={templateProject?.phases ?? null}
+        typicalProjectSize={typeof rawTypicalProjectSize === 'number' ? rawTypicalProjectSize : null}
+        scalingUnit={formattedScalingUnit}
+      />
     </div>
   );
 };
