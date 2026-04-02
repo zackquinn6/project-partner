@@ -342,17 +342,38 @@ A **process variable** is a fundamental, theoretically measurable parameter that
 
 **Deliverables**
 
-1. **`public.projects.description`** — **Brief summary of the work and the purpose** (not a paragraph essay, not step-by-step).
-   - Prefer a **single sentence** in this shape: **what you do** (often two or three comma-separated work phrases) **+ why / outcome**, optionally **+ typical spaces** where the work applies.
-   - Stay aligned with **this template’s actual phases and steps** (process map + migrations); add **credible** detail from **light research** only when it matches that scope—do not invent measurements or constraints the template does not support.
+1. **`public.projects.description`** — **Catalog overview**, not a procedure list.
+
+   **What it is *not***
+
+   - **Not** a list of every step, operation, or micro-task in the workflow. The full sequence belongs in the process map and `step_instructions`, not in `description`.
+   - **Not** a paragraph essay or multi-sentence inventory of work packages.
+
+   **Required structure (integrate into coherent prose—usually one or two sentences, or a tight short paragraph)**
+
+   Write so all three layers are visible to the reader, in roughly this order:
+
+   1. **Key steps (phases)** — Name **only high-level phases** from this template’s actual phase structure (**2–3 phases**; **never more than 4**). Each item should be a **phase-level** label or a very short phrase (e.g. “prep and substrate,” “layout and install,” “finish and cure”), **not** a dump of individual `operation_steps` titles. A **brief** overview of the journey is helpful; a step-by-step run-through is wrong.
+   2. **Typical areas in the home** — Where this work usually happens (e.g. bathroom, kitchen, living room, basement). Use **credible** examples aligned with the template; do not invent rooms the project does not touch.
+   3. **Purpose / benefit** — Why someone does the project or what outcome they want, in plain language (e.g. *“…for a durable, high-performance floor”*, *“…to prevent water leakage”*, *“…for a finish that holds up to daily use”*).
+
+   **Alignment and research**
+
+   - Stay aligned with **this template’s phases and scope** (process map + migrations); add **credible** detail from **light research** only when it matches that scope—do not invent measurements or constraints the template does not support.
    - Do **not** duplicate instruction copy from `step_instructions`.
 
-   **Example (Tile flooring installation):**  
-   *Preparing the subfloor, completing a layout, and installing with thinset mortar to create a durable, high-performance flooring material in living rooms, kitchens, and bathrooms.*
+   **Example (Tile flooring installation — pattern only):**  
+   *Subfloor prep, layout, and mortar-down install through grout and cure—typically in kitchens, bathrooms, and living spaces—for a durable, high-performance tile floor.*
 
 2. **`public.projects.project_challenges`** — **One paragraph only, 2–3 sentences maximum** (not 2–3 sentences *per topic*, not a list of five blocks, not bullet lists).
-   - Purpose: a **clear, rapid summary of the hardest parts of the project for decision-making**—technical friction in compact form, with **at most a light nod** to how it *feels* (doubt, fatigue, second-guessing) if it helps judgment. **No multi-paragraph listings.**
-   - **Authoring inputs:** (1) **Context from the project itself**—phase names, operation/step titles, tools/materials emphasis, scaling unit, obvious choke points in the workflow; (2) **targeted research** when needed so the hardest parts reflect real field friction, still consistent with the template.
+
+   **Intent (must not duplicate the description)**
+
+   - **Project challenges** answer: *“What makes this hard or risky for a real homeowner to judge or execute?”* They are **not** a second description, **not** a re-list of phases/steps, and **not** a substitute for Step 3 timeline/budget risks or Step 8 PFMEA.
+   - Purpose: a **clear, rapid summary of the hardest parts for decision-making**—technical friction in compact form, with **at most a light nod** to how it *feels* (doubt, fatigue, second-guessing) if it helps judgment. **No multi-paragraph listings.**
+
+   **Authoring inputs:** (1) **Context from the project itself**—where the workflow actually bites (choke points, quality sensitivity, access, sequencing stress), tools/materials emphasis, scaling unit; (2) **targeted research** when needed so the hardest parts reflect real field friction, still consistent with the template.
+
    - Tone: matter-of-fact and respectful; avoid lecturing or long empathy paragraphs.
 
    **Examples (single paragraph, ≤3 sentences each):**
@@ -430,8 +451,8 @@ A **process variable** is a fundamental, theoretically measurable parameter that
 
 - **Step 9**
   - Updates **`public.projects.description`** and **`public.projects.project_challenges`** only (project-level copy).
-  - **Description** = **brief work + purpose** (ideally one sentence; see **Step 9** example pattern in section B). Not step-by-step; align with template scope + light research.
-  - **Project challenges** = **one paragraph, 2–3 sentences total**—fast summary of hardest parts for **decision-making**; **no** multi-paragraph listings or 5+ distinct blocks. Ground in **project workflow context** plus research as needed.
+  - **Description** = structured overview (**not** a full step list): **(1)** **2–3** high-level **phases** only (**max 4**), **(2)** **typical home areas**, **(3)** **purpose/benefit**. See **Step 9** in section B. Align with template phases + scope; light research only when consistent.
+  - **Project challenges** = **one paragraph, 2–3 sentences total**—hardest parts for **decision-making**; **not** a re-list of phases/steps (that belongs in **description** at phase level only, and in the workflow elsewhere). **No** multi-paragraph listings or 5+ distinct blocks. Ground in **workflow choke points** plus research as needed.
   - Verify **`projects.id`** exists before `UPDATE`; fail loudly if missing.
   - No PFMEA, no `operation_steps`, no phase JSON rebuild required **solely** for these two fields.
 
