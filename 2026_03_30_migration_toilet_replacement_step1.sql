@@ -1,5 +1,5 @@
 -- Step 1 of project development: Toilet Replacement - operations, steps, descriptions, 3-level instructions
--- Project ID: f46b9b02-de31-42e0-ab04-5409ed1f21ee
+-- Project ID: 8267c526-036d-4f5c-9f17-2ee1b3d87886
 -- Phases required: Removal, Installation
 --
 -- Stable IDs: ops ...f21f1..f21f4 | steps ...f21e1..f21ea
@@ -7,7 +7,7 @@
 
 DO $$
 DECLARE
-  v_project_id CONSTANT uuid := 'f46b9b02-de31-42e0-ab04-5409ed1f21ee'::uuid;
+  v_project_id CONSTANT uuid := '8267c526-036d-4f5c-9f17-2ee1b3d87886'::uuid;
   v_phase_removal_id uuid;
   v_phase_install_id uuid;
 BEGIN
@@ -48,7 +48,7 @@ BEGIN
     estimated_time,
     flow_type
   ) VALUES (
-    'f46b9b02-de31-42e0-ab04-5409ed1f21f1'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21f1'::uuid,
     v_phase_removal_id,
     'Shut off water & disconnect',
     'Safely shut off the supply, drain the toilet, and disconnect the water line.',
@@ -75,8 +75,8 @@ BEGIN
     skill_level,
     allow_content_edit
   ) VALUES (
-    'f46b9b02-de31-42e0-ab04-5409ed1f21e1'::uuid,
-    'f46b9b02-de31-42e0-ab04-5409ed1f21f1'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21e1'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21f1'::uuid,
     'Prep the area and verify the shutoff',
     'Protect the floor, stage cleanup items, and confirm the toilet shutoff valve stops water flow.',
     1,
@@ -103,7 +103,7 @@ BEGIN
   INSERT INTO public.step_instructions (step_id, instruction_level, content)
   VALUES
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e1'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e1'::uuid,
       'beginner',
       jsonb_build_array(
         jsonb_build_object('title','Safety / PPE','content','Wear gloves and eye protection. Bathrooms get slippery fast—keep a towel down and wipe spills immediately.','type','warning'),
@@ -113,7 +113,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e1'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e1'::uuid,
       'intermediate',
       jsonb_build_array(
         jsonb_build_object('title','Safety / PPE','content','Gloves + eye protection. Keep towels down; even small spills can cause slips.','type','warning'),
@@ -122,7 +122,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e1'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e1'::uuid,
       'advanced',
       jsonb_build_array(
         jsonb_build_object('title','Risk control','content','Treat any unreliable angle stop as a leak risk during reconnection. If it won’t seal fully, isolate at the branch/main and replace the stop as part of the job.','type','warning'),
@@ -150,8 +150,8 @@ BEGIN
     skill_level,
     allow_content_edit
   ) VALUES (
-    'f46b9b02-de31-42e0-ab04-5409ed1f21e2'::uuid,
-    'f46b9b02-de31-42e0-ab04-5409ed1f21f1'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21e2'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21f1'::uuid,
     'Drain the toilet',
     'Empty the tank and remove as much water from the bowl as possible to reduce spills during removal.',
     2,
@@ -178,7 +178,7 @@ BEGIN
   INSERT INTO public.step_instructions (step_id, instruction_level, content)
   VALUES
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e2'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e2'::uuid,
       'beginner',
       jsonb_build_array(
         jsonb_build_object('title','Instructions','content','With the shutoff closed, flush the toilet to empty the tank. Hold the handle down to drain more. Use a cup or sponge to bail out the remaining tank water into a bucket. Then sponge out as much bowl water as you can.','type','standard'),
@@ -187,7 +187,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e2'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e2'::uuid,
       'intermediate',
       jsonb_build_array(
         jsonb_build_object('title','Drain strategy','content','Flush once, then bail/sponge the tank completely. Sponge the bowl down to minimize slosh.','type','standard'),
@@ -195,7 +195,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e2'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e2'::uuid,
       'advanced',
       jsonb_build_array(
         jsonb_build_object('title','Control contamination','content','Minimize splash/contamination: sponge/bail, don’t pour aggressively. Keep a dedicated bucket for wastewater.','type','warning'),
@@ -222,8 +222,8 @@ BEGIN
     skill_level,
     allow_content_edit
   ) VALUES (
-    'f46b9b02-de31-42e0-ab04-5409ed1f21e3'::uuid,
-    'f46b9b02-de31-42e0-ab04-5409ed1f21f1'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21e3'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21f1'::uuid,
     'Disconnect the water supply line',
     'Remove the supply line from the toilet fill valve while controlling any residual water.',
     3,
@@ -250,7 +250,7 @@ BEGIN
   INSERT INTO public.step_instructions (step_id, instruction_level, content)
   VALUES
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e3'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e3'::uuid,
       'beginner',
       jsonb_build_array(
         jsonb_build_object('title','Instructions','content','Place a towel and a small bucket under the shutoff. Unscrew the supply line from the bottom of the toilet tank (fill valve shank). Let any water drain into the bucket.','type','standard'),
@@ -259,7 +259,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e3'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e3'::uuid,
       'intermediate',
       jsonb_build_array(
         jsonb_build_object('title','Disconnect cleanly','content','Back off the coupling nut at the fill valve. Keep the line end elevated after disconnect to limit drain-out.','type','standard'),
@@ -267,7 +267,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e3'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e3'::uuid,
       'advanced',
       jsonb_build_array(
         jsonb_build_object('title','Leak discipline','content','Any shutoff that weeps under “closed” is a failure mode—replace it before final hook-up. Keep control of residual water at both ends.','type','warning'),
@@ -287,7 +287,7 @@ BEGIN
     estimated_time,
     flow_type
   ) VALUES (
-    'f46b9b02-de31-42e0-ab04-5409ed1f21f2'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21f2'::uuid,
     v_phase_removal_id,
     'Remove toilet & prep flange',
     'Remove the toilet from the floor, control odors, and prep the flange area for the new install.',
@@ -314,8 +314,8 @@ BEGIN
     skill_level,
     allow_content_edit
   ) VALUES (
-    'f46b9b02-de31-42e0-ab04-5409ed1f21e4'::uuid,
-    'f46b9b02-de31-42e0-ab04-5409ed1f21f2'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21e4'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21f2'::uuid,
     'Unbolt and lift the toilet',
     'Remove closet bolt caps/nuts, break the seal, and lift the toilet off the flange.',
     1,
@@ -342,7 +342,7 @@ BEGIN
   INSERT INTO public.step_instructions (step_id, instruction_level, content)
   VALUES
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e4'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e4'::uuid,
       'beginner',
       jsonb_build_array(
         jsonb_build_object('title','Safety','content','Toilets are heavier than they look. Use two people if possible. Lift with legs, not back.','type','warning'),
@@ -351,7 +351,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e4'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e4'::uuid,
       'intermediate',
       jsonb_build_array(
         jsonb_build_object('title','Break the seal','content','After removing nuts, rock minimally to break wax; then lift vertical to avoid bolt binding.','type','standard'),
@@ -359,7 +359,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e4'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e4'::uuid,
       'advanced',
       jsonb_build_array(
         jsonb_build_object('title','Control failure modes','content','If nuts are seized, avoid aggressive prying against the flange. Cut hardware if needed to protect the flange/subfloor integrity.','type','warning'),
@@ -386,8 +386,8 @@ BEGIN
     skill_level,
     allow_content_edit
   ) VALUES (
-    'f46b9b02-de31-42e0-ab04-5409ed1f21e5'::uuid,
-    'f46b9b02-de31-42e0-ab04-5409ed1f21f2'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21e5'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21f2'::uuid,
     'Remove old wax and block the drain opening',
     'Scrape away the old wax ring and temporarily block the drain to control sewer gas and prevent debris from falling in.',
     2,
@@ -414,7 +414,7 @@ BEGIN
   INSERT INTO public.step_instructions (step_id, instruction_level, content)
   VALUES
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e5'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e5'::uuid,
       'beginner',
       jsonb_build_array(
         jsonb_build_object('title','Safety','content','Sewer gas can be unpleasant and unhealthy. Keep the drain covered when you’re not actively working on it.','type','warning'),
@@ -423,7 +423,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e5'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e5'::uuid,
       'intermediate',
       jsonb_build_array(
         jsonb_build_object('title','Clean the sealing plane','content','Remove wax down to a clean sealing surface; keep debris out of the drain. Cover the opening between tasks.','type','standard'),
@@ -431,7 +431,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e5'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e5'::uuid,
       'advanced',
       jsonb_build_array(
         jsonb_build_object('title','Quality requirement','content','The flange sealing plane must be clean and continuous; anything between the new seal and flange is a leak path.','type','warning'),
@@ -458,8 +458,8 @@ BEGIN
     skill_level,
     allow_content_edit
   ) VALUES (
-    'f46b9b02-de31-42e0-ab04-5409ed1f21e6'::uuid,
-    'f46b9b02-de31-42e0-ab04-5409ed1f21f2'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21e6'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21f2'::uuid,
     'Inspect the flange and subfloor',
     'Check flange condition, bolt slots, and floor stability so the new toilet can be set solidly and sealed.',
     3,
@@ -486,7 +486,7 @@ BEGIN
   INSERT INTO public.step_instructions (step_id, instruction_level, content)
   VALUES
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e6'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e6'::uuid,
       'beginner',
       jsonb_build_array(
         jsonb_build_object('title','What to look for','content','Make sure the flange isn’t cracked and doesn’t move when you wiggle it. Check that the bolt slots are not broken. Press on the floor around the flange—if it feels soft, address it before installing the new toilet.','type','standard'),
@@ -494,7 +494,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e6'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e6'::uuid,
       'intermediate',
       jsonb_build_array(
         jsonb_build_object('title','Inspection checklist','content','Confirm: flange is fastened solidly, sits at the correct height relative to finished floor, bolt channels hold bolts firmly, and surrounding floor is sound.','type','standard'),
@@ -502,7 +502,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e6'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e6'::uuid,
       'advanced',
       jsonb_build_array(
         jsonb_build_object('title','Root-cause mindset','content','A rocking toilet is a support problem, not a caulk problem. Resolve flange/floor flatness and rigidity before installation.','type','warning'),
@@ -526,7 +526,7 @@ BEGIN
     estimated_time,
     flow_type
   ) VALUES (
-    'f46b9b02-de31-42e0-ab04-5409ed1f21f3'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21f3'::uuid,
     v_phase_install_id,
     'Set the toilet',
     'Install new bolts/seal and set the toilet squarely onto the flange without rocking.',
@@ -553,8 +553,8 @@ BEGIN
     skill_level,
     allow_content_edit
   ) VALUES (
-    'f46b9b02-de31-42e0-ab04-5409ed1f21e7'::uuid,
-    'f46b9b02-de31-42e0-ab04-5409ed1f21f3'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21e7'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21f3'::uuid,
     'Install closet bolts and the new seal',
     'Install new closet bolts and place the new wax ring (or approved seal) correctly.',
     1,
@@ -581,7 +581,7 @@ BEGIN
   INSERT INTO public.step_instructions (step_id, instruction_level, content)
   VALUES
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e7'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e7'::uuid,
       'beginner',
       jsonb_build_array(
         jsonb_build_object('title','Instructions','content','Remove the rag covering the drain opening. Slide new closet bolts into the flange slots so they stand straight up. Place the new wax ring (or seal) as directed for your toilet—make sure it’s centered.','type','standard'),
@@ -589,7 +589,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e7'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e7'::uuid,
       'intermediate',
       jsonb_build_array(
         jsonb_build_object('title','Bolt alignment','content','Align bolts to the toilet base holes before you lift the toilet into position. Confirm both bolts are equally spaced and upright.','type','standard'),
@@ -597,7 +597,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e7'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e7'::uuid,
       'advanced',
       jsonb_build_array(
         jsonb_build_object('title','Leak prevention','content','A distorted or misaligned seal is a primary leak path. Treat any reseat as “new seal required.”','type','warning'),
@@ -624,8 +624,8 @@ BEGIN
     skill_level,
     allow_content_edit
   ) VALUES (
-    'f46b9b02-de31-42e0-ab04-5409ed1f21e8'::uuid,
-    'f46b9b02-de31-42e0-ab04-5409ed1f21f3'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21e8'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21f3'::uuid,
     'Set the toilet and secure it',
     'Lower the toilet onto the bolts, compress the seal, and tighten nuts evenly until stable (without cracking porcelain).',
     2,
@@ -652,7 +652,7 @@ BEGIN
   INSERT INTO public.step_instructions (step_id, instruction_level, content)
   VALUES
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e8'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e8'::uuid,
       'beginner',
       jsonb_build_array(
         jsonb_build_object('title','Safety','content','Porcelain can crack if overtightened. Tighten slowly and evenly.','type','warning'),
@@ -661,7 +661,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e8'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e8'::uuid,
       'intermediate',
       jsonb_build_array(
         jsonb_build_object('title','Set technique','content','Aim for one clean “drop” onto the seal. Micro-adjust only before compression. Alternate turns on nuts to keep the base parallel to the floor.','type','standard'),
@@ -669,7 +669,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e8'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e8'::uuid,
       'advanced',
       jsonb_build_array(
         jsonb_build_object('title','Root cause of rocking','content','If the toilet rocks, correct the support/plane. Do not rely on caulk to stabilize.','type','warning'),
@@ -689,7 +689,7 @@ BEGIN
     estimated_time,
     flow_type
   ) VALUES (
-    'f46b9b02-de31-42e0-ab04-5409ed1f21f4'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21f4'::uuid,
     v_phase_install_id,
     'Reconnect water & verify performance',
     'Reconnect the supply, restore water, and verify leak-free operation and flush performance.',
@@ -716,8 +716,8 @@ BEGIN
     skill_level,
     allow_content_edit
   ) VALUES (
-    'f46b9b02-de31-42e0-ab04-5409ed1f21e9'::uuid,
-    'f46b9b02-de31-42e0-ab04-5409ed1f21f4'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21e9'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21f4'::uuid,
     'Reconnect the water supply and refill',
     'Reconnect the supply line, slowly open the shutoff, and allow the tank to fill.',
     1,
@@ -744,7 +744,7 @@ BEGIN
   INSERT INTO public.step_instructions (step_id, instruction_level, content)
   VALUES
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e9'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e9'::uuid,
       'beginner',
       jsonb_build_array(
         jsonb_build_object('title','Instructions','content','Reconnect the supply line to the bottom of the toilet tank. Hold a towel under the connection. Slowly open the shutoff valve counterclockwise and watch for leaks while the tank fills.','type','standard'),
@@ -752,7 +752,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e9'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e9'::uuid,
       'intermediate',
       jsonb_build_array(
         jsonb_build_object('title','Leak check during refill','content','Bring the system up under controlled conditions: slow open, observe joints during fill and initial valve shutoff.','type','standard'),
@@ -760,7 +760,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21e9'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21e9'::uuid,
       'advanced',
       jsonb_build_array(
         jsonb_build_object('title','Failure mode control','content','Any seep at the angle stop or compression/flex connection is a hard stop. Correct before pressurizing further or leaving unattended.','type','warning'),
@@ -787,8 +787,8 @@ BEGIN
     skill_level,
     allow_content_edit
   ) VALUES (
-    'f46b9b02-de31-42e0-ab04-5409ed1f21ea'::uuid,
-    'f46b9b02-de31-42e0-ab04-5409ed1f21f4'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21ea'::uuid,
+    '8267c526-036d-4f5c-9f17-5409ed1f21f4'::uuid,
     'Flush test and final checks',
     'Run multiple flushes and inspect for leaks at the base and connections; complete cleanup.',
     2,
@@ -815,7 +815,7 @@ BEGIN
   INSERT INTO public.step_instructions (step_id, instruction_level, content)
   VALUES
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21ea'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21ea'::uuid,
       'beginner',
       jsonb_build_array(
         jsonb_build_object('title','Instructions','content','Flush the toilet 2–3 times. Look around the base for any water. Check the supply connection and shutoff for drips. Wipe the floor dry and recheck after a few minutes.','type','standard'),
@@ -824,7 +824,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21ea'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21ea'::uuid,
       'intermediate',
       jsonb_build_array(
         jsonb_build_object('title','Test plan','content','Perform multiple flush cycles; inspect base perimeter and all supply joints. Confirm stability (no rocking) after test.','type','standard'),
@@ -832,7 +832,7 @@ BEGIN
       )
     ),
     (
-      'f46b9b02-de31-42e0-ab04-5409ed1f21ea'::uuid,
+      '8267c526-036d-4f5c-9f17-5409ed1f21ea'::uuid,
       'advanced',
       jsonb_build_array(
         jsonb_build_object('title','Acceptance criteria','content','Leak-free under repeated flush cycles, stable/no rock, joints dry after idle period.','type','standard'),

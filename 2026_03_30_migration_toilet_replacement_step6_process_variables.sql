@@ -1,6 +1,6 @@
 -- Step 6 of project development: Process variables ONLY (no tools/materials library inserts)
 -- Project: Toilet Replacement
--- Project ID: f46b9b02-de31-42e0-ab04-5409ed1f21ee
+-- Project ID: 8267c526-036d-4f5c-9f17-2ee1b3d87886
 --
 -- Prerequisites: run steps 1–5 first (workflow, outputs, risks, tools on steps, materials on steps).
 -- Tools and materials CATALOG belong in step 4 and step 5 migrations — not here.
@@ -11,7 +11,7 @@
 
 DO $$
 DECLARE
-  v_project_id CONSTANT uuid := 'f46b9b02-de31-42e0-ab04-5409ed1f21ee'::uuid;
+  v_project_id CONSTANT uuid := '8267c526-036d-4f5c-9f17-2ee1b3d87886'::uuid;
   v_step_count integer;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.projects p WHERE p.id = v_project_id) THEN
@@ -42,7 +42,7 @@ BEGIN
       'required', true,
       'unit', 'minutes'
     )
-  ) WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e1'::uuid;
+  ) WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e1'::uuid;
 
   UPDATE public.operation_steps SET process_variables = jsonb_build_array(
     jsonb_build_object(
@@ -52,7 +52,7 @@ BEGIN
       'description', 'How completely tank and bowl are emptied. Too low: slosh and contamination on lift; overkill is rare but wastes time. Target: no audible slosh when bowl is rocked gently.',
       'required', true
     )
-  ) WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e2'::uuid;
+  ) WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e2'::uuid;
 
   UPDATE public.operation_steps SET process_variables = jsonb_build_array(
     jsonb_build_object(
@@ -62,7 +62,7 @@ BEGIN
       'description', 'Force applied to supply coupling and nuts. Too low: joint leaks; too high: crushed ferrule, galling, or cracked fill valve shank. Target: hand-firm plus small wrench increment until joint separates without deformation.',
       'required', true
     )
-  ) WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e3'::uuid;
+  ) WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e3'::uuid;
 
   UPDATE public.operation_steps SET process_variables = jsonb_build_array(
     jsonb_build_object(
@@ -72,7 +72,7 @@ BEGIN
       'description', 'Deviation from straight vertical lift after seal break. Too lateral: flange lip damage, bolt shear, floor gouging. Target: plumb lift with minimal side load.',
       'required', true
     )
-  ) WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e4'::uuid;
+  ) WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e4'::uuid;
 
   UPDATE public.operation_steps SET process_variables = jsonb_build_array(
     jsonb_build_object(
@@ -82,7 +82,7 @@ BEGIN
       'description', 'Wax residue left on flange bearing surface. Too much residue: leak path; aggressive scraping: flange damage. Target: visually clean, continuous bearing ring with no loose chunks.',
       'required', true
     )
-  ) WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e5'::uuid;
+  ) WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e5'::uuid;
 
   UPDATE public.operation_steps SET process_variables = jsonb_build_array(
     jsonb_build_object(
@@ -92,7 +92,7 @@ BEGIN
       'description', 'Observable movement when flange is pressed side-to-side. Any meaningful flex means subfloor or attachment failure risk before setting bowl. Target: no perceptible translation relative to floor plane.',
       'required', true
     )
-  ) WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e6'::uuid;
+  ) WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e6'::uuid;
 
   UPDATE public.operation_steps SET process_variables = jsonb_build_array(
     jsonb_build_object(
@@ -103,7 +103,7 @@ BEGIN
       'required', true,
       'unit', 'cycles'
     )
-  ) WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e7'::uuid;
+  ) WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e7'::uuid;
 
   UPDATE public.operation_steps SET process_variables = jsonb_build_array(
     jsonb_build_object(
@@ -113,7 +113,7 @@ BEGIN
       'description', 'Balance of tightening between left and right nuts per pass. One-sided tightening tilts bowl and stresses porcelain. Target: equal small turns alternating sides until snug with no rock.',
       'required', true
     )
-  ) WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e8'::uuid;
+  ) WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e8'::uuid;
 
   UPDATE public.operation_steps SET process_variables = jsonb_build_array(
     jsonb_build_object(
@@ -123,7 +123,7 @@ BEGIN
       'description', 'How fast the angle stop is reopened after connection. Too fast: water hammer and joint surge leaks. Target: slow sweep to full open while watching every threaded joint.',
       'required', true
     )
-  ) WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e9'::uuid;
+  ) WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e9'::uuid;
 
   UPDATE public.operation_steps SET process_variables = jsonb_build_array(
     jsonb_build_object(
@@ -134,7 +134,7 @@ BEGIN
       'required', true,
       'unit', 'minutes'
     )
-  ) WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21ea'::uuid;
+  ) WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21ea'::uuid;
 
   UPDATE public.projects
   SET phases = public.rebuild_phases_json_from_project_phases(v_project_id)

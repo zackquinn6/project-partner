@@ -1,6 +1,6 @@
 -- Step 3 of project development: Project Risks (timeline/budget focused)
 -- Project: Toilet Replacement
--- Project ID: f46b9b02-de31-42e0-ab04-5409ed1f21ee
+-- Project ID: 8267c526-036d-4f5c-9f17-2ee1b3d87886
 --
 -- IMPORTANT (per planning rules):
 -- - Focus on risks that affect timeline or budget.
@@ -9,7 +9,7 @@
 
 DO $$
 DECLARE
-  v_project_id CONSTANT uuid := 'f46b9b02-de31-42e0-ab04-5409ed1f21ee'::uuid;
+  v_project_id CONSTANT uuid := '8267c526-036d-4f5c-9f17-2ee1b3d87886'::uuid;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.projects p WHERE p.id = v_project_id) THEN
     RAISE EXCEPTION 'Project not found: %', v_project_id;

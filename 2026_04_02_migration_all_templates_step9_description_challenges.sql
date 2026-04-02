@@ -27,8 +27,8 @@ BEGIN
   WHERE p.id <> ALL(v_excl)
     AND (p.is_standard IS DISTINCT FROM true)
     AND (
-      p.id = 'f46b9b02-de31-42e0-ab04-5409ed1f21ee'::uuid
-      OR p.parent_project_id = 'f46b9b02-de31-42e0-ab04-5409ed1f21ee'::uuid
+      p.id = '8267c526-036d-4f5c-9f17-2ee1b3d87886'::uuid
+      OR p.parent_project_id = '8267c526-036d-4f5c-9f17-2ee1b3d87886'::uuid
       OR lower(btrim(p.name)) LIKE 'toilet replacement%'
     );
   GET DIAGNOSTICS v_n = ROW_COUNT;

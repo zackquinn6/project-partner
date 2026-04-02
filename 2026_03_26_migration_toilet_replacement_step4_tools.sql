@@ -1,6 +1,6 @@
 -- Step 4 of project development: Tools list (must match tools library + variants)
 -- Project: Toilet Replacement
--- Project ID: f46b9b02-de31-42e0-ab04-5409ed1f21ee
+-- Project ID: 8267c526-036d-4f5c-9f17-2ee1b3d87886
 --
 -- Rules:
 -- - Ensure each required tool row exists (INSERT by name when missing), then attach to steps.
@@ -12,7 +12,7 @@
 
 DO $$
 DECLARE
-  v_project_id CONSTANT uuid := 'f46b9b02-de31-42e0-ab04-5409ed1f21ee'::uuid;
+  v_project_id CONSTANT uuid := '8267c526-036d-4f5c-9f17-2ee1b3d87886'::uuid;
   v_missing text[] := ARRAY[]::text[];
 
   -- Tool core IDs
@@ -92,7 +92,7 @@ BEGIN
     jsonb_build_object('coreItemId', t_bucket, 'item', 'Bucket', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true),
     jsonb_build_object('coreItemId', t_paper_towels, 'item', 'Paper Towels', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true)
   )
-  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e1'::uuid;
+  WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e1'::uuid;
 
   -- Step: Drain the toilet
   UPDATE public.operation_steps
@@ -100,7 +100,7 @@ BEGIN
     jsonb_build_object('coreItemId', t_bucket, 'item', 'Bucket', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true),
     jsonb_build_object('coreItemId', t_sponge, 'item', 'Sponge', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true)
   )
-  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e2'::uuid;
+  WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e2'::uuid;
 
   -- Step: Disconnect the water supply line
   UPDATE public.operation_steps
@@ -110,7 +110,7 @@ BEGIN
     jsonb_build_object('coreItemId', t_bucket, 'item', 'Bucket', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true),
     jsonb_build_object('coreItemId', t_paper_towels, 'item', 'Paper Towels', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true)
   )
-  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e3'::uuid;
+  WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e3'::uuid;
 
   -- Step: Unbolt and lift the toilet
   UPDATE public.operation_steps
@@ -119,7 +119,7 @@ BEGIN
     jsonb_build_object('coreItemId', t_utility_knife, 'item', 'Utility Knife', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false),
     jsonb_build_object('coreItemId', t_paper_towels, 'item', 'Paper Towels', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true)
   )
-  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e4'::uuid;
+  WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e4'::uuid;
 
   -- Step: Remove old wax and block the drain opening
   UPDATE public.operation_steps
@@ -127,7 +127,7 @@ BEGIN
     jsonb_build_object('coreItemId', t_putty_knife, 'item', 'Putty Knife', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true),
     jsonb_build_object('coreItemId', t_paper_towels, 'item', 'Paper Towels', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true)
   )
-  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e5'::uuid;
+  WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e5'::uuid;
 
   -- Step: Inspect the flange and subfloor
   UPDATE public.operation_steps
@@ -136,14 +136,14 @@ BEGIN
     jsonb_build_object('coreItemId', t_putty_knife, 'item', 'Putty Knife', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false),
     jsonb_build_object('coreItemId', t_paper_towels, 'item', 'Paper Towels', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false)
   )
-  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e6'::uuid;
+  WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e6'::uuid;
 
   -- Step: Install closet bolts and the new seal
   UPDATE public.operation_steps
   SET tools = jsonb_build_array(
     jsonb_build_object('coreItemId', t_paper_towels, 'item', 'Paper Towels', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false)
   )
-  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e7'::uuid;
+  WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e7'::uuid;
 
   -- Step: Set the toilet and secure it
   UPDATE public.operation_steps
@@ -152,7 +152,7 @@ BEGIN
     jsonb_build_object('coreItemId', t_adjustable_wrench, 'item', 'Adjustable Wrench', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true),
     jsonb_build_object('coreItemId', t_paper_towels, 'item', 'Paper Towels', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true)
   )
-  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e8'::uuid;
+  WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e8'::uuid;
 
   -- Step: Reconnect the water supply and refill
   UPDATE public.operation_steps
@@ -161,7 +161,7 @@ BEGIN
     jsonb_build_object('coreItemId', t_channel_lock_pliers, 'item', 'Tongue-and-Groove Pliers', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false),
     jsonb_build_object('coreItemId', t_paper_towels, 'item', 'Paper Towels', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true)
   )
-  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21e9'::uuid;
+  WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21e9'::uuid;
 
   -- Step: Flush test and final checks
   UPDATE public.operation_steps
@@ -169,7 +169,7 @@ BEGIN
     jsonb_build_object('coreItemId', t_paper_towels, 'item', 'Paper Towels', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', true),
     jsonb_build_object('coreItemId', t_flashlight, 'item', 'Flashlight', 'quantity', 1, 'attributes', '{}'::jsonb, 'isPrime', false)
   )
-  WHERE id = 'f46b9b02-de31-42e0-ab04-5409ed1f21ea'::uuid;
+  WHERE id = '8267c526-036d-4f5c-9f17-5409ed1f21ea'::uuid;
 
   -- Refresh project cached phases JSON
   UPDATE public.projects
