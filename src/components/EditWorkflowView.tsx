@@ -2860,6 +2860,7 @@ export default function EditWorkflowView({
         open={decisionTreeOpen}
         onOpenChange={setDecisionTreeOpen}
         currentProject={currentProject}
+        phases={displayPhases}
       />
     </div>;
 }

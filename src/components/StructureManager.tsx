@@ -3572,7 +3572,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       <DecisionTreeManager 
         open={showDecisionTreeManager} 
         onOpenChange={setShowDecisionTreeManager} 
-        currentProject={currentProject} 
+        currentProject={currentProject}
+        phases={phases}
       />
       
       {/* Phase Incorporation Dialog */}

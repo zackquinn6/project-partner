@@ -30,6 +30,8 @@ interface DecisionTreeManagerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentProject: Project;
+  /** Process Map / Workflow editor load phases in local state; pass them here so the table is not empty. */
+  phases?: Phase[];
 }
 
 interface FlowTypeConfig {
@@ -43,8 +45,10 @@ interface FlowTypeConfig {
 export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
   open,
   onOpenChange,
-  currentProject
+  currentProject,
+  phases: phasesProp
 }) => {
+  const workflowPhases = phasesProp ?? currentProject.phases ?? [];
   const { updateProject } = useProject();
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
   const [expandedOperations, setExpandedOperations] = useState<Set<string>>(new Set());
@@ -63,6 +67,20 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       loadFlowConfigs();
     }
   }, [open, currentProject.id]);
+
+  const phaseTreeKey = useMemo(
+    () => workflowPhases.map((p) => p.id).join(','),
+    [workflowPhases]
+  );
+
+  // Expand phases and operations when opening so the table shows rows immediately
+  useEffect(() => {
+    if (!open || workflowPhases.length === 0) return;
+    setExpandedPhases(new Set(workflowPhases.map((p) => p.id)));
+    setExpandedOperations(
+      new Set(workflowPhases.flatMap((p) => p.operations.map((o) => o.id)))
+    );
+  }, [open, phaseTreeKey]);
 
   const loadFlowConfigs = async () => {
     try {
@@ -131,7 +149,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       if (newSet.has(phaseId)) {
         newSet.delete(phaseId);
         // Also collapse all operations in this phase
-        currentProject.phases.find(p => p.id === phaseId)?.operations.forEach(op => {
+        workflowPhases.find(p => p.id === phaseId)?.operations.forEach(op => {
           const newOps = new Set(expandedOperations);
           newOps.delete(op.id);
           setExpandedOperations(newOps);
@@ -156,8 +174,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
   };
 
   const expandAll = () => {
-    setExpandedPhases(new Set(currentProject.phases.map(p => p.id)));
-    const allOps = currentProject.phases.flatMap(p => p.operations.map(o => o.id));
+    setExpandedPhases(new Set(workflowPhases.map(p => p.id)));
+    const allOps = workflowPhases.flatMap(p => p.operations.map(o => o.id));
     setExpandedOperations(new Set(allOps));
   };
 
@@ -215,7 +233,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
   };
 
   const getAllOperations = () => {
-    return currentProject.phases.flatMap(phase => 
+    return workflowPhases.flatMap(phase => 
       phase.operations.map(op => ({
         ...op,
         phaseName: phase.name,
@@ -231,7 +249,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     if (op) return op.name;
     
     // Try to find as step
-    for (const phase of currentProject.phases) {
+    for (const phase of workflowPhases) {
       for (const operation of phase.operations) {
         const step = operation.steps.find(s => s.id === itemId);
         if (step) return step.step;
@@ -239,7 +257,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     }
     
     // Try to find as phase
-    const phase = currentProject.phases.find(p => p.id === itemId);
+    const phase = workflowPhases.find(p => p.id === itemId);
     if (phase) return phase.name;
     
     return itemId;
@@ -496,7 +514,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       
       for (const [itemId, config] of Object.entries(flowConfigs)) {
         // Check if this is an operation (exists in phase_operations)
-        const isOperation = currentProject.phases.some(phase => 
+        const isOperation = workflowPhases.some(phase => 
           phase.operations.some(op => op.id === itemId)
         );
         
@@ -566,7 +584,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
     if (flowchartLevel === 'phase') {
       // Phase-level flowchart (horizontal)
-      currentProject.phases.forEach((phase, index) => {
+      workflowPhases.forEach((phase, index) => {
         const config = flowConfigs[phase.id];
         const nodeType = config?.type === 'if-necessary' ? 'if-necessary' : 
                         config?.type === 'alternate' ? 'alternate' : 
@@ -596,11 +614,11 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
         });
 
         // Add edges to next phase
-        if (index < currentProject.phases.length - 1) {
+        if (index < workflowPhases.length - 1) {
           edges.push({
-            id: `${phase.id}-${currentProject.phases[index + 1].id}`,
+            id: `${phase.id}-${workflowPhases[index + 1].id}`,
             source: phase.id,
-            target: currentProject.phases[index + 1].id,
+            target: workflowPhases[index + 1].id,
             animated: true,
             markerEnd: { type: MarkerType.ArrowClosed },
           });
@@ -641,7 +659,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
           config.alternateIds.forEach((altId, altIndex) => {
             const yOffset = (altIndex + 1) * verticalSpacing;
-            const altPhase = currentProject.phases.find(p => p.id === altId);
+            const altPhase = workflowPhases.find(p => p.id === altId);
             if (altPhase && !nodes.find(n => n.id === altId)) {
               nodes.push({
                 id: altId,
@@ -674,7 +692,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       });
     } else if (flowchartLevel === 'operation') {
       // Operation-level flowchart (horizontal)
-      currentProject.phases.forEach((phase) => {
+      workflowPhases.forEach((phase) => {
         // Add phase header
         nodes.push({
           id: `phase-header-${phase.id}`,
@@ -809,7 +827,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       });
     } else {
       // Step-level flowchart (horizontal)
-      currentProject.phases.forEach((phase) => {
+      workflowPhases.forEach((phase) => {
         phase.operations.forEach((operation) => {
           // Add operation header
           nodes.push({
@@ -951,7 +969,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     }
 
     return { nodes, edges };
-  }, [currentProject, flowConfigs, flowchartLevel]);
+  }, [workflowPhases, flowConfigs, flowchartLevel]);
 
   const { nodes, edges } = useMemo(() => generateFlowchart(), [generateFlowchart]);
 
@@ -966,44 +984,54 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           <div className="flex items-center justify-between">
             <DialogTitle>Decision Tree Manager - {currentProject.name}</DialogTitle>
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleSave}>
-                Save
+              <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="button" size="sm" onClick={handleSave}>
+                Save & Close
               </Button>
             </div>
           </div>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'table' | 'flowchart')} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="mx-6 mb-4 shrink-0 h-10 bg-muted">
-            <TabsTrigger 
-              value="table" 
-              className="flex items-center gap-2 h-9"
-            >
-              <List className="w-4 h-4" />
-              Table View
-            </TabsTrigger>
-            <TabsTrigger 
-              value="flowchart" 
-              className="flex items-center gap-2 h-9"
-            >
-              <GitBranch className="w-4 h-4" />
-              Flowchart
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'table' | 'flowchart')} className="flex min-h-0 flex-1 flex-col">
+          <div className="mb-4 shrink-0 px-6">
+            <TabsList className="grid h-11 w-full grid-cols-2 gap-0 rounded-md border border-border bg-muted p-0 text-muted-foreground shadow-sm">
+              <TabsTrigger
+                value="table"
+                className="flex h-full w-full items-center justify-center gap-2 rounded-none rounded-l-md border-r border-border py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-none"
+              >
+                <List className="h-4 w-4 shrink-0" />
+                Table View
+              </TabsTrigger>
+              <TabsTrigger
+                value="flowchart"
+                className="flex h-full w-full items-center justify-center gap-2 rounded-none rounded-r-md py-2 text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-none"
+              >
+                <GitBranch className="h-4 w-4 shrink-0" />
+                Flowchart
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="table" className="flex-1 flex flex-col min-h-0 px-6 pb-6 mt-0 data-[state=inactive]:hidden">
-            <div className="flex gap-2 mb-4 shrink-0">
+          <TabsContent value="table" className="mt-0 flex min-h-0 flex-1 flex-col px-6 pb-6 data-[state=inactive]:hidden">
+            <div className="mb-4 flex shrink-0 gap-2">
               <Button size="sm" variant="outline" onClick={expandAll}>
-                <ChevronsUpDown className="w-4 h-4 mr-2" />
+                <ChevronsUpDown className="mr-2 h-4 w-4" />
                 Expand All
               </Button>
               <Button size="sm" variant="outline" onClick={collapseAll}>
-                <ChevronsDownUp className="w-4 h-4 mr-2" />
+                <ChevronsDownUp className="mr-2 h-4 w-4" />
                 Collapse All
               </Button>
             </div>
-            
-            <div className="flex-1 overflow-auto border rounded-lg min-h-0">
+
+            {workflowPhases.length === 0 ? (
+              <div className="flex min-h-[12rem] flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+                No workflow phases are loaded for this project. Open Process Map or Workflow editor so phases load, then open Decision Tree again.
+              </div>
+            ) : (
+            <div className="min-h-0 flex-1 overflow-auto rounded-lg border">
               <Table>
             <TableHeader>
               <TableRow>
@@ -1013,7 +1041,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentProject.phases.map(phase => (
+              {workflowPhases.map(phase => (
                 <React.Fragment key={phase.id}>
                   {/* Phase Row */}
                   <TableRow className="bg-muted/50">
@@ -1038,13 +1066,13 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                       {renderFlowTypeControls(
                         phase.id, 
                         phase.name,
-                        currentProject.phases.map(p => ({ id: p.id, label: p.name }))
+                        workflowPhases.map(p => ({ id: p.id, label: p.name }))
                       )}
                     </TableCell>
                     <TableCell>
                       {renderPredecessorControls(
                         phase.id,
-                        currentProject.phases.map(p => ({ id: p.id, label: p.name }))
+                        workflowPhases.map(p => ({ id: p.id, label: p.name }))
                       )}
                     </TableCell>
                   </TableRow>
@@ -1123,9 +1151,10 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             </TableBody>
           </Table>
             </div>
+            )}
           </TabsContent>
 
-          <TabsContent value="flowchart" className="flex-1 flex flex-col min-h-0 px-6 pb-6 mt-0 data-[state=inactive]:hidden">
+          <TabsContent value="flowchart" className="mt-0 flex min-h-0 flex-1 flex-col px-6 pb-6 data-[state=inactive]:hidden">
             <div className="mb-4 flex items-center gap-4">
               <Label className="font-semibold">View Level:</Label>
               <RadioGroup 
