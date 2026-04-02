@@ -8,7 +8,7 @@ import { Label } from '../ui/label';
 import { Alert, AlertDescription } from '../ui/alert';
 import { ScrollArea } from '../ui/scroll-area';
 import { Phase, Operation, WorkflowStep } from '../../interfaces/Project';
-import { AlertTriangle, Plus, Trash2, Save, X, ChevronDown, ChevronRight, Settings } from 'lucide-react';
+import { Info, Plus, Trash2, Save, X, ChevronDown, ChevronRight, Settings } from 'lucide-react';
 import { useIsMobile } from '../../hooks/use-mobile';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 
@@ -184,11 +184,10 @@ export const SimplifiedCustomWorkManager: React.FC<SimplifiedCustomWorkManagerPr
         <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
           <div className="space-y-4">
             {/* Warning */}
-            <Alert className="border-orange-200 bg-orange-50/50">
-              <AlertTriangle className="h-4 w-4 text-orange-600" />
-              <AlertDescription className="text-orange-800 text-xs leading-relaxed">
-                <strong className="font-medium">Note:</strong> Custom work may affect project guarantees. 
-                Verify safety and building code requirements before proceeding.
+            <Alert className="border-sky-200 bg-sky-50/80 dark:border-sky-800 dark:bg-sky-950/40">
+              <Info className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+              <AlertDescription className="text-sky-900 dark:text-sky-100 text-xs leading-relaxed">
+                Custom work won&apos;t have the workflow as created for other projects.
               </AlertDescription>
             </Alert>
 

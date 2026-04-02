@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { Label } from '../ui/label';
 import { WorkflowDecisionEngine } from './WorkflowDecisionEngine';
 import { ProjectRun } from '../../interfaces/ProjectRun';
 import { CheckCircle2 } from 'lucide-react';
@@ -174,45 +173,27 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
                 </Badge>
               )}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mb-3">
-              Make decisions for how this space will be completed
-            </p>
-            
-            {/* Read-only Sizing Display */}
-            <div className="mt-3 pt-3 border-t">
-              <div className="text-xs text-muted-foreground mb-2 font-medium">Sizing</div>
-              <div className="space-y-2">
-                {/* Current Project Sizing */}
-                <div>
-                  <Label className="text-xs font-medium mb-1 block text-muted-foreground">
-                    {currentProjectName}
-                  </Label>
-                  <div className="text-sm font-medium text-center">
-                    {space.scaleValue || spaceSizingData.get(space.id)?.[projectScaleUnit] || 0} {projectScaleUnit}
-                  </div>
-                </div>
-                
-                {/* Incorporated Phases Sizing */}
-                {incorporatedPhases.map((phase) => {
-                  const sizingKey = phase.scalingUnit;
-                  const spaceSizing = spaceSizingData.get(space.id) || {};
-                  const currentValue = spaceSizing[sizingKey];
-                  
-                  if (currentValue === undefined || currentValue === 0) return null;
-                  
-                  return (
-                    <div key={phase.projectName}>
-                      <Label className="text-xs font-medium mb-1 block text-muted-foreground">
-                        {phase.projectName}
-                      </Label>
-                      <div className="text-sm font-medium text-center">
-                        {currentValue} {phase.scalingUnit}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            {(() => {
+              const parts: string[] = [];
+              const mainVal =
+                space.scaleValue ??
+                spaceSizingData.get(space.id)?.[projectScaleUnit] ??
+                0;
+              parts.push(`${currentProjectName} ${mainVal} ${projectScaleUnit}`);
+              incorporatedPhases.forEach((phase) => {
+                const spaceSizing = spaceSizingData.get(space.id) || {};
+                const currentValue = spaceSizing[phase.scalingUnit];
+                if (currentValue !== undefined && currentValue !== 0) {
+                  parts.push(`${phase.projectName} ${currentValue} ${phase.scalingUnit}`);
+                }
+              });
+              return (
+                <p className="mt-2 border-t pt-2 text-left text-xs leading-snug text-muted-foreground">
+                  <span className="font-medium text-foreground">Sizing — </span>
+                  {parts.join(' · ')}
+                </p>
+              );
+            })()}
           </CardHeader>
           <CardContent>
             <WorkflowDecisionEngine

@@ -2,15 +2,20 @@ import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { ScrollArea } from '../ui/scroll-area';
 import { Input } from '../ui/input';
 import { Checkbox } from '../ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 import { Project, Phase } from '../../interfaces/Project';
-import { Search, Package, Clock, Filter, Plus } from 'lucide-react';
+import { Search, Package, Clock, Plus, ChevronDown } from 'lucide-react';
 import { useIsMobile } from '../../hooks/use-mobile';
 
 interface PhaseBrowserProps {
@@ -120,17 +125,19 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
       });
     }
     
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(project => {
-        if (Array.isArray(project.category)) {
-          return project.category.includes(selectedCategory);
-        }
-        return project.category === selectedCategory;
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter((project) => {
+        const cats = Array.isArray(project.category)
+          ? project.category
+          : project.category
+            ? [project.category]
+            : [];
+        return cats.some((c) => selectedCategories.includes(c));
       });
     }
-    
+
     return filtered;
-  }, [availableProjectsList, searchTerm, selectedCategory]);
+  }, [availableProjectsList, searchTerm, selectedCategories]);
 
   // Get unique categories
   const categories = useMemo(() => {
@@ -215,49 +222,69 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
                 />
               </div>
 
-              {/* Category Filter - Small text labels */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-muted-foreground font-medium">Categories:</span>
-                <Button
-                  variant={selectedCategory === 'all' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectedCategory('all')}
-                  className="h-7 text-xs px-2"
-                >
-                  All
-                </Button>
-                {categories.map(category => (
-                  <Button
-                    key={category}
-                    variant={selectedCategory === category ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedCategory(category)}
-                    className="h-7 text-xs px-2"
-                  >
-                    {category}
-                  </Button>
-                ))}
-              </div>
+              {categories.length > 0 ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-9 gap-1.5">
+                      Categories
+                      {selectedCategories.length > 0 ? (
+                        <span className="text-muted-foreground">({selectedCategories.length})</span>
+                      ) : null}
+                      <ChevronDown className="h-4 w-4 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56 max-h-64 overflow-y-auto" align="start">
+                    <DropdownMenuLabel>Filter by category</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {categories.map((category) => (
+                      <DropdownMenuCheckboxItem
+                        key={category}
+                        checked={selectedCategories.includes(category)}
+                        onCheckedChange={() => {
+                          setSelectedCategories((prev) =>
+                            prev.includes(category)
+                              ? prev.filter((c) => c !== category)
+                              : [...prev, category]
+                          );
+                        }}
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        {category}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                    {selectedCategories.length > 0 ? (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={() => setSelectedCategories([])}
+                        >
+                          Clear categories
+                        </DropdownMenuItem>
+                      </>
+                    ) : null}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
 
               {/* Add Custom Work Button */}
               {onAddCustomWork && (
-                <Card className="border-orange-200 bg-orange-50/50">
+                <Card className="border-sky-200 bg-sky-50/80 dark:border-sky-800 dark:bg-sky-950/40">
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1">
-                        <h4 className="font-semibold text-sm text-orange-900">Add Custom Work</h4>
-                        <p className="text-xs text-orange-700 mt-0.5">
-                          Use this when you can't find work content in our catalog
+                        <h4 className="font-semibold text-sm text-sky-950 dark:text-sky-100">Add Custom Work</h4>
+                        <p className="text-xs text-sky-800 dark:text-sky-200/90 mt-0.5">
+                          Use this when you can&apos;t find work content in our catalog
                         </p>
                       </div>
-                      <Button 
+                      <Button
                         onClick={() => {
                           onAddCustomWork();
                           onOpenChange(false);
-                        }} 
-                        variant="outline" 
+                        }}
+                        variant="outline"
                         size="sm"
-                        className="border-orange-300 text-orange-800 hover:bg-orange-100"
+                        className="border-sky-300 text-sky-900 hover:bg-sky-100 dark:border-sky-600 dark:text-sky-100 dark:hover:bg-sky-900/50"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         Create Custom
@@ -276,7 +303,7 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
                   <Package className="text-muted-foreground mx-auto mb-4 w-12 h-12" />
                   <h3 className="font-semibold mb-2 text-lg">No Projects Found</h3>
                   <p className="text-muted-foreground text-sm">
-                    {searchTerm || selectedCategory !== 'all' 
+                    {searchTerm || selectedCategories.length > 0
                       ? 'Try adjusting your search or filter criteria.'
                       : 'No compatible projects are available.'
                     }
@@ -286,76 +313,37 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[300px]">Project Name</TableHead>
-                      <TableHead className="w-[200px]">Categories</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="w-[100px] text-center">Phases</TableHead>
-                      <TableHead className="w-[100px]"></TableHead>
+                      <TableHead className="w-[min(22%,11rem)] max-w-[11rem] whitespace-nowrap">
+                        Project name
+                      </TableHead>
+                      <TableHead className="min-w-0">Description</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredProjects.map((project) => {
-                      // Count non-standard phases (use isStandard flag instead of hardcoded names)
-                      const availablePhases = project.phases?.filter(p => 
-                        p.isStandard !== true || p.isLinked === true
-                      ).length || 0;
-                      
-                      const projectCategories = Array.isArray(project.category) 
-                        ? project.category 
-                        : (project.category ? [project.category] : ['Other']);
-                      
-                      return (
-                        <TableRow 
-                          key={project.id} 
-                          className="cursor-pointer hover:bg-accent/50"
-                          onClick={() => handleProjectClick(project.id)}
-                        >
-                          <TableCell className="font-medium">{project.name}</TableCell>
-                          <TableCell>
-                            <TooltipProvider delayDuration={200}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="flex flex-wrap gap-1 max-h-[3.5rem] overflow-hidden relative">
-                                    {projectCategories.map((cat, idx) => (
-                                      <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0.5">
-                                        {cat}
-                                      </Badge>
-                                    ))}
-                                    {projectCategories.length > 4 && (
-                                      <div className="absolute bottom-0 right-0 bg-background/80 backdrop-blur-sm px-1 text-[10px] text-muted-foreground">
-                                        +{projectCategories.length - 4} more
-                                      </div>
-                                    )}
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="right" className="max-w-xs">
-                                  <div className="flex flex-wrap gap-1">
-                                    {projectCategories.map((cat, idx) => (
-                                      <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0.5">
-                                        {cat}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
+                    {filteredProjects.map((project) => (
+                      <TableRow
+                        key={project.id}
+                        role="button"
+                        tabIndex={0}
+                        className="cursor-pointer hover:bg-accent/50"
+                        onClick={() => handleProjectClick(project.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleProjectClick(project.id);
+                          }
+                        }}
+                      >
+                        <TableCell className="max-w-[11rem] truncate font-medium align-top">
+                          {project.name}
+                        </TableCell>
+                        <TableCell className="min-w-0 text-sm text-muted-foreground align-top">
+                          <span className="line-clamp-4 sm:line-clamp-6">
                             {project.description || 'No description available'}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant="outline" className="text-xs">
-                              {availablePhases}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="sm" className="h-8">
-                              Select
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               )}
