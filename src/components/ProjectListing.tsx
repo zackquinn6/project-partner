@@ -265,7 +265,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                         <div className="flex-1 flex flex-col gap-1">
                           {isRiskFocusRun(projectRun) && (
                             <Badge variant="outline" className="text-xs w-fit">
-                              Risk-Focus
+                              Risk-Less
                             </Badge>
                           )}
                           <div className="flex items-center gap-2">
@@ -425,7 +425,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                         <div className="flex flex-col gap-1">
                           {isRiskFocusRun(projectRun) && (
                             <Badge variant="outline" className="text-xs w-fit">
-                              Risk-Focus
+                              Risk-Less
                             </Badge>
                           )}
                           <div className="flex items-center gap-2">

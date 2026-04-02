@@ -212,7 +212,7 @@ export function MobileProjectListing({
                   </span>
                   {isRiskFocusRun(currentProjectRun) ? (
                     <Badge variant="outline" className="px-1.5 py-0 text-[9px] leading-none">
-                      Risk-Focus
+                      Risk-Less
                     </Badge>
                   ) : null}
                 </div>

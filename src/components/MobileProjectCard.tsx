@@ -201,7 +201,7 @@ export function MobileProjectCard({
                     <div className="min-w-0">
                       {projectRunData != null && isRiskFocusRun(projectRunData) ? (
                         <Badge variant="outline" className="mb-0.5 inline-flex px-1.5 py-0 text-[9px] leading-tight">
-                          Risk-Focus
+                          Risk-Less
                         </Badge>
                       ) : null}
                       <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-card-foreground">
