@@ -16,6 +16,13 @@ import { MultiContentEditor } from './MultiContentEditor';
 import type { ContentSection } from '@/interfaces/Project';
 import { buildPricingModelRowsForVariation } from '@/utils/pricingModelLabels';
 
+/** When PostgREST has no `warning_flags` relation, avoid repeat 404s for the session. */
+const WARNING_FLAGS_UNAVAILABLE_SESSION_KEY = 'toolio:warning_flags_unavailable';
+
+/** Nested above parent dialogs that use z-[100] (e.g. VariationViewer); align with VariationManager. */
+const NESTED_EDITOR_OVERLAY_CLASS = 'z-[260] bg-black/80';
+const NESTED_EDITOR_CONTENT_Z = 'z-[270]';
+
 interface VariationInstance {
   id: string;
   core_item_id: string;
@@ -137,6 +144,14 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
 
   const fetchWarningFlags = async () => {
     try {
+      if (
+        typeof sessionStorage !== 'undefined' &&
+        sessionStorage.getItem(WARNING_FLAGS_UNAVAILABLE_SESSION_KEY) === '1'
+      ) {
+        setAvailableWarnings([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('warning_flags')
         .select('*')
@@ -147,9 +162,9 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
           error.code === 'PGRST205' ||
           /could not find the table.*warning_flags/i.test(String(error.message ?? ''))
         ) {
-          console.warn(
-            'warning_flags is not exposed in the API schema; Warnings tab uses only flags stored on the variation.'
-          );
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem(WARNING_FLAGS_UNAVAILABLE_SESSION_KEY, '1');
+          }
           setAvailableWarnings([]);
           return;
         }
@@ -314,10 +329,10 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
-        <DialogOverlay className="z-[100] bg-black/80" />
+        <DialogOverlay className={NESTED_EDITOR_OVERLAY_CLASS} />
         <DialogPrimitive.Content
           aria-describedby={undefined}
-          className="fixed left-[50%] top-[50%] z-[100] translate-x-[-50%] translate-y-[-50%] max-w-4xl max-h-[80vh] w-[90vw] overflow-y-auto bg-background border rounded-lg shadow-lg p-6"
+          className={`fixed left-[50%] top-[50%] ${NESTED_EDITOR_CONTENT_Z} translate-x-[-50%] translate-y-[-50%] max-w-4xl max-h-[80vh] w-[90vw] overflow-y-auto bg-background border rounded-lg shadow-lg p-6`}
         >
         <DialogHeader>
           <DialogTitle>Edit Variation: {variation.name}</DialogTitle>

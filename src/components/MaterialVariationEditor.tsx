@@ -14,6 +14,10 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+/** Nested above parent dialogs that use z-[100] (e.g. VariationViewer); align with VariationManager. */
+const NESTED_EDITOR_OVERLAY_CLASS = 'z-[260] bg-black/80';
+const NESTED_EDITOR_CONTENT_Z = 'z-[270]';
+
 export interface MaterialVariationRow {
   id: string;
   material_id: string;
@@ -114,10 +118,10 @@ export function MaterialVariationEditor({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
-        <DialogOverlay className="z-[100] bg-black/80" />
+        <DialogOverlay className={NESTED_EDITOR_OVERLAY_CLASS} />
         <DialogPrimitive.Content
           aria-describedby={undefined}
-          className="fixed left-[50%] top-[50%] z-[100] max-h-[85vh] w-[90vw] max-w-lg translate-x-[-50%] translate-y-[-50%] overflow-y-auto rounded-lg border bg-background p-6 shadow-lg"
+          className={`fixed left-[50%] top-[50%] ${NESTED_EDITOR_CONTENT_Z} max-h-[85vh] w-[90vw] max-w-lg translate-x-[-50%] translate-y-[-50%] overflow-y-auto rounded-lg border bg-background p-6 shadow-lg`}
         >
           <DialogHeader>
             <DialogTitle>Edit material variant: {variation.name}</DialogTitle>

@@ -22,6 +22,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { buildPricingModelRowsForVariation } from '@/utils/pricingModelLabels';
 
+/** When PostgREST has no `warning_flags` relation, avoid repeat 404s for the session. */
+const WARNING_FLAGS_UNAVAILABLE_SESSION_KEY = 'toolio:warning_flags_unavailable';
+
 interface EnhancedVariationViewerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -94,12 +97,18 @@ export function EnhancedVariationViewer({
   const fetchData = async () => {
     setLoading(true);
     try {
+      const skipWarningFlagsFetch =
+        typeof sessionStorage !== 'undefined' &&
+        sessionStorage.getItem(WARNING_FLAGS_UNAVAILABLE_SESSION_KEY) === '1';
+
       const [variationsRes, flagsRes] = await Promise.all([
         supabase
           .from('tool_variations')
           .select('*')
           .eq('core_item_id', coreItemId),
-        supabase.from('warning_flags').select('*').order('name'),
+        skipWarningFlagsFetch
+          ? Promise.resolve({ data: [] as WarningFlag[] | null, error: null })
+          : supabase.from('warning_flags').select('*').order('name'),
       ]);
 
       const { data: variationsData, error: variationsError } = variationsRes;
@@ -111,9 +120,9 @@ export function EnhancedVariationViewer({
           flagsError.code === 'PGRST205' ||
           /could not find the table.*warning_flags/i.test(String(flagsError.message ?? ''))
         ) {
-          console.warn(
-            'warning_flags is not in the API schema; variation warning UI uses stored flags only.'
-          );
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem(WARNING_FLAGS_UNAVAILABLE_SESSION_KEY, '1');
+          }
           setWarningFlags([]);
         } else {
           throw flagsError;
