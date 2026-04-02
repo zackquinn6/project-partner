@@ -338,47 +338,42 @@ A **process variable** is a fundamental, theoretically measurable parameter that
 
 **Role**
 
-- Step 9 finalizes **catalog-facing narrative** on the template project row: what the project **is** (`description`) and where DIYers typically **struggle** (`project_challenges`). This is separate from step-level instructions (Step 1), timeline/budget risks (Step 3), and quality PFMEA (Step 8).
+- Step 9 finalizes **catalog-facing narrative** on the template project row: a **brief purpose summary** (`description`) and a **tight read on the hardest parts** (`project_challenges`) so someone can **decide** if the project fits their skill and appetite. Separate from step-level instructions (Step 1), timeline/budget risks (Step 3), and quality PFMEA (Step 8).
 
 **Deliverables**
 
-1. **`public.projects.description`** — A clear project description that:
-   - States **what** the project covers and **why** someone would do it (scope and outcome), in plain language.
-   - Stays **high level**: enough to choose the right template, not a repeat of step-by-step instructions (those live in `step_instructions` / process map).
-   - Avoids inventing constraints or measurements that are not defined elsewhere in the template.
+1. **`public.projects.description`** — **Brief summary of the work and the purpose** (not a paragraph essay, not step-by-step).
+   - Prefer a **single sentence** in this shape: **what you do** (often two or three comma-separated work phrases) **+ why / outcome**, optionally **+ typical spaces** where the work applies.
+   - Stay aligned with **this template’s actual phases and steps** (process map + migrations); add **credible** detail from **light research** only when it matches that scope—do not invent measurements or constraints the template does not support.
+   - Do **not** duplicate instruction copy from `step_instructions`.
 
-2. **`public.projects.project_challenges`** — One or more **project challenges** written to the standard below.
+   **Example (Tile flooring installation):**  
+   *Preparing the subfloor, completing a layout, and installing with thinset mortar to create a durable, high-performance flooring material in living rooms, kitchens, and bathrooms.*
 
-**Definition: what a Project Challenge is**
+2. **`public.projects.project_challenges`** — **One paragraph only, 2–3 sentences maximum** (not 2–3 sentences *per topic*, not a list of five blocks, not bullet lists).
+   - Purpose: a **clear, rapid summary of the hardest parts of the project for decision-making**—technical friction in compact form, with **at most a light nod** to how it *feels* (doubt, fatigue, second-guessing) if it helps judgment. **No multi-paragraph listings.**
+   - **Authoring inputs:** (1) **Context from the project itself**—phase names, operation/step titles, tools/materials emphasis, scaling unit, obvious choke points in the workflow; (2) **targeted research** when needed so the hardest parts reflect real field friction, still consistent with the template.
+   - Tone: matter-of-fact and respectful; avoid lecturing or long empathy paragraphs.
 
-A project challenge should clearly describe **the specific technical difficulty** a user will face — the part of the project where precision, awkward conditions, or hidden complexity make things harder than they look. It should also name **the emotional experience** that typically shows up at that moment, such as doubt, frustration, or the feeling of slowing down. The tone stays supportive and matter-of-fact, helping the user mentally prepare without overwhelming them.
+   **Examples (single paragraph, ≤3 sentences each):**
 
-**Writing rules (project challenges)**
+   - **Tile flooring:** *Flatness and deflection requirements decide whether grout and tile survive; coverage under large format and grout wash timing punish rushed work. Most second-guessing lands on whether prep is “good enough” before the first full sheets go down.*
 
-- **2–3 sentences max**
-- **Sentence 1:** What technically makes this part hard
-- **Sentence 2:** What emotional friction it creates
-- **Sentence 3 (optional):** A grounding, supportive note (“This is normal,” “Most people slow down here,” etc.)
+   - **Interior painting:** *Cut lines and wet-edge timing show under side light; rushing the ceiling line or open field is the usual regret. Dust and holidays in the last coat are environmental and pace problems more than “bad luck.”*
 
-**Examples (following the standard)**
-
-- **Example 1:** Keeping everything level is tricky because even small shifts in the material can throw off the alignment. This is usually the moment where people start second-guessing whether they measured correctly.
-
-- **Example 2:** Cutting clean edges takes precision, and imperfections become very visible once everything is installed. Many DIYers feel a spike of frustration here because mistakes are hard to hide.
-
-- **Example 3:** Working overhead makes it harder to control tools and maintain accuracy. This step often feels physically tiring, which can make people rush and lose confidence.
+   - **Toilet replacement:** *True shutoff, lifting without damaging the flange, and even wax compression without a rocking bowl stack into one tight bathroom moment; slow supply and base weeps often appear after the first cycles.*
 
 **DB placement**
 
 - `public.projects.description` — text / nullable per live schema (`src/integrations/supabase/types.ts`).
-- `public.projects.project_challenges` — text / nullable; this is the canonical column (legacy `diy_length_challenges` may exist in some contexts—prefer **`project_challenges`** for new work).
+- `public.projects.project_challenges` — text / nullable; canonical column (legacy `diy_length_challenges` may exist in some contexts—prefer **`project_challenges`** for new work).
 
 **Step 9 SQL migrations**
 
 - **`UPDATE public.projects`** (or equivalent) setting **`description`** and **`project_challenges`** for `v_project_id`, after verifying the row exists (e.g. `IF NOT FOUND THEN RAISE`).
 - **No** `rebuild_phases_json_from_project_phases` required solely for these fields unless other workflow rows in the same migration also changed normalized phases.
 - **Idempotent:** safe to re-run with the same final text (e.g. `UPDATE … WHERE id = v_project_id`).
-- Typically run **after** Steps **1–8** so the description and challenges align with the actual workflow content, or in parallel once the template scope is known—do not contradict steps, risks, or PFMEA seed data.
+- Typically run **after** Steps **1–8** so copy reflects the built workflow; do not contradict steps, risks, or PFMEA seed data.
 
 ---
 
@@ -435,8 +430,8 @@ A project challenge should clearly describe **the specific technical difficulty*
 
 - **Step 9**
   - Updates **`public.projects.description`** and **`public.projects.project_challenges`** only (project-level copy).
-  - **Project challenges** follow the **2–3 sentence** standard: technical difficulty first, emotional friction second, optional supportive third sentence; see **Step 9** in section B for examples.
-  - **Description** = scannable “what this project is”; do not duplicate full step instructions.
+  - **Description** = **brief work + purpose** (ideally one sentence; see **Step 9** example pattern in section B). Not step-by-step; align with template scope + light research.
+  - **Project challenges** = **one paragraph, 2–3 sentences total**—fast summary of hardest parts for **decision-making**; **no** multi-paragraph listings or 5+ distinct blocks. Ground in **project workflow context** plus research as needed.
   - Verify **`projects.id`** exists before `UPDATE`; fail loudly if missing.
   - No PFMEA, no `operation_steps`, no phase JSON rebuild required **solely** for these two fields.
 
