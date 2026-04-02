@@ -165,7 +165,7 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
 
       const { data: maintTaskRows, error: maintTasksErr } = await supabase
         .from('user_maintenance_tasks')
-        .select('id, frequency_days, last_completed, criticality, progress_percentage')
+        .select('id, frequency_days, last_completed, next_due, criticality, progress_percentage')
         .eq('user_id', user.id)
         .eq('home_id', home.id);
 

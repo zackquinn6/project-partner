@@ -121,7 +121,7 @@ export default function Home({
       if (firstHomeId) {
         const { data: maintTasks } = await supabase
           .from('user_maintenance_tasks')
-          .select('id, last_completed, frequency_days, progress_percentage')
+          .select('id, last_completed, next_due, frequency_days, progress_percentage')
           .eq('user_id', user.id)
           .eq('home_id', firstHomeId)
           .eq('is_active', true);

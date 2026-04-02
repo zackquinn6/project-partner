@@ -8,6 +8,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
@@ -22,6 +23,7 @@ import { MaintenanceHistoryTab } from './MaintenanceHistoryTab';
 import { MaintenancePdfPrinter } from './MaintenancePdfPrinter';
 import { MaintenanceNotifications } from './MaintenanceNotifications';
 import { MaintenanceDashboard, getSystemForCategory, SYSTEM_CONFIG, type SystemKey } from './MaintenanceDashboard';
+import { getTaskProgress } from '@/utils/maintenanceProgress';
 import { HomeManager } from './HomeManager';
 import { MaintenancePhotosWindow } from './MaintenancePhotosWindow';
 import { MaintenancePlanWorkflow } from './MaintenancePlanWorkflow';
@@ -98,11 +100,7 @@ interface EditMaintenanceTaskFormProps {
 }
 
 function computedProgress(task: MaintenanceTask): number {
-  if (task.progress_percentage != null) return Math.max(0, task.progress_percentage);
-  if (!task.last_completed) return 0;
-  const totalDays = task.frequency_days;
-  const daysSinceCompletion = differenceInDays(new Date(), new Date(task.last_completed));
-  return Math.max(0, (daysSinceCompletion / totalDays) * 100);
+  return getTaskProgress(task);
 }
 
 const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task, onClose, onUpdated, onDelete }) => {
@@ -118,7 +116,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
     benefits_of_maintenance: task.benefits_of_maintenance ?? '',
     criticality: task.criticality ?? 2,
     repair_cost_savings: task.repair_cost_savings != null && task.repair_cost_savings !== '' ? String(task.repair_cost_savings) : '',
-    progress_percentage: task.progress_percentage ?? computedProgress(task),
+    progress_percentage: Math.round(task.progress_percentage ?? computedProgress(task)),
   });
   const [saving, setSaving] = useState(false);
 
@@ -138,7 +136,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           benefits_of_maintenance: form.benefits_of_maintenance.trim() || null,
           criticality: form.criticality,
           repair_cost_savings: repairSavingsStr || null,
-          progress_percentage: form.progress_percentage,
+          progress_percentage: Math.round(form.progress_percentage),
         })
         .eq('id', task.id)
         .eq('user_id', user.id);
@@ -188,17 +186,6 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
             className="min-h-0 resize-y"
             value={form.description}
             onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
-          />
-        </div>
-        <div>
-          <Label htmlFor="edit-instructions">Instructions</Label>
-          <Textarea
-            id="edit-instructions"
-            rows={2}
-            className="min-h-0 resize-y"
-            value={form.instructions}
-            onChange={(e) => setForm(prev => ({ ...prev, instructions: e.target.value }))}
-            placeholder="Step-by-step instructions"
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -269,68 +256,102 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
               min={0}
               max={200}
               step={1}
-              value={[Math.min(200, form.progress_percentage)]}
-              onValueChange={([v]) => setForm(prev => ({ ...prev, progress_percentage: v }))}
+              value={[Math.min(200, Math.round(form.progress_percentage))]}
+              onValueChange={([v]) =>
+                setForm(prev => ({ ...prev, progress_percentage: Math.round(Math.max(0, Math.min(9999, v ?? 0))) }))
+              }
               className="flex-1 [&_[data-radix-slider-track]]:bg-muted/60 [&_[data-radix-slider-range]]:bg-emerald-600 [&_[data-radix-slider-thumb]]:border-emerald-600"
             />
             <Input
               type="number"
               min={0}
               max={9999}
-              className="w-20 h-7 text-center shrink-0"
+              step={1}
+              inputMode="numeric"
+              className="w-20 h-7 text-center shrink-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               value={form.progress_percentage}
               onChange={(e) => {
-                const v = parseInt(e.target.value, 10);
-                if (!Number.isNaN(v)) setForm(prev => ({ ...prev, progress_percentage: Math.max(0, Math.min(9999, v)) }));
+                const raw = e.target.value;
+                if (raw === '') {
+                  setForm(prev => ({ ...prev, progress_percentage: 0 }));
+                  return;
+                }
+                const v = parseInt(raw, 10);
+                if (!Number.isNaN(v)) {
+                  setForm(prev => ({ ...prev, progress_percentage: Math.max(0, Math.min(9999, v)) }));
+                }
               }}
             />
             <span className="text-xs text-muted-foreground shrink-0 w-4">%</span>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">Override progress (0 = just started, 100 = due, &gt;100 = overdue).</p>
+          <p className="text-xs text-muted-foreground mt-1">Override progress (0 = just started, 100 = due, &gt;100 = overdue). Whole percent only.</p>
         </div>
-        <div>
-          <Label htmlFor="edit-risks">Risks of skipping</Label>
-          <Textarea
-            id="edit-risks"
-            rows={1}
-            className="min-h-0 resize-y"
-            placeholder="e.g. Sediment buildup, early failure"
-            value={form.risks_of_skipping}
-            onChange={(e) => setForm(prev => ({ ...prev, risks_of_skipping: e.target.value }))}
-          />
-        </div>
-        <div>
-          <Label htmlFor="edit-benefits">Benefits of maintenance</Label>
-          <Textarea
-            id="edit-benefits"
-            rows={1}
-            className="min-h-0 resize-y"
-            placeholder="e.g. Extend life from 10 to 20 yrs"
-            value={form.benefits_of_maintenance}
-            onChange={(e) => setForm(prev => ({ ...prev, benefits_of_maintenance: e.target.value }))}
-          />
-        </div>
-        <div>
-          <Label htmlFor="edit-repair-savings"><span className="md:hidden">Benefit $</span><span className="hidden md:inline">Repair cost savings ($)</span></Label>
-          <Input
-            id="edit-repair-savings"
-            type="number"
-            min={0}
-            step={1}
-            className="w-full min-w-0 max-w-[8rem] h-7 md:h-8"
-            value={form.repair_cost_savings}
-            onChange={(e) => {
-              const raw = e.target.value;
-              if (raw === '') {
-                setForm(prev => ({ ...prev, repair_cost_savings: '' }));
-                return;
-              }
-              const v = parseInt(raw, 10);
-              if (!Number.isNaN(v) && v >= 0) setForm(prev => ({ ...prev, repair_cost_savings: String(v) }));
-            }}
-            placeholder="0"
-          />
-        </div>
+        <Accordion type="single" collapsible className="w-full rounded-lg border bg-card/30 px-2">
+          <AccordionItem value="advanced" className="border-0">
+            <AccordionTrigger className="py-2 text-sm font-semibold hover:no-underline">
+              Advanced settings
+            </AccordionTrigger>
+            <AccordionContent className="space-y-3 pb-3 pt-0">
+              <div>
+                <Label htmlFor="edit-instructions">Instructions</Label>
+                <Textarea
+                  id="edit-instructions"
+                  rows={4}
+                  className="min-h-[5.5rem] resize-y mt-1"
+                  value={form.instructions}
+                  onChange={(e) => setForm(prev => ({ ...prev, instructions: e.target.value }))}
+                  placeholder="Step-by-step instructions"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-risks">Risks of skipping</Label>
+                <Textarea
+                  id="edit-risks"
+                  rows={6}
+                  className="min-h-[9rem] resize-y mt-1"
+                  placeholder="e.g. Sediment buildup, early failure"
+                  value={form.risks_of_skipping}
+                  onChange={(e) => setForm(prev => ({ ...prev, risks_of_skipping: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-benefits">Benefits of maintenance</Label>
+                <Textarea
+                  id="edit-benefits"
+                  rows={6}
+                  className="min-h-[9rem] resize-y mt-1"
+                  placeholder="e.g. Extend life from 10 to 20 yrs"
+                  value={form.benefits_of_maintenance}
+                  onChange={(e) => setForm(prev => ({ ...prev, benefits_of_maintenance: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-repair-savings">
+                  <span className="md:hidden">Benefit $</span>
+                  <span className="hidden md:inline">Repair cost savings ($)</span>
+                </Label>
+                <Input
+                  id="edit-repair-savings"
+                  type="number"
+                  min={0}
+                  step={1}
+                  className="mt-1 w-full min-w-0 max-w-[8rem] h-7 md:h-8"
+                  value={form.repair_cost_savings}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === '') {
+                      setForm(prev => ({ ...prev, repair_cost_savings: '' }));
+                      return;
+                    }
+                    const v = parseInt(raw, 10);
+                    if (!Number.isNaN(v) && v >= 0) setForm(prev => ({ ...prev, repair_cost_savings: String(v) }));
+                  }}
+                  placeholder="0"
+                />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
         </div>
       </div>
       <div className="flex justify-between gap-2 pt-2 border-t shrink-0 bg-background px-4">
@@ -481,20 +502,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       console.error('Error fetching completion history:', error);
     }
   };
-  const getTaskProgress = (task: MaintenanceTask) => {
-    if (task.progress_percentage != null) return Math.max(0, task.progress_percentage);
-    if (!task.last_completed) return 0;
-    const lastCompleted = new Date(task.last_completed);
-    const now = new Date();
-    const totalDays = task.frequency_days;
-    const daysSinceCompletion = differenceInDays(now, lastCompleted);
-    return Math.max(0, (daysSinceCompletion / totalDays) * 100);
-  };
   const getProgressBarColor = (progress: number) =>
     progress >= 100 ? 'bg-destructive' : progress >= 91 ? 'bg-amber-500' : 'bg-emerald-600';
   const getTaskStatus = (task: MaintenanceTask) => {
-    const dueDate = new Date(task.next_due);
-    const now = new Date();
+    const dueDate = startOfDay(new Date(task.next_due));
+    const now = startOfDay(new Date());
     const daysUntilDue = differenceInDays(dueDate, now);
     if (daysUntilDue < 0) {
       return {
