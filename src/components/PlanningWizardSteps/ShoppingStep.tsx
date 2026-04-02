@@ -27,12 +27,11 @@ export const ShoppingStep: React.FC<ShoppingStepProps> = ({
 }) => {
   const handleOpenShoppingList = () => {
     window.dispatchEvent(
-      new CustomEvent('openMaterialsSelection', {
+      new CustomEvent('openShoppingChecklist', {
         detail: {
-          expandSettingsAccordionWhenOpen: true,
           fromPlanningWizard: true,
           onComplete,
-        }
+        },
       })
     );
   };

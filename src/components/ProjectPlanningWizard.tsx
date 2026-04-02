@@ -231,11 +231,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
           else window.dispatchEvent(new CustomEvent('open-project-budgeting', { detail }));
           return;
         case 'shopping_list':
-          window.dispatchEvent(
-            new CustomEvent('openMaterialsSelection', {
-              detail: { ...detail, expandSettingsAccordionWhenOpen: true }
-            })
-          );
+          window.dispatchEvent(new CustomEvent('openShoppingChecklist', { detail }));
           return;
         case 'quality_control':
           onOpenQualityControl?.(detail);

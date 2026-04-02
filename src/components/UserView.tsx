@@ -244,6 +244,7 @@ export default function UserView({
   const [projectPlanningWizardOpen, setProjectPlanningWizardOpen] = useState(false);
   const [materialsSelectionOpen, setMaterialsSelectionOpen] = useState(false);
   const [shoppingChecklistExpandSettingsAccordion, setShoppingChecklistExpandSettingsAccordion] = useState(false);
+  const [shoppingChecklistCollapseAllOnOpen, setShoppingChecklistCollapseAllOnOpen] = useState(false);
   const [toolRentalsOpen, setToolRentalsOpen] = useState(false);
   const [homeManagerOpen, setHomeManagerOpen] = useState(false);
   const [projectBudgetingOpen, setProjectBudgetingOpen] = useState(false);
@@ -466,15 +467,23 @@ export default function UserView({
       setChangeManagementOpen(true);
     };
     const handleOpenMaterialsSelection = (event?: Event) => {
-      const detail = (event as CustomEvent<{ expandSettingsAccordionWhenOpen?: boolean; fromPlanningWizard?: boolean; onComplete?: () => void }> | undefined)?.detail;
-      if (detail?.fromPlanningWizard) {
-        registerPlanningWizardToolCloseCallback('shopping', detail.onComplete);
-      }
+      const detail = (event as CustomEvent<{ expandSettingsAccordionWhenOpen?: boolean }> | undefined)?.detail;
+      setShoppingChecklistCollapseAllOnOpen(false);
       setShoppingChecklistExpandSettingsAccordion(detail?.expandSettingsAccordionWhenOpen === true);
       setMaterialsSelectionOpen(true);
     };
+    const handleOpenShoppingChecklist = (event?: Event) => {
+      const detail = (event as CustomEvent<{ fromPlanningWizard?: boolean; onComplete?: () => void }> | undefined)?.detail;
+      if (detail?.fromPlanningWizard) {
+        registerPlanningWizardToolCloseCallback('shopping', detail.onComplete);
+      }
+      setShoppingChecklistExpandSettingsAccordion(false);
+      setShoppingChecklistCollapseAllOnOpen(detail?.fromPlanningWizard === true);
+      setOrderingWindowOpen(true);
+    };
     const handleOpenOrderingWindow = (event?: Event) => {
       const detail = (event as CustomEvent<{ expandSettingsAccordionWhenOpen?: boolean }> | undefined)?.detail;
+      setShoppingChecklistCollapseAllOnOpen(false);
       setShoppingChecklistExpandSettingsAccordion(detail?.expandSettingsAccordionWhenOpen === true);
       setOrderingWindowOpen(true);
     };
@@ -515,6 +524,7 @@ export default function UserView({
     window.addEventListener('open-project-scheduler', handleOpenProjectScheduler);
     window.addEventListener('open-change-management', handleOpenChangeManagement);
     window.addEventListener('openMaterialsSelection', handleOpenMaterialsSelection);
+    window.addEventListener('openShoppingChecklist', handleOpenShoppingChecklist);
     window.addEventListener('openOrderingWindow', handleOpenOrderingWindow);
     window.addEventListener('openProjectCustomizer', handleOpenProjectCustomizer as EventListener);
     window.addEventListener('open-project-customizer', handleOpenProjectCustomizer as EventListener);
@@ -526,6 +536,7 @@ export default function UserView({
       window.removeEventListener('open-project-scheduler', handleOpenProjectScheduler);
       window.removeEventListener('open-change-management', handleOpenChangeManagement);
       window.removeEventListener('openMaterialsSelection', handleOpenMaterialsSelection);
+      window.removeEventListener('openShoppingChecklist', handleOpenShoppingChecklist);
       window.removeEventListener('openOrderingWindow', handleOpenOrderingWindow);
       window.removeEventListener('openProjectCustomizer', handleOpenProjectCustomizer);
       window.removeEventListener('open-project-customizer', handleOpenProjectCustomizer);
@@ -2198,6 +2209,7 @@ export default function UserView({
         break;
       case 'shopping-checklist':
         setShoppingChecklistExpandSettingsAccordion(false);
+        setShoppingChecklistCollapseAllOnOpen(false);
         setOrderingWindowOpen(true);
         break;
       case 'materials-selection':
@@ -4052,11 +4064,15 @@ export default function UserView({
       <OrderingWindow
         open={orderingWindowOpen}
         onOpenChange={(open) => {
-          if (!open) setShoppingChecklistExpandSettingsAccordion(false);
+          if (!open) {
+            setShoppingChecklistExpandSettingsAccordion(false);
+            setShoppingChecklistCollapseAllOnOpen(false);
+          }
           setOrderingWindowOpen(open);
           if (!open) completePlanningWizardToolCloseCallback('shopping');
         }}
         expandSettingsAccordionWhenOpen={shoppingChecklistExpandSettingsAccordion}
+        collapseAllAccordionSectionsOnOpen={shoppingChecklistCollapseAllOnOpen}
         project={currentProject}
         projectRun={currentProjectRun}
         userOwnedTools={[]}

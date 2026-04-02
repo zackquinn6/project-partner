@@ -2,10 +2,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { ResponsiveDialog } from "@/components/ResponsiveDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight, ShoppingCart, Eye, EyeOff, ExternalLink, Globe, Check, Maximize, Info, Calendar, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -37,7 +35,10 @@ interface OrderingWindowProps {
   };
   onOrderingComplete?: () => void;
   expandSettingsAccordionWhenOpen?: boolean;
+  /** When true (e.g. opened from project planning wizard), all accordion sections start collapsed. */
+  collapseAllAccordionSectionsOnOpen?: boolean;
 }
+
 interface ShoppingSite {
   name: string;
   url: string;
@@ -85,7 +86,8 @@ export function OrderingWindow({
   completedSteps,
   selectedMaterials,
   onOrderingComplete,
-  expandSettingsAccordionWhenOpen = false
+  expandSettingsAccordionWhenOpen = false,
+  collapseAllAccordionSectionsOnOpen = false
 }: OrderingWindowProps) {
   const {
     updateProjectRun
@@ -95,7 +97,6 @@ export function OrderingWindow({
   const [shoppedTools, setShoppedTools] = useState<Set<string>>(new Set());
   const [shoppedMaterials, setShoppedMaterials] = useState<Set<string>>(new Set());
   const [materialLeadTimes, setMaterialLeadTimes] = useState<Record<string, number>>({});
-  const [showShopped, setShowShopped] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [itemDetailsOpen, setItemDetailsOpen] = useState(false);
@@ -104,12 +105,15 @@ export function OrderingWindow({
   const [qualityTierPreference, setQualityTierPreference] = useState<QualityTierPreference>('mid');
 
   useEffect(() => {
-    if (open) {
-      setAccordionOpenValues(
-        expandSettingsAccordionWhenOpen ? ['shopping-settings'] : ['shopping-checklist']
-      );
+    if (!open) return;
+    if (collapseAllAccordionSectionsOnOpen) {
+      setAccordionOpenValues([]);
+    } else if (expandSettingsAccordionWhenOpen) {
+      setAccordionOpenValues(["shopping-settings"]);
+    } else {
+      setAccordionOpenValues(["shopping-checklist"]);
     }
-  }, [open, expandSettingsAccordionWhenOpen]);
+  }, [open, expandSettingsAccordionWhenOpen, collapseAllAccordionSectionsOnOpen]);
 
   // Calculate need dates and warnings
   const needDates = useMemo(() => {
@@ -555,11 +559,6 @@ export function OrderingWindow({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3">
-                <Checkbox id="show-shopped-main" checked={showShopped} onCheckedChange={checked => setShowShopped(checked === true)} />
-                <label htmlFor="show-shopped-main" className="text-sm font-medium">Show completed items</label>
-              </div>
-
               <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -667,10 +666,17 @@ export function OrderingWindow({
                   </div>
                 )}
               </div>
+            </AccordionContent>
+          </AccordionItem>
 
+          <AccordionItem value="shopping-websites" className="rounded-lg border px-3">
+            <AccordionTrigger className="py-3 text-sm font-semibold hover:no-underline">
+              Shopping websites
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pb-4 pt-0">
               <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
                 <div>
-                  <h4 className="font-medium text-xs mb-2">Shopping Websites</h4>
+                  <h4 className="font-medium text-xs mb-2">Quick links</h4>
                   <div className="flex flex-wrap gap-1.5">
                     {SHOPPING_SITES.map(site => <Button key={site.name} onClick={() => window.open(site.url, '_blank')} size="sm" className={`text-xs px-2 py-1 h-auto ${site.color} text-white`}>
                         <ExternalLink className="w-2.5 h-2.5 mr-1" />
@@ -720,7 +726,7 @@ export function OrderingWindow({
                     {shoppedToolsList.length + shoppedMaterialsList.length} shopped
                   </Badge>
                 </div>
-                
+
                 {onOrderingComplete && <Button onClick={onOrderingComplete} disabled={shoppedTools.size + shoppedMaterials.size < uniqueTools.length + uniqueMaterials.length} className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 h-auto" size="sm">
                     <Check className="w-3 h-3 mr-1.5" />
                     Complete Shopping
@@ -731,17 +737,17 @@ export function OrderingWindow({
                 <Tabs defaultValue="materials" className="flex flex-col h-full">
                   <TabsList className="grid w-full grid-cols-2 mb-4">
                     <TabsTrigger value="materials" className="text-sm">
-                      Materials ({activeMaterials.length + (showShopped ? shoppedMaterialsList.length : 0)})
+                      Materials ({activeMaterials.length})
                     </TabsTrigger>
                     <TabsTrigger value="tools" className="text-sm">
-                      Tools ({activeTools.length + (showShopped ? shoppedToolsList.length : 0)})
+                      Tools ({activeTools.length})
                     </TabsTrigger>
                   </TabsList>
             
             <TabsContent value="materials" className="flex-1">
               <ScrollArea className="h-[50vh] md:h-[45vh]">
                 <div className="space-y-3 pr-3">
-                  {activeMaterials.length === 0 && (!showShopped || shoppedMaterialsList.length === 0) ? <div className="text-center py-8 text-muted-foreground">
+                  {activeMaterials.length === 0 ? <div className="text-center py-8 text-muted-foreground">
                       <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p className="text-sm">No materials to order for this project</p>
                     </div> : <>
@@ -779,45 +785,6 @@ export function OrderingWindow({
                           </div>
                         </div>;
                   })}
-                      
-                      {/* Shopped Materials */}
-                      {showShopped && shoppedMaterialsList.length > 0 && <>
-                          {activeMaterials.length > 0 && <Separator className="my-4" />}
-                          <div className="mb-3">
-                            <h3 className="text-sm font-medium text-muted-foreground">Completed Items</h3>
-                          </div>
-                          {shoppedMaterialsList.map((material, index) => {
-                            const rawLeadDays = materialLeadTimes[material.id];
-                            const leadDaysValue = (typeof rawLeadDays === 'number' && !Number.isNaN(rawLeadDays)) ? rawLeadDays : 0;
-
-                            return <div key={`shopped-${material.id}-${index}`} className="border rounded-lg p-1.5 bg-muted/30 opacity-60">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-3">
-                                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                    <h4 className="font-medium text-sm line-through">{material.name}</h4>
-                                  </div>
-                                  <p className="text-xs text-muted-foreground mt-2 ml-7 line-through">
-                                    {material.description}
-                                  </p>
-
-                                  <div className="flex items-center gap-2 mt-2 ml-7">
-                                    <Badge variant="outline" className="text-[10px]">
-                                      Lead days: {leadDaysValue}
-                                    </Badge>
-                                  </div>
-
-                                  {material.totalQuantity && <Badge variant="secondary" className="text-xs mt-2 ml-7 line-through">
-                                      Qty: {material.totalQuantity} {material.unit || 'pieces'}
-                                    </Badge>}
-                                </div>
-                                <Button variant="outline" size="sm" onClick={() => handleItemDetails(material, 'material')} className="ml-2 flex-shrink-0">
-                                  <Info className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>;
-                          })}
-                        </>}
                     </>}
                 </div>
               </ScrollArea>
@@ -826,7 +793,7 @@ export function OrderingWindow({
             <TabsContent value="tools" className="flex-1">
               <ScrollArea className="h-[50vh] md:h-[45vh]">
                 <div className="space-y-3 pr-3">
-                  {activeTools.length === 0 && (!showShopped || shoppedToolsList.length === 0) ? <div className="text-center py-8 text-muted-foreground">
+                  {activeTools.length === 0 ? <div className="text-center py-8 text-muted-foreground">
                       <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p className="text-sm">No tools to order for this project</p>
                     </div> : <>
@@ -861,34 +828,6 @@ export function OrderingWindow({
                           </div>
                         </div>;
                   })}
-                      
-                      {/* Shopped Tools */}
-                      {showShopped && shoppedToolsList.length > 0 && <>
-                          {activeTools.length > 0 && <Separator className="my-4" />}
-                          <div className="mb-3">
-                            <h3 className="text-sm font-medium text-muted-foreground">Completed Items</h3>
-                          </div>
-                          {shoppedToolsList.map((tool, index) => <div key={`shopped-${tool.id}-${index}`} className="border rounded-lg p-1.5 bg-muted/30 opacity-60">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-3">
-                                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                    <h4 className="font-medium text-sm line-through">{tool.name}</h4>
-                                    {userOwnedTools.some((ownedTool: any) => ownedTool.tool === tool.name || ownedTool.name === tool.name || ownedTool === tool.name) && <Badge variant="secondary" className="text-xs line-through">Owned</Badge>}
-                                  </div>
-                                  <p className="text-xs text-muted-foreground mt-2 ml-7 line-through">
-                                    {tool.description}
-                                  </p>
-                                  {tool.maxQuantity && <Badge variant="secondary" className="text-xs mt-2 ml-7 line-through">
-                                      Qty: {tool.maxQuantity}
-                                    </Badge>}
-                                </div>
-                                <Button variant="outline" size="sm" onClick={() => handleItemDetails(tool, 'tool')} className="ml-2 flex-shrink-0">
-                                  <Info className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>)}
-                        </>}
                     </>}
                 </div>
               </ScrollArea>
