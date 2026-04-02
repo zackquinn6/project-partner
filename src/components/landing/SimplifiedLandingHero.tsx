@@ -64,7 +64,9 @@ export function SimplifiedLandingHero({ onLearnMore }: SimplifiedLandingHeroProp
           >
             Project Management,
             <br />
-            Pre-Built for Home Improvement.
+            Pre-Built for
+            <br />
+            Home&nbsp;Improvement.
           </h1>
 
           <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
@@ -80,14 +82,6 @@ export function SimplifiedLandingHero({ onLearnMore }: SimplifiedLandingHeroProp
             >
               Get started
               <ArrowRight className="h-4 w-4" aria-hidden />
-            </Button>
-            <Button
-              type="button"
-              variant="link"
-              className="h-auto p-0 text-sm font-medium text-muted-foreground hover:text-foreground"
-              onClick={onLearnMore}
-            >
-              Learn how it works
             </Button>
           </div>
 
@@ -184,6 +178,15 @@ export function SimplifiedLandingHero({ onLearnMore }: SimplifiedLandingHeroProp
                         </Button>
                       </CardContent>
                     </Card>
+                  </div>
+                  <div className="mt-6 flex justify-center">
+                    <Button
+                      type="button"
+                      className="bg-orange-600 hover:bg-orange-700"
+                      onClick={onLearnMore}
+                    >
+                      Learn More
+                    </Button>
                   </div>
                 </AccordionContent>
               </AccordionItem>
