@@ -94,7 +94,7 @@ export function UnifiedProjectManagement({
 }: UnifiedProjectManagementProps = {}) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const { hasProjectOwnerRole } = useProjectOwner();
   const {
     addProject,
@@ -167,6 +167,7 @@ export function UnifiedProjectManagement({
     item_type: '',
     project_type: 'primary'
   });
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
   const [planningGuideOpen, setPlanningGuideOpen] = useState(false);
   const [planningGuideInitialTab, setPlanningGuideInitialTab] = useState<PlanningGuideTab | null>(null);
@@ -1392,6 +1393,16 @@ export function UnifiedProjectManagement({
     }
   };
   const createProject = async () => {
+    if (roleLoading) {
+      toast.error('Still loading permissions. Please try again.');
+      return;
+    }
+
+    if (!isAdmin) {
+      toast.error('Only administrators can create projects.');
+      return;
+    }
+
     if (!newProject.item.trim()) {
       toast.error("Item is required");
       return;
@@ -1415,6 +1426,7 @@ export function UnifiedProjectManagement({
     }
 
     try {
+      setIsCreatingProject(true);
       console.log('🔨 Creating project:', { ...newProject, name: projectName });
       await addProject({
         name: projectName,
@@ -1437,6 +1449,7 @@ export function UnifiedProjectManagement({
       });
 
       await fetchProjects();
+
       const { data: createdProject } = await supabase
         .from('projects')
         .select(
@@ -1446,6 +1459,11 @@ export function UnifiedProjectManagement({
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      if (!createdProject) {
+        throw new Error(`Created project "${projectName}" was not returned from the database`);
+      }
+
       if (createdProject) {
         setSelectedProject(createdProject);
         setCurrentProject(unifiedTemplateRowToContextProject(createdProject));
@@ -1469,6 +1487,8 @@ export function UnifiedProjectManagement({
     } catch (error) {
       console.error('Error creating project:', error);
       toast.error(`Failed to create project: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsCreatingProject(false);
     }
   };
   const getStatusBadge = (status: string, isCurrentVersion: boolean) => {
@@ -1597,7 +1617,12 @@ export function UnifiedProjectManagement({
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={() => setCreateProjectDialogOpen(true)} className="flex items-center gap-2 self-end">
+              <Button
+                type="button"
+                onClick={() => setCreateProjectDialogOpen(true)}
+                className="flex items-center gap-2 self-end"
+                disabled={roleLoading || !isAdmin}
+              >
                 <Plus className="w-4 h-4" />
                 New Project
               </Button>
@@ -2979,11 +3004,21 @@ export function UnifiedProjectManagement({
             )}
 
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setCreateProjectDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setCreateProjectDialogOpen(false)} disabled={isCreatingProject}>
                 Cancel
               </Button>
-              <Button onClick={createProject} disabled={!newProject.item?.trim() || (!newProject.action && !newProject.actionCustom?.trim())}>
-                Create Project
+              <Button
+                type="button"
+                onClick={createProject}
+                disabled={
+                  isCreatingProject ||
+                  roleLoading ||
+                  !isAdmin ||
+                  !newProject.item?.trim() ||
+                  (!newProject.action && !newProject.actionCustom?.trim())
+                }
+              >
+                {isCreatingProject ? 'Creating...' : 'Create Project'}
               </Button>
             </div>
           </div>
