@@ -4122,6 +4122,7 @@ export default function UserView({
         phases={workflowTemplateProject?.phases ?? null}
         typicalProjectSize={workflowTemplateProject?.typicalProjectSize ?? (workflowTemplateProject as any)?.typical_project_size ?? null}
         scalingUnit={workflowTemplateProject?.scalingUnit ?? (workflowTemplateProject as any)?.scaling_unit ?? null}
+        planningWorkflowPresentation
       />
 
       {/* Unplanned Work Window */}
