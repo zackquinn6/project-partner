@@ -359,6 +359,11 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   };
   const isStepCompleted = (stepIndex: number) => completedKickoffSteps.has(stepIndex);
   const allKickoffStepsComplete = completedKickoffSteps.size === kickoffSteps.length;
+
+  const goToKickoffStep = (index: number) => {
+    if (index < 0 || index >= kickoffSteps.length) return;
+    setCurrentKickoffStep(index);
+  };
   const handleOutputToggle = (stepId: string, outputId: string) => {
     setCheckedOutputs(prev => {
       const stepOutputs = new Set(prev[stepId] || []);
@@ -463,9 +468,13 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       />
                     ) : null}
                     <div className="flex min-w-[4.25rem] flex-1 basis-0 flex-col items-center px-0.5 sm:min-w-[4.5rem] md:min-w-[5rem]">
-                      <div
+                      <button
+                        type="button"
+                        onClick={() => goToKickoffStep(index)}
+                        aria-label={`Go to ${step.title}, step ${index + 1}`}
+                        aria-current={index === currentKickoffStep ? 'step' : undefined}
                         className={`
-                          flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors sm:h-7 sm:w-7 md:h-8 md:w-8
+                          flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-7 sm:w-7 md:h-8 md:w-8
                           ${
                             index === currentKickoffStep
                               ? 'border-primary bg-primary text-primary-foreground'
@@ -476,11 +485,11 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                         `}
                       >
                         {isStepCompleted(index) ? (
-                          <CheckCircle className="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                          <CheckCircle className="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" aria-hidden />
                         ) : (
                           <span className="text-[11px] font-medium sm:text-xs md:text-sm">{index + 1}</span>
                         )}
-                      </div>
+                      </button>
                       <p
                         className={`mt-1 w-full text-center text-[9px] font-medium leading-tight sm:text-[10px] md:text-xs break-normal [overflow-wrap:normal] [word-break:normal] ${
                           index === currentKickoffStep
@@ -550,8 +559,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       {/* Step Purpose Sub-header - white box like project kickoff header */}
       {currentStepPurpose && (
         <Card className="shrink-0">
-          <CardContent className="flex flex-row items-center justify-between gap-2 p-2 sm:p-3">
-            <h2 className="min-h-[2.75rem] sm:min-h-[3.25rem] min-w-0 flex-1 break-words py-1 pr-2 text-base font-semibold leading-snug sm:text-lg sm:py-1.5">
+          <CardContent className="flex flex-row items-center justify-between gap-2 px-2 py-1.5 sm:px-3 sm:py-2">
+            <h2 className="min-w-0 flex-1 break-words pr-2 text-base font-semibold leading-snug sm:text-lg">
               {currentStepPurpose}
             </h2>
             {currentStepId === 'kickoff-step-1' && (

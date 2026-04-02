@@ -312,6 +312,16 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     });
   };
 
+  const goToPlanningStep = (index: number) => {
+    if (index < 0 || index >= wizardSteps.length) return;
+    if (autoOpenTimerRef.current) {
+      clearTimeout(autoOpenTimerRef.current);
+      autoOpenTimerRef.current = null;
+    }
+    setWizardPhase('steps');
+    setCurrentStep(index);
+  };
+
   const allWorkflowStepsComplete =
     wizardSteps.length > 0 && completedSteps.size === wizardSteps.length;
 
@@ -611,9 +621,19 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                       />
                     ) : null}
                     <div className="flex w-11 shrink-0 flex-col items-center px-0.5 sm:w-14 md:w-[4.25rem]">
-                      <div
+                      <button
+                        type="button"
+                        onClick={() => goToPlanningStep(index)}
+                        aria-label={
+                          wizardPhase === 'confirm'
+                            ? `Return to ${step.title}, step ${index + 1}`
+                            : `Go to ${step.title}, step ${index + 1}`
+                        }
+                        aria-current={
+                          wizardPhase === 'steps' && index === currentStep ? 'step' : undefined
+                        }
                         className={`
-                          flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors sm:h-7 sm:w-7 md:h-8 md:w-8
+                          flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-7 sm:w-7 md:h-8 md:w-8
                           ${
                             wizardPhase === 'confirm'
                               ? 'border-green-500 bg-green-500 text-white'
@@ -626,11 +646,11 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                         `}
                       >
                         {wizardPhase === 'confirm' || isStepCompleted(index) ? (
-                          <CheckCircle className="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                          <CheckCircle className="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" aria-hidden />
                         ) : (
                           <span className="text-[11px] font-medium sm:text-xs md:text-sm">{index + 1}</span>
                         )}
-                      </div>
+                      </button>
                       <p
                         className={`mt-1 w-full text-center text-[9px] font-medium leading-[1.15] sm:text-[10px] md:text-xs line-clamp-3 break-words hyphens-auto ${
                           wizardPhase === 'confirm'
@@ -739,8 +759,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       {/* Step purpose — matches KickoffWorkflow purpose card */}
       {currentStepPurpose ? (
         <Card className="shrink-0">
-          <CardContent className="flex flex-row items-center justify-between gap-2 p-2 sm:p-3">
-            <h2 className="min-w-0 flex-1 break-words pr-2 text-base font-semibold sm:text-lg">
+          <CardContent className="flex flex-row items-center justify-between gap-2 px-2 py-1.5 sm:px-3 sm:py-2">
+            <h2 className="min-w-0 flex-1 break-words pr-2 text-base font-semibold leading-snug sm:text-lg">
               {currentStepPurpose}
             </h2>
           </CardContent>
