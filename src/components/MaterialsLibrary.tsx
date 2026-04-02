@@ -291,9 +291,11 @@ export function MaterialsLibrary() {
                 </TableCell>
                 <TableCell className="font-medium capitalize w-32 break-words">
                   {material.item}
-                  <Badge variant="secondary" className="text-xs px-1 py-0 mt-1">
-                    {material.category}
-                  </Badge>
+                  {material.category?.trim() ? (
+                    <Badge variant="secondary" className="text-xs px-1 py-0 mt-1">
+                      {material.category}
+                    </Badge>
+                  ) : null}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground break-words">
                   {material.description || '-'}

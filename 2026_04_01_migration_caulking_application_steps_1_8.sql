@@ -598,6 +598,27 @@ BEGIN
   UPDATE public.operation_steps
   SET process_variables = jsonb_build_array(
     jsonb_build_object(
+      'id', 'caulk-pv-silicon-surface-dryness',
+      'name', 'Surface dryness',
+      'type', 'upstream',
+      'description', 'Moisture condition of the joint before silicon placement. Too wet: weak adhesion and cure disruption; too dry is acceptable if the joint is otherwise ready. Target: visibly dry contact surfaces before application.',
+      'required', true
+    ),
+    jsonb_build_object(
+      'id', 'caulk-pv-silicon-surface-cleanliness',
+      'name', 'Surface cleanliness',
+      'type', 'upstream',
+      'description', 'Residue level at the bond line before silicon placement. Too contaminated: adhesion loss and bead defects; over-handling can reintroduce debris. Target: contaminant-free application surface.',
+      'required', true
+    ),
+    jsonb_build_object(
+      'id', 'caulk-pv-silicon-surface-flatness',
+      'name', 'Surface flatness',
+      'type', 'upstream',
+      'description', 'Joint edge uniformity before bead placement. Too uneven: difficult bead contact and visible gaps; excessive correction effort slows application. Target: edges accept a continuous bead without bridging voids.',
+      'required', true
+    ),
+    jsonb_build_object(
       'id', 'caulk-pv-silicon-tip-angle',
       'name', 'Tip cut angle',
       'type', 'process',
@@ -612,12 +633,54 @@ BEGIN
       'description', 'Opening size at the cut tip. Too small: skips and poor contact; too large: excessive discharge and bead width growth beyond target. Target: opening sized to maintain bead at or below 1/4 inch.',
       'required', true,
       'unit', 'inches'
+    ),
+    jsonb_build_object(
+      'id', 'caulk-pv-silicon-wipe-pressure',
+      'name', 'Wipe pressure',
+      'type', 'process',
+      'description', 'Force applied while tooling the fresh silicon bead. Too light: ridges and poor contact remain; too high: bead starves or smears outside the joint. Target: enough pressure to smooth and seat the bead without pulling material out.',
+      'required', true
+    ),
+    jsonb_build_object(
+      'id', 'caulk-pv-silicon-caulk-volume',
+      'name', 'Caulk volume',
+      'type', 'process',
+      'description', 'Amount of silicon dispensed into the joint. Too low: incomplete coverage and voids; too high: excessive squeeze-out and bead width growth. Target: volume that achieves full coverage with a smooth profile at or below 1/4 inch.',
+      'required', true
+    ),
+    jsonb_build_object(
+      'id', 'caulk-pv-silicon-tool-moisture',
+      'name', 'Tool moisture',
+      'type', 'process',
+      'description', 'Moisture condition of the wipe or tooling surface during finishing. Too dry: drag marks and tearing; too wet: diluted surface and messy edges. Target: lightly conditioned tool surface that smooths the bead without flooding it.',
+      'required', true
     )
   )
   WHERE id = '9d9ebf39-3844-4e5c-9b0f-52336a8df203'::uuid;
 
   UPDATE public.operation_steps
   SET process_variables = jsonb_build_array(
+    jsonb_build_object(
+      'id', 'caulk-pv-painters-surface-dryness',
+      'name', 'Surface dryness',
+      'type', 'upstream',
+      'description', 'Moisture condition of the joint before painters caulk placement. Too wet: weak adhesion and delayed paint readiness; dry surfaces support finish control. Target: visibly dry contact surfaces before application.',
+      'required', true
+    ),
+    jsonb_build_object(
+      'id', 'caulk-pv-painters-surface-cleanliness',
+      'name', 'Surface cleanliness',
+      'type', 'upstream',
+      'description', 'Dust, residue, or loose finish present at the joint before bead placement. Too contaminated: poor bond and visible defects; recontamination after prep resets the step. Target: clean finish-ready joint edges before application.',
+      'required', true
+    ),
+    jsonb_build_object(
+      'id', 'caulk-pv-painters-surface-flatness',
+      'name', 'Surface flatness',
+      'type', 'upstream',
+      'description', 'Uniformity of trim or drywall edges before painters caulk placement. Too uneven: profile reads wavy or leaves voids; excessive build-up looks like filler instead of sealant. Target: joint edges support a narrow, even bead.',
+      'required', true
+    ),
     jsonb_build_object(
       'id', 'caulk-pv-painters-tip-angle',
       'name', 'Tip cut angle',
@@ -633,6 +696,27 @@ BEGIN
       'description', 'Opening size at the cut tip. Too small: broken coverage; too large: oversized profile and difficult finish smoothing. Target: opening sized to keep the bead smooth and at or below 1/4 inch.',
       'required', true,
       'unit', 'inches'
+    ),
+    jsonb_build_object(
+      'id', 'caulk-pv-painters-wipe-pressure',
+      'name', 'Wipe pressure',
+      'type', 'process',
+      'description', 'Force applied while tooling the fresh painters caulk bead. Too light: visible ridges and poor edge blending; too high: bead starves and pulls out of the joint. Target: enough pressure to smooth the bead into a narrow finish-ready line.',
+      'required', true
+    ),
+    jsonb_build_object(
+      'id', 'caulk-pv-painters-caulk-volume',
+      'name', 'Caulk volume',
+      'type', 'process',
+      'description', 'Amount of painters caulk dispensed into the joint. Too low: skips and incomplete sealing; too high: oversized profile and extra wipe cleanup. Target: volume that fills the joint fully while keeping the bead smooth and no wider than 1/4 inch.',
+      'required', true
+    ),
+    jsonb_build_object(
+      'id', 'caulk-pv-painters-tool-moisture',
+      'name', 'Tool moisture',
+      'type', 'process',
+      'description', 'Moisture condition of the wipe or tooling surface during finish smoothing. Too dry: dragging and rough texture; too wet: washout and smeared paint-line edges. Target: lightly conditioned tool surface that finishes the bead cleanly without over-wetting it.',
+      'required', true
     )
   )
   WHERE id = '9d9ebf39-3844-4e5c-9b0f-52336a8df204'::uuid;

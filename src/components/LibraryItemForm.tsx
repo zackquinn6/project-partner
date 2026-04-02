@@ -34,9 +34,9 @@ function parseInstructions(value: unknown): ContentSection[] {
 export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFormProps) {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
-    name: item?.name || '',
+    name: item?.name || item?.item || '',
     description: item?.description || '',
-    unit: item?.unit || '', // for materials
+    unit: item?.unit || item?.unit_size || '', // for materials
     alternates: item?.alternates || '', // JSON string of alternates
     category: typeof item?.category === 'string' ? item.category : '',
   });
@@ -49,6 +49,18 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
   useEffect(() => {
     setInstructions(parseInstructions(item?.instructions));
   }, [item?.id, item?.instructions]);
+
+  useEffect(() => {
+    setFormData({
+      name: item?.name || item?.item || '',
+      description: item?.description || '',
+      unit: item?.unit || item?.unit_size || '',
+      alternates: item?.alternates || '',
+      category: typeof item?.category === 'string' ? item.category : '',
+    });
+    setPhotoUrl(item?.photo_url || '');
+    setPhotoFile(null);
+  }, [item]);
 
   const allowedImageTypes = new Set([
     'image/jpeg',
@@ -165,9 +177,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
         description: formData.description.trim() || null,
         photo_url: finalPhotoUrl || null,
         alternates: formData.alternates || null,
-        category: formData.category.trim()
-          ? formData.category.trim()
-          : (typeof item?.category === 'string' && item.category.trim() ? item.category.trim() : null),
+        category: formData.category.trim() || null,
         ...(type === 'materials' && {
           unit: formData.unit.trim() || null
         }),
@@ -254,7 +264,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
 
           {type === 'materials' && (
             <div>
-              <Label htmlFor="unit">Unit</Label>
+              <Label htmlFor="unit">Unit Size</Label>
               <Input
                 id="unit"
                 value={formData.unit}
@@ -326,32 +336,40 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
 
           <div>
             <Label>Category / Type</Label>
-            <Select
-              value={formData.category}
-              onValueChange={(value) => setFormData({ ...formData, category: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a category..." />
-              </SelectTrigger>
-              <SelectContent className="z-[1000]">
-                {type === 'tools' ? (
-                  <>
-                    <SelectItem value="PPE">PPE</SelectItem>
-                    <SelectItem value="Hand Tool">Hand Tool</SelectItem>
-                    <SelectItem value="Power Tool">Power Tool</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </>
-                ) : (
-                  <>
-                    <SelectItem value="PPE">PPE</SelectItem>
-                    <SelectItem value="Hardware">Hardware</SelectItem>
-                    <SelectItem value="Software">Software</SelectItem>
-                    <SelectItem value="Consumable">Consumable</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </>
-                )}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select
+                value={formData.category || '__none__'}
+                onValueChange={(value) => setFormData({ ...formData, category: value === '__none__' ? '' : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category..." />
+                </SelectTrigger>
+                <SelectContent className="z-[1000]">
+                  <SelectItem value="__none__">No category</SelectItem>
+                  {type === 'tools' ? (
+                    <>
+                      <SelectItem value="PPE">PPE</SelectItem>
+                      <SelectItem value="Hand Tool">Hand Tool</SelectItem>
+                      <SelectItem value="Power Tool">Power Tool</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="PPE">PPE</SelectItem>
+                      <SelectItem value="Consumable">Consumable</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </>
+                  )}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFormData({ ...formData, category: '' })}
+              >
+                Clear
+              </Button>
+            </div>
           </div>
 
           <div className="flex gap-2 pt-4">
