@@ -63,7 +63,6 @@ interface VariationInstance {
   photo_url?: string;
   attributes: Record<string, string>;
   estimated_weight_lbs?: number;
-  weight_lbs?: number;
   estimated_rental_lifespan_days?: number;
   warning_flags?: string[];
   created_at?: string;
@@ -299,7 +298,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
 
   const handleCreateVariation = async () => {
     if (!variationName.trim()) {
-      toast.error('Variation name is required');
+      toast.error('Cannot create variation: name is required. Enter a variation name.');
       return;
     }
 
@@ -834,13 +833,20 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                   </div>
 
                   <div>
-                    <Label htmlFor="var-name">Variation Name</Label>
+                    <Label htmlFor="var-name">
+                      Variation name{' '}
+                      <span className="text-destructive" aria-hidden>
+                        *
+                      </span>
+                    </Label>
                     <div className="flex space-x-2">
                       <Input
                         id="var-name"
                         value={variationName}
                         onChange={(e) => setVariationName(e.target.value)}
                         placeholder="Enter variation name"
+                        required
+                        aria-required="true"
                       />
                       <Button type="button" variant="outline" onClick={generateVariationName}>
                         Auto-generate
@@ -934,16 +940,12 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                       )}
                        {/* Display weight and pricing if available */}
                        <div className="flex flex-wrap gap-2 mt-2">
-                         {(() => {
-                           const w =
-                             variation.weight_lbs ?? variation.estimated_weight_lbs;
-                           if (w == null) return null;
-                           return (
-                             <Badge variant="outline" className="text-xs">
-                               Weight: {Number(w).toFixed(1)} lbs
-                             </Badge>
-                           );
-                         })()}
+                         {variation.estimated_weight_lbs != null && (
+                           <Badge variant="outline" className="text-xs">
+                             Weight:{' '}
+                             {Number(variation.estimated_weight_lbs).toFixed(1)} lbs
+                           </Badge>
+                         )}
                         {variation.estimated_rental_lifespan_days && (
                           <Badge variant="outline" className="text-xs">
                             Rental Life: {variation.estimated_rental_lifespan_days} days

@@ -88,7 +88,10 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
           'Description': variation.description || '',
           'SKU/Model Numbers': variation.sku || '',
           'Attributes': attributeStrings.join('; '),
-          'Weight (lbs)': variation.weight_lbs || variation.estimated_weight_lbs || '',
+          'Weight (lbs)':
+            variation.estimated_weight_lbs != null
+              ? Number(variation.estimated_weight_lbs).toFixed(1)
+              : '',
           'Estimated Rental Lifespan (days)': variation.estimated_rental_lifespan_days || '',
           'Warning Flags': (variation.warning_flags as string[] || []).join(', '),
           'Created At': new Date(variation.created_at).toLocaleDateString(),

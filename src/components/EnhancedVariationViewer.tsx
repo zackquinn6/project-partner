@@ -39,7 +39,7 @@ interface VariationInstance {
   attributes: Record<string, string>;
   warning_flags: string[];
   estimated_rental_lifespan_days: number;
-  estimated_weight_lbs: number;
+  estimated_weight_lbs: number | null;
   photo_url?: string;
 }
 
@@ -234,9 +234,9 @@ export function EnhancedVariationViewer({
   };
 
   const updateVariationEstimate = async (
-    variationId: string, 
-    field: 'estimated_rental_lifespan_days' | 'estimated_weight_lbs', 
-    value: number
+    variationId: string,
+    field: 'estimated_rental_lifespan_days' | 'estimated_weight_lbs',
+    value: number | null
   ) => {
     try {
       const { error } = await supabase
@@ -348,7 +348,10 @@ export function EnhancedVariationViewer({
                         <div className="flex items-center gap-2">
                           <Weight className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
-                            Weight: {variation.estimated_weight_lbs || 'N/A'} lbs
+                            Weight:{' '}
+                            {variation.estimated_weight_lbs != null
+                              ? `${Number(variation.estimated_weight_lbs).toFixed(1)} lbs`
+                              : 'N/A'}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -565,14 +568,30 @@ export function EnhancedVariationViewer({
                           <Input
                             type="number"
                             step="0.1"
-                            value={variation.estimated_weight_lbs || ''}
-                            onChange={(e) => 
-                              updateVariationEstimate(
-                                variation.id, 
-                                'estimated_weight_lbs', 
-                                parseFloat(e.target.value) || 0
-                              )
+                            value={
+                              variation.estimated_weight_lbs != null
+                                ? variation.estimated_weight_lbs
+                                : ''
                             }
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              if (raw === '') {
+                                void updateVariationEstimate(
+                                  variation.id,
+                                  'estimated_weight_lbs',
+                                  null
+                                );
+                                return;
+                              }
+                              const v = parseFloat(raw);
+                              if (!Number.isFinite(v)) return;
+                              const rounded = Math.round(v * 10) / 10;
+                              void updateVariationEstimate(
+                                variation.id,
+                                'estimated_weight_lbs',
+                                rounded
+                              );
+                            }}
                           />
                         </div>
                       </div>

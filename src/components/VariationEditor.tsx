@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, Save, X } from 'lucide-react';
+import { Plus, Trash2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -32,7 +32,6 @@ interface VariationInstance {
   photo_url?: string;
   attributes: Record<string, string>;
   estimated_weight_lbs?: number;
-  weight_lbs?: number;
   estimated_rental_lifespan_days?: number;
   warning_flags?: string[];
   quick_add?: boolean;
@@ -197,8 +196,6 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
         description: editedVariation.description || null,
         sku: editedVariation.sku || null,
         photo_url: editedVariation.photo_url || null,
-        weight_lbs:
-          editedVariation.weight_lbs != null ? editedVariation.weight_lbs : null,
         estimated_weight_lbs:
           editedVariation.estimated_weight_lbs != null
             ? editedVariation.estimated_weight_lbs
@@ -393,38 +390,24 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
                       ? editedVariation.estimated_weight_lbs
                       : ''
                   }
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === '') {
+                      setEditedVariation({
+                        ...editedVariation,
+                        estimated_weight_lbs: undefined,
+                      });
+                      return;
+                    }
+                    const v = parseFloat(raw);
+                    if (!Number.isFinite(v)) return;
+                    const rounded = Math.round(v * 10) / 10;
                     setEditedVariation({
                       ...editedVariation,
-                      estimated_weight_lbs: e.target.value
-                        ? parseFloat(e.target.value)
-                        : undefined,
-                    })
-                  }
+                      estimated_weight_lbs: rounded,
+                    });
+                  }}
                   placeholder="e.g., 12.5"
-                />
-              </div>
-              <div>
-                <Label htmlFor="weight">Measured weight (lbs)</Label>
-                <p className="text-xs text-muted-foreground mb-1.5">
-                  Optional admin field when an actual scale weight differs from the display value.
-                </p>
-                <Input
-                  id="weight"
-                  type="number"
-                  step="0.1"
-                  value={
-                    editedVariation.weight_lbs != null ? editedVariation.weight_lbs : ''
-                  }
-                  onChange={(e) =>
-                    setEditedVariation({
-                      ...editedVariation,
-                      weight_lbs: e.target.value
-                        ? parseFloat(e.target.value)
-                        : undefined,
-                    })
-                  }
-                  placeholder="e.g., 10.5"
                 />
               </div>
               <div>
@@ -723,8 +706,8 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
             <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>
-          <Button onClick={saveVariation} disabled={loading} size="icon" variant="outline">
-            <Save className="w-4 h-4" />
+          <Button onClick={saveVariation} disabled={loading} variant="default">
+            Save
           </Button>
         </div>
         </DialogPrimitive.Content>
