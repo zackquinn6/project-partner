@@ -4,7 +4,7 @@ This document is intended as a **strict reference for AI** when the user prompts
 
 > **“Complete step X of project development for project ‘[project name]’ with project id [xyz123]”**
 
-Where **Step X** is one of the steps defined below.
+Where **Step X** is one of the steps defined below (**Step 1** through **Step 9**).
 
 ---
 
@@ -64,9 +64,9 @@ Where **Step X** is one of the steps defined below.
 
 ### One migration file per project-development step (required)
 
-- **Exactly one SQL file per Step** (Step 1 … Step 8 as defined in section B). Do not split a single step across multiple migration files (for example, do not add a second “Step 1” file when another `project_id` needs the same workflow—extend the existing Step 1 file instead).
+- **Exactly one SQL file per Step** (Step 1 … Step 9 as defined in section B). Do not split a single step across multiple migration files (for example, do not add a second “Step 1” file when another `project_id` needs the same workflow—extend the existing Step 1 file instead).
 - **Multiple template projects** that need the same step: put **one PostgreSQL `DO $$ … END $$;` block per `project_id`** in that step’s file, in stable order, with comments separating blocks. Each block uses its own stable operation/step UUIDs. If there is only one target `project_id`, use **one** `DO` block.
-- **Steps 2–8** for the same template must use the **same** `v_project_id` as Step 1, and any `UPDATE public.operation_steps … WHERE id = …` must reference the **same** `operation_steps.id` values created in Step 1 for that project (Step 8 PFMEA rows reference those steps via `operation_step_id`).
+- **Steps 2–8** for the same template must use the **same** `v_project_id` as Step 1, and any `UPDATE public.operation_steps … WHERE id = …` must reference the **same** `operation_steps.id` values created in Step 1 for that project (Step 8 PFMEA rows reference those steps via `operation_step_id`). **Step 9** is **project-level copy only** (`projects.description`, `projects.project_challenges`); it does not touch `operation_steps`.
 - **Naming:** use a single slug and step number, e.g. `YYYY_MM_DD_migration_<project_slug>_step<N>[_<qualifier>].sql`. Use a **qualifier** only when two different migrations would both be “step N” by number but different in purpose (outputs vs risks vs tools). Example (Toilet Replacement, project `f46b9b02-de31-42e0-ab04-5409ed1f21ee`):
   - `2026_03_30_migration_toilet_replacement_step1.sql` — Step 1
   - `2026_03_26_migration_toilet_replacement_step2_outputs.sql` — Step 2
@@ -76,6 +76,7 @@ Where **Step X** is one of the steps defined below.
   - `2026_03_30_migration_toilet_replacement_step6_process_variables.sql` — Step 6
   - `2026_03_30_migration_toilet_replacement_step7_time_estimates.sql` — Step 7
   - `2026_03_30_migration_toilet_replacement_step8_pfmea.sql` — Step 8
+  - `YYYY_MM_DD_migration_<project_slug>_step9_project_copy.sql` — Step 9 (description + project challenges)
 - Do **not** encode `project_id` in the **filename**; the project is identified inside the SQL (`v_project_id` or comments).
 
 ### Library bootstrap inside steps 4–5 (tools + materials)
@@ -333,11 +334,57 @@ A **process variable** is a fundamental, theoretically measurable parameter that
 - **Validate every UUID literal** per **UUID literals in migrations** above—invalid UUIDs fail the whole batch after earlier inserts may have committed inside the same transaction, depending on runner behavior.
 - Prerequisite: Steps **1–2** (steps + outputs with stable output `id`s) at minimum; typically run after **7** so workflow content is complete.
 
+### Step 9 — Project description and project challenges
+
+**Role**
+
+- Step 9 finalizes **catalog-facing narrative** on the template project row: what the project **is** (`description`) and where DIYers typically **struggle** (`project_challenges`). This is separate from step-level instructions (Step 1), timeline/budget risks (Step 3), and quality PFMEA (Step 8).
+
+**Deliverables**
+
+1. **`public.projects.description`** — A clear project description that:
+   - States **what** the project covers and **why** someone would do it (scope and outcome), in plain language.
+   - Stays **high level**: enough to choose the right template, not a repeat of step-by-step instructions (those live in `step_instructions` / process map).
+   - Avoids inventing constraints or measurements that are not defined elsewhere in the template.
+
+2. **`public.projects.project_challenges`** — One or more **project challenges** written to the standard below.
+
+**Definition: what a Project Challenge is**
+
+A project challenge should clearly describe **the specific technical difficulty** a user will face — the part of the project where precision, awkward conditions, or hidden complexity make things harder than they look. It should also name **the emotional experience** that typically shows up at that moment, such as doubt, frustration, or the feeling of slowing down. The tone stays supportive and matter-of-fact, helping the user mentally prepare without overwhelming them.
+
+**Writing rules (project challenges)**
+
+- **2–3 sentences max**
+- **Sentence 1:** What technically makes this part hard
+- **Sentence 2:** What emotional friction it creates
+- **Sentence 3 (optional):** A grounding, supportive note (“This is normal,” “Most people slow down here,” etc.)
+
+**Examples (following the standard)**
+
+- **Example 1:** Keeping everything level is tricky because even small shifts in the material can throw off the alignment. This is usually the moment where people start second-guessing whether they measured correctly.
+
+- **Example 2:** Cutting clean edges takes precision, and imperfections become very visible once everything is installed. Many DIYers feel a spike of frustration here because mistakes are hard to hide.
+
+- **Example 3:** Working overhead makes it harder to control tools and maintain accuracy. This step often feels physically tiring, which can make people rush and lose confidence.
+
+**DB placement**
+
+- `public.projects.description` — text / nullable per live schema (`src/integrations/supabase/types.ts`).
+- `public.projects.project_challenges` — text / nullable; this is the canonical column (legacy `diy_length_challenges` may exist in some contexts—prefer **`project_challenges`** for new work).
+
+**Step 9 SQL migrations**
+
+- **`UPDATE public.projects`** (or equivalent) setting **`description`** and **`project_challenges`** for `v_project_id`, after verifying the row exists (e.g. `IF NOT FOUND THEN RAISE`).
+- **No** `rebuild_phases_json_from_project_phases` required solely for these fields unless other workflow rows in the same migration also changed normalized phases.
+- **Idempotent:** safe to re-run with the same final text (e.g. `UPDATE … WHERE id = v_project_id`).
+- Typically run **after** Steps **1–8** so the description and challenges align with the actual workflow content, or in parallel once the template scope is known—do not contradict steps, risks, or PFMEA seed data.
+
 ---
 
 ## C) Clarifications for steps (quick checklist)
 
-- **All steps (1–8)** — Ship **one** migration file per step for a given project slug (see **One migration file per project-development step** above). Never duplicate the same step number across multiple files.
+- **All steps (1–9)** — Ship **one** migration file per step for a given project slug (see **One migration file per project-development step** above). Never duplicate the same step number across multiple files.
 
 - **Step 1**
   - Must include instructions at **all 3 levels** (beginner/intermediate/advanced) for each step.
@@ -385,4 +432,11 @@ A **process variable** is a fundamental, theoretically measurable parameter that
   - **Detection** scores on `pfmea_controls` must follow **`pfmea_scoring`** / Scoring criteria: manual and subjective detection methods use **higher** numeric scores (worse detection) than justified automated or gage-based methods.
   - All inserted UUID literals must be syntactically valid: the **last group is exactly 12 hex digits** (see **UUID literals in migrations**).
   - Idempotent inserts with explicit ids and `ON CONFLICT` where appropriate.
+
+- **Step 9**
+  - Updates **`public.projects.description`** and **`public.projects.project_challenges`** only (project-level copy).
+  - **Project challenges** follow the **2–3 sentence** standard: technical difficulty first, emotional friction second, optional supportive third sentence; see **Step 9** in section B for examples.
+  - **Description** = scannable “what this project is”; do not duplicate full step instructions.
+  - Verify **`projects.id`** exists before `UPDATE`; fail loudly if missing.
+  - No PFMEA, no `operation_steps`, no phase JSON rebuild required **solely** for these two fields.
 
