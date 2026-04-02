@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,8 +45,17 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
     unit: item?.unit || item?.unit_size || '', // for materials
     alternates: item?.alternates || '', // JSON string of alternates
     category: typeof item?.category === 'string' ? item.category : '',
+    specialty_scale:
+      type === 'tools' && typeof item?.specialty_scale === 'number'
+        ? String(item.specialty_scale)
+        : '',
   });
-  const [instructions, setInstructions] = useState<ContentSection[]>(() => parseInstructions(item?.instructions));
+  /** Keys: `core` for the tools row; otherwise tool_variations.id */
+  const [toolInstructionMap, setToolInstructionMap] = useState<Record<string, ContentSection[]>>(() => ({
+    core: parseInstructions(item?.instructions),
+  }));
+  const [instructionEditorKey, setInstructionEditorKey] = useState<string>('core');
+  const [toolVariationsList, setToolVariationsList] = useState<{ id: string; name: string }[]>([]);
   const [uploading, setUploading] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(item?.photo_url || '');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -55,8 +64,55 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
   const materialCategoryOptions = ['PPE', 'Consumable', 'Other'];
 
   useEffect(() => {
-    setInstructions(parseInstructions(item?.instructions));
-  }, [item?.id, item?.instructions]);
+    if (type !== 'tools') return;
+    setToolInstructionMap((prev) => ({
+      ...prev,
+      core: parseInstructions(item?.instructions),
+    }));
+  }, [type, item?.instructions]);
+
+  const refreshToolVariationsForInstructions = useCallback(async () => {
+    if (type !== 'tools' || !item?.id) return;
+    const { data, error } = await supabase
+      .from('tool_variations')
+      .select('id, name, instructions')
+      .eq('core_item_id', item.id)
+      .order('name');
+
+    if (error) {
+      toast.error('Failed to load variants for instructions');
+      return;
+    }
+    const rows = data ?? [];
+    setToolVariationsList(rows.map((r) => ({ id: r.id, name: r.name })));
+    setToolInstructionMap((prev) => {
+      const next: Record<string, ContentSection[]> = {
+        core: prev.core,
+      };
+      for (const r of rows) {
+        const id = r.id as string;
+        next[id] = id in prev ? prev[id]! : parseInstructions(r.instructions);
+      }
+      return next;
+    });
+  }, [type, item?.id]);
+
+  useEffect(() => {
+    if (type !== 'tools') return;
+    if (!item?.id) {
+      setToolVariationsList([]);
+      setInstructionEditorKey('core');
+      return;
+    }
+    void refreshToolVariationsForInstructions();
+  }, [type, item?.id, refreshToolVariationsForInstructions]);
+
+  useEffect(() => {
+    if (instructionEditorKey === 'core') return;
+    if (!toolVariationsList.some((v) => v.id === instructionEditorKey)) {
+      setInstructionEditorKey('core');
+    }
+  }, [toolVariationsList, instructionEditorKey]);
 
   useEffect(() => {
     setFormData({
@@ -65,10 +121,14 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
       unit: item?.unit || item?.unit_size || '',
       alternates: item?.alternates || '',
       category: typeof item?.category === 'string' ? item.category : '',
+      specialty_scale:
+        type === 'tools' && typeof item?.specialty_scale === 'number'
+          ? String(item.specialty_scale)
+          : '',
     });
     setPhotoUrl(item?.photo_url || '');
     setPhotoFile(null);
-  }, [item]);
+  }, [item, type]);
 
   const allowedImageTypes = new Set([
     'image/jpeg',
@@ -166,6 +226,21 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
       return;
     }
 
+    let specialtyScaleValue: number | undefined;
+    if (type === 'tools') {
+      const rawScale = formData.specialty_scale.trim();
+      if (rawScale === '') {
+        toast.error('Specialty scale is required');
+        return;
+      }
+      const parsed = Number(rawScale);
+      if (!Number.isInteger(parsed)) {
+        toast.error('Specialty scale must be a whole number');
+        return;
+      }
+      specialtyScaleValue = parsed;
+    }
+
     setUploading(true);
 
     try {
@@ -211,7 +286,10 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
         ...(type === 'materials' && {
           unit: formData.unit.trim() || null
         }),
-        ...(type === 'tools' && { instructions: instructions.length > 0 ? instructions : [] }),
+        ...(type === 'tools' && {
+          instructions: (toolInstructionMap.core ?? []).length > 0 ? toolInstructionMap.core : [],
+          specialty_scale: specialtyScaleValue as number,
+        }),
       };
 
       if (item) {
@@ -222,6 +300,19 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
           .eq('id', item.id);
         
         if (error) throw error;
+
+        if (type === 'tools') {
+          for (const v of toolVariationsList) {
+            const secs = toolInstructionMap[v.id];
+            if (secs === undefined) continue;
+            const payload = secs.length > 0 ? secs : [];
+            const { error: variationInstructionError } = await supabase
+              .from('tool_variations')
+              .update({ instructions: payload })
+              .eq('id', v.id);
+            if (variationInstructionError) throw variationInstructionError;
+          }
+        }
       } else {
         if (!user?.id) {
           toast.error('You must be logged in to create library items');
@@ -281,12 +372,17 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
           </Button>
         </div>
       )}
-      <TabsList className={`grid w-full shrink-0 ${type === 'tools' ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      <TabsList
+        className={`grid w-full shrink-0 gap-1 ${
+          type === 'tools' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'
+        }`}
+      >
         <TabsTrigger value="basic">{type === 'tools' ? 'Core Tool' : 'Core Material'}</TabsTrigger>
         <TabsTrigger value="variations" disabled={!item?.id}>
           Variations {!item?.id && '(Save item first)'}
         </TabsTrigger>
         {type === 'tools' && <TabsTrigger value="alternates">Alternates</TabsTrigger>}
+        {type === 'tools' && <TabsTrigger value="instructions">Instructions</TabsTrigger>}
       </TabsList>
       
       <TabsContent value="basic" className="mt-0 min-h-0 flex-1 overflow-hidden">
@@ -347,6 +443,29 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
             </Select>
           </div>
 
+          {type === 'tools' && (
+            <div>
+              <Label htmlFor="specialty-scale">Specialty scale *</Label>
+              <Input
+                id="specialty-scale"
+                type="number"
+                inputMode="numeric"
+                step={1}
+                min={1}
+                value={formData.specialty_scale}
+                onChange={(e) =>
+                  setFormData({ ...formData, specialty_scale: e.target.value })
+                }
+                placeholder="e.g. 1 or 2"
+                required
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Whole number. The user tool library uses this to group tools (for example, scale 1 vs higher
+                values). Use the scale your catalog conventions define for this item.
+              </p>
+            </div>
+          )}
+
           <div>
             <Label>Photo</Label>
             <div className="space-y-2">
@@ -399,18 +518,6 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
             </div>
           </div>
 
-          {type === 'tools' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Tool instructions</CardTitle>
-                <CardDescription>Text, videos, photos, and links shown when users open instructions for this tool in the workflow.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <MultiContentEditor sections={instructions} onChange={setInstructions} />
-              </CardContent>
-            </Card>
-          )}
-
           {type === 'materials' && (
             <div>
               <AlternatesEditor
@@ -444,7 +551,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
             coreItemId={item.id}
             coreItemName={item.name}
             onVariationUpdate={() => {
-              // Optionally refresh or notify parent component
+              void refreshToolVariationsForInstructions();
             }}
           />
         )}
@@ -470,6 +577,62 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
                 itemType="tool"
               />
             </div>
+          </div>
+        </TabsContent>
+      )}
+
+      {type === 'tools' && (
+        <TabsContent value="instructions" className="mt-0 min-h-0 flex-1 overflow-hidden">
+          <div className="h-full overflow-y-auto p-6">
+            <Card className="max-w-4xl mx-auto">
+              <CardHeader>
+                <CardTitle>Tool instructions</CardTitle>
+                <CardDescription>
+                  Choose whether these blocks apply to the core tool (default for all variants) or to one
+                  variant. Variant-specific instructions can override or extend what users see for that SKU in
+                  the workflow.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="instruction-target">Instructions for</Label>
+                  <Select
+                    value={instructionEditorKey}
+                    onValueChange={setInstructionEditorKey}
+                  >
+                    <SelectTrigger id="instruction-target" className="max-w-md">
+                      <SelectValue placeholder="Select target" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[1000]">
+                      <SelectItem value="core">Core tool (default)</SelectItem>
+                      {toolVariationsList.map((v) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          Variant: {v.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!item?.id ? (
+                    <p className="text-xs text-muted-foreground">
+                      Save the tool first to load variants. Until then, only core tool instructions are available.
+                    </p>
+                  ) : toolVariationsList.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      No variants yet. Add variants on the Variations tab to assign per-variant instructions.
+                    </p>
+                  ) : null}
+                </div>
+                <MultiContentEditor
+                  sections={toolInstructionMap[instructionEditorKey] ?? []}
+                  onChange={(sections) =>
+                    setToolInstructionMap((prev) => ({
+                      ...prev,
+                      [instructionEditorKey]: sections,
+                    }))
+                  }
+                />
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
       )}

@@ -21,9 +21,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogPortal,
-  DialogOverlay,
 } from '@/components/ui/dialog';
+
+const NESTED_DIALOG_OVERLAY = 'z-[260]';
+const NESTED_DIALOG_CONTENT = 'z-[270]';
 
 interface VariationAttribute {
   id: string;
@@ -519,18 +520,24 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
             <div className="flex space-x-2 ml-auto pl-8">
               <Dialog open={showAttributeDialog} onOpenChange={setShowAttributeDialog}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 px-3 py-1">
+                  <Button type="button" variant="outline" size="sm" className="h-8 px-3 py-1">
                     <Plus className="h-4 w-4 mr-1" />
                     Add Attribute
                   </Button>
                 </DialogTrigger>
-                <DialogPortal>
-                  <DialogOverlay className="z-[150]" />
-                  <DialogContent className="z-[151]">
+                <DialogContent
+                  overlayClassName={NESTED_DIALOG_OVERLAY}
+                  className={`${NESTED_DIALOG_CONTENT} max-w-lg`}
+                >
                     <DialogHeader>
                       <DialogTitle>Create New Attribute</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
+                      {variations.length === 0 ? (
+                        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+                          Create at least one variation first. Attribute definitions are stored on variation rows.
+                        </p>
+                      ) : null}
                       <div>
                         <Label>Common Attributes</Label>
                         <div className="grid grid-cols-2 gap-2 mt-2 max-h-40 overflow-y-auto">
@@ -566,32 +573,43 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                         />
                       </div>
                       <div className="flex justify-end space-x-2">
-                        <Button variant="outline" onClick={() => {
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
                           setShowAttributeDialog(false);
                           setSelectedCommonAttributes([]);
                           setNewAttributeName('');
-                        }}>
+                        }}
+                        >
                           Cancel
                         </Button>
-                        <Button onClick={handleCreateAttribute} disabled={loading}>
+                        <Button
+                          type="button"
+                          onClick={() => void handleCreateAttribute()}
+                          disabled={
+                            loading ||
+                            (selectedCommonAttributes.length === 0 && !newAttributeName.trim())
+                          }
+                        >
                           Create Attributes
                         </Button>
                       </div>
                     </div>
                   </DialogContent>
-                </DialogPortal>
               </Dialog>
 
               <Dialog open={showValueDialog} onOpenChange={setShowValueDialog}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 px-3 py-1">
+                  <Button type="button" variant="outline" size="sm" className="h-8 px-3 py-1">
                     <Plus className="h-4 w-4 mr-1" />
                     Add Value
                   </Button>
                 </DialogTrigger>
-                <DialogPortal>
-                  <DialogOverlay className="z-[150]" />
-                  <DialogContent className="z-[151]">
+                <DialogContent
+                  overlayClassName={NESTED_DIALOG_OVERLAY}
+                  className={`${NESTED_DIALOG_CONTENT} max-w-lg`}
+                >
                     <DialogHeader>
                       <DialogTitle>Add Attribute Value</DialogTitle>
                     </DialogHeader>
@@ -636,20 +654,27 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                       />
                     </div>
                     <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={() => {
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
                         setShowValueDialog(false);
                         setSelectedAttributeId('');
                         setNewValueText('');
-                      }}>
+                      }}
+                      >
                         Cancel
                       </Button>
-                      <Button onClick={handleCreateAttributeValue} disabled={loading || !selectedAttributeId || attributes.length === 0}>
+                      <Button
+                        type="button"
+                        onClick={() => void handleCreateAttributeValue()}
+                        disabled={loading || !selectedAttributeId || attributes.length === 0}
+                      >
                         Add Value
                       </Button>
                     </div>
                   </div>
                 </DialogContent>
-                </DialogPortal>
               </Dialog>
             </div>
           </CardTitle>
@@ -703,14 +728,15 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
             <div className="flex items-center space-x-2">
               <Dialog open={showVariationDialog} onOpenChange={setShowVariationDialog}>
               <DialogTrigger asChild>
-                <Button size="sm" className="text-xs">
+                <Button type="button" size="sm" className="text-xs">
                   <Plus className="h-4 w-4 mr-1" />
                   Create
                 </Button>
               </DialogTrigger>
-              <DialogPortal>
-                <DialogOverlay className="z-[150]" />
-                <DialogContent className="max-w-2xl z-[151]">
+                <DialogContent
+                  overlayClassName={NESTED_DIALOG_OVERLAY}
+                  className={`${NESTED_DIALOG_CONTENT} max-w-2xl`}
+                >
                   <DialogHeader>
                     <DialogTitle>Create New Variation</DialogTitle>
                   </DialogHeader>
@@ -794,7 +820,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                         onChange={(e) => setVariationName(e.target.value)}
                         placeholder="Enter variation name"
                       />
-                      <Button variant="outline" onClick={generateVariationName}>
+                      <Button type="button" variant="outline" onClick={generateVariationName}>
                         Auto-generate
                       </Button>
                     </div>
@@ -850,16 +876,15 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                   </div>
 
                   <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setShowVariationDialog(false)}>
+                    <Button type="button" variant="outline" onClick={() => setShowVariationDialog(false)}>
                       Cancel
                     </Button>
-                    <Button onClick={handleCreateVariation} disabled={loading}>
+                    <Button type="button" onClick={() => void handleCreateVariation()} disabled={loading}>
                       Create Variation
                     </Button>
                   </div>
                 </div>
               </DialogContent>
-              </DialogPortal>
               </Dialog>
             </div>
           </CardTitle>

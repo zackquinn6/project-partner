@@ -20,6 +20,7 @@ interface Tool {
   description: string | null;
   category: string;
   photo_url: string | null;
+  specialty_scale: number;
   created_at: string;
   updated_at: string;
   instructions?: unknown;
@@ -36,6 +37,7 @@ type ToolRow = {
   description: string | null;
   category: string;
   photo_url: string | null;
+  specialty_scale: number;
   created_at: string;
   updated_at: string;
   instructions?: unknown;
@@ -62,7 +64,7 @@ export function ToolsLibrary() {
       // Cast entire query to bypass TypeScript type checking for column names
       const query = supabase
         .from('tools' as any)
-        .select('id, name, description, category, photo_url, created_at, updated_at, instructions') as any;
+        .select('id, name, description, category, photo_url, specialty_scale, created_at, updated_at, instructions') as any;
 
       const { data, error } = await query.order('name', { ascending: true }); // Database column is 'name', not 'item'
       
@@ -75,6 +77,7 @@ export function ToolsLibrary() {
         description: row.description,
         category: row.category,
         photo_url: row.photo_url,
+        specialty_scale: row.specialty_scale,
         created_at: row.created_at,
         updated_at: row.updated_at,
         instructions: row.instructions
@@ -214,7 +217,7 @@ export function ToolsLibrary() {
           </DialogTrigger>
           <DialogPortal>
             <DialogOverlay className="z-[100]" />
-            <DialogContent className="w-[90vw] max-w-[90vw] max-h-[90vh] overflow-hidden z-[101]">
+            <DialogContent className="z-[101] flex w-full max-w-full max-h-[90dvh] flex-col overflow-hidden lg:w-[90vw] lg:max-w-[90vw]">
               <DialogHeader>
                 <DialogTitle>Add New Tool</DialogTitle>
               </DialogHeader>
@@ -347,7 +350,7 @@ export function ToolsLibrary() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogPortal>
           <DialogOverlay className="z-[100]" />
-          <DialogContent className="w-[90vw] max-w-[90vw] max-h-[90vh] overflow-hidden z-[101]">
+          <DialogContent className="z-[101] flex w-full max-w-full max-h-[90dvh] flex-col overflow-hidden lg:w-[90vw] lg:max-w-[90vw]">
             <DialogHeader>
               <DialogTitle>Edit Tool</DialogTitle>
             </DialogHeader>
