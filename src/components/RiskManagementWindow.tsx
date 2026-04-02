@@ -1,5 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogPortal,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Sheet,
   SheetContent,
@@ -479,6 +486,11 @@ interface RiskManagementWindowProps {
   workflowEditorRiskLess?: boolean;
   /** Display name for Risk-Less dashboard when editing a template from the workflow editor */
   templateProjectDisplayName?: string;
+  /**
+   * When true with variant risk-focus + run mode: centered ~90% viewport + blurred backdrop (planning wizard).
+   * When false (default): full-bleed Risk-Less (e.g. My Workshop / workflow app).
+   */
+  planningWizardToolPresentation?: boolean;
 }
 
 export function RiskManagementWindow({
@@ -490,7 +502,8 @@ export function RiskManagementWindow({
   readOnly = false,
   variant = 'default',
   workflowEditorRiskLess = false,
-  templateProjectDisplayName
+  templateProjectDisplayName,
+  planningWizardToolPresentation = false,
 }: RiskManagementWindowProps) {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
@@ -531,6 +544,10 @@ export function RiskManagementWindow({
   const friendlyRiskLessRegisterUi = riskFocusRun && !workflowEditorRiskLess;
   /** Risk-Less run without advanced register columns: combine risk + likelihood in one column. */
   const riskFocusEasyMode = riskFocusRun && !advancedMode;
+
+  const usePlanningToolShell = Boolean(
+    planningWizardToolPresentation && variant === 'risk-focus' && mode === 'run'
+  );
 
   /** Keep scroll position in Risk-Less: avoid full fetchRisks() after small mitigation edits. */
   const patchRunRiskMitigationActions = useCallback(
@@ -1168,19 +1185,8 @@ export function RiskManagementWindow({
     }
   };
 
-  return (
+  const mainContents = (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={cn(
-          'flex flex-col overflow-hidden p-0 [&>button]:hidden',
-          useRiskLessChrome
-            ? cn(
-                'gap-0 !inset-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-none !translate-x-0 !translate-y-0 flex-col overflow-hidden rounded-none border-0 p-0 shadow-none sm:max-w-none md:!max-w-none md:rounded-none md:p-0 [&>button]:hidden'
-              )
-            : 'h-screen max-h-full w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg'
-        )}
-      >
         <DialogHeader className={cn(PLANNING_TOOL_WINDOW_HEADER_CLASSNAME, 'flex-shrink-0')}>
           <div className="min-w-0 flex-1 space-y-1">
             <DialogTitle
@@ -2473,7 +2479,47 @@ export function RiskManagementWindow({
             </div>
           )}
         </div>
-      </DialogContent>
+      </>
+    );
+
+  return (
+    <>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {usePlanningToolShell ? (
+        <DialogPortal>
+          {open ? (
+            <div
+              className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-md transition-opacity duration-200"
+              aria-hidden="true"
+            />
+          ) : null}
+          <div
+            data-dialog-content
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              'fixed inset-0 z-[91] flex flex-col overflow-hidden bg-background p-0 shadow-lg',
+              'md:left-1/2 md:top-1/2 md:right-auto md:bottom-auto md:-translate-x-1/2 md:-translate-y-1/2',
+              'md:h-[90vh] md:max-h-[min(90vh,calc(100vh-2rem))] md:w-[90vw] md:max-w-[min(90vw,calc(100vw-2rem))]',
+              'md:rounded-lg md:border'
+            )}
+          >
+            {mainContents}
+          </div>
+        </DialogPortal>
+      ) : (
+        <DialogContent
+          className={cn(
+            'flex flex-col overflow-hidden p-0 [&>button]:hidden',
+            useRiskLessChrome
+              ? cn(
+                  'gap-0 !inset-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-none !translate-x-0 !translate-y-0 flex-col overflow-hidden rounded-none border-0 p-0 shadow-none sm:max-w-none md:!max-w-none md:rounded-none md:p-0 [&>button]:hidden'
+                )
+              : 'h-screen max-h-full w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg'
+          )}
+        >
+          {mainContents}
+        </DialogContent>
+      )}
     </Dialog>
 
     {/* Add/Edit risk dialog — sibling of main Dialog (nested Dialog inside DialogContent breaks Radix a11y). */}

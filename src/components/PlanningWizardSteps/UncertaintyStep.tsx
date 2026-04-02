@@ -84,7 +84,9 @@ export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
           onOpenChange={setRiskManagementOpen}
           projectRunId={currentProjectRun?.id}
           mode="run"
+          variant="risk-focus"
           readOnly={false}
+          planningWizardToolPresentation
         />
       )}
     </div>

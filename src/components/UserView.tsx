@@ -250,6 +250,7 @@ export default function UserView({
   const [afterActionReviewOpen, setAfterActionReviewOpen] = useState(false);
   const [aarProjectRun, setAarProjectRun] = useState<ProjectRun | null>(null);
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
+  const [riskManagementPlanningPresentation, setRiskManagementPlanningPresentation] = useState(false);
   const [projectPerformanceOpen, setProjectPerformanceOpen] = useState(false);
   const [communicationPlanOpen, setCommunicationPlanOpen] = useState(false);
   const [qualityCheckOpen, setQualityCheckOpen] = useState(false);
@@ -2228,6 +2229,7 @@ export default function UserView({
         break;
       case 'risk-management':
         console.log('🛡️ Launching Risk Management app');
+        setRiskManagementPlanningPresentation(false);
         setRiskManagementOpen(true);
         break;
       case 'risk-focus':
@@ -3260,6 +3262,7 @@ export default function UserView({
               if (options?.fromPlanningWizard) {
                 registerPlanningWizardToolCloseCallback('risk', options.onComplete);
               }
+              setRiskManagementPlanningPresentation(Boolean(options?.fromPlanningWizard));
               setRiskManagementOpen(true);
             }}
             onOpenQualityControl={(options) => {
@@ -4243,6 +4246,7 @@ export default function UserView({
             if (options?.fromPlanningWizard) {
               registerPlanningWizardToolCloseCallback('risk', options.onComplete);
             }
+            setRiskManagementPlanningPresentation(Boolean(options?.fromPlanningWizard));
             setRiskManagementOpen(true);
           }}
           onOpenQualityControl={(options) => {
@@ -4369,11 +4373,15 @@ export default function UserView({
           open={riskManagementOpen}
           onOpenChange={(open) => {
             setRiskManagementOpen(open);
-            if (!open) completePlanningWizardToolCloseCallback('risk');
+            if (!open) {
+              setRiskManagementPlanningPresentation(false);
+              completePlanningWizardToolCloseCallback('risk');
+            }
           }}
           projectRunId={currentProjectRun.id}
           mode="run"
           variant="risk-focus"
+          planningWizardToolPresentation={riskManagementPlanningPresentation}
         />
       )}
 
