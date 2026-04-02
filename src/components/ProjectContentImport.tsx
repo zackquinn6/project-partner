@@ -369,7 +369,7 @@ IMPORTANT FORMAT NOTES:
           id: `material-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           name: rowData.material_name,
           description: rowData.material_description || '',
-          category: 'Other' as const,
+          category: 'Consumables' as const,
           alternates: []
         };
         

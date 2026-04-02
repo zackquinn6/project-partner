@@ -97,7 +97,7 @@ export function MaterialsSelectionWindow({
                 id: key,
                 name: material.name,
                 description: material.description || '',
-                category: material.category || 'Other',
+                category: typeof material.category === 'string' ? material.category : '',
                 alternates: material.alternates || [],
                 unit: material.unit || 'pieces',
                 quantity: 1,

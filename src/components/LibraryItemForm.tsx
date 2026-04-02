@@ -19,6 +19,7 @@ import {
   PLANNING_TOOL_SAVE_CLOSE_CLASSNAME,
 } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
 import { TOOLS_LIBRARY_CATEGORIES } from '@/utils/toolCatalogCategory';
+import { MATERIALS_LIBRARY_CATEGORIES, isMaterialsLibraryCategory } from '@/utils/materialCatalogCategory';
 
 interface LibraryItemFormProps {
   type: 'tools' | 'materials';
@@ -83,7 +84,6 @@ export function LibraryItemForm({
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toolCategoryOptions = ['PPE', 'Hand Tool', 'Power Tool', 'Other'];
-  const materialCategoryOptions = ['PPE', 'Consumable', 'Other'];
 
   useEffect(() => {
     if (type !== 'tools') return;
@@ -449,7 +449,7 @@ export function LibraryItemForm({
                 <SelectValue placeholder="Select a category..." />
               </SelectTrigger>
               <SelectContent className="z-[1000]">
-                {(type === 'tools' ? TOOLS_LIBRARY_CATEGORIES : materialCategoryOptions).map((category) => (
+                {(type === 'tools' ? TOOLS_LIBRARY_CATEGORIES : MATERIALS_LIBRARY_CATEGORIES).map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}
                   </SelectItem>

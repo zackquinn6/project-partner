@@ -78,6 +78,9 @@ const RollupSection: React.FC<RollupSectionProps> = ({
       'Hardware': 'bg-blue-100 text-blue-800',
       'Software': 'bg-green-100 text-green-800',
       'Consumable': 'bg-orange-100 text-orange-800',
+      'Consumables': 'bg-orange-100 text-orange-800',
+      'Components': 'bg-slate-200 text-slate-900',
+      'PPE': 'bg-cyan-100 text-cyan-900',
       'Hand Tool': 'bg-purple-100 text-purple-800',
       'Power Tool': 'bg-red-100 text-red-800',
       'Other': 'bg-gray-100 text-gray-800'
