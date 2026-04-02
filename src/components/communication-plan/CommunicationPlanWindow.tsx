@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Dialog, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Select,
   SelectContent,
@@ -38,6 +38,8 @@ import {
   Sparkles,
   Clock,
   Bell,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -109,6 +111,14 @@ type LogRow = {
   sent_at: string;
 };
 
+type CommunicationPlanSectionKey =
+  | 'overview'
+  | 'people'
+  | 'compose'
+  | 'schedule'
+  | 'triggers'
+  | 'sent';
+
 const CONCERN_OPTIONS: { id: string; label: string }[] = [
   { id: 'budget', label: 'Budget' },
   { id: 'timeline', label: 'Timeline' },
@@ -174,7 +184,7 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
   const [log, setLog] = useState<LogRow[]>([]);
   const [openRisks, setOpenRisks] = useState<{ risk_title: string; status: string | null }[]>([]);
 
-  const [tab, setTab] = useState('overview');
+  const [openSection, setOpenSection] = useState<CommunicationPlanSectionKey>('overview');
   const tabBodyPad = PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME;
 
   const [composeTemplate, setComposeTemplate] = useState<TemplateKey>('weekly_summary');
@@ -606,7 +616,7 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
   const draftForTrigger = (tt: TriggerType) => {
     const tk = templateKeyForTrigger(tt);
     setComposeTemplate(tk);
-    setTab('compose');
+    setOpenSection('compose');
   };
 
   const now = new Date();
@@ -621,6 +631,8 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
     if (!id) return '—';
     return stakeholders.find((s) => s.id === id)?.display_name ?? '—';
   };
+
+  const focusSection = (section: CommunicationPlanSectionKey) => () => setOpenSection(section);
 
   if (!currentProjectRun) {
     return (
@@ -691,504 +703,648 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
                 <p className="text-sm text-muted-foreground">Loading…</p>
               </div>
             ) : (
-              <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
+              <ScrollArea className="min-h-0 flex-1">
                 <div
                   className={cn(
-                    PLANNING_TOOL_WINDOW_SECONDARY_STRIP_CLASSNAME,
-                    'pt-0 pb-3 md:pt-1 md:pb-4'
+                    tabBodyPad,
+                    'space-y-4 pt-3 md:pt-4'
                   )}
                 >
-                  <TabsList className="flex h-auto w-full flex-wrap gap-1">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="people">People</TabsTrigger>
-                    <TabsTrigger value="compose">Compose & send</TabsTrigger>
-                    <TabsTrigger value="schedule">Schedule</TabsTrigger>
-                    <TabsTrigger value="triggers">Triggers</TabsTrigger>
-                    <TabsTrigger value="sent">Sent & copied</TabsTrigger>
-                  </TabsList>
-                </div>
-
-                <div className="relative min-h-0 flex-1">
-                  <TabsContent
-                    value="overview"
-                    className="absolute inset-0 mt-0 data-[state=active]:block data-[state=inactive]:hidden"
+                  <div
+                    className={cn(
+                      PLANNING_TOOL_WINDOW_SECONDARY_STRIP_CLASSNAME,
+                      'rounded-xl border border-border/70 bg-muted/30 p-3'
+                    )}
                   >
-                    <ScrollArea className="h-full">
-                      <div className={`${tabBodyPad} space-y-4`}>
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">Use for this project</CardTitle>
-                        <CardDescription>
-                          Optional add-on — when off, nothing changes elsewhere in Project Partner.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="space-y-1">
-                          <p className="font-medium">
-                            {plan?.enabled ? 'Enabled' : 'Disabled'}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Stakeholders, schedules, and drafts stay in one place.
-                          </p>
-                        </div>
-                        <Switch
-                          checked={!!plan?.enabled}
-                          onCheckedChange={(v) => void handleEnable(v)}
-                          aria-label="Enable communication plan for this project"
-                        />
-                      </CardContent>
-                    </Card>
+                    <div className="flex flex-wrap gap-2">
+                      {([
+                        ['overview', 'Overview'],
+                        ['people', 'People'],
+                        ['compose', 'Compose & send'],
+                        ['schedule', 'Schedule'],
+                        ['triggers', 'Triggers'],
+                        ['sent', 'Sent & copied'],
+                      ] as const).map(([key, label]) => (
+                        <Button
+                          key={key}
+                          type="button"
+                          size="sm"
+                          variant={openSection === key ? 'default' : 'outline'}
+                          className="h-8 text-xs"
+                          onClick={() => setOpenSection(key)}
+                        >
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
 
-                    {plan?.enabled && (
-                      <>
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-base flex items-center gap-2">
-                              <Bell className="h-4 w-4" />
-                              Text messaging
-                              <Badge variant="secondary">Coming soon</Badge>
-                            </CardTitle>
-                            <CardDescription>
-                              SMS from the app is not available yet. Email and copy-to-clipboard work today.
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-sm text-muted-foreground">
-                              Want early access when texting launches?
-                            </p>
-                            <div className="flex items-center gap-2">
-                              <Switch
-                                checked={plan.sms_early_access_opt_in}
-                                onCheckedChange={(v) => void handleSmsOptIn(v)}
-                                aria-label="Opt in for SMS early access"
-                              />
-                              <span className="text-sm">Early access list</span>
+                  <Card className="border-border/70 shadow-sm">
+                    <Collapsible
+                      open={openSection === 'overview'}
+                      onOpenChange={(next) => setOpenSection(next ? 'overview' : openSection === 'overview' ? 'people' : openSection)}
+                    >
+                      <CardContent className="space-y-4 p-4">
+                        <CollapsibleTrigger asChild>
+                          <button type="button" className="flex w-full items-center justify-between gap-3 text-left">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                                1
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-semibold">Overview</h3>
+                                <p className="text-xs text-muted-foreground">Turn it on and review the setup.</p>
+                              </div>
                             </div>
-                          </CardContent>
-                        </Card>
-
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-base flex items-center gap-2">
-                              <Sparkles className="h-4 w-4" />
-                              Recommended setup
-                            </CardTitle>
-                            <CardDescription>
-                              Uses your project&apos;s steps, schedule, budget, and risks — no guessing names.
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent className="flex flex-wrap gap-2">
-                            <Button variant="outline" size="sm" onClick={() => setTab('people')}>
-                              Add people
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => void autoGenerateSchedule()}>
-                              Build schedule from frequencies
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => setTab('compose')}>
-                              Open composer
-                            </Button>
-                          </CardContent>
-                        </Card>
-
-                        {dueItems.length > 0 && (
-                          <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20">
-                            <CardHeader>
-                              <CardTitle className="text-base text-amber-900 dark:text-amber-100">
-                                Updates due
-                              </CardTitle>
-                              <CardDescription>
-                                {dueItems.length} scheduled reminder
-                                {dueItems.length === 1 ? '' : 's'} — send an update when you can.
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent className="text-sm space-y-2">
-                              {dueItems.map((item) => (
-                                <div key={item.id} className="flex justify-between gap-2">
-                                  <span>{stakeholderName(item.stakeholder_id)}</span>
-                                  <span className="text-muted-foreground">
-                                    {item.next_due_at
-                                      ? new Date(item.next_due_at).toLocaleString()
-                                      : ''}
-                                  </span>
+                            {openSection === 'overview' ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="space-y-4 pt-1" onPointerDownCapture={focusSection('overview')}>
+                            <Card className="border-border/70 bg-background">
+                              <CardHeader>
+                                <CardTitle className="text-base">Use for this project</CardTitle>
+                                <CardDescription>
+                                  Optional add-on — when off, nothing changes elsewhere in Project Partner.
+                                </CardDescription>
+                              </CardHeader>
+                              <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="space-y-1">
+                                  <p className="font-medium">{plan?.enabled ? 'Enabled' : 'Disabled'}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Stakeholders, schedules, and drafts stay in one place.
+                                  </p>
                                 </div>
-                              ))}
-                              <Button size="sm" className="mt-2" onClick={() => setTab('compose')}>
-                                Draft an update
-                              </Button>
-                            </CardContent>
-                          </Card>
-                        )}
-                      </>
-                    )}
-                      </div>
-                    </ScrollArea>
-                  </TabsContent>
+                                <Switch
+                                  checked={!!plan?.enabled}
+                                  onCheckedChange={(v) => void handleEnable(v)}
+                                  aria-label="Enable communication plan for this project"
+                                />
+                              </CardContent>
+                            </Card>
 
-                  <TabsContent
-                    value="people"
-                    className="absolute inset-0 mt-0 data-[state=active]:block data-[state=inactive]:hidden"
-                  >
-                    <ScrollArea className="h-full">
-                      <div className={`${tabBodyPad} space-y-4`}>
-                    {!plan?.enabled ? (
-                      <p className="text-sm text-muted-foreground">
-                        Turn on Communication Plan on the Overview tab first.
-                      </p>
-                    ) : (
-                      <>
-                        <div className="flex justify-end">
-                          <Button size="sm" onClick={openNewStakeholder}>
-                            <Plus className="h-4 w-4 mr-1" />
-                            Add person
-                          </Button>
-                        </div>
-                        {stakeholders.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">
-                            Add spouse, co-owners, tenants, contractors, or neighbors who should hear from you.
-                          </p>
-                        ) : (
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Role</TableHead>
-                                <TableHead>Frequency</TableHead>
-                                <TableHead>Channel</TableHead>
-                                <TableHead className="w-[100px]" />
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {stakeholders.map((s) => (
-                                <TableRow key={s.id}>
-                                  <TableCell className="font-medium">{s.display_name}</TableCell>
-                                  <TableCell className="text-muted-foreground text-sm">
-                                    {ROLE_PRESETS.find((r) => r.value === s.role_label)?.label ??
-                                      s.role_label}
-                                  </TableCell>
-                                  <TableCell className="text-sm">
-                                    {FREQUENCY_OPTIONS.find((f) => f.value === s.preferred_frequency)
-                                      ?.label ?? s.preferred_frequency}
-                                  </TableCell>
-                                  <TableCell className="text-sm">
-                                    {s.delivery_method === 'email' ? (
-                                      <span className="inline-flex items-center gap-1">
-                                        <Mail className="h-3.5 w-3.5" />
-                                        Email
-                                      </span>
-                                    ) : (
-                                      'Off-app (copy / paste)'
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex gap-1">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={() => openEditStakeholder(s)}
-                                        aria-label="Edit"
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-destructive"
-                                        onClick={() => void deleteStakeholder(s.id)}
-                                        aria-label="Remove"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
+                            {plan?.enabled ? (
+                              <>
+                                <Card className="border-border/70 bg-background">
+                                  <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-base">
+                                      <Bell className="h-4 w-4" />
+                                      Text messaging
+                                      <Badge variant="secondary">Coming soon</Badge>
+                                    </CardTitle>
+                                    <CardDescription>
+                                      SMS from the app is not available yet. Email and copy-to-clipboard work today.
+                                    </CardDescription>
+                                  </CardHeader>
+                                  <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <p className="text-sm text-muted-foreground">
+                                      Want early access when texting launches?
+                                    </p>
+                                    <div className="flex items-center gap-2">
+                                      <Switch
+                                        checked={plan.sms_early_access_opt_in}
+                                        onCheckedChange={(v) => void handleSmsOptIn(v)}
+                                        aria-label="Opt in for SMS early access"
+                                      />
+                                      <span className="text-sm">Early access list</span>
                                     </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        )}
-                      </>
-                    )}
-                      </div>
-                    </ScrollArea>
-                  </TabsContent>
+                                  </CardContent>
+                                </Card>
 
-                  <TabsContent
-                    value="compose"
-                    className="absolute inset-0 mt-0 data-[state=active]:block data-[state=inactive]:hidden"
-                  >
-                    <ScrollArea className="h-full">
-                      <div className={`${tabBodyPad} space-y-4`}>
-                    {!plan?.enabled ? (
-                      <p className="text-sm text-muted-foreground">
-                        Enable Communication Plan on the Overview tab to compose and log sends.
-                      </p>
-                    ) : (
-                      <>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <div className="space-y-2">
-                            <Label>Template</Label>
-                            <Select
-                              value={composeTemplate}
-                              onValueChange={(v) => setComposeTemplate(v as TemplateKey)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="max-h-72">
-                                {TEMPLATE_KEYS.map((k) => (
-                                  <SelectItem key={k} value={k}>
-                                    {TEMPLATE_LABELS[k]}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Stakeholder</Label>
-                            <Select
-                              value={composeStakeholderId || '_none'}
-                              onValueChange={setComposeStakeholderId}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Choose recipient" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="_none">—</SelectItem>
-                                {stakeholders.map((s) => (
-                                  <SelectItem key={s.id} value={s.id}>
-                                    {s.display_name}
-                                    {s.delivery_method === 'email' ? ` (${s.email})` : ''}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Subject</Label>
-                          <Input
-                            value={composeSubject}
-                            onChange={(e) => setComposeSubject(e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Message</Label>
-                          <Textarea
-                            className="min-h-[200px] font-sans text-sm"
-                            value={composeBody}
-                            onChange={(e) => setComposeBody(e.target.value)}
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Filled from your tasks, schedule, budget, and risks — edit before sending.
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            onClick={() => void sendEmail()}
-                            disabled={
-                              !composeStakeholderId ||
-                              composeStakeholderId === '_none' ||
-                              stakeholders.find((x) => x.id === composeStakeholderId)?.delivery_method !==
-                                'email'
-                            }
-                          >
-                            <Mail className="h-4 w-4 mr-2" />
-                            Send email
-                          </Button>
-                          <Button variant="outline" onClick={() => void copyToClipboard()}>
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copy for group chat
-                          </Button>
-                          <Button variant="outline" onClick={downloadTxt}>
-                            <Download className="h-4 w-4 mr-2" />
-                            Export .txt
-                          </Button>
-                        </div>
-                        <div className="rounded-md border border-dashed p-3 space-y-2 opacity-60">
-                          <div className="flex items-center gap-2 text-sm font-medium">
-                            Text message
-                            <Badge variant="outline">Coming soon</Badge>
-                          </div>
-                          <Button size="sm" disabled variant="secondary">
-                            Send SMS
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                      </div>
-                    </ScrollArea>
-                  </TabsContent>
-
-                  <TabsContent
-                    value="schedule"
-                    className="absolute inset-0 mt-0 data-[state=active]:block data-[state=inactive]:hidden"
-                  >
-                    <ScrollArea className="h-full">
-                      <div className={`${tabBodyPad} space-y-4`}>
-                    {!plan?.enabled ? (
-                      <p className="text-sm text-muted-foreground">Enable the plan on Overview first.</p>
-                    ) : (
-                      <>
-                        <div className="flex flex-wrap gap-2 items-center justify-between">
-                          <p className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            Timeline from stakeholder frequencies (weekly / biweekly / monthly).
-                          </p>
-                          <Button size="sm" variant="secondary" onClick={() => void autoGenerateSchedule()}>
-                            Regenerate
-                          </Button>
-                        </div>
-                        {scheduleItems.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">
-                            No rows yet. Add people with a recurring frequency, then regenerate.
-                          </p>
-                        ) : (
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Person</TableHead>
-                                <TableHead>Template</TableHead>
-                                <TableHead>Cadence</TableHead>
-                                <TableHead>Next due</TableHead>
-                                <TableHead>Last sent</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {[...dueItems, ...upcomingItems].map((item) => (
-                                <TableRow key={item.id}>
-                                  <TableCell>{stakeholderName(item.stakeholder_id)}</TableCell>
-                                  <TableCell className="text-sm">
-                                    {TEMPLATE_LABELS[item.template_key as TemplateKey] ??
-                                      item.template_key}
-                                  </TableCell>
-                                  <TableCell className="capitalize text-sm">{item.cadence}</TableCell>
-                                  <TableCell className="text-sm">
-                                    {item.next_due_at
-                                      ? new Date(item.next_due_at).toLocaleString()
-                                      : '—'}
-                                    {item.next_due_at && new Date(item.next_due_at) <= now && (
-                                      <Badge className="ml-2" variant="destructive">
-                                        Due
-                                      </Badge>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="text-sm text-muted-foreground">
-                                    {item.last_sent_at
-                                      ? new Date(item.last_sent_at).toLocaleString()
-                                      : '—'}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        )}
-                      </>
-                    )}
-                      </div>
-                    </ScrollArea>
-                  </TabsContent>
-
-                  <TabsContent
-                    value="triggers"
-                    className="absolute inset-0 mt-0 data-[state=active]:block data-[state=inactive]:hidden"
-                  >
-                    <ScrollArea className="h-full">
-                      <div className={`${tabBodyPad} space-y-4`}>
-                    {!plan?.enabled ? (
-                      <p className="text-sm text-muted-foreground">Enable the plan on Overview first.</p>
-                    ) : (
-                      <>
-                        <p className="text-sm text-muted-foreground">
-                          Turn on triggers you care about. When something happens, open here and draft an
-                          update with one tap — automation can hook into these later.
-                        </p>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Trigger</TableHead>
-                              <TableHead className="w-[100px]">On</TableHead>
-                              <TableHead className="w-[140px]" />
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {TRIGGER_TYPES.map((tt) => {
-                              const row = triggers.find((t) => t.trigger_type === tt);
-                              if (!row) return null;
-                              return (
-                                <TableRow key={tt}>
-                                  <TableCell className="text-sm">{TRIGGER_LABELS[tt]}</TableCell>
-                                  <TableCell>
-                                    <Switch
-                                      checked={row.enabled}
-                                      onCheckedChange={(v) => void toggleTrigger(row, v)}
-                                      aria-label={`Enable ${tt}`}
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => draftForTrigger(tt)}
-                                    >
-                                      Draft update
+                                <Card className="border-border/70 bg-background">
+                                  <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-base">
+                                      <Sparkles className="h-4 w-4" />
+                                      Recommended setup
+                                    </CardTitle>
+                                    <CardDescription>
+                                      Uses your project&apos;s steps, schedule, budget, and risks — no guessing names.
+                                    </CardDescription>
+                                  </CardHeader>
+                                  <CardContent className="flex flex-wrap gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => setOpenSection('people')}>
+                                      Add people
                                     </Button>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      </>
-                    )}
-                      </div>
-                    </ScrollArea>
-                  </TabsContent>
+                                    <Button variant="outline" size="sm" onClick={() => void autoGenerateSchedule()}>
+                                      Build schedule from frequencies
+                                    </Button>
+                                    <Button variant="outline" size="sm" onClick={() => setOpenSection('compose')}>
+                                      Open composer
+                                    </Button>
+                                  </CardContent>
+                                </Card>
 
-                  <TabsContent
-                    value="sent"
-                    className="absolute inset-0 mt-0 data-[state=active]:block data-[state=inactive]:hidden"
-                  >
-                    <ScrollArea className="h-full">
-                      <div className={`${tabBodyPad} space-y-4`}>
-                    {!plan?.enabled ? (
-                      <p className="text-sm text-muted-foreground">Enable the plan to start logging.</p>
-                    ) : log.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        Sent emails and off-app copies you log from Compose appear here.
-                      </p>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>When</TableHead>
-                            <TableHead>Channel</TableHead>
-                            <TableHead>Subject</TableHead>
-                            <TableHead>Template</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {log.map((row) => (
-                            <TableRow key={row.id}>
-                              <TableCell className="text-sm whitespace-nowrap">
-                                {new Date(row.sent_at).toLocaleString()}
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                {row.channel === 'email' ? 'Email' : 'Copied (off-app)'}
-                              </TableCell>
-                              <TableCell className="text-sm max-w-[200px] truncate">{row.subject}</TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {TEMPLATE_LABELS[row.template_key as TemplateKey] ?? row.template_key}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
-                      </div>
-                    </ScrollArea>
-                  </TabsContent>
+                                {dueItems.length > 0 ? (
+                                  <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20">
+                                    <CardHeader>
+                                      <CardTitle className="text-base text-amber-900 dark:text-amber-100">
+                                        Updates due
+                                      </CardTitle>
+                                      <CardDescription>
+                                        {dueItems.length} scheduled reminder{dueItems.length === 1 ? '' : 's'} — send an update when you can.
+                                      </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2 text-sm">
+                                      {dueItems.map((item) => (
+                                        <div key={item.id} className="flex flex-col gap-0.5 rounded-lg border border-amber-200/70 bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+                                          <span className="font-medium">{stakeholderName(item.stakeholder_id)}</span>
+                                          <span className="text-muted-foreground">
+                                            {item.next_due_at ? new Date(item.next_due_at).toLocaleString() : ''}
+                                          </span>
+                                        </div>
+                                      ))}
+                                      <Button size="sm" className="mt-2" onClick={() => setOpenSection('compose')}>
+                                        Draft an update
+                                      </Button>
+                                    </CardContent>
+                                  </Card>
+                                ) : null}
+                              </>
+                            ) : null}
+                          </div>
+                        </CollapsibleContent>
+                      </CardContent>
+                    </Collapsible>
+                  </Card>
+
+                  <Card className="border-border/70 shadow-sm">
+                    <Collapsible
+                      open={openSection === 'people'}
+                      onOpenChange={(next) => setOpenSection(next ? 'people' : openSection === 'people' ? 'compose' : openSection)}
+                    >
+                      <CardContent className="space-y-4 p-4">
+                        <CollapsibleTrigger asChild>
+                          <button type="button" className="flex w-full items-center justify-between gap-3 text-left">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                                2
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-semibold">People</h3>
+                                <p className="text-xs text-muted-foreground">Who should hear from you, and how often.</p>
+                              </div>
+                            </div>
+                            {openSection === 'people' ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="space-y-4 pt-1" onPointerDownCapture={focusSection('people')}>
+                            {!plan?.enabled ? (
+                              <p className="text-sm text-muted-foreground">Turn on Communication Plan in Overview first.</p>
+                            ) : (
+                              <>
+                                <div className="flex justify-end">
+                                  <Button size="sm" onClick={openNewStakeholder}>
+                                    <Plus className="mr-1 h-4 w-4" />
+                                    Add person
+                                  </Button>
+                                </div>
+                                {stakeholders.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground">
+                                    Add spouse, co-owners, tenants, contractors, or neighbors who should hear from you.
+                                  </p>
+                                ) : (
+                                  <>
+                                    <div className="space-y-3 md:hidden">
+                                      {stakeholders.map((s) => (
+                                        <Card key={s.id} className="border-border/70 bg-background">
+                                          <CardContent className="space-y-3 p-4">
+                                            <div className="flex items-start justify-between gap-3">
+                                              <div className="min-w-0">
+                                                <div className="font-medium">{s.display_name}</div>
+                                                <div className="text-sm text-muted-foreground">
+                                                  {ROLE_PRESETS.find((r) => r.value === s.role_label)?.label ?? s.role_label}
+                                                </div>
+                                              </div>
+                                              <div className="flex gap-1">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditStakeholder(s)} aria-label="Edit">
+                                                  <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => void deleteStakeholder(s.id)} aria-label="Remove">
+                                                  <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                              </div>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2 text-xs">
+                                              <Badge variant="secondary">
+                                                {FREQUENCY_OPTIONS.find((f) => f.value === s.preferred_frequency)?.label ?? s.preferred_frequency}
+                                              </Badge>
+                                              <Badge variant="outline">
+                                                {s.delivery_method === 'email' ? 'Email' : 'Off-app copy'}
+                                              </Badge>
+                                            </div>
+                                            {s.email ? <p className="text-xs text-muted-foreground">{s.email}</p> : null}
+                                          </CardContent>
+                                        </Card>
+                                      ))}
+                                    </div>
+                                    <div className="hidden overflow-x-auto md:block">
+                                      <Table>
+                                        <TableHeader>
+                                          <TableRow>
+                                            <TableHead>Name</TableHead>
+                                            <TableHead>Role</TableHead>
+                                            <TableHead>Frequency</TableHead>
+                                            <TableHead>Channel</TableHead>
+                                            <TableHead className="w-[100px]" />
+                                          </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                          {stakeholders.map((s) => (
+                                            <TableRow key={s.id}>
+                                              <TableCell className="font-medium">{s.display_name}</TableCell>
+                                              <TableCell className="text-sm text-muted-foreground">
+                                                {ROLE_PRESETS.find((r) => r.value === s.role_label)?.label ?? s.role_label}
+                                              </TableCell>
+                                              <TableCell className="text-sm">
+                                                {FREQUENCY_OPTIONS.find((f) => f.value === s.preferred_frequency)?.label ?? s.preferred_frequency}
+                                              </TableCell>
+                                              <TableCell className="text-sm">
+                                                {s.delivery_method === 'email' ? (
+                                                  <span className="inline-flex items-center gap-1">
+                                                    <Mail className="h-3.5 w-3.5" />
+                                                    Email
+                                                  </span>
+                                                ) : (
+                                                  'Off-app (copy / paste)'
+                                                )}
+                                              </TableCell>
+                                              <TableCell>
+                                                <div className="flex gap-1">
+                                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditStakeholder(s)} aria-label="Edit">
+                                                    <Pencil className="h-4 w-4" />
+                                                  </Button>
+                                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => void deleteStakeholder(s.id)} aria-label="Remove">
+                                                    <Trash2 className="h-4 w-4" />
+                                                  </Button>
+                                                </div>
+                                              </TableCell>
+                                            </TableRow>
+                                          ))}
+                                        </TableBody>
+                                      </Table>
+                                    </div>
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </CollapsibleContent>
+                      </CardContent>
+                    </Collapsible>
+                  </Card>
+
+                  <Card className="border-border/70 shadow-sm">
+                    <Collapsible
+                      open={openSection === 'compose'}
+                      onOpenChange={(next) => setOpenSection(next ? 'compose' : openSection === 'compose' ? 'schedule' : openSection)}
+                    >
+                      <CardContent className="space-y-4 p-4">
+                        <CollapsibleTrigger asChild>
+                          <button type="button" className="flex w-full items-center justify-between gap-3 text-left">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                                3
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-semibold">Compose & send</h3>
+                                <p className="text-xs text-muted-foreground">Draft once, then email or copy anywhere.</p>
+                              </div>
+                            </div>
+                            {openSection === 'compose' ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="space-y-4 pt-1" onPointerDownCapture={focusSection('compose')}>
+                            {!plan?.enabled ? (
+                              <p className="text-sm text-muted-foreground">
+                                Enable Communication Plan in Overview to compose and log sends.
+                              </p>
+                            ) : (
+                              <>
+                                <div className="grid gap-4 lg:grid-cols-2">
+                                  <div className="space-y-2">
+                                    <Label>Template</Label>
+                                    <Select value={composeTemplate} onValueChange={(v) => setComposeTemplate(v as TemplateKey)}>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent className="max-h-72">
+                                        {TEMPLATE_KEYS.map((k) => (
+                                          <SelectItem key={k} value={k}>
+                                            {TEMPLATE_LABELS[k]}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Stakeholder</Label>
+                                    <Select value={composeStakeholderId || '_none'} onValueChange={setComposeStakeholderId}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Choose recipient" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="_none">—</SelectItem>
+                                        {stakeholders.map((s) => (
+                                          <SelectItem key={s.id} value={s.id}>
+                                            {s.display_name}
+                                            {s.delivery_method === 'email' ? ` (${s.email})` : ''}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Subject</Label>
+                                  <Input value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Message</Label>
+                                  <Textarea className="min-h-[220px] font-sans text-sm" value={composeBody} onChange={(e) => setComposeBody(e.target.value)} />
+                                  <p className="text-xs text-muted-foreground">
+                                    Filled from your tasks, schedule, budget, and risks — edit before sending.
+                                  </p>
+                                </div>
+                                <div className="grid gap-2 sm:grid-cols-3">
+                                  <Button
+                                    onClick={() => void sendEmail()}
+                                    disabled={
+                                      !composeStakeholderId ||
+                                      composeStakeholderId === '_none' ||
+                                      stakeholders.find((x) => x.id === composeStakeholderId)?.delivery_method !== 'email'
+                                    }
+                                  >
+                                    <Mail className="mr-2 h-4 w-4" />
+                                    Send email
+                                  </Button>
+                                  <Button variant="outline" onClick={() => void copyToClipboard()}>
+                                    <Copy className="mr-2 h-4 w-4" />
+                                    Copy for group chat
+                                  </Button>
+                                  <Button variant="outline" onClick={downloadTxt}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Export .txt
+                                  </Button>
+                                </div>
+                                <div className="rounded-md border border-dashed p-3 opacity-60">
+                                  <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                                    Text message
+                                    <Badge variant="outline">Coming soon</Badge>
+                                  </div>
+                                  <Button size="sm" disabled variant="secondary">
+                                    Send SMS
+                                  </Button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </CollapsibleContent>
+                      </CardContent>
+                    </Collapsible>
+                  </Card>
+
+                  <Card className="border-border/70 shadow-sm">
+                    <Collapsible
+                      open={openSection === 'schedule'}
+                      onOpenChange={(next) => setOpenSection(next ? 'schedule' : openSection === 'schedule' ? 'triggers' : openSection)}
+                    >
+                      <CardContent className="space-y-4 p-4">
+                        <CollapsibleTrigger asChild>
+                          <button type="button" className="flex w-full items-center justify-between gap-3 text-left">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                                4
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-semibold">Schedule</h3>
+                                <p className="text-xs text-muted-foreground">Auto-build reminders from stakeholder frequency.</p>
+                              </div>
+                            </div>
+                            {openSection === 'schedule' ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="space-y-4 pt-1" onPointerDownCapture={focusSection('schedule')}>
+                            {!plan?.enabled ? (
+                              <p className="text-sm text-muted-foreground">Enable the plan in Overview first.</p>
+                            ) : (
+                              <>
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Clock className="h-4 w-4" />
+                                    Timeline from stakeholder frequencies (weekly / biweekly / monthly).
+                                  </p>
+                                  <Button size="sm" variant="secondary" onClick={() => void autoGenerateSchedule()}>
+                                    Regenerate
+                                  </Button>
+                                </div>
+                                {scheduleItems.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground">
+                                    No rows yet. Add people with a recurring frequency, then regenerate.
+                                  </p>
+                                ) : (
+                                  <>
+                                    <div className="space-y-3 md:hidden">
+                                      {[...dueItems, ...upcomingItems].map((item) => (
+                                        <Card key={item.id} className="border-border/70 bg-background">
+                                          <CardContent className="space-y-2 p-4">
+                                            <div className="flex items-start justify-between gap-2">
+                                              <div className="font-medium">{stakeholderName(item.stakeholder_id)}</div>
+                                              {item.next_due_at && new Date(item.next_due_at) <= now ? (
+                                                <Badge variant="destructive">Due</Badge>
+                                              ) : null}
+                                            </div>
+                                            <div className="text-sm text-muted-foreground">
+                                              {TEMPLATE_LABELS[item.template_key as TemplateKey] ?? item.template_key}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">Cadence: {item.cadence}</div>
+                                            <div className="text-xs">Next due: {item.next_due_at ? new Date(item.next_due_at).toLocaleString() : '—'}</div>
+                                            <div className="text-xs text-muted-foreground">Last sent: {item.last_sent_at ? new Date(item.last_sent_at).toLocaleString() : '—'}</div>
+                                          </CardContent>
+                                        </Card>
+                                      ))}
+                                    </div>
+                                    <div className="hidden overflow-x-auto md:block">
+                                      <Table>
+                                        <TableHeader>
+                                          <TableRow>
+                                            <TableHead>Person</TableHead>
+                                            <TableHead>Template</TableHead>
+                                            <TableHead>Cadence</TableHead>
+                                            <TableHead>Next due</TableHead>
+                                            <TableHead>Last sent</TableHead>
+                                          </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                          {[...dueItems, ...upcomingItems].map((item) => (
+                                            <TableRow key={item.id}>
+                                              <TableCell>{stakeholderName(item.stakeholder_id)}</TableCell>
+                                              <TableCell className="text-sm">{TEMPLATE_LABELS[item.template_key as TemplateKey] ?? item.template_key}</TableCell>
+                                              <TableCell className="text-sm capitalize">{item.cadence}</TableCell>
+                                              <TableCell className="text-sm">
+                                                {item.next_due_at ? new Date(item.next_due_at).toLocaleString() : '—'}
+                                                {item.next_due_at && new Date(item.next_due_at) <= now ? <Badge className="ml-2" variant="destructive">Due</Badge> : null}
+                                              </TableCell>
+                                              <TableCell className="text-sm text-muted-foreground">
+                                                {item.last_sent_at ? new Date(item.last_sent_at).toLocaleString() : '—'}
+                                              </TableCell>
+                                            </TableRow>
+                                          ))}
+                                        </TableBody>
+                                      </Table>
+                                    </div>
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </CollapsibleContent>
+                      </CardContent>
+                    </Collapsible>
+                  </Card>
+
+                  <Card className="border-border/70 shadow-sm">
+                    <Collapsible
+                      open={openSection === 'triggers'}
+                      onOpenChange={(next) => setOpenSection(next ? 'triggers' : openSection === 'triggers' ? 'sent' : openSection)}
+                    >
+                      <CardContent className="space-y-4 p-4">
+                        <CollapsibleTrigger asChild>
+                          <button type="button" className="flex w-full items-center justify-between gap-3 text-left">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                                5
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-semibold">Triggers</h3>
+                                <p className="text-xs text-muted-foreground">Pick the project moments you want to communicate.</p>
+                              </div>
+                            </div>
+                            {openSection === 'triggers' ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="space-y-4 pt-1" onPointerDownCapture={focusSection('triggers')}>
+                            {!plan?.enabled ? (
+                              <p className="text-sm text-muted-foreground">Enable the plan in Overview first.</p>
+                            ) : (
+                              <>
+                                <p className="text-sm text-muted-foreground">
+                                  Turn on triggers you care about. When something happens, open here and draft an update with one tap.
+                                </p>
+                                <div className="space-y-3">
+                                  {TRIGGER_TYPES.map((tt) => {
+                                    const row = triggers.find((t) => t.trigger_type === tt);
+                                    if (!row) return null;
+                                    return (
+                                      <Card key={tt} className="border-border/70 bg-background">
+                                        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                          <div className="min-w-0 flex-1">
+                                            <div className="font-medium">{TRIGGER_LABELS[tt]}</div>
+                                            <p className="mt-1 text-xs text-muted-foreground">
+                                              Open a draft quickly when this happens in the project.
+                                            </p>
+                                          </div>
+                                          <div className="flex items-center gap-3">
+                                            <Switch checked={row.enabled} onCheckedChange={(v) => void toggleTrigger(row, v)} aria-label={`Enable ${tt}`} />
+                                            <Button variant="outline" size="sm" onClick={() => draftForTrigger(tt)}>
+                                              Draft update
+                                            </Button>
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    );
+                                  })}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </CollapsibleContent>
+                      </CardContent>
+                    </Collapsible>
+                  </Card>
+
+                  <Card className="border-border/70 shadow-sm">
+                    <Collapsible
+                      open={openSection === 'sent'}
+                      onOpenChange={(next) => setOpenSection(next ? 'sent' : openSection === 'sent' ? 'overview' : openSection)}
+                    >
+                      <CardContent className="space-y-4 p-4">
+                        <CollapsibleTrigger asChild>
+                          <button type="button" className="flex w-full items-center justify-between gap-3 text-left">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                                6
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-semibold">Sent & copied</h3>
+                                <p className="text-xs text-muted-foreground">Review recent outbound history for this run.</p>
+                              </div>
+                            </div>
+                            {openSection === 'sent' ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="space-y-4 pt-1" onPointerDownCapture={focusSection('sent')}>
+                            {!plan?.enabled ? (
+                              <p className="text-sm text-muted-foreground">Enable the plan to start logging.</p>
+                            ) : log.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">
+                                Sent emails and off-app copies you log from Compose appear here.
+                              </p>
+                            ) : (
+                              <>
+                                <div className="space-y-3 md:hidden">
+                                  {log.map((row) => (
+                                    <Card key={row.id} className="border-border/70 bg-background">
+                                      <CardContent className="space-y-2 p-4">
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="min-w-0 flex-1 font-medium">{row.subject}</div>
+                                          <Badge variant="outline">{row.channel === 'email' ? 'Email' : 'Copied'}</Badge>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {TEMPLATE_LABELS[row.template_key as TemplateKey] ?? row.template_key}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">{new Date(row.sent_at).toLocaleString()}</div>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                                <div className="hidden overflow-x-auto md:block">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>When</TableHead>
+                                        <TableHead>Channel</TableHead>
+                                        <TableHead>Subject</TableHead>
+                                        <TableHead>Template</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {log.map((row) => (
+                                        <TableRow key={row.id}>
+                                          <TableCell className="whitespace-nowrap text-sm">{new Date(row.sent_at).toLocaleString()}</TableCell>
+                                          <TableCell className="text-sm">{row.channel === 'email' ? 'Email' : 'Copied (off-app)'}</TableCell>
+                                          <TableCell className="max-w-[200px] truncate text-sm">{row.subject}</TableCell>
+                                          <TableCell className="text-sm text-muted-foreground">
+                                            {TEMPLATE_LABELS[row.template_key as TemplateKey] ?? row.template_key}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </CollapsibleContent>
+                      </CardContent>
+                    </Collapsible>
+                  </Card>
                 </div>
-              </Tabs>
+              </ScrollArea>
             )}
           </div>
         </DialogPrimitive.Content>

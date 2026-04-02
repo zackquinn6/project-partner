@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Circle, Clock, Menu, Eye, EyeOff, HelpCircle, Calendar as CalendarIcon, BookOpen } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Circle, Clock, Menu, Eye, EyeOff, HelpCircle, Calendar as CalendarIcon, BookOpen, Settings2, Sparkles, DollarSign, ClipboardCheck, ShoppingCart, MessageCircle, Crosshair } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -62,7 +62,7 @@ export function MobileWorkflowView({
   const [showMaterials, setShowMaterials] = useState(true);
   const [showTools, setShowTools] = useState(true);
   const [isStepListOpen, setIsStepListOpen] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['materials', 'tools']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['options', 'materials', 'tools', 'project-tools']));
   const stepRef = useRef<HTMLDivElement>(null);
 
   // Fetch instructions based on level
@@ -105,6 +105,22 @@ export function MobileWorkflowView({
     setExpandedSections(newExpanded);
   };
 
+  const stepApps = (() => {
+    let apps = currentStep?.apps || [];
+    if (typeof apps === 'string') {
+      try {
+        apps = JSON.parse(apps);
+      } catch {
+        apps = [];
+      }
+    }
+    return Array.isArray(apps) ? apps.filter((app: any) => app && (app.appName || app.id)) : [];
+  })();
+
+  const launchActionKey = (actionKey: string) => {
+    window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey } }));
+  };
+
   if (!currentStep) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -117,7 +133,7 @@ export function MobileWorkflowView({
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div className="flex-shrink-0 bg-card/95 backdrop-blur-sm border-b border-border sticky top-0 z-40">
-        <div className="flex items-center justify-between p-2 sm:p-3 md:p-4 gap-2">
+        <div className="flex items-center justify-between gap-2 px-2 py-2 sm:px-3 sm:py-3">
           <Button
             variant="ghost"
             size="sm"
@@ -127,32 +143,13 @@ export function MobileWorkflowView({
             <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
           
-          <div className="flex-1 flex flex-col items-center justify-center min-w-0 px-1 sm:px-2">
-            <div className="flex items-center gap-1.5 sm:gap-2 w-full justify-center">
-              <h1 className="font-semibold text-sm sm:text-base text-card-foreground truncate text-center max-w-[140px] sm:max-w-none">
+          <div className="min-w-0 flex-1 px-1">
+            <div className="flex items-center justify-center">
+              <h1 className="max-w-[11rem] truncate text-center text-sm font-semibold text-card-foreground sm:max-w-none sm:text-base">
                 {projectName}
               </h1>
-              <div className="flex items-center gap-1 sm:gap-2">
-                {onInstructionLevelChange && (
-                  <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
-                    <SelectTrigger className="h-7 sm:h-8 text-[10px] sm:text-xs w-[70px] sm:w-[90px] flex-shrink-0">
-                      <SelectValue>
-                        {instructionLevel === 'beginner' && 'Beginner'}
-                        {instructionLevel === 'intermediate' && 'Intermediate'}
-                        {instructionLevel === 'advanced' && 'Advanced'}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="beginner" className="text-xs">Beginner: Extra guidance</SelectItem>
-                      <SelectItem value="intermediate" className="text-xs">Intermediate: Short step-by-step</SelectItem>
-                      <SelectItem value="advanced" className="text-xs">Advanced: Key points only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-                <WorkflowThemeSelector />
-              </div>
             </div>
-            <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-0.5">
+            <p className="mt-0.5 text-center text-[10px] text-muted-foreground sm:text-xs">
               Step {currentStepIndex + 1} of {totalSteps}
             </p>
           </div>
@@ -178,8 +175,8 @@ export function MobileWorkflowView({
         </div>
         
         {/* Progress Bar */}
-        <div className="px-2 sm:px-3 md:px-4 pb-2 sm:pb-3 md:pb-4">
-          <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground mb-1 sm:mb-2">
+        <div className="px-2 pb-2 sm:px-3 sm:pb-3">
+          <div className="mb-1 flex items-center justify-between text-[10px] text-muted-foreground sm:text-xs">
             <span>Progress</span>
             <span>{Math.round(progress)}%</span>
           </div>
@@ -345,6 +342,132 @@ export function MobileWorkflowView({
                 </div>
             </CardContent>
           </Card>
+
+          <Collapsible
+            open={expandedSections.has('options')}
+            onOpenChange={() => toggleSection('options')}
+          >
+            <Card className="gradient-card">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer p-3 pb-2 transition-fast hover:bg-muted/5 sm:p-4 sm:pb-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Settings2 className="h-4 w-4 text-muted-foreground" />
+                      <CardTitle className="text-sm sm:text-base">View options</CardTitle>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[10px] sm:text-xs">
+                        {instructionLevel}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4 pt-0 p-3 sm:p-4">
+                  {onInstructionLevelChange && (
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium">Instruction detail</Label>
+                      <Select value={instructionLevel} onValueChange={onInstructionLevelChange}>
+                        <SelectTrigger className="h-9 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="beginner" className="text-xs">Beginner: Extra guidance</SelectItem>
+                          <SelectItem value="intermediate" className="text-xs">Intermediate: Short step-by-step</SelectItem>
+                          <SelectItem value="advanced" className="text-xs">Advanced: Key points only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">Theme</Label>
+                    <div className="flex items-center justify-start rounded-lg border bg-background/60 p-2">
+                      <WorkflowThemeSelector />
+                    </div>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          <Collapsible
+            open={expandedSections.has('project-tools')}
+            onOpenChange={() => toggleSection('project-tools')}
+          >
+            <Card className="gradient-card">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer p-3 pb-2 transition-fast hover:bg-muted/5 sm:p-4 sm:pb-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-sm sm:text-base">Project tools</CardTitle>
+                    </div>
+                    <Badge variant="secondary" className="text-[10px] sm:text-xs">Mobile</Badge>
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-3 pt-0 p-3 sm:p-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => window.dispatchEvent(new CustomEvent('openProjectScheduler'))}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      Scheduler
+                    </Button>
+                    <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => launchActionKey('shopping-checklist')}>
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      Shopping
+                    </Button>
+                    <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => launchActionKey('risk-management')}>
+                      <Crosshair className="mr-2 h-4 w-4" />
+                      Risk-Less
+                    </Button>
+                    <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => launchActionKey('quality-check')}>
+                      <ClipboardCheck className="mr-2 h-4 w-4" />
+                      Quality
+                    </Button>
+                    <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => launchActionKey('project-budgeting')}>
+                      <DollarSign className="mr-2 h-4 w-4" />
+                      Budget
+                    </Button>
+                    <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => launchActionKey('communication-plan')}>
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      Comms
+                    </Button>
+                  </div>
+                  {stepApps.length > 0 && (
+                    <div className="space-y-2 border-t pt-3">
+                      <Label className="text-xs font-medium">Apps for this step</Label>
+                      <div className="grid grid-cols-1 gap-2">
+                        {stepApps.map((app: any, index: number) => {
+                          const actionKey = typeof app.actionKey === 'string' && app.actionKey.trim() !== ''
+                            ? app.actionKey
+                            : typeof app.id === 'string'
+                              ? app.id.replace(/^app-/, '')
+                              : '';
+                          return (
+                            <Button
+                              key={`${app.id || app.appName}-${index}`}
+                              variant="secondary"
+                              size="sm"
+                              className="justify-start text-xs"
+                              onClick={() => {
+                                if (actionKey) launchActionKey(actionKey);
+                              }}
+                              disabled={!actionKey}
+                            >
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              {app.appName || actionKey || 'Open app'}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
           {/* Materials - Hide for ordering steps */}
           {currentStep.materials && currentStep.materials.length > 0 && 

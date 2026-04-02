@@ -225,8 +225,8 @@ function RiskFocusDashboard({
   const name = projectDisplayName?.trim() || null;
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 py-2 md:px-4">
-      <div className="mb-3 rounded-xl border border-amber-300/70 bg-amber-100 px-4 py-3 text-center shadow-sm">
-        <div className="text-base font-bold leading-tight text-amber-950 md:text-lg">
+      <div className="mb-3 rounded-xl border border-slate-700/80 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 px-4 py-3 text-center shadow-sm">
+        <div className="text-base font-bold leading-tight text-blue-50 md:text-lg">
           Do What You Can - Every Step Reduces Risk
         </div>
       </div>
@@ -1075,9 +1075,9 @@ export function RiskManagementWindow({
                 showRiskFocusHiddenToggle ||
                 risks.length > 0) ? (
                 <>
-                  {/* Risk-Less mobile: progress (narrow) | sort menu (center) | hidden + add */}
-                  <div className="flex w-full shrink-0 items-center gap-2 md:hidden">
-                    <div className="shrink-0">
+                  {/* Risk-Less mobile: compact stacked controls */}
+                  <div className="flex w-full shrink-0 flex-col gap-2 md:hidden">
+                    <div className="flex w-full items-start gap-2">
                       {showRiskFocusProgressRow && riskFocusRunForProgress ? (
                         progressEditable ? (
                           <Select
@@ -1095,7 +1095,7 @@ export function RiskManagementWindow({
                             }}
                           >
                             <SelectTrigger
-                              className="h-7 w-[120px] max-w-[120px] shrink-0 text-xs"
+                              className="h-8 w-[92px] min-w-[92px] shrink-0 px-2 text-xs"
                               aria-label="Project progress"
                             >
                               <SelectValue />
@@ -1135,12 +1135,12 @@ export function RiskManagementWindow({
                           </Select>
                         ) : (
                           <div
-                            className="flex w-[min(100%,9rem)] flex-col gap-0.5"
+                            className="flex min-w-0 flex-1 flex-col gap-1 rounded-lg border bg-background px-2.5 py-2"
                             role="status"
                             aria-label={`Project progress ${riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%`}
                           >
-                            <div className="flex items-center justify-between gap-1 text-[10px] text-muted-foreground">
-                              <span>Project Progress</span>
+                            <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                              <span className="uppercase tracking-wide">Progress</span>
                               <span className="tabular-nums font-medium text-foreground">
                                 {riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%
                               </span>
@@ -1152,80 +1152,76 @@ export function RiskManagementWindow({
                           </div>
                         )
                       ) : null}
+                      <div className="flex min-w-0 flex-1 justify-end">
+                        {risks.length > 0 ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 gap-1 px-2 text-xs"
+                                aria-label="Sort risks"
+                              >
+                                {riskListSort === 'alpha' ? (
+                                  <ArrowDownAZ className="h-3.5 w-3.5 shrink-0" />
+                                ) : (
+                                  <ArrowDownWideNarrow className="h-3.5 w-3.5 shrink-0" />
+                                )}
+                                <span className="max-w-[4.75rem] truncate">
+                                  {riskListSort === 'alpha' ? 'A-Z' : 'Risk'}
+                                </span>
+                                <ChevronDown className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="z-[250]">
+                              <DropdownMenuItem onClick={() => setRiskListSort('alpha')}>
+                                <ArrowDownAZ className="mr-2 h-4 w-4" />
+                                A-Z
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setRiskListSort('severity-desc')}>
+                                <ArrowDownWideNarrow className="mr-2 h-4 w-4" />
+                                Risk level
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : null}
+                      </div>
                     </div>
-                    <div className="flex min-w-0 flex-1 justify-center px-1">
-                      {risks.length > 0 ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-7 gap-1 px-2 text-xs"
-                              aria-label="Sort risks"
-                            >
-                              {riskListSort === 'alpha' ? (
-                                <ArrowDownAZ className="h-3.5 w-3.5 shrink-0" />
-                              ) : (
-                                <ArrowDownWideNarrow className="h-3.5 w-3.5 shrink-0" />
-                              )}
-                              <span className="max-w-[5.5rem] truncate">
-                                {riskListSort === 'alpha' ? 'A–Z' : 'Risk level'}
-                              </span>
-                              <ChevronDown className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="center" className="z-[250]">
-                            <DropdownMenuItem onClick={() => setRiskListSort('alpha')}>
-                              <ArrowDownAZ className="mr-2 h-4 w-4" />
-                              A–Z
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setRiskListSort('severity-desc')}>
-                              <ArrowDownWideNarrow className="mr-2 h-4 w-4" />
-                              Risk level
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : null}
-                    </div>
-                    <div className="flex shrink-0 flex-col items-start gap-1.5">
+                    <div className="flex w-full flex-wrap items-center gap-2">
                       {showRiskFocusHiddenToggle ? (
-                        <div className="flex items-center gap-1.5">
-                          <Checkbox
-                            id="show-hidden-risks-riskless-mobile"
-                            className="mt-0.5 h-3 w-3 shrink-0 rounded-sm border-[1.5px] [&_svg]:h-2.5 [&_svg]:w-2.5"
-                            checked={showHiddenRisks}
-                            onCheckedChange={(c) => setShowHiddenRisks(c === true)}
-                          />
-                          <Label
-                            htmlFor="show-hidden-risks-riskless-mobile"
-                            className="cursor-pointer text-[10px] font-normal leading-tight"
-                          >
-                            Show hidden risks
-                          </Label>
-                        </div>
+                        <Button
+                          type="button"
+                          variant={showHiddenRisks ? 'default' : 'outline'}
+                          size="sm"
+                          className="h-8 gap-1.5 px-2 text-xs"
+                          onClick={() => setShowHiddenRisks((prev) => !prev)}
+                        >
+                          {showHiddenRisks ? (
+                            <Eye className="h-3.5 w-3.5 shrink-0" />
+                          ) : (
+                            <EyeOff className="h-3.5 w-3.5 shrink-0" />
+                          )}
+                          Hidden
+                        </Button>
                       ) : null}
                       {riskFocusRun ? (
-                        <div className="flex items-center gap-1.5">
-                          <Checkbox
-                            id="hide-standard-risks-riskless-mobile"
-                            className="mt-0.5 h-3 w-3 shrink-0 rounded-sm border-[1.5px] [&_svg]:h-2.5 [&_svg]:w-2.5"
-                            checked={hideStandardRisks}
-                            onCheckedChange={(c) => setHideStandardRisks(c === true)}
-                          />
-                          <Label
-                            htmlFor="hide-standard-risks-riskless-mobile"
-                            className="cursor-pointer text-[10px] font-normal leading-tight"
-                          >
-                            Hide standard risks
-                          </Label>
-                        </div>
+                        <Button
+                          type="button"
+                          variant={hideStandardRisks ? 'default' : 'outline'}
+                          size="sm"
+                          className="h-8 gap-1.5 px-2 text-xs"
+                          onClick={() => setHideStandardRisks((prev) => !prev)}
+                        >
+                          <Shield className="h-3.5 w-3.5 shrink-0" />
+                          Standard
+                        </Button>
                       ) : null}
                       {showAddRiskRow ? (
                         <Button
                           variant="default"
-                          size="icon"
-                          className="h-7 w-7 shrink-0"
+                          size="sm"
+                          className="ml-auto h-8 gap-1.5 px-2 text-xs"
                           aria-label="Add risk"
                           onClick={() => {
                             setEditingRisk(null);
@@ -1244,6 +1240,7 @@ export function RiskManagementWindow({
                           }}
                         >
                           <Plus className="h-4 w-4" />
+                          Add
                         </Button>
                       ) : null}
                     </div>
