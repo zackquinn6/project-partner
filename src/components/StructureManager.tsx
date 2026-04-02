@@ -576,24 +576,89 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       // Combine both and convert to Phase format
       const allPhasesData = [...(standardPhasesData || []), ...(customPhasesData || [])];
       
-      // Get source project names for incorporated phases
+      // Resolve each incorporated source project to the latest published revision in its family.
       const sourceProjectIds = new Set(
         (customPhasesData || [])
           .filter((p: any) => p.source_project_id)
           .map((p: any) => p.source_project_id)
       );
       
-      const sourceProjectsMap = new Map<string, string>();
+      const sourceProjectsMap = new Map<string, { id: string; name: string }>();
       if (sourceProjectIds.size > 0) {
-        const { data: sourceProjects } = await supabase
+        const { data: sourceProjects, error: sourceProjectsError } = await supabase
           .from('projects')
-          .select('id, name')
+          .select('id, name, parent_project_id, revision_number, updated_at')
           .in('id', Array.from(sourceProjectIds));
-        
-        if (sourceProjects) {
-          sourceProjects.forEach((p: any) => {
-            sourceProjectsMap.set(p.id, p.name);
+
+        if (sourceProjectsError) {
+          throw new Error(`Failed to load incorporated source projects: ${sourceProjectsError.message}`);
+        }
+
+        const familyIds = Array.from(new Set(
+          (sourceProjects || []).map((project: any) => project.parent_project_id || project.id)
+        ));
+
+        const [familyRootResult, familyRevisionResult] = await Promise.all([
+          supabase
+            .from('projects')
+            .select('id, name, parent_project_id, revision_number, updated_at')
+            .in('id', familyIds)
+            .eq('publish_status', 'published'),
+          supabase
+            .from('projects')
+            .select('id, name, parent_project_id, revision_number, updated_at')
+            .in('parent_project_id', familyIds)
+            .eq('publish_status', 'published')
+        ]);
+
+        if (familyRootResult.error) {
+          throw new Error(`Failed to load incorporated project families: ${familyRootResult.error.message}`);
+        }
+
+        if (familyRevisionResult.error) {
+          throw new Error(`Failed to load incorporated project revisions: ${familyRevisionResult.error.message}`);
+        }
+
+        const latestByFamily = new Map<string, any>();
+        [...(familyRootResult.data || []), ...(familyRevisionResult.data || [])].forEach((project: any) => {
+          const familyId = project.parent_project_id || project.id;
+          const existing = latestByFamily.get(familyId);
+
+          if (!existing) {
+            latestByFamily.set(familyId, project);
+            return;
+          }
+
+          const projectRevision = project.revision_number ?? 0;
+          const existingRevision = existing.revision_number ?? 0;
+          const projectUpdatedAt = new Date(project.updated_at).getTime();
+          const existingUpdatedAt = new Date(existing.updated_at).getTime();
+
+          if (
+            projectRevision > existingRevision ||
+            (projectRevision === existingRevision && projectUpdatedAt > existingUpdatedAt)
+          ) {
+            latestByFamily.set(familyId, project);
+          }
+        });
+
+        (sourceProjects || []).forEach((project: any) => {
+          const familyId = project.parent_project_id || project.id;
+          const latestProject = latestByFamily.get(familyId);
+          if (!latestProject) {
+            throw new Error(`Could not resolve latest incorporated project for source ${project.id}`);
+          }
+
+          sourceProjectsMap.set(project.id, {
+            id: latestProject.id,
+            name: latestProject.name
           });
+        });
+      }
+
+      for (const phaseData of customPhasesData || []) {
+        if (phaseData.source_project_id && !sourceProjectsMap.has(phaseData.source_project_id)) {
+          throw new Error(`Missing incorporated source project mapping for ${phaseData.source_project_id}`);
         }
       }
       
@@ -678,17 +743,22 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             return aOrder - bOrder;
           });
         } else if (isIncorporated) {
+          const sourceProject = sourceProjectsMap.get(phaseData.source_project_id);
+          if (!sourceProject) {
+            throw new Error(`Could not resolve incorporated source project for phase "${phaseData.name}"`);
+          }
+
           // For incorporated phases: dynamically fetch operations/steps from source project
           // First, find the source phase by matching name in the source project
           const { data: sourcePhase } = await supabase
             .from('project_phases')
             .select('id')
-            .eq('project_id', phaseData.source_project_id)
+            .eq('project_id', sourceProject.id)
             .eq('name', phaseData.name)
             .single();
           
           if (!sourcePhase?.id) {
-            console.warn(`⚠️ Source phase not found for incorporated phase "${phaseData.name}" in project ${phaseData.source_project_id}`);
+            console.warn(`⚠️ Source phase not found for incorporated phase "${phaseData.name}" in project ${sourceProject.id}`);
             // Fall back to using the phase's own ID
           const { data: operations } = await supabase
               .from('phase_operations')
@@ -898,7 +968,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           isStandard: phaseData.is_standard,
           isLinked: isIncorporated, // Mark as linked if incorporated
           sourceProjectId: phaseData.source_project_id || undefined,
-          sourceProjectName: isIncorporated ? (sourceProjectsMap.get(phaseData.source_project_id) || 'Unknown Project') : undefined,
+          sourceProjectName: isIncorporated ? sourceProjectsMap.get(phaseData.source_project_id)?.name : undefined,
           phaseOrderNumber,
           position_rule: phaseData.position_rule,
           position_value: phaseData.position_value,

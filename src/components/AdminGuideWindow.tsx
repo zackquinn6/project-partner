@@ -48,7 +48,7 @@ const adminFunctions = [
     workflows: [
       'Creating new project templates from scratch',
       'Importing existing project data and converting to templates',
-      'Managing template revisions and approval workflows',
+      'Managing template revisions and incorporated phase updates',
       'Publishing templates to user catalog',
       'Archiving outdated or problematic templates'
     ],

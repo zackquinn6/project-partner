@@ -22,9 +22,11 @@ interface PhaseIncorporationDialogProps {
 interface PublishedProject {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   phases: any; // Will be parsed as Phase[] after fetching
   revision_number: number;
+  parent_project_id: string | null;
+  updated_at: string;
   category?: string[];
   is_standard?: boolean | null;
 }
@@ -67,17 +69,44 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
     try {
       const { data, error } = await supabase
         .from('projects')
-        .select('id, name, description, phases, revision_number, category, is_standard')
+        .select('id, name, description, phases, revision_number, parent_project_id, updated_at, category, is_standard')
         .eq('publish_status', 'published')
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
 
-      // Rebuild phases for each project to ensure we have correct phase names
-      // This uses the rebuild_phases_json_from_project_phases function to get fresh data
-      const processedProjects = await Promise.all((data || [])
-        .filter(project => project.name.toLowerCase() !== 'manual project template')
-        .filter(project => project.is_standard !== true)
+      const latestPublishedProjects = Array.from(
+        (data || [])
+          .filter(project => project.name.toLowerCase() !== 'manual project template')
+          .filter(project => project.is_standard !== true)
+          .reduce((map, project) => {
+            const familyId = project.parent_project_id ?? project.id;
+            const existing = map.get(familyId);
+
+            if (!existing) {
+              map.set(familyId, project);
+              return map;
+            }
+
+            const currentRevision = project.revision_number ?? 0;
+            const existingRevision = existing.revision_number ?? 0;
+            const currentUpdatedAt = new Date(project.updated_at).getTime();
+            const existingUpdatedAt = new Date(existing.updated_at).getTime();
+
+            if (
+              currentRevision > existingRevision ||
+              (currentRevision === existingRevision && currentUpdatedAt > existingUpdatedAt)
+            ) {
+              map.set(familyId, project);
+            }
+
+            return map;
+          }, new Map<string, PublishedProject>())
+          .values()
+      );
+
+      // Rebuild phases for each latest project to ensure we have correct phase names
+      const processedProjects = await Promise.all(latestPublishedProjects
         .map(async (project) => {
           let phases: Phase[] = [];
           try {

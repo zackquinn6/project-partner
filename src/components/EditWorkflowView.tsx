@@ -317,6 +317,85 @@ export default function EditWorkflowView({
       if (standardError) {
         throw new Error(`Failed to load standard phases: ${standardError.message}`);
       }
+
+      const sourceProjectIds = Array.from(new Set(
+        (customPhasesData || [])
+          .filter((phase: any) => phase.source_project_id)
+          .map((phase: any) => phase.source_project_id)
+      ));
+
+      const sourceProjectsMap = new Map<string, { id: string; name: string }>();
+      if (sourceProjectIds.length > 0) {
+        const { data: sourceProjects, error: sourceProjectsError } = await supabase
+          .from('projects')
+          .select('id, name, parent_project_id, revision_number, updated_at')
+          .in('id', sourceProjectIds);
+
+        if (sourceProjectsError) {
+          throw new Error(`Failed to load incorporated source projects: ${sourceProjectsError.message}`);
+        }
+
+        const familyIds = Array.from(new Set(
+          (sourceProjects || []).map((project: any) => project.parent_project_id || project.id)
+        ));
+
+        const [familyRootResult, familyRevisionResult] = await Promise.all([
+          supabase
+            .from('projects')
+            .select('id, name, parent_project_id, revision_number, updated_at')
+            .in('id', familyIds)
+            .eq('publish_status', 'published'),
+          supabase
+            .from('projects')
+            .select('id, name, parent_project_id, revision_number, updated_at')
+            .in('parent_project_id', familyIds)
+            .eq('publish_status', 'published')
+        ]);
+
+        if (familyRootResult.error) {
+          throw new Error(`Failed to load incorporated project families: ${familyRootResult.error.message}`);
+        }
+
+        if (familyRevisionResult.error) {
+          throw new Error(`Failed to load incorporated project revisions: ${familyRevisionResult.error.message}`);
+        }
+
+        const latestByFamily = new Map<string, any>();
+        [...(familyRootResult.data || []), ...(familyRevisionResult.data || [])].forEach((project: any) => {
+          const familyId = project.parent_project_id || project.id;
+          const existing = latestByFamily.get(familyId);
+
+          if (!existing) {
+            latestByFamily.set(familyId, project);
+            return;
+          }
+
+          const projectRevision = project.revision_number ?? 0;
+          const existingRevision = existing.revision_number ?? 0;
+          const projectUpdatedAt = new Date(project.updated_at).getTime();
+          const existingUpdatedAt = new Date(existing.updated_at).getTime();
+
+          if (
+            projectRevision > existingRevision ||
+            (projectRevision === existingRevision && projectUpdatedAt > existingUpdatedAt)
+          ) {
+            latestByFamily.set(familyId, project);
+          }
+        });
+
+        (sourceProjects || []).forEach((project: any) => {
+          const familyId = project.parent_project_id || project.id;
+          const latestProject = latestByFamily.get(familyId);
+          if (!latestProject) {
+            throw new Error(`Could not resolve latest incorporated project for source ${project.id}`);
+          }
+
+          sourceProjectsMap.set(project.id, {
+            id: latestProject.id,
+            name: latestProject.name
+          });
+        });
+      }
       
       // Process custom phases (including incorporated)
       const customPhases: Phase[] = await Promise.all((customPhasesData || []).map(async (phaseData: any) => {
@@ -325,8 +404,23 @@ export default function EditWorkflowView({
         let sourceProjectName: string | undefined;
         
         if (isLinked) {
-          // For incorporated phases, fetch operations and steps from the phase itself
-          const { data: sourceOperations } = await supabase
+          const sourceProject = sourceProjectsMap.get(phaseData.source_project_id);
+          if (!sourceProject) {
+            throw new Error(`Could not resolve incorporated source project for phase "${phaseData.name}"`);
+          }
+
+          const { data: sourcePhase, error: sourcePhaseError } = await supabase
+            .from('project_phases')
+            .select('id')
+            .eq('project_id', sourceProject.id)
+            .eq('name', phaseData.name)
+            .single();
+
+          if (sourcePhaseError) {
+            throw new Error(`Failed to resolve incorporated phase "${phaseData.name}": ${sourcePhaseError.message}`);
+          }
+
+          const { data: sourceOperations, error: sourceOperationsError } = await supabase
             .from('phase_operations')
             .select(`
               id,
@@ -336,8 +430,12 @@ export default function EditWorkflowView({
               display_order,
               estimated_time
             `)
-            .eq('phase_id', phaseData.id)  // Use the phase's own ID, not source_phase_id
+            .eq('phase_id', sourcePhase.id)
             .order('display_order');
+
+          if (sourceOperationsError) {
+            throw new Error(`Failed to load incorporated operations for "${phaseData.name}": ${sourceOperationsError.message}`);
+          }
           
           operationsWithSteps = await Promise.all((sourceOperations || []).map(async (op: any) => {
             const { data: steps, error: stepsError } = await supabase
@@ -478,14 +576,7 @@ export default function EditWorkflowView({
             };
           }));
           
-          // Get source project name
-          const { data: sourceProject } = await supabase
-            .from('projects')
-            .select('name')
-            .eq('id', phaseData.source_project_id)
-            .single();
-          
-          sourceProjectName = sourceProject?.name;
+          sourceProjectName = sourceProject.name;
         } else {
           // For regular custom phases, fetch operations and steps normally
           const { data: operations } = await supabase

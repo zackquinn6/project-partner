@@ -183,7 +183,7 @@ export const AdminView: React.FC = () => {
               </div>
                <CardTitle>Action Center</CardTitle>
                <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                 Review pending actions and phase revision updates
+                 Review user feedback that still needs admin attention
                </CardDescription>
             </CardHeader>
             <CardContent className="mt-auto">
