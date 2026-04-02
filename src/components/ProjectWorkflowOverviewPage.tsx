@@ -65,7 +65,7 @@ export function ProjectWorkflowOverviewPage({
       <Accordion type="single" collapsible>
         <AccordionItem value="project-details">
           <AccordionTrigger className="text-sm sm:text-base">
-            See project details
+            More Project Details
           </AccordionTrigger>
           <AccordionContent>
             <ProjectOverviewStep

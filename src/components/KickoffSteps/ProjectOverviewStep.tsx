@@ -664,21 +664,25 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     return normalizedScalingUnit.startsWith('per ') ? normalizedScalingUnit.replace('per ', '') : normalizedScalingUnit;
   })() : null;
 
+  /** Sits directly under the “More project details” accordion header, above the Description row. */
+  const projectVisualizerUnderAccordionHeader = (
+    <div className="mb-2 w-full border-b border-border/50 pb-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={!templateProject?.id}
+        onClick={() => setProjectVisualizerOpen(true)}
+        className="h-7 gap-2 text-[11px]"
+      >
+        <Eye className="h-3.5 w-3.5" />
+        Project Visualizer
+      </Button>
+    </div>
+  );
+
   const projectDetailsFields = (
     <>
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={!templateProject?.id}
-              onClick={() => setProjectVisualizerOpen(true)}
-              className="h-7 gap-2 text-[11px]"
-            >
-              <Eye className="h-3.5 w-3.5" />
-              Project Visualizer
-            </Button>
-          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             <div className="flex-1 min-w-0">
               <Label className="text-xs">Description</Label>
@@ -870,6 +874,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   if (mode === 'workflow') {
     return (
       <div className="space-y-3">
+        {projectVisualizerUnderAccordionHeader}
         {projectDetailsFields}
         {templateProject && (
           <RiskManagementWindow
@@ -972,7 +977,10 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               <AccordionTrigger className="py-2 text-xs font-semibold hover:no-underline sm:py-2.5 sm:text-sm">
                 More Project Details
               </AccordionTrigger>
-              <AccordionContent className="pb-2 pt-0 sm:pb-3">{projectDetailsFields}</AccordionContent>
+              <AccordionContent className="pb-2 pt-0 sm:pb-3">
+                {projectVisualizerUnderAccordionHeader}
+                {projectDetailsFields}
+              </AccordionContent>
             </AccordionItem>
           </Accordion>
         </CardContent>
