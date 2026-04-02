@@ -10,6 +10,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Phase } from '@/interfaces/Project';
 
+/** Radix Select: keep `value` always a string (no undefined ↔ string flip). */
+const INCORPORATE_PHASE_UNSET = '__pp_incorporate_phase_unset__';
+
 function coerceRpcPhaseArray(raw: unknown): unknown[] {
   if (raw == null) return [];
   if (Array.isArray(raw)) return raw;
@@ -390,13 +393,22 @@ export const PhaseIncorporationDialog: React.FC<PhaseIncorporationDialogProps> =
               <label className="text-sm font-medium">Select Phase</label>
               {availableOptions.length > 0 ? (
                 <Select
-                  value={selectedPhase?.id ?? undefined}
-                  onValueChange={handlePhaseSelect}
+                  value={selectedPhase?.id ?? INCORPORATE_PHASE_UNSET}
+                  onValueChange={(v) => {
+                    if (v === INCORPORATE_PHASE_UNSET) {
+                      setSelectedPhase(null);
+                      return;
+                    }
+                    handlePhaseSelect(v);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Choose a phase to incorporate..." />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={INCORPORATE_PHASE_UNSET} className="text-muted-foreground">
+                      Choose a phase to incorporate…
+                    </SelectItem>
                     {availableOptions.map(({ dbPhaseId, phase }) => {
                       const phaseName = phase?.name || 'Unnamed Phase';
                       return (

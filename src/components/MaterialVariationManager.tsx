@@ -23,6 +23,9 @@ const NESTED_DIALOG_CONTENT = 'z-[151]';
 /** Select portals to body; must sit above nested dialog overlay/content. */
 const SELECT_IN_DIALOG_CONTENT = 'z-[300] border bg-popover text-popover-foreground';
 
+/** Radix Select: keep `value` always a string so it never flips uncontrolled ↔ controlled. */
+const SELECT_NO_VALUE = '__pp_select_no_value__';
+
 interface VariationAttribute {
   id: string;
   name: string;
@@ -564,10 +567,10 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="select-attr">Attribute</Label>
-                      <Select 
-                        key={`attr-select-${attributes.map(a => a.id).join('|')}`}
-                        value={selectedAttributeId || undefined} 
-                        onValueChange={setSelectedAttributeId}
+                      <Select
+                        key={`attr-select-${attributes.map((a) => a.id).join('|')}`}
+                        value={selectedAttributeId ? selectedAttributeId : SELECT_NO_VALUE}
+                        onValueChange={(v) => setSelectedAttributeId(v === SELECT_NO_VALUE ? '' : v)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder={attributes.length === 0 ? "No attributes available. Create an attribute first." : "Select attribute"} />
@@ -578,11 +581,16 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                               No attributes available. Create an attribute first.
                             </div>
                           ) : (
-                            attributes.map(attr => (
-                              <SelectItem key={attr.id} value={attr.id}>
-                                {attr.display_name}
+                            <>
+                              <SelectItem value={SELECT_NO_VALUE} className="text-muted-foreground">
+                                Select attribute…
                               </SelectItem>
-                            ))
+                              {attributes.map((attr) => (
+                                <SelectItem key={attr.id} value={attr.id}>
+                                  {attr.display_name}
+                                </SelectItem>
+                              ))}
+                            </>
                           )}
                         </SelectContent>
                       </Select>
@@ -714,19 +722,27 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                           <div key={attr.id} className="space-y-2">
                             <Label className="text-sm font-medium">{attr.display_name}</Label>
                             <Select
-                              value={selectedAttributes[attr.name] ?? undefined}
+                              value={selectedAttributes[attr.name] ?? SELECT_NO_VALUE}
                               onValueChange={(value) => {
-                                setSelectedAttributes((prev) => ({
-                                  ...prev,
-                                  [attr.name]: value,
-                                }));
+                                setSelectedAttributes((prev) => {
+                                  const next = { ...prev };
+                                  if (value === SELECT_NO_VALUE) {
+                                    delete next[attr.name];
+                                  } else {
+                                    next[attr.name] = value;
+                                  }
+                                  return next;
+                                });
                               }}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder={`Select ${attr.display_name.toLowerCase()}`} />
                               </SelectTrigger>
                               <SelectContent className={SELECT_IN_DIALOG_CONTENT}>
-                                {attr.values.map(value => (
+                                <SelectItem value={SELECT_NO_VALUE} className="text-muted-foreground">
+                                  Choose…
+                                </SelectItem>
+                                {attr.values.map((value) => (
                                   <SelectItem key={value.id} value={value.value}>
                                     {value.display_value}
                                   </SelectItem>
