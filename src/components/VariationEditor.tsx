@@ -142,10 +142,23 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
         .select('*')
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        if (
+          error.code === 'PGRST205' ||
+          /could not find the table.*warning_flags/i.test(String(error.message ?? ''))
+        ) {
+          console.warn(
+            'warning_flags is not exposed in the API schema; Warnings tab uses only flags stored on the variation.'
+          );
+          setAvailableWarnings([]);
+          return;
+        }
+        throw error;
+      }
       setAvailableWarnings(data || []);
     } catch (error) {
       console.error('Error fetching warning flags:', error);
+      setAvailableWarnings([]);
       toast.error('Failed to load warning flags');
     }
   };
@@ -302,7 +315,10 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[100] bg-black/80" />
-        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-[100] translate-x-[-50%] translate-y-[-50%] max-w-4xl max-h-[80vh] w-[90vw] overflow-y-auto bg-background border rounded-lg shadow-lg p-6">
+        <DialogPrimitive.Content
+          aria-describedby={undefined}
+          className="fixed left-[50%] top-[50%] z-[100] translate-x-[-50%] translate-y-[-50%] max-w-4xl max-h-[80vh] w-[90vw] overflow-y-auto bg-background border rounded-lg shadow-lg p-6"
+        >
         <DialogHeader>
           <DialogTitle>Edit Variation: {variation.name}</DialogTitle>
         </DialogHeader>
@@ -435,7 +451,13 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
               <div className="text-sm text-muted-foreground mb-4">
                 Select applicable warning flags for this variation to help users identify potential safety considerations.
               </div>
-              
+
+              {availableWarnings.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No warning-flag catalog is available. Any flags already stored on this variation are listed below.
+                </p>
+              ) : null}
+
               <div className="grid grid-cols-2 gap-3">
                 {availableWarnings.map((flag) => {
                   const isSelected = editedVariation.warning_flags?.includes(flag.name) || false;

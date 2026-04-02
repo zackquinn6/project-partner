@@ -115,7 +115,10 @@ export function MaterialVariationEditor({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[100] bg-black/80" />
-        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-[100] max-h-[85vh] w-[90vw] max-w-lg translate-x-[-50%] translate-y-[-50%] overflow-y-auto rounded-lg border bg-background p-6 shadow-lg">
+        <DialogPrimitive.Content
+          aria-describedby={undefined}
+          className="fixed left-[50%] top-[50%] z-[100] max-h-[85vh] w-[90vw] max-w-lg translate-x-[-50%] translate-y-[-50%] overflow-y-auto rounded-lg border bg-background p-6 shadow-lg"
+        >
           <DialogHeader>
             <DialogTitle>Edit material variant: {variation.name}</DialogTitle>
           </DialogHeader>

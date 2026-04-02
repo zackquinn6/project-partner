@@ -106,15 +106,27 @@ export function EnhancedVariationViewer({
       const { data: flagsData, error: flagsError } = flagsRes;
 
       if (variationsError) throw variationsError;
-      if (flagsError) throw flagsError;
+      if (flagsError) {
+        if (
+          flagsError.code === 'PGRST205' ||
+          /could not find the table.*warning_flags/i.test(String(flagsError.message ?? ''))
+        ) {
+          console.warn(
+            'warning_flags is not in the API schema; variation warning UI uses stored flags only.'
+          );
+          setWarningFlags([]);
+        } else {
+          throw flagsError;
+        }
+      } else {
+        setWarningFlags(flagsData || []);
+      }
 
       setVariations((variationsData || []).map(v => ({
         ...v,
         attributes: v.attributes as Record<string, string> || {},
         warning_flags: v.warning_flags || []
       })));
-
-      setWarningFlags(flagsData || []);
 
       if (variationsData?.length > 0) {
         const modelsByVariation: Record<string, ToolModel[]> = {};

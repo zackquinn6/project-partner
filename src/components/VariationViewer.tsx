@@ -207,7 +207,8 @@ export function VariationViewer({ open, onOpenChange, coreItemId, coreItemName, 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[100] bg-black/80" />
-        <DialogPrimitive.Content 
+        <DialogPrimitive.Content
+          aria-describedby={undefined}
           className="fixed left-[50%] top-[50%] z-[100] translate-x-[-50%] translate-y-[-50%] max-w-5xl max-h-[80vh] w-[90vw] overflow-hidden bg-background border rounded-lg shadow-lg p-6"
         >
           <div className="mb-4 flex items-start justify-between gap-3 border-b border-border pb-4">
@@ -295,7 +296,8 @@ export function VariationViewer({ open, onOpenChange, coreItemId, coreItemName, 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[100] bg-black/80" />
-        <DialogPrimitive.Content 
+        <DialogPrimitive.Content
+          aria-describedby={undefined}
           className="fixed left-[50%] top-[50%] z-[100] translate-x-[-50%] translate-y-[-50%] max-w-4xl max-h-[80vh] w-[90vw] overflow-y-auto bg-background border rounded-lg shadow-lg p-6"
         >
         <div className="mb-4 flex items-start justify-between gap-3 border-b border-border pb-4">
