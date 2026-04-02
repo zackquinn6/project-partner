@@ -586,6 +586,7 @@ export function LibraryItemForm({
                 value={formData.alternates}
                 onChange={(value) => setFormData({ ...formData, alternates: value })}
                 itemType="tool"
+                libraryToolPicker={{ excludeCoreToolId: item?.id }}
               />
             </div>
           </div>

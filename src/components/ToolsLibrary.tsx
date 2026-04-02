@@ -21,8 +21,11 @@ const TOOLS_LIBRARY_EDIT_FORM_ID = "tools-library-edit-tool-form";
 /** Add / Edit tool dialogs: 90vw × 90dvh, centered; fixed height so all tabs keep the same chrome. */
 const ADMIN_TOOL_DIALOG_OVERLAY_CLASS = cn("z-[100] bg-black/50 backdrop-blur-md");
 
+/** `!` overrides shared DialogContent `md:max-w-lg` (~50% width on desktop). */
 const ADMIN_TOOL_DIALOG_CONTENT_CLASS = cn(
-  "z-[101] flex h-[90dvh] max-h-[90dvh] w-[90vw] max-w-[90vw] flex-col gap-0 overflow-hidden rounded-lg border p-0"
+  "z-[101] flex h-[90dvh] max-h-[90dvh] flex-col gap-0 overflow-hidden rounded-lg border p-0",
+  "w-[90vw] max-w-[90vw] !w-[90vw] !max-w-[90vw] md:!w-[90vw] md:!max-w-[90vw]",
+  "md:!max-h-[90dvh]"
 );
 
 interface Tool {
