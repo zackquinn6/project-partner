@@ -210,12 +210,23 @@ export function VariationViewer({ open, onOpenChange, coreItemId, coreItemName, 
         <DialogPrimitive.Content 
           className="fixed left-[50%] top-[50%] z-[100] translate-x-[-50%] translate-y-[-50%] max-w-5xl max-h-[80vh] w-[90vw] overflow-hidden bg-background border rounded-lg shadow-lg p-6"
         >
-          <DialogHeader>
-            <DialogTitle>Select Variation for {coreItemName}</DialogTitle>
-            <DialogDescription>
-              Choose a specific variation of this {catalogKind.slice(0, -1)} to add to your library.
-            </DialogDescription>
-          </DialogHeader>
+          <div className="mb-4 flex items-start justify-between gap-3 border-b border-border pb-4">
+            <DialogHeader className="flex-1 space-y-1.5 text-left sm:text-left">
+              <DialogTitle>Select Variation for {coreItemName}</DialogTitle>
+              <DialogDescription>
+                Choose a specific variation of this {catalogKind.slice(0, -1)} to add to your library.
+              </DialogDescription>
+            </DialogHeader>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+              onClick={() => onOpenChange(false)}
+            >
+              Close
+            </Button>
+          </div>
           
           {loading ? (
             <div className="flex justify-center p-8">Loading variations...</div>
@@ -287,14 +298,25 @@ export function VariationViewer({ open, onOpenChange, coreItemId, coreItemName, 
         <DialogPrimitive.Content 
           className="fixed left-[50%] top-[50%] z-[100] translate-x-[-50%] translate-y-[-50%] max-w-4xl max-h-[80vh] w-[90vw] overflow-y-auto bg-background border rounded-lg shadow-lg p-6"
         >
-        <DialogHeader>
-          <DialogTitle>Variations for {coreItemName}</DialogTitle>
-          <DialogDescription>
-            {catalogKind === 'tools'
-              ? 'View all available variations of this tool with pricing and model information.'
-              : 'View all available variants of this material.'}
-          </DialogDescription>
-        </DialogHeader>
+        <div className="mb-4 flex items-start justify-between gap-3 border-b border-border pb-4">
+          <DialogHeader className="flex-1 space-y-1.5 text-left sm:text-left">
+            <DialogTitle>Variations for {coreItemName}</DialogTitle>
+            <DialogDescription>
+              {catalogKind === 'tools'
+                ? 'View all available variations of this tool with pricing and model information.'
+                : 'View all available variants of this material.'}
+            </DialogDescription>
+          </DialogHeader>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            onClick={() => onOpenChange(false)}
+          >
+            Close
+          </Button>
+        </div>
         
         {loading ? (
           <div className="flex justify-center p-8">Loading variations...</div>
