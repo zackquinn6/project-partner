@@ -338,7 +338,12 @@ A **process variable** is a fundamental, theoretically measurable parameter that
 
 **Role**
 
-- Step 9 finalizes **catalog-facing narrative** on the template project row: a **brief purpose summary** (`description`) and a **tight read on the hardest parts** (`project_challenges`) so someone can **decide** if the project fits their skill and appetite. Separate from step-level instructions (Step 1), timeline/budget risks (Step 3), and quality PFMEA (Step 8).
+- Step 9 finalizes **catalog-facing narrative** on the template project row: a **very short purpose summary** (`description`) and a **tiny experiential read on the hardest moments** (`project_challenges`) so someone can **decide** if the project fits their skill and appetite. Separate from step-level instructions (Step 1), timeline/budget risks (Step 3), and quality PFMEA (Step 8).
+
+**Hard limits (both fields)**
+
+- **`description`** and **`project_challenges`** each: **maximum 200 characters** (count spaces and punctuation). **Target ≤ 150 characters** when possible.
+- Before shipping SQL or copy, **count characters** on the final string; do not exceed 200.
 
 **Deliverables**
 
@@ -347,42 +352,46 @@ A **process variable** is a fundamental, theoretically measurable parameter that
    **What it is *not***
 
    - **Not** a list of every step, operation, or micro-task in the workflow. The full sequence belongs in the process map and `step_instructions`, not in `description`.
-   - **Not** a paragraph essay or multi-sentence inventory of work packages.
+   - **Not** a long paragraph; the **character limit** forces compression.
 
-   **Required structure (integrate into coherent prose—usually one or two sentences, or a tight short paragraph)**
+   **Required structure (integrate into coherent prose within the character budget)**
 
-   Write so all three layers are visible to the reader, in roughly this order:
+   Fit all three layers into the allowed length—often **one tight sentence** or **2–3 very short lines** of continuous prose (no bullets). Order:
 
-   1. **Key steps (phases)** — Name **only high-level phases** from this template’s actual phase structure (**2–3 phases**; **never more than 4**). Each item should be a **phase-level** label or a very short phrase (e.g. “prep and substrate,” “layout and install,” “finish and cure”), **not** a dump of individual `operation_steps` titles. A **brief** overview of the journey is helpful; a step-by-step run-through is wrong.
-   2. **Typical areas in the home** — Where this work usually happens (e.g. bathroom, kitchen, living room, basement). Use **credible** examples aligned with the template; do not invent rooms the project does not touch.
-   3. **Purpose / benefit** — Why someone does the project or what outcome they want, in plain language (e.g. *“…for a durable, high-performance floor”*, *“…to prevent water leakage”*, *“…for a finish that holds up to daily use”*).
+   1. **Key steps (phases)** — **Only high-level phases** from this template (**2–3**; **max 4**), as **phase-level** labels or micro-phrases—not individual `operation_steps` titles.
+   2. **Typical areas in the home** — Where the work usually happens (e.g. bathroom, kitchen). Credible and template-aligned only.
+   3. **Purpose / benefit** — Outcome in plain language (durable floor, stop leaks, etc.).
 
    **Alignment and research**
 
-   - Stay aligned with **this template’s phases and scope** (process map + migrations); add **credible** detail from **light research** only when it matches that scope—do not invent measurements or constraints the template does not support.
-   - Do **not** duplicate instruction copy from `step_instructions`.
+   - Stay aligned with **this template’s phases and scope**; light research only when consistent. Do **not** duplicate `step_instructions`.
 
-   **Example (Tile flooring installation — pattern only):**  
-   *Subfloor prep, layout, and mortar-down install through grout and cure—typically in kitchens, bathrooms, and living spaces—for a durable, high-performance tile floor.*
+   **Example (tile — pattern only; length illustrative, stay under your budget):**  
+   *Prep, set, and grout tile in kitchens and baths for a durable, lasting floor.*
 
-2. **`public.projects.project_challenges`** — **One paragraph only, 2–3 sentences maximum** (not 2–3 sentences *per topic*, not a list of five blocks, not bullet lists).
+2. **`public.projects.project_challenges`** — **Narrative only** — **not** a list of risks or challenges.
+
+   **Form and focus**
+
+   - Write as **flowing prose** (one small paragraph). **Do not** write as a **catalog** of separate risks (no “Risk 1 / Risk 2,” no stacked clauses that read like a bullet list without bullets, no inventory of disconnected hazards).
+   - Center on **what the person may actually feel or notice**—doubt, timing pressure, cramped space, “is this good enough?”—and on the **hardest specific zones or moments** in the job (e.g. corners, ceiling line, flange, last coat, first full row).
+   - **2–3 short lines** of narrative in the UI sense is fine, but the **hard cap is character count**: **≤ 200 characters**, **≤ 150** ideal—same as **`description`**.
 
    **Intent (must not duplicate the description)**
 
-   - **Project challenges** answer: *“What makes this hard or risky for a real homeowner to judge or execute?”* They are **not** a second description, **not** a re-list of phases/steps, and **not** a substitute for Step 3 timeline/budget risks or Step 8 PFMEA.
-   - Purpose: a **clear, rapid summary of the hardest parts for decision-making**—technical friction in compact form, with **at most a light nod** to how it *feels* (doubt, fatigue, second-guessing) if it helps judgment. **No multi-paragraph listings.**
+   - Answers: *“Where does this get ugly for a real homeowner?”* **Not** a second description, **not** a re-list of phases/steps, **not** Step 3 or Step 8 content.
 
-   **Authoring inputs:** (1) **Context from the project itself**—where the workflow actually bites (choke points, quality sensitivity, access, sequencing stress), tools/materials emphasis, scaling unit; (2) **targeted research** when needed so the hardest parts reflect real field friction, still consistent with the template.
+   **Authoring inputs:** Template choke points + light research; stay consistent with scope.
 
-   - Tone: matter-of-fact and respectful; avoid lecturing or long empathy paragraphs.
+   - Tone: direct; no lecturing.
 
-   **Examples (single paragraph, ≤3 sentences each):**
+   **Examples (narrative, experience + hot spots; each under ~150 characters):**
 
-   - **Tile flooring:** *Flatness and deflection requirements decide whether grout and tile survive; coverage under large format and grout wash timing punish rushed work. Most second-guessing lands on whether prep is “good enough” before the first full sheets go down.*
+   - **Tile:** *You’ll second-guess flatness before you set; big tile and tight corners punish rushed grout timing.*
 
-   - **Interior painting:** *Cut lines and wet-edge timing show under side light; rushing the ceiling line or open field is the usual regret. Dust and holidays in the last coat are environmental and pace problems more than “bad luck.”*
+   - **Interior painting:** *Ceiling lines and big walls show every waver; dust sneaking in before the last coat is the quiet killer.*
 
-   - **Toilet replacement:** *True shutoff, lifting without damaging the flange, and even wax compression without a rocking bowl stack into one tight bathroom moment; slow supply and base weeps often appear after the first cycles.*
+   - **Toilet:** *Cramped bath, scary shutoff, easy flange damage lifting the bowl—then a slow leak you notice days later.*
 
 **DB placement**
 
@@ -392,6 +401,7 @@ A **process variable** is a fundamental, theoretically measurable parameter that
 **Step 9 SQL migrations**
 
 - **`UPDATE public.projects`** (or equivalent) setting **`description`** and **`project_challenges`** for `v_project_id`, after verifying the row exists (e.g. `IF NOT FOUND THEN RAISE`).
+- Each string must respect **`char_length(description) ≤ 200`** and **`char_length(project_challenges) ≤ 200`** (prefer ≤ 150). Validate when authoring.
 - **No** `rebuild_phases_json_from_project_phases` required solely for these fields unless other workflow rows in the same migration also changed normalized phases.
 - **Idempotent:** safe to re-run with the same final text (e.g. `UPDATE … WHERE id = v_project_id`).
 - Typically run **after** Steps **1–8** so copy reflects the built workflow; do not contradict steps, risks, or PFMEA seed data.
@@ -451,8 +461,9 @@ A **process variable** is a fundamental, theoretically measurable parameter that
 
 - **Step 9**
   - Updates **`public.projects.description`** and **`public.projects.project_challenges`** only (project-level copy).
-  - **Description** = structured overview (**not** a full step list): **(1)** **2–3** high-level **phases** only (**max 4**), **(2)** **typical home areas**, **(3)** **purpose/benefit**. See **Step 9** in section B. Align with template phases + scope; light research only when consistent.
-  - **Project challenges** = **one paragraph, 2–3 sentences total**—hardest parts for **decision-making**; **not** a re-list of phases/steps (that belongs in **description** at phase level only, and in the workflow elsewhere). **No** multi-paragraph listings or 5+ distinct blocks. Ground in **workflow choke points** plus research as needed.
+  - **Both fields:** **≤ 200 characters** each (hard max), **≤ 150** ideal—count before ship.
+  - **Description** = structured overview (**not** a full step list) within the limit: **(1)** **2–3** high-level **phases** (**max 4**), **(2)** **typical home areas**, **(3)** **purpose/benefit**. See **Step 9** in section B.
+  - **Project challenges** = **narrative prose** (experience + hardest specific zones/moments); **not** a list or catalog of risks. Same length rules as description. **Not** a re-list of phases/steps; **not** Step 3 / Step 8.
   - Verify **`projects.id`** exists before `UPDATE`; fail loudly if missing.
   - No PFMEA, no `operation_steps`, no phase JSON rebuild required **solely** for these two fields.
 
