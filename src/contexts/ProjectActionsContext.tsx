@@ -114,6 +114,7 @@ type ProjectRunRiskInsertRow = {
   budget_impact_high: number | null;
   mitigation_strategy: string | null;
   mitigation_actions: Json | null;
+  mitigation_effort_level: string | null;
   mitigation_cost: number | null;
   recommendation: string | null;
   impact: string | null;
@@ -141,6 +142,7 @@ function mutableProjectRunRiskFields(row: ProjectRunRiskInsertRow) {
     budget_impact_high: row.budget_impact_high,
     mitigation_strategy: row.mitigation_strategy,
     mitigation_actions: row.mitigation_actions,
+    mitigation_effort_level: row.mitigation_effort_level,
     mitigation_cost: row.mitigation_cost,
     recommendation: row.recommendation,
     impact: row.impact,
@@ -300,6 +302,7 @@ async function syncFoundationAndTemplateRisksToProjectRun(
       budget_impact_high: numberOrNullForRunRisk(risk.budget_impact_high, 'budget_impact_high'),
       mitigation_strategy: optionalDbTextForRiskCopy(risk.mitigation_strategy),
       mitigation_actions: sanitizeMitigationActionsForInsert(risk.mitigation_actions),
+      mitigation_effort_level: optionalDbTextForRiskCopy(risk.mitigation_effort_level),
       mitigation_cost: numberOrNullForRunRisk(risk.mitigation_cost, 'mitigation_cost'),
       recommendation: optionalDbTextForRiskCopy(risk.recommendation),
       impact: optionalDbTextForRiskCopy(risk.impact),

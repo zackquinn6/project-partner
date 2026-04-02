@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -96,6 +97,8 @@ interface Risk {
   mitigation: string | null; // Legacy text field
   mitigation_strategy?: string | null; // Database field
   mitigation_actions?: { action: string; benefit?: string | null; completed?: boolean }[] | null;
+  /** Template + run: effort to implement mitigation; admin sets on template, copied to runs. */
+  mitigation_effort_level?: MitigationEffortLevel | null;
   notes?: string | null;
   status?: 'open' | 'mitigated' | 'closed' | 'monitoring';
   is_template_risk?: boolean;
@@ -158,6 +161,25 @@ function severitySortRank(severity: string | null | undefined): number {
   if (s === 'low') return 1;
   return 0;
 }
+
+type MitigationEffortLevel = 'low' | 'medium' | 'high';
+
+function parseMitigationEffortLevelFromDb(raw: unknown): MitigationEffortLevel | null {
+  if (raw == null || raw === '') return null;
+  const s = String(raw).toLowerCase();
+  if (s === 'low' || s === 'medium' || s === 'high') return s;
+  return null;
+}
+
+/** Lower rank = easier mitigation (ascending = easiest first). Unknown last. */
+function mitigationEffortSortRank(level: MitigationEffortLevel | null | undefined): number {
+  if (level === 'low') return 1;
+  if (level === 'medium') return 2;
+  if (level === 'high') return 3;
+  return 4;
+}
+
+type RiskLessRegisterPrimarySort = 'easiest-mitigation' | 'most-important-risk';
 
 function riskFocusSeverityCounts(risks: Risk[]) {
   let high = 0;
@@ -230,7 +252,7 @@ function RiskFocusDashboard({
           Do What You Can - Every Step Reduces Risk
         </div>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div className="min-w-0 sm:max-w-[38%] sm:flex-1">
           {name ? (
             <h2 className="text-center text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-left sm:text-2xl md:text-3xl">
@@ -238,11 +260,11 @@ function RiskFocusDashboard({
             </h2>
           ) : null}
         </div>
-        <div className="flex min-w-0 flex-1 flex-col sm:max-w-[58%] sm:items-end">
-          <div className="mb-1 w-full text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground sm:text-right">
+        <div className="flex min-w-0 flex-1 flex-col items-center sm:max-w-[58%]">
+          <div className="mb-2 w-full text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Current Risk Summary
           </div>
-          <div className="flex w-full justify-center sm:justify-end">
+          <div className="flex w-full justify-center">
             <Card className="min-w-0 w-full max-w-md overflow-hidden">
               <CardContent className="flex flex-row flex-wrap items-center justify-center gap-y-1 px-1.5 py-1 sm:px-2 sm:py-1">
                 <div className="flex min-w-0 flex-row flex-wrap items-center justify-center gap-x-2 gap-y-0.5 sm:gap-x-3">
@@ -345,6 +367,8 @@ export function RiskManagementWindow({
   /** Risk-Less: when true, hide rows originating from Standard Project Foundation. Default off (show all). */
   const [hideStandardRisks, setHideStandardRisks] = useState(false);
   const [riskListSort, setRiskListSort] = useState<'alpha' | 'severity-desc'>('alpha');
+  const [riskLessRegisterPrimarySort, setRiskLessRegisterPrimarySort] =
+    useState<RiskLessRegisterPrimarySort>('easiest-mitigation');
   const showRiskFocusHiddenToggle = riskFocusRun && risks.length > 0;
   const wfTableAdvanced = workflowTemplateRiskLess && advancedMode;
   const wfTableFriendly = workflowTemplateRiskLess && !advancedMode;
@@ -377,6 +401,7 @@ export function RiskManagementWindow({
     budget_impact_dollars: 0,
     mitigation: '',
     mitigation_actions: [] as { action: string; benefit?: string | null; completed?: boolean }[],
+    mitigation_effort_level: null as MitigationEffortLevel | null,
     notes: '',
     status: 'open' as 'open' | 'mitigated' | 'closed' | 'monitoring'
   });
@@ -393,15 +418,24 @@ export function RiskManagementWindow({
     }
     const sorted = [...list];
     if (variant === 'risk-focus' && mode === 'run') {
-      if (riskListSort === 'alpha') {
-        sorted.sort((a, b) => (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' }));
-      } else {
-        sorted.sort(
-          (a, b) =>
-            severitySortRank(b.severity) - severitySortRank(a.severity) ||
-            (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' })
+      sorted.sort((a, b) => {
+        if (riskLessRegisterPrimarySort === 'easiest-mitigation') {
+          const pe =
+            mitigationEffortSortRank(a.mitigation_effort_level ?? null) -
+            mitigationEffortSortRank(b.mitigation_effort_level ?? null);
+          if (pe !== 0) return pe;
+        } else {
+          const sev = severitySortRank(b.severity) - severitySortRank(a.severity);
+          if (sev !== 0) return sev;
+        }
+        if (riskListSort === 'alpha') {
+          return (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' });
+        }
+        return (
+          severitySortRank(b.severity) - severitySortRank(a.severity) ||
+          (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' })
         );
-      }
+      });
     } else if (workflowTemplateRiskLess) {
       if (riskListSort === 'alpha') {
         sorted.sort((a, b) => (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' }));
@@ -414,7 +448,16 @@ export function RiskManagementWindow({
       }
     }
     return sorted;
-  }, [risks, variant, mode, showHiddenRisks, hideStandardRisks, riskListSort, workflowTemplateRiskLess]);
+  }, [
+    risks,
+    variant,
+    mode,
+    showHiddenRisks,
+    hideStandardRisks,
+    riskListSort,
+    workflowTemplateRiskLess,
+    riskLessRegisterPrimarySort,
+  ]);
 
   useEffect(() => {
     if (!showAdvancedToggle) {
@@ -515,6 +558,7 @@ export function RiskManagementWindow({
           mitigation: risk.mitigation_strategy || null,
           mitigation_strategy: risk.mitigation_strategy,
           mitigation_actions: parseMitigationActionsFromDb(risk.mitigation_actions),
+          mitigation_effort_level: parseMitigationEffortLevelFromDb(risk.mitigation_effort_level),
           notes: risk.benefit || risk.risk_description || null,
           benefit: typeof risk.benefit === 'string' ? risk.benefit : null,
           status: 'open' as const,
@@ -550,6 +594,7 @@ export function RiskManagementWindow({
           mitigation: risk.mitigation_strategy || null,
           mitigation_strategy: risk.mitigation_strategy,
           mitigation_actions: parseMitigationActionsFromDb(risk.mitigation_actions),
+          mitigation_effort_level: parseMitigationEffortLevelFromDb(risk.mitigation_effort_level),
           notes: risk.benefit || risk.risk_description || null,
           benefit: typeof risk.benefit === 'string' ? risk.benefit : null,
           status: risk.status || 'open',
@@ -611,7 +656,8 @@ export function RiskManagementWindow({
               mitigation_strategy: formData.mitigation.trim() || null,
               mitigation_actions: formData.mitigation_actions && formData.mitigation_actions.length > 0
                 ? formData.mitigation_actions
-                : null
+                : null,
+              mitigation_effort_level: formData.mitigation_effort_level,
             })
             .eq('id', editingRisk.id);
 
@@ -646,6 +692,7 @@ export function RiskManagementWindow({
               mitigation_actions: formData.mitigation_actions && formData.mitigation_actions.length > 0
                 ? formData.mitigation_actions
                 : null,
+              mitigation_effort_level: formData.mitigation_effort_level,
               display_order: nextOrder
             });
 
@@ -731,6 +778,7 @@ export function RiskManagementWindow({
         budget_impact_dollars: 0,
         mitigation: '',
         mitigation_actions: [],
+        mitigation_effort_level: null,
         notes: '',
         status: 'open'
       });
@@ -761,6 +809,7 @@ export function RiskManagementWindow({
       budget_impact_dollars: risk.budget_impact_dollars || risk.budget_impact_high || risk.budget_impact_low || 0,
       mitigation: risk.mitigation || risk.mitigation_strategy || '',
       mitigation_actions: risk.mitigation_actions ? [...risk.mitigation_actions] : [],
+      mitigation_effort_level: risk.mitigation_effort_level ?? null,
       notes: narrative,
       status: risk.status || 'open'
     });
@@ -1055,6 +1104,39 @@ export function RiskManagementWindow({
           />
         ) : null}
 
+        {riskFocusRun ? (
+          <div className="shrink-0 border-b border-border/60 bg-muted/15 px-3 py-3 md:px-4">
+            <div className="mx-auto flex max-w-3xl flex-col items-center gap-3">
+              <span className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Sort register
+              </span>
+              <RadioGroup
+                value={riskLessRegisterPrimarySort}
+                onValueChange={(v) =>
+                  setRiskLessRegisterPrimarySort(v as RiskLessRegisterPrimarySort)
+                }
+                className="flex flex-row flex-wrap items-center justify-center gap-x-6 gap-y-2"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="easiest-mitigation" id="risk-less-sort-easiest" />
+                  <Label htmlFor="risk-less-sort-easiest" className="cursor-pointer text-sm font-normal leading-snug">
+                    Easiest mitigation first
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="most-important-risk" id="risk-less-sort-important" />
+                  <Label htmlFor="risk-less-sort-important" className="cursor-pointer text-sm font-normal leading-snug">
+                    Most important risk first
+                  </Label>
+                </div>
+              </RadioGroup>
+              <p className="max-w-md text-center text-[10px] text-muted-foreground">
+                Use the Risk and &ldquo;What&apos;s the new status?&rdquo; column headers to sort within this order.
+              </p>
+            </div>
+          </div>
+        ) : null}
+
         <div
           className={cn(
             'flex min-h-0 flex-1 flex-col px-2 md:px-4',
@@ -1233,6 +1315,7 @@ export function RiskManagementWindow({
                               budget_impact_dollars: 0,
                               mitigation: '',
                               mitigation_actions: [],
+                              mitigation_effort_level: null,
                               notes: '',
                               status: 'open'
                             });
@@ -1355,6 +1438,7 @@ export function RiskManagementWindow({
                               budget_impact_dollars: 0,
                               mitigation: '',
                               mitigation_actions: [],
+                              mitigation_effort_level: null,
                               notes: '',
                               status: 'open'
                             });
@@ -1559,6 +1643,7 @@ export function RiskManagementWindow({
                             budget_impact_dollars: 0,
                             mitigation: '',
                             mitigation_actions: [],
+                            mitigation_effort_level: null,
                             notes: '',
                             status: 'open'
                           });
@@ -2588,6 +2673,35 @@ export function RiskManagementWindow({
               </div>
 
               <div className="space-y-3">
+                {workflowTemplateRiskLess ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="mitigation_effort_level">Mitigation effort level</Label>
+                    <p className="text-xs text-muted-foreground">
+                      How much work the mitigation typically takes. Risk-Less uses this for &ldquo;easiest mitigation
+                      first&rdquo; ordering.
+                    </p>
+                    <Select
+                      value={formData.mitigation_effort_level ?? 'none'}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          mitigation_effort_level:
+                            value === 'none' ? null : (value as MitigationEffortLevel),
+                        })
+                      }
+                    >
+                      <SelectTrigger id="mitigation_effort_level" className="w-full max-w-md">
+                        <SelectValue placeholder="Not set" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Not set</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : null}
                 <Label htmlFor="mitigation">Mitigation</Label>
                 <Textarea
                   id="mitigation"
@@ -2731,6 +2845,7 @@ export function RiskManagementWindow({
                       budget_impact_dollars: 0,
                       mitigation: '',
                       mitigation_actions: [],
+                      mitigation_effort_level: null,
                       notes: '',
                       status: 'open'
                     });

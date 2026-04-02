@@ -2758,6 +2758,7 @@ export type Database = {
           likelihood: string | null
           mitigation_actions: Json | null
           mitigation_cost: number | null
+          mitigation_effort_level: string | null
           mitigation_strategy: string | null
           project_run_id: string
           recommendation: string | null
@@ -2783,6 +2784,7 @@ export type Database = {
           likelihood?: string | null
           mitigation_actions?: Json | null
           mitigation_cost?: number | null
+          mitigation_effort_level?: string | null
           mitigation_strategy?: string | null
           project_run_id: string
           recommendation?: string | null
@@ -2808,6 +2810,7 @@ export type Database = {
           likelihood?: string | null
           mitigation_actions?: Json | null
           mitigation_cost?: number | null
+          mitigation_effort_level?: string | null
           mitigation_strategy?: string | null
           project_run_id?: string
           recommendation?: string | null
@@ -3134,6 +3137,7 @@ export type Database = {
           likelihood: string | null
           mitigation_actions: Json | null
           mitigation_cost: number | null
+          mitigation_effort_level: string | null
           mitigation_strategy: string | null
           project_id: string
           recommendation: string | null
@@ -3155,6 +3159,7 @@ export type Database = {
           likelihood?: string | null
           mitigation_actions?: Json | null
           mitigation_cost?: number | null
+          mitigation_effort_level?: string | null
           mitigation_strategy?: string | null
           project_id: string
           recommendation?: string | null
@@ -3176,6 +3181,7 @@ export type Database = {
           likelihood?: string | null
           mitigation_actions?: Json | null
           mitigation_cost?: number | null
+          mitigation_effort_level?: string | null
           mitigation_strategy?: string | null
           project_id?: string
           recommendation?: string | null
