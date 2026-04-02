@@ -332,14 +332,18 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
         <DialogOverlay className={NESTED_EDITOR_OVERLAY_CLASS} />
         <DialogPrimitive.Content
           aria-describedby={undefined}
-          className={`fixed left-[50%] top-[50%] ${NESTED_EDITOR_CONTENT_Z} translate-x-[-50%] translate-y-[-50%] max-w-4xl max-h-[80vh] w-[90vw] overflow-y-auto bg-background border rounded-lg shadow-lg p-6`}
+          className={`fixed left-[50%] top-[50%] ${NESTED_EDITOR_CONTENT_Z} flex max-h-[85vh] h-[min(85vh,44rem)] w-[90vw] max-w-4xl translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden bg-background border rounded-lg shadow-lg p-6`}
         >
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle>Edit Variation: {variation.name}</DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="flex min-h-0 flex-1 flex-col gap-0 pt-1"
+        >
+          <TabsList className="grid w-full shrink-0 grid-cols-5 my-2.5">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="instructions">Instructions</TabsTrigger>
             <TabsTrigger value="warnings">Warnings</TabsTrigger>
@@ -347,6 +351,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
             <TabsTrigger value="pricing">Pricing</TabsTrigger>
           </TabsList>
 
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           <TabsContent value="details" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -667,9 +672,10 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
               })}
             </div>
           </TabsContent>
+          </div>
         </Tabs>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        <div className="flex shrink-0 justify-end gap-2 border-t pt-4 mt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             <X className="w-4 h-4 mr-2" />
             Cancel
