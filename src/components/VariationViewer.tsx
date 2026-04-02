@@ -351,8 +351,11 @@ export function VariationViewer({ open, onOpenChange, coreItemId, coreItemName, 
                         
                         {catalogKind === 'tools' && (
                         <div className="flex gap-4 mb-2 text-xs text-muted-foreground">
-                          {variation.estimated_weight_lbs && (
-                            <span>Weight: {variation.estimated_weight_lbs} lbs</span>
+                          {variation.estimated_weight_lbs != null && (
+                            <span>
+                              Weight:{' '}
+                              {Number(variation.estimated_weight_lbs).toFixed(1)} lbs
+                            </span>
                           )}
                           {variation.estimated_rental_lifespan_days && (
                             <span>Rental Life: {variation.estimated_rental_lifespan_days} days</span>

@@ -197,9 +197,16 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
         description: editedVariation.description || null,
         sku: editedVariation.sku || null,
         photo_url: editedVariation.photo_url || null,
-        weight_lbs: editedVariation.weight_lbs || null,
-        estimated_weight_lbs: editedVariation.estimated_weight_lbs || null,
-        estimated_rental_lifespan_days: editedVariation.estimated_rental_lifespan_days || null,
+        weight_lbs:
+          editedVariation.weight_lbs != null ? editedVariation.weight_lbs : null,
+        estimated_weight_lbs:
+          editedVariation.estimated_weight_lbs != null
+            ? editedVariation.estimated_weight_lbs
+            : null,
+        estimated_rental_lifespan_days:
+          editedVariation.estimated_rental_lifespan_days != null
+            ? editedVariation.estimated_rental_lifespan_days
+            : null,
         warning_flags: editedVariation.warning_flags || null,
         quick_add: editedVariation.quick_add || false,
         updated_at: new Date().toISOString(),
@@ -351,7 +358,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
             <TabsTrigger value="pricing">Pricing</TabsTrigger>
           </TabsList>
 
-          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          <div className="min-h-0 flex-1 overflow-y-auto px-2">
           <TabsContent value="details" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -371,16 +378,52 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
                 />
               </div>
               <div>
-                <Label htmlFor="weight">Actual Weight (lbs)</Label>
+                <Label htmlFor="estimated-weight">
+                  Display weight (lbs)
+                </Label>
+                <p className="text-xs text-muted-foreground mb-1.5">
+                  Shown on variation details and in the catalog; shoppers see this value.
+                </p>
+                <Input
+                  id="estimated-weight"
+                  type="number"
+                  step="0.1"
+                  value={
+                    editedVariation.estimated_weight_lbs != null
+                      ? editedVariation.estimated_weight_lbs
+                      : ''
+                  }
+                  onChange={(e) =>
+                    setEditedVariation({
+                      ...editedVariation,
+                      estimated_weight_lbs: e.target.value
+                        ? parseFloat(e.target.value)
+                        : undefined,
+                    })
+                  }
+                  placeholder="e.g., 12.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="weight">Measured weight (lbs)</Label>
+                <p className="text-xs text-muted-foreground mb-1.5">
+                  Optional admin field when an actual scale weight differs from the display value.
+                </p>
                 <Input
                   id="weight"
                   type="number"
                   step="0.1"
-                  value={editedVariation.weight_lbs || ''}
-                  onChange={(e) => setEditedVariation({ 
-                    ...editedVariation, 
-                    weight_lbs: e.target.value ? parseFloat(e.target.value) : undefined 
-                  })}
+                  value={
+                    editedVariation.weight_lbs != null ? editedVariation.weight_lbs : ''
+                  }
+                  onChange={(e) =>
+                    setEditedVariation({
+                      ...editedVariation,
+                      weight_lbs: e.target.value
+                        ? parseFloat(e.target.value)
+                        : undefined,
+                    })
+                  }
                   placeholder="e.g., 10.5"
                 />
               </div>

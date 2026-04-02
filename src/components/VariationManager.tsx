@@ -934,11 +934,16 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                       )}
                        {/* Display weight and pricing if available */}
                        <div className="flex flex-wrap gap-2 mt-2">
-                         {(variation.weight_lbs || variation.estimated_weight_lbs) && (
-                           <Badge variant="outline" className="text-xs">
-                             Weight: {variation.weight_lbs || variation.estimated_weight_lbs} lbs
-                           </Badge>
-                         )}
+                         {(() => {
+                           const w =
+                             variation.weight_lbs ?? variation.estimated_weight_lbs;
+                           if (w == null) return null;
+                           return (
+                             <Badge variant="outline" className="text-xs">
+                               Weight: {Number(w).toFixed(1)} lbs
+                             </Badge>
+                           );
+                         })()}
                         {variation.estimated_rental_lifespan_days && (
                           <Badge variant="outline" className="text-xs">
                             Rental Life: {variation.estimated_rental_lifespan_days} days
