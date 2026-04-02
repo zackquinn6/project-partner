@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { MultiContentEditor } from './MultiContentEditor';
 import type { ContentSection } from '@/interfaces/Project';
+import { buildPricingModelRowsForVariation } from '@/utils/pricingModelLabels';
 
 interface VariationInstance {
   id: string;
@@ -69,7 +70,6 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
   const [editedVariation, setEditedVariation] = useState<VariationInstance>(variation);
   const [models, setModels] = useState<ToolModel[]>([]);
   const [pricing, setPricing] = useState<PricingData[]>([]);
-  const [newModel, setNewModel] = useState<Partial<ToolModel>>({});
   const [newPricing, setNewPricing] = useState<Partial<PricingData>>({});
   const [availableWarnings, setAvailableWarnings] = useState<WarningFlag[]>([]);
   const [loading, setLoading] = useState(false);
@@ -98,13 +98,15 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
 
   const fetchModelsAndPricing = async () => {
     try {
-      const { data: modelsData, error: modelsError } = await supabase
-        .from('tools')
-        .select('*')
-        .eq('variation_instance_id', variation.id);
-
-      if (modelsError) throw modelsError;
-      setModels(modelsData || []);
+      let coreItemDisplayName: string | undefined;
+      if (variation.core_item_id) {
+        const { data: coreRow } = await supabase
+          .from('tools')
+          .select('name')
+          .eq('id', variation.core_item_id)
+          .maybeSingle();
+        coreItemDisplayName = coreRow?.name ?? undefined;
+      }
 
       const { data: varData, error: varError } = await supabase
         .from('tool_variations')
@@ -113,8 +115,20 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
         .single();
 
       if (varError) throw varError;
-      const list = (varData?.pricing as PricingData[] | null) || [];
-      setPricing(Array.isArray(list) ? list : []);
+      const raw = varData?.pricing as PricingData[] | null;
+      const list = Array.isArray(raw) ? raw : [];
+      setPricing(list);
+
+      setModels(
+        buildPricingModelRowsForVariation({
+          variationId: variation.id,
+          coreItemId: variation.core_item_id,
+          coreItemDisplayName,
+          variationName: variation.name,
+          variationSku: variation.sku,
+          pricing: list,
+        })
+      );
     } catch (error) {
       console.error('Error fetching models and pricing:', error);
       toast.error('Failed to load variation data');
@@ -181,54 +195,6 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
       toast.error('Failed to save variation');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const addModel = async () => {
-    if (!newModel.model_name) {
-      toast.error('Model name is required');
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('tools')
-        .insert({
-          variation_instance_id: variation.id,
-          model_name: newModel.model_name,
-          manufacturer: newModel.manufacturer,
-          model_number: newModel.model_number,
-          upc_code: newModel.upc_code
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setModels([...models, data]);
-      setNewModel({});
-      toast.success('Model added successfully');
-    } catch (error) {
-      console.error('Error adding model:', error);
-      toast.error('Failed to add model');
-    }
-  };
-
-  const deleteModel = async (modelId: string) => {
-    try {
-      const { error } = await supabase
-        .from('tools')
-        .delete()
-        .eq('id', modelId);
-
-      if (error) throw error;
-
-      setModels(models.filter(m => m.id !== modelId));
-      setPricing(pricing.filter(p => p.model_id !== modelId));
-      toast.success('Model deleted successfully');
-    } catch (error) {
-      console.error('Error deleting model:', error);
-      toast.error('Failed to delete model');
     }
   };
 
@@ -526,88 +492,22 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
           </TabsContent>
 
           <TabsContent value="models" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Add New Model</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="model-name">Model Name *</Label>
-                    <Input
-                      id="model-name"
-                      value={newModel.model_name || ''}
-                      onChange={(e) => setNewModel({ ...newModel, model_name: e.target.value })}
-                      placeholder="e.g., DeWalt DCS570B"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="manufacturer">Manufacturer</Label>
-                    <Input
-                      id="manufacturer"
-                      value={newModel.manufacturer || ''}
-                      onChange={(e) => setNewModel({ ...newModel, manufacturer: e.target.value })}
-                      placeholder="e.g., DeWalt"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="model-number">Model Number</Label>
-                    <Input
-                      id="model-number"
-                      value={newModel.model_number || ''}
-                      onChange={(e) => setNewModel({ ...newModel, model_number: e.target.value })}
-                      placeholder="e.g., DCS570B"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="upc">UPC Code</Label>
-                    <Input
-                      id="upc"
-                      value={newModel.upc_code || ''}
-                      onChange={(e) => setNewModel({ ...newModel, upc_code: e.target.value })}
-                      placeholder="e.g., 885911419154"
-                    />
-                  </div>
-                </div>
-                <Button onClick={addModel} className="w-full" disabled={!newModel.model_name}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Model
-                </Button>
-              </CardContent>
-            </Card>
-
+            <p className="text-sm text-muted-foreground">
+              Pricing targets are keyed by UUID on each variation (variation id, core catalog tool id, or legacy
+              keys still present in <code className="text-xs">pricing</code> JSON). Use the Details tab for SKU
+              and naming; add retailer rows on the Pricing tab.
+            </p>
             <div className="space-y-3">
               {models.map((model) => (
                 <Card key={model.id}>
                   <CardContent className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-medium">{model.model_name}</div>
-                        {model.manufacturer && (
-                          <div className="text-sm text-muted-foreground">by {model.manufacturer}</div>
-                        )}
-                        {model.model_number && (
-                          <div className="text-xs text-muted-foreground">Model: {model.model_number}</div>
-                        )}
-                        {model.upc_code && (
-                          <div className="text-xs text-muted-foreground">UPC: {model.upc_code}</div>
-                        )}
-                        <div className="mt-2">
-                          {getModelPricing(model.id).length > 0 && (
-                            <div className="text-sm">
-                              <strong>Pricing:</strong> {getModelPricing(model.id).length} retailer(s)
-                            </div>
-                          )}
-                        </div>
+                    <div className="font-medium">{model.model_name}</div>
+                    <div className="text-xs text-muted-foreground font-mono mt-1 break-all">{model.id}</div>
+                    {getModelPricing(model.id).length > 0 && (
+                      <div className="text-sm mt-2">
+                        <strong>Pricing:</strong> {getModelPricing(model.id).length} retailer(s)
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deleteModel(model.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}

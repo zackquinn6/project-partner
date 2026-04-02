@@ -31,17 +31,6 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
 
       if (variationsError) throw variationsError;
 
-      // Fetch all tool models (now stored in tools table)
-      const { data: models, error: modelsError } = await supabase
-        .from('tools')
-        .select('*')
-        .order('model_name');
-
-      if (modelsError) throw modelsError;
-
-      // Pricing is stored on tool_variations.pricing (JSONB array per variation)
-      const pricing = (variations || []).flatMap(v => (v.pricing as any[] | null) || []);
-
       // Create workbook
       const workbook = XLSX.utils.book_new();
 
@@ -110,20 +99,15 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
       const variationsSheet = XLSX.utils.json_to_sheet(variationsData);
       XLSX.utils.book_append_sheet(workbook, variationsSheet, 'Variations');
 
-      // Models sheet
-      const modelsData = (models || []).map(model => {
-        const variation = variations?.find(v => v.id === model.variation_instance_id);
-        const tool = tools?.find(t => t.id === variation?.core_item_id);
-        
+      // Models sheet — one row per variation (SKU / identity lives on tool_variations, not a separate models table)
+      const modelsData = (variations || []).map((variation) => {
+        const tool = tools?.find(t => t.id === variation.core_item_id);
         return {
           'Tool Name': tool?.name || '',
-          'Variation Name': variation?.name || '',
-          'Model Name': model.model_name,
-          'Manufacturer': model.manufacturer || '',
-          'Model Number': model.model_number || '',
-          'UPC Code': model.upc_code || '',
-          'Created At': new Date(model.created_at).toLocaleDateString(),
-          'Updated At': new Date(model.updated_at).toLocaleDateString()
+          'Variation Name': variation.name,
+          'SKU/Model Numbers': variation.sku || '',
+          'Created At': new Date(variation.created_at).toLocaleDateString(),
+          'Updated At': new Date(variation.updated_at).toLocaleDateString(),
         };
       });
 
@@ -131,21 +115,22 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
       XLSX.utils.book_append_sheet(workbook, modelsSheet, 'Models');
 
       // Pricing sheet (pricing entries include model_id; variations already loaded)
-      const pricingData = (pricing || []).map((price: any) => {
-        const model = models?.find((m: any) => m.id === price.model_id);
-        const variation = variations?.find((v: any) => v.id === model?.variation_instance_id);
-        const tool = tools?.find((t: any) => t.id === variation?.core_item_id);
-        return {
+      const pricingData = (variations || []).flatMap((variation) => {
+        const tool = tools?.find(t => t.id === variation.core_item_id);
+        const list = (variation.pricing as any[] | null) || [];
+        return list.map((price: any) => ({
           'Tool Name': tool?.name || '',
-          'Variation Name': variation?.name || '',
-          'Model Name': model?.model_name || '',
+          'Variation Name': variation.name,
+          'Pricing key (model_id)': price.model_id ?? '',
           'Retailer': price.retailer,
           'Price': price.price ?? '',
           'Currency': price.currency ?? '',
           'Availability Status': price.availability_status ?? '',
           'Product URL': price.product_url ?? '',
-          'Last Scraped': price.last_scraped_at ? new Date(price.last_scraped_at).toLocaleDateString() : ''
-        };
+          'Last Scraped': price.last_scraped_at
+            ? new Date(price.last_scraped_at).toLocaleDateString()
+            : '',
+        }));
       });
 
       const pricingSheet = XLSX.utils.json_to_sheet(pricingData);

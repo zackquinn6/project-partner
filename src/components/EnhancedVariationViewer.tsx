@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { 
   Edit, 
-  Trash2, 
   Plus, 
   DollarSign, 
   Weight, 
@@ -21,6 +20,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { buildPricingModelRowsForVariation } from '@/utils/pricingModelLabels';
 
 interface EnhancedVariationViewerProps {
   open: boolean;
@@ -51,6 +51,7 @@ interface ToolModel {
 
 interface PricingData {
   id: string;
+  model_id: string;
   retailer: string;
   price: number;
   currency: string;
@@ -80,8 +81,6 @@ export function EnhancedVariationViewer({
   const [loading, setLoading] = useState(true);
   const [scrapingProgress, setScrapingProgress] = useState<Record<string, number>>({});
   const [editingVariation, setEditingVariation] = useState<VariationInstance | null>(null);
-  const [editingModel, setEditingModel] = useState<ToolModel | null>(null);
-  const [showAddModel, setShowAddModel] = useState<string | null>(null);
   const [showAddAttribute, setShowAddAttribute] = useState<string | null>(null);
   const [newAttributeKey, setNewAttributeKey] = useState('');
   const [newAttributeValue, setNewAttributeValue] = useState('');
@@ -118,33 +117,29 @@ export function EnhancedVariationViewer({
       setWarningFlags(flagsData || []);
 
       if (variationsData?.length > 0) {
-        const variationIds = variationsData.map(v => v.id);
-        const { data: modelsData, error: modelsError } = await supabase
-          .from('tools')
-          .select(
-            'id, model_name, manufacturer, model_number, upc_code, variation_instance_id'
-          )
-          .in('variation_instance_id', variationIds);
-
-        if (modelsError) throw modelsError;
-
         const modelsByVariation: Record<string, ToolModel[]> = {};
-        modelsData?.forEach(model => {
-          if (!modelsByVariation[model.variation_instance_id]) {
-            modelsByVariation[model.variation_instance_id] = [];
-          }
-          modelsByVariation[model.variation_instance_id].push(model as ToolModel);
-        });
-        setModels(modelsByVariation);
-
         const pricingByModel: Record<string, PricingData[]> = {};
-        (variationsData || []).forEach(v => {
-          const list = (v.pricing as PricingData[] | null) || [];
+
+        for (const v of variationsData) {
+          const raw = v.pricing as PricingData[] | null;
+          const list = Array.isArray(raw) ? raw : [];
+          modelsByVariation[v.id] = buildPricingModelRowsForVariation({
+            variationId: v.id,
+            coreItemId: v.core_item_id,
+            coreItemDisplayName: coreItemName,
+            variationName: v.name,
+            variationSku: (v as { sku?: string }).sku,
+            pricing: list,
+          }) as ToolModel[];
+
           list.forEach((p: PricingData) => {
+            if (!p.model_id) return;
             if (!pricingByModel[p.model_id]) pricingByModel[p.model_id] = [];
             pricingByModel[p.model_id].push(p);
           });
-        });
+        }
+
+        setModels(modelsByVariation);
         setPricingData(pricingByModel);
       } else {
         setModels({});
@@ -167,11 +162,12 @@ export function EnhancedVariationViewer({
       const searchTerm = `${model.manufacturer || ''} ${model.model_name}`.trim();
       
       const { data, error } = await supabase.functions.invoke('scrape-tool-pricing', {
-        body: { 
+        body: {
           modelId,
+          variationId: model.variation_instance_id,
           searchTerm,
-          includeEstimates: true
-        }
+          includeEstimates: true,
+        },
       });
 
       if (error) throw error;
@@ -237,46 +233,6 @@ export function EnhancedVariationViewer({
     } catch (error) {
       console.error('Error updating estimate:', error);
       toast.error('Failed to update estimate');
-    }
-  };
-
-  const addNewModel = async (variationId: string, modelData: Partial<ToolModel>) => {
-    try {
-      const { error } = await supabase
-        .from('tools')
-        .insert({
-          variation_instance_id: variationId,
-          model_name: modelData.model_name || '',
-          manufacturer: modelData.manufacturer || '',
-          model_number: modelData.model_number || '',
-          upc_code: modelData.upc_code || ''
-        });
-
-      if (error) throw error;
-      
-      fetchData();
-      setShowAddModel(null);
-      toast.success('Model added successfully');
-    } catch (error) {
-      console.error('Error adding model:', error);
-      toast.error('Failed to add model');
-    }
-  };
-
-  const deleteModel = async (modelId: string) => {
-    try {
-      const { error } = await supabase
-        .from('tools')
-        .delete()
-        .eq('id', modelId);
-
-      if (error) throw error;
-      
-      fetchData();
-      toast.success('Model deleted');
-    } catch (error) {
-      console.error('Error deleting model:', error);
-      toast.error('Failed to delete model');
     }
   };
 
@@ -481,36 +437,23 @@ export function EnhancedVariationViewer({
                     </TabsContent>
 
                     <TabsContent value="models" className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <Label className="font-medium">Tool Models</Label>
-                        <Button
-                          size="sm"
-                          onClick={() => setShowAddModel(variation.id)}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Model
-                        </Button>
-                      </div>
-                      
+                      <p className="text-sm text-muted-foreground">
+                        Each row is a pricing key tied to this variation (see Pricing tab). Scrape sends the row
+                        label as the search term and stores results under that key.
+                      </p>
                       <div className="space-y-2">
                         {(models[variation.id] || []).map((model) => (
                           <div key={model.id} className="flex items-center justify-between p-3 border rounded-md">
                             <div>
-                              <div className="font-medium">
-                                {model.manufacturer} {model.model_name}
-                              </div>
-                              {model.model_number && (
-                                <div className="text-sm text-muted-foreground">
-                                  Model: {model.model_number}
-                                </div>
-                              )}
+                              <div className="font-medium">{model.model_name}</div>
+                              <div className="text-xs text-muted-foreground font-mono break-all">{model.id}</div>
                             </div>
                             <div className="flex gap-2">
                               {scrapingProgress[model.id] !== undefined ? (
                                 <div className="flex items-center gap-2">
-                                  <Progress 
-                                    value={scrapingProgress[model.id]} 
-                                    className="w-20 h-2" 
+                                  <Progress
+                                    value={scrapingProgress[model.id]}
+                                    className="w-20 h-2"
                                   />
                                   <RefreshCw className="h-4 w-4 animate-spin" />
                                 </div>
@@ -523,20 +466,6 @@ export function EnhancedVariationViewer({
                                   <DollarSign className="h-4 w-4" />
                                 </Button>
                               )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setEditingModel(model)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => deleteModel(model.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
                             </div>
                           </div>
                         ))}
@@ -553,9 +482,7 @@ export function EnhancedVariationViewer({
                         return (
                           <div key={model.id} className="border rounded-md p-3">
                             <div className="flex items-center justify-between mb-2">
-                              <div className="font-medium">
-                                {model.manufacturer} {model.model_name}
-                              </div>
+                              <div className="font-medium">{model.model_name}</div>
                               {average > 0 && (
                                 <Badge variant="default">
                                   Avg: ${average} ({count} retailers)

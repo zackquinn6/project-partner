@@ -48,12 +48,6 @@ export const clearAllTools = async (): Promise<boolean> => {
     const variationIds = toolVariations?.map(v => v.id) || [];
 
     // Delete in correct order to respect foreign key constraints (pricing lives on tool_variations.pricing)
-    console.log('Deleting tool models...');
-    await supabase
-      .from('tools')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
-
     console.log('Deleting variation warning flags...');
     if (variationIds.length > 0) {
       await supabase

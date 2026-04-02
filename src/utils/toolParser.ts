@@ -203,16 +203,6 @@ export async function importToolsToDatabase(
               continue;
             }
 
-      // Create tool model entry
-      await supabase
-        .from('tools')
-        .insert({
-          variation_instance_id: variationData.id,
-          model_name: `${variation.brand} ${variation.model}`,
-          manufacturer: variation.brand,
-          model_number: variation.model
-        });
-
             // Create attributes and values as needed in attribute_definitions JSON
             await createAttributesAndValues(coreToolId, variation.attributes);
 

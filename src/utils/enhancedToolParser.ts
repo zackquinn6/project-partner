@@ -469,21 +469,6 @@ export async function importEnhancedToolsToDatabase(
           .single();
         
         if (variantError) throw variantError;
-        
-        // Create models for this variant
-        for (const model of variant.models) {
-          const { error: modelError } = await supabase
-            .from('tools')
-            .insert({
-              variation_instance_id: variationInstance.id,
-              model_name: model.modelName,
-              manufacturer: model.manufacturer,
-              model_number: model.modelNumber,
-              upc_code: model.upcCode
-            });
-          
-          if (modelError) throw modelError;
-        }
       }
       
       results.success++;

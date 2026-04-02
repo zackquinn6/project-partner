@@ -364,6 +364,60 @@ function RiskLessListSortMenu({
   );
 }
 
+/** Run-mode Risk-Less (workshop / home): primary register order — easiest mitigation vs most important risk. */
+function RiskLessRegisterPrimarySortMenu({
+  value,
+  onValueChange,
+  align = 'end',
+  triggerClassName,
+}: {
+  value: RiskLessRegisterPrimarySort;
+  onValueChange: (v: RiskLessRegisterPrimarySort) => void;
+  align?: 'end' | 'center' | 'start';
+  triggerClassName?: string;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={cn('h-8 gap-0.5 px-2 text-xs', triggerClassName)}
+          aria-label={
+            value === 'easiest-mitigation'
+              ? 'Sort register: easiest mitigation first (change)'
+              : 'Sort register: most important risk first (change)'
+          }
+        >
+          <ListOrdered className="h-3.5 w-3.5 shrink-0" />
+          <span className="hidden min-[380px]:inline">
+            {value === 'easiest-mitigation' ? 'Easiest first' : 'Most important first'}
+          </span>
+          <ChevronDown className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align={align} className="z-[250] w-[min(100vw-2rem,18rem)]">
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+          Sort register
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuRadioGroup
+          value={value}
+          onValueChange={(v) => onValueChange(v as RiskLessRegisterPrimarySort)}
+        >
+          <DropdownMenuRadioItem value="easiest-mitigation" className="text-sm">
+            Easiest mitigation first
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="most-important-risk" className="text-sm">
+            Most important risk first
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function RiskLessEditVisibilityMenu({
   showHiddenToggle,
   isRiskFocusRun,
@@ -473,6 +527,8 @@ export function RiskManagementWindow({
   const showRiskFocusHiddenToggle = riskFocusRun && risks.length > 0;
   const wfTableAdvanced = workflowTemplateRiskLess && advancedMode;
   const wfTableFriendly = workflowTemplateRiskLess && !advancedMode;
+  /** User workshop / home Risk-Less run (not workflow editor template). */
+  const friendlyRiskLessRegisterUi = riskFocusRun && !workflowEditorRiskLess;
 
   /** Keep scroll position in Risk-Less: avoid full fetchRisks() after small mitigation edits. */
   const patchRunRiskMitigationActions = useCallback(
@@ -529,13 +585,7 @@ export function RiskManagementWindow({
           const sev = severitySortRank(b.severity) - severitySortRank(a.severity);
           if (sev !== 0) return sev;
         }
-        if (riskListSort === 'alpha') {
-          return (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' });
-        }
-        return (
-          severitySortRank(b.severity) - severitySortRank(a.severity) ||
-          (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' })
-        );
+        return (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' });
       });
     } else if (workflowTemplateRiskLess) {
       if (riskListSort === 'alpha') {
@@ -1123,7 +1173,9 @@ export function RiskManagementWindow({
         className={cn(
           'flex flex-col overflow-hidden p-0 [&>button]:hidden',
           useRiskLessChrome
-            ? 'flex h-screen max-h-full w-full max-w-[90vw] flex-col overflow-hidden p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg md:p-0 [&>button]:hidden'
+            ? cn(
+                'gap-0 !inset-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-none !translate-x-0 !translate-y-0 flex-col overflow-hidden rounded-none border-0 p-0 shadow-none sm:max-w-none md:!max-w-none md:rounded-none md:p-0 [&>button]:hidden'
+              )
             : 'h-screen max-h-full w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg'
         )}
       >
@@ -1168,7 +1220,7 @@ export function RiskManagementWindow({
               >
                 {workflowTemplateRiskLess
                   ? 'Review and edit risks for the project template you are working on'
-                  : `Spot what could go wrong, decide how much it matters, and plan how you'll handle it`}
+                  : `Spot what could go wrong, and plan how you'll handle it`}
               </p>
             ) : null}
           </div>
@@ -1203,53 +1255,6 @@ export function RiskManagementWindow({
             risks={displayRisks}
             projectDisplayName={templateProjectDisplayName?.trim() || null}
           />
-        ) : null}
-
-        {riskFocusRun ? (
-          <div className="shrink-0 border-b border-border/60 bg-muted/15 px-3 py-2 md:px-4">
-            <div className="mx-auto flex max-w-3xl flex-col items-center gap-1.5">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 gap-0.5 px-2 text-xs"
-                    aria-label={
-                      riskLessRegisterPrimarySort === 'easiest-mitigation'
-                        ? 'Sort register: easiest mitigation first (change order)'
-                        : 'Sort register: most important risk first (change order)'
-                    }
-                  >
-                    <ListOrdered className="h-3.5 w-3.5 shrink-0" />
-                    <ChevronDown className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="z-[250] w-[min(100vw-2rem,18rem)]">
-                  <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                    Sort register
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuRadioGroup
-                    value={riskLessRegisterPrimarySort}
-                    onValueChange={(v) =>
-                      setRiskLessRegisterPrimarySort(v as RiskLessRegisterPrimarySort)
-                    }
-                  >
-                    <DropdownMenuRadioItem value="easiest-mitigation" className="text-sm">
-                      Easiest mitigation first
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="most-important-risk" className="text-sm">
-                      Most important risk first
-                    </DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <p className="max-w-md px-2 text-center text-[10px] leading-snug text-muted-foreground">
-                Use the list sort control in the toolbar to order by risk name or current status within this order.
-              </p>
-            </div>
-          </div>
         ) : null}
 
         <div
@@ -1333,9 +1338,10 @@ export function RiskManagementWindow({
                     ) : null}
                     <div className="flex w-full flex-wrap items-center gap-2">
                       {risks.length > 0 && riskFocusRun ? (
-                        <RiskLessListSortMenu
-                          riskListSort={riskListSort}
-                          onSortChange={setRiskListSort}
+                        <RiskLessRegisterPrimarySortMenu
+                          value={riskLessRegisterPrimarySort}
+                          onValueChange={setRiskLessRegisterPrimarySort}
+                          align="start"
                           triggerClassName="h-8"
                         />
                       ) : null}
@@ -1439,9 +1445,9 @@ export function RiskManagementWindow({
                     ) : null}
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:ml-auto">
                       {risks.length > 0 && riskFocusRun ? (
-                        <RiskLessListSortMenu
-                          riskListSort={riskListSort}
-                          onSortChange={setRiskListSort}
+                        <RiskLessRegisterPrimarySortMenu
+                          value={riskLessRegisterPrimarySort}
+                          onValueChange={setRiskLessRegisterPrimarySort}
                           triggerClassName="h-7"
                         />
                       ) : null}
@@ -1556,9 +1562,9 @@ export function RiskManagementWindow({
                       />
                     ) : null}
                     {riskFocusRun && risks.length > 0 ? (
-                      <RiskLessListSortMenu
-                        riskListSort={riskListSort}
-                        onSortChange={setRiskListSort}
+                      <RiskLessRegisterPrimarySortMenu
+                        value={riskLessRegisterPrimarySort}
+                        onValueChange={setRiskLessRegisterPrimarySort}
                         triggerClassName="h-7"
                       />
                     ) : null}
@@ -1702,7 +1708,9 @@ export function RiskManagementWindow({
                               {riskFocusRun ? (
                                 <>
                                   <div>
-                                    <div className="text-xs text-muted-foreground mb-1">Likelihood</div>
+                                    <div className="text-xs text-muted-foreground mb-1">
+                                      {friendlyRiskLessRegisterUi ? 'How likely is it?' : 'Likelihood'}
+                                    </div>
                                     <Badge
                                       className={getRiskLevelColor(
                                         risk.likelihood,
@@ -1740,7 +1748,11 @@ export function RiskManagementWindow({
                                     </div>
                                   ) : null}
                                   <div>
-                                    <div className="text-xs text-muted-foreground mb-1">Impact</div>
+                                    <div className="text-xs text-muted-foreground mb-1">
+                                      {friendlyRiskLessRegisterUi
+                                        ? 'If it happens, then what?'
+                                        : 'Impact'}
+                                    </div>
                                     <ImpactIfItDoesContent risk={risk} />
                                   </div>
                                 </>
@@ -1843,7 +1855,11 @@ export function RiskManagementWindow({
                                   onClick={(e) => e.stopPropagation()}
                                   onKeyDown={(e) => e.stopPropagation()}
                                 >
-                                  <div className="text-xs text-muted-foreground mb-1">Mitigation</div>
+                                  <div className="text-xs text-muted-foreground mb-1">
+                                    {friendlyRiskLessRegisterUi
+                                      ? 'What can we do to prevent it?'
+                                      : 'Mitigation'}
+                                  </div>
                                   {(risk.mitigation_actions?.length ?? 0) > 0 ? (
                                     <ul className="space-y-2 text-sm">
                                       {risk.mitigation_actions!.map((ma, idx) => (
@@ -2021,7 +2037,7 @@ export function RiskManagementWindow({
                           {riskFocusRun ? (
                             <>
                               <TableHead className="w-[100px] bg-background align-bottom font-semibold text-foreground">
-                                Likelihood
+                                {friendlyRiskLessRegisterUi ? 'How likely is it?' : 'Likelihood'}
                               </TableHead>
                               {advancedMode ? (
                                 <TableHead className="w-[120px] bg-background align-bottom font-semibold text-foreground">
@@ -2067,7 +2083,9 @@ export function RiskManagementWindow({
                                 : 'min-w-[140px] max-w-[200px]'
                             )}
                           >
-                            {wfTableFriendly ? 'If it happens, then what?' : 'Impact'}
+                            {wfTableFriendly || friendlyRiskLessRegisterUi
+                              ? 'If it happens, then what?'
+                              : 'Impact'}
                           </TableHead>
                           <TableHead
                             className={cn(
@@ -2075,7 +2093,9 @@ export function RiskManagementWindow({
                               riskFocusRun ? 'min-w-[16rem] w-[36%]' : 'min-w-[200px]'
                             )}
                           >
-                            {wfTableFriendly ? 'What can we do to prevent it?' : 'Mitigation'}
+                            {wfTableFriendly || friendlyRiskLessRegisterUi
+                              ? 'What can we do to prevent it?'
+                              : 'Mitigation'}
                           </TableHead>
                           {mode === 'run' && variant === 'risk-focus' ? (
                             <TableHead className="min-w-[100px] max-w-[140px] bg-background align-bottom font-semibold leading-tight text-foreground">

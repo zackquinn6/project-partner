@@ -281,13 +281,9 @@ serve(async (req) => {
       
       for (const variationId of variationIds) {
         try {
-          // Get variation and its optional models (LEFT JOIN instead of INNER)
           const { data: variation, error: variationError } = await supabase
             .from('tool_variations')
-            .select(`
-              id, name, attributes, estimated_weight_lbs, estimated_rental_lifespan_days,
-              tools(id, model_name, manufacturer)
-            `)
+            .select('id, name, attributes, estimated_weight_lbs, estimated_rental_lifespan_days, core_item_id')
             .eq('id', variationId)
             .single();
 
@@ -296,9 +292,27 @@ serve(async (req) => {
             continue;
           }
 
-          // Use variation name for search term
-          const toolSearchTerm = variation.name;
-          console.log(`Processing variation: ${toolSearchTerm} (has ${variation.tools?.length || 0} models)`);
+          let coreToolName: string | null = null;
+          if (variation.core_item_id) {
+            const { data: toolRow } = await supabase
+              .from('tools')
+              .select('name')
+              .eq('id', variation.core_item_id)
+              .maybeSingle();
+            coreToolName = toolRow?.name ?? null;
+          }
+
+          const toolSearchTerm = [coreToolName, variation.name]
+            .filter((x): x is string => Boolean(x && String(x).trim()))
+            .join(' ')
+            .trim();
+
+          if (!toolSearchTerm) {
+            console.log(`Skipping variation ${variationId}: no name for search`);
+            continue;
+          }
+
+          console.log(`Processing variation: ${toolSearchTerm}`);
 
           // Only estimate if not already present
           let needsWeightEstimate = !variation.estimated_weight_lbs;
@@ -322,55 +336,50 @@ serve(async (req) => {
             console.log(`Updated variation ${variationId} with estimates:`, updateData);
           }
 
-          // Process pricing for tool models if they exist
-          if (variation.tools?.length > 0) {
-            console.log(`Processing pricing for ${variation.tools.length} models`);
-            const toolModel = variation.tools[0];
-            
-            // Scrape pricing from all retailers
-            const retailerPromises = RETAILERS.slice(0, 3).map(retailer => // Limit to first 3 retailers for efficiency
-              scrapeRetailerPricing(retailer, `${toolModel.manufacturer || ''} ${toolModel.model_name || toolSearchTerm}`.trim())
-            );
-            
-            const retailerResults = await Promise.allSettled(retailerPromises);
-            
-            for (let i = 0; i < retailerResults.length; i++) {
-              const retailer = RETAILERS[i];
-              const result = retailerResults[i];
+          const pricingModelKey = variation.id;
 
-              if (result.status === 'fulfilled' && result.value.length > 0) {
-                const pricingResult = result.value[0];
-                
-                if (pricingResult.price > 0) {
-                  const { data: varRow } = await supabase
-                    .from('tool_variations')
-                    .select('pricing')
-                    .eq('id', variationId)
-                    .single();
-                  const pricing = (varRow?.pricing || []) as any[];
-                  const without = pricing.filter((p: any) => !(p.model_id === toolModel.id && p.retailer === retailer.name));
-                  const updated = [...without, {
-                    id: crypto.randomUUID(),
-                    model_id: toolModel.id,
-                    retailer: retailer.name,
-                    price: pricingResult.price,
-                    currency: 'USD',
-                    availability_status: pricingResult.availability,
-                    product_url: pricingResult.productUrl,
-                    last_scraped_at: new Date().toISOString()
-                  }];
-                  await supabase
-                    .from('tool_variations')
-                    .update({ pricing: updated })
-                    .eq('id', variationId);
-                  console.log(`Saved pricing for ${toolModel.model_name}: $${pricingResult.price} from ${retailer.name}`);
-                }
+          const retailerPromises = RETAILERS.slice(0, 3).map((retailer) =>
+            scrapeRetailerPricing(retailer, toolSearchTerm)
+          );
+
+          const retailerResults = await Promise.allSettled(retailerPromises);
+
+          for (let i = 0; i < retailerResults.length; i++) {
+            const retailer = RETAILERS[i];
+            const result = retailerResults[i];
+
+            if (result.status === 'fulfilled' && result.value.length > 0) {
+              const pricingResult = result.value[0];
+
+              if (pricingResult.price > 0) {
+                const { data: varRow } = await supabase
+                  .from('tool_variations')
+                  .select('pricing')
+                  .eq('id', variationId)
+                  .single();
+                const pricing = (varRow?.pricing || []) as any[];
+                const without = pricing.filter((p: any) =>
+                  !(p.model_id === pricingModelKey && p.retailer === retailer.name)
+                );
+                const updated = [...without, {
+                  id: crypto.randomUUID(),
+                  model_id: pricingModelKey,
+                  retailer: retailer.name,
+                  price: pricingResult.price,
+                  currency: 'USD',
+                  availability_status: pricingResult.availability,
+                  product_url: pricingResult.productUrl,
+                  last_scraped_at: new Date().toISOString()
+                }];
+                await supabase
+                  .from('tool_variations')
+                  .update({ pricing: updated })
+                  .eq('id', variationId);
+                console.log(`Saved pricing for variation ${variationId}: $${pricingResult.price} from ${retailer.name}`);
               }
             }
-          } else {
-            console.log(`No models found for variation ${toolSearchTerm}, skipping pricing scrape`);
           }
-          
+
           processedCount++;
           if (processedCount % 10 === 0) {
             console.log(`Processed ${processedCount}/${variationIds.length} variations`);
@@ -392,20 +401,59 @@ serve(async (req) => {
       });
     }
 
-    // Original single model processing
-    const currentModelId = modelId;
-    console.log(`Starting price scraping for model: ${currentModelId}, search: ${searchTerm}`);
+    const camelVariationTarget = body.variationId as string | undefined;
+    const snakeVariationTarget = body.variation_id as string | undefined;
+    const currentModelId = modelId as string | undefined;
 
-    // Get the model details
-      const { data: model, error: modelError } = await supabase
-      .from('tools')
-      .select('*, tool_variations(*)')
-      .eq('id', currentModelId)
-      .single();
+    const resolvedSearchTerm = (
+      typeof searchTerm === 'string' && searchTerm.trim()
+        ? searchTerm.trim()
+        : [body.brand, body.model, body.tool_name].filter(Boolean).map(String).join(' ').trim()
+    );
 
-    if (modelError) {
-      throw new Error(`Failed to fetch model: ${modelError.message}`);
+    let variationRowId: string;
+    let pricingModelKey: string;
+
+    if (camelVariationTarget && currentModelId) {
+      variationRowId = camelVariationTarget;
+      pricingModelKey = currentModelId;
+    } else if (snakeVariationTarget && !currentModelId) {
+      variationRowId = snakeVariationTarget;
+      pricingModelKey = snakeVariationTarget;
+    } else if (snakeVariationTarget && currentModelId) {
+      variationRowId = snakeVariationTarget;
+      pricingModelKey = currentModelId;
+    } else if (currentModelId) {
+      const { data: asVar } = await supabase
+        .from('tool_variations')
+        .select('id')
+        .eq('id', currentModelId)
+        .maybeSingle();
+      if (asVar) {
+        variationRowId = currentModelId;
+        pricingModelKey = currentModelId;
+      } else {
+        const { data: asTool } = await supabase
+          .from('tools')
+          .select('id')
+          .eq('id', currentModelId)
+          .maybeSingle();
+        if (!asTool) {
+          throw new Error('modelId is not a tools or tool_variations id');
+        }
+        throw new Error('Pass variationId when modelId is a catalog tools row id');
+      }
+    } else {
+      throw new Error('modelId or variation_id is required');
     }
+
+    if (!resolvedSearchTerm) {
+      throw new Error('searchTerm (or tool_name / brand / model) is required');
+    }
+
+    console.log(
+      `Starting price scrape variationRowId=${variationRowId} pricingModelKey=${pricingModelKey} search=${resolvedSearchTerm}`
+    );
 
     const results = {
       pricingData: [] as any[],
@@ -413,14 +461,12 @@ serve(async (req) => {
       estimatedLifespan: null as number | null
     };
 
-    // Scrape pricing from all retailers
-    const scrapingPromises = RETAILERS.map(retailer => 
-      scrapeRetailerPricing(retailer, searchTerm)
+    const scrapingPromises = RETAILERS.map((retailer) =>
+      scrapeRetailerPricing(retailer, resolvedSearchTerm)
     );
 
     const retailerResults = await Promise.allSettled(scrapingPromises);
 
-    // Process and save pricing data
     for (let i = 0; i < RETAILERS.length; i++) {
       const retailer = RETAILERS[i];
       const result = retailerResults[i];
@@ -428,17 +474,18 @@ serve(async (req) => {
       if (result.status === 'fulfilled' && result.value.length > 0) {
         const pricingResult = result.value[0];
         if (pricingResult.price > 0) {
-          const variationId = model.variation_instance_id;
           const { data: varRow } = await supabase
             .from('tool_variations')
             .select('pricing')
-            .eq('id', variationId)
+            .eq('id', variationRowId)
             .single();
           const pricing = (varRow?.pricing || []) as any[];
-          const without = pricing.filter((p: any) => !(p.model_id === modelId && p.retailer === retailer.name));
+          const without = pricing.filter((p: any) =>
+            !(p.model_id === pricingModelKey && p.retailer === retailer.name)
+          );
           const updated = [...without, {
             id: crypto.randomUUID(),
-            model_id: modelId,
+            model_id: pricingModelKey,
             retailer: retailer.name,
             price: pricingResult.price,
             currency: 'USD',
@@ -449,7 +496,7 @@ serve(async (req) => {
           const { error: updateError } = await supabase
             .from('tool_variations')
             .update({ pricing: updated })
-            .eq('id', variationId);
+            .eq('id', variationRowId);
           if (!updateError) {
             results.pricingData.push({
               retailer: retailer.name,
@@ -461,17 +508,15 @@ serve(async (req) => {
       }
     }
 
-    // Estimate weight and lifespan if requested
     if (includeEstimates) {
       const [weightEstimate, lifespanEstimate] = await Promise.all([
-        estimateWeightFromWeb(searchTerm),
-        estimateRentalLifespanFromWeb(searchTerm)
+        estimateWeightFromWeb(resolvedSearchTerm),
+        estimateRentalLifespanFromWeb(resolvedSearchTerm)
       ]);
 
       results.estimatedWeight = weightEstimate;
       results.estimatedLifespan = lifespanEstimate;
 
-      // Update the variation instance with estimates
       if (weightEstimate || lifespanEstimate) {
         const updateData: any = {};
         if (weightEstimate) updateData.estimated_weight_lbs = weightEstimate;
@@ -480,7 +525,7 @@ serve(async (req) => {
         await supabase
           .from('tool_variations')
           .update(updateData)
-          .eq('id', model.variation_instance_id);
+          .eq('id', variationRowId);
       }
     }
 

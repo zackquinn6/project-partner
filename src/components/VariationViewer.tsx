@@ -9,6 +9,7 @@ import {
   fetchAttributeDefinitionsForCoreItem,
   fetchAttributeDefinitionsForMaterial,
 } from '@/utils/variationAttributeDefinitions';
+import { buildPricingModelRowsForVariation } from '@/utils/pricingModelLabels';
 import { VariationEditor } from './VariationEditor';
 import { MaterialVariationEditor } from './MaterialVariationEditor';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -112,18 +113,28 @@ export function VariationViewer({ open, onOpenChange, coreItemId, coreItemName, 
         }));
         setVariations(processedVariations);
 
-        const variationIds = processedVariations.map(v => v.id);
-        if (variationIds.length > 0 && !onVariationSelect) {
-          const { data: modelsData, error: modelsError } = await supabase
-            .from('tools')
-            .select('*')
-            .in('variation_instance_id', variationIds);
-
-          if (modelsError) throw modelsError;
-          setModels(modelsData || []);
-
-          const flatPricing = (variationsData || []).flatMap(v => (v.pricing as any[] | null) || []);
+        if (onVariationSelect) {
+          setModels([]);
+          setPricing([]);
+        } else {
+          const flatPricing = (variationsData || []).flatMap(
+            (v) => (v.pricing as PricingData[] | null) || []
+          );
           setPricing(flatPricing);
+
+          const modelRows = processedVariations.flatMap((v) => {
+            const raw = (v as { pricing?: { model_id?: string }[] }).pricing;
+            const pricingList = Array.isArray(raw) ? raw : [];
+            return buildPricingModelRowsForVariation({
+              variationId: v.id,
+              coreItemId: v.core_item_id,
+              coreItemDisplayName: coreItemName,
+              variationName: v.name,
+              variationSku: v.sku,
+              pricing: pricingList,
+            });
+          });
+          setModels(modelRows);
         }
       }
     } catch (error) {

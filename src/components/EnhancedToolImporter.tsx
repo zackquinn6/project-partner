@@ -96,50 +96,99 @@ export function EnhancedToolImporter({ open, onOpenChange, onSuccess }: Enhanced
 
     setScrapingPrices(true);
     setProgress(0);
-    
+
     try {
       let processed = 0;
-      const totalModels = parsedTools.reduce((acc, tool) => 
-        acc + tool.variants.reduce((vAcc, variant) => vAcc + variant.models.length, 0), 0
+      let skipped = 0;
+      const totalModels = parsedTools.reduce(
+        (acc, t) => acc + t.variants.reduce((vAcc, v) => vAcc + v.models.length, 0),
+        0
       );
 
       for (const tool of parsedTools) {
-        for (const variant of tool.variants) {
-          for (const model of variant.models) {
-            try {
-              // Get the model ID from database first
-              const { data: dbModel } = await supabase
-                .from('tools')
-                .select('id')
-                .eq('model_name', model.modelName)
-                .eq('manufacturer', model.manufacturer || '')
-                .maybeSingle();
+        const { data: coreRow, error: coreErr } = await supabase
+          .from('tools')
+          .select('id')
+          .eq('name', tool.coreToolName)
+          .maybeSingle();
 
-              if (dbModel) {
-                // Trigger pricing scrape
-                const searchTerm = `${model.manufacturer || ''} ${model.modelName}`.trim();
-                await supabase.functions.invoke('scrape-tool-pricing', {
-                  body: { 
-                    modelId: dbModel.id, 
-                    searchTerm,
-                    includeEstimates: true
+        if (coreErr) {
+          console.error(`Lookup core tool "${tool.coreToolName}":`, coreErr);
+        }
+
+        for (const variant of tool.variants) {
+          let variationId: string | undefined;
+          if (coreRow?.id) {
+            const { data: varRows, error: varErr } = await supabase
+              .from('tool_variations')
+              .select('id')
+              .eq('core_item_id', coreRow.id)
+              .eq('name', variant.name)
+              .order('created_at', { ascending: false })
+              .limit(1);
+
+            if (varErr) {
+              console.error(`Lookup variation "${variant.name}":`, varErr);
+            }
+            variationId = varRows?.[0]?.id;
+          }
+
+          for (let mi = 0; mi < variant.models.length; mi++) {
+            const model = variant.models[mi];
+            try {
+              if (!variationId) {
+                skipped++;
+                console.warn(
+                  `Skip scrape (import this tool first): ${tool.coreToolName} / ${variant.name} / ${model.modelName}`
+                );
+              } else {
+                const searchTerm = [
+                  model.manufacturer,
+                  model.modelName,
+                  model.modelNumber,
+                ]
+                  .filter((s): s is string => Boolean(s && String(s).trim()))
+                  .join(' ')
+                  .trim();
+
+                if (!searchTerm) {
+                  skipped++;
+                } else {
+                  const pricingModelKey = `${variationId}:import:${mi}`;
+
+                  const { error: fnErr } = await supabase.functions.invoke('scrape-tool-pricing', {
+                    body: {
+                      variationId,
+                      modelId: pricingModelKey,
+                      searchTerm,
+                      includeEstimates: true,
+                    },
+                  });
+
+                  if (fnErr) {
+                    console.error(`scrape-tool-pricing ${model.modelName}:`, fnErr);
                   }
-                });
-                
-                // Small delay to avoid overwhelming servers
-                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                  await new Promise((resolve) => setTimeout(resolve, 1000));
+                }
               }
             } catch (error) {
               console.error(`Error scraping pricing for ${model.modelName}:`, error);
             }
-            
+
             processed++;
             setProgress((processed / totalModels) * 100);
           }
         }
       }
 
-      toast.success(`Completed pricing scrape for ${totalModels} models`);
+      if (skipped > 0) {
+        toast.message('Pricing scrape finished', {
+          description: `${skipped} of ${totalModels} row(s) skipped — import tools first, or ensure variant names match tool_variations in the database.`,
+        });
+      } else {
+        toast.success(`Completed pricing scrape for ${totalModels} model row(s)`);
+      }
     } catch (error) {
       console.error('Error scraping pricing:', error);
       toast.error('Failed to scrape pricing data');
