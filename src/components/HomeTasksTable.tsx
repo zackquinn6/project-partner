@@ -251,9 +251,9 @@ export function HomeTasksTable({
     { id: 'pro', label: 'Pro', labelDesktop: 'Professional' },
   ];
 
-  return <div className="flex h-full min-h-0 flex-1 flex-col space-y-2 md:space-y-3">
+  return <div className="flex min-h-0 flex-1 flex-col space-y-2 md:space-y-3">
       {/* Full-width desktop (xl+): DIY level pills + inline “Show completed” */}
-      <div className="hidden xl:flex flex-row gap-4 items-center pt-3">
+      <div className="hidden shrink-0 xl:flex flex-row items-center gap-4 pt-3">
         {onAddTask && (
           <Button
             onClick={onAddTask}
@@ -312,7 +312,7 @@ export function HomeTasksTable({
       </div>
 
       {/* Tablet / slim desktop (md–lg): filters as dropdowns + Show Done button (same pattern as mobile) */}
-      <div className="hidden md:flex xl:hidden flex-col gap-2 mb-1 pt-3">
+      <div className="mb-1 hidden shrink-0 flex-col gap-2 pt-3 md:flex xl:hidden">
         <Input
           placeholder="Search tasks..."
           value={searchTerm}
@@ -374,7 +374,7 @@ export function HomeTasksTable({
       </div>
 
       {/* Mobile filters and controls */}
-      <div className="flex md:hidden flex-col gap-1.5 mb-1 pt-0.5">
+      <div className="mb-1 flex shrink-0 flex-col gap-1.5 pt-0.5 md:hidden">
         <Input
           placeholder="Search tasks..."
           value={searchTerm}
@@ -435,8 +435,8 @@ export function HomeTasksTable({
       </div>
 
       {/* Table: mobile = check + task + due; desktop = full columns */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-none border border-x-0 border-border md:rounded-lg md:border-x">
-        <div className="h-full min-h-0 flex-1 overflow-auto">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-none border border-x-0 border-border md:rounded-lg md:border-x">
+        <div className="min-h-0 flex-1 overflow-auto">
           <Table>
             <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:!h-auto [&_th]:!min-h-[4.25rem] [&_th]:!px-1 [&_th]:!py-3 [&_th]:leading-none md:[&_th]:!min-h-11 md:[&_th]:!px-3 md:[&_th]:!py-2.5">
               <TableRow className="border-sky-500/50">

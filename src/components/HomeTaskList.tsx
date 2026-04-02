@@ -753,8 +753,8 @@ export function HomeTaskList({
   );
 
   const taskManagerTabs = (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex h-full flex-col">
-              <div className="flex-shrink-0 border-b border-border/60 bg-background/95 px-2 pb-1 pt-0.5 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:pb-2 md:pt-1.5">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
+              <div className="flex-shrink-0 border-b border-border/60 bg-background/95 px-2 pb-1 pt-0 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:pb-1.5 md:pt-0">
                 <div className="overflow-hidden">
                   <TabsList className="w-full inline-flex h-8 md:h-9 p-0.5 gap-0.5 md:gap-1 bg-muted/50 rounded-full">
                     <TabsTrigger value="tasks" className="text-[11px] md:text-xs px-2 md:px-3 py-1.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0 truncate">
@@ -773,7 +773,7 @@ export function HomeTaskList({
               </div>
 
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-background to-muted/30 px-2 pb-2 pt-0 md:px-6 md:pb-4 md:pt-0">
-                <TabsContent value="tasks" className="mt-0 flex h-full min-h-0 flex-1 flex-col gap-0.5 overflow-hidden md:gap-3">
+                <TabsContent value="tasks" className="mt-0 flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden md:gap-3">
                   <div className="shrink-0 space-y-0.5 md:space-y-3">
                   {/* Project Dashboard metrics (Project & Task Manager) */}
                   {(() => {
@@ -1232,12 +1232,12 @@ export function HomeTaskList({
                   </div>
                 </TabsContent>
 
-                <TabsContent value="shopping" className="mt-0 flex h-full min-h-0 flex-1 flex-col overflow-auto">
+                <TabsContent value="shopping" className="mt-0 flex min-h-0 flex-1 flex-col overflow-auto">
                   <ShoppingListManager />
                 </TabsContent>
 
                 {user ? (
-                  <TabsContent value="schedule" className="mt-0 flex h-full min-h-0 flex-1 flex-col space-y-4 overflow-auto">
+                  <TabsContent value="schedule" className="mt-0 flex min-h-0 flex-1 flex-col space-y-4 overflow-auto">
                     {/* Top buttons for Team and Assign windows */}
                     <div className="flex gap-2">
                       <Button
