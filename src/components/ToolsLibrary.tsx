@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Plus, Edit, Image, ArrowUpDown } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { LibraryItemForm } from "./LibraryItemForm";
 import { VariationViewer } from "./VariationViewer";
@@ -14,11 +14,15 @@ import { ExportToolsData } from "./ExportToolsData";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PLANNING_TOOL_SAVE_CLOSE_CLASSNAME } from "@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions";
 
-/** Add / Edit tool dialogs: fixed height for tab parity; 90vw on small screens, edge-to-edge from `md` up. */
+const TOOLS_LIBRARY_EDIT_FORM_ID = "tools-library-edit-tool-form";
+
+/** Add / Edit tool dialogs: 90vw × 90dvh, centered; fixed height so all tabs keep the same chrome. */
+const ADMIN_TOOL_DIALOG_OVERLAY_CLASS = cn("z-[100] bg-black/50 backdrop-blur-md");
+
 const ADMIN_TOOL_DIALOG_CONTENT_CLASS = cn(
-  "z-[101] flex h-[90dvh] max-h-[90dvh] w-[90vw] max-w-[90vw] flex-col gap-0 overflow-hidden p-0",
-  "md:inset-0 md:left-0 md:top-0 md:h-dvh md:max-h-dvh md:w-screen md:max-w-none md:translate-x-0 md:translate-y-0 md:rounded-none"
+  "z-[101] flex h-[90dvh] max-h-[90dvh] w-[90vw] max-w-[90vw] flex-col gap-0 overflow-hidden rounded-lg border p-0"
 );
 
 interface Tool {
@@ -64,6 +68,7 @@ export function ToolsLibrary() {
   const [viewingVariations, setViewingVariations] = useState<Tool | null>(null);
   const [sortField, setSortField] = useState<SortField>('item');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [editToolFormSubmitting, setEditToolFormSubmitting] = useState(false);
 
   const fetchTools = async () => {
     try {
@@ -222,21 +227,21 @@ export function ToolsLibrary() {
               <Plus className="w-3 h-3" />
             </Button>
           </DialogTrigger>
-          <DialogPortal>
-            <DialogOverlay className="z-[100]" />
-            <DialogContent className={ADMIN_TOOL_DIALOG_CONTENT_CLASS}>
-              <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
-                <DialogTitle>Add New Tool</DialogTitle>
-              </DialogHeader>
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-2 sm:px-6">
-                <LibraryItemForm
-                  type="tools"
-                  onSave={handleSave}
-                  onCancel={() => setShowAddDialog(false)}
-                />
-              </div>
-            </DialogContent>
-          </DialogPortal>
+          <DialogContent
+            overlayClassName={ADMIN_TOOL_DIALOG_OVERLAY_CLASS}
+            className={ADMIN_TOOL_DIALOG_CONTENT_CLASS}
+          >
+            <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
+              <DialogTitle>Add New Tool</DialogTitle>
+            </DialogHeader>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-2 sm:px-6">
+              <LibraryItemForm
+                type="tools"
+                onSave={handleSave}
+                onCancel={() => setShowAddDialog(false)}
+              />
+            </div>
+          </DialogContent>
         </Dialog>
       </div>
 
@@ -354,29 +359,68 @@ export function ToolsLibrary() {
         )}
       </div>
 
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogPortal>
-          <DialogOverlay className="z-[100]" />
-          <DialogContent className={ADMIN_TOOL_DIALOG_CONTENT_CLASS}>
-            <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
-              <DialogTitle>Edit Tool</DialogTitle>
-            </DialogHeader>
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-2 sm:px-6">
-              {editingTool && (
-                <div className="flex min-h-0 flex-1 flex-col gap-3">
-                  <div className="min-h-0 flex-1 overflow-hidden">
-                    <LibraryItemForm
-                      type="tools"
-                      item={{...editingTool, name: editingTool.item}}
-                      onSave={handleSave}
-                      onCancel={() => {
-                        setShowEditDialog(false);
-                        setEditingTool(null);
-                      }}
-                    />
-                  </div>
-                  <div className="flex shrink-0 justify-end border-t border-border pt-3">
-                    <AlertDialog>
+      <Dialog
+        open={showEditDialog}
+        onOpenChange={(open) => {
+          setShowEditDialog(open);
+          if (!open) {
+            setEditingTool(null);
+            setEditToolFormSubmitting(false);
+          }
+        }}
+      >
+        <DialogContent
+          overlayClassName={ADMIN_TOOL_DIALOG_OVERLAY_CLASS}
+          className={ADMIN_TOOL_DIALOG_CONTENT_CLASS}
+        >
+          <DialogHeader className="shrink-0 flex flex-row flex-wrap items-center justify-between gap-3 border-b px-4 py-3 text-left sm:px-6">
+            <DialogTitle className="min-w-0 flex-1">Edit Tool</DialogTitle>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="min-h-9 px-3 text-xs md:min-h-8 md:text-sm"
+                onClick={() => {
+                  setShowEditDialog(false);
+                  setEditingTool(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                form={TOOLS_LIBRARY_EDIT_FORM_ID}
+                size="sm"
+                disabled={editToolFormSubmitting}
+                className={cn(
+                  "min-h-9 px-3 text-xs md:min-h-8 md:text-sm",
+                  PLANNING_TOOL_SAVE_CLOSE_CLASSNAME
+                )}
+              >
+                {editToolFormSubmitting ? "Saving..." : "Save & Close"}
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-2 sm:px-6">
+            {editingTool && (
+              <div className="flex min-h-0 flex-1 flex-col gap-3">
+                <div className="min-h-0 flex-1 overflow-hidden">
+                  <LibraryItemForm
+                    type="tools"
+                    formId={TOOLS_LIBRARY_EDIT_FORM_ID}
+                    hideFooterActions
+                    onSubmittingChange={setEditToolFormSubmitting}
+                    item={{ ...editingTool, name: editingTool.item }}
+                    onSave={handleSave}
+                    onCancel={() => {
+                      setShowEditDialog(false);
+                      setEditingTool(null);
+                    }}
+                  />
+                </div>
+                <div className="flex shrink-0 justify-end border-t border-border pt-3">
+                  <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="destructive" size="sm">
                           Delete Tool
@@ -402,13 +446,12 @@ export function ToolsLibrary() {
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
+                  </AlertDialog>
                 </div>
-              )}
-            </div>
-          </DialogContent>
-        </DialogPortal>
+              </div>
+            )}
+          </div>
+        </DialogContent>
       </Dialog>
 
       <ToolsImportManager

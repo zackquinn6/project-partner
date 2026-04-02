@@ -26,6 +26,8 @@ interface LibraryItemFormProps {
   onCancel: () => void;
   formId?: string;
   hideFooterActions?: boolean;
+  /** When the form is saving (tools/materials submit in progress). */
+  onSubmittingChange?: (submitting: boolean) => void;
 }
 
 function parseInstructions(value: unknown): ContentSection[] {
@@ -46,7 +48,15 @@ function specialtyScaleFormValueFromItem(item: { specialty_scale?: number } | un
     : '';
 }
 
-export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFooterActions = false }: LibraryItemFormProps) {
+export function LibraryItemForm({
+  type,
+  item,
+  onSave,
+  onCancel,
+  formId,
+  hideFooterActions = false,
+  onSubmittingChange,
+}: LibraryItemFormProps) {
   const { user } = useAuth();
   const effectiveFormId = formId ?? `${type}-library-item-form`;
   const [formData, setFormData] = useState({
@@ -64,6 +74,10 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
   const [instructionEditorKey, setInstructionEditorKey] = useState<string>('core');
   const [toolVariationsList, setToolVariationsList] = useState<{ id: string; name: string }[]>([]);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    onSubmittingChange?.(uploading);
+  }, [uploading, onSubmittingChange]);
   const [photoUrl, setPhotoUrl] = useState(item?.photo_url || '');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -367,7 +381,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFoot
             disabled={uploading}
             className={`min-h-9 px-3 text-xs md:min-h-8 md:text-sm ${PLANNING_TOOL_SAVE_CLOSE_CLASSNAME}`}
           >
-            {uploading ? 'Saving...' : item ? 'Update Tool' : 'Add Tool'}
+            {uploading ? 'Saving...' : item ? 'Save & Close' : 'Add Tool'}
           </Button>
         </div>
       )}
