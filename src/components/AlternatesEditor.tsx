@@ -15,6 +15,8 @@ export interface AlternateItem {
   /** Library tool reference when alternate was chosen from tools / tool_variations. */
   core_tool_id?: string | null;
   variation_id?: string | null;
+  /** When true with core_tool_id, alternate is the whole tool (any variant). Mutually exclusive with variation_id. */
+  alternate_all_variants?: boolean;
 }
 
 function parseAlternates(jsonString: string): AlternateItem[] {
@@ -34,6 +36,7 @@ function parseAlternates(jsonString: string): AlternateItem[] {
       const entry: AlternateItem = { type, name: o.name, items };
       if (typeof o.core_tool_id === "string") entry.core_tool_id = o.core_tool_id;
       if (typeof o.variation_id === "string") entry.variation_id = o.variation_id;
+      if (o.alternate_all_variants === true) entry.alternate_all_variants = true;
       out.push(entry);
     }
     return out;
@@ -41,6 +44,8 @@ function parseAlternates(jsonString: string): AlternateItem[] {
     return [];
   }
 }
+
+const VARIANT_SCOPE_ALL = "all";
 
 function ToolLibraryAlternatesPicker({
   value,
@@ -52,7 +57,8 @@ function ToolLibraryAlternatesPicker({
   excludeCoreToolId?: string | null;
 }) {
   const [alternates, setAlternates] = useState<AlternateItem[]>(() => parseAlternates(value));
-  const [selectedKey, setSelectedKey] = useState<string>("");
+  const [selectedCoreId, setSelectedCoreId] = useState<string>("");
+  const [selectedVariantScope, setSelectedVariantScope] = useState<string>(VARIANT_SCOPE_ALL);
   const [tools, setTools] = useState<{ id: string; name: string }[]>([]);
   const [variations, setVariations] = useState<{ id: string; name: string; core_item_id: string }[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -86,68 +92,106 @@ function ToolLibraryAlternatesPicker({
 
   const toolNameById = useMemo(() => new Map(tools.map((t) => [t.id, t.name])), [tools]);
 
-  const pickerOptions = useMemo(() => {
+  const coreOptions = useMemo(() => {
     const ex = excludeCoreToolId || undefined;
-    const list: { value: string; label: string }[] = [];
-    for (const t of tools) {
-      if (ex && t.id === ex) continue;
-      list.push({ value: `core:${t.id}`, label: `${t.name} (core)` });
-    }
-    for (const v of variations) {
-      if (ex && v.core_item_id === ex) continue;
-      const cn = toolNameById.get(v.core_item_id) ?? "Tool";
-      list.push({ value: `var:${v.id}`, label: `${cn}: ${v.name}` });
-    }
-    list.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
-    return list;
-  }, [tools, variations, excludeCoreToolId, toolNameById]);
+    return tools
+      .filter((t) => !(ex && t.id === ex))
+      .map((t) => ({ value: t.id, label: t.name }))
+      .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
+  }, [tools, excludeCoreToolId]);
+
+  const variantOptionsForCore = useMemo(() => {
+    if (!selectedCoreId) return [];
+    const rows = variations
+      .filter((v) => v.core_item_id === selectedCoreId)
+      .map((v) => ({
+        value: v.id,
+        label: v.name,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
+    return rows;
+  }, [variations, selectedCoreId]);
 
   const updateAlternates = (next: AlternateItem[]) => {
     setAlternates(next);
     onChange(JSON.stringify(next));
   };
 
-  const isDuplicate = (coreId: string, varId: string | null) =>
+  const isDuplicateSpecificVariant = (coreId: string, variationId: string) =>
     alternates.some(
       (a) =>
         a.type === "single" &&
         a.core_tool_id === coreId &&
-        (a.variation_id ?? null) === (varId ?? null)
+        !a.alternate_all_variants &&
+        a.variation_id === variationId
+    );
+
+  /** Legacy: core-only row (no flag, no variation_id). */
+  const isDuplicateLegacyCoreOnly = (coreId: string) =>
+    alternates.some(
+      (a) =>
+        a.type === "single" &&
+        a.core_tool_id === coreId &&
+        !a.alternate_all_variants &&
+        (a.variation_id == null || a.variation_id === "")
+    );
+
+  const coreHasSpecificVariantAlternate = (coreId: string) =>
+    alternates.some(
+      (a) =>
+        a.type === "single" &&
+        a.core_tool_id === coreId &&
+        !a.alternate_all_variants &&
+        typeof a.variation_id === "string" &&
+        a.variation_id.length > 0
+    );
+
+  const coreHasAllVariantsAlternate = (coreId: string) =>
+    alternates.some(
+      (a) => a.type === "single" && a.core_tool_id === coreId && a.alternate_all_variants === true
     );
 
   const handleAdd = () => {
-    if (!selectedKey) return;
-    if (selectedKey.startsWith("core:")) {
-      const id = selectedKey.slice(5);
-      const nm = tools.find((t) => t.id === id)?.name;
-      if (!nm) return;
-      if (isDuplicate(id, null)) return;
+    if (!selectedCoreId) return;
+    const coreName = toolNameById.get(selectedCoreId) ?? "Tool";
+
+    if (selectedVariantScope === VARIANT_SCOPE_ALL) {
+      if (
+        coreHasAllVariantsAlternate(selectedCoreId) ||
+        isDuplicateLegacyCoreOnly(selectedCoreId) ||
+        coreHasSpecificVariantAlternate(selectedCoreId)
+      ) {
+        return;
+      }
       updateAlternates([
         ...alternates,
         {
           type: "single",
-          name: `${nm} (core)`,
-          core_tool_id: id,
-          variation_id: null,
+          name: `${coreName} (all variants)`,
+          core_tool_id: selectedCoreId,
+          alternate_all_variants: true,
         },
       ]);
-    } else if (selectedKey.startsWith("var:")) {
-      const vid = selectedKey.slice(4);
-      const v = variations.find((x) => x.id === vid);
-      if (!v) return;
-      if (isDuplicate(v.core_item_id, v.id)) return;
-      const coreName = toolNameById.get(v.core_item_id) ?? "Tool";
+    } else {
+      const v = variations.find((x) => x.id === selectedVariantScope);
+      if (!v || v.core_item_id !== selectedCoreId) return;
+      if (
+        isDuplicateSpecificVariant(selectedCoreId, v.id) ||
+        coreHasAllVariantsAlternate(selectedCoreId) ||
+        isDuplicateLegacyCoreOnly(selectedCoreId)
+      ) {
+        return;
+      }
       updateAlternates([
         ...alternates,
         {
           type: "single",
           name: `${coreName}: ${v.name}`,
-          core_tool_id: v.core_item_id,
+          core_tool_id: selectedCoreId,
           variation_id: v.id,
         },
       ]);
     }
-    setSelectedKey("");
   };
 
   const handleRemove = (index: number) => {
@@ -157,12 +201,6 @@ function ToolLibraryAlternatesPicker({
   return (
     <div className="space-y-4">
       <Label>Alternates</Label>
-      <p className="text-xs text-muted-foreground">
-        Select a core tool or a variant from the library, then add it to the list.
-        {excludeCoreToolId
-          ? " This tool and its own variants are omitted so you cannot alternate a tool with itself."
-          : null}
-      </p>
       {loadError ? <p className="text-sm text-destructive">{loadError}</p> : null}
 
       {alternates.length > 0 ? (
@@ -177,9 +215,21 @@ function ToolLibraryAlternatesPicker({
                         Group (legacy)
                       </Badge>
                     ) : alt.core_tool_id ? (
-                      <Badge variant="default" className="text-xs">
-                        Library
-                      </Badge>
+                      <>
+                        {alt.alternate_all_variants ? (
+                          <Badge variant="default" className="text-xs">
+                            All variants
+                          </Badge>
+                        ) : alt.variation_id ? (
+                          <Badge variant="default" className="text-xs">
+                            Variant
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            Core (legacy)
+                          </Badge>
+                        )}
+                      </>
                     ) : (
                       <Badge variant="outline" className="text-xs">
                         Legacy
@@ -211,17 +261,23 @@ function ToolLibraryAlternatesPicker({
 
       <Card className="space-y-3 p-4">
         <Label className="text-sm">Add alternate from library</Label>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <Label htmlFor="tool-alt-picker" className="text-xs text-muted-foreground">
-              Core tool or variant
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="tool-alt-core" className="text-xs text-muted-foreground">
+              Core tool
             </Label>
-            <Select value={selectedKey || undefined} onValueChange={setSelectedKey}>
-              <SelectTrigger id="tool-alt-picker" className="w-full">
-                <SelectValue placeholder="Select a tool or variant…" />
+            <Select
+              value={selectedCoreId || undefined}
+              onValueChange={(id) => {
+                setSelectedCoreId(id);
+                setSelectedVariantScope(VARIANT_SCOPE_ALL);
+              }}
+            >
+              <SelectTrigger id="tool-alt-core" className="w-full">
+                <SelectValue placeholder="Select core tool…" />
               </SelectTrigger>
               <SelectContent className="z-[1000] max-h-[min(280px,50vh)]">
-                {pickerOptions.map((opt) => (
+                {coreOptions.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
@@ -229,16 +285,38 @@ function ToolLibraryAlternatesPicker({
               </SelectContent>
             </Select>
           </div>
-          <Button type="button" onClick={handleAdd} disabled={!selectedKey} className="shrink-0 sm:mb-0.5">
-            <Plus className="mr-2 h-4 w-4" />
-            Add
-          </Button>
+          <div className="space-y-1.5">
+            <Label htmlFor="tool-alt-variant" className="text-xs text-muted-foreground">
+              Variant
+            </Label>
+            <Select
+              value={selectedVariantScope || undefined}
+              onValueChange={setSelectedVariantScope}
+              disabled={!selectedCoreId}
+            >
+              <SelectTrigger id="tool-alt-variant" className="w-full">
+                <SelectValue placeholder={selectedCoreId ? "All variants or one…" : "Select core first"} />
+              </SelectTrigger>
+              <SelectContent className="z-[1000] max-h-[min(280px,50vh)]">
+                <SelectItem value={VARIANT_SCOPE_ALL}>All variants</SelectItem>
+                {variantOptionsForCore.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+        <Button type="button" onClick={handleAdd} disabled={!selectedCoreId} className="w-full sm:w-auto">
+          <Plus className="mr-2 h-4 w-4" />
+          Add
+        </Button>
       </Card>
 
       {alternates.length === 0 ? (
         <p className="py-2 text-center text-xs text-muted-foreground">
-          No alternates yet. Choose a tool or variant above and click Add.
+          No alternates yet. Pick a core tool, choose All variants or a specific variant, then Add.
         </p>
       ) : null}
     </div>
