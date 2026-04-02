@@ -16,15 +16,12 @@ import {
   syncAttributeDefinitionsToAllMaterialVariants,
 } from '@/utils/variationAttributeDefinitions';
 import { MaterialVariationEditor } from './MaterialVariationEditor';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogPortal,
-  DialogOverlay,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
+const NESTED_DIALOG_OVERLAY = 'z-[150]';
+const NESTED_DIALOG_CONTENT = 'z-[151]';
+/** Select portals to body; must sit above nested dialog overlay/content. */
+const SELECT_IN_DIALOG_CONTENT = 'z-[300] border bg-popover text-popover-foreground';
 
 interface VariationAttribute {
   id: string;
@@ -492,9 +489,10 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                     Add Attribute
                   </Button>
                 </DialogTrigger>
-                <DialogPortal>
-                  <DialogOverlay className="z-[150]" />
-                  <DialogContent className="z-[151]">
+                <DialogContent
+                  overlayClassName={NESTED_DIALOG_OVERLAY}
+                  className={`${NESTED_DIALOG_CONTENT} max-w-lg`}
+                >
                     <DialogHeader>
                       <DialogTitle>Create New Attribute</DialogTitle>
                     </DialogHeader>
@@ -547,7 +545,6 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                       </div>
                     </div>
                   </DialogContent>
-                </DialogPortal>
               </Dialog>
 
               <Dialog open={showValueDialog} onOpenChange={setShowValueDialog}>
@@ -557,9 +554,10 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                     Add Value
                   </Button>
                 </DialogTrigger>
-                <DialogPortal>
-                  <DialogOverlay className="z-[150]" />
-                  <DialogContent className="z-[151]">
+                <DialogContent
+                  overlayClassName={NESTED_DIALOG_OVERLAY}
+                  className={`${NESTED_DIALOG_CONTENT} max-w-lg`}
+                >
                     <DialogHeader>
                       <DialogTitle>Add Attribute Value</DialogTitle>
                     </DialogHeader>
@@ -568,13 +566,13 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                       <Label htmlFor="select-attr">Attribute</Label>
                       <Select 
                         key={`attr-select-${attributes.map(a => a.id).join('|')}`}
-                        value={selectedAttributeId} 
+                        value={selectedAttributeId || undefined} 
                         onValueChange={setSelectedAttributeId}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder={attributes.length === 0 ? "No attributes available. Create an attribute first." : "Select attribute"} />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className={SELECT_IN_DIALOG_CONTENT}>
                           {attributes.length === 0 ? (
                             <div className="px-2 py-1.5 text-sm text-muted-foreground">
                               No attributes available. Create an attribute first.
@@ -617,7 +615,6 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                     </div>
                   </div>
                 </DialogContent>
-                </DialogPortal>
               </Dialog>
             </div>
           </CardTitle>
@@ -676,9 +673,10 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                   Create
                 </Button>
               </DialogTrigger>
-              <DialogPortal>
-                <DialogOverlay className="z-[150]" />
-                <DialogContent className="max-w-2xl z-[151]">
+              <DialogContent
+                overlayClassName={NESTED_DIALOG_OVERLAY}
+                className={`${NESTED_DIALOG_CONTENT} max-w-2xl`}
+              >
                   <DialogHeader>
                     <DialogTitle>Create New Variation</DialogTitle>
                   </DialogHeader>
@@ -692,7 +690,9 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">Type</Label>
                           <Select
-                            value={Object.keys(selectedAttributes).length === 0 ? 'standard' : ''}
+                            value={
+                              Object.keys(selectedAttributes).length === 0 ? 'standard' : 'with_attributes'
+                            }
                             onValueChange={(value) => {
                               if (value === 'standard') {
                                 setSelectedAttributes({});
@@ -702,8 +702,9 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                             <SelectTrigger>
                               <SelectValue placeholder="Select variation type" />
                             </SelectTrigger>
-                            <SelectContent className="bg-background border z-50">
+                            <SelectContent className={SELECT_IN_DIALOG_CONTENT}>
                               <SelectItem value="standard">Standard</SelectItem>
+                              <SelectItem value="with_attributes">With attribute values</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -713,18 +714,18 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                           <div key={attr.id} className="space-y-2">
                             <Label className="text-sm font-medium">{attr.display_name}</Label>
                             <Select
-                              value={selectedAttributes[attr.name] || ''}
+                              value={selectedAttributes[attr.name] ?? undefined}
                               onValueChange={(value) => {
-                                setSelectedAttributes(prev => ({
+                                setSelectedAttributes((prev) => ({
                                   ...prev,
-                                  [attr.name]: value
+                                  [attr.name]: value,
                                 }));
                               }}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder={`Select ${attr.display_name.toLowerCase()}`} />
                               </SelectTrigger>
-                              <SelectContent className="bg-background border z-50">
+                              <SelectContent className={SELECT_IN_DIALOG_CONTENT}>
                                 {attr.values.map(value => (
                                   <SelectItem key={value.id} value={value.value}>
                                     {value.display_value}
@@ -742,7 +743,7 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                           <SelectTrigger>
                             <SelectValue placeholder="Standard (no attributes configured)" />
                           </SelectTrigger>
-                          <SelectContent className="bg-background border z-50">
+                          <SelectContent className={SELECT_IN_DIALOG_CONTENT}>
                             <SelectItem value="standard">Standard</SelectItem>
                           </SelectContent>
                         </Select>
@@ -827,7 +828,6 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                   </div>
                 </div>
               </DialogContent>
-              </DialogPortal>
               </Dialog>
             </div>
           </CardTitle>

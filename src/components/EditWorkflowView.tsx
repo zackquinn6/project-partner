@@ -418,7 +418,8 @@ export default function EditWorkflowView({
           resolvedIncorporated = await resolveIncorporatedSourcePhase(
             sourceProject.id,
             phaseData.source_phase_id,
-            phaseData.name
+            phaseData.name,
+            phaseData.source_project_id
           );
 
           const priorName = phaseData.name;

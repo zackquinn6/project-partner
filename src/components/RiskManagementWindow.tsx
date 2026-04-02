@@ -2405,20 +2405,22 @@ export function RiskManagementWindow({
             </div>
           )}
         </div>
+      </DialogContent>
+    </Dialog>
 
-        {/* Add/Edit Form Dialog — scrollable body + fixed footer so it fits inside Risk-Less */}
-        <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
-          <DialogContent
-            className={cn(
-              'z-[200] flex max-h-[min(90dvh,880px)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl',
-              'border bg-background shadow-xl'
-            )}
-          >
-            <DialogHeader className="shrink-0 space-y-1 border-b px-4 py-3 text-left sm:px-5 sm:py-4">
-              <DialogTitle>{editingRisk ? 'Edit risk' : 'Add risk'}</DialogTitle>
-            </DialogHeader>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">
-            <div className="space-y-4">
+    {/* Add/Edit risk dialog — sibling of main Dialog (nested Dialog inside DialogContent breaks Radix a11y). */}
+    <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+      <DialogContent
+        className={cn(
+          'z-[200] flex max-h-[min(90dvh,880px)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl',
+          'border bg-background shadow-xl'
+        )}
+      >
+        <DialogHeader className="shrink-0 space-y-1 border-b px-4 py-3 text-left sm:px-5 sm:py-4">
+          <DialogTitle>{editingRisk ? 'Edit risk' : 'Add risk'}</DialogTitle>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">
+          <div className="space-y-4">
               <div>
                 <Label htmlFor="risk">Risk *</Label>
                 <Textarea
@@ -2742,8 +2744,6 @@ export function RiskManagementWindow({
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </DialogContent>
-    </Dialog>
 
     <Sheet
       open={detailsRisk !== null}

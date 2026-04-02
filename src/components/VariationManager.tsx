@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
   fetchAttributeDefinitionsForCoreItem,
+  filterToolVariationsForDisplay,
   persistAttributeDefinitionsForCoreItem,
 } from '@/utils/variationAttributeDefinitions';
 import { VariationEditor } from './VariationEditor';
@@ -24,6 +25,14 @@ import {
 
 const NESTED_DIALOG_OVERLAY = 'z-[260]';
 const NESTED_DIALOG_CONTENT = 'z-[270]';
+/** Select portals to body; must sit above nested dialog overlay/content. */
+const SELECT_IN_DIALOG_CONTENT = 'z-[300] border bg-popover text-popover-foreground';
+
+function clientIdForAttributeDefinition(attr: { id?: unknown; name?: unknown }): string | null {
+  if (typeof attr.id === 'string' && attr.id.trim() !== '') return attr.id;
+  if (typeof attr.name === 'string' && attr.name.trim() !== '') return attr.name;
+  return null;
+}
 
 interface VariationAttribute {
   id: string;
@@ -124,20 +133,26 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
         supabase,
         coreItemId
       )) as any[];
-      const formattedAttributes: VariationAttribute[] = defs.map((attr: any) => ({
-        id: attr.id,
-        name: attr.name,
-        display_name: attr.display_name,
-        attribute_type: attr.attribute_type,
-        values: (attr.values || []).map((v: any) => ({
-          id: v.id,
-          attribute_id: attr.id,
-          value: v.value,
-          display_value: v.display_value,
-          sort_order: v.sort_order,
-          core_item_id: v.core_item_id
-        }))
-      }));
+      const formattedAttributes: VariationAttribute[] = (defs as any[])
+        .map((attr: any) => {
+          const cid = clientIdForAttributeDefinition(attr);
+          if (!cid) return null;
+          return {
+            id: cid,
+            name: attr.name,
+            display_name: attr.display_name,
+            attribute_type: attr.attribute_type,
+            values: (attr.values || []).map((v: any) => ({
+              id: v.id,
+              attribute_id: cid,
+              value: v.value,
+              display_value: v.display_value,
+              sort_order: v.sort_order,
+              core_item_id: v.core_item_id
+            }))
+          } satisfies VariationAttribute;
+        })
+        .filter((a): a is VariationAttribute => a !== null);
 
       setAttributes(formattedAttributes);
     } catch (error) {
@@ -154,7 +169,8 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
         .eq('core_item_id', coreItemId);
 
       if (error) throw error;
-      setVariations((data || []).map(item => ({
+      const visible = filterToolVariationsForDisplay(data || []);
+      setVariations(visible.map(item => ({
         ...item,
         attributes: item.attributes as Record<string, string>
       })));
@@ -240,7 +256,9 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
         supabase,
         coreItemId
       )) as any[];
-      const attrIndex = defs.findIndex((a: any) => a.id === selectedAttributeId);
+      const attrIndex = defs.findIndex(
+        (a: any) => clientIdForAttributeDefinition(a) === selectedAttributeId
+      );
       if (attrIndex === -1) {
         throw new Error('Selected attribute was not found. Please refresh and try again.');
       }
@@ -385,7 +403,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
     try {
       const defs = (
         (await fetchAttributeDefinitionsForCoreItem(supabase, coreItemId)) as any[]
-      ).filter((a: any) => a.id !== attributeId);
+      ).filter((a: any) => clientIdForAttributeDefinition(a) !== attributeId);
       await persistAttributeDefinitionsForCoreItem(supabase, coreItemId, defs);
 
       fetchAttributes();
@@ -414,6 +432,15 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
     } catch (error) {
       console.error('Error deleting attribute value:', error);
       toast.error('Failed to delete attribute value');
+    }
+  };
+
+  const handleValueDialogOpenChange = (open: boolean) => {
+    setShowValueDialog(open);
+    if (open) {
+      setSelectedAttributeId('');
+      setNewValueText('');
+      void fetchAttributes();
     }
   };
 
@@ -575,7 +602,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                   </DialogContent>
               </Dialog>
 
-              <Dialog open={showValueDialog} onOpenChange={setShowValueDialog}>
+              <Dialog open={showValueDialog} onOpenChange={handleValueDialogOpenChange}>
                 <DialogTrigger asChild>
                   <Button type="button" variant="outline" size="sm" className="h-8 px-3 py-1">
                     <Plus className="h-4 w-4 mr-1" />
@@ -594,13 +621,13 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                       <Label htmlFor="select-attr">Attribute</Label>
                       <Select 
                         key={`attr-select-${attributes.map(a => a.id).join('|')}`}
-                        value={selectedAttributeId} 
+                        value={selectedAttributeId || undefined} 
                         onValueChange={setSelectedAttributeId}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder={attributes.length === 0 ? "No attributes available. Create an attribute first." : "Select attribute"} />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className={SELECT_IN_DIALOG_CONTENT}>
                           {attributes.length === 0 ? (
                             <div className="px-2 py-1.5 text-sm text-muted-foreground">
                               No attributes available. Create an attribute first.
@@ -726,7 +753,9 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">Type</Label>
                           <Select
-                            value={Object.keys(selectedAttributes).length === 0 ? 'standard' : ''}
+                            value={
+                              Object.keys(selectedAttributes).length === 0 ? 'standard' : 'with_attributes'
+                            }
                             onValueChange={(value) => {
                               if (value === 'standard') {
                                 setSelectedAttributes({});
@@ -736,8 +765,9 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                             <SelectTrigger>
                               <SelectValue placeholder="Select variation type" />
                             </SelectTrigger>
-                            <SelectContent className="bg-background border z-50">
+                            <SelectContent className={SELECT_IN_DIALOG_CONTENT}>
                               <SelectItem value="standard">Standard</SelectItem>
+                              <SelectItem value="with_attributes">With attribute values</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -747,18 +777,18 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                           <div key={attr.id} className="space-y-2">
                             <Label className="text-sm font-medium">{attr.display_name}</Label>
                             <Select
-                              value={selectedAttributes[attr.name] || ''}
+                              value={selectedAttributes[attr.name] ?? undefined}
                               onValueChange={(value) => {
-                                setSelectedAttributes(prev => ({
+                                setSelectedAttributes((prev) => ({
                                   ...prev,
-                                  [attr.name]: value
+                                  [attr.name]: value,
                                 }));
                               }}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder={`Select ${attr.display_name.toLowerCase()}`} />
                               </SelectTrigger>
-                              <SelectContent className="bg-background border z-50">
+                              <SelectContent className={SELECT_IN_DIALOG_CONTENT}>
                                 {attr.values.map(value => (
                                   <SelectItem key={value.id} value={value.value}>
                                     {value.display_value}
@@ -776,7 +806,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                           <SelectTrigger>
                             <SelectValue placeholder="Standard (no attributes configured)" />
                           </SelectTrigger>
-                          <SelectContent className="bg-background border z-50">
+                          <SelectContent className={SELECT_IN_DIALOG_CONTENT}>
                             <SelectItem value="standard">Standard</SelectItem>
                           </SelectContent>
                         </Select>

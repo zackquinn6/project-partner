@@ -1,5 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+/** System-only row when `tools.attribute_definitions` cannot be written and there are no real variations. */
+export const TOOL_ATTRIBUTE_SCHEMA_HOLDER_VARIATION_NAME = '__core_attribute_definitions__';
+
+export function isToolAttributeSchemaHolderVariation(name: string): boolean {
+  return name === TOOL_ATTRIBUTE_SCHEMA_HOLDER_VARIATION_NAME;
+}
+
+export function filterToolVariationsForDisplay<T extends { name: string }>(rows: T[] | null | undefined): T[] {
+  return (rows ?? []).filter((r) => !isToolAttributeSchemaHolderVariation(r.name));
+}
+
 function isMissingAttributeDefinitionsColumn(error: { code?: string; message?: string }): boolean {
   return (
     error.code === '42703' ||
@@ -48,11 +59,12 @@ export async function fetchAttributeDefinitionsForCoreItem(
   return Array.isArray(raw) ? raw : [];
 }
 
+/** @returns true when definitions were written to `tools.attribute_definitions`. */
 export async function saveAttributeDefinitionsForCoreTool(
   supabase: SupabaseClient,
   coreItemId: string,
   defs: unknown[]
-): Promise<void> {
+): Promise<boolean> {
   const { error } = await supabase
     .from('tools')
     .update({
@@ -63,10 +75,66 @@ export async function saveAttributeDefinitionsForCoreTool(
 
   if (error) {
     if (isMissingAttributeDefinitionsColumn(error)) {
-      return;
+      return false;
     }
     throw error;
   }
+  return true;
+}
+
+async function countRealToolVariationsForCoreItem(
+  supabase: SupabaseClient,
+  coreItemId: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from('tool_variations')
+    .select('id', { count: 'exact', head: true })
+    .eq('core_item_id', coreItemId)
+    .neq('name', TOOL_ATTRIBUTE_SCHEMA_HOLDER_VARIATION_NAME);
+
+  if (error) throw error;
+  if (count === null) {
+    throw new Error(`Missing tool variation count for core item ${coreItemId}`);
+  }
+  return count;
+}
+
+async function upsertToolAttributeSchemaHolderVariation(
+  supabase: SupabaseClient,
+  coreItemId: string,
+  defs: unknown[]
+): Promise<void> {
+  const { data: existing, error: selErr } = await supabase
+    .from('tool_variations')
+    .select('id')
+    .eq('core_item_id', coreItemId)
+    .eq('name', TOOL_ATTRIBUTE_SCHEMA_HOLDER_VARIATION_NAME)
+    .maybeSingle();
+
+  if (selErr) throw selErr;
+
+  const now = new Date().toISOString();
+  if (existing?.id) {
+    const { error } = await supabase
+      .from('tool_variations')
+      .update({
+        attribute_definitions: defs,
+        updated_at: now,
+      } as Record<string, unknown>)
+      .eq('id', existing.id);
+    if (error) throw error;
+    return;
+  }
+
+  const { error: insErr } = await supabase.from('tool_variations').insert({
+    id: crypto.randomUUID(),
+    core_item_id: coreItemId,
+    name: TOOL_ATTRIBUTE_SCHEMA_HOLDER_VARIATION_NAME,
+    attributes: {},
+    attribute_definitions: defs,
+    updated_at: now,
+  } as Record<string, unknown>);
+  if (insErr) throw insErr;
 }
 
 export async function syncAttributeDefinitionsToAllVariations(
@@ -85,14 +153,29 @@ export async function syncAttributeDefinitionsToAllVariations(
   if (error) throw error;
 }
 
-/** Save canonical defs on `tools`, then copy to all rows in `tool_variations` for this core tool (if any). */
+/**
+ * Save canonical defs on `tools` when possible, then mirror to `tool_variations`.
+ * If the tools column is not available and there are no real variations, stores defs on a system-only
+ * variation row so reads (e.g. Add Value) still resolve.
+ */
 export async function persistAttributeDefinitionsForCoreItem(
   supabase: SupabaseClient,
   coreItemId: string,
   defs: unknown[]
 ): Promise<void> {
-  await saveAttributeDefinitionsForCoreTool(supabase, coreItemId, defs);
-  await syncAttributeDefinitionsToAllVariations(supabase, coreItemId, defs);
+  const savedToTools = await saveAttributeDefinitionsForCoreTool(supabase, coreItemId, defs);
+
+  if (savedToTools) {
+    await syncAttributeDefinitionsToAllVariations(supabase, coreItemId, defs);
+    return;
+  }
+
+  const realVariationCount = await countRealToolVariationsForCoreItem(supabase, coreItemId);
+  if (realVariationCount === 0) {
+    await upsertToolAttributeSchemaHolderVariation(supabase, coreItemId, defs);
+  } else {
+    await syncAttributeDefinitionsToAllVariations(supabase, coreItemId, defs);
+  }
 }
 
 export async function countVariationsForCoreItem(
