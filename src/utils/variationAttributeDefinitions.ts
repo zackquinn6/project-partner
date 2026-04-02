@@ -1,22 +1,50 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+function isMissingAttributeDefinitionsColumn(error: { code?: string; message?: string }): boolean {
+  return (
+    error.code === '42703' ||
+    (typeof error.message === 'string' && error.message.includes('attribute_definitions'))
+  );
+}
+
 /**
  * Canonical attribute definitions for a catalog tool live on `tools.attribute_definitions`.
  * Each `tool_variations` row keeps a copy for historical/runtime use; mirror via
  * `syncAttributeDefinitionsToAllVariations` when variants exist.
+ *
+ * If `tools.attribute_definitions` is not migrated yet, reads the latest copy from `tool_variations`.
  */
 export async function fetchAttributeDefinitionsForCoreItem(
   supabase: SupabaseClient,
   coreItemId: string
 ): Promise<unknown[]> {
-  const { data, error } = await supabase
+  const toolsRes = await supabase
     .from('tools')
     .select('attribute_definitions')
     .eq('id', coreItemId)
     .maybeSingle();
 
-  if (error) throw error;
-  const raw = data?.attribute_definitions;
+  if (toolsRes.error) {
+    if (!isMissingAttributeDefinitionsColumn(toolsRes.error)) {
+      throw toolsRes.error;
+    }
+  } else {
+    const raw = toolsRes.data?.attribute_definitions;
+    return Array.isArray(raw) ? raw : [];
+  }
+
+  const varRes = await supabase
+    .from('tool_variations')
+    .select('attribute_definitions')
+    .eq('core_item_id', coreItemId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (varRes.error) {
+    throw varRes.error;
+  }
+  const raw = varRes.data?.attribute_definitions;
   return Array.isArray(raw) ? raw : [];
 }
 
@@ -33,7 +61,12 @@ export async function saveAttributeDefinitionsForCoreTool(
     } as Record<string, unknown>)
     .eq('id', coreItemId);
 
-  if (error) throw error;
+  if (error) {
+    if (isMissingAttributeDefinitionsColumn(error)) {
+      return;
+    }
+    throw error;
+  }
 }
 
 export async function syncAttributeDefinitionsToAllVariations(
