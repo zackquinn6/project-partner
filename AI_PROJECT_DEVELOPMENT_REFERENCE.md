@@ -120,12 +120,34 @@ Where **Step X** is one of the steps defined below (**Step 1** through **Step 9*
 - Steps → `public.operation_steps` (title + description at minimum)
 - Instructions → `public.step_instructions` (3 rows per step)
 
+**Process map / Structure Manager — descriptions (phases, operations, steps)**
+
+In the admin **Process Map** (**Structure Manager**), **phase**, **operation**, and **step** description fields are **single-line summaries of what that unit covers**. They answer *what this block of work is about*, not *how to execute it step-by-step*.
+
+- **Do write:** One tight sentence or phrase that states **outcome, scope, or intent** of the phase/operation/step in plain language.
+- **Do not write:** A **numbered or bulleted procedure**, a **laundry list of sub-tasks**, or **instructional sequencing** (“first… then… then…”). That content belongs in **`public.step_instructions`** (and related UI), not in these description fields.
+
+**Where each description lives**
+
+| Level     | DB field |
+|----------|----------|
+| Phase    | `public.project_phases.description` |
+| Operation | `public.phase_operations.operation_description` |
+| Step     | `public.operation_steps.description` |
+
+**Examples (pattern only)**
+
+- **Phase — Prepare Subfloor:** *Bring the structural floor to a clean, sound, flat plane and install an appropriate tile underlayment system.*
+- **Phase — Install:** *Tile layout, cutting, and setting.*
+
+Operation and step descriptions follow the same rule: **one line**, **summary of what happens**, not a mini–work instruction.
+
 **Writing guidance for process map names and step copy**
 
 - Minimize use of the word **`the`** in operation names, step titles, and instructions when it is not needed for clarity.
 - Prefer concise naming:
   - Use **`Reconnect water supply line`** instead of **`Reconnect the water supply line`**
-- **Describe, don't instruct** in `public.operation_steps.description`.
+- **Describe, don't instruct** in `public.operation_steps.description` (and in phase/operation descriptions as above).
 - Step descriptions should name the work or resulting scope, not tell the user how to do it.
 - Prefer short descriptive phrases such as **`Toilet placement and bolt installation`** instead of instructional sentences such as **`Lower the toilet onto the bolts, compress the seal, and tighten nuts evenly until stable`**.
 - Put execution guidance, sequencing, cautions, and technique details in the 3 instruction levels under `public.step_instructions`, not in the step description.
@@ -417,6 +439,7 @@ A **process variable** is a fundamental, theoretically measurable parameter that
   - Instructions belong in `public.step_instructions`, not embedded as defaults elsewhere.
   - `INSERT` into `public.operation_steps` must use only columns that exist in schema (see **Schema alignment** above).
   - Minimize unnecessary use of **`the`** across process map names and instructions.
+  - **Process map descriptions** (`project_phases.description`, `phase_operations.operation_description`, `operation_steps.description`): **one line** each — summary of **what happens** in that phase/operation/step; **not** a list of instructions or procedural steps (see **Process map / Structure Manager — descriptions** in Step 1 above).
   - For `public.operation_steps.description`, follow **describe, don't instruct**: description = scope/state label; instructions = how-to guidance.
   - Deliver as **one** migration file for Step 1 (see **One migration file per project-development step**); add extra `DO` blocks for additional `project_id`s, not extra files.
 
