@@ -13,6 +13,8 @@ export interface PlanningToolWindowHeaderActionsProps {
   saveDisabled?: boolean;
   /** Primary action label (default: Save and Close). */
   saveLabel?: string;
+  saveButtonType?: 'button' | 'submit';
+  saveButtonForm?: string;
 }
 
 /**
@@ -24,6 +26,8 @@ export function PlanningToolWindowHeaderActions({
   className,
   saveDisabled,
   saveLabel = 'Save and Close',
+  saveButtonType = 'button',
+  saveButtonForm,
 }: PlanningToolWindowHeaderActionsProps) {
   return (
     <div className={cn('flex shrink-0 items-center gap-2', className)}>
@@ -37,7 +41,8 @@ export function PlanningToolWindowHeaderActions({
         Cancel
       </Button>
       <Button
-        type="button"
+        type={saveButtonType}
+        form={saveButtonForm}
         size="sm"
         disabled={saveDisabled}
         className={cn(

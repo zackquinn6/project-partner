@@ -10,6 +10,7 @@ import { Plus, X, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
+  countVariationsForCoreItem,
   countMaterialVariantsForMaterial,
   fetchAttributeDefinitionsForMaterial,
   syncAttributeDefinitionsToAllMaterialVariants,
@@ -147,7 +148,7 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
       const { data, error } = await supabase
         .from('materials_variants')
         .select('*')
-        .eq('core_item_id', materialId);
+        .eq('material_id', materialId);
 
       if (error) throw error;
       setVariations((data || []).map(item => ({

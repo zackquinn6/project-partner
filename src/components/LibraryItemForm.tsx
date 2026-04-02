@@ -21,6 +21,8 @@ interface LibraryItemFormProps {
   item?: any;
   onSave: () => void;
   onCancel: () => void;
+  formId?: string;
+  hideFooterActions?: boolean;
 }
 
 function parseInstructions(value: unknown): ContentSection[] {
@@ -31,7 +33,7 @@ function parseInstructions(value: unknown): ContentSection[] {
   return [];
 }
 
-export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFormProps) {
+export function LibraryItemForm({ type, item, onSave, onCancel, formId, hideFooterActions = false }: LibraryItemFormProps) {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: item?.name || item?.item || '',
@@ -228,16 +230,17 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
   };
 
   return (
-    <Tabs defaultValue="basic" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
+    <Tabs defaultValue="basic" className="flex h-full min-h-0 w-full flex-col">
+      <TabsList className="grid w-full grid-cols-2 shrink-0">
         <TabsTrigger value="basic">{type === 'tools' ? 'Core Tool' : 'Core Material'}</TabsTrigger>
         <TabsTrigger value="variations" disabled={!item?.id}>
           Variations {!item?.id && '(Save item first)'}
         </TabsTrigger>
       </TabsList>
       
-      <TabsContent value="basic" className="space-y-6 p-6">
-        <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
+      <TabsContent value="basic" className="mt-0 min-h-0 flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto p-6">
+        <form id={formId} onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
           <div>
             <Label htmlFor="name">
               {type === 'tools' ? 'Tool' : 'Material'} Name *
@@ -372,15 +375,18 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
             </div>
           </div>
 
-          <div className="flex gap-2 pt-4">
-            <Button type="submit" disabled={uploading} className="flex-1">
-              {uploading ? 'Saving...' : (item ? 'Update' : 'Add')} {type === 'tools' ? 'Tool' : 'Material'}
-            </Button>
-            <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
-              Cancel
-            </Button>
-          </div>
+          {!hideFooterActions && (
+            <div className="flex gap-2 pt-4">
+              <Button type="submit" disabled={uploading} className="flex-1">
+                {uploading ? 'Saving...' : (item ? 'Update' : 'Add')} {type === 'tools' ? 'Tool' : 'Material'}
+              </Button>
+              <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+                Cancel
+              </Button>
+            </div>
+          )}
         </form>
+        </div>
       </TabsContent>
 
       {type === 'tools' && (
@@ -402,7 +408,8 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
         </TabsContent>
       )}
 
-      <TabsContent value="variations">
+      <TabsContent value="variations" className="mt-0 min-h-0 flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto">
         {item?.id && type === 'tools' && (
           <VariationManager
             coreItemId={item.id}
@@ -421,6 +428,7 @@ export function LibraryItemForm({ type, item, onSave, onCancel }: LibraryItemFor
             }}
           />
         )}
+        </div>
       </TabsContent>
     </Tabs>
   );
