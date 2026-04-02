@@ -2742,15 +2742,34 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         }
       });
     }
+
+    const currentNumericOrder =
+      typeof currentPhase.phaseOrderNumber === 'number'
+        ? currentPhase.phaseOrderNumber
+        : typeof (currentPhase as any)?.position_value === 'number'
+          ? (currentPhase as any).position_value
+          : null;
+
+    const numericPhaseOrders = phases
+      .map((p) => {
+        if (typeof p.phaseOrderNumber === 'number') return p.phaseOrderNumber;
+        const positionValue = (p as any)?.position_value;
+        return typeof positionValue === 'number' ? positionValue : null;
+      })
+      .filter((value): value is number => typeof value === 'number');
+
+    const maxNumericOrder = numericPhaseOrders.length > 0 ? Math.max(...numericPhaseOrders) : 1;
+    const upperBound = Math.max(maxNumericOrder + 1, currentNumericOrder ?? 1);
     
     // Add 'First' (position 1) only if not occupied by a standard phase (or if editing standard project)
-    if (isEditingStandardProject || !standardPositions.has(1)) {
+    if (isEditingStandardProject || !standardPositions.has(1) || currentNumericOrder === 1) {
       options.push('First');
     }
     
-    // Add integer options (2 to totalPhases-1), excluding standard phase positions
-    for (let i = 2; i < totalPhases; i++) {
-      if (isEditingStandardProject || !standardPositions.has(i)) {
+    // Add integer options from the real occupied numeric position space,
+    // not the rendered phase count, so gaps like 4 remain selectable.
+    for (let i = 2; i <= upperBound; i++) {
+      if (isEditingStandardProject || !standardPositions.has(i) || currentNumericOrder === i) {
         options.push(i);
       }
     }
