@@ -20,6 +20,7 @@ import {
 } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
 import { TOOLS_LIBRARY_CATEGORIES } from '@/utils/toolCatalogCategory';
 import { MATERIALS_LIBRARY_CATEGORIES, isMaterialsLibraryCategory } from '@/utils/materialCatalogCategory';
+import { filterToolVariationsForDisplay } from '@/utils/variationAttributeDefinitions';
 
 interface LibraryItemFormProps {
   type: 'tools' | 'materials';
@@ -106,12 +107,13 @@ export function LibraryItemForm({
       return;
     }
     const rows = data ?? [];
-    setToolVariationsList(rows.map((r) => ({ id: r.id, name: r.name })));
+    const visible = filterToolVariationsForDisplay(rows);
+    setToolVariationsList(visible.map((r) => ({ id: r.id, name: r.name })));
     setToolInstructionMap((prev) => {
       const next: Record<string, ContentSection[]> = {
         core: prev.core,
       };
-      for (const r of rows) {
+      for (const r of visible) {
         const id = r.id as string;
         next[id] = id in prev ? prev[id]! : parseInstructions(r.instructions);
       }
@@ -400,7 +402,11 @@ export function LibraryItemForm({
         {type === 'tools' && <TabsTrigger value="instructions">Instructions</TabsTrigger>}
       </TabsList>
       
-      <TabsContent value="basic" className="mt-0 min-h-0 flex-1 overflow-hidden">
+      <TabsContent
+        value="basic"
+        forceMount
+        className="mt-0 min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
+      >
         <div className="h-full overflow-y-auto p-6">
         <form id={effectiveFormId} onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
           <div>

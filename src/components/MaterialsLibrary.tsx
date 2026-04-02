@@ -202,13 +202,13 @@ export function MaterialsLibrary() {
         </Dialog>
       </div>
 
-      <div className="border rounded-lg max-h-[70vh] overflow-hidden">
-        <div className="max-h-[70vh] overflow-y-auto">
-        <Table>
-          <TableHeader className="sticky top-0 z-20 bg-background shadow-sm">
+      <div className="border rounded-lg">
+        <div className="max-h-[70vh] overflow-auto">
+        <Table wrapperClassName="overflow-visible">
+          <TableHeader className="border-b bg-background">
             <TableRow>
-              <TableHead className="w-12">Photo</TableHead>
-              <TableHead className="w-32">
+              <TableHead className="sticky top-0 z-20 w-12 border-b bg-background">Photo</TableHead>
+              <TableHead className="sticky top-0 z-20 w-32 border-b bg-background">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('item')}
@@ -218,7 +218,7 @@ export function MaterialsLibrary() {
                   {getSortIcon('item')}
                 </Button>
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-0 z-20 border-b bg-background">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('description')}
@@ -228,7 +228,7 @@ export function MaterialsLibrary() {
                   {getSortIcon('description')}
                 </Button>
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-0 z-20 border-b bg-background">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('unit_size')}
@@ -238,7 +238,9 @@ export function MaterialsLibrary() {
                   {getSortIcon('unit_size')}
                 </Button>
               </TableHead>
-              <TableHead className="w-20 text-right">Actions</TableHead>
+              <TableHead className="sticky top-0 z-20 w-20 border-b bg-background text-right">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -317,7 +319,6 @@ export function MaterialsLibrary() {
                     setShowEditDialog(false);
                     setEditingMaterial(null);
                   }}
-                  onSaveAndClose={() => {}}
                   saveButtonType="submit"
                   saveButtonForm="edit-material-form"
                 />

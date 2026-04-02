@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Plus, Edit, Image, ArrowUpDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { filterToolVariationsForDisplay } from "@/utils/variationAttributeDefinitions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { LibraryItemForm } from "./LibraryItemForm";
 import { VariationViewer } from "./VariationViewer";
@@ -108,7 +109,7 @@ export function ToolsLibrary() {
           
           return {
             ...tool,
-            variations: variations || []
+            variations: filterToolVariationsForDisplay(variations || [])
           };
         })
       );
@@ -249,12 +250,12 @@ export function ToolsLibrary() {
       </div>
 
       <div className="border rounded-lg">
-        <div className="overflow-auto max-h-[70vh]">
-          <Table>
+        <div className="max-h-[70vh] overflow-auto">
+          <Table wrapperClassName="overflow-visible">
             <TableHeader className="bg-background border-b">
               <TableRow>
-                <TableHead className="w-12 bg-background sticky top-0 z-20">Photo</TableHead>
-                <TableHead className="w-32 bg-background sticky top-0 z-20">
+                <TableHead className="sticky top-0 z-20 w-12 border-b bg-background">Photo</TableHead>
+                <TableHead className="sticky top-0 z-20 w-32 border-b bg-background">
                   <Button
                     variant="ghost"
                     onClick={() => handleSort('item')}
@@ -264,7 +265,7 @@ export function ToolsLibrary() {
                     {getSortIcon('item')}
                   </Button>
                 </TableHead>
-                <TableHead className="bg-background sticky top-0 z-20">
+                <TableHead className="sticky top-0 z-20 border-b bg-background">
                   <Button
                     variant="ghost"
                     onClick={() => handleSort('description')}
@@ -274,7 +275,7 @@ export function ToolsLibrary() {
                     {getSortIcon('description')}
                   </Button>
                 </TableHead>
-                <TableHead className="bg-background sticky top-0 z-20">
+                <TableHead className="sticky top-0 z-20 border-b bg-background">
                   <Button
                     variant="ghost"
                     onClick={() => handleSort('variations')}
@@ -284,7 +285,9 @@ export function ToolsLibrary() {
                     {getSortIcon('variations')}
                   </Button>
                 </TableHead>
-                <TableHead className="w-20 text-right bg-background sticky top-0 z-20">Actions</TableHead>
+                <TableHead className="sticky top-0 z-20 w-20 border-b bg-background text-right">
+                  Actions
+                </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -377,7 +380,9 @@ export function ToolsLibrary() {
           className={ADMIN_TOOL_DIALOG_CONTENT_CLASS}
         >
           <DialogHeader className="shrink-0 flex flex-row flex-wrap items-center justify-between gap-3 border-b px-4 py-3 text-left sm:px-6">
-            <DialogTitle className="min-w-0 flex-1">Edit Tool</DialogTitle>
+            <DialogTitle className="min-w-0 flex-1">
+              {editingTool != null ? `Edit Tool - ${editingTool.item}` : "Edit Tool"}
+            </DialogTitle>
             <div className="flex shrink-0 items-center gap-2">
               <Button
                 type="button"

@@ -8,7 +8,8 @@ export const PLANNING_TOOL_SAVE_CLOSE_CLASSNAME =
 
 export interface PlanningToolWindowHeaderActionsProps {
   onCancel: () => void;
-  onSaveAndClose: () => void | Promise<void>;
+  /** Used when `saveButtonType` is `button`. Omit when using `submit` + `saveButtonForm`. */
+  onSaveAndClose?: () => void | Promise<void>;
   className?: string;
   saveDisabled?: boolean;
   /** Primary action label (default: Save and Close). */
@@ -49,7 +50,11 @@ export function PlanningToolWindowHeaderActions({
           'min-h-9 px-3 text-xs md:min-h-8 md:text-sm',
           PLANNING_TOOL_SAVE_CLOSE_CLASSNAME
         )}
-        onClick={() => void onSaveAndClose()}
+        onClick={
+          saveButtonType === 'submit'
+            ? undefined
+            : () => void onSaveAndClose?.()
+        }
       >
         {saveLabel}
       </Button>
