@@ -97,6 +97,7 @@ export function UnifiedProjectManagement({
   const { isAdmin } = useUserRole();
   const { hasProjectOwnerRole } = useProjectOwner();
   const {
+    addProject,
     setCurrentProject,
     currentProject
   } = useProject();
@@ -1415,45 +1416,41 @@ export function UnifiedProjectManagement({
 
     try {
       console.log('🔨 Creating project:', { ...newProject, name: projectName });
-
-      // Get current user ID
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User must be authenticated to create a project');
-      }
-
-      // Use backend function to create project with standard foundation
-      const {
-        data,
-        error
-      } = await supabase.rpc('create_project_with_standard_foundation', {
-        p_project_name: projectName,
-        p_project_description: newProject.description || '',
-        p_category: newProject.categories.length > 0 ? newProject.categories[0] : 'general',
-        p_created_by: user.id
+      await addProject({
+        name: projectName,
+        description: newProject.description || '',
+        category: newProject.categories,
+        effortLevel: (newProject.effort_level || 'Medium') as 'Low' | 'Medium' | 'High',
+        skillLevel: (newProject.skill_level || 'Intermediate') as 'Beginner' | 'Intermediate' | 'Advanced',
+        estimatedTime: newProject.estimated_time || undefined,
+        scalingUnit:
+          (newProject.scaling_unit || undefined) as
+            | 'per square feet'
+            | 'per 10x10 room'
+            | 'per linear feet'
+            | 'per cubic yard'
+            | 'per item'
+            | undefined,
+        projectChallenges: undefined,
+        projectType: newProject.project_type === 'secondary' ? 'Secondary' : 'Primary',
+        phases: [],
       });
-      if (error) {
-        console.error('❌ Create project error:', error);
-        throw error;
+
+      await fetchProjects();
+      const { data: createdProject } = await supabase
+        .from('projects')
+        .select(
+          'id, name, description, publish_status, revision_number, parent_project_id, created_at, updated_at, published_at, beta_released_at, archived_at, revision_notes, category, effort_level, skill_level, estimated_time, estimated_total_time, typical_project_size, scaling_unit, item_type, project_challenges, budget_per_unit, budget_per_typical_size, project_type, created_by, owner_id, phases, cover_image, is_popular, visibility_status, release_date'
+        )
+        .ilike('name', projectName)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (createdProject) {
+        setSelectedProject(createdProject);
+        setCurrentProject(unifiedTemplateRowToContextProject(createdProject));
       }
 
-      // Update project with additional fields
-      if (data) {
-        await supabase
-          .from('projects')
-          .update({
-            category: newProject.categories,
-            effort_level: newProject.effort_level,
-            skill_level: newProject.skill_level,
-            estimated_time: newProject.estimated_time || null,
-            scaling_unit: newProject.scaling_unit || null,
-            item_type: newProject.item_type || null,
-            project_type: newProject.project_type || 'primary'
-          })
-          .eq('id', data);
-      }
-
-      console.log('✅ Project created:', data);
       toast.success("New project created with standard phases!");
       setCreateProjectDialogOpen(false);
       setNewProject({
@@ -1469,7 +1466,6 @@ export function UnifiedProjectManagement({
         item_type: '',
         project_type: 'primary'
       });
-      fetchProjects();
     } catch (error) {
       console.error('Error creating project:', error);
       toast.error(`Failed to create project: ${error instanceof Error ? error.message : 'Unknown error'}`);
