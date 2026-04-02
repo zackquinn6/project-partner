@@ -3641,6 +3641,7 @@ export type Database = {
         Row: {
           alternates: string | null
           attribute_definitions: Json
+          category: string
           created_at: string
           created_by: string | null
           description: string | null
@@ -3654,6 +3655,7 @@ export type Database = {
         Insert: {
           alternates?: string | null
           attribute_definitions?: Json
+          category: string
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -3668,6 +3670,7 @@ export type Database = {
           alternates?: string | null
           attribute_definitions?: Json
           created_at?: string
+          category?: string
           created_by?: string | null
           description?: string | null
           id?: string

@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { saveAttributeDefinitionsForCoreTool } from '@/utils/variationAttributeDefinitions';
+import { resolveToolsLibraryCategoryForInsert } from '@/utils/toolCatalogCategory';
 
 interface ParsedTool {
   name: string;
@@ -158,7 +159,11 @@ export async function importToolsToDatabase(
         .from('tools')
         .insert({
           name: tool.name,
-          description: tool.description
+          description: tool.description ?? null,
+          category: resolveToolsLibraryCategoryForInsert(tool.name, tool.category, tool.description),
+          specialty_scale: 1,
+          alternates: null,
+          attribute_definitions: [],
         } as any)
         .select()
         .single();

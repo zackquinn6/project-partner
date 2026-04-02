@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   PLANNING_TOOL_SAVE_CLOSE_CLASSNAME,
 } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
+import { TOOLS_LIBRARY_CATEGORIES } from '@/utils/toolCatalogCategory';
 
 interface LibraryItemFormProps {
   type: 'tools' | 'materials';
@@ -295,7 +296,8 @@ export function LibraryItemForm({
         description: formData.description.trim() || null,
         photo_url: finalPhotoUrl || null,
         alternates: formData.alternates || null,
-        category: formData.category.trim() || null,
+        /** DB `tools_category_required_chk` / materials constraints — never persist null after validation. */
+        category: formData.category.trim(),
         ...(type === 'materials' && {
           unit: formData.unit.trim() || null
         }),
@@ -447,7 +449,7 @@ export function LibraryItemForm({
                 <SelectValue placeholder="Select a category..." />
               </SelectTrigger>
               <SelectContent className="z-[1000]">
-                {(type === 'tools' ? toolCategoryOptions : materialCategoryOptions).map((category) => (
+                {(type === 'tools' ? TOOLS_LIBRARY_CATEGORIES : materialCategoryOptions).map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}
                   </SelectItem>

@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { resolveToolsLibraryCategoryForInsert } from '@/utils/toolCatalogCategory';
 
 export interface EnhancedParsedTool {
   name: string;
@@ -417,7 +418,7 @@ export async function importEnhancedToolsToDatabase(
       const { data: coreTools, error: coreError } = await supabase
         .from('tools')
         .select('id')
-        .eq('item', tool.coreToolName)
+        .eq('name', tool.coreToolName)
         .maybeSingle();
       
       if (coreError && coreError.code !== 'PGRST116') {
@@ -433,7 +434,15 @@ export async function importEnhancedToolsToDatabase(
           .from('tools')
           .insert({
             name: tool.coreToolName,
-            description: `${tool.category} - ${tool.name}`
+            description: `${tool.category} - ${tool.name}`,
+            category: resolveToolsLibraryCategoryForInsert(
+              tool.coreToolName,
+              tool.category,
+              tool.name
+            ),
+            specialty_scale: 1,
+            alternates: null,
+            attribute_definitions: [],
           } as any)
           .select('id')
           .single();
