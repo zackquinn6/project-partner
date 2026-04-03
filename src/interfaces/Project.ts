@@ -26,6 +26,8 @@ export interface Tool {
   category: 'Hardware' | 'Software' | 'Hand Tool' | 'Power Tool' | 'Other' | 'PPE';
   alternates: string[];
   item?: string;
+  /** When set and non-empty, tool is shown only if at least one linked instruction section is visible. When omitted or empty, applies to all sections on the step. */
+  linkedContentSectionIds?: string[];
 }
 
 // New library interfaces matching database schema
@@ -97,6 +99,12 @@ export interface AppReference {
   isBeta?: boolean;
 }
 
+/** One AND-clause: user's choice for `decisionId` must be one of `choiceIds`. */
+export interface ContentSectionDecisionRule {
+  decisionId: string;
+  choiceIds: string[];
+}
+
 export interface ContentSection {
   id: string;
   type: 'text' | 'image' | 'video' | 'link' | 'button' | 'safety-warning';
@@ -110,6 +118,23 @@ export interface ContentSection {
   buttonLabel?: string;
   buttonIcon?: string;
   buttonVariant?: 'default' | 'outline' | 'secondary';
+  /**
+   * When null or undefined, this section applies for all general project choices.
+   * When set, every rule must pass (AND): for each rule, the user's selected choice for that decision must be in choiceIds.
+   */
+  decisionApplicability?: ContentSectionDecisionRule[] | null;
+}
+
+/** Global template-level decisions (project customizer), stored under scheduling_prerequisites. */
+export interface GeneralProjectChoice {
+  id: string;
+  label: string;
+}
+
+export interface GeneralProjectDecision {
+  id: string;
+  label: string;
+  choices: GeneralProjectChoice[];
 }
 
 /** Default instruction sections for new workflow steps in the editor. */

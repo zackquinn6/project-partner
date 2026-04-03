@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ResponsiveDialog } from '../ResponsiveDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
 import { SimplifiedCustomWorkManager } from './SimplifiedCustomWorkManager';
@@ -51,6 +51,8 @@ interface CustomizationState {
   // Legacy fields for backward compatibility
   standardDecisions: Record<string, string[]>; // phaseId -> selected alternatives
   ifNecessaryWork: Record<string, string[]>; // phaseId -> selected optional work
+  /** General project decision id -> selected choice id (from template scheduling_prerequisites). */
+  generalProjectChoices: Record<string, string>;
   customPlannedWork: Phase[]; // phases added from other projects
   customUnplannedWork: Phase[]; // custom phases created by user
   workflowOrder: string[]; // ordered phase ids
@@ -70,6 +72,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     spaceDecisions: {},
     standardDecisions: {},
     ifNecessaryWork: {},
+    generalProjectChoices: {},
     customPlannedWork: [],
     customUnplannedWork: [],
     workflowOrder: []
@@ -85,6 +88,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   const [homes, setHomes] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
   const [itemType, setItemType] = useState<string | null>(null);
+  const [templateGeneralDecisions, setTemplateGeneralDecisions] = useState<GeneralProjectDecision[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -97,6 +101,37 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     ? projects.find(p => p.id === currentProjectRun.projectId)
     : null;
   const scalingUnit = templateProject?.scalingUnit || currentProjectRun?.scalingUnit || 'per item';
+
+  const filteredGeneralProjectDecisions = useMemo(
+    () =>
+      filterGeneralDecisionsForPhases(
+        templateGeneralDecisions,
+        currentProjectRun?.phases
+      ),
+    [templateGeneralDecisions, currentProjectRun?.phases]
+  );
+
+  useEffect(() => {
+    if (!open || !templateProject?.id) {
+      setTemplateGeneralDecisions([]);
+      return;
+    }
+    let cancelled = false;
+    void supabase
+      .from('projects')
+      .select('scheduling_prerequisites')
+      .eq('id', templateProject.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        setTemplateGeneralDecisions(
+          parseGeneralProjectDecisionsFromPrerequisites(data?.scheduling_prerequisites)
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, templateProject?.id]);
 
   // Fetch item_type directly from database since it's not in the transformed Project interface
   useEffect(() => {
@@ -191,6 +226,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
             spaceDecisions: savedData.spaceDecisions || {},
             standardDecisions: savedData.standardDecisions || {},
             ifNecessaryWork: savedData.ifNecessaryWork || {},
+            generalProjectChoices: savedData.generalProjectChoices || {},
             customPlannedWork: savedData.customPlannedWork || [],
             customUnplannedWork: savedData.customUnplannedWork || [],
             workflowOrder: savedData.workflowOrder || []
@@ -213,6 +249,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
             spaceDecisions: savedData.spaceDecisions || {},
             standardDecisions: savedData.standardDecisions || {},
             ifNecessaryWork: savedData.ifNecessaryWork || {},
+            generalProjectChoices: savedData.generalProjectChoices || {},
             customPlannedWork: savedData.customPlannedWork || [],
             customUnplannedWork: savedData.customUnplannedWork || [],
             workflowOrder: savedData.workflowOrder || []
@@ -723,6 +760,51 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                   />
                 </AccordionTrigger>
                 <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
+                  {filteredGeneralProjectDecisions.length > 0 ? (
+                    <Card className="mb-6 border-primary/20">
+                      <CardHeader className={isMobile ? 'pb-3' : ''}>
+                        <CardTitle className={isMobile ? 'text-base' : ''}>Project choices</CardTitle>
+                        <CardDescription className="text-xs">
+                          General options for this project. They work together with phase and alternate
+                          decisions below.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-5">
+                        {filteredGeneralProjectDecisions.map((decision) => (
+                          <div
+                            key={decision.id}
+                            className="space-y-2 border-b border-border/60 pb-4 last:border-0 last:pb-0"
+                          >
+                            <Label className="text-sm font-medium">{decision.label}</Label>
+                            <RadioGroup
+                              value={customizationState.generalProjectChoices[decision.id] ?? ''}
+                              onValueChange={(v) =>
+                                setCustomizationState((prev) => ({
+                                  ...prev,
+                                  generalProjectChoices: {
+                                    ...prev.generalProjectChoices,
+                                    [decision.id]: v,
+                                  },
+                                }))
+                              }
+                            >
+                              {decision.choices.map((c) => (
+                                <div key={c.id} className="flex items-center space-x-2">
+                                  <RadioGroupItem value={c.id} id={`gpc-${decision.id}-${c.id}`} />
+                                  <Label
+                                    htmlFor={`gpc-${decision.id}-${c.id}`}
+                                    className="font-normal cursor-pointer text-sm"
+                                  >
+                                    {c.label}
+                                  </Label>
+                                </div>
+                              ))}
+                            </RadioGroup>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  ) : null}
                   <SpaceDecisionFlow
                     spaces={customizationState.spaces}
                     projectRun={currentProjectRun}

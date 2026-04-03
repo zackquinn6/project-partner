@@ -11,7 +11,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { MultiContentRenderer } from '@/components/MultiContentRenderer';
 import { useStepInstructions } from '@/hooks/useStepInstructions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { WorkflowThemeSelector } from './WorkflowThemeSelector';
+import type { GeneralProjectDecision } from '@/interfaces/Project';
+import type { GeneralProjectChoicesMap } from '@/utils/generalProjectDecisions';
+import { filterSectionRowsForMicroDecisions } from '@/utils/microDecisionVisibility';
 
 interface MobileWorkflowViewProps {
   projectName: string;
@@ -35,6 +39,13 @@ interface MobileWorkflowViewProps {
   onToolInstructions?: (toolId: string, toolName: string) => void;
   instructionLevel?: 'beginner' | 'intermediate' | 'advanced';
   onInstructionLevelChange?: (level: 'beginner' | 'intermediate' | 'advanced') => void;
+  /** When set with shouldApply and loaded, instruction sections and fallback multi-content respect micro decisions (same as desktop UserView). */
+  microDecisions?: {
+    loading: boolean;
+    shouldApply: boolean;
+    choices: GeneralProjectChoicesMap;
+    catalog: GeneralProjectDecision[];
+  };
 }
 
 export function MobileWorkflowView({
@@ -57,7 +68,8 @@ export function MobileWorkflowView({
   onToggleTool,
   onToolInstructions,
   instructionLevel = 'intermediate',
-  onInstructionLevelChange
+  onInstructionLevelChange,
+  microDecisions
 }: MobileWorkflowViewProps) {
   const [showMaterials, setShowMaterials] = useState(true);
   const [showTools, setShowTools] = useState(true);
@@ -120,6 +132,12 @@ export function MobileWorkflowView({
   const launchActionKey = (actionKey: string) => {
     window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey } }));
   };
+
+  const microOn =
+    Boolean(projectRunId) &&
+    Boolean(microDecisions) &&
+    !microDecisions!.loading &&
+    microDecisions!.shouldApply;
 
   if (!currentStep) {
     return (
@@ -232,7 +250,17 @@ export function MobileWorkflowView({
                         </div>
                       )}
                       
-                      {instruction.content.sections && [...instruction.content.sections]
+                      {instruction.content.sections && (() => {
+                        const base = [...instruction.content.sections];
+                        const filtered = microOn
+                          ? filterSectionRowsForMicroDecisions(
+                              base,
+                              true,
+                              microDecisions!.choices,
+                              microDecisions!.catalog
+                            )
+                          : base;
+                        return [...filtered]
                         .sort((a, b) => {
                           // Sort warnings to top, then tips, then standard
                           const order = { warning: 0, tip: 1, standard: 2 };
@@ -252,7 +280,8 @@ export function MobileWorkflowView({
                           <h4 className="font-semibold mb-1">{section.title}</h4>
                           <div className="whitespace-pre-wrap">{section.content}</div>
                         </div>
-                      ))}
+                      ))
+                      })()}
 
                       {instruction.content.photos && instruction.content.photos.map((photo, idx) => (
                         <div key={idx}>
@@ -281,8 +310,32 @@ export function MobileWorkflowView({
                   ) : (
                     <>
                       {/* Fallback to original content */}
-                      {currentStep.content && Array.isArray(currentStep.content) && currentStep.content.length > 0 ? (
-                        <MultiContentRenderer sections={currentStep.content} />
+                      {currentStep.contentSections && Array.isArray(currentStep.contentSections) && currentStep.contentSections.length > 0 ? (
+                        <MultiContentRenderer
+                          sections={
+                            microOn
+                              ? filterSectionRowsForMicroDecisions(
+                                  currentStep.contentSections,
+                                  true,
+                                  microDecisions!.choices,
+                                  microDecisions!.catalog
+                                )
+                              : currentStep.contentSections
+                          }
+                        />
+                      ) : currentStep.content && Array.isArray(currentStep.content) && currentStep.content.length > 0 ? (
+                        <MultiContentRenderer
+                          sections={
+                            microOn
+                              ? filterSectionRowsForMicroDecisions(
+                                  currentStep.content,
+                                  true,
+                                  microDecisions!.choices,
+                                  microDecisions!.catalog
+                                )
+                              : currentStep.content
+                          }
+                        />
                       ) : currentStep.description && (
                         <p className="text-muted-foreground text-sm leading-relaxed">
                           {currentStep.description}

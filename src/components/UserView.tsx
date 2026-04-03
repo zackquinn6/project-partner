@@ -27,6 +27,15 @@ import { MobileProjectListing } from './MobileProjectListing';
 import { MobileWorkflowView } from './MobileWorkflowView';
 import { OutputDetailPopup } from './OutputDetailPopup';
 import { calculateProjectProgress, getWorkflowStepsCount } from '@/utils/progressCalculation';
+import { useWorkflowMicroDecisions } from '@/hooks/useWorkflowMicroDecisions';
+import {
+  getInstructionSectionsForStep,
+  stepHasVisibleInstructionContent,
+  getVisibleInstructionSectionIds,
+  filterToolsByVisibleSections,
+  filterMaterialsByVisibleSections,
+  filterSectionRowsForMicroDecisions,
+} from '@/utils/microDecisionVisibility';
 import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
 import { PhaseRatingPopup } from './PhaseRatingPopup';
 import { ExpertHelpWindow } from './ExpertHelpWindow';
@@ -738,6 +747,14 @@ export default function UserView({
   // Apply standard phase ordering to match Process Map
   // This ensures workflow navigation follows the same order as Process Map
   const workflowPhases = enforceStandardPhaseOrdering(rawWorkflowPhases);
+
+  const microRuntime = useWorkflowMicroDecisions(
+    currentProjectRun?.id,
+    currentProjectRun?.projectId,
+    instructionLevel,
+    workflowPhases,
+    currentProjectRun?.customization_decisions
+  );
   
   // CRITICAL: Project runs should preserve exact template phase structure
   // Template structure: Standard phases → Custom phases → Standard phases (Ordering) → Close Project
@@ -763,7 +780,7 @@ export default function UserView({
     if (organizedNavigation.length === 0) return [];
     
     let stepIndex = 0;
-    return organizedNavigation.flatMap(item => {
+    const baseSteps = organizedNavigation.flatMap(item => {
       return item.steps.map((step) => {
         // Use actual materials and tools from database - no sample data
         let materials = step.materials || [];
@@ -851,7 +868,44 @@ export default function UserView({
         };
       });
     });
-  }, [organizedNavigation, appOverrides]);
+
+    if (
+      currentProjectRun &&
+      !microRuntime.loading &&
+      microRuntime.shouldApply
+    ) {
+      return baseSteps
+        .filter((step) => {
+          const secs = getInstructionSectionsForStep(
+            step,
+            microRuntime.instructionSectionsByStepId
+          );
+          return stepHasVisibleInstructionContent(
+            secs,
+            microRuntime.choices,
+            microRuntime.catalog
+          );
+        })
+        .map((step) => {
+          const secs = getInstructionSectionsForStep(
+            step,
+            microRuntime.instructionSectionsByStepId
+          );
+          const vis = getVisibleInstructionSectionIds(
+            secs,
+            microRuntime.choices,
+            microRuntime.catalog
+          );
+          return {
+            ...step,
+            tools: filterToolsByVisibleSections(step.tools || [], vis),
+            materials: filterMaterialsByVisibleSections(step.materials || [], vis),
+          };
+        });
+    }
+
+    return baseSteps;
+  }, [organizedNavigation, appOverrides, currentProjectRun, microRuntime]);
 
   const persistedCompletedStepsSignature = useMemo(() => {
     const arr = currentProjectRun?.completedSteps;
@@ -2370,7 +2424,14 @@ export default function UserView({
         display_order: typeof section.display_order === 'number' ? section.display_order : (10 + idx)
       }));
 
-      return <MultiContentRenderer sections={[...textRows, ...normalizedSectionRows, ...photoRows, ...videoRows, ...linkRows]} />;
+      const filteredSectionRows = filterSectionRowsForMicroDecisions(
+        normalizedSectionRows,
+        Boolean(currentProjectRun) && microRuntime.shouldApply && !microRuntime.loading,
+        microRuntime.choices,
+        microRuntime.catalog
+      );
+
+      return <MultiContentRenderer sections={[...textRows, ...filteredSectionRows, ...photoRows, ...videoRows, ...linkRows]} />;
     }
     
     // Use original content if no instruction data
@@ -2403,8 +2464,18 @@ export default function UserView({
         }
       };
       
+      const sectionsForRenderer =
+        Boolean(currentProjectRun) && microRuntime.shouldApply && !microRuntime.loading
+          ? filterSectionRowsForMicroDecisions(
+              step.contentSections,
+              true,
+              microRuntime.choices,
+              microRuntime.catalog
+            )
+          : step.contentSections;
+
       return <MultiContentRenderer 
-        sections={step.contentSections} 
+        sections={sectionsForRenderer} 
         onButtonAction={handleButtonAction}
       />;
     }
@@ -2437,8 +2508,13 @@ export default function UserView({
         }
       };
       
+      const contentArrayForRenderer =
+        Boolean(currentProjectRun) && microRuntime.shouldApply && !microRuntime.loading
+          ? filterSectionRowsForMicroDecisions(step.content, true, microRuntime.choices, microRuntime.catalog)
+          : step.content;
+
       return <MultiContentRenderer 
-        sections={step.content} 
+        sections={contentArrayForRenderer} 
         onButtonAction={handleButtonAction}
       />;
     }
@@ -3335,6 +3411,12 @@ export default function UserView({
           onToolInstructions={(id, name) => setToolInstructions({ id, name })}
           instructionLevel={instructionLevel}
           onInstructionLevelChange={handleInstructionLevelChange}
+          microDecisions={{
+            loading: microRuntime.loading,
+            shouldApply: microRuntime.shouldApply,
+            choices: microRuntime.choices,
+            catalog: microRuntime.catalog,
+          }}
         />
       ) : (
         /* Desktop Workflow View */

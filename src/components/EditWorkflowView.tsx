@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
-import { WorkflowStep, Tool, Material, Output, ContentSection, Phase, Operation, Project, AppReference, StepInput, getDefaultStepContentSections } from '@/interfaces/Project';
+import { WorkflowStep, Tool, Material, Output, ContentSection, Phase, Operation, Project, AppReference, StepInput, getDefaultStepContentSections, type GeneralProjectDecision } from '@/interfaces/Project';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -35,6 +35,7 @@ import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, X, Settings, Save, C
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
+import { parseGeneralProjectDecisionsFromPrerequisites } from '@/utils/generalProjectDecisions';
 import { parseProcessVariablesFromDb } from '@/utils/processVariablesUtils';
 import {
   resolveIncorporatedSourcePhase,
@@ -1255,6 +1256,29 @@ export default function EditWorkflowView({
   const [appsLibraryOpen, setAppsLibraryOpen] = useState(false);
   const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
   const [decisionTreeOpen, setDecisionTreeOpen] = useState(false);
+  const [generalProjectDecisionsForEditor, setGeneralProjectDecisionsForEditor] = useState<GeneralProjectDecision[]>([]);
+
+  useEffect(() => {
+    if (!currentProject?.id) {
+      setGeneralProjectDecisionsForEditor([]);
+      return;
+    }
+    let cancelled = false;
+    void supabase
+      .from('projects')
+      .select('scheduling_prerequisites')
+      .eq('id', currentProject.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        setGeneralProjectDecisionsForEditor(
+          parseGeneralProjectDecisionsFromPrerequisites(data?.scheduling_prerequisites)
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProject?.id, decisionTreeOpen]);
   const [instructionLevel, setInstructionLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
   const [levelSpecificContent, setLevelSpecificContent] = useState<ContentSection[] | null>(null);
   const [levelSpecificContentKey, setLevelSpecificContentKey] = useState<{ stepId: string | null; level: 'beginner' | 'intermediate' | 'advanced' }>({
@@ -1764,6 +1788,41 @@ export default function EditWorkflowView({
     updateProject(updatedProject);
     toast.success(`Imported ${importedPhases.length} phases successfully`);
   };
+
+  const instructionSectionPickerOptions = React.useMemo(() => {
+    if (!editMode || !editingStep) return [];
+    const currentStepId = editingStep.id;
+    const fromPending =
+      pendingContentChanges && pendingContentRef.current.stepId === currentStepId
+        ? pendingContentChanges
+        : null;
+    const fromLoaded =
+      levelSpecificContentKey.stepId === currentStepId &&
+      levelSpecificContentKey.level === instructionLevel &&
+      levelSpecificContent &&
+      levelSpecificContent.length > 0
+        ? levelSpecificContent
+        : null;
+    const raw =
+      fromPending ??
+      fromLoaded ??
+      (editingStep.contentSections && editingStep.contentSections.length > 0
+        ? editingStep.contentSections
+        : []);
+    return raw.map((s) => ({
+      id: s.id,
+      label: s.title?.trim() ? s.title : `${s.type} section`,
+    }));
+  }, [
+    editMode,
+    editingStep,
+    pendingContentChanges,
+    levelSpecificContent,
+    levelSpecificContentKey.stepId,
+    levelSpecificContentKey.level,
+    instructionLevel,
+  ]);
+
   const renderContent = (step: typeof currentStep) => {
     if (!step) return null;
     if (editMode && editingStep) {
@@ -1811,7 +1870,8 @@ export default function EditWorkflowView({
       
       return <div className="space-y-6">
           <MultiContentEditor 
-            sections={contentSections} 
+            sections={contentSections}
+            generalDecisions={generalProjectDecisionsForEditor}
             onChange={(sections) => {
               // Track both the changes and which level they belong to
               const currentStepId = editingStepRef.current?.id ?? null;
@@ -2405,6 +2465,7 @@ export default function EditWorkflowView({
                             <CompactToolsTable
                               title="Tools"
                               tools={nonPpeTools}
+                              contentSectionOptions={instructionSectionPickerOptions}
                               onToolsChange={(tools) => updateEditingStep('tools', [...tools, ...ppeTools])}
                               onAddTool={() => {
                                 setAlternateToolParentId(null);
@@ -2427,6 +2488,7 @@ export default function EditWorkflowView({
                             <CompactMaterialsTable
                               title="Materials"
                               materials={nonPpeMaterials}
+                              contentSectionOptions={instructionSectionPickerOptions}
                               onMaterialsChange={(materials) =>
                                 updateEditingStep('materials', [...materials, ...ppeMaterials])
                               }
@@ -2451,6 +2513,7 @@ export default function EditWorkflowView({
                             <CompactPpeTable
                               ppeTools={ppeTools}
                               ppeMaterials={ppeMaterials}
+                              contentSectionOptions={instructionSectionPickerOptions}
                               onPpeToolsChange={(tools) =>
                                 updateEditingStep('tools', [...nonPpeTools, ...tools])
                               }

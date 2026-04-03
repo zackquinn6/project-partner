@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -26,7 +27,15 @@ import { useProject } from '@/contexts/ProjectContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
-import { DECISION_TREE_CONFIG_KEY } from '@/utils/decisionTreeSchedulingPrereqs';
+import {
+  DECISION_TREE_CONFIG_KEY,
+  GENERAL_PROJECT_DECISIONS_KEY,
+} from '@/utils/decisionTreeSchedulingPrereqs';
+import type { GeneralProjectDecision, GeneralProjectChoice } from '@/interfaces/Project';
+import {
+  parseGeneralProjectDecisionsFromPrerequisites,
+} from '@/utils/generalProjectDecisions';
+import { sanitizeMicroDecisionOrphansForProject } from '@/utils/sanitizeMicroDecisionOrphansForProject';
 import { 
   ReactFlow,
   Node, 
@@ -108,6 +117,10 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
   // Store which item is currently showing alternate selector
   const [showAlternateSelector, setShowAlternateSelector] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [generalProjectDecisions, setGeneralProjectDecisions] = useState<GeneralProjectDecision[]>([]);
+
+  const canEditGeneralProjectDecisions =
+    !currentProject.isStandardTemplate || editingStandardFoundation;
 
   // Load existing flow configurations from database when component opens
   useEffect(() => {
@@ -223,6 +236,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       const rawPrereq = projectRes.data?.scheduling_prerequisites;
       if (rawPrereq && typeof rawPrereq === 'object' && !Array.isArray(rawPrereq)) {
         const rawObj = rawPrereq as Record<string, unknown>;
+        setGeneralProjectDecisions(parseGeneralProjectDecisionsFromPrerequisites(rawPrereq));
         const dtBlob = rawObj[DECISION_TREE_CONFIG_KEY];
         if (dtBlob && typeof dtBlob === 'object' && !Array.isArray(dtBlob)) {
           for (const [eid, data] of Object.entries(dtBlob as Record<string, unknown>)) {
@@ -245,6 +259,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
         for (const [entityId, preds] of Object.entries(rawObj)) {
           if (entityId === DECISION_TREE_CONFIG_KEY) continue;
+          if (entityId === GENERAL_PROJECT_DECISIONS_KEY) continue;
           if (!Array.isArray(preds)) continue;
           const ids = preds.filter((x): x is string => typeof x === 'string' && x.length > 0);
           if (ids.length === 0) continue;
@@ -263,6 +278,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     } catch (error) {
       console.error('Error loading flow configs:', error);
       toast.error('Failed to load decision tree configuration');
+      setGeneralProjectDecisions([]);
     }
   };
 
@@ -748,6 +764,9 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             }
             continue;
           }
+          if (k === GENERAL_PROJECT_DECISIONS_KEY) {
+            continue;
+          }
           if (
             !editingStandardFoundation &&
             Array.isArray(v) &&
@@ -810,6 +829,16 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
         scheduling_prerequisites[DECISION_TREE_CONFIG_KEY] = mergedDecisionBlob;
       }
 
+      const existingGpd = parseGeneralProjectDecisionsFromPrerequisites(raw);
+      const gpdToPersist = canEditGeneralProjectDecisions ? generalProjectDecisions : existingGpd;
+      if (gpdToPersist.length > 0) {
+        scheduling_prerequisites[GENERAL_PROJECT_DECISIONS_KEY] = gpdToPersist.map((d) => ({
+          id: d.id,
+          label: d.label,
+          choices: d.choices.map((c: GeneralProjectChoice) => ({ id: c.id, label: c.label })),
+        }));
+      }
+
       const { error: prereqError } = await supabase
         .from('projects')
         .update({
@@ -829,6 +858,19 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       });
       if (rebuildErr) {
         console.warn('DecisionTreeManager: rebuild_phases_json_from_project_phases failed', rebuildErr);
+      }
+
+      const { operationStepsUpdated, instructionsUpdated } = await sanitizeMicroDecisionOrphansForProject(
+        currentProject.id,
+        gpdToPersist
+      );
+      if (operationStepsUpdated > 0 || instructionsUpdated > 0) {
+        const { error: rebuild2 } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+          p_project_id: currentProject.id,
+        });
+        if (rebuild2) {
+          console.warn('DecisionTreeManager: rebuild after micro-decision sanitize failed', rebuild2);
+        }
       }
 
       if (errorCount > 0) {
@@ -1339,6 +1381,157 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             value="table"
             className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 data-[state=inactive]:hidden sm:px-6 sm:pb-6"
           >
+            <Card className="mb-4 shrink-0 border-muted">
+              <CardHeader className="py-3">
+                <CardTitle className="text-base">General Project Decisions</CardTitle>
+                <CardDescription>
+                  Project-wide choices (e.g. tile size, layout). Homeowners pick these in Project Customizer
+                  alongside phase/alternate decisions. Link instruction sections and tools to these in the workflow
+                  editor.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-0">
+                {!canEditGeneralProjectDecisions ? (
+                  <p className="text-sm text-muted-foreground">
+                    General project decisions for the Standard Project Foundation can only be edited from{' '}
+                    <span className="font-medium text-foreground">Edit Standard</span>.
+                  </p>
+                ) : null}
+                <div className="space-y-4">
+                  {generalProjectDecisions.map((decision, dIdx) => (
+                    <div
+                      key={decision.id}
+                      className="rounded-lg border bg-muted/20 p-3 space-y-3"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="space-y-1 flex-1 min-w-[12rem]">
+                          <Label className="text-xs font-semibold">Decision label</Label>
+                          <Input
+                            value={decision.label}
+                            disabled={!canEditGeneralProjectDecisions}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setGeneralProjectDecisions((prev) =>
+                                prev.map((d, i) => (i === dIdx ? { ...d, label: v } : d))
+                              );
+                            }}
+                            placeholder="e.g. Tile size"
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        {canEditGeneralProjectDecisions ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive"
+                            onClick={() =>
+                              setGeneralProjectDecisions((prev) => prev.filter((_, i) => i !== dIdx))
+                            }
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Remove decision
+                          </Button>
+                        ) : null}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold">Choices</Label>
+                        {decision.choices.map((choice, cIdx) => (
+                          <div key={choice.id} className="flex flex-wrap items-center gap-2">
+                            <Input
+                              value={choice.label}
+                              disabled={!canEditGeneralProjectDecisions}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                setGeneralProjectDecisions((prev) =>
+                                  prev.map((d, i) => {
+                                    if (i !== dIdx) return d;
+                                    const nextChoices = d.choices.map((c, j) =>
+                                      j === cIdx ? { ...c, label: v } : c
+                                    );
+                                    return { ...d, choices: nextChoices };
+                                  })
+                                );
+                              }}
+                              className="h-8 text-sm flex-1 min-w-[8rem]"
+                              placeholder="Choice label"
+                            />
+                            {canEditGeneralProjectDecisions ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  setGeneralProjectDecisions((prev) =>
+                                    prev.map((d, i) => {
+                                      if (i !== dIdx) return d;
+                                      return {
+                                        ...d,
+                                        choices: d.choices.filter((_, j) => j !== cIdx),
+                                      };
+                                    })
+                                  )
+                                }
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            ) : null}
+                          </div>
+                        ))}
+                        {canEditGeneralProjectDecisions ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              setGeneralProjectDecisions((prev) =>
+                                prev.map((d, i) => {
+                                  if (i !== dIdx) return d;
+                                  const nid = `gpc-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+                                  return {
+                                    ...d,
+                                    choices: [...d.choices, { id: nid, label: 'New choice' }],
+                                  };
+                                })
+                              )
+                            }
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add choice
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {canEditGeneralProjectDecisions ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() =>
+                      setGeneralProjectDecisions((prev) => [
+                        ...prev,
+                        {
+                          id: `gpd-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+                          label: 'New decision',
+                          choices: [
+                            {
+                              id: `gpc-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+                              label: 'Choice A',
+                            },
+                          ],
+                        },
+                      ])
+                    }
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add decision
+                  </Button>
+                ) : null}
+              </CardContent>
+            </Card>
+
             <div className="mb-2 flex shrink-0 flex-col gap-2 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center">
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={expandAll}>

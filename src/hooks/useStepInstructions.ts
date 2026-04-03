@@ -12,6 +12,7 @@ export interface StepInstruction {
   content: {
     text: string;
     sections: Array<{
+      id?: string;
       title: string;
       content: string;
       type?: 'text' | 'image' | 'video' | 'link' | 'button' | 'safety-warning' | 'warning' | 'tip' | 'standard';
@@ -19,6 +20,7 @@ export interface StepInstruction {
       alignment?: 'left' | 'center' | 'right';
       display_order?: number;
       severity?: 'low' | 'medium' | 'high' | 'critical';
+      decisionApplicability?: import('@/interfaces/Project').ContentSection['decisionApplicability'];
     }>;
     photos: Array<{
       url: string;
@@ -53,15 +55,32 @@ function normalizeContent(row: StepInstructionRow | null, instructionLevel: Step
     links: [] as StepInstruction['content']['links'],
   };
   if (Array.isArray(raw) && raw.length > 0) {
-    empty.sections = raw.map((s: { title?: string; content?: string; type?: string; width?: string; alignment?: string; display_order?: number; severity?: string }) => ({
-      title: s.title ?? '',
-      content: s.content ?? '',
-      type: s.type as StepInstruction['content']['sections'][number]['type'],
-      width: s.width as StepInstruction['content']['sections'][number]['width'],
-      alignment: s.alignment as StepInstruction['content']['sections'][number]['alignment'],
-      display_order: typeof s.display_order === 'number' ? s.display_order : undefined,
-      severity: s.severity as StepInstruction['content']['sections'][number]['severity'],
-    }))
+    empty.sections = raw.map(
+      (s: {
+        id?: string;
+        title?: string;
+        content?: string;
+        type?: string;
+        width?: string;
+        alignment?: string;
+        display_order?: number;
+        severity?: string;
+        decisionApplicability?: unknown;
+      }) => ({
+        id: typeof s.id === 'string' && s.id.length > 0 ? s.id : undefined,
+        title: s.title ?? '',
+        content: s.content ?? '',
+        type: s.type as StepInstruction['content']['sections'][number]['type'],
+        width: s.width as StepInstruction['content']['sections'][number]['width'],
+        alignment: s.alignment as StepInstruction['content']['sections'][number]['alignment'],
+        display_order: typeof s.display_order === 'number' ? s.display_order : undefined,
+        severity: s.severity as StepInstruction['content']['sections'][number]['severity'],
+        decisionApplicability:
+          s.decisionApplicability === null || s.decisionApplicability === undefined
+            ? null
+            : (s.decisionApplicability as StepInstruction['content']['sections'][number]['decisionApplicability']),
+      })
+    )
     .sort((a, b) => {
       const aOrder = typeof a.display_order === 'number' ? a.display_order : Number.MAX_SAFE_INTEGER;
       const bOrder = typeof b.display_order === 'number' ? b.display_order : Number.MAX_SAFE_INTEGER;

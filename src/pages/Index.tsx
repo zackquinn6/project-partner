@@ -20,7 +20,6 @@ import { toast } from 'sonner';
 import { MobileOptimizedHome } from '@/components/MobileOptimizedHome';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { MobileProjectListing } from '@/components/MobileProjectListing';
-import { MobileWorkflowView } from '@/components/MobileWorkflowView';
 import { ToolRentalsWindow } from '@/components/ToolRentalsWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';

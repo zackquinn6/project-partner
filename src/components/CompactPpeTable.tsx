@@ -5,6 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Plus, Shield, ListPlus } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface StepTool {
   id: string;
@@ -15,6 +17,7 @@ interface StepTool {
   parentId?: string;
   quantity?: number;
   purpose?: string;
+  linkedContentSectionIds?: string[];
 }
 
 interface StepMaterial {
@@ -27,6 +30,63 @@ interface StepMaterial {
   quantity?: number;
   purpose?: string;
   unit?: string;
+  linkedContentSectionIds?: string[];
+}
+
+function PpeSectionLinkCell({
+  allOptions,
+  linkedIds,
+  onChange,
+}: {
+  allOptions: { id: string; label: string }[];
+  linkedIds: string[] | undefined;
+  onChange: (next: string[] | undefined) => void;
+}) {
+  if (allOptions.length === 0) return <span className="inline-block w-8" aria-hidden />;
+  const allIds = allOptions.map((o) => o.id);
+  const effective =
+    !linkedIds || linkedIds.length === 0
+      ? new Set(allIds)
+      : new Set(linkedIds.filter((id) => allIds.includes(id)));
+  const isAll = effective.size === allIds.length;
+
+  const toggle = (id: string, checked: boolean) => {
+    const next = new Set(effective);
+    if (checked) next.add(id);
+    else next.delete(id);
+    if (next.size === 0 || next.size === allIds.length) {
+      onChange(undefined);
+      return;
+    }
+    onChange(allIds.filter((i) => next.has(i)));
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] px-2 max-w-[7rem] truncate">
+          {isAll ? 'All sections' : `${effective.size} sections`}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3" align="end">
+        <div className="text-xs font-medium mb-2">Instruction sections</div>
+        <p className="text-[10px] text-muted-foreground mb-2">
+          Default: all sections. Clear any to limit this PPE row to specific blocks.
+        </p>
+        <div className="space-y-2 max-h-48 overflow-y-auto">
+          {allOptions.map((o) => (
+            <label key={o.id} className="flex items-center gap-2 text-xs cursor-pointer">
+              <Checkbox
+                checked={effective.has(o.id)}
+                onCheckedChange={(v) => toggle(o.id, v === true)}
+              />
+              <span className="truncate">{o.label}</span>
+            </label>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 type PpeRow =
@@ -75,6 +135,7 @@ export interface CompactPpeTableProps {
   onAddPpe: () => void;
   onAddAlternatePpeTool?: (parentToolId: string) => void;
   onAddAlternatePpeMaterial?: (parentMaterialId: string) => void;
+  contentSectionOptions?: { id: string; label: string }[];
 }
 
 export function CompactPpeTable({
@@ -85,9 +146,11 @@ export function CompactPpeTable({
   onAddPpe,
   onAddAlternatePpeTool,
   onAddAlternatePpeMaterial,
+  contentSectionOptions = [],
 }: CompactPpeTableProps) {
   const safePpeTools = ppeTools || [];
   const safePpeMaterials = ppeMaterials || [];
+  const sectionOpts = contentSectionOptions || [];
 
   const orderedRows: PpeRow[] = useMemo(() => {
     const toolRows = buildToolRows(safePpeTools).map((r) => ({ kind: 'tool' as const, ...r }));
@@ -153,6 +216,9 @@ export function CompactPpeTable({
                   <TableHead className="text-xs py-2">PPE item</TableHead>
                   <TableHead className="text-xs py-2 w-16">Qty</TableHead>
                   <TableHead className="text-xs py-2">Purpose</TableHead>
+                  {sectionOpts.length > 0 ? (
+                    <TableHead className="text-xs py-2 w-[7.5rem]">Sections</TableHead>
+                  ) : null}
                   <TableHead className="text-xs py-2 w-10 text-center" aria-label="Substitutes" />
                   <TableHead className="text-xs py-2 w-16"></TableHead>
                 </TableRow>
@@ -220,6 +286,21 @@ export function CompactPpeTable({
                           className="text-xs h-6"
                         />
                       </TableCell>
+                      {sectionOpts.length > 0 ? (
+                        <TableCell className="py-2">
+                          {row.depth === 0 ? (
+                            <PpeSectionLinkCell
+                              allOptions={sectionOpts}
+                              linkedIds={row.tool.linkedContentSectionIds}
+                              onChange={(next) =>
+                                handleToolChange(row.tool.id, 'linkedContentSectionIds', next)
+                              }
+                            />
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      ) : null}
                       <TableCell className="py-2 text-center">
                         {row.depth === 0 && onAddAlternatePpeTool ? (
                           <Tooltip>
@@ -324,6 +405,21 @@ export function CompactPpeTable({
                           className="text-xs h-6"
                         />
                       </TableCell>
+                      {sectionOpts.length > 0 ? (
+                        <TableCell className="py-2">
+                          {row.depth === 0 ? (
+                            <PpeSectionLinkCell
+                              allOptions={sectionOpts}
+                              linkedIds={row.material.linkedContentSectionIds}
+                              onChange={(next) =>
+                                handleMaterialChange(row.material.id, 'linkedContentSectionIds', next)
+                              }
+                            />
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      ) : null}
                       <TableCell className="py-2 text-center">
                         {row.depth === 0 && onAddAlternatePpeMaterial ? (
                           <Tooltip>

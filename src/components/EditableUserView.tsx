@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,6 +25,17 @@ import { SignatureCapture } from './SignatureCapture';
 import { StepCompletionTracker } from './StepCompletionTracker';
 import { EnhancedProjectPlanning } from './EnhancedProjectPlanning';
 import { toast } from "@/hooks/use-toast";
+import { useWorkflowMicroDecisions } from '@/hooks/useWorkflowMicroDecisions';
+import { useStepInstructions } from '@/hooks/useStepInstructions';
+import {
+  filterSectionRowsForMicroDecisions,
+  getInstructionSectionsForStep,
+  stepHasVisibleInstructionContent,
+  getVisibleInstructionSectionIds,
+  filterToolsByVisibleSections,
+  filterMaterialsByVisibleSections,
+} from '@/utils/microDecisionVisibility';
+import { getSafeEmbedUrl } from '@/utils/videoEmbedSanitizer';
 
 interface EditableUserViewProps {
   onBackToAdmin: () => void;
@@ -81,23 +92,91 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
   const [editingStep, setEditingStep] = useState<string | null>(null);
   const [editData, setEditData] = useState<any>({});
 
+  const previewRunMatchesTemplate =
+    Boolean(
+      currentProjectRun?.id &&
+        currentProject?.id &&
+        currentProjectRun.projectId === currentProject.id
+    );
+
+  const microRuntime = useWorkflowMicroDecisions(
+    previewRunMatchesTemplate ? currentProjectRun!.id : undefined,
+    previewRunMatchesTemplate ? currentProject!.id : undefined,
+    'intermediate',
+    currentProject?.phases,
+    currentProjectRun?.customization_decisions
+  );
+
   // Flatten all steps from all phases and operations for navigation
-  const allSteps = currentProject ? currentProject.phases.flatMap((phase, phaseIndex) =>
-    phase.operations.flatMap((operation, operationIndex) =>
-      operation.steps.map((step, stepIndex) => ({
-        ...step,
-        phaseId: phase.id,
-        phaseName: phase.name,
-        operationId: operation.id,
-        operationName: operation.name,
-        phaseIndex,
-        operationIndex,
-        stepIndex
-      }))
-    )
-  ) : [];
+  const allSteps = useMemo(() => {
+    if (!currentProject) return [];
+    const base = currentProject.phases.flatMap((phase, phaseIndex) =>
+      phase.operations.flatMap((operation, operationIndex) =>
+        operation.steps.map((step, stepIndex) => ({
+          ...step,
+          phaseId: phase.id,
+          phaseName: phase.name,
+          operationId: operation.id,
+          operationName: operation.name,
+          phaseIndex,
+          operationIndex,
+          stepIndex,
+        }))
+      )
+    );
+    if (
+      !previewRunMatchesTemplate ||
+      microRuntime.loading ||
+      !microRuntime.shouldApply
+    ) {
+      return base;
+    }
+    return base
+      .filter((step) =>
+        stepHasVisibleInstructionContent(
+          getInstructionSectionsForStep(step, microRuntime.instructionSectionsByStepId),
+          microRuntime.choices,
+          microRuntime.catalog
+        )
+      )
+      .map((step) => {
+        const secs = getInstructionSectionsForStep(
+          step,
+          microRuntime.instructionSectionsByStepId
+        );
+        const vis = getVisibleInstructionSectionIds(
+          secs,
+          microRuntime.choices,
+          microRuntime.catalog
+        );
+        return {
+          ...step,
+          tools: filterToolsByVisibleSections(step.tools || [], vis),
+          materials: filterMaterialsByVisibleSections(step.materials || [], vis),
+        };
+      });
+  }, [currentProject, previewRunMatchesTemplate, microRuntime]);
+
+  useEffect(() => {
+    if (allSteps.length === 0) return;
+    if (currentStepIndex >= allSteps.length) {
+      setCurrentStepIndex(allSteps.length - 1);
+    }
+  }, [allSteps.length, currentStepIndex]);
 
   const currentStep = allSteps[currentStepIndex];
+
+  const { instruction, loading: instructionLoading } = useStepInstructions(
+    currentStep?.id || '',
+    'intermediate',
+    previewRunMatchesTemplate ? currentProjectRun?.id : undefined
+  );
+
+  const visibleStepIdSet = useMemo(
+    () => new Set(allSteps.map((s) => s.id)),
+    [allSteps]
+  );
+
   const progress = allSteps.length > 0 ? completedSteps.size / allSteps.length * 100 : 0;
 
   const handleNext = () => {
@@ -410,9 +489,93 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
       );
     }
 
+    if (
+      previewRunMatchesTemplate &&
+      instruction &&
+      !instructionLoading &&
+      currentStep?.id === step.id
+    ) {
+      const sectionRows = Array.isArray(instruction.content.sections)
+        ? instruction.content.sections
+        : [];
+      const textRows = instruction.content.text
+        ? [
+            {
+              type: 'text' as const,
+              title: '',
+              content: instruction.content.text,
+              display_order: 0,
+            },
+          ]
+        : [];
+      const photoRows = (instruction.content.photos || []).map((photo, idx) => ({
+        type: 'image' as const,
+        title: photo.caption || photo.alt || '',
+        content: photo.url,
+        display_order: 1000 + idx,
+      }));
+      const videoRows = (instruction.content.videos || []).map((video, idx) => ({
+        type: 'video' as const,
+        title: video.title || '',
+        content: video.embed ? (getSafeEmbedUrl(video.embed) || video.url) : video.url,
+        display_order: 2000 + idx,
+      }));
+      const linkRows = (instruction.content.links || []).map((link, idx) => ({
+        type: 'link' as const,
+        title: link.title || link.url,
+        content: link.url,
+        display_order: 3000 + idx,
+      }));
+      const normalizedSectionRows = sectionRows.map((section: { type?: string }, idx: number) => ({
+        ...section,
+        type: section.type === 'warning' ? 'safety-warning' : section.type,
+        display_order:
+          typeof (section as { display_order?: number }).display_order === 'number'
+            ? (section as { display_order: number }).display_order
+            : 10 + idx,
+      }));
+      const filteredSectionRows = filterSectionRowsForMicroDecisions(
+        normalizedSectionRows,
+        microRuntime.shouldApply && !microRuntime.loading,
+        microRuntime.choices,
+        microRuntime.catalog
+      );
+      return (
+        <MultiContentRenderer
+          sections={[...textRows, ...filteredSectionRows, ...photoRows, ...videoRows, ...linkRows]}
+        />
+      );
+    }
+
+    if (
+      step.contentSections &&
+      Array.isArray(step.contentSections) &&
+      step.contentSections.length > 0
+    ) {
+      const sections =
+        previewRunMatchesTemplate && microRuntime.shouldApply && !microRuntime.loading
+          ? filterSectionRowsForMicroDecisions(
+              step.contentSections,
+              true,
+              microRuntime.choices,
+              microRuntime.catalog
+            )
+          : step.contentSections;
+      return <MultiContentRenderer sections={sections} />;
+    }
+
     // Check if content is an array (content_sections from normalized tables)
     if (Array.isArray(step.content) && step.content.length > 0) {
-      return <MultiContentRenderer sections={step.content} />;
+      const sections =
+        previewRunMatchesTemplate && microRuntime.shouldApply && !microRuntime.loading
+          ? filterSectionRowsForMicroDecisions(
+              step.content,
+              true,
+              microRuntime.choices,
+              microRuntime.catalog
+            )
+          : step.content;
+      return <MultiContentRenderer sections={sections} />;
     }
 
     // Legacy content display based on contentType
@@ -611,7 +774,9 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                         {phase.operations.map((operation) => (
                           <div key={operation.id} className="space-y-1">
                             <h5 className="text-sm font-medium text-muted-foreground">{operation.name}</h5>
-                            {operation.steps.map(step => {
+                            {operation.steps
+                              .filter((st) => visibleStepIdSet.has(st.id))
+                              .map(step => {
                               const stepIndex = allSteps.findIndex(s => s.id === step.id);
                               const completionPercentage = stepCompletionPercentages[step.id] || 0;
                               const isInProgress = completionPercentage > 0 && completionPercentage < 100;

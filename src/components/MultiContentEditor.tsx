@@ -8,28 +8,153 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, FileText, Image, Video, ExternalLink, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-
-interface ContentSection {
-  id: string;
-  type: 'text' | 'image' | 'video' | 'link' | 'button' | 'safety-warning';
-  content: string;
-  title?: string;
-  severity?: 'low' | 'medium' | 'high' | 'critical';
-  width?: 'full' | 'half' | 'third' | 'two-thirds';
-  alignment?: 'left' | 'center' | 'right';
-  // Button-specific properties
-  buttonAction?: 'project-customizer' | 'project-scheduler' | 'shopping-checklist' | 'materials-selection' | 'project-budgeting' | 'project-performance' | 'after-action-review';
-  buttonLabel?: string;
-  buttonIcon?: string;
-  buttonVariant?: 'default' | 'outline' | 'secondary';
-}
+import { Checkbox } from "@/components/ui/checkbox";
+import type { ContentSection, GeneralProjectDecision } from "@/interfaces/Project";
 
 interface MultiContentEditorProps {
   sections: ContentSection[];
   onChange: (sections: ContentSection[]) => void;
+  /** When provided, each section can restrict visibility to general project decision choices (AND across rules). */
+  generalDecisions?: GeneralProjectDecision[];
 }
 
-export function MultiContentEditor({ sections, onChange }: MultiContentEditorProps) {
+function SectionDecisionApplicabilityBlock({
+  section,
+  generalDecisions,
+  onUpdate,
+}: {
+  section: ContentSection;
+  generalDecisions: GeneralProjectDecision[];
+  onUpdate: (app: ContentSection["decisionApplicability"]) => void;
+}) {
+  if (generalDecisions.length === 0) return null;
+
+  const rules =
+    section.decisionApplicability === null || section.decisionApplicability === undefined
+      ? []
+      : section.decisionApplicability;
+
+  const setRules = (next: NonNullable<ContentSection["decisionApplicability"]>) => {
+    onUpdate(next.length > 0 ? next : null);
+  };
+
+  return (
+    <div className="rounded-lg border border-dashed p-3 space-y-3 bg-muted/30">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <Label className="text-xs font-semibold">Decision applicability</Label>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 text-xs"
+          onClick={() => onUpdate(null)}
+        >
+          All choices (default)
+        </Button>
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        Leave as default to show this section for every homeowner choice. Add rules so this section only
+        appears when <span className="font-medium text-foreground">all</span> listed decisions match the
+        selected choices.
+      </p>
+      <div className="space-y-3">
+        {rules.map((rule, ruleIdx) => {
+          const decision = generalDecisions.find((d) => d.id === rule.decisionId);
+          return (
+            <div key={`${rule.decisionId}-${ruleIdx}`} className="rounded border bg-background p-2 space-y-2">
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="flex-1 min-w-[10rem] space-y-1">
+                  <Label className="text-[10px]">Decision</Label>
+                  <Select
+                    value={rule.decisionId}
+                    onValueChange={(decisionId) => {
+                      const d = generalDecisions.find((x) => x.id === decisionId);
+                      const firstChoice = d?.choices[0]?.id;
+                      const next = rules.map((r, i) =>
+                        i === ruleIdx
+                          ? { decisionId, choiceIds: firstChoice ? [firstChoice] : [] }
+                          : r
+                      );
+                      setRules(next);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select decision" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {generalDecisions.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-destructive"
+                  onClick={() => setRules(rules.filter((_, i) => i !== ruleIdx))}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+              {decision && decision.choices.length > 0 ? (
+                <div className="space-y-1">
+                  <Label className="text-[10px]">Choices (this section shows if user picked any of)</Label>
+                  <div className="flex flex-col gap-1.5 pl-1">
+                    {decision.choices.map((c) => {
+                      const checked = rule.choiceIds.includes(c.id);
+                      return (
+                        <label key={c.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(v) => {
+                              const on = v === true;
+                              const nextChoiceIds = on
+                                ? [...rule.choiceIds, c.id]
+                                : rule.choiceIds.filter((id) => id !== c.id);
+                              const next = rules.map((r, i) =>
+                                i === ruleIdx ? { ...r, choiceIds: nextChoiceIds } : r
+                              );
+                              setRules(next);
+                            }}
+                          />
+                          <span>{c.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-8 text-xs"
+        onClick={() => {
+          const first = generalDecisions[0];
+          if (!first) return;
+          const cid = first.choices[0]?.id;
+          setRules([
+            ...rules,
+            { decisionId: first.id, choiceIds: cid ? [cid] : [] },
+          ]);
+        }}
+      >
+        <Plus className="h-3 w-3 mr-1" />
+        Add decision rule
+      </Button>
+    </div>
+  );
+}
+
+export function MultiContentEditor({ sections, onChange, generalDecisions = [] }: MultiContentEditorProps) {
   const addSection = (type: ContentSection['type']) => {
     const newSection: ContentSection = {
       id: `section-${Date.now()}`,
@@ -200,6 +325,12 @@ export function MultiContentEditor({ sections, onChange }: MultiContentEditorPro
                   </Select>
                 </div>
               </div>
+
+              <SectionDecisionApplicabilityBlock
+                section={section}
+                generalDecisions={generalDecisions}
+                onUpdate={(app) => updateSection(section.id, { decisionApplicability: app })}
+              />
 
               {section.type === 'text' && (
                 <>

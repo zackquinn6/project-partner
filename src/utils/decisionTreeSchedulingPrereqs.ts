@@ -1,6 +1,9 @@
 /** Reserved key inside `projects.scheduling_prerequisites` JSON (ignored by scheduling string[] parser). */
 export const DECISION_TREE_CONFIG_KEY = '__decision_tree_config__';
 
+/** General project decisions (tile size, layout, etc.) stored alongside flow config. */
+export const GENERAL_PROJECT_DECISIONS_KEY = '__general_project_decisions__';
+
 /** Phase IDs marked blocked in the decision-tree blob (incorporated phases hidden from pickers). */
 export function getBlockedPhaseIdsFromSchedulingPrerequisites(raw: unknown): Set<string> {
   const ids = new Set<string>();
