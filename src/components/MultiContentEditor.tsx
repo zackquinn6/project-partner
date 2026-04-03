@@ -1,15 +1,51 @@
-import { useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, FileText, Image, Video, ExternalLink, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, FileText, Image, Video, ExternalLink, AlertTriangle, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import type { ContentSection, GeneralProjectDecision } from "@/interfaces/Project";
+
+const DECISION_APPLICABILITY_TOOLTIP =
+  "Leave as default to show this section for every homeowner choice. Add rules so this section only appears when all listed decisions match the selected choices.";
+
+function orderSectionsWithSafetyFirst(sections: ContentSection[]): ContentSection[] {
+  const safety = sections.filter((s) => s.type === "safety-warning");
+  const rest = sections.filter((s) => s.type !== "safety-warning");
+  return [...safety, ...rest];
+}
+
+function getLayoutWidthClass(width?: ContentSection["width"]) {
+  switch (width) {
+    case "half":
+      return "w-full sm:w-1/2";
+    case "third":
+      return "w-full sm:w-1/3";
+    case "two-thirds":
+      return "w-full sm:w-2/3";
+    default:
+      return "w-full";
+  }
+}
+
+function getLayoutAlignmentClass(alignment?: ContentSection["alignment"]) {
+  switch (alignment) {
+    case "center":
+      return "mx-auto";
+    case "right":
+      return "ml-auto";
+    default:
+      return "";
+  }
+}
 
 interface MultiContentEditorProps {
   sections: ContentSection[];
@@ -39,24 +75,42 @@ function SectionDecisionApplicabilityBlock({
   };
 
   return (
-    <div className="rounded-lg border border-dashed p-3 space-y-3 bg-muted/30">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <Label className="text-xs font-semibold">Decision applicability</Label>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 text-xs"
-          onClick={() => onUpdate(null)}
-        >
-          All choices (default)
-        </Button>
-      </div>
-      <p className="text-[11px] text-muted-foreground">
-        Leave as default to show this section for every homeowner choice. Add rules so this section only
-        appears when <span className="font-medium text-foreground">all</span> listed decisions match the
-        selected choices.
-      </p>
+    <Accordion type="single" collapsible className="rounded-lg border border-dashed bg-muted/30 px-3">
+      <AccordionItem value={`decision-applicability-${section.id}`} className="border-0">
+        <AccordionTrigger className="py-3 text-xs font-semibold hover:no-underline [&[data-state=open]]:pb-2">
+          <span className="flex items-center gap-2 text-left">
+            Decision applicability
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="About decision applicability"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <HelpCircle className="h-3.5 w-3.5 shrink-0" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+                  {DECISION_APPLICABILITY_TOOLTIP}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </span>
+        </AccordionTrigger>
+        <AccordionContent className="space-y-3 pt-0">
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => onUpdate(null)}
+            >
+              All choices (default)
+            </Button>
+          </div>
       <div className="space-y-3">
         {rules.map((rule, ruleIdx) => {
           const decision = generalDecisions.find((d) => d.id === rule.decisionId);
@@ -150,43 +204,82 @@ function SectionDecisionApplicabilityBlock({
         <Plus className="h-3 w-3 mr-1" />
         Add decision rule
       </Button>
-    </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
 
 export function MultiContentEditor({ sections, onChange, generalDecisions = [] }: MultiContentEditorProps) {
-  const addSection = (type: ContentSection['type']) => {
+  const orderedSections = useMemo(() => orderSectionsWithSafetyFirst(sections), [sections]);
+
+  useEffect(() => {
+    const ordered = orderSectionsWithSafetyFirst(sections);
+    const rawKey = sections.map((s) => s.id).join("|");
+    const orderedKey = ordered.map((s) => s.id).join("|");
+    if (rawKey !== orderedKey) {
+      onChange(ordered);
+    }
+  }, [sections, onChange]);
+
+  const addSection = (type: ContentSection["type"]) => {
     const newSection: ContentSection = {
       id: `section-${Date.now()}`,
       type,
-      content: '',
-      title: type === 'text' ? 'New Text Section' : ''
+      content: "",
+      title: type === "text" ? "New Text Section" : "",
     };
-    onChange([...sections, newSection]);
+    const base = orderSectionsWithSafetyFirst(sections);
+    if (type === "safety-warning") {
+      const safety = base.filter((s) => s.type === "safety-warning");
+      const rest = base.filter((s) => s.type !== "safety-warning");
+      onChange([newSection, ...safety, ...rest]);
+    } else {
+      onChange([...base, newSection]);
+    }
   };
 
   const updateSection = (id: string, updates: Partial<ContentSection>) => {
-    const updated = sections.map(section => 
-      section.id === id ? { ...section, ...updates } : section
-    );
+    const updated = sections.map((section) => (section.id === id ? { ...section, ...updates } : section));
     onChange(updated);
   };
 
   const removeSection = (id: string) => {
-    onChange(sections.filter(section => section.id !== id));
+    onChange(sections.filter((section) => section.id !== id));
   };
 
-  const moveSection = (id: string, direction: 'up' | 'down') => {
-    const index = sections.findIndex(s => s.id === id);
-    if (
-      (direction === 'up' && index > 0) ||
-      (direction === 'down' && index < sections.length - 1)
-    ) {
-      const newSections = [...sections];
-      const targetIndex = direction === 'up' ? index - 1 : index + 1;
-      [newSections[index], newSections[targetIndex]] = [newSections[targetIndex], newSections[index]];
-      onChange(newSections);
-    }
+  const moveSection = (id: string, direction: "up" | "down") => {
+    const list = orderSectionsWithSafetyFirst(sections);
+    const index = list.findIndex((s) => s.id === id);
+    if (index < 0) return;
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= list.length) return;
+    const cur = list[index];
+    const adj = list[targetIndex];
+    const curSafety = cur.type === "safety-warning";
+    const adjSafety = adj.type === "safety-warning";
+    if (curSafety !== adjSafety) return;
+    const newSections = [...list];
+    [newSections[index], newSections[targetIndex]] = [newSections[targetIndex], newSections[index]];
+    onChange(newSections);
+  };
+
+  const canMoveUp = (id: string) => {
+    const list = orderedSections;
+    const index = list.findIndex((s) => s.id === id);
+    if (index <= 0) return false;
+    const cur = list[index];
+    const prev = list[index - 1];
+    return (cur.type === "safety-warning") === (prev.type === "safety-warning");
+  };
+
+  const canMoveDown = (id: string) => {
+    const list = orderedSections;
+    const index = list.findIndex((s) => s.id === id);
+    if (index < 0 || index >= list.length - 1) return false;
+    const cur = list[index];
+    const next = list[index + 1];
+    return (cur.type === "safety-warning") === (next.type === "safety-warning");
   };
 
   const getIcon = (type: ContentSection['type']) => {
@@ -252,21 +345,31 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
         </div>
       </div>
 
-      <div className="space-y-4">
-        {sections.map((section, index) => (
-          <Card key={section.id} className="border-2">
+      <div className="flex flex-wrap gap-4 items-start">
+        {orderedSections.map((section, index) => (
+          <div
+            key={section.id}
+            className={cn(
+              getLayoutWidthClass(section.width),
+              getLayoutAlignmentClass(section.alignment),
+              "min-w-0 shrink-0"
+            )}
+          >
+          <Card className="border-2 h-full">
             <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   {getIcon(section.type)}
-                  <CardTitle className="text-sm capitalize">{section.type} Section {index + 1}</CardTitle>
+                  <CardTitle className="text-sm capitalize truncate">
+                    {section.type} Section {index + 1}
+                  </CardTitle>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0">
                   <Button 
                     size="sm" 
                     variant="outline" 
                     onClick={() => moveSection(section.id, 'up')}
-                    disabled={index === 0}
+                    disabled={!canMoveUp(section.id)}
                   >
                     ↑
                   </Button>
@@ -274,7 +377,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                     size="sm" 
                     variant="outline" 
                     onClick={() => moveSection(section.id, 'down')}
-                    disabled={index === sections.length - 1}
+                    disabled={!canMoveDown(section.id)}
                   >
                     ↓
                   </Button>
@@ -553,6 +656,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
               )}
             </CardContent>
           </Card>
+          </div>
         ))}
       </div>
 

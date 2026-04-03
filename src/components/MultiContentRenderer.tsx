@@ -35,10 +35,14 @@ export function MultiContentRenderer({ sections, onButtonAction }: MultiContentR
   };
   const getWidthClass = (width?: string) => {
     switch (width) {
-      case 'half': return 'w-1/2';
-      case 'third': return 'w-1/3';
-      case 'two-thirds': return 'w-2/3';
-      default: return 'w-full';
+      case 'half':
+        return 'w-full sm:w-1/2';
+      case 'third':
+        return 'w-full sm:w-1/3';
+      case 'two-thirds':
+        return 'w-full sm:w-2/3';
+      default:
+        return 'w-full';
     }
   };
 
@@ -90,11 +94,11 @@ export function MultiContentRenderer({ sections, onButtonAction }: MultiContentR
         </div>
       )}
 
-      <div className="flex flex-wrap gap-4">
+      <div className="flex flex-wrap gap-4 items-start">
         {nonWarningSections.map((section, index) => (
           <div 
             key={section.id || `section-${index}`} 
-            className={`${getWidthClass(section.width)} ${getAlignmentClass(section.alignment)}`}
+            className={`${getWidthClass(section.width)} ${getAlignmentClass(section.alignment)} min-w-0 shrink-0`}
           >
             {section.type === 'text' && (
               <div className="space-y-2">
