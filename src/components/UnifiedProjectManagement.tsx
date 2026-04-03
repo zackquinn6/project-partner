@@ -1446,6 +1446,7 @@ export function UnifiedProjectManagement({
       });
 
       if (!projectId) {
+        toast.error('Could not create project.');
         return;
       }
 
@@ -2825,10 +2826,15 @@ export function UnifiedProjectManagement({
                     </TooltipProvider>
                   </div>
                   <div className="flex gap-2">
-                    <Select value={newProject.action || ''} onValueChange={value => setNewProject(prev => ({
-                      ...prev,
-                      action: value
-                    }))}>
+                    <Select
+                      value={newProject.action ? newProject.action : undefined}
+                      onValueChange={(value) =>
+                        setNewProject((prev) => ({
+                          ...prev,
+                          action: value,
+                        }))
+                      }
+                    >
                       <SelectTrigger className="flex-1 h-10">
                         <SelectValue placeholder="Select action..." />
                       </SelectTrigger>
@@ -2926,6 +2932,7 @@ export function UnifiedProjectManagement({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -2962,14 +2969,18 @@ export function UnifiedProjectManagement({
                 </Select>
               </div>
             </div>
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="project-scaling">Scaling Unit</Label>
-              <Select value={newProject.scaling_unit || ''} onValueChange={value => setNewProject(prev => ({
-              ...prev,
-              scaling_unit: value
-            }))}>
+              <Select
+                value={newProject.scaling_unit ? newProject.scaling_unit : undefined}
+                onValueChange={(value) =>
+                  setNewProject((prev) => ({
+                    ...prev,
+                    scaling_unit: value,
+                  }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select scaling unit" />
                 </SelectTrigger>

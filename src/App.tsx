@@ -20,6 +20,8 @@ import NotFound from "./pages/NotFound";
 import ImportTileContent from "./pages/ImportTileContent";
 import ApplyProjectOwner from "./pages/ApplyProjectOwner";
 import AcceptProjectOwnerInvite from "./pages/AcceptProjectOwnerInvite";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "sonner";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +59,8 @@ const App: React.FC = () => {
           </AuthProvider>
         </GuestProvider>
       </SecurityHeadersProvider>
+      <Toaster />
+      <SonnerToaster richColors position="top-center" />
     </QueryClientProvider>
   );
 };

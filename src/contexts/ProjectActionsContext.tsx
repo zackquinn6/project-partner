@@ -499,7 +499,12 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         .rpc('create_project_with_standard_foundation', {
           p_project_name: projectData.name,
           p_project_description: projectData.description || '',
-          p_category: Array.isArray(projectData.category) ? projectData.category[0] : (projectData.category || 'general')
+          p_category:
+            Array.isArray(projectData.category) && projectData.category.length > 0
+              ? projectData.category[0]
+              : typeof projectData.category === 'string' && projectData.category.trim()
+                ? projectData.category.trim()
+                : undefined,
         });
 
       if (error) {
@@ -510,7 +515,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             description: `A project with the name "${projectData.name}" already exists. Please choose a unique name.`,
             variant: "destructive",
           });
-          return;
+          return null;
         }
         throw error;
       }
