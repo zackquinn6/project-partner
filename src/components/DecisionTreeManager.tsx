@@ -271,8 +271,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     const config = flowConfigs[itemId] || { type: null };
 
     return (
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
+      <div className="min-w-0 space-y-1.5 sm:space-y-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <Select 
             value={config.type || 'none'} 
             onValueChange={(value) => {
@@ -283,10 +283,10 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               }
             }}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="h-8 min-w-0 max-w-full flex-1 text-xs sm:h-9 sm:text-sm">
               <SelectValue placeholder="Select flow type" />
             </SelectTrigger>
-            <SelectContent className="bg-popover z-[100]">
+            <SelectContent className="z-[200] bg-popover">
               <SelectItem value="none">None</SelectItem>
               <SelectItem value="if-necessary">If-Necessary</SelectItem>
               <SelectItem value="alternate">Alternate</SelectItem>
@@ -298,9 +298,10 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             <Button
               size="sm"
               variant="outline"
+              className="h-8 shrink-0 px-2 text-xs"
               onClick={() => setShowAlternateSelector(itemId)}
             >
-              <Plus className="w-3 h-3 mr-1" />
+              <Plus className="mr-1 h-3 w-3" />
               Add Alternate
             </Button>
           )}
@@ -317,7 +318,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select if-necessary operation" />
               </SelectTrigger>
-              <SelectContent className="bg-popover max-h-[300px] z-[100]">
+              <SelectContent className="z-[200] max-h-[300px] bg-popover">
                 {availableAlternates
                   .filter(alt => {
                     const altConfig = flowConfigs[alt.id];
@@ -380,7 +381,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
         {/* Alternate selector dialog */}
         {showAlternateSelector === itemId && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/50">
             <div className="bg-background p-6 rounded-lg max-w-lg w-full max-h-[500px] overflow-auto border shadow-lg">
               <h3 className="text-lg font-semibold mb-4">Select Alternates</h3>
               <p className="text-sm text-muted-foreground mb-4">
@@ -421,7 +422,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     const config = flowConfigs[itemId] || { predecessorIds: [] };
 
     return (
-      <div className="space-y-2">
+      <div className="min-w-0 space-y-1.5 sm:space-y-2">
         <Select
           onValueChange={(value) => {
             const currentPreds = config.predecessorIds || [];
@@ -432,10 +433,10 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             }
           }}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="h-8 w-full min-w-0 max-w-full text-xs sm:h-9 sm:text-sm">
             <SelectValue placeholder="Add predecessor" />
           </SelectTrigger>
-          <SelectContent className="bg-popover max-h-[300px] z-[100]">
+          <SelectContent className="z-[200] max-h-[300px] bg-popover">
             {availableOps
               .filter(op => op.id !== itemId && !config.predecessorIds?.includes(op.id))
               .map(op => (
@@ -979,10 +980,15 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] !max-w-[90vw] md:!max-w-[90vw] h-[90vh] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="p-6 pb-4 shrink-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle>Decision Tree Manager - {currentProject.name}</DialogTitle>
+      <DialogContent
+        overlayClassName="z-[100]"
+        className="!fixed !inset-0 !left-0 !top-0 z-[101] !flex h-[100dvh] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 !flex-col gap-0 overflow-hidden rounded-none border-0 p-0 shadow-none md:!max-w-none md:!translate-x-0 md:!translate-y-0"
+      >
+        <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <DialogTitle className="min-w-0 truncate text-base sm:text-lg">
+              Decision Tree Manager - {currentProject.name}
+            </DialogTitle>
             <div className="flex gap-2">
               <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                 Cancel
@@ -994,8 +1000,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           </div>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'table' | 'flowchart')} className="flex min-h-0 flex-1 flex-col">
-          <div className="mb-4 shrink-0 px-6">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'table' | 'flowchart')} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="mb-2 shrink-0 px-4 pt-2 sm:mb-4 sm:px-6 sm:pt-0">
             <TabsList className="grid h-11 w-full grid-cols-2 gap-0 rounded-md border border-border bg-muted p-0 text-muted-foreground shadow-sm">
               <TabsTrigger
                 value="table"
@@ -1014,8 +1020,11 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             </TabsList>
           </div>
 
-          <TabsContent value="table" className="mt-0 flex min-h-0 flex-1 flex-col px-6 pb-6 data-[state=inactive]:hidden">
-            <div className="mb-4 flex shrink-0 gap-2">
+          <TabsContent
+            value="table"
+            className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 data-[state=inactive]:hidden sm:px-6 sm:pb-6"
+          >
+            <div className="mb-2 flex shrink-0 flex-wrap gap-2 sm:mb-4">
               <Button size="sm" variant="outline" onClick={expandAll}>
                 <ChevronsUpDown className="mr-2 h-4 w-4" />
                 Expand All
@@ -1032,12 +1041,15 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               </div>
             ) : (
             <div className="min-h-0 flex-1 overflow-auto rounded-lg border">
-              <Table>
-            <TableHeader>
+              <Table
+                wrapperClassName="overflow-visible"
+                className="table-fixed w-full text-xs sm:text-sm [&_td]:p-2 [&_th]:h-9 [&_th]:px-2 [&_th]:py-1.5"
+              >
+            <TableHeader className="sticky top-0 z-[1] bg-background shadow-[0_1px_0_0_hsl(var(--border))]">
               <TableRow>
-                <TableHead className="w-[300px]">Item</TableHead>
-                <TableHead className="w-[200px]">Flow Type</TableHead>
-                <TableHead className="w-[200px]">Prerequisites</TableHead>
+                <TableHead className="w-[36%] min-w-0 font-semibold">Item</TableHead>
+                <TableHead className="w-[32%] min-w-0 font-semibold">Flow Type</TableHead>
+                <TableHead className="w-[32%] min-w-0 font-semibold">Prerequisites</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1045,8 +1057,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 <React.Fragment key={phase.id}>
                   {/* Phase Row */}
                   <TableRow className="bg-muted/50">
-                    <TableCell className="font-semibold">
-                      <div className="flex items-center gap-2">
+                    <TableCell className="min-w-0 font-semibold align-top">
+                      <div className="flex min-w-0 items-center gap-1.5">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -1059,17 +1071,17 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                             <ChevronRight className="w-4 h-4" />
                           )}
                         </Button>
-                        <span>{phase.name}</span>
+                        <span className="min-w-0 break-words">{phase.name}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="min-w-0 align-top">
                       {renderFlowTypeControls(
                         phase.id, 
                         phase.name,
                         workflowPhases.map(p => ({ id: p.id, label: p.name }))
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="min-w-0 align-top">
                       {renderPredecessorControls(
                         phase.id,
                         workflowPhases.map(p => ({ id: p.id, label: p.name }))
@@ -1081,8 +1093,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                   {expandedPhases.has(phase.id) && phase.operations.map(operation => (
                     <React.Fragment key={operation.id}>
                       <TableRow className="bg-muted/20">
-                        <TableCell>
-                          <div className="flex items-center gap-2 pl-8">
+                        <TableCell className="min-w-0 align-top">
+                          <div className="flex min-w-0 items-center gap-1.5 pl-4 sm:pl-8">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -1095,10 +1107,10 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                                 <ChevronRight className="w-4 h-4" />
                               )}
                             </Button>
-                            <span className="font-medium">{operation.name}</span>
+                            <span className="min-w-0 break-words font-medium">{operation.name}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="min-w-0 align-top">
                           {renderFlowTypeControls(
                             operation.id,
                             operation.name,
@@ -1108,7 +1120,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                             }))
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="min-w-0 align-top">
                           {renderPredecessorControls(
                             operation.id,
                             allOperations
@@ -1121,12 +1133,12 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                       {/* Steps under this operation */}
                       {expandedOperations.has(operation.id) && operation.steps.map(step => (
                         <TableRow key={step.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2 pl-16">
-                              <span className="text-sm">{step.step}</span>
+                          <TableCell className="min-w-0 align-top">
+                            <div className="flex min-w-0 items-center gap-1.5 pl-8 sm:pl-16">
+                              <span className="break-words text-xs sm:text-sm">{step.step}</span>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="min-w-0 align-top">
                             {renderFlowTypeControls(
                               step.id,
                               step.step,
@@ -1136,7 +1148,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                               }))
                             )}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="min-w-0 align-top">
                             {renderPredecessorControls(
                               step.id,
                               operation.steps.map(s => ({ id: s.id, label: s.step }))
@@ -1154,8 +1166,11 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             )}
           </TabsContent>
 
-          <TabsContent value="flowchart" className="mt-0 flex min-h-0 flex-1 flex-col px-6 pb-6 data-[state=inactive]:hidden">
-            <div className="mb-4 flex items-center gap-4">
+          <TabsContent
+            value="flowchart"
+            className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 data-[state=inactive]:hidden sm:px-6 sm:pb-6"
+          >
+            <div className="mb-2 flex shrink-0 flex-wrap items-center gap-3 sm:mb-4 sm:gap-4">
               <Label className="font-semibold">View Level:</Label>
               <RadioGroup 
                 value={flowchartLevel} 
@@ -1177,8 +1192,9 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               </RadioGroup>
             </div>
 
-            <div className="flex-1 border rounded-lg overflow-hidden bg-muted/20">
+            <div className="min-h-0 flex-1 overflow-hidden rounded-lg border bg-muted/20">
               <ReactFlow
+                className="h-full min-h-[200px]"
                 nodes={nodes}
                 edges={edges}
                 fitView
@@ -1190,7 +1206,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               </ReactFlow>
             </div>
 
-            <div className="mt-4 grid grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg">
+            <div className="mt-2 grid shrink-0 grid-cols-2 gap-2 rounded-lg bg-muted/30 p-2 sm:mt-4 sm:grid-cols-4 sm:gap-4 sm:p-4">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded border-2 border-gray-400 bg-gray-100"></div>
                 <span className="text-sm">Standard Flow</span>
