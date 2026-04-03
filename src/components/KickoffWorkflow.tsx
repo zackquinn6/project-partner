@@ -202,9 +202,15 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         newCompletedSteps.push(actualStepId);
       }
 
-      // Update completed kickoff steps state immediately
-      const newCompletedKickoffSteps = new Set(completedKickoffSteps);
-      newCompletedKickoffSteps.add(stepIndex);
+      // Derive UI completion from the list we are about to persist — not from React state, which can be stale
+      // when users advance quickly and would otherwise leave finishingEntireKickoff false after the last step.
+      const pendingCompletedIds = new Set(newCompletedSteps);
+      const newCompletedKickoffSteps = new Set<number>();
+      kickoffSteps.forEach((s, idx) => {
+        if (pendingCompletedIds.has(s.id)) {
+          newCompletedKickoffSteps.add(idx);
+        }
+      });
       setCompletedKickoffSteps(newCompletedKickoffSteps);
 
       // CRITICAL: Fetch initial_budget, initial_timeline, initial_sizing directly from database
@@ -443,13 +449,79 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       {/* Step Navigation (no separate project-name header) */}
       <Card className="shrink-0">
         <CardContent className="p-2 sm:p-2.5 md:p-3">
-          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+          {/* Mobile: one row — prev arrow | compact steps | next arrow | step x/y */}
+          <div className="flex items-center gap-1 sm:hidden">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={handlePrevious}
+              disabled={currentKickoffStep === 0}
+              aria-label="Previous step"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="scrollbar-hide flex min-w-0 flex-1 items-center justify-center gap-0 overflow-x-auto py-0.5">
+              {kickoffSteps.map((step, index) => (
+                <React.Fragment key={step.id}>
+                  {index > 0 ? (
+                    <div className="h-px w-1 shrink-0 bg-muted-foreground/30" aria-hidden />
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => goToKickoffStep(index)}
+                    aria-label={`${step.title}, step ${index + 1}`}
+                    aria-current={index === currentKickoffStep ? 'step' : undefined}
+                    className={`
+                      flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
+                      ${
+                        index === currentKickoffStep
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : isStepCompleted(index)
+                            ? 'border-green-500 bg-green-500 text-white'
+                            : 'border-muted-foreground bg-background'
+                      }
+                    `}
+                  >
+                    {isStepCompleted(index) ? (
+                      <CheckCircle className="h-3 w-3" aria-hidden />
+                    ) : (
+                      <span className="text-[10px] font-semibold">{index + 1}</span>
+                    )}
+                  </button>
+                </React.Fragment>
+              ))}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={handleNext}
+              disabled={currentKickoffStep === kickoffSteps.length - 1}
+              aria-label="Next step"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <div className="shrink-0 text-center leading-none tabular-nums">
+              <div className="text-[10px] font-medium text-muted-foreground">
+                {currentKickoffStep + 1}/{kickoffSteps.length}
+              </div>
+              {allKickoffStepsComplete ? (
+                <CheckCircle className="mx-auto mt-0.5 h-3 w-3 text-green-500" aria-label="Kickoff complete" />
+              ) : null}
+            </div>
+          </div>
+
+          {/* sm+: original layout with step titles + scroll affordance */}
+          <div className="hidden flex-col gap-1.5 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-2">
             <div className="flex min-w-0 flex-1 items-start gap-1">
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
-                className="mt-0.5 h-9 w-9 shrink-0 sm:hidden"
+                className="mt-0.5 h-9 w-9 shrink-0 md:hidden"
                 onClick={() => scrollKickoffStepNav('left')}
                 aria-label="Scroll steps left"
               >
@@ -457,24 +529,24 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
               </Button>
               <div
                 ref={kickoffStepNavRef}
-                className="scrollbar-hide flex min-w-0 flex-1 items-start overflow-x-auto px-0.5 pb-1 sm:overflow-visible sm:px-1 sm:pb-0"
+                className="scrollbar-hide flex min-w-0 flex-1 items-start overflow-x-auto px-0.5 pb-1 md:overflow-visible md:px-1 md:pb-0"
               >
                 {kickoffSteps.map((step, index) => (
                   <React.Fragment key={step.id}>
                     {index > 0 ? (
                       <div
-                        className="mt-[13px] h-0.5 w-1 shrink-0 self-start bg-muted-foreground/25 sm:mt-[15px] sm:w-1.5"
+                        className="mt-[13px] h-0.5 w-1 shrink-0 self-start bg-muted-foreground/25 md:mt-[15px] md:w-1.5"
                         aria-hidden
                       />
                     ) : null}
-                    <div className="flex min-w-[4.25rem] flex-1 basis-0 flex-col items-center px-0.5 sm:min-w-[4.5rem] md:min-w-[5rem]">
+                    <div className="flex min-w-[4.25rem] flex-1 basis-0 flex-col items-center px-0.5 md:min-w-[5rem]">
                       <button
                         type="button"
                         onClick={() => goToKickoffStep(index)}
                         aria-label={`Go to ${step.title}, step ${index + 1}`}
                         aria-current={index === currentKickoffStep ? 'step' : undefined}
                         className={`
-                          flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-7 sm:w-7 md:h-8 md:w-8
+                          flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:h-8 md:w-8
                           ${
                             index === currentKickoffStep
                               ? 'border-primary bg-primary text-primary-foreground'
@@ -485,13 +557,13 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                         `}
                       >
                         {isStepCompleted(index) ? (
-                          <CheckCircle className="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" aria-hidden />
+                          <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
                         ) : (
-                          <span className="text-[11px] font-medium sm:text-xs md:text-sm">{index + 1}</span>
+                          <span className="text-[11px] font-medium md:text-sm">{index + 1}</span>
                         )}
                       </button>
                       <p
-                        className={`mt-1 w-full text-center text-[9px] font-medium leading-tight sm:text-[10px] md:text-xs break-normal [overflow-wrap:normal] [word-break:normal] ${
+                        className={`mt-1 w-full text-center text-[9px] font-medium leading-tight md:text-xs break-normal [overflow-wrap:normal] [word-break:normal] ${
                           index === currentKickoffStep
                             ? 'text-primary'
                             : isStepCompleted(index)
@@ -509,7 +581,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                 type="button"
                 variant="outline"
                 size="icon"
-                className="mt-0.5 h-9 w-9 shrink-0 sm:hidden"
+                className="mt-0.5 h-9 w-9 shrink-0 md:hidden"
                 onClick={() => scrollKickoffStepNav('right')}
                 aria-label="Scroll steps right"
               >
@@ -517,22 +589,22 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
               </Button>
             </div>
 
-            <div className="flex w-full flex-col gap-2 sm:w-auto">
-              <div className="flex w-full items-center justify-center gap-1.5 sm:w-auto">
+            <div className="flex w-full flex-col gap-2 md:w-auto">
+              <div className="flex w-full items-center justify-center gap-1.5 md:w-auto">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handlePrevious}
                   disabled={currentKickoffStep === 0}
-                  className="h-9 w-9 shrink-0 p-0 sm:h-9 sm:w-auto sm:px-3"
+                  className="h-9 w-9 shrink-0 p-0 md:h-9 md:w-auto md:px-3"
                   aria-label="Previous step"
                 >
-                  <ChevronLeft className="h-4 w-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Previous</span>
+                  <ChevronLeft className="h-4 w-4 md:mr-1" />
+                  <span className="hidden md:inline">Previous</span>
                 </Button>
                 <div className="min-w-[70px] px-1 text-center leading-tight">
-                  <div className="text-[10px] font-medium text-foreground sm:text-xs">Step</div>
-                  <div className="text-[10px] text-muted-foreground sm:text-xs">
+                  <div className="text-[10px] font-medium text-foreground md:text-xs">Step</div>
+                  <div className="text-[10px] text-muted-foreground md:text-xs">
                     {currentKickoffStep + 1} of {kickoffSteps.length}
                   </div>
                   {allKickoffStepsComplete && (
@@ -544,10 +616,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                   size="sm"
                   onClick={handleNext}
                   disabled={currentKickoffStep === kickoffSteps.length - 1}
-                  className="h-9 w-9 shrink-0 p-0 sm:h-9 sm:w-auto sm:px-3"
+                  className="h-9 w-9 shrink-0 p-0 md:h-9 md:w-auto md:px-3"
                   aria-label="Next step"
                 >
-                  <span className="hidden sm:inline sm:mr-1">Next</span>
+                  <span className="hidden md:inline md:mr-1">Next</span>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

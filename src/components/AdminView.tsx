@@ -381,7 +381,7 @@ export const AdminView: React.FC = () => {
                 </Button>
               </div>
             </DialogHeader>
-            <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-2 md:px-4 py-3 md:py-4">
               <UnifiedProjectManagement 
                 onEditWorkflow={() => {
                   // Keep project management open, just open workflow editor

@@ -2029,11 +2029,11 @@ export default function EditWorkflowView({
   }
   return <div className="fixed inset-0 bg-background overflow-auto z-50">
       {/* Header with Project Name and Controls */}
-      <div className="sticky top-0 z-10 bg-background border-b">
-        <div className="w-full px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">
+      <div className="sticky top-0 z-10 border-b bg-background">
+        <div className="w-full px-3 py-3 sm:px-6 sm:py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="break-words text-base font-bold leading-snug sm:text-lg md:text-xl">
               {isEditingStandardProject ? '🔒 Standard Project Foundation Editor' : `Workflow Editor: ${currentProject?.name?.replace(/\s*\([Dd]raft\)\s*/g, '').replace(/\s*\(Rev\s+\d+\)\s*/gi, '').trim() || 'Untitled Project'}`}
               </h1>
               {!isEditingStandardProject ? (
@@ -2059,15 +2059,15 @@ export default function EditWorkflowView({
                 </div>
               ) : null}
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-2 sm:w-auto sm:justify-start">
               {editMode && (
-                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                <Badge variant="outline" className="max-w-full truncate bg-primary/10 text-primary border-primary/20">
                   Editing: {currentStep?.step}
                 </Badge>
               )}
 
               {/* Desktop/tablet header actions */}
-              <div className="hidden md:flex gap-2">
+              <div className="hidden md:flex flex-wrap gap-2">
                 {editMode ? (
                   <>
                     <Button onClick={handleSaveEdit} size="icon" variant="outline" title="Save Changes">
@@ -2277,7 +2277,7 @@ export default function EditWorkflowView({
         </div>
       </div>
 
-      <div className="w-full px-6 py-8">
+      <div className="w-full px-3 py-4 sm:px-6 sm:py-8">
         {!editMode && (
           <Card className="mb-6 border-border/80 p-0 overflow-hidden">
             <Accordion type="single" collapsible className="w-full">
@@ -2606,14 +2606,25 @@ export default function EditWorkflowView({
                 </Card>
 
                 {/* Navigation */}
-                <div className="flex justify-between">
-                  <Button onClick={handlePrevious} disabled={currentStepIndex === 0} variant="outline">
-                    <ChevronLeft className="w-4 h-4 mr-2" />
-                    Previous Step
+                <div className="flex items-center justify-between gap-2">
+                  <Button
+                    onClick={handlePrevious}
+                    disabled={currentStepIndex === 0}
+                    variant="outline"
+                    className="h-10 w-10 shrink-0 p-0 sm:h-9 sm:w-auto sm:gap-2 sm:px-3"
+                    aria-label="Previous step"
+                  >
+                    <ChevronLeft className="h-4 w-4 sm:mr-0" />
+                    <span className="hidden sm:inline">Previous Step</span>
                   </Button>
-                  <Button onClick={handleNext} disabled={currentStepIndex >= allSteps.length - 1}>
-                    Next Step
-                    <ChevronRight className="w-4 h-4 ml-2" />
+                  <Button
+                    onClick={handleNext}
+                    disabled={currentStepIndex >= allSteps.length - 1}
+                    className="h-10 w-10 shrink-0 p-0 sm:h-9 sm:w-auto sm:gap-2 sm:px-3"
+                    aria-label="Next step"
+                  >
+                    <span className="hidden sm:inline">Next Step</span>
+                    <ChevronRight className="h-4 w-4 sm:ml-0" />
                   </Button>
                 </div>
               </div>}
@@ -2657,9 +2668,9 @@ export default function EditWorkflowView({
               {/* Header */}
               <Card className="bg-muted/30 border shadow-sm">
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
                         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                           {currentStep?.phaseName}
                         </Badge>
@@ -2669,16 +2680,16 @@ export default function EditWorkflowView({
                         </Badge>
                       </div>
                       <>
-                        <CardTitle className="text-2xl">{currentStep?.step}</CardTitle>
+                        <CardTitle className="break-words text-lg sm:text-2xl">{currentStep?.step}</CardTitle>
                         {currentStep?.description && <CardDescription className="text-base">
                             {currentStep.description}
                           </CardDescription>}
                       </>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex shrink-0 gap-2 sm:self-start">
                       {(!isStepFromStandardOrIncorporatedPhase(currentStep) || currentStep?.allowContentEdit) && (
-                        <Button onClick={handleStartEdit} variant="outline" size="sm">
-                          <Edit className="w-4 h-4 mr-2" />
+                        <Button onClick={handleStartEdit} variant="outline" size="sm" className="w-full sm:w-auto">
+                          <Edit className="mr-2 h-4 w-4 shrink-0" />
                           {currentStep?.allowContentEdit ? 'Edit Content' : 'Edit Step'}
                         </Button>
                       )}
@@ -3013,14 +3024,25 @@ export default function EditWorkflowView({
               )}
 
               {/* Navigation */}
-              <div className="flex justify-between">
-                <Button onClick={handlePrevious} disabled={currentStepIndex === 0} variant="outline">
-                  <ChevronLeft className="w-4 h-4 mr-2" />
-                  Previous
+              <div className="flex items-center justify-between gap-2">
+                <Button
+                  onClick={handlePrevious}
+                  disabled={currentStepIndex === 0}
+                  variant="outline"
+                  className="h-10 w-10 shrink-0 p-0 sm:h-9 sm:w-auto sm:gap-2 sm:px-3"
+                  aria-label="Previous step"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Previous</span>
                 </Button>
-                <Button onClick={handleNext} disabled={currentStepIndex >= allSteps.length - 1}>
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-2" />
+                <Button
+                  onClick={handleNext}
+                  disabled={currentStepIndex >= allSteps.length - 1}
+                  className="h-10 w-10 shrink-0 p-0 sm:h-9 sm:w-auto sm:gap-2 sm:px-3"
+                  aria-label="Next step"
+                >
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>

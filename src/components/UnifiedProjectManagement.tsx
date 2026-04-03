@@ -1646,16 +1646,22 @@ export function UnifiedProjectManagement({
             {selectedProject && <div className="space-y-6">
                 {/* Project Details Section */}
                 <Tabs value={activeView} onValueChange={value => setActiveView(value as any)} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="details">Project Details</TabsTrigger>
-                    <TabsTrigger value="revisions">Workflow Editor</TabsTrigger>
+                  <TabsList className="grid h-auto w-full grid-cols-2 gap-1 p-1">
+                    <TabsTrigger value="details" className="whitespace-normal px-2 py-2 text-center text-xs leading-tight sm:px-3 sm:text-sm">
+                      <span className="hidden min-[340px]:inline">Project Details</span>
+                      <span className="inline min-[340px]:hidden">Details</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="revisions" className="whitespace-normal px-2 py-2 text-center text-xs leading-tight sm:px-3 sm:text-sm">
+                      <span className="hidden min-[340px]:inline">Workflow Editor</span>
+                      <span className="inline min-[340px]:hidden">Workflow</span>
+                    </TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="details" className="mt-6">
                     <Card>
                       <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle>Project Information</CardTitle>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <CardTitle className="text-base sm:text-lg">Project Information</CardTitle>
                           <div className="flex flex-wrap gap-2">
                             <Button
                               type="button"
@@ -1829,8 +1835,8 @@ export function UnifiedProjectManagement({
                             <Label className="text-sm">Categories</Label>
                             {editingProject ? <Popover>
                                 <PopoverTrigger asChild>
-                                  <Button variant="outline" className="w-full justify-between text-sm h-auto min-h-[40px] py-2">
-                                    <span className="text-left truncate flex-1 min-w-0">
+                                  <Button variant="outline" className="h-10 w-full justify-between gap-2 px-3 py-0 text-sm">
+                                    <span className="min-w-0 flex-1 truncate text-left">
                                       {(() => {
                                         const categories = editedProject.category || [];
                                         if (categories.length === 0) return 'Select categories...';
@@ -1839,15 +1845,25 @@ export function UnifiedProjectManagement({
                                         return `${categories[0]}${categories.length > 1 ? ` +${categories.length - 1} more` : ''}`;
                                       })()}
                                     </span>
-                                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
                                   </Button>
                                 </PopoverTrigger>
-                              <PopoverContent className="w-[400px] p-0 bg-background" align="start">
-                                <div className="max-h-[300px] overflow-y-auto p-4 space-y-2 pr-2">
+                              <PopoverContent
+                                className="z-[100] flex w-[min(18rem,calc(50vw-1rem))] max-w-[min(18rem,calc(50vw-1rem))] flex-col overflow-hidden p-0"
+                                align="start"
+                                side="bottom"
+                                sideOffset={4}
+                                collisionPadding={8}
+                              >
+                                <div
+                                  className="max-h-[min(20rem,50dvh)] min-h-0 space-y-1.5 overflow-y-scroll overscroll-y-contain p-3 [-webkit-overflow-scrolling:touch]"
+                                  onWheel={(e) => e.stopPropagation()}
+                                >
                                   {PROJECT_CATEGORIES.map(cat => (
-                                    <div key={cat} className="flex items-center space-x-2">
+                                    <div key={cat} className="flex min-w-0 items-start gap-2">
                                       <Checkbox
                                         id={`edit-cat-${cat}`}
+                                        className="mt-0.5 shrink-0"
                                         checked={editedProject.category?.includes(cat) || false}
                                         onCheckedChange={checked => {
                                           const currentCategories = editedProject.category || [];
@@ -1858,7 +1874,7 @@ export function UnifiedProjectManagement({
                                           }));
                                         }}
                                       />
-                                      <label htmlFor={`edit-cat-${cat}`} className="text-sm cursor-pointer">
+                                      <label htmlFor={`edit-cat-${cat}`} className="min-w-0 flex-1 cursor-pointer text-sm leading-snug break-words">
                                         {cat}
                                       </label>
                                     </div>
@@ -2352,9 +2368,9 @@ export function UnifiedProjectManagement({
                   <TabsContent value="revisions" className="mt-6">
                     <Card>
                       <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle>Workflow Editor</CardTitle>
-                          <div className="flex gap-2">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <CardTitle className="text-base sm:text-lg">Workflow Editor</CardTitle>
+                          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
                             <Button onClick={async () => {
                           console.log('🔵 Create Revision button clicked', {
                             hasSelectedProject: !!selectedProject,
@@ -2384,13 +2400,13 @@ export function UnifiedProjectManagement({
                           // Always show dialog for new revisions; revision numbering is handled on publish
                           setRevisionNotes('');
                           setCreateRevisionDialogOpen(true);
-                        }} variant="outline" className="flex items-center gap-2">
-                              <GitBranch className="w-4 h-4" />
-                              Create Revision
+                        }} variant="outline" className="flex w-full items-center justify-center gap-2 sm:w-auto">
+                              <GitBranch className="h-4 w-4 shrink-0" />
+                              <span className="truncate">Create Revision</span>
                             </Button>
-                            <Button onClick={() => setResetRevisionsDialogOpen(true)} variant="outline" className="flex items-center gap-2">
-                              <RefreshCw className="w-4 h-4" />
-                              Reset Revisions
+                            <Button onClick={() => setResetRevisionsDialogOpen(true)} variant="outline" className="flex w-full items-center justify-center gap-2 sm:w-auto">
+                              <RefreshCw className="h-4 w-4 shrink-0" />
+                              <span className="truncate">Reset Revisions</span>
                             </Button>
                           </div>
                         </div>
@@ -2401,8 +2417,8 @@ export function UnifiedProjectManagement({
                           </div> : <div className="space-y-4">
                             {projectRevisions.map(revision => <Card key={revision.id} className="border-l-4 border-l-primary/20">
                                 <CardContent className="pt-4">
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1">
+                                      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                    <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-3 mb-2">
                                         <h4 className="font-medium">Revision {revision.revision_number}</h4>
                                         {getStatusBadge(
@@ -2436,9 +2452,9 @@ export function UnifiedProjectManagement({
                                         </div>}
                                     </div>
 
-                     <div className="ml-4 flex flex-col gap-2">
+                     <div className="mt-3 flex w-full flex-col gap-2 sm:ml-4 sm:mt-0 sm:w-auto">
                       {revision.publish_status === 'draft' && (
-                        <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2">
+                        <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-3">
                         <Button size="sm" variant="outline" onClick={() => {
                                 // Parse phases
                                 let parsedPhases = [];
@@ -2485,8 +2501,8 @@ export function UnifiedProjectManagement({
                                 if (onEditWorkflow) {
                                   onEditWorkflow();
                                 }
-                              }} className="flex items-center justify-center gap-0.5 px-1 text-xs whitespace-nowrap lg:gap-1 lg:px-2">
-                          <Edit className="w-3 h-3 shrink-0" />
+                              }} className="flex min-h-9 w-full items-center justify-center gap-1 px-2 text-xs sm:min-h-0 sm:min-w-0">
+                          <Edit className="h-3.5 w-3.5 shrink-0" />
                           Edit Workflow
                         </Button>
                         <Button
@@ -2497,9 +2513,9 @@ export function UnifiedProjectManagement({
                             e.stopPropagation();
                             openProcessMapForProject(revision);
                           }}
-                          className="flex items-center justify-center gap-1 px-2 text-xs whitespace-nowrap min-w-0"
+                          className="flex min-h-9 w-full items-center justify-center gap-1 px-2 text-xs sm:min-h-0"
                         >
-                          <Network className="w-3 h-3 shrink-0 hidden lg:block" />
+                          <Network className="hidden h-3.5 w-3.5 shrink-0 lg:block" />
                           Process Map
                         </Button>
                         <Button
@@ -2510,15 +2526,15 @@ export function UnifiedProjectManagement({
                             e.stopPropagation();
                             openPfmeaForProjectId(revision.id);
                           }}
-                          className="flex items-center justify-center gap-1 px-2 text-xs whitespace-nowrap min-w-0"
+                          className="flex min-h-9 w-full items-center justify-center gap-1 px-2 text-xs sm:min-h-0"
                         >
-                          <Shield className="w-3 h-3" />
+                          <Shield className="h-3.5 w-3.5 shrink-0" />
                           PFMEA
                         </Button>
                         </div>
                       )}
                                       {revision.publish_status === 'draft' && <>
-                                          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-2">
+                                          <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
                                           <Button size="sm" variant="outline" onClick={e => {
                                   e.preventDefault();
                                   e.stopPropagation();
@@ -2784,19 +2800,19 @@ export function UnifiedProjectManagement({
 
       {/* Create Project Dialog */}
       <Dialog open={createProjectDialogOpen} onOpenChange={setCreateProjectDialogOpen}>
-        <DialogContent className="w-[85vw] max-w-[85vw]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="w-5 h-5" />
+        <DialogContent className="flex h-[min(92dvh,40rem)] max-h-[92dvh] w-[calc(100vw-1rem)] max-w-md flex-col gap-0 overflow-hidden p-0 sm:h-[min(90dvh,44rem)] sm:max-w-lg md:max-w-xl">
+          <DialogHeader className="shrink-0 space-y-1 border-b px-4 py-3 text-left sm:px-6 sm:py-4">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Plus className="h-5 w-5 shrink-0" />
               Create New Project
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-3 sm:px-6 sm:py-4">
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">
                 Project Name: Item + Action. e.g. "Tile Flooring Installation"
               </p>
-              <div className="grid grid-cols-2 gap-4 items-end">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 sm:items-end">
                 <div className="space-y-2">
                   <Label htmlFor="project-item" className="h-5 flex items-center">Item *</Label>
                   <Input 
@@ -2885,28 +2901,38 @@ export function UnifiedProjectManagement({
             }))} rows={3} />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
               <div className="space-y-2">
                 <Label htmlFor="project-categories">Categories</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between h-auto min-h-[40px] py-2">
-                      <span className="text-left text-sm truncate flex-1 mr-2">
+                    <Button variant="outline" className="h-10 w-full justify-between gap-2 px-3 py-0">
+                      <span className="min-w-0 flex-1 truncate text-left text-sm">
                         {newProject.categories.length > 0 
                           ? (newProject.categories.length <= 2 
                               ? newProject.categories.join(', ')
                               : `${newProject.categories.slice(0, 2).join(', ')} +${newProject.categories.length - 2} more`)
                           : 'Select categories...'}
                       </span>
-                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[400px] p-0 bg-background" align="start">
-                    <div className="max-h-[300px] overflow-y-auto p-4 space-y-2 pr-2">
+                  <PopoverContent
+                    className="z-[100] flex w-[min(18rem,calc(50vw-1rem))] max-w-[min(18rem,calc(50vw-1rem))] flex-col overflow-hidden p-0"
+                    align="start"
+                    side="bottom"
+                    sideOffset={4}
+                    collisionPadding={8}
+                  >
+                    <div
+                      className="max-h-[min(20rem,50dvh)] min-h-0 space-y-1.5 overflow-y-scroll overscroll-y-contain p-3 [-webkit-overflow-scrolling:touch]"
+                      onWheel={(e) => e.stopPropagation()}
+                    >
                       {PROJECT_CATEGORIES.map(cat => (
-                        <div key={cat} className="flex items-center space-x-2">
+                        <div key={cat} className="flex min-w-0 items-start gap-2">
                           <Checkbox
                             id={`new-cat-${cat}`}
+                            className="mt-0.5 shrink-0"
                             checked={newProject.categories.includes(cat)}
                             onCheckedChange={checked => {
                               const newCategories = checked ? [...newProject.categories, cat] : newProject.categories.filter(c => c !== cat);
@@ -2916,7 +2942,7 @@ export function UnifiedProjectManagement({
                               }));
                             }}
                           />
-                          <label htmlFor={`new-cat-${cat}`} className="text-sm cursor-pointer">
+                          <label htmlFor={`new-cat-${cat}`} className="min-w-0 flex-1 cursor-pointer text-sm leading-snug break-words">
                             {cat}
                           </label>
                         </div>
@@ -2945,7 +2971,7 @@ export function UnifiedProjectManagement({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
               <div className="space-y-2">
                 <Label htmlFor="project-effort">Effort Level</Label>
                 <Select value={newProject.effort_level || 'Medium'} onValueChange={value => setNewProject(prev => ({
@@ -3015,8 +3041,10 @@ export function UnifiedProjectManagement({
               </div>
             )}
 
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setCreateProjectDialogOpen(false)} disabled={isCreatingProject}>
+          </div>
+          <div className="shrink-0 border-t bg-background px-4 py-3 sm:px-6">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button type="button" variant="outline" onClick={() => setCreateProjectDialogOpen(false)} disabled={isCreatingProject} className="w-full sm:w-auto">
                 Cancel
               </Button>
               <Button
@@ -3029,6 +3057,7 @@ export function UnifiedProjectManagement({
                   !newProject.item?.trim() ||
                   (!newProject.action && !newProject.actionCustom?.trim())
                 }
+                className="w-full sm:w-auto"
               >
                 {isCreatingProject ? 'Creating...' : 'Create Project'}
               </Button>
