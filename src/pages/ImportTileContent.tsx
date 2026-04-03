@@ -287,12 +287,6 @@ Prime|Finish|Post-install inspection|Inspect grout and tile|Check for cracks in 
       
       addLog('\n🎉 Import complete! The trigger will automatically rebuild the phases JSON.');
       addLog('🎉 The Tile Flooring project now has standard phases PLUS custom Prep/Install/Finish phases with all steps.');
-      
-      toast({
-        title: "Import Complete!",
-        description: "Excel content has been successfully imported into the Tile Flooring project.",
-      });
-      
     } catch (error) {
       addLog(`\n❌ Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       toast({

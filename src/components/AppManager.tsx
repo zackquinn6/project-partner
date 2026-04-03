@@ -266,9 +266,7 @@ export function AppManager({
           console.error('❌ Error rebuilding project phases:', err);
         });
       }
-      toast.success(`App "${appName}" updated successfully`);
-
-      // Update local state
+            // Update local state
       setNativeApps(prev => prev.map(app => app.id === editingApp.id ? {
         ...app,
         appName,
@@ -355,9 +353,7 @@ export function AppManager({
           p_project_id: project.id
         });
       }
-      toast.success(`External app updated in ${updatedCount} workflow step(s)`);
-
-      // Update local state
+            // Update local state
       setExternalApps(prev => prev.map(app => app.id === editingApp.id ? {
         ...app,
         ...editForm
@@ -402,8 +398,7 @@ export function AppManager({
       openInNewTab: true
     });
     setShowAddExternal(false);
-    toast.success('External app added. It will be available when adding apps to workflow steps.');
-  };
+      };
   const handleDeleteExternal = async (app: AppReference) => {
     if (!confirm(`Are you sure you want to delete "${app.appName}"? This will remove it from all workflow steps.`)) {
       return;
@@ -444,8 +439,7 @@ export function AppManager({
           p_project_id: project.id
         });
       }
-      toast.success(`External app removed from ${updatedCount} workflow step(s)`);
-      setExternalApps(prev => prev.filter(a => a.id !== app.id));
+            setExternalApps(prev => prev.filter(a => a.id !== app.id));
       loadApps(); // Reload to get fresh data
     } catch (error) {
       console.error('Error deleting external app:', error);

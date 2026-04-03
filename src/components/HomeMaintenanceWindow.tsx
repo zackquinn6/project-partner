@@ -143,11 +143,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
 
       if (error) throw error;
 
-      toast({
-        title: 'Task updated',
-        description: 'Maintenance task details have been updated.',
-      });
-
+      
       onUpdated();
       onClose();
     } catch (error) {
@@ -591,8 +587,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
         .eq('user_id', user.id);
       if (updateError) throw updateError;
       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, last_completed: now.toISOString(), next_due: nextDue } : t));
-      toast({ title: 'Saved' });
-      fetchTasks();
+            fetchTasks();
       fetchCompletions();
     } catch (error) {
       console.error('Error quick-logging task:', error);

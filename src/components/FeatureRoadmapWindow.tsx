@@ -157,8 +157,7 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
         submitted_by: user.id
       });
       if (error) throw error;
-      toast.success('Feature request submitted successfully');
-      setShowFeatureRequestForm(false);
+            setShowFeatureRequestForm(false);
       setRequestForm({
         title: '',
         description: '',
@@ -197,8 +196,7 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
           ...prev,
           [itemType]: new Set([...prev[itemType]].filter(id => id !== itemId))
         }));
-        toast.success('Vote removed');
-      } else {
+              } else {
         // Add vote
         const {
           error
@@ -212,8 +210,7 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
           ...prev,
           [itemType]: new Set([...prev[itemType], itemId])
         }));
-        toast.success('Vote recorded');
-      }
+              }
 
       // Refresh data to get updated vote counts
       fetchData();

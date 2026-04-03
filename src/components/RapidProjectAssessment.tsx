@@ -296,8 +296,7 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
 
       if (error) throw error;
 
-      toast({ title: "Success", description: "Project deleted successfully" });
-      await loadSavedProjects();
+            await loadSavedProjects();
     } catch (error) {
       console.error('Error deleting project:', error);
       toast({ title: "Error", description: "Failed to delete project", variant: "destructive" });

@@ -689,8 +689,7 @@ export function MaintenancePlanWorkflow({
         if (homesError) throw homesError;
       }
 
-      toast({ title: 'Plan saved', description: 'Your maintenance plan has been saved.' });
-      onPlanSaved();
+            onPlanSaved();
       onOpenChange(false);
     } catch (e) {
       console.error(e);

@@ -81,11 +81,7 @@ export const AdminActionCenter: React.FC<AdminActionCenterProps> = ({
       // Refresh feedback
       await fetchFeedback();
 
-      toast({
-        title: "Feedback Updated",
-        description: `Feedback marked as ${newStatus}.`
-      });
-    } catch (error) {
+          } catch (error) {
       console.error('Error updating feedback:', error);
       toast({
         title: "Action Failed",

@@ -766,8 +766,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         if (upErr) throw upErr;
 
         await fetchPfmeaDetails(selectedPfmeaProject.project_id);
-        toast.success('Output removed');
-        setPfmeaLineDeleteTarget(null);
+                setPfmeaLineDeleteTarget(null);
       } catch (err) {
         console.error(err);
         toast.error('Failed to remove output');
@@ -803,8 +802,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       if (error) throw error;
       if (kind === 'effect' && effectFailureModeId) await syncFailureModeSeverityFromDb(effectFailureModeId);
       await fetchPfmeaDetails(selectedPfmeaProject.project_id);
-      toast.success('Removed');
-      setPfmeaLineDeleteTarget(null);
+            setPfmeaLineDeleteTarget(null);
     } catch (err) {
       console.error(err);
       toast.error('Failed to delete');
@@ -892,8 +890,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       if (selectedPfmeaProject) {
         await fetchPfmeaDetails(selectedPfmeaProject.project_id);
       }
-      toast.success('Failure mode added');
-    } catch (error) {
+          } catch (error) {
       console.error('Error adding failure mode:', error);
       toast.error('Failed to add failure mode');
     }
@@ -1048,8 +1045,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       }
       
       cancelEdit();
-      toast.success('Updated successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('Error saving edit:', error);
       toast.error('Failed to save changes');
     }
@@ -1313,8 +1309,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         });
         if (error) throw error;
         if (selectedPfmeaProject) await fetchPfmeaDetails(selectedPfmeaProject.project_id);
-        toast.success('Potential cause added');
-      } catch (err) {
+              } catch (err) {
         console.error(err);
         toast.error('Failed to add potential cause');
       }
@@ -1439,8 +1434,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       if (error) throw error;
 
       await syncFailureModeSeverityFromDb(failureModeId);
-      toast.success('Potential effect added successfully');
-      if (selectedPfmeaProject) fetchPfmeaDetails(selectedPfmeaProject.project_id);
+            if (selectedPfmeaProject) fetchPfmeaDetails(selectedPfmeaProject.project_id);
     } catch (error) {
       console.error('Error adding potential effect:', error);
       toast.error('Failed to add potential effect');
@@ -1463,8 +1457,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
       if (error) throw error;
 
-      toast.success('Potential cause added successfully');
-      if (selectedPfmeaProject) fetchPfmeaDetails(selectedPfmeaProject.project_id);
+            if (selectedPfmeaProject) fetchPfmeaDetails(selectedPfmeaProject.project_id);
     } catch (error) {
       console.error('Error adding potential cause:', error);
       toast.error('Failed to add potential cause');
@@ -1493,8 +1486,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
       if (error) throw error;
 
-      toast.success(`${controlType} control added successfully`);
-      if (selectedPfmeaProject) fetchPfmeaDetails(selectedPfmeaProject.project_id);
+            if (selectedPfmeaProject) fetchPfmeaDetails(selectedPfmeaProject.project_id);
     } catch (error) {
       console.error(`Error adding ${controlType} control:`, error);
       toast.error(`Failed to add ${controlType} control`);
@@ -1515,8 +1507,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
       if (error) throw error;
 
-      toast.success('Action item added successfully');
-      if (selectedPfmeaProject) fetchPfmeaDetails(selectedPfmeaProject.project_id);
+            if (selectedPfmeaProject) fetchPfmeaDetails(selectedPfmeaProject.project_id);
     } catch (error) {
       console.error('Error adding action item:', error);
       toast.error('Failed to add action item');
@@ -1591,8 +1582,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       if (selectedPfmeaProject) {
         await fetchPfmeaDetails(selectedPfmeaProject.project_id);
       }
-      toast.success('Output added');
-    } catch (err) {
+          } catch (err) {
       console.error(err);
       toast.error('Failed to add output');
     }
@@ -1658,8 +1648,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       if (selectedPfmeaProject) {
         await fetchPfmeaDetails(selectedPfmeaProject.project_id);
       }
-      toast.success('Process variable added');
-    } catch (err) {
+          } catch (err) {
       console.error(err);
       toast.error('Failed to add process variable');
     }
@@ -1828,7 +1817,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         case 'effects':
         case 's':
           if (!fm) {
-            toast.message('Add a failure mode first', { description: 'Select a requirement row, then add a Failure Mode.' });
+            toast.error('Add a failure mode first', { description: 'Select a requirement row, then add a Failure Mode.' });
             return;
           }
           void addPotentialEffect(fm.id);
@@ -1836,18 +1825,18 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         case 'causes':
         case 'o':
           if (!fm) {
-            toast.message('Add a failure mode first', { description: 'Select a requirement row, then add a Failure Mode.' });
+            toast.error('Add a failure mode first', { description: 'Select a requirement row, then add a Failure Mode.' });
             return;
           }
           void addPotentialCause(fm.id);
           return;
         case 'prevention_controls':
           if (!fm) {
-            toast.message('Add a failure mode first', { description: 'Select a requirement row, then add a Failure Mode.' });
+            toast.error('Add a failure mode first', { description: 'Select a requirement row, then add a Failure Mode.' });
             return;
           }
           if (!cause) {
-            toast.message('Add a potential cause first', {
+            toast.error('Add a potential cause first', {
               description: 'Prevention controls are aligned to a specific cause row.',
             });
             return;
@@ -1857,7 +1846,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         case 'detection_controls':
         case 'd':
           if (!fm) {
-            toast.message('Add a failure mode first', { description: 'Select a requirement row, then add a Failure Mode.' });
+            toast.error('Add a failure mode first', { description: 'Select a requirement row, then add a Failure Mode.' });
             return;
           }
           void addControl(fm.id, 'detection');
@@ -1870,7 +1859,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           return;
         case 'recommended_actions':
           if (!fm) {
-            toast.message('Add a failure mode first', { description: 'Select a requirement row, then add a Failure Mode.' });
+            toast.error('Add a failure mode first', { description: 'Select a requirement row, then add a Failure Mode.' });
             return;
           }
           void addActionItem(fm.id);
@@ -2214,7 +2203,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           </SelectContent>
         </Select>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => toast.success('Export functionality coming soon')}>
+          <Button variant="outline" size="sm" onClick={() => }>
             Export
           </Button>
         </div>

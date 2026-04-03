@@ -37,8 +37,7 @@ export function ProjectCertificate({ projectRun, onClose }: ProjectCertificatePr
       link.download = `${projectRun.name}-certificate.png`;
       link.click();
 
-      toast.success('Certificate downloaded!');
-    } catch (error) {
+          } catch (error) {
       console.error('Error downloading certificate:', error);
       toast.error('Failed to download certificate');
     } finally {
@@ -93,8 +92,7 @@ export function ProjectCertificate({ projectRun, onClose }: ProjectCertificatePr
 
       if (emailError) throw emailError;
 
-      toast.success('Certificate sent successfully!');
-      setEmail('');
+            setEmail('');
     } catch (error) {
       console.error('Error sending certificate:', error);
       toast.error('Failed to send certificate');

@@ -144,8 +144,7 @@ export function QualityCheckWindow({
           ...projectRun,
           quality_control_settings: next
         });
-        toast.success('Quality Control settings saved');
-      } catch (e) {
+              } catch (e) {
         console.error(e);
         toast.error('Failed to save settings');
       } finally {
@@ -328,8 +327,7 @@ export function QualityCheckWindow({
         issue_reports: nextIssueReports
       });
 
-      toast.success('Document uploaded');
-    } catch (e) {
+          } catch (e) {
       console.error('Failed to upload quality document', e);
       toast.error('Failed to upload document');
     } finally {

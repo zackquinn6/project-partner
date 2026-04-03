@@ -83,8 +83,7 @@ export const ZillowSyncDialog = ({
         }
       }
 
-      toast.success('Home data saved successfully!');
-      onSyncComplete();
+            onSyncComplete();
       onOpenChange(false);
       setTimeout(() => {
         window.location.reload();

@@ -596,8 +596,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                     onClick={async () => {
                       if (currentProjectRun) {
                         await deleteProjectRun(currentProjectRun.id);
-                        toast.success('Project removed');
-                        if (onExit) onExit();
+                                                if (onExit) onExit();
                       }
                     }}
                     variant="outline"

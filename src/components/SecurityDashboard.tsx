@@ -78,11 +78,7 @@ export const SecurityDashboard: React.FC = () => {
       const { data, error } = await supabase.rpc('cleanup_old_sessions');
       if (error) throw error;
       
-      toast({
-        title: "Success",
-        description: `Cleaned up ${data} old sessions`,
-      });
-      
+            
       loadSecurityData();
     } catch (error) {
       console.error('Error cleaning up sessions:', error);

@@ -342,16 +342,14 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
         if (error) throw error;
         setPlan(inserted as PlanRow);
         await ensureTriggerRows(inserted.id);
-        toast.success('Communication Plan turned on for this project.');
-      } else {
+              } else {
         const { error } = await supabase
           .from('project_communication_plans')
           .update({ enabled })
           .eq('id', plan.id);
         if (error) throw error;
         setPlan({ ...plan, enabled });
-        toast.success(enabled ? 'Communication Plan enabled.' : 'Communication Plan disabled.');
-      }
+              }
       await loadAll();
     } catch (e) {
       console.error(e);
@@ -370,8 +368,7 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
       return;
     }
     setPlan({ ...plan, sms_early_access_opt_in: v });
-    toast.success(v ? "You're on the list for SMS early access." : 'SMS early access preference cleared.');
-  };
+      };
 
   const openNewStakeholder = () => {
     setEditingStakeholder(null);
@@ -431,8 +428,7 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
           })
           .eq('id', editingStakeholder.id);
         if (error) throw error;
-        toast.success('Stakeholder updated.');
-      } else {
+              } else {
         const maxOrder = stakeholders.reduce((m, s) => Math.max(m, s.sort_order), -1);
         const { error } = await supabase.from('communication_stakeholders').insert({
           plan_id: plan.id,
@@ -445,8 +441,7 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
           sort_order: maxOrder + 1,
         });
         if (error) throw error;
-        toast.success('Stakeholder added.');
-      }
+              }
       setStakeFormOpen(false);
       await loadAll();
     } catch (e) {
@@ -461,8 +456,7 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
       toast.error('Could not remove stakeholder.');
       return;
     }
-    toast.success('Removed.');
-    await loadAll();
+        await loadAll();
   };
 
   const toggleTrigger = async (row: TriggerRow, enabled: boolean) => {
@@ -513,7 +507,7 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
       }
 
       if (rows.length === 0) {
-        toast.message('No recurring frequencies to schedule.', {
+        toast.error('No recurring frequencies to schedule.', {
           description: 'Choose weekly, biweekly, or monthly on stakeholders to get dated reminders.',
         });
         return;
@@ -521,7 +515,6 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
 
       const { error: insErr } = await supabase.from('communication_schedule_items').insert(rows);
       if (insErr) throw insErr;
-      toast.success('Schedule generated from stakeholder frequencies.');
       await loadAll();
     } catch (e) {
       console.error(e);
@@ -560,8 +553,7 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
           ? composeStakeholderId
           : null;
       await logOutboundCopy(sid, composeTemplate);
-      toast.success('Copied — ready to paste into iMessage, WhatsApp, Slack, or email.');
-    } catch {
+          } catch {
       toast.error('Clipboard not available.');
     }
   };
@@ -575,8 +567,7 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
     a.download = `project-update-${new Date().toISOString().slice(0, 10)}.txt`;
     a.click();
     URL.revokeObjectURL(a.href);
-    toast.success('Download started.');
-  };
+      };
 
   const sendEmail = async () => {
     if (!plan || !runId || !composeStakeholderId || composeStakeholderId === '_none') {
@@ -609,8 +600,7 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
       toast.error(String(data.error));
       return;
     }
-    toast.success('Email sent and logged.');
-    await loadAll();
+        await loadAll();
   };
 
   const draftForTrigger = (tt: TriggerType) => {

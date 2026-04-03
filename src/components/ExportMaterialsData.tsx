@@ -90,8 +90,7 @@ export function ExportMaterialsData({ className = "" }: ExportMaterialsDataProps
       // Write and download file
       XLSX.writeFile(workbook, filename);
       
-      toast.success(`Materials data exported successfully to ${filename}`);
-    } catch (error) {
+          } catch (error) {
       console.error('Error exporting data:', error);
       toast.error('Failed to export materials data');
     } finally {

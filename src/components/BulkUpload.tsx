@@ -121,8 +121,7 @@ Sandpaper,Fine grit sandpaper,Pack of 10 sheets`;
 
       if (error) throw error;
 
-      toast.success(`Successfully uploaded ${validItems.length} ${type}`);
-      onSuccess();
+            onSuccess();
       onOpenChange(false);
       setCsvData('');
       setFileInput(null);

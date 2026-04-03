@@ -84,12 +84,7 @@ export const AdminSecurityDashboard: React.FC = () => {
       const { data, error } = await supabase.rpc('start_admin_session');
       if (error) throw error;
       
-      toast({
-        title: "Secure Session Started",
-        description: "Admin session initiated with full audit logging",
-        variant: "default"
-      });
-      
+            
       loadSecurityData();
     } catch (error) {
       console.error('Error starting session:', error);

@@ -146,8 +146,7 @@ export function ExportToolsData({ className = "" }: ExportToolsDataProps) {
       // Write and download file
       XLSX.writeFile(workbook, filename);
       
-      toast.success(`Tools data exported successfully to ${filename}`);
-    } catch (error) {
+          } catch (error) {
       console.error('Error exporting data:', error);
       toast.error('Failed to export tools data');
     } finally {

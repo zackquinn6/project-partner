@@ -253,11 +253,7 @@ export function ProjectContractors({ projectRunId, phases }: ProjectContractorsP
       setContractors([...contractors, contractorToAdd]);
       cancelAdding();
       
-      toast({
-        title: "Success",
-        description: "Contractor added and saved",
-      });
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error saving contractor:', error);
       toast({
         title: "Error",
@@ -290,11 +286,7 @@ export function ProjectContractors({ projectRunId, phases }: ProjectContractorsP
 
         if (error) throw error;
 
-        toast({
-          title: "Success",
-          description: "Contractor deleted",
-        });
-      } catch (error: any) {
+              } catch (error: any) {
         console.error('Error deleting contractor:', error);
         toast({
           title: "Error",
@@ -361,11 +353,7 @@ export function ProjectContractors({ projectRunId, phases }: ProjectContractorsP
 
       setAssignments([...assignments, newAssignment]);
       
-      toast({
-        title: "Success",
-        description: "Contractor assigned to phase",
-      });
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error assigning contractor:', error);
       toast({
         title: "Error",
@@ -393,11 +381,7 @@ export function ProjectContractors({ projectRunId, phases }: ProjectContractorsP
 
       setAssignments(assignments.filter(a => a.id !== assignmentId));
       
-      toast({
-        title: "Success",
-        description: "Assignment removed",
-      });
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error removing assignment:', error);
       toast({
         title: "Error",

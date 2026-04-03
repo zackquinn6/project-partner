@@ -111,8 +111,7 @@ export const FeatureRoadmap: React.FC = () => {
 
       if (error) throw error;
 
-      toast.success('Roadmap item added successfully');
-      setShowAddRoadmapItem(false);
+            setShowAddRoadmapItem(false);
       setRoadmapForm({
         title: '',
         description: '',
@@ -141,8 +140,7 @@ export const FeatureRoadmap: React.FC = () => {
 
       if (error) throw error;
 
-      toast.success('Feature request submitted successfully');
-      setShowFeatureRequestForm(false);
+            setShowFeatureRequestForm(false);
       setRequestForm({
         title: '',
         description: '',

@@ -53,11 +53,7 @@ export const GoogleCalendarIntegration: React.FC<CalendarIntegrationProps> = ({
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       setIsConnected(true);
-      toast({
-        title: "Google Calendar Connected",
-        description: "Successfully connected to your Google Calendar account.",
-      });
-      
+            
       // Load existing events
       await loadCalendarEvents();
     } catch (error) {
@@ -132,11 +128,7 @@ export const GoogleCalendarIntegration: React.FC<CalendarIntegrationProps> = ({
       onEventCreated(newEvent);
       setShowCreateEvent(false);
       
-      toast({
-        title: "Event Created",
-        description: `"${eventData.title}" has been added to your Google Calendar.`,
-      });
-      
+            
     } catch (error) {
       toast({
         title: "Failed to Create Event",

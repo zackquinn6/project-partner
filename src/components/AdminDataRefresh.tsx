@@ -70,11 +70,7 @@ export function AdminDataRefresh() {
           : ds
       ));
       
-      toast({
-        title: "Data Refreshed",
-        description: `${source?.name} data has been successfully updated.`
-      });
-    } catch (error) {
+          } catch (error) {
       setDataSources(prev => prev.map(ds => 
         ds.id === sourceId 
           ? { ...ds, status: 'error' as const }

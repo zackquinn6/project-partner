@@ -162,8 +162,7 @@ export const AppsLibraryDialog = ({
     setExternalAppIcon('ExternalLink');
     setExternalAppDescription('');
     
-    toast.success('External app added');
-  };
+      };
 
   // Common icon options for external apps
   const iconOptions = [

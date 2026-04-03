@@ -51,8 +51,7 @@ export const PartnerAppToggles: React.FC = () => {
             : key === 'tool_rentals_enabled'
               ? 'Tool Rental'
               : 'Waste Removal';
-      toast.success(`${label} ${enabled ? 'enabled' : 'disabled'}`);
-    } catch (err) {
+          } catch (err) {
       console.error('Error updating partner app setting:', err);
       toast.error('Failed to update setting');
     } finally {

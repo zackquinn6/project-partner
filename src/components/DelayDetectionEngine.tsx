@@ -198,11 +198,7 @@ export const DelayDetectionEngine: React.FC<DelayDetectionEngineProps> = ({
 
   const handleInterventionApply = (intervention: DelayIntervention) => {
     onInterventionApply(intervention);
-    toast({
-      title: "Intervention Applied",
-      description: `${intervention.title} has been added to your project plan.`,
-    });
-  };
+      };
 
   const getRiskColor = (risk: DelayDetection['delayRisk']) => {
     switch (risk) {

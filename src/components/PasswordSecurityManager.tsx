@@ -49,8 +49,7 @@ export const PasswordSecurityManager: React.FC = () => {
         password: passwordData.newPassword
       });
       if (error) throw error;
-      toast.success('Password updated successfully');
-      setPasswordData({
+            setPasswordData({
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
@@ -80,8 +79,7 @@ export const PasswordSecurityManager: React.FC = () => {
         email: newEmail
       });
       if (error) throw error;
-      toast.success('Email update request sent. Please check your new email for confirmation.');
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Email update error:', error);
       toast.error(error.message || 'Failed to update email');
     } finally {

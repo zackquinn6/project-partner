@@ -154,11 +154,7 @@ export const KnowledgeIngestionSystem: React.FC = () => {
     // Simulate scanning process
     await new Promise(resolve => setTimeout(resolve, 3000));
     
-    toast({
-      title: "Knowledge Scan Complete",
-      description: "Found 3 new updates and 2 potential improvements"
-    });
-    
+        
     setIsScanning(false);
   };
 
@@ -184,21 +180,13 @@ export const KnowledgeIngestionSystem: React.FC = () => {
     setSources([...sources, source]);
     setNewSource({ name: '', url: '', type: 'blog', category: '' });
     
-    toast({
-      title: "Knowledge Source Added",
-      description: `${source.name} has been added to the ingestion pipeline`
-    });
-  };
+      };
 
   const approveUpdate = (updateId: string) => {
     setUpdates(updates.map(update => 
       update.id === updateId ? { ...update, status: 'approved' } : update
     ));
-    toast({
-      title: "Update Approved",
-      description: "Knowledge update will be integrated into relevant projects"
-    });
-  };
+      };
 
   const getStatusColor = (status: string) => {
     switch (status) {

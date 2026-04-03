@@ -65,11 +65,7 @@ export const ProjectOwnerInvitationDialog: React.FC<ProjectOwnerInvitationDialog
 
       if (error) throw error;
 
-      toast({
-        title: "Invitation sent",
-        description: `An invitation has been sent to ${email}`,
-      });
-
+      
       setEmail('');
       onOpenChange(false);
       onInvitationSent?.();

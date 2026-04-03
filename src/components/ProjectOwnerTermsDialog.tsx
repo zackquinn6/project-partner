@@ -92,11 +92,7 @@ export const ProjectOwnerTermsDialog: React.FC<ProjectOwnerTermsDialogProps> = (
 
       if (rpcError) throw rpcError;
 
-      toast({
-        title: "Welcome, Project Owner!",
-        description: "You have successfully accepted the terms and can now create and manage projects.",
-      });
-
+      
       onOpenChange(false);
       onAccepted?.();
     } catch (error) {

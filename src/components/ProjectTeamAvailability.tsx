@@ -307,11 +307,7 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
       onTeamMembersChange([...teamMembers, memberToAdd]);
       cancelAdding();
       
-      toast({
-        title: "Success",
-        description: "Team member added and saved",
-      });
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error saving team member:', error);
       toast({
         title: "Error",
@@ -339,11 +335,7 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
 
         if (error) throw error;
 
-        toast({
-          title: "Success",
-          description: "Team member deleted",
-        });
-      } catch (error: any) {
+              } catch (error: any) {
         console.error('Error deleting team member:', error);
         toast({
           title: "Error",
@@ -440,11 +432,7 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
       onTeamMembersChange(updatedMembers);
       cancelEditing();
       
-      toast({
-        title: "Success",
-        description: "Team member updated",
-      });
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error updating team member:', error);
       toast({
         title: "Error",

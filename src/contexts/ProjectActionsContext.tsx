@@ -415,10 +415,7 @@ interface ProjectActionsContextType {
     options?: { riskFocusSession?: boolean }
   ) => Promise<string | null>;
   addProjectRun: (projectRun: Omit<ProjectRun, 'id' | 'createdAt' | 'updatedAt'>, onSuccess?: (projectRunId: string) => void) => Promise<void>;
-  updateProject: (
-    project: Project,
-    options?: { silentSuccessToast?: boolean }
-  ) => Promise<void>;
+  updateProject: (project: Project) => Promise<void>;
   updateProjectRun: (projectRun: ProjectRun) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
   deleteProjectRun: (projectRunId: string) => Promise<void>;
@@ -802,10 +799,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       if (onSuccess) {
         onSuccess(guestId);
       }
-      toast({
-        title: "Success",
-        description: "Project run saved temporarily (sign up to keep permanently)"
-      });
       return;
     }
 
@@ -1037,12 +1030,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         setCurrentProject(project);
       }
       
-      if (!options?.silentSuccessToast) {
-        toast({
-          title: "Success",
-          description: "Project updated successfully",
-        });
-      }
     } catch (error) {
       await reportUserFacingError({
         source: 'project_actions',
@@ -1061,10 +1048,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     if (isGuest) {
       // Handle guest mode
       updateGuestProjectRun(projectRun);
-      toast({
-        title: "Success",
-        description: "Project run updated (sign up to keep permanently)"
-      });
       return;
     }
 
@@ -1475,11 +1458,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       if (currentProject?.id === projectId) {
         setCurrentProject(null);
       }
-
-      toast({
-        title: "Success",
-        description: "Project deleted successfully",
-      });
     } catch (error) {
       await reportUserFacingError({
         source: 'project_actions',
@@ -1498,10 +1476,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     if (isGuest) {
       // Handle guest mode
       deleteGuestProjectRun(projectRunId);
-      toast({
-        title: "Success",
-        description: "Project run deleted"
-      });
       return;
     }
 
@@ -1630,11 +1604,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         if (currentProjectRun?.id === runId) {
           setCurrentProjectRun(transformedRun);
         }
-
-        toast({
-          title: "Success",
-          description: "Project refreshed with latest template updates!",
-        });
       }
     } catch (error) {
       await reportUserFacingError({

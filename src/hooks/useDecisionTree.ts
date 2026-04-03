@@ -73,11 +73,7 @@ export const useDecisionTree = (projectId?: string) => {
       if (error) throw error;
       
       setDecisionTrees(prev => [data, ...prev]);
-      toast({
-        title: "Success",
-        description: "Decision tree created successfully",
-      });
-      
+            
       return data;
     } catch (error) {
       console.error('Error creating decision tree:', error);
@@ -110,11 +106,7 @@ export const useDecisionTree = (projectId?: string) => {
         return a.display_order - b.display_order;
       }));
       
-      toast({
-        title: "Success",
-        description: "Operation created successfully",
-      });
-      
+            
       return data;
     } catch (error) {
       console.error('Error creating operation:', error);
@@ -142,11 +134,7 @@ export const useDecisionTree = (projectId?: string) => {
         ...data,
         condition_rules: data.condition_rules as Record<string, any>
       } : op));
-      toast({
-        title: "Success",
-        description: "Operation updated successfully",
-      });
-      
+            
       return data;
     } catch (error) {
       console.error('Error updating operation:', error);
@@ -169,11 +157,7 @@ export const useDecisionTree = (projectId?: string) => {
       if (error) throw error;
       
       setOperations(prev => prev.filter(op => op.id !== id));
-      toast({
-        title: "Success",
-        description: "Operation deleted successfully",
-      });
-    } catch (error) {
+          } catch (error) {
       console.error('Error deleting operation:', error);
       toast({
         title: "Error",

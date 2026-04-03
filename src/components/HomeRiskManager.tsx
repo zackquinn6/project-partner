@@ -112,15 +112,13 @@ export const HomeRiskManager: React.FC = () => {
           .eq('id', editingRisk.id);
 
         if (error) throw error;
-        toast.success('Home risk updated successfully');
-      } else {
+              } else {
         const { error } = await supabase
           .from('homes_risks')
           .insert(riskData);
 
         if (error) throw error;
-        toast.success('Home risk added successfully');
-      }
+              }
 
       setShowForm(false);
       setEditingRisk(null);
@@ -160,8 +158,7 @@ export const HomeRiskManager: React.FC = () => {
         .eq('id', riskId);
 
       if (error) throw error;
-      toast.success('Home risk deleted successfully');
-      fetchRisks();
+            fetchRisks();
     } catch (error) {
       console.error('Error deleting home risk:', error);
       toast.error('Failed to delete home risk');

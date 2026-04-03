@@ -46,8 +46,7 @@ export function EnhancedToolImporter({ open, onOpenChange, onSuccess }: Enhanced
     try {
       const tools = await EnhancedToolParser.parseEnhancedToolListExcel(file);
       setParsedTools(tools);
-      toast.success(`Parsed ${tools.length} tool groups with ${tools.reduce((acc, t) => acc + t.variants.length, 0)} variants`);
-    } catch (error) {
+          } catch (error) {
       console.error('Error parsing file:', error);
       toast.error('Failed to parse Excel file. Please check the format.');
     } finally {
@@ -71,8 +70,7 @@ export function EnhancedToolImporter({ open, onOpenChange, onSuccess }: Enhanced
       // Ensure the tools library refreshes by calling onSuccess twice - 
       // once immediately and once with a small delay to ensure data propagation
       if (results.success > 0) {
-        toast.success(`Successfully imported ${results.success} tools`);
-        onSuccess?.();
+                onSuccess?.();
         // Add a small delay to ensure database changes have propagated
         setTimeout(() => {
           onSuccess?.();
@@ -183,11 +181,9 @@ export function EnhancedToolImporter({ open, onOpenChange, onSuccess }: Enhanced
       }
 
       if (skipped > 0) {
-        toast.message('Pricing scrape finished', {
+        toast.error('Some pricing rows were skipped', {
           description: `${skipped} of ${totalModels} row(s) skipped — import tools first, or ensure variant names match tool_variations in the database.`,
         });
-      } else {
-        toast.success(`Completed pricing scrape for ${totalModels} model row(s)`);
       }
     } catch (error) {
       console.error('Error scraping pricing:', error);

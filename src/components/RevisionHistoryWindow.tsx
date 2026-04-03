@@ -205,7 +205,6 @@ export const RevisionHistoryWindow: React.FC<RevisionHistoryWindowProps> = ({
                 <Button 
                   onClick={() => {
                     // Handle release to beta
-                    toast("Project marked for beta testing");
                   }}
                   className="flex items-center gap-2"
                   variant="outline"
@@ -216,7 +215,6 @@ export const RevisionHistoryWindow: React.FC<RevisionHistoryWindowProps> = ({
                 <Button 
                   onClick={() => {
                     // Handle release to production
-                    toast("Project released to production");
                   }}
                   className="flex items-center gap-2"
                   variant="default"

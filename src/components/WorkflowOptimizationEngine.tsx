@@ -173,11 +173,7 @@ export const WorkflowOptimizationEngine: React.FC = () => {
     // Simulate analysis process
     await new Promise(resolve => setTimeout(resolve, 4000));
     
-    toast({
-      title: "Analysis Complete",
-      description: "Found 2 new optimization opportunities and 1 workflow improvement"
-    });
-    
+        
     setIsAnalyzing(false);
   };
 
@@ -190,11 +186,7 @@ export const WorkflowOptimizationEngine: React.FC = () => {
     
     const optimization = optimizations.find(opt => opt.id === optimizationId);
     
-    toast({
-      title: "Optimization Applied",
-      description: `${optimization?.title} is now active across ${optimization?.projectTypes.join(', ')} projects`
-    });
-  };
+      };
 
   const getStatusColor = (status: string) => {
     switch (status) {

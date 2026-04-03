@@ -98,20 +98,12 @@ export const AdaptiveGuidanceEngine: React.FC<AdaptiveGuidanceEngineProps> = ({
     if (currentTime > avgTimeForStep * 2 && guidanceLevel === 'minimal') {
       setGuidanceLevel('detailed');
       setShowVisualAids(true);
-      toast({
-        title: "Guidance Enhanced",
-        description: "Added more detail based on your progress.",
-      });
-    }
+          }
     
     // If user is breezing through
     if (currentTime < avgTimeForStep * 0.5 && guidanceLevel === 'comprehensive') {
       setGuidanceLevel('standard');
-      toast({
-        title: "Guidance Streamlined",
-        description: "Reduced detail since you're moving quickly.",
-      });
-    }
+          }
 
     // If user asks many questions
     if (learningData.questionsAsked > 2 && guidanceLevel !== 'comprehensive') {
@@ -143,11 +135,7 @@ export const AdaptiveGuidanceEngine: React.FC<AdaptiveGuidanceEngineProps> = ({
 
     onGuidanceAdjustment(adjustment);
     
-    toast({
-      title: "Feedback Recorded",
-      description: "We've adjusted the guidance level for future steps.",
-    });
-  };
+      };
 
   const generateAdaptedInstructions = (): any => {
     const baseContent = currentStep.content;

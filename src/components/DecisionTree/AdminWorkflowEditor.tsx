@@ -102,8 +102,7 @@ export const AdminWorkflowEditor: React.FC<AdminWorkflowEditorProps> = ({
 
   const handleSave = () => {
     onSave(editingPhases);
-    toast.success('Workflow structure saved successfully');
-  };
+      };
 
   const getOperationStepType = (operation: Operation): string => {
     // Get step type from first step (they should all be the same for an operation)

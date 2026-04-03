@@ -440,8 +440,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         if (!createdId) {
           return;
         }
-        toast.success('Project created with standard foundation');
-        setCurrentProject(newProject);
+                setCurrentProject(newProject);
         navigate('/', {
           state: {
             view: 'admin'

@@ -81,11 +81,7 @@ export const AdminMembershipManager: React.FC = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Coupon code created successfully",
-      });
-
+      
       setNewCouponCode('');
       setExtensionDays(7);
       setMaxUses('');
@@ -109,11 +105,7 @@ export const AdminMembershipManager: React.FC = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: `Coupon ${!currentStatus ? 'activated' : 'deactivated'}`,
-      });
-
+      
       loadCoupons();
     } catch (error: any) {
       toast({

@@ -79,11 +79,7 @@ export const FeedbackCollectionSystem: React.FC<FeedbackCollectionSystemProps> =
 
     onFeedbackSubmit(quickFeedback);
 
-    toast({
-      title: "Feedback Recorded",
-      description: "Thanks for helping us improve!",
-    });
-
+    
     // If it's a low rating, prompt for detailed feedback
     if (rating <= 2) {
       setShowDetailedFeedback(true);
@@ -104,11 +100,7 @@ export const FeedbackCollectionSystem: React.FC<FeedbackCollectionSystemProps> =
     onFeedbackSubmit(detailedFeedback);
     setShowDetailedFeedback(false);
 
-    toast({
-      title: "Detailed Feedback Submitted",
-      description: "Your feedback will help improve this step for future users.",
-    });
-  };
+      };
 
   const handleIssueToggle = (issueId: string, checked: boolean) => {
     setFeedbackData(prev => ({

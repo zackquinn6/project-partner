@@ -150,11 +150,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
 
       if (error) throw error;
 
-      toast({
-        title: 'Coupon Redeemed!',
-        description: `Your trial has been extended by ${data.daysExtended} days.`,
-      });
-
+      
       await checkSubscription();
     } catch (error: any) {
       toast({
@@ -184,11 +180,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
         0,
         Math.ceil((new Date(trialEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
       );
-      toast({
-        title: "You're in your free trial",
-        description: `We hope you're finding Toolio helpful. You have ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left to explore – we're here to help you get your project done.`,
-      });
-      setLastTrialNotificationDate(today);
+            setLastTrialNotificationDate(today);
       supabase.rpc('record_trial_notification_shown').then(() => {}).catch(() => {});
     };
 

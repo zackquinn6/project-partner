@@ -147,11 +147,7 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
         throw new Error(`Failed to save analysis: ${dbError.message}`);
       }
 
-      toast({
-        title: "Analysis Complete",
-        description: "Your repair has been analyzed and saved to your account.",
-      });
-
+      
     } catch (error) {
       console.error('Analysis error:', error);
       toast({

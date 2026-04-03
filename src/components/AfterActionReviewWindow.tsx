@@ -140,8 +140,7 @@ export function AfterActionReviewWindow({
     window.dispatchEvent(
       new CustomEvent('after-action-reviews-changed', { detail: { projectRunId: projectRun.id } })
     );
-    toast({ title: 'Saved' });
-  };
+      };
 
   const goToIndex = async (next: number) => {
     if (next < 0 || next >= rows.length) return;

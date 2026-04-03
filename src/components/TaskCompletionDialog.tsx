@@ -151,11 +151,7 @@ export function TaskCompletionDialog({
 
       if (error) throw error;
 
-      toast({
-        title: "Task Completed!",
-        description: `${task.title} has been marked as completed`,
-      });
-
+      
       onCompleted();
       setNotes('');
       setPhotoFile(null);

@@ -70,12 +70,7 @@ export const SecureAdminUserView: React.FC<SecureAdminUserViewProps> = ({ userId
       
       if (data && data.length > 0) {
         setProfile(data[0]);
-        toast({
-          title: "Profile Accessed",
-          description: "Masked profile data loaded successfully. Access logged.",
-          variant: "default"
-        });
-      }
+              }
     } catch (error) {
       console.error('Error loading masked profile:', error);
       toast({
@@ -109,12 +104,7 @@ export const SecureAdminUserView: React.FC<SecureAdminUserViewProps> = ({ userId
       
       if (data) {
         setHomes(data);
-        toast({
-          title: "Home Data Accessed", 
-          description: "Masked home data loaded successfully. Access logged.",
-          variant: "default"
-        });
-      }
+              }
     } catch (error) {
       console.error('Error loading masked homes:', error);
       toast({
@@ -156,12 +146,7 @@ export const SecureAdminUserView: React.FC<SecureAdminUserViewProps> = ({ userId
 
       if (error) throw error;
       
-      toast({
-        title: "Emergency Access Requested",
-        description: data || "Emergency access logged and supervisor notified",
-        variant: "default"
-      });
-      setShowEmergencyDialog(false);
+            setShowEmergencyDialog(false);
       setEmergencyReason('');
       setSupervisorEmail('');
     } catch (error) {

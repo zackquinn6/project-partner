@@ -163,8 +163,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
       await recomputeTaskFromCompletions(completion.task_id);
       setCompletions(prev => prev.filter(c => c.id !== completion.id));
       onRefresh?.();
-      toast({ title: 'Deleted', description: 'Completion record removed.' });
-    } catch (e) {
+          } catch (e) {
       console.error(e);
       toast({ title: 'Error', description: 'Could not delete completion', variant: 'destructive' });
     } finally {
@@ -189,8 +188,7 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
       setEditingCompletion(null);
       setEditDate(null);
       onRefresh?.();
-      toast({ title: 'Updated', description: 'Completion date updated.' });
-    } catch (e) {
+          } catch (e) {
       console.error(e);
       toast({ title: 'Error', description: 'Could not update date', variant: 'destructive' });
     } finally {

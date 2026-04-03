@@ -319,8 +319,7 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
         throw error;
       }
 
-      toast.success('Material variant created');
-      
+            
       setVariationName('');
       setVariationDescription('');
       setVariationSku('');
@@ -428,8 +427,7 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
         .getPublicUrl(filePath);
 
       setVariationPhotoUrl(publicUrl);
-      toast.success('Photo uploaded successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('Error uploading photo:', error);
       toast.error('Failed to upload photo');
     } finally {

@@ -66,11 +66,7 @@ export const CalendarScheduler: React.FC<CalendarSchedulerProps> = ({
 
   const saveCalendar = async () => {
     // TODO: Save to Supabase
-    toast({
-      title: "Calendar Saved",
-      description: "Your availability has been updated successfully.",
-    });
-  };
+      };
 
   const addTimeSlot = (date: string, timeSlot: TimeSlot) => {
     setCalendar(prev => ({

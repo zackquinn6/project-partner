@@ -75,8 +75,7 @@ export function TaskShoppingListDialog({
       
       setNewMaterial('');
       fetchItems();
-      toast.success('Material added');
-    } catch (error) {
+          } catch (error) {
       console.error('Error adding material:', error);
       toast.error('Failed to add material');
     }
@@ -92,8 +91,7 @@ export function TaskShoppingListDialog({
       if (error) throw error;
       
       fetchItems();
-      toast.success('Material removed');
-    } catch (error) {
+          } catch (error) {
       console.error('Error removing material:', error);
       toast.error('Failed to remove material');
     }

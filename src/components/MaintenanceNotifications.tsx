@@ -107,11 +107,7 @@ export function MaintenanceNotifications({
           .insert({ user_id: user.id, ...payload });
         if (error) throw error;
       }
-      toast({
-        title: "Settings Saved",
-        description: "Your notification preferences have been updated.",
-      });
-      queueMicrotask(() => {
+            queueMicrotask(() => {
         onSaved?.();
       });
     } catch (error) {
@@ -209,11 +205,7 @@ export function MaintenanceNotifications({
         throw new Error(bodyError);
       }
       console.log(`${DEBUG_PREFIX} 6. Success — showing toast for ${testEmail}`);
-      toast({
-        title: "Test Email Sent",
-        description: `Test notification sent to ${testEmail}`
-      });
-    } catch (error) {
+          } catch (error) {
       console.error(`${DEBUG_PREFIX} 7. Caught error`, {
         message: error instanceof Error ? error.message : String(error),
         error,

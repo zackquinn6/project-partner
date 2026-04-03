@@ -75,8 +75,7 @@ export function MaterialVariationEditor({
       } = supabase.storage.from('library-photos').getPublicUrl(filePath);
 
       setEdited({ ...edited, photo_url: publicUrl });
-      toast.success('Photo uploaded successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('Error uploading photo:', error);
       toast.error('Failed to upload photo');
     } finally {
@@ -105,8 +104,7 @@ export function MaterialVariationEditor({
 
       if (error) throw error;
 
-      toast.success('Material variant updated');
-      onSave();
+            onSave();
     } catch (error) {
       console.error('Error saving material variant:', error);
       toast.error('Failed to save material variant');

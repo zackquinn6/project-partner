@@ -79,12 +79,7 @@ const DefaultLandingSetting: React.FC = () => {
       if (error) throw error;
 
       setMode(value);
-      toast.success(
-        value === 'projects'
-          ? 'Default landing set to Project Catalog'
-          : 'Default landing set to Workspace home'
-      );
-    } catch (err) {
+          } catch (err) {
       console.error('Error updating default landing view setting:', err);
       toast.error('Failed to update default landing view');
     } finally {

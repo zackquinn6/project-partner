@@ -271,11 +271,7 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
       };
 
       onSpacesChange([...selectedSpaces, newSpace]);
-      toast({
-        title: "Space added",
-        description: `${homeSpace.space_name} imported from home spaces`
-      });
-    } catch (error) {
+          } catch (error) {
       console.error('Error adding home space:', error);
       toast({
         title: "Error",
@@ -350,11 +346,7 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
       setCustomScaleValue(undefined);
       setShowCustomSpaceForm(false);
       
-      toast({
-        title: "Custom space added",
-        description: `${customSpaceName} added to project`
-      });
-    } catch (error) {
+          } catch (error) {
       console.error('Error adding custom space:', error);
       toast({
         title: "Error",
@@ -375,11 +367,7 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
       if (error) throw error;
 
       onSpacesChange(selectedSpaces.filter(s => s.id !== spaceId));
-      toast({
-        title: "Space removed",
-        description: "Space removed from project"
-      });
-    } catch (error) {
+          } catch (error) {
       console.error('Error removing space:', error);
       toast({
         title: "Error",

@@ -138,12 +138,7 @@ export function PhaseAssignment({ projectRunId, phases, teamMembers, userId }: P
       a => a.phaseId === phaseId
     );
     if (existingAssignment) {
-      toast({
-        title: "Already Assigned",
-        description: `${phase.name} is already assigned to ${targetMember.name}.`,
-        variant: "default"
-      });
-      return;
+            return;
     }
 
     const newAssignment: PhaseAssignment = {
@@ -196,11 +191,7 @@ export function PhaseAssignment({ projectRunId, phases, teamMembers, userId }: P
         if (error) throw error;
       }
 
-      toast({
-        title: "Assignments saved",
-        description: "Phase assignments have been saved successfully.",
-      });
-    } catch (error) {
+          } catch (error) {
       console.error("Error saving phase assignments:", error);
       toast({
         title: "Error",
@@ -268,11 +259,7 @@ export function PhaseAssignment({ projectRunId, phases, teamMembers, userId }: P
     // Write and download
     XLSX.writeFile(wb, filename);
 
-    toast({
-      title: "Export successful",
-      description: `Exported ${totalAssignments} assignment(s) to ${filename}`,
-    });
-  };
+      };
 
   // Get assigned phase IDs to filter them from available list
   const assignedPhaseIds = new Set<string>();

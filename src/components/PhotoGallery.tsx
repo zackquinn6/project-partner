@@ -346,8 +346,7 @@ export function PhotoGallery({
 
       if (dbError) throw dbError;
 
-      toast.success('Photo deleted');
-      fetchPhotos();
+            fetchPhotos();
       setSelectedPhoto(null);
       setPhotoUrl(null);
     } catch (error) {
@@ -374,8 +373,7 @@ export function PhotoGallery({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success('Photo downloaded');
-    } catch (error) {
+          } catch (error) {
       console.error('Error downloading photo:', error);
       toast.error('Failed to download photo');
     }

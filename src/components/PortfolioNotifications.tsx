@@ -202,11 +202,7 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
         .eq("user_id", user.id);
       if (profErr) throw profErr;
 
-      toast({
-        title: "Settings Saved",
-        description: "Your notification preferences have been updated.",
-      });
-      queueMicrotask(() => {
+            queueMicrotask(() => {
         onSaved?.();
       });
     } catch (error) {
@@ -294,11 +290,7 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
       ) {
         throw new Error((data as { error: string }).error);
       }
-      toast({
-        title: "Test Email Sent",
-        description: `Test notification sent to ${testEmail}`,
-      });
-    } catch (error) {
+          } catch (error) {
       toast({
         title: "Error",
         description:
@@ -352,11 +344,7 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
         setZipSuggestionNote(
           `Suggested from ZIP ${zip} (${data.time_zone}). Save to keep this on your profile.`,
         );
-        toast({
-          title: "Time zone updated",
-          description: `Set to ${data.time_zone}. Click Save to persist.`,
-        });
-      } else {
+              } else {
         toast({
           title: "Could not resolve",
           description:

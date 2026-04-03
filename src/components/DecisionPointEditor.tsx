@@ -87,8 +87,7 @@ export const DecisionPointEditor: React.FC<DecisionPointEditorProps> = ({
 
     onSave(updatedStep);
     onOpenChange(false);
-    toast.success('Decision point saved successfully');
-  };
+      };
 
   const handleToggleDecisionPoint = (enabled: boolean) => {
     if (enabled) {

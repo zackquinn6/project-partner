@@ -88,8 +88,7 @@ export const UserProjectCustomizer: React.FC<UserProjectCustomizerProps> = ({
 
   const handleSave = () => {
     onSave(selections);
-    toast.success('Project customization saved');
-  };
+      };
 
   const alternateDecisionsCount = alternateGroups.length;
   const alternateAnsweredCount = Object.keys(selections.alternateChoices).length;

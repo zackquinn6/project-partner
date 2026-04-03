@@ -147,11 +147,7 @@ export const ProjectOwnershipSelector: React.FC<ProjectOwnershipSelectorProps> =
       }
       setOpen(false);
       
-      toast({
-        title: "Owner added",
-        description: "Project owner has been added successfully.",
-      });
-
+      
       onOwnersChange?.();
     } catch (error) {
       console.error('Error adding project owner:', error);
@@ -174,11 +170,7 @@ export const ProjectOwnershipSelector: React.FC<ProjectOwnershipSelectorProps> =
 
       setCurrentOwners(currentOwners.filter(o => o.id !== ownerId));
       
-      toast({
-        title: "Owner removed",
-        description: "Project owner has been removed successfully.",
-      });
-
+      
       onOwnersChange?.();
     } catch (error) {
       console.error('Error removing project owner:', error);

@@ -118,8 +118,7 @@ export const clearAllProjectRuns = async (): Promise<boolean> => {
     }
 
     console.log('All project runs cleared successfully');
-    toast.success('All project runs deleted');
-    return true;
+        return true;
   } catch (error) {
     console.error('Error clearing project runs:', error);
     toast.error('Failed to clear project runs');
@@ -150,8 +149,7 @@ export const clearAllProjectTemplates = async (): Promise<boolean> => {
 
     if (!projects || projects.length === 0) {
       console.log('No templates to delete');
-      toast.success('No templates to delete');
-      return true;
+            return true;
     }
 
     const projectIds = projects.map(p => p.id);
@@ -192,8 +190,7 @@ export const clearAllProjectTemplates = async (): Promise<boolean> => {
     }
 
     console.log(`Deleted ${projectIds.length} project templates successfully`);
-    toast.success(`Deleted ${projectIds.length} project templates`);
-    return true;
+        return true;
   } catch (error) {
     console.error('Error clearing project templates:', error);
     toast.error('Failed to clear project templates');

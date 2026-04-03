@@ -2182,10 +2182,7 @@ export default function UserView({
     // Log the issue report for debugging
     console.log("Issue Report submitted and saved:", issueReportData);
     
-    toast.success("Issue reported successfully", {
-      description: "Your feedback has been recorded"
-    });
-    
+        
     // Reset form and close dialog
     setReportIssues({
       instructionsNotClear: false,
@@ -2321,7 +2318,6 @@ export default function UserView({
         setCommunicationPlanOpen(true);
         break;
       case 'waste-removal':
-        toast.info('Waste Removal is coming soon.');
         break;
       case 'project-catalog':
         navigate('/projects');

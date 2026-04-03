@@ -138,8 +138,7 @@ export function AgreementTemplatesSection() {
         .from('agreement_templates')
         .insert({ type: dialogType, body: editBody.trim(), updated_by: user.id });
       if (error) throw error;
-      toast({ title: 'Saved', description: `${TYPE_LABELS[dialogType]} template updated. A new version was saved.` });
-      const updated = await fetchCurrent();
+            const updated = await fetchCurrent();
       setEditBody(updated[dialogType]?.body ?? editBody);
       setDialogMode('view');
     } catch (e: any) {

@@ -311,8 +311,7 @@ export function AIProjectGenerator({
       setGeneratedProject(result);
       setActiveTab('preview');
       
-      toast.success('Project generated successfully!');
-    } catch (error) {
+          } catch (error) {
       console.error('Generation error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to generate project');
     } finally {
@@ -389,15 +388,7 @@ export function AIProjectGenerator({
       if (result.success && result.projectId) {
         // Show success notification with import statistics
         const statsMessage = `Phases: ${result.stats?.phasesCreated || 0}, Operations: ${result.stats?.operationsCreated || 0}, Steps: ${result.stats?.stepsCreated || 0}`;
-        toast.success(
-          selectedExistingProject 
-            ? `Project updated successfully! ${statsMessage}` 
-            : `Project imported successfully! ${statsMessage}`,
-          {
-            duration: 5000,
-          }
-        );
-        // Refresh projects list
+                // Refresh projects list
         await fetchProjects();
         if (onProjectCreated) {
           onProjectCreated(result.projectId);

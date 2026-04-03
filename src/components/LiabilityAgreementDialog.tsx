@@ -245,10 +245,8 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
       if (insertError) throw insertError;
 
       if (pdfPath) {
-        toast({ title: 'Agreement saved', description: 'You can now use the app.' });
-      } else {
-        toast({ title: 'Agreement saved', description: 'Your acceptance was recorded. PDF could not be stored (file too large).' });
-      }
+              } else {
+              }
       onAccepted();
     } catch (e) {
       console.error('Usage agreement save error:', e);

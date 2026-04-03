@@ -209,8 +209,7 @@ export function MaintenanceCalendarWindow({
 
       if (error) throw error;
 
-      toast({ title: 'Saved', description: 'Recurrence start date updated.' });
-      closeRecurrenceEditor();
+            closeRecurrenceEditor();
       onTasksUpdated();
     } catch (e) {
       console.error('Error saving recurrence start date:', e);

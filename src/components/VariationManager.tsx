@@ -237,8 +237,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
       setSelectedCommonAttributes([]);
       setShowAttributeDialog(false);
       fetchAttributes();
-      toast.success('Attributes saved');
-    } catch (error) {
+          } catch (error) {
       console.error('Error creating attribute:', error);
       toast.error('Failed to create attribute');
     } finally {
@@ -287,8 +286,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
       setSelectedAttributeId('');
       setShowValueDialog(false);
       fetchAttributes();
-      toast.success('Attribute value saved');
-    } catch (error) {
+          } catch (error) {
       console.error('Error creating attribute value:', error);
       toast.error('Failed to create attribute value');
     } finally {
@@ -356,10 +354,8 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
               model: selectedAttributes.model || selectedAttributes.model_number
             }
           });
-          toast.success('Variation created and price scraping started');
         } catch (scrapeError) {
           console.error('Price scraping failed:', scrapeError);
-          toast.success('Variation created (price scraping failed)');
         }
       }
       
@@ -467,8 +463,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
         .getPublicUrl(filePath);
 
       setVariationPhotoUrl(publicUrl);
-      toast.success('Photo uploaded successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('Error uploading photo:', error);
       toast.error('Failed to upload photo');
     } finally {

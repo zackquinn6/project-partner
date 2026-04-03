@@ -482,16 +482,14 @@ export function UnifiedProjectManagement({
             };
             console.log('🔄 Fresh project data (fallback):', mappedData);
             setSelectedProject(mappedData as Project);
-            toast.success("Project updated successfully!");
-          } else if (retryData && retryData[0]) {
+                      } else if (retryData && retryData[0]) {
             // Fallback: map the retry data
             const mappedRetryData = {
               ...retryData[0],
               project_challenges: retryData[0].project_challenges ?? null
             };
             setSelectedProject(mappedRetryData as Project);
-            toast.success("Project updated successfully!");
-          } else {
+                      } else {
             toast.error("Project saved but failed to refresh. Please reload the page.");
           }
           return;
@@ -530,8 +528,7 @@ export function UnifiedProjectManagement({
         console.log('🔄 Fresh budget_per_unit:', mappedData.budget_per_unit, 'type:', typeof mappedData.budget_per_unit);
         console.log('🔄 Fresh budget_per_typical_size:', mappedData.budget_per_typical_size, 'type:', typeof mappedData.budget_per_typical_size);
         setSelectedProject(mappedData as Project);
-        toast.success("Project updated successfully!");
-      } else if (data && data[0]) {
+              } else if (data && data[0]) {
         // Fallback to data from update response - map columns
         const mappedData = {
           ...data[0],
@@ -539,8 +536,7 @@ export function UnifiedProjectManagement({
         };
         console.log('⚠️ Using update response data as fallback:', mappedData);
         setSelectedProject(mappedData as Project);
-        toast.success("Project updated successfully!");
-      } else {
+              } else {
         toast.error("Project saved but failed to refresh. Please reload the page.");
       }
     } catch (error) {
@@ -860,8 +856,7 @@ export function UnifiedProjectManagement({
         throw error;
       }
       console.log('✅ Project status updated successfully');
-      toast.success(`Project ${status === 'beta-testing' ? 'released to Beta' : 'published'}!`);
-      setPublishDialogOpen(false);
+            setPublishDialogOpen(false);
       setReleaseNotes('');
       fetchProjects();
       window.dispatchEvent(new CustomEvent('refetch-projects'));
@@ -1059,8 +1054,7 @@ export function UnifiedProjectManagement({
         }
       }
       toast.dismiss(loadingToast);
-      toast.success("Revision created successfully! Custom phases and workflow preserved.");
-      setCreateRevisionDialogOpen(false);
+            setCreateRevisionDialogOpen(false);
       setRevisionNotes('');
 
       // Refresh both lists to show the new revision
@@ -1145,8 +1139,7 @@ export function UnifiedProjectManagement({
         error: deleteError
       } = await supabase.from('projects').delete().in('id', projectIds);
       if (deleteError) throw deleteError;
-      toast.success("Project deleted successfully");
-      setSelectedProject(null);
+            setSelectedProject(null);
       setDeleteDialogOpen(false);
       setProjectToDelete(null);
       fetchProjects();
@@ -1198,9 +1191,7 @@ export function UnifiedProjectManagement({
         toast.error("Failed to delete revision");
         return;
       }
-      toast.success("Revision deleted successfully");
-
-      // Refresh data without closing the window
+            // Refresh data without closing the window
       fetchProjects();
       if (selectedProject) {
         fetchProjectRevisions();
@@ -1269,8 +1260,7 @@ export function UnifiedProjectManagement({
       await fetchProjects();
       
       toast.dismiss(loadingToast);
-      toast.success("Revisions reset successfully.");
-      setResetRevisionsDialogOpen(false);
+            setResetRevisionsDialogOpen(false);
       // Ensure the UI reflects the new root revision immediately.
       // Users reported it can look like the project was deleted until a refresh.
       setTimeout(() => {
@@ -1477,8 +1467,7 @@ export function UnifiedProjectManagement({
       setSelectedProject(createdProject);
       setCurrentProject(unifiedTemplateRowToContextProject(createdProject));
 
-      toast.success("New project created with standard phases!");
-      setCreateProjectDialogOpen(false);
+            setCreateProjectDialogOpen(false);
       setNewProject({
         item: '',
         action: '',
@@ -2495,8 +2484,6 @@ export function UnifiedProjectManagement({
                                 // Open workflow editor
                                 if (onEditWorkflow) {
                                   onEditWorkflow();
-                                } else {
-                                  toast.info('Project selected. Use the "Edit Standard" button in the Admin Panel to edit the workflow.');
                                 }
                               }} className="flex items-center justify-center gap-0.5 px-1 text-xs whitespace-nowrap lg:gap-1 lg:px-2">
                           <Edit className="w-3 h-3 shrink-0" />
@@ -3055,8 +3042,7 @@ export function UnifiedProjectManagement({
         open={aiProjectGeneratorOpen}
         onOpenChange={setAiProjectGeneratorOpen}
         onProjectCreated={(projectId) => {
-          toast.success('Project created successfully!');
-          fetchProjects();
+                    fetchProjects();
         }}
       />
 

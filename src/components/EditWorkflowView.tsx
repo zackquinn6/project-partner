@@ -1551,7 +1551,7 @@ export default function EditWorkflowView({
   const handleStartEdit = () => {
     // Check if this step is standard (unless allowContentEdit is true)
     if (!isEditingStandardProject && currentStep?.isStandard && !currentStep?.allowContentEdit) {
-      toast('Cannot edit standard steps. Only custom steps can be edited in this project.');
+      toast.error('Cannot edit standard steps. Only custom steps can be edited in this project.');
       return;
     }
     
@@ -1603,7 +1603,7 @@ export default function EditWorkflowView({
     let stepPersistedToDb = false;
     let operationStepsSaveFailed = false;
 
-    await updateProject(updatedProject, { silentSuccessToast: true });
+    await updateProject(updatedProject);
 
     // If editing Standard Project Foundation, also update operation_steps table
     if (isEditingStandardProject) {
@@ -1639,8 +1639,7 @@ export default function EditWorkflowView({
           console.error('❌ SaveEdit: Error updating operation_steps:', error);
           toast.error(`Failed to save step: ${error.message}`);
         } else {
-          toast.success('Step saved successfully');
-          
+                    
           // Reload phases to reflect the changes
           if (currentProject?.id) {
             const reloadedPhases = await loadPhasesFromDatabase(currentProject.id);
@@ -1710,9 +1709,7 @@ export default function EditWorkflowView({
             toast.error(`Failed to save step: ${error.message}`);
           } else {
             stepPersistedToDb = true;
-            toast.success('Step saved successfully');
-
-            // Reload phases to reflect the changes
+                        // Reload phases to reflect the changes
             if (currentProject?.id) {
               const reloadedPhases = await loadPhasesFromDatabase(currentProject.id);
               setRawPhases(reloadedPhases);
@@ -1726,8 +1723,7 @@ export default function EditWorkflowView({
     }
 
     if (!stepPersistedToDb && !operationStepsSaveFailed) {
-      toast.success('Project updated successfully');
-    }
+          }
 
     setEditMode(false);
   };
@@ -1786,8 +1782,7 @@ export default function EditWorkflowView({
       updatedAt: new Date()
     };
     updateProject(updatedProject);
-    toast.success(`Imported ${importedPhases.length} phases successfully`);
-  };
+      };
 
   const instructionSectionPickerOptions = React.useMemo(() => {
     if (!editMode || !editingStep) return [];
@@ -2199,7 +2194,7 @@ export default function EditWorkflowView({
                         <DropdownMenuItem
                           onSelect={(e) => {
                             e.preventDefault();
-                            toast.info('Standard and incorporated phases must be edited outside this template.');
+                            toast.error('Standard and incorporated phases must be edited outside this template.');
                           }}
                         >
                           <Info className="w-4 h-4 mr-2" />
@@ -3046,8 +3041,7 @@ export default function EditWorkflowView({
         open={aiProjectGeneratorOpen}
         onOpenChange={setAiProjectGeneratorOpen}
         onProjectCreated={(projectId) => {
-          toast.success('Project created successfully!');
-          // Optionally refresh or navigate to the new project
+                    // Optionally refresh or navigate to the new project
         }}
       />
       {/* Tools & Materials Library */}

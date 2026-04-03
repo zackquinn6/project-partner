@@ -615,11 +615,7 @@ export default function DIYSurveyPopup({
       }
 
       if (showSavedToast && user) {
-        toast({
-          title: 'Saved',
-          description: 'Your profile was updated.',
-        });
-      }
+              }
       onProfileSaved?.();
       return true;
     } catch (error) {

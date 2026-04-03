@@ -938,12 +938,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           duration: 10000
         });
       } else if (riskAnalysis.totalDelay > 0) {
-        toast({
-          title: "Risk Buffer Added",
-          description: `${Math.ceil(riskAnalysis.totalDelay)} days added for ${riskAnalysis.includedRisks.length} identified risks. Risk-adjusted target: ${format(riskAnalysis.adjustedDate, 'MMM dd, yyyy')}`,
-          duration: 8000
-        });
-      }
+              }
       
       // Prepare scheduling inputs with risk-adjusted date
       const schedulingInputs: SchedulingInputs = {
@@ -1005,12 +1000,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
       const persisted = await persistScheduleToProject(result);
       if (persisted) {
-        toast({
-          title: "Schedule generated",
-          description: `Saved ${result.scheduledTasks.length} tasks to your project. Use Calendar View or View Schedule to review.`,
-          duration: 6000
-        });
-      } else {
+              } else {
         toast({
           title: "Schedule generated but not saved",
           description: "Your schedule is shown below, but saving to the project failed. Use Save & Commit to try again.",
@@ -1061,11 +1051,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         weekdaysAfterFivePm: preset.settings.weekdaysAfterFivePm,
         workingHours: preset.settings.workingHours
       });
-      toast({
-        title: "Preset applied",
-        description: `Applied "${preset.name}" schedule settings`
-      });
-    } else {
+          } else {
       toast({
         title: "No team member",
         description: "Please add a team member first",
@@ -1078,11 +1064,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const applyRemediation = async (remediation: RemediationSuggestion) => {
     if (remediation.preview) {
       setSchedulingResult(remediation.preview);
-      toast({
-        title: "Remediation applied",
-        description: remediation.description
-      });
-    }
+          }
   };
 
   // Open calendar for team member
@@ -1139,11 +1121,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     updateTeamMember(calendarOpen, {
       availability: tempAvailability
     });
-    toast({
-      title: "Availability updated",
-      description: `Updated availability for ${selectedDates.length} dates`
-    });
-    setCalendarOpen(null);
+        setCalendarOpen(null);
     setSelectedDates([]);
     setTempAvailability({});
   };
@@ -1228,11 +1206,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       });
       return;
     }
-    toast({
-      title: "Schedule saved",
-      description: `Your optimized schedule has been saved. Last scheduled: ${format(new Date(), 'MMM dd, yyyy')}`
-    });
-    onOpenChange(false);
+        onOpenChange(false);
   };
 
   // Apply optimization method (updates workflow navigation without generating schedule)
@@ -1304,11 +1278,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         detail: { projectRunId: projectRun.id }
       }));
       
-      toast({
-        title: "Optimization method applied",
-        description: `Workflow navigation updated to ${scheduleOptimizationMethod === 'single-piece-flow' ? 'single-piece flow' : 'batch flow'}.`
-      });
-    } catch (error) {
+          } catch (error) {
       toast({
         title: "Error applying optimization",
         description: "There was a problem updating the workflow navigation. Please try again.",
@@ -1380,11 +1350,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       const pdfHeight = canvas.height * pdfWidth / canvas.width;
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${project?.name || 'project'}-schedule.pdf`);
-      toast({
-        title: "PDF downloaded",
-        description: "Your schedule has been downloaded successfully."
-      });
-    } catch (error) {
+          } catch (error) {
       console.error('PDF generation error:', error);
       toast({
         title: "PDF generation failed",
@@ -1446,11 +1412,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           }
         });
       }
-      toast({
-        title: "Notifications sent",
-        description: "Schedule notifications have been sent to team members."
-      });
-    } catch (error) {
+          } catch (error) {
       console.error('Error sending notifications:', error);
       toast({
         title: "Error sending notifications",

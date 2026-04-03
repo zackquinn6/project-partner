@@ -333,11 +333,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       const selectedHome = homes.find(h => h.id === homeId);
       setHomeName(selectedHome?.name || 'Unknown Home');
 
-      toast({
-        title: "Home updated",
-        description: "Project home has been changed"
-      });
-    } catch (error) {
+          } catch (error) {
       console.error('Error updating home:', error);
       toast({
         title: "Error",
@@ -573,11 +569,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         detail: { projectRunId: currentProjectRun.id }
       }));
       
-      toast({
-        title: "Success", 
-        description: `Project customization saved. Workflow now has ${orderedPhases.length} phases.`
-      });
-      
+            
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving customization:', error);

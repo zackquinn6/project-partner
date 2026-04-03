@@ -445,11 +445,7 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
       // Send notifications (if enabled)
       await sendNotifications();
 
-      toast({
-        title: "Assignments saved",
-        description: "Task assignments have been saved successfully.",
-      });
-
+      
       // Keep assignments visible after save - they're now in the database
       
     } catch (error) {
@@ -576,11 +572,7 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
     // Write and download
     XLSX.writeFile(wb, filename);
 
-    toast({
-      title: "Export successful",
-      description: `Exported ${totalAssignments} assignment(s) to ${filename}`,
-    });
-  };
+      };
 
   // Get assigned task and subtask IDs to filter them from available list
   const assignedTaskIds = new Set<string>();

@@ -15,11 +15,7 @@ export const Footer = ({ onPricingClick }: FooterProps) => {
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Thanks for subscribing!",
-      description: "You'll receive DIY tips weekly.",
-    });
-    setNewsletterEmail('');
+        setNewsletterEmail('');
   };
 
   return (

@@ -90,8 +90,7 @@ export const DecisionTreeEditor: React.FC<DecisionTreeEditorProps> = ({
     
     onSave(editingDecision);
     onOpenChange(false);
-    toast.success('Decision point saved');
-  };
+      };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

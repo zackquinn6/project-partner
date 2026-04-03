@@ -41,8 +41,7 @@ function RiskFocusStartControls({
     try {
       const runId = await createProjectRun(project, undefined, undefined, { riskFocusSession: true });
       if (runId) {
-        toast.success('Risk-Less session started.');
-        onSessionStarted?.(runId);
+                onSessionStarted?.(runId);
       }
     } catch {
       // createProjectRun already toasts on failure

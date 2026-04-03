@@ -179,9 +179,7 @@ export function PhotoUpload({
 
       if (dbError) throw dbError;
 
-      toast.success('Photo uploaded successfully');
-
-      void checkMilestoneUnlocks();
+            void checkMilestoneUnlocks();
 
       // Reset form
       setSelectedFile(null);

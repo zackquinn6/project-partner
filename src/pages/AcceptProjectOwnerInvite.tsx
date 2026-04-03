@@ -111,10 +111,6 @@ export default function AcceptProjectOwnerInvite() {
       if (error) throw error;
       setAcceptedProjectName(invitation.project_name);
       setAccepted(true);
-      toast({
-        title: 'Welcome, Project Owner!',
-        description: `You now have access to project management and analytics for ${invitation.project_name}.`,
-      });
     } catch (err) {
       console.error('Accept invitation error:', err);
       toast({

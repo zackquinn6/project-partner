@@ -73,8 +73,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
       return;
     }
 
-    toast.success('Project created with standard foundation');
-    setCurrentProject(newProject);
+        setCurrentProject(newProject);
     setNewProjectForm({ name: '', description: '', category: '', estimatedTime: '', estimatedTotalTime: '', typicalProjectSize: '', scalingUnit: '' });
     setIsNewProjectOpen(false);
     // Only open setup dialog in user mode, not admin mode

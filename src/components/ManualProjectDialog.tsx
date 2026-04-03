@@ -122,11 +122,7 @@ export function ManualProjectDialog({ open, onOpenChange, onProjectCreated }: Ma
 
       if (error) throw error;
 
-      toast.success('Project logged successfully!', {
-        description: 'Your manual project has been added to your progress board.'
-      });
-
-      // Reset form
+            // Reset form
       setFormData({
         name: '',
         description: '',

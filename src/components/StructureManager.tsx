@@ -1141,8 +1141,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             }
             
             console.log(`✅ Auto-fixed ${fixCount} display_order values`);
-            toast.success(`Auto-fixed ${fixCount} duplicate display orders. Reloading...`);
-            
+                        
             // Reload phases after fixing
             const reloadedPhases = await loadPhases(projectId);
             const revalidationError = validateDisplayOrder(reloadedPhases);
@@ -1399,8 +1398,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       // Update UI immediately
       setPhases(sortedPhases);
       
-      toast.success('Phase added successfully');
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error adding phase:', error);
       // Check if this is a validation error and show details
       if (error.message && error.message.includes('Validation failed')) {
@@ -1576,8 +1574,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       // Update UI immediately
       setPhases(sortedPhases);
       
-      toast.success('Phase deleted successfully');
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error deleting phase:', error);
       toast.error(`Failed to delete phase: ${error.message || 'Unknown error'}`);
     } finally {
@@ -1756,8 +1753,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         }));
 
         setEditingItem(null);
-        toast.success('Step updated successfully');
-        return;
+                return;
       }
       
       // Reload phases with position data from database
@@ -1770,8 +1766,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       setPhases(sortedPhases);
       
       setEditingItem(null);
-      toast.success(`${editingItem.type.charAt(0).toUpperCase() + editingItem.type.slice(1)} updated successfully`);
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error saving edit:', error);
       toast.error(`Failed to save: ${error.message || 'Unknown error'}`);
     }
@@ -1854,8 +1849,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
-      toast.success('Operation deleted successfully');
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error deleting operation:', error);
       toast.error(`Failed to delete operation: ${error.message || 'Unknown error'}`);
     }
@@ -1919,8 +1913,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
-      toast.success('Operation moved up');
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error moving operation up:', error);
       toast.error(`Failed to move operation: ${error.message || 'Unknown error'}`);
     }
@@ -1984,8 +1977,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
-      toast.success('Operation moved down');
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error moving operation down:', error);
       toast.error(`Failed to move operation: ${error.message || 'Unknown error'}`);
     }
@@ -2124,8 +2116,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         loadedProjectIdRef.current = null;
         setPhases(sortedPhases);
 
-        toast.success(`Operation moved to "${toPhase.name}"`);
-      } catch (error: unknown) {
+              } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         console.error('Error moving operation to phase:', error);
         toast.error(`Failed to move operation: ${message}`);
@@ -2241,8 +2232,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         loadedProjectIdRef.current = null;
         setPhases(sortedPhases);
 
-        toast.success(`Step moved to "${toOperation.name}"`);
-      } catch (error: unknown) {
+              } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         console.error('Error moving step to operation:', error);
         toast.error(`Failed to move step: ${message}`);
@@ -2343,8 +2333,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
-      toast.success('Step moved up');
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error moving step up:', error);
       toast.error(`Failed to move step: ${error.message || 'Unknown error'}`);
     }
@@ -2436,8 +2425,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
-      toast.success('Step moved down');
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error moving step down:', error);
       toast.error(`Failed to move step: ${error.message || 'Unknown error'}`);
     }
@@ -2514,8 +2502,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
-      toast.success('Step deleted successfully');
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error deleting step:', error);
       toast.error(`Failed to delete step: ${error.message || 'Unknown error'}`);
     }
@@ -2645,8 +2632,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
-      toast.success('Operation added successfully');
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error adding operation:', error);
       toast.error(`Failed to add operation: ${error.message || 'Unknown error'}`);
     }
@@ -2748,8 +2734,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       loadedProjectIdRef.current = null;
       setPhases(sortedPhases);
       
-      toast.success('Step added successfully');
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error adding step:', error);
       toast.error(`Failed to add step: ${error.message || 'Unknown error'}`);
     }
@@ -2835,8 +2820,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       setPhases(sortedPhases);
       
-      toast.success('Phase moved up');
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error moving phase up:', error);
       toast.error(`Failed to move phase: ${error.message || 'Unknown error'}`);
     } finally {
@@ -2893,8 +2877,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
       setPhases(sortedPhases);
       
-      toast.success('Phase moved down');
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error moving phase down:', error);
       toast.error(`Failed to move phase: ${error.message || 'Unknown error'}`);
     } finally {
@@ -3018,8 +3001,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       // Update UI immediately
       setPhases(sortedPhases);
       
-      toast.success('Phase order updated');
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error changing phase order:', error);
       toast.error(`Failed to change phase order: ${error.message || 'Unknown error'}`);
     } finally {
@@ -4043,8 +4025,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             loadedProjectIdRef.current = null;
             setPhases(sortedPhases);
             
-            toast.success(`Phase "${phaseToIncorporate.name}" incorporated successfully`);
-            return true;
+                        return true;
           } catch (error: any) {
             console.error('Error incorporating phase:', error);
             toast.error(`Failed to incorporate phase: ${error.message || 'Unknown error'}`);

@@ -160,8 +160,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
           is_primary: false
         }).eq('user_id', user.id).neq('id', homeId || '');
       }
-      toast.success(editingHome ? 'Home updated successfully' : 'Home added successfully');
-      setShowForm(false);
+            setShowForm(false);
       setEditingHome(null);
       setFormData({
         name: '',
@@ -207,8 +206,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
         error
       } = await supabase.from('homes').delete().eq('id', homeId).eq('user_id', user.id);
       if (error) throw error;
-      toast.success('Home deleted successfully');
-      fetchHomes();
+            fetchHomes();
     } catch (error) {
       console.error('Error deleting home:', error);
       toast.error('Failed to delete home');
@@ -229,8 +227,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
         is_primary: true
       }).eq('id', homeId).eq('user_id', user.id);
       if (error) throw error;
-      toast.success('Primary home updated');
-      fetchHomes();
+            fetchHomes();
     } catch (error) {
       console.error('Error setting primary home:', error);
       toast.error('Failed to set primary home');

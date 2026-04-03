@@ -220,8 +220,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
       }
 
       console.log('✅ Variation saved successfully');
-      toast.success('Variation updated successfully');
-      onSave();
+            onSave();
     } catch (error) {
       console.error('Error saving variation:', error);
       toast.error('Failed to save variation');
@@ -257,8 +256,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
 
       setPricing(nextPricing);
       setNewPricing({});
-      toast.success('Pricing data added successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('Error adding pricing:', error);
       toast.error('Failed to add pricing data');
     }
@@ -275,8 +273,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
       if (error) throw error;
 
       setPricing(nextPricing);
-      toast.success('Pricing data deleted successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('Error deleting pricing:', error);
       toast.error('Failed to delete pricing data');
     }
@@ -303,8 +300,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
         .getPublicUrl(filePath);
 
       setEditedVariation({ ...editedVariation, photo_url: publicUrl });
-      toast.success('Photo uploaded successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('Error uploading photo:', error);
       toast.error('Failed to upload photo');
     } finally {

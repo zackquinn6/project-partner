@@ -832,8 +832,7 @@ export function RiskManagementWindow({
             .eq('id', editingRisk.id);
 
           if (error) throw error;
-          toast.success('Risk updated successfully');
-        } else {
+                  } else {
           const { data: existingRisks } = await supabase
             .from('project_risks')
             .select('display_order')
@@ -867,8 +866,7 @@ export function RiskManagementWindow({
             });
 
           if (error) throw error;
-          toast.success('Risk added successfully');
-        }
+                  }
       } else if (mode === 'run' && projectRunId) {
         // Save run risk
         if (editingRisk) {
@@ -897,8 +895,7 @@ export function RiskManagementWindow({
             .eq('id', editingRisk.id);
 
           if (error) throw error;
-          toast.success('Risk updated successfully');
-        } else {
+                  } else {
           const { data: existingRisks } = await supabase
             .from('project_run_risks')
             .select('display_order')
@@ -934,8 +931,7 @@ export function RiskManagementWindow({
             });
 
           if (error) throw error;
-          toast.success('Risk added successfully');
-        }
+                  }
       }
 
       setShowAddForm(false);
@@ -1003,16 +999,14 @@ export function RiskManagementWindow({
           .eq('id', risk.id);
 
         if (error) throw error;
-        toast.success('Risk deleted successfully');
-      } else if (mode === 'run' && projectRunId) {
+              } else if (mode === 'run' && projectRunId) {
         const { error } = await supabase
           .from('project_run_risks')
           .delete()
           .eq('id', risk.id);
 
         if (error) throw error;
-        toast.success('Risk deleted successfully');
-      }
+              }
 
       fetchRisks();
       setShowAddForm(false);
@@ -1037,8 +1031,7 @@ export function RiskManagementWindow({
         .eq('id', risk.id);
 
       if (error) throw error;
-      toast.success('Risk status updated');
-      fetchRisks();
+            fetchRisks();
       
       // Notify scheduler that risks have been updated
       window.dispatchEvent(new CustomEvent('risks-updated'));
@@ -1058,8 +1051,7 @@ export function RiskManagementWindow({
         .eq('id', risk.id);
 
       if (error) throw error;
-      toast.success('Risk level updated');
-      fetchRisks();
+            fetchRisks();
       window.dispatchEvent(new CustomEvent('risks-updated'));
     } catch (error) {
       console.error('Error updating risk level:', error);
@@ -1153,8 +1145,7 @@ export function RiskManagementWindow({
         .update({ hidden_from_register: hidden })
         .eq('id', risk.id);
       if (error) throw error;
-      toast.success(hidden ? 'Risk hidden from register' : 'Risk shown in register again');
-      fetchRisks();
+            fetchRisks();
       setDetailsRisk((prev) => (prev?.id === risk.id ? { ...prev, hidden_from_register: hidden } : prev));
       setEditingRisk((prev) => (prev?.id === risk.id ? { ...prev, hidden_from_register: hidden } : prev));
       window.dispatchEvent(new CustomEvent('risks-updated'));

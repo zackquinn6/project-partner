@@ -221,8 +221,7 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
         .eq('id', dialog.stepId);
       if (upErr) throw upErr;
 
-      toast.success(dialog.kind === 'output_add' ? 'Output added' : 'Output updated');
-      setDialog(null);
+            setDialog(null);
       await runRefresh();
     } catch (e) {
       console.error(e);
@@ -285,8 +284,7 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
         .eq('id', dialog.stepId);
       if (upErr) throw upErr;
 
-      toast.success(dialog.kind === 'variable_add' ? 'Process variable added' : 'Process variable updated');
-      setDialog(null);
+            setDialog(null);
       await runRefresh();
     } catch (e) {
       console.error(e);
@@ -314,8 +312,7 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
           .update({ outputs: next, updated_at: new Date().toISOString() })
           .eq('id', deleteTarget.stepId);
         if (upErr) throw upErr;
-        toast.success('Output removed');
-      } else {
+              } else {
         const { data: row, error: fetchErr } = await supabase
           .from('operation_steps')
           .select('process_variables')
@@ -332,8 +329,7 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
           })
           .eq('id', deleteTarget.stepId);
         if (upErr) throw upErr;
-        toast.success('Process variable removed');
-      }
+              }
       setDeleteTarget(null);
       await runRefresh();
     } catch (e) {

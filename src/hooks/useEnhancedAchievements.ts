@@ -287,10 +287,7 @@ export function useEnhancedAchievements(userId?: string) {
       }
 
       if (!options?.skipToast) {
-        toast.success(`🎉 +${xpAmount} XP earned!`, {
-          description: reason,
-        });
-      }
+              }
     } catch (error) {
       console.error('Error awarding XP:', error);
     }
@@ -365,11 +362,7 @@ export function useEnhancedAchievements(userId?: string) {
 
     if (newlyUnlocked.length > 0) {
       newlyUnlocked.forEach((achievement) => {
-        toast.success(`🏆 Achievement Unlocked: ${achievement.name}!`, {
-          description: achievement.description,
-          duration: 5000,
-        });
-      });
+              });
 
       await fetchAchievementsData();
     }

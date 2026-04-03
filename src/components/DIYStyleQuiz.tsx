@@ -254,11 +254,7 @@ export default function DIYStyleQuiz({ open, onOpenChange }: DIYStyleQuizProps) 
       localStorage.setItem('diyStyleArchetype', archetypeResult);
       localStorage.setItem('diyStyleAnswers', JSON.stringify(newAnswers));
       
-      toast({
-        title: "Quiz Complete!",
-        description: "Your DIY style has been identified.",
-      });
-    }
+          }
   };
 
   const calculateArchetype = (answers: Record<string, string>): string => {

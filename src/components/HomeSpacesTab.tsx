@@ -132,8 +132,7 @@ export const HomeSpacesTab: React.FC<HomeSpacesTabProps> = ({ homeId }) => {
         .insert(newSpaces);
 
       if (error) throw error;
-      toast.success(`Auto-generated ${newSpaces.length} spaces!`);
-      fetchSpaces();
+            fetchSpaces();
     } catch (error) {
       console.error('Error auto-generating spaces:', error);
       toast.error('Failed to auto-generate spaces');
@@ -197,16 +196,14 @@ export const HomeSpacesTab: React.FC<HomeSpacesTabProps> = ({ homeId }) => {
           .eq('id', editingSpace.id);
 
         if (error) throw error;
-        toast.success('Space updated successfully');
-      } else {
+              } else {
         // Create new space
         const { error } = await supabase
           .from('home_spaces')
           .insert(spaceData);
 
         if (error) throw error;
-        toast.success('Space added successfully');
-      }
+              }
 
       setShowForm(false);
       setEditingSpace(null);
@@ -242,8 +239,7 @@ export const HomeSpacesTab: React.FC<HomeSpacesTabProps> = ({ homeId }) => {
         .eq('id', spaceId);
 
       if (error) throw error;
-      toast.success('Space deleted successfully');
-      fetchSpaces();
+            fetchSpaces();
     } catch (error) {
       console.error('Error deleting space:', error);
       toast.error('Failed to delete space');

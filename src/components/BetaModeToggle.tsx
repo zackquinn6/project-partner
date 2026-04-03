@@ -26,8 +26,7 @@ export const BetaModeToggle = () => {
       if (error) throw error;
 
       await refetch();
-      toast.success(`Beta mode ${checked ? 'enabled' : 'disabled'}`);
-    } catch (error) {
+          } catch (error) {
       console.error('Error updating beta mode:', error);
       toast.error('Failed to update beta mode');
     } finally {

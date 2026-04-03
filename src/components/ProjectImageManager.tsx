@@ -112,8 +112,7 @@ export const ProjectImageManager = ({ projectId, onImageUpdated }: ProjectImageM
 
       if (updateError) throw updateError;
 
-      toast.success('Image uploaded successfully!');
-      
+            
       // Reset form
       setSelectedFile(null);
       setPreviewUrl('');
@@ -144,8 +143,7 @@ export const ProjectImageManager = ({ projectId, onImageUpdated }: ProjectImageM
 
       if (error) throw error;
 
-      toast.success('Cover image updated');
-      setCoverImage(imageUrl);
+            setCoverImage(imageUrl);
       
       if (onImageUpdated) {
         onImageUpdated();
@@ -174,8 +172,7 @@ export const ProjectImageManager = ({ projectId, onImageUpdated }: ProjectImageM
 
       if (error) throw error;
 
-      toast.success('Image deleted');
-      setImages(newImages);
+            setImages(newImages);
       setCoverImage(newCoverImage || '');
       
       if (onImageUpdated) {

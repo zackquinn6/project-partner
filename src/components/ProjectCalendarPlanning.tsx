@@ -213,11 +213,7 @@ export const ProjectCalendarPlanning: React.FC<ProjectCalendarPlanningProps> = (
       await updateProjectRun(updatedProjectRun);
       onComplete();
       
-      toast({
-        title: "Calendar Plan Saved",
-        description: "Your project schedule has been saved successfully.",
-      });
-    } catch (error) {
+          } catch (error) {
       toast({
         title: "Error",
         description: "Failed to save calendar plan. Please try again.",

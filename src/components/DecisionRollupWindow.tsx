@@ -143,8 +143,7 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
       const finalPhases = applyWorkflowChanges(updatedPhases);
 
       onPhasesUpdate(finalPhases);
-      toast.success('Decisions applied and workflow updated successfully');
-      onOpenChange(false);
+            onOpenChange(false);
     } catch (error) {
       console.error('Error applying decisions:', error);
       toast.error('Failed to apply decisions');

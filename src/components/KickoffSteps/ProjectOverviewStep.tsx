@@ -600,8 +600,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     try {
       // Delete the project run entirely from database
       deleteProjectRun(currentProjectRun.id);
-      toast.success('Project removed');
-      if (projectCatalogEnabled) {
+            if (projectCatalogEnabled) {
         navigate('/projects');
       } else {
         navigate('/', { state: { view: 'user' } });

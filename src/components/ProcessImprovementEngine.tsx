@@ -81,11 +81,7 @@ export const ProcessImprovementEngine: React.FC<ProcessImprovementEngineProps> =
       setSourcesAnalyzed(data.sourcesAnalyzed || 0);
       setAnalysisComplete(true);
 
-      toast({
-        title: "Analysis Complete",
-        description: `Found ${data.improvements?.length || 0} improvement recommendations`
-      });
-
+      
     } catch (error) {
       console.error('Process improvement analysis failed:', error);
       toast({
@@ -135,11 +131,7 @@ export const ProcessImprovementEngine: React.FC<ProcessImprovementEngineProps> =
     // Call the update function
     onProjectUpdate(updatedProject);
 
-    toast({
-      title: "Improvements Applied",
-      description: `Successfully applied ${selectedImprovements.size} improvements to ${project.name}`
-    });
-
+    
     // Close the dialog
     onClose();
   };

@@ -363,8 +363,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       });
     }
     
-    toast.success('Alternate relationship added');
-  };
+      };
 
   const removeAlternate = (itemId: string, alternateId: string) => {
     const currentConfig = flowConfigs[itemId];
@@ -382,8 +381,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       });
     }
     
-    toast.success('Alternate relationship removed');
-  };
+      };
 
   const getAllOperations = () => {
     return workflowPhases.flatMap(phase => 

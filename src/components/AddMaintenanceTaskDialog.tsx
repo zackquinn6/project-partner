@@ -136,11 +136,7 @@ export function AddMaintenanceTaskDialog({
 
       if (error) throw error;
 
-      toast({
-        title: "Task Added",
-        description: `${template.title} has been added to your maintenance schedule`,
-      });
-
+      
       setTemplates(prev => prev.filter(t => t.id !== template.id));
       setExistingTemplateIds(prev => new Set(prev).add(template.id));
       onTaskAdded();
@@ -180,11 +176,7 @@ export function AddMaintenanceTaskDialog({
 
       if (error) throw error;
 
-      toast({
-        title: "Custom task added",
-        description: `${customTask.title} was added to your maintenance schedule successfully.`,
-      });
-
+      
       setCustomTask({
         title: '',
         description: '',

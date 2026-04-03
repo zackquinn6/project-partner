@@ -59,8 +59,7 @@ export const ProgressReportingStyleDialog = ({
         progress_reporting_style: selectedStyle
       });
       
-      toast.success('Progress reporting style updated successfully');
-      onOpenChange(false);
+            onOpenChange(false);
     } catch (error) {
       console.error('Error updating progress reporting style:', error);
       toast.error('Failed to update progress reporting style');

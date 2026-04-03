@@ -36,11 +36,7 @@ export const UserDataManagement: React.FC = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast({
-        title: "Success",
-        description: "Your data has been exported successfully",
-      });
-    } catch (error) {
+          } catch (error) {
       console.error('Error exporting user data:', error);
       toast({
         title: "Error",
@@ -63,11 +59,7 @@ export const UserDataManagement: React.FC = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Your data has been deleted successfully",
-      });
-
+      
       // Sign out the user after data deletion
       await supabase.auth.signOut();
       setDeleteDialogOpen(false);

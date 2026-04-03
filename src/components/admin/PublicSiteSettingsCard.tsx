@@ -52,8 +52,7 @@ export const PublicSiteSettingsCard: React.FC = () => {
           : settingKey === 'project_catalog_enabled'
             ? 'Project catalog'
             : 'Workshop Labs accordion';
-      toast.success(`${label} ${enabled ? 'on' : 'off'} for all users`);
-    } catch (err) {
+          } catch (err) {
       console.error('Error updating public site setting:', err);
       toast.error('Failed to update setting');
     } finally {

@@ -16,11 +16,7 @@ export function BetaProjectWarning({ projectName, open, onOpenChange, onAccept }
   const { toast } = useToast();
 
   const handleReportIssue = () => {
-    toast({
-      title: "Issue Report",
-      description: "Report functionality will be implemented to help improve this beta workflow.",
-    });
-  };
+      };
 
   const handleAccept = () => {
     onAccept();

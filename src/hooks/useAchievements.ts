@@ -144,10 +144,7 @@ export function useAchievements(userId?: string) {
 
       if (newlyUnlocked.length > 0) {
         newlyUnlocked.forEach((achievement) => {
-          toast.success(`🏆 Achievement Unlocked: ${achievement.name}!`, {
-            description: achievement.description,
-          });
-        });
+                  });
 
         await fetchAchievements();
       }

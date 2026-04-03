@@ -62,8 +62,7 @@ export function ContactUsWindow({ open, onOpenChange }: ContactUsWindowProps) {
         throw new Error(String((data as { error: string }).error));
       }
 
-      toast.success('Your message was sent. We will get back to you soon.');
-      resetForm();
+            resetForm();
       onOpenChange(false);
     } catch (err) {
       console.error('Contact form submit failed:', err);

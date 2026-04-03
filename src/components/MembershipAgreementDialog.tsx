@@ -167,8 +167,7 @@ export const MembershipAgreementDialog: React.FC<MembershipAgreementDialogProps>
 
       if (error) throw error;
 
-      toast.success('Agreement signed successfully!');
-      onAgreementSigned();
+            onAgreementSigned();
       onOpenChange(false);
     } catch (error) {
       console.error('Error signing agreement:', error);

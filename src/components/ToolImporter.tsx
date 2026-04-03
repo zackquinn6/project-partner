@@ -52,8 +52,7 @@ export function ToolImporter({ open, onOpenChange, onSuccess }: ToolImporterProp
     try {
       const tools = await parseToolListExcel(file);
       setParsedTools(tools);
-      toast.success(`Parsed ${tools.length} tools from Excel file`);
-    } catch (error) {
+          } catch (error) {
       console.error('Error parsing file:', error);
       toast.error('Failed to parse Excel file. Please check the format.');
     } finally {
@@ -75,8 +74,7 @@ export function ToolImporter({ open, onOpenChange, onSuccess }: ToolImporterProp
       setImportResults(results);
       
       if (results.success > 0) {
-        toast.success(`Successfully imported ${results.success} tools`);
-        onSuccess?.();
+                onSuccess?.();
       }
 
       if (results.errors.length > 0) {

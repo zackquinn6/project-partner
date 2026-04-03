@@ -661,8 +661,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       await updateProjectRun(contextUpdatedRun);
       
       console.log('✅ ProjectProfileStep.handleSave: COMPLETED SUCCESSFULLY - all 3 fields saved to database');
-      toast.success('Project profile saved successfully');
-      
+            
       // CRITICAL: Don't call onComplete() here - let the parent component (KickoffWorkflow) handle step completion
       // This prevents double-calling handleStepComplete and ensures proper sequencing
       // The parent will call handleStepComplete after this save completes

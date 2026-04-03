@@ -233,8 +233,7 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
 
       if (error) throw error;
       setEditingNotes(false);
-      toast.success('Notes updated successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('Error updating notes:', error);
       toast.error('Failed to update notes');
     }
@@ -256,8 +255,7 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
       // Update the home object locally and trigger re-render
       Object.assign(home, { photos: updatedPhotos });
       setRefreshTrigger(prev => prev + 1);
-      toast.success('Photo deleted successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('Error deleting photo:', error);
       toast.error('Failed to delete photo');
     }
@@ -299,8 +297,7 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
       // Update the home object locally and trigger re-render
       Object.assign(home, { photos: updatedPhotos });
       setRefreshTrigger(prev => prev + 1);
-      toast.success('Photos uploaded successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('Error uploading photos:', error);
       toast.error('Failed to upload photos');
     } finally {
@@ -327,8 +324,7 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
       if (error) throw error;
 
       await fetchRiskMitigations();
-      toast.success('Risk mitigation updated successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('Error updating risk mitigation:', error);
       toast.error('Failed to update risk mitigation');
     }

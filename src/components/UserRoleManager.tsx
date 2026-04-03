@@ -141,8 +141,7 @@ export const UserRoleManager: React.FC = () => {
       });
       if (error) throw error;
       await loadUsers();
-      toast({ title: "Success", description: "Role updated" });
-    } catch (error: any) {
+          } catch (error: any) {
       console.error('Error changing role:', error);
       toast({
         title: "Error updating role",
@@ -173,8 +172,7 @@ export const UserRoleManager: React.FC = () => {
         if (insError) throw insError;
       }
       setOwnerProjectIds(prev => ({ ...prev, [userId]: projectIds }));
-      toast({ title: "Saved", description: "Assigned projects updated" });
-    } catch (error: any) {
+          } catch (error: any) {
       toast({
         title: "Error updating assigned projects",
         description: error.message || "Please try again.",
@@ -259,8 +257,7 @@ export const UserRoleManager: React.FC = () => {
           body: { invitation_id: invitationId },
         });
       }
-      toast({ title: 'Invitations sent', description: `Email and in-app notification sent to ${email} for ${created.length} project(s).` });
-      setSendInviteForUserId(null);
+            setSendInviteForUserId(null);
       setSendInviteEmail('');
       setSendInviteProjectIds([]);
       loadUsers();

@@ -151,9 +151,7 @@ export const ScaledStepProgressDialog: React.FC<ScaledStepProgressDialogProps> =
       // Check if all spaces are 100% complete
       const allComplete = Array.from(progressData.values()).every(p => p === 100);
 
-      toast.success('Progress updated successfully');
-
-      if (allComplete) {
+            if (allComplete) {
         // Mark step as complete
         onProgressComplete();
         onOpenChange(false);

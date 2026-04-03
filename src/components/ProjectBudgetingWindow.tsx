@@ -298,8 +298,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         initial_budget: asString,
       });
       setBudgetGoal(asString);
-      toast({ title: 'Project budget updated' });
-    } catch (error) {
+          } catch (error) {
       console.error('Error updating project budget:', error);
       toast({
         title: 'Failed to update project budget',
@@ -401,15 +400,13 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
     setNewItemSection('');
     setNewItemName('');
     setNewItemAmount('');
-    toast({ title: 'Budget item added successfully' });
-  };
+      };
 
   const removeBudgetItem = async (id: string) => {
     const updatedItems = budgetItems.filter(item => item.id !== id);
     setBudgetItems(updatedItems);
     await saveBudgetData(updatedItems, actualEntries);
-    toast({ title: 'Budget item removed' });
-  };
+      };
 
   const startEditItem = (item: BudgetLineItem) => {
     setEditingItem(item);
@@ -480,8 +477,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
     // Clear form and editing state
     cancelEditItem();
     
-    toast({ title: 'Budget item updated successfully' });
-  };
+      };
 
   const addActualEntry = async () => {
     if (!newActualDescription.trim() || !newActualAmount.trim()) {
@@ -521,8 +517,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
     setNewActualDescription('');
     setNewActualAmount('');
     setSelectedLineItemForActual('');
-    toast({ title: 'Actual spend recorded successfully' });
-  };
+      };
 
   const handleReceiptUpload = async (entryId: string, file: File) => {
     if (!currentProjectRun) return;
@@ -547,8 +542,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
 
       setActualEntries(updatedEntries);
       saveBudgetData(budgetItems, updatedEntries);
-      toast({ title: 'Receipt uploaded' });
-    } catch (error) {
+          } catch (error) {
       toast({ title: 'Failed to upload receipt', variant: 'destructive' });
     }
   };

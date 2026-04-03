@@ -112,8 +112,7 @@ export const MaterialsSelectionDialog: React.FC<MaterialsSelectionDialogProps> =
     setNewCustomName('');
     setNewCustomQuantity('');
     setNewCustomUnit('');
-    toast.success('Custom material added');
-  };
+      };
 
   const removeCustomMaterial = (id: string) => {
     setCustomMaterials(prev => prev.filter(m => m.id !== id));

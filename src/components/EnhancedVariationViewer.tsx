@@ -198,8 +198,7 @@ export function EnhancedVariationViewer({
       // Refresh pricing data
       fetchData();
       
-      toast.success(`Scraped pricing for ${model.model_name}`);
-    } catch (error) {
+          } catch (error) {
       console.error('Error scraping pricing:', error);
       toast.error(`Failed to scrape pricing for ${model.model_name}`);
     } finally {
@@ -226,8 +225,7 @@ export function EnhancedVariationViewer({
         prev.map(v => v.id === variationId ? { ...v, warning_flags: flags } : v)
       );
       
-      toast.success('Warning flags updated');
-    } catch (error) {
+          } catch (error) {
       console.error('Error updating warning flags:', error);
       toast.error('Failed to update warning flags');
     }
@@ -250,8 +248,7 @@ export function EnhancedVariationViewer({
         prev.map(v => v.id === variationId ? { ...v, [field]: value } : v)
       );
       
-      toast.success('Estimate updated');
-    } catch (error) {
+          } catch (error) {
       console.error('Error updating estimate:', error);
       toast.error('Failed to update estimate');
     }
@@ -278,8 +275,7 @@ export function EnhancedVariationViewer({
       setShowAddAttribute(null);
       setNewAttributeKey('');
       setNewAttributeValue('');
-      toast.success('Attribute added successfully');
-    } catch (error) {
+          } catch (error) {
       console.error('Error adding attribute:', error);
       toast.error('Failed to add attribute');
     }

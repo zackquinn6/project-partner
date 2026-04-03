@@ -596,8 +596,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
       
       console.log('✅ Revision created with', parsedPhases.length, 'phases');
       
-      toast.success(`Revision ${newRevision.revision_number} created successfully`);
-      
+            
       // Refresh projects
       fetchProjects();
       
@@ -1075,8 +1074,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                       }
                       
                       console.log('✅ Custom phases synced to tables');
-                      toast.success('Changes saved successfully');
-                      setEditingProject(false);
+                                            setEditingProject(false);
                       
                       // Refresh to show updated data
                       fetchProjects();
