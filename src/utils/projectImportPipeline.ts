@@ -564,6 +564,7 @@ export async function importGeneratedProject(
           effort_level: projectInfo?.effortLevel || null,
           skill_level: projectInfo?.skillLevel || null,
           project_challenges: projectInfo?.projectChallenges || null,
+          revision_number: 0,
         })
         .eq('id', projectId);
 

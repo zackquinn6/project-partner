@@ -533,7 +533,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             scaling_unit: projectData.scalingUnit || null,
             item_type: projectData.scalingUnit === 'per item' ? (projectData as any).itemType || null : null,
             project_challenges: projectData.projectChallenges || null,
-            project_type: projectData.projectType?.toLowerCase() === 'secondary' ? 'secondary' : 'primary'
+            project_type: projectData.projectType?.toLowerCase() === 'secondary' ? 'secondary' : 'primary',
+            revision_number: 0,
           })
           .eq('id', projectId);
 
