@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent } from './ui/card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -19,6 +21,7 @@ import {
   ChevronsDownUp,
   ChevronsUpDown,
   GitBranch,
+  Info,
   List,
   Save,
 } from 'lucide-react';
@@ -877,9 +880,6 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
         toast.error(`Failed to save ${errorCount} operation(s)`);
       } else {
         console.log('✅ Successfully saved decision tree configurations');
-        toast.success(
-          closeAfter ? 'Decision tree saved successfully' : 'Decision tree saved'
-        );
 
         if (closeAfter) {
           await new Promise((resolve) => setTimeout(resolve, 500));
@@ -1381,16 +1381,44 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             value="table"
             className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 data-[state=inactive]:hidden sm:px-6 sm:pb-6"
           >
+            <TooltipProvider delayDuration={300}>
+              <Accordion
+                type="multiple"
+                defaultValue={['general-project-decisions', 'structure-decisions']}
+                className="flex min-h-0 flex-1 flex-col overflow-hidden border-0"
+              >
+                <AccordionItem value="general-project-decisions" className="shrink-0 border-b border-border">
+                  <AccordionTrigger className="py-3 text-base font-semibold hover:no-underline [&[data-state=open]]:pb-2">
+                    <span className="flex flex-1 items-center gap-2 pr-2 text-left">
+                      <span>General Project Decisions</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span
+                            className="inline-flex shrink-0 rounded-full p-0.5 text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
+                            role="button"
+                            tabIndex={0}
+                            aria-label="About general project decisions"
+                            onKeyDown={(e) => {
+                              e.stopPropagation();
+                              if (e.key === 'Enter' || e.key === ' ') e.preventDefault();
+                            }}
+                          >
+                            <Info className="h-4 w-4" aria-hidden />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" align="start" className="max-w-sm text-left">
+                          Project-wide choices (e.g. tile size, layout). Homeowners pick these in Project Customizer
+                          alongside phase/alternate decisions. Link instruction sections and tools to these in the
+                          workflow editor.
+                        </TooltipContent>
+                      </Tooltip>
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-0 pt-0">
             <Card className="mb-4 shrink-0 border-muted">
-              <CardHeader className="py-3">
-                <CardTitle className="text-base">General Project Decisions</CardTitle>
-                <CardDescription>
-                  Project-wide choices (e.g. tile size, layout). Homeowners pick these in Project Customizer
-                  alongside phase/alternate decisions. Link instruction sections and tools to these in the workflow
-                  editor.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-0">
+              <CardContent className="space-y-4 pt-4">
                 {!canEditGeneralProjectDecisions ? (
                   <p className="text-sm text-muted-foreground">
                     General project decisions for the Standard Project Foundation can only be edited from{' '}
@@ -1531,7 +1559,17 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 ) : null}
               </CardContent>
             </Card>
+                  </AccordionContent>
+                </AccordionItem>
 
+                <AccordionItem
+                  value="structure-decisions"
+                  className="flex min-h-0 flex-1 flex-col border-b-0 data-[state=closed]:min-h-0"
+                >
+                  <AccordionTrigger className="shrink-0 py-3 text-base font-semibold hover:no-underline [&[data-state=open]]:pb-2">
+                    Structure Decisions
+                  </AccordionTrigger>
+                  <AccordionContent className="flex min-h-0 flex-1 flex-col overflow-hidden pb-2 pt-0 data-[state=open]:flex data-[state=open]:flex-1">
             <div className="mb-2 flex shrink-0 flex-col gap-2 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center">
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={expandAll}>
@@ -1723,6 +1761,10 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           </Table>
             </div>
             )}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </TooltipProvider>
           </TabsContent>
 
           <TabsContent

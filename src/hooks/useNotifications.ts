@@ -111,6 +111,25 @@ export function useNotifications() {
     setUnreadCount(0);
   }, [user?.id]);
 
+  const deleteNotification = useCallback(async (id: string) => {
+    if (!user?.id) return;
+    const { data, error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .select('read_at');
+    if (error) {
+      console.error('Error deleting notification:', error);
+      return;
+    }
+    const deleted = data?.[0] as { read_at: string | null } | undefined;
+    if (deleted && deleted.read_at === null) {
+      setUnreadCount((c) => Math.max(0, c - 1));
+    }
+    setList((prev) => prev.filter((n) => n.id !== id));
+  }, [user?.id]);
+
   return {
     notifications: list,
     unreadCount,
@@ -119,6 +138,7 @@ export function useNotifications() {
     fetchRecent,
     fetchAll,
     markAsRead,
-    markAllAsRead
+    markAllAsRead,
+    deleteNotification,
   };
 }

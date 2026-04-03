@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, AlertCircle, CheckCheck, Settings2, TriangleAlert } from 'lucide-react';
+import { Bell, AlertCircle, CheckCheck, Settings2, TriangleAlert, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { getNotificationSupportCode } from '@/utils/errorReporting';
 
 export function NotificationDropdown() {
-  const { notifications, unreadCount, loading, refetch, markAsRead } = useNotifications();
+  const { notifications, unreadCount, loading, refetch, markAsRead, deleteNotification } = useNotifications();
   const [windowOpen, setWindowOpen] = React.useState(false);
 
   return (
@@ -73,7 +73,7 @@ export function NotificationDropdown() {
                       ) : (
                         <Bell className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                       )}
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 pr-1">
                         <p className="font-medium leading-tight">{n.title}</p>
                         {n.body && (
                           <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2">{n.body}</p>
@@ -86,15 +86,26 @@ export function NotificationDropdown() {
                         <p className="text-[10px] text-muted-foreground mt-1">
                           {new Date(n.created_at).toLocaleDateString()}
                         </p>
-                        {!n.read_at && (
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                          {!n.read_at && (
+                            <Button
+                              variant="link"
+                              className="h-auto p-0 text-xs"
+                              onClick={() => markAsRead(n.id)}
+                            >
+                              Mark as read
+                            </Button>
+                          )}
                           <Button
-                            variant="link"
-                            className="h-auto p-0 text-xs mt-0.5"
-                            onClick={() => markAsRead(n.id)}
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                            aria-label="Delete notification"
+                            onClick={() => deleteNotification(n.id)}
                           >
-                            Mark as read
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
-                        )}
+                        </div>
                       </div>
                     </div>
                   </li>

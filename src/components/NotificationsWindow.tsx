@@ -8,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications, AppNotification } from '@/hooks/useNotifications';
-import { CheckCheck, Bell, AlertCircle, TriangleAlert } from 'lucide-react';
+import { CheckCheck, Bell, AlertCircle, TriangleAlert, Trash2 } from 'lucide-react';
 import { getNotificationSupportCode } from '@/utils/errorReporting';
 
 export function NotificationsWindow({
@@ -18,7 +18,7 @@ export function NotificationsWindow({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { fetchAll, markAsRead, markAllAsRead, unreadCount } = useNotifications();
+  const { fetchAll, markAsRead, markAllAsRead, deleteNotification, unreadCount } = useNotifications();
   const [all, setAll] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
@@ -62,20 +62,6 @@ export function NotificationsWindow({
             <Bell className="h-5 w-5" />
             Notifications
           </DialogTitle>
-          <p className="text-sm text-muted-foreground pt-1">
-            Daily workflow emails (tasks due today &amp; overdue) use your{' '}
-            <button
-              type="button"
-              className="text-primary underline underline-offset-2 font-medium"
-              onClick={() => {
-                onOpenChange(false);
-                window.dispatchEvent(new CustomEvent('open-portfolio-reminders'));
-              }}
-            >
-              notification delivery settings
-            </button>
-            — time zone and send time are stored on your profile and reminder preferences.
-          </p>
         </DialogHeader>
         {unreadCount > 0 && (
           <Button
@@ -117,15 +103,28 @@ export function NotificationsWindow({
                     <p className="text-xs text-muted-foreground mt-1">
                       {new Date(n.created_at).toLocaleString()}
                     </p>
-                    {!n.read_at && (
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                      {!n.read_at && (
+                        <Button
+                          variant="link"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => markAsRead(n.id)}
+                        >
+                          Mark as read
+                        </Button>
+                      )}
                       <Button
                         variant="link"
-                        className="h-auto p-0 text-xs mt-1"
-                        onClick={() => markAsRead(n.id)}
+                        className="h-auto p-0 text-xs text-destructive gap-1"
+                        onClick={async () => {
+                          await deleteNotification(n.id);
+                          setAll((prev) => prev.filter((x) => x.id !== n.id));
+                        }}
                       >
-                        Mark as read
+                        <Trash2 className="h-3 w-3 shrink-0" aria-hidden />
+                        Delete
                       </Button>
-                    )}
+                    </div>
                   </div>
                 </div>
               </li>

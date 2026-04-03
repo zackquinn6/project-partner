@@ -16,14 +16,6 @@ function parseJsonArray(raw: unknown): unknown[] {
   return [];
 }
 
-function validSectionIdsFromContentSections(sections: ContentSection[]): Set<string> {
-  const ids = new Set<string>();
-  for (const s of sections) {
-    if (typeof s.id === 'string' && s.id.length > 0) ids.add(s.id);
-  }
-  return ids;
-}
-
 function sanitizeToolsMaterialsLinks(json: Json | null, validIds: Set<string>): { next: Json | null; changed: boolean } {
   if (json === null || json === undefined) return { next: json, changed: false };
   const arr = parseJsonArray(json);
@@ -40,6 +32,15 @@ function sanitizeToolsMaterialsLinks(json: Json | null, validIds: Set<string>): 
     return { ...o, linkedContentSectionIds: filtered };
   });
   return changed ? { next: next as Json, changed: true } : { next: json, changed: false };
+}
+
+function contentSectionsFromInstructionPayload(content: unknown): ContentSection[] {
+  if (Array.isArray(content)) return content as ContentSection[];
+  if (content !== null && typeof content === 'object' && 'sections' in content) {
+    const obj = content as { sections?: unknown };
+    return Array.isArray(obj.sections) ? (obj.sections as ContentSection[]) : [];
+  }
+  return [];
 }
 
 function sanitizeInstructionRecordContent(content: unknown, decisions: GeneralProjectDecision[]): {
@@ -66,8 +67,8 @@ function sanitizeInstructionRecordContent(content: unknown, decisions: GeneralPr
 
 /**
  * After general project decisions (or choices) are removed or changed, strip invalid
- * `decisionApplicability` from `operation_steps.content_sections` and `step_instructions.content`,
- * and drop `linkedContentSectionIds` that reference removed instruction section ids.
+ * `decisionApplicability` from `step_instructions.content`, and drop `linkedContentSectionIds`
+ * on `operation_steps.tools` / `operation_steps.materials` that reference removed section ids.
  */
 export async function sanitizeMicroDecisionOrphansForProject(
   projectId: string,
@@ -108,7 +109,7 @@ export async function sanitizeMicroDecisionOrphansForProject(
 
   const { data: steps, error: stepsError } = await supabase
     .from('operation_steps')
-    .select('id, content_sections, tools, materials')
+    .select('id, tools, materials')
     .in('operation_id', opIds);
 
   if (stepsError) {
@@ -116,28 +117,72 @@ export async function sanitizeMicroDecisionOrphansForProject(
     return { operationStepsUpdated: 0, instructionsUpdated: 0 };
   }
 
-  const stepIds: string[] = [];
+  const stepList = steps || [];
+  const stepIds = stepList.map((s) => s.id).filter((id): id is string => typeof id === 'string' && id.length > 0);
 
-  for (const row of steps || []) {
+  if (stepIds.length === 0) {
+    return { operationStepsUpdated, instructionsUpdated };
+  }
+
+  const { data: instrRows, error: instrErr } = await supabase
+    .from('step_instructions')
+    .select('id, step_id, content')
+    .in('step_id', stepIds);
+
+  if (instrErr) {
+    console.warn('sanitizeMicroDecisionOrphansForProject: step_instructions', instrErr);
+    return { operationStepsUpdated: 0, instructionsUpdated: 0 };
+  }
+
+  const instructionsByStepId = new Map<
+    string,
+    { id: string; step_id: string; content: Json }[]
+  >();
+  for (const ir of instrRows || []) {
+    const sid = ir.step_id as string;
+    const iid = ir.id as string;
+    if (!sid || !iid) continue;
+    const list = instructionsByStepId.get(sid);
+    const row = { id: iid, step_id: sid, content: ir.content as Json };
+    if (list) list.push(row);
+    else instructionsByStepId.set(sid, [row]);
+  }
+
+  for (const row of stepList) {
     const id = row.id as string;
     if (!id) continue;
-    stepIds.push(id);
 
-    const rawSections = parseJsonArray((row as { content_sections?: unknown }).content_sections);
-    const asContentSections = rawSections as ContentSection[];
-    const sanitizedSections = sanitizeContentSectionsDecisionApplicability(asContentSections, decisions);
-    const validIds = validSectionIdsFromContentSections(sanitizedSections);
+    const validIds = new Set<string>();
+    const instrsForStep = instructionsByStepId.get(id) ?? [];
+
+    for (const ir of instrsForStep) {
+      const { next, changed } = sanitizeInstructionRecordContent(ir.content, decisions);
+      for (const s of contentSectionsFromInstructionPayload(next)) {
+        if (typeof s.id === 'string' && s.id.length > 0) validIds.add(s.id);
+      }
+      if (!changed) continue;
+      const { error: upErr } = await supabase
+        .from('step_instructions')
+        .update({
+          content: next as Json,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', ir.id);
+
+      if (!upErr) {
+        instructionsUpdated += 1;
+      } else {
+        console.warn('sanitizeMicroDecisionOrphansForProject: update step_instructions', ir.id, upErr);
+      }
+    }
 
     const toolsRes = sanitizeToolsMaterialsLinks((row as { tools?: Json | null }).tools ?? null, validIds);
     const matsRes = sanitizeToolsMaterialsLinks((row as { materials?: Json | null }).materials ?? null, validIds);
 
-    const sectionsChanged = JSON.stringify(rawSections) !== JSON.stringify(sanitizedSections);
-
-    if (sectionsChanged || toolsRes.changed || matsRes.changed) {
+    if (toolsRes.changed || matsRes.changed) {
       const { error: upErr } = await supabase
         .from('operation_steps')
         .update({
-          content_sections: sanitizedSections as unknown as Json,
           tools: toolsRes.next,
           materials: matsRes.next,
           updated_at: new Date().toISOString(),
@@ -149,39 +194,6 @@ export async function sanitizeMicroDecisionOrphansForProject(
       } else {
         console.warn('sanitizeMicroDecisionOrphansForProject: update operation_steps', id, upErr);
       }
-    }
-  }
-
-  if (stepIds.length === 0) {
-    return { operationStepsUpdated, instructionsUpdated };
-  }
-
-  const { data: instrRows, error: instrErr } = await supabase
-    .from('step_instructions')
-    .select('id, content')
-    .in('step_id', stepIds);
-
-  if (instrErr) {
-    console.warn('sanitizeMicroDecisionOrphansForProject: step_instructions', instrErr);
-    return { operationStepsUpdated, instructionsUpdated };
-  }
-
-  for (const ir of instrRows || []) {
-    const iid = ir.id as string;
-    const { next, changed } = sanitizeInstructionRecordContent(ir.content, decisions);
-    if (!changed) continue;
-    const { error: upErr } = await supabase
-      .from('step_instructions')
-      .update({
-        content: next as Json,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', iid);
-
-    if (!upErr) {
-      instructionsUpdated += 1;
-    } else {
-      console.warn('sanitizeMicroDecisionOrphansForProject: update step_instructions', iid, upErr);
     }
   }
 
