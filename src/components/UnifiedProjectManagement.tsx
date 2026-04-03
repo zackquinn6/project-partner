@@ -2800,7 +2800,7 @@ export function UnifiedProjectManagement({
 
       {/* Create Project Dialog */}
       <Dialog open={createProjectDialogOpen} onOpenChange={setCreateProjectDialogOpen}>
-        <DialogContent className="flex h-[min(92dvh,40rem)] max-h-[92dvh] w-[calc(100vw-1rem)] max-w-md flex-col gap-0 overflow-hidden p-0 sm:h-[min(90dvh,44rem)] sm:max-w-lg md:max-w-xl">
+        <DialogContent className="flex h-[min(92dvh,40rem)] max-h-[92dvh] w-full max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:h-[min(90dvh,44rem)] sm:max-w-lg md:max-w-xl">
           <DialogHeader className="shrink-0 space-y-1 border-b px-4 py-3 text-left sm:px-6 sm:py-4">
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Plus className="h-5 w-5 shrink-0" />
