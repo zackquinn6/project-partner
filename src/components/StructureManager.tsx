@@ -28,7 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Plus, Copy, Trash2, Edit, Check, X, FileOutput, Wrench, Package, 
   Clipboard, ClipboardCheck, Save, ChevronDown, ChevronRight, Link, 
-  ExternalLink, ArrowLeft, GitBranch, MoreVertical, Loader2, ChevronUp 
+  ExternalLink, ArrowLeft, ArrowRight, GitBranch, MoreVertical, Loader2, ChevronUp 
 } from 'lucide-react';
 import { FlowTypeSelector, getFlowTypeBadge } from './FlowTypeSelector';
 import { StepTypeSelector, getStepTypeIcon } from './StepTypeSelector';
