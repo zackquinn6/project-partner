@@ -415,7 +415,10 @@ interface ProjectActionsContextType {
     options?: { riskFocusSession?: boolean }
   ) => Promise<string | null>;
   addProjectRun: (projectRun: Omit<ProjectRun, 'id' | 'createdAt' | 'updatedAt'>, onSuccess?: (projectRunId: string) => void) => Promise<void>;
-  updateProject: (project: Project) => Promise<void>;
+  updateProject: (
+    project: Project,
+    options?: { silentSuccessToast?: boolean }
+  ) => Promise<void>;
   updateProjectRun: (projectRun: ProjectRun) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
   deleteProjectRun: (projectRunId: string) => Promise<void>;
@@ -1037,10 +1040,12 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         setCurrentProject(project);
       }
       
-      toast({
-        title: "Success",
-        description: "Project updated successfully",
-      });
+      if (!options?.silentSuccessToast) {
+        toast({
+          title: "Success",
+          description: "Project updated successfully",
+        });
+      }
     } catch (error) {
       await reportUserFacingError({
         source: 'project_actions',

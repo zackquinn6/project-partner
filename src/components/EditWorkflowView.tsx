@@ -1538,8 +1538,11 @@ export default function EditWorkflowView({
       updatedAt: new Date()
     };
     
-    updateProject(updatedProject);
-    
+    let stepPersistedToDb = false;
+    let operationStepsSaveFailed = false;
+
+    await updateProject(updatedProject, { silentSuccessToast: true });
+
     // If editing Standard Project Foundation, also update operation_steps table
     if (isEditingStandardProject) {
       try {
@@ -1640,11 +1643,13 @@ export default function EditWorkflowView({
             .select('*');
           
           if (error) {
+            operationStepsSaveFailed = true;
             console.error('❌ Error saving custom step to operation_steps:', error);
             toast.error(`Failed to save step: ${error.message}`);
           } else {
+            stepPersistedToDb = true;
             toast.success('Step saved successfully');
-            
+
             // Reload phases to reflect the changes
             if (currentProject?.id) {
               const reloadedPhases = await loadPhasesFromDatabase(currentProject.id);
@@ -1652,11 +1657,16 @@ export default function EditWorkflowView({
             }
           }
         } catch (err) {
+          operationStepsSaveFailed = true;
           console.error('❌ Exception saving custom step:', err);
         }
       }
     }
-    
+
+    if (!stepPersistedToDb && !operationStepsSaveFailed) {
+      toast.success('Project updated successfully');
+    }
+
     setEditMode(false);
   };
   const handleEditOutput = (output: Output) => {
