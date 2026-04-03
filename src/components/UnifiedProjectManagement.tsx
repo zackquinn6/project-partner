@@ -1452,24 +1452,30 @@ export function UnifiedProjectManagement({
 
       await fetchProjects();
 
-      const { data: createdProject } = await supabase
+      const { data: createdRow, error: fetchCreatedError } = await supabase
         .from('projects')
-        .select(
-          'id, name, description, publish_status, revision_number, parent_project_id, created_at, updated_at, published_at, beta_released_at, archived_at, revision_notes, category, effort_level, skill_level, estimated_time, estimated_total_time, typical_project_size, scaling_unit, item_type, project_challenges, budget_per_unit, budget_per_typical_size, project_type, created_by, owner_id, phases, cover_image, is_popular, visibility_status, release_date'
-        )
+        .select('*')
         .eq('id', projectId)
-        .order('updated_at', { ascending: false })
-        .limit(1)
         .maybeSingle();
 
-      if (!createdProject) {
+      if (fetchCreatedError) {
+        throw new Error(fetchCreatedError.message);
+      }
+      if (!createdRow) {
         throw new Error(`Created project "${projectName}" was not returned from the database`);
       }
 
-      if (createdProject) {
-        setSelectedProject(createdProject);
-        setCurrentProject(unifiedTemplateRowToContextProject(createdProject));
-      }
+      const createdProject = {
+        ...createdRow,
+        project_challenges:
+          (createdRow as { project_challenges?: string | null }).project_challenges ??
+          (createdRow as { diy_length_challenges?: string | null }).diy_length_challenges ??
+          null,
+        project_type: (createdRow as { project_type?: string | null }).project_type || 'primary',
+      } as Project;
+
+      setSelectedProject(createdProject);
+      setCurrentProject(unifiedTemplateRowToContextProject(createdProject));
 
       toast.success("New project created with standard phases!");
       setCreateProjectDialogOpen(false);

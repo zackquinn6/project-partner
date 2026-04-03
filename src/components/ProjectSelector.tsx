@@ -14,6 +14,7 @@ import { Plus, FolderOpen, Edit, Home } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { HomeManager } from '@/components/HomeManager';
 import { isKickoffPhaseComplete } from '@/utils/projectUtils';
+import { toast } from 'sonner';
 
 interface ProjectSelectorProps {
   isAdminMode?: boolean;
@@ -48,14 +49,14 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
   const [homes, setHomes] = useState<any[]>([]);
   const [showHomeManager, setShowHomeManager] = useState(false);
 
-  const handleCreateProject = () => {
+  const handleCreateProject = async () => {
     if (!newProjectForm.name.trim()) return;
 
     const newProject: Project = {
       id: crypto.randomUUID(),
       name: newProjectForm.name,
       description: newProjectForm.description,
-      category: newProjectForm.category ? [newProjectForm.category] : undefined,
+      category: newProjectForm.category ? [newProjectForm.category] : [],
       estimatedTime: newProjectForm.estimatedTime || undefined,
       estimatedTotalTime: newProjectForm.estimatedTotalTime || undefined,
       typicalProjectSize: newProjectForm.typicalProjectSize ? parseFloat(newProjectForm.typicalProjectSize) : undefined,
@@ -67,7 +68,12 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
       phases: []
     };
 
-    addProject(newProject);
+    const createdId = await addProject(newProject);
+    if (!createdId) {
+      return;
+    }
+
+    toast.success('Project created with standard foundation');
     setCurrentProject(newProject);
     setNewProjectForm({ name: '', description: '', category: '', estimatedTime: '', estimatedTotalTime: '', typicalProjectSize: '', scalingUnit: '' });
     setIsNewProjectOpen(false);

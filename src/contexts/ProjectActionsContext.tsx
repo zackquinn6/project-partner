@@ -554,10 +554,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       // We do NOT synthesize or mutate phases on the client here to avoid
       // diverging from the canonical database representation.
 
-      toast({
-        title: "Success",
-        description: "Project created successfully with standard foundation",
-      });
+      // Success toast is shown by callers after any follow-up steps (e.g. load row for editor).
       return projectId ?? null;
     } catch (error) {
       await reportUserFacingError({

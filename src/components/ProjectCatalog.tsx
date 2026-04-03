@@ -36,6 +36,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { isKickoffPhaseComplete } from '@/utils/projectUtils';
 import { filterProjectsForCatalog } from '@/utils/catalogProjectFilters';
 import { reportUserFacingError } from '@/utils/errorReporting';
+import { toast } from 'sonner';
 interface ProjectTemplate {
   id: string;
   name: string;
@@ -430,12 +431,16 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           planEndDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
           status: 'not-started' as const,
           publishStatus: 'draft' as const,
-          category: project.category,
+          category: Array.isArray(project.category) ? project.category : [project.category],
           difficulty: project.difficulty,
           estimatedTime: project.estimatedTime,
           phases: []
         };
-        addProject(newProject);
+        const createdId = await addProject(newProject as Project);
+        if (!createdId) {
+          return;
+        }
+        toast.success('Project created with standard foundation');
         setCurrentProject(newProject);
         navigate('/', {
           state: {
