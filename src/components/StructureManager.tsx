@@ -2024,6 +2024,36 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   }, []);
 
   /**
+   * Renumber operation_steps for an operation to sequential display_order 1..n.
+   */
+  const renumberStepsForOperation = useCallback(async (operationId: string) => {
+    const { data: steps, error } = await supabase
+      .from('operation_steps')
+      .select('id, display_order')
+      .eq('operation_id', operationId)
+      .order('display_order', { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+    if (!steps?.length) {
+      return;
+    }
+    for (let i = 0; i < steps.length; i++) {
+      const correctOrder = i + 1;
+      if (steps[i].display_order !== correctOrder) {
+        const { error: uErr } = await supabase
+          .from('operation_steps')
+          .update({ display_order: correctOrder, updated_at: new Date().toISOString() })
+          .eq('id', steps[i].id);
+        if (uErr) {
+          throw uErr;
+        }
+      }
+    }
+  }, []);
+
+  /**
    * Move an operation to another phase (updates phase_id, renumbers display_order in both phases).
    */
   const handleMoveOperationToPhase = useCallback(
@@ -2109,6 +2139,123 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       isEditingStandardProject,
       reloadPhasesWithPositions,
       renumberOperationsForPhase,
+    ]
+  );
+
+  /**
+   * Move a step to another operation (updates operation_id, renumbers display_order in both operations).
+   */
+  const handleMoveStepToOperation = useCallback(
+    async (stepId: string, fromOperationId: string, toOperationId: string) => {
+      if (!currentProject?.id) {
+        return;
+      }
+      if (fromOperationId === toOperationId) {
+        return;
+      }
+
+      const findOperationInPhases = (opId: string) => {
+        for (const p of phases) {
+          const op = p.operations.find((o) => o.id === opId);
+          if (op) {
+            return { phase: p, operation: op };
+          }
+        }
+        return null;
+      };
+
+      const fromCtx = findOperationInPhases(fromOperationId);
+      const toCtx = findOperationInPhases(toOperationId);
+
+      if (!fromCtx || !toCtx) {
+        toast.error('Operation not found');
+        return;
+      }
+
+      const { phase: fromPhase, operation: fromOperation } = fromCtx;
+      const { phase: toPhase, operation: toOperation } = toCtx;
+
+      const step = fromOperation.steps.find((s) => s.id === stepId);
+      if (!step) {
+        toast.error('Step not found');
+        return;
+      }
+
+      if (fromPhase.isLinked || toPhase.isLinked) {
+        toast.error('Cannot move steps to or from incorporated phases');
+        return;
+      }
+
+      if (!isEditingStandardProject && isStandardPhase(fromPhase)) {
+        toast.error('Cannot move steps out of standard phases in this mode.');
+        return;
+      }
+
+      if (!isEditingStandardProject && isStandardPhase(toPhase)) {
+        toast.error('Cannot move steps into standard phases. Use Edit Standard or choose a custom phase operation.');
+        return;
+      }
+
+      if (step.isStandard && !isEditingStandardProject) {
+        toast.error('Cannot move standard steps. Use Edit Standard to modify standard phases.');
+        return;
+      }
+
+      if (fromOperation.isStandard && !isEditingStandardProject) {
+        toast.error('Cannot move steps from standard operations. Use Edit Standard to modify standard phases.');
+        return;
+      }
+
+      if (toOperation.isStandard && !isEditingStandardProject) {
+        toast.error('Cannot move steps into standard operations. Use Edit Standard to modify standard phases.');
+        return;
+      }
+
+      try {
+        const { data: targetSteps, error: countErr } = await supabase
+          .from('operation_steps')
+          .select('id')
+          .eq('operation_id', toOperationId);
+
+        if (countErr) {
+          throw countErr;
+        }
+
+        const nextDisplayOrder = (targetSteps?.length ?? 0) + 1;
+
+        const { error: moveErr } = await supabase
+          .from('operation_steps')
+          .update({
+            operation_id: toOperationId,
+            display_order: nextDisplayOrder,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', stepId);
+
+        if (moveErr) {
+          throw moveErr;
+        }
+
+        await renumberStepsForOperation(fromOperationId);
+        await renumberStepsForOperation(toOperationId);
+
+        const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
+        loadedProjectIdRef.current = null;
+        setPhases(sortedPhases);
+
+        toast.success(`Step moved to "${toOperation.name}"`);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error('Error moving step to operation:', error);
+        toast.error(`Failed to move step: ${message}`);
+      }
+    },
+    [
+      currentProject,
+      phases,
+      isEditingStandardProject,
+      reloadPhasesWithPositions,
+      renumberStepsForOperation,
     ]
   );
   
@@ -3360,6 +3507,26 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                   !isLinkedPhase(p) &&
                                   (isEditingStandardProject || !isStandardPhase(p))
                               );
+
+                              const stepMoveTargets = phases.flatMap((p) => {
+                                if (isLinkedPhase(p)) {
+                                  return [];
+                                }
+                                if (!isEditingStandardProject && isStandardPhase(p)) {
+                                  return [];
+                                }
+                                return p.operations
+                                  .filter((op) => {
+                                    if (op.id === operation.id) {
+                                      return false;
+                                    }
+                                    if (!isEditingStandardProject && op.isStandard) {
+                                      return false;
+                                    }
+                                    return true;
+                                  })
+                                  .map((op) => ({ phase: p, operation: op }));
+                              });
                               
                               // Check if operations/steps are read-only:
                               // - Standard phases in regular projects
@@ -3664,6 +3831,43 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                                   >
                                                                     <Trash2 className="w-3 h-3" />
                                                                   </Button>
+                                                                  {stepMoveTargets.length > 0 && (
+                                                                    <DropdownMenu>
+                                                                      <DropdownMenuTrigger asChild>
+                                                                        <Button
+                                                                          type="button"
+                                                                          size="sm"
+                                                                          variant="ghost"
+                                                                          title="Move step to another operation"
+                                                                        >
+                                                                          <ArrowRight className="w-3 h-3" />
+                                                                        </Button>
+                                                                      </DropdownMenuTrigger>
+                                                                      <DropdownMenuContent
+                                                                        align="end"
+                                                                        className="max-h-[min(60vh,22rem)] min-w-[12rem] overflow-y-auto"
+                                                                      >
+                                                                        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                                                                          Move to operation
+                                                                        </DropdownMenuLabel>
+                                                                        {stepMoveTargets.map(({ phase: tp, operation: top }) => (
+                                                                          <DropdownMenuItem
+                                                                            key={top.id}
+                                                                            className="text-sm"
+                                                                            onSelect={() => {
+                                                                              void handleMoveStepToOperation(
+                                                                                step.id,
+                                                                                operation.id,
+                                                                                top.id
+                                                                              );
+                                                                            }}
+                                                                          >
+                                                                            {tp.name} — {top.name}
+                                                                          </DropdownMenuItem>
+                                                                        ))}
+                                                                      </DropdownMenuContent>
+                                                                    </DropdownMenu>
+                                                                  )}
                                                                 </>
                                                               )}
                                                             </>
