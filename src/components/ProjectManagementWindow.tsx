@@ -1162,8 +1162,12 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
             Edit Standard
           </Button>
           {currentProject && (
-            <Button onClick={() => setCurrentView('editWorkflow')} variant="outline" className="flex items-center gap-2">
-              <Edit className="w-4 h-4" />
+            <Button
+              onClick={() => setCurrentView('editWorkflow')}
+              variant="outline"
+              className="flex items-center gap-1 px-2 h-8 text-xs lg:gap-2 lg:px-4 lg:h-10 lg:text-sm"
+            >
+              <Edit className="w-4 h-4 shrink-0" />
               Edit Workflow
             </Button>
           )}

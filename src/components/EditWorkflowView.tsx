@@ -1839,7 +1839,7 @@ export default function EditWorkflowView({
             <div className="hidden md:flex items-center gap-4">
               <div className="flex gap-2">
                 <Button onClick={() => setViewMode('structure')} variant="default" size="sm" className="flex items-center gap-2">
-                  <List className="w-4 h-4" />
+                  <List className="w-4 h-4 max-lg:hidden" />
                   Process Map
                 </Button>
               </div>
@@ -1934,7 +1934,7 @@ export default function EditWorkflowView({
                       size="sm"
                       className="flex items-center gap-2"
                     >
-                      <List className="w-4 h-4" />
+                      <List className="w-4 h-4 max-lg:hidden" />
                       Process Map
                     </Button>
                     <Button
@@ -2055,7 +2055,6 @@ export default function EditWorkflowView({
                             setViewMode('structure');
                           }}
                         >
-                          <List className="w-4 h-4 mr-2" />
                           Process Map
                         </DropdownMenuItem>
                         <DropdownMenuItem

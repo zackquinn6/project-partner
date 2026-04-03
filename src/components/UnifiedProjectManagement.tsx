@@ -1530,6 +1530,25 @@ export function UnifiedProjectManagement({
       minute: '2-digit'
     });
   };
+
+  /** Below `lg`: date only; `lg` and up: date + time (Workflow Editor / revisions tab). */
+  const workflowRevisionDate = (dateString: string | null) => {
+    if (!dateString) {
+      return 'Never';
+    }
+    return (
+      <>
+        <span className="lg:hidden">
+          {new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          })}
+        </span>
+        <span className="hidden lg:inline">{formatDate(dateString)}</span>
+      </>
+    );
+  };
   return <>
       <div className="space-y-6 h-full flex flex-col min-h-0">
         <Card className="flex-1 flex flex-col min-h-0">
@@ -2399,25 +2418,24 @@ export function UnifiedProjectManagement({
                                       
                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground mb-3">
                                         <div>
-                                          <span className="font-medium">Created:</span> {formatDate(revision.created_at)}
+                                          <span className="font-medium">Created:</span>{' '}
+                                          {workflowRevisionDate(revision.created_at)}
                                         </div>
                                         {revision.beta_released_at && <div>
-                                            <span className="font-medium">Beta Release:</span> {formatDate(revision.beta_released_at)}
+                                            <span className="font-medium">Beta Release:</span>{' '}
+                                            {workflowRevisionDate(revision.beta_released_at)}
                                           </div>}
                                         {revision.published_at && <div>
-                                            <span className="font-medium">Published:</span> {formatDate(revision.published_at)}
+                                            <span className="font-medium">Published:</span>{' '}
+                                            {workflowRevisionDate(revision.published_at)}
                                           </div>}
                                         {revision.archived_at && <div>
-                                            <span className="font-medium">Archived:</span> {formatDate(revision.archived_at)}
+                                            <span className="font-medium">Archived:</span>{' '}
+                                            {workflowRevisionDate(revision.archived_at)}
                                           </div>}
                                       </div>
 
                                       {revision.revision_notes && <div className="mb-2">
-                                          <span className="font-medium text-sm">Revision Notes:</span>
-                                          <p className="text-sm text-muted-foreground mt-1">{revision.revision_notes}</p>
-                                        </div>}
-
-                                      {revision.revision_notes && <div>
                                           <span className="font-medium text-sm">Revision Notes:</span>
                                           <p className="text-sm text-muted-foreground mt-1">{revision.revision_notes}</p>
                                         </div>}
@@ -2474,8 +2492,8 @@ export function UnifiedProjectManagement({
                                 } else {
                                   toast.info('Project selected. Use the "Edit Standard" button in the Admin Panel to edit the workflow.');
                                 }
-                              }} className="flex items-center justify-center gap-1 px-2 text-xs whitespace-nowrap">
-                          <Edit className="w-3 h-3" />
+                              }} className="flex items-center justify-center gap-0.5 px-1 text-xs whitespace-nowrap lg:gap-1 lg:px-2">
+                          <Edit className="w-3 h-3 shrink-0" />
                           Edit Workflow
                         </Button>
                         <Button
@@ -2488,7 +2506,7 @@ export function UnifiedProjectManagement({
                           }}
                           className="flex items-center justify-center gap-1 px-2 text-xs whitespace-nowrap min-w-0"
                         >
-                          <Network className="w-3 h-3" />
+                          <Network className="w-3 h-3 shrink-0 hidden lg:block" />
                           Process Map
                         </Button>
                         <Button
