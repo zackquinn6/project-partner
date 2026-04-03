@@ -225,15 +225,26 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
       operationsRes.data?.forEach((op) => {
         const ft = op.flow_type as string | null;
-        if (ft && ft !== 'prime' && ft !== 'blocked') {
+        if (!ft || ft === 'prime') {
+          return;
+        }
+        if (ft === 'blocked') {
           configs[op.id] = {
-            type: ft as 'if-necessary' | 'alternate' | 'dependent',
+            type: 'blocked',
             decisionPrompt: undefined,
             alternateIds: undefined,
             dependentOn: undefined,
             predecessorIds: [],
           };
+          return;
         }
+        configs[op.id] = {
+          type: ft as 'if-necessary' | 'alternate' | 'dependent',
+          decisionPrompt: undefined,
+          alternateIds: undefined,
+          dependentOn: undefined,
+          predecessorIds: [],
+        };
       });
 
       const rawPrereq = projectRes.data?.scheduling_prerequisites;
@@ -414,6 +425,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
   ) => {
     const allowBlocked = options?.allowBlocked === true;
     const config = flowConfigs[itemId] || { type: null };
+    const showBlockedOption = allowBlocked || config.type === 'blocked';
 
     if (!editable) {
       const parts: string[] = [];
@@ -472,8 +484,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               <SelectItem value="if-necessary">If-Necessary</SelectItem>
               <SelectItem value="alternate">Alternate</SelectItem>
               <SelectItem value="dependent">Dependent</SelectItem>
-              {allowBlocked ? (
-                <SelectItem value="blocked">Blocked</SelectItem>
+              {showBlockedOption ? (
+                <SelectItem value="blocked">Blocked (incorporated)</SelectItem>
               ) : null}
             </SelectContent>
           </Select>
@@ -1322,7 +1334,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         overlayClassName="z-[100]"
-        className="!fixed !inset-0 !left-0 !top-0 z-[101] !flex h-[100dvh] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 !flex-col gap-0 overflow-hidden rounded-none border-0 p-0 shadow-none md:!max-w-none md:!translate-x-0 md:!translate-y-0"
+        className="!fixed !inset-0 !left-0 !top-0 z-[101] !flex h-[100dvh] max-h-[100dvh] w-full max-w-[100vw] !max-w-[100vw] translate-x-0 translate-y-0 !flex-col gap-0 overflow-hidden rounded-none border-0 p-0 shadow-none md:h-[100dvh] md:max-h-[100dvh] md:!max-w-none md:!translate-x-0 md:!translate-y-0"
       >
         <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
           <div className="flex items-center justify-between gap-3">
@@ -1381,11 +1393,13 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             value="table"
             className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 data-[state=inactive]:hidden sm:px-6 sm:pb-6"
           >
+            {/* Single scroll viewport: Accordion + Radix content heights are content-sized, so flex+min-h-0 must live here */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
             <TooltipProvider delayDuration={300}>
               <Accordion
                 type="multiple"
                 defaultValue={['general-project-decisions', 'structure-decisions']}
-                className="flex min-h-0 flex-1 flex-col overflow-hidden border-0"
+                className="border-0"
               >
                 <AccordionItem value="general-project-decisions" className="shrink-0 border-b border-border">
                   <AccordionTrigger className="py-3 text-base font-semibold hover:no-underline [&[data-state=open]]:pb-2">
@@ -1562,14 +1576,11 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                   </AccordionContent>
                 </AccordionItem>
 
-                <AccordionItem
-                  value="structure-decisions"
-                  className="flex min-h-0 flex-1 flex-col border-b-0 data-[state=closed]:min-h-0"
-                >
+                <AccordionItem value="structure-decisions" className="border-b-0">
                   <AccordionTrigger className="shrink-0 py-3 text-base font-semibold hover:no-underline [&[data-state=open]]:pb-2">
                     Structure Decisions
                   </AccordionTrigger>
-                  <AccordionContent className="flex min-h-0 flex-1 flex-col overflow-hidden pb-2 pt-0 data-[state=open]:flex data-[state=open]:flex-1">
+                  <AccordionContent className="pb-2 pt-0">
             <div className="mb-2 flex shrink-0 flex-col gap-2 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center">
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={expandAll}>
@@ -1604,10 +1615,10 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 All phases are standard foundation rows and are hidden. Turn on <span className="font-medium text-foreground">Show standard phase rows</span> to view them.
               </div>
             ) : (
-            <div className="min-h-0 flex-1 overflow-auto rounded-lg border">
+            <div className="rounded-lg border">
               <Table
-                wrapperClassName="overflow-visible"
-                className="table-fixed w-full text-xs sm:text-sm [&_td]:p-2 [&_th]:h-9 [&_th]:px-2 [&_th]:py-1.5"
+                wrapperClassName="min-w-0 overflow-x-auto"
+                className="table-fixed w-full min-w-[640px] text-xs sm:text-sm [&_td]:p-2 [&_th]:h-9 [&_th]:px-2 [&_th]:py-1.5"
               >
             <TableHeader className="sticky top-0 z-[1] bg-background shadow-[0_1px_0_0_hsl(var(--border))]">
               <TableRow>
@@ -1702,7 +1713,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                               id: op.id,
                               label: `${op.phaseName} > ${op.name}`,
                             })),
-                            canEditDecisionSettings(operation.id)
+                            canEditDecisionSettings(operation.id),
+                            phase.isLinked ? { allowBlocked: true } : undefined
                           )}
                         </TableCell>
                         <TableCell className="min-w-0 align-top">
@@ -1765,6 +1777,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 </AccordionItem>
               </Accordion>
             </TooltipProvider>
+            </div>
           </TabsContent>
 
           <TabsContent
