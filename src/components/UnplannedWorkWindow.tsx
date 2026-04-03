@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, Plus, GripVertical, Trash2, AlertTriangle, Layers, X } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { Phase, Operation, WorkflowStep } from '@/interfaces/Project';
+import { supabase } from '@/integrations/supabase/client';
+import { getBlockedPhaseIdsFromSchedulingPrerequisites } from '@/utils/decisionTreeSchedulingPrereqs';
 
 interface UnplannedWorkWindowProps {
   isOpen: boolean;
@@ -41,18 +43,72 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
   const [draggedPhaseIndex, setDraggedPhaseIndex] = useState<number | null>(null);
   const [dropZoneIndex, setDropZoneIndex] = useState<number | null>(null);
 
-  // Get available phases from other published projects
-  const availablePhases: DraggedPhase[] = projects
-    .filter(project => project.publishStatus === 'published' && project.id !== currentProjectRun?.projectId)
-    .flatMap(project => 
-      project.phases
-        .filter(phase => phase.name !== 'Kickoff')
-        .map(phase => ({
-          ...phase,
-          sourceProjectId: project.id,
-          sourceProjectName: project.name
-        }))
-    );
+  const blockedPhasesFetchKey = useMemo(
+    () =>
+      projects
+        .filter(
+          (project) =>
+            project.publishStatus === 'published' && project.id !== currentProjectRun?.projectId
+        )
+        .map((p) => p.id)
+        .sort()
+        .join('|'),
+    [projects, currentProjectRun?.projectId]
+  );
+
+  const [blockedPhasesByProjectId, setBlockedPhasesByProjectId] = useState<
+    Map<string, Set<string>>
+  >(new Map());
+
+  useEffect(() => {
+    const ids = blockedPhasesFetchKey ? blockedPhasesFetchKey.split('|').filter(Boolean) : [];
+    if (ids.length === 0) {
+      setBlockedPhasesByProjectId(new Map());
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const results = await Promise.all(
+        ids.map((id) =>
+          supabase.from('projects').select('scheduling_prerequisites').eq('id', id).maybeSingle()
+        )
+      );
+      if (cancelled) return;
+      const next = new Map<string, Set<string>>();
+      results.forEach((res, i) => {
+        const pid = ids[i];
+        if (res.error || res.data === null) return;
+        next.set(
+          pid,
+          getBlockedPhaseIdsFromSchedulingPrerequisites(res.data.scheduling_prerequisites)
+        );
+      });
+      setBlockedPhasesByProjectId(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [blockedPhasesFetchKey]);
+
+  const availablePhases: DraggedPhase[] = useMemo(
+    () =>
+      projects
+        .filter(
+          (project) =>
+            project.publishStatus === 'published' && project.id !== currentProjectRun?.projectId
+        )
+        .flatMap((project) =>
+          project.phases
+            .filter((phase) => phase.name !== 'Kickoff')
+            .filter((phase) => !blockedPhasesByProjectId.get(project.id)?.has(phase.id))
+            .map((phase) => ({
+              ...phase,
+              sourceProjectId: project.id,
+              sourceProjectName: project.name,
+            }))
+        ),
+    [projects, currentProjectRun?.projectId, blockedPhasesByProjectId]
+  );
 
   const handleDragStart = (e: React.DragEvent, phase: DraggedPhase) => {
     setDraggedItem(phase);

@@ -204,7 +204,7 @@ export interface Phase {
   name: string;
   description: string;
   operations: Operation[];
-  flowType?: 'prime' | 'alternate' | 'if-necessary'; // Decision tree branching at phase level
+  flowType?: 'prime' | 'alternate' | 'if-necessary' | 'blocked' | 'dependent'; // Decision tree branching at phase level
   // Linked phase properties
   isLinked?: boolean;
   sourceProjectId?: string;

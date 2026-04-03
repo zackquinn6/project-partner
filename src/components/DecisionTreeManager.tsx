@@ -10,11 +10,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
-import { ChevronRight, ChevronDown, Plus, X, ChevronsDownUp, ChevronsUpDown, GitBranch, List } from 'lucide-react';
+import {
+  ChevronRight,
+  ChevronDown,
+  Plus,
+  X,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  GitBranch,
+  List,
+  Save,
+} from 'lucide-react';
 import { Project, Phase, Operation, WorkflowStep } from '@/interfaces/Project';
 import { useProject } from '@/contexts/ProjectContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
+import { DECISION_TREE_CONFIG_KEY } from '@/utils/decisionTreeSchedulingPrereqs';
 import { 
   ReactFlow,
   Node, 
@@ -41,11 +53,37 @@ interface DecisionTreeManagerProps {
 }
 
 interface FlowTypeConfig {
-  type: 'if-necessary' | 'alternate' | 'dependent' | null;
+  type: 'if-necessary' | 'alternate' | 'dependent' | 'blocked' | null;
   decisionPrompt?: string;
   alternateIds?: string[]; // IDs of alternate operations/steps
   predecessorIds?: string[]; // IDs of prerequisite operations
   dependentOn?: string; // ID of the if-necessary operation this depends on
+}
+
+interface StoredDecisionTreeEntity {
+  type: 'if-necessary' | 'alternate' | 'dependent' | 'blocked' | null;
+  decisionPrompt?: string | null;
+  alternateIds?: string[];
+  dependentOn?: string | null;
+}
+
+function serializeDecisionTreeEntity(config: FlowTypeConfig): StoredDecisionTreeEntity | null {
+  const prompt = config.decisionPrompt?.trim();
+  const hasContent =
+    !!config.type ||
+    !!prompt ||
+    (config.alternateIds && config.alternateIds.length > 0) ||
+    !!config.dependentOn;
+  if (!hasContent) {
+    return null;
+  }
+  return {
+    type: config.type ?? null,
+    decisionPrompt: prompt ? prompt : null,
+    alternateIds:
+      config.alternateIds && config.alternateIds.length > 0 ? config.alternateIds : undefined,
+    dependentOn: config.dependentOn ?? null,
+  };
 }
 
 export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
@@ -69,6 +107,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
   
   // Store which item is currently showing alternate selector
   const [showAlternateSelector, setShowAlternateSelector] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Load existing flow configurations from database when component opens
   useEffect(() => {
@@ -95,19 +134,26 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     [visiblePhases]
   );
 
-  const isStandardFoundationEntity = useCallback(
+  /**
+   * True if this entity is a standard foundation phase or anything inside a standard phase.
+   * Uses parent phase `isStandard` only (operation/step `isStandard` is not reliable in all loaders).
+   */
+  const isUnderStandardFoundationPhase = useCallback(
     (entityId: string): boolean => {
       for (const phase of workflowPhases) {
         if (phase.id === entityId) {
           return phase.isStandard === true;
         }
+        if (phase.isStandard !== true) {
+          continue;
+        }
         for (const op of phase.operations) {
           if (op.id === entityId) {
-            return op.isStandard === true;
+            return true;
           }
           for (const step of op.steps) {
             if (step.id === entityId) {
-              return step.isStandard === true;
+              return true;
             }
           }
         }
@@ -122,9 +168,9 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       if (editingStandardFoundation) {
         return true;
       }
-      return !isStandardFoundationEntity(entityId);
+      return !isUnderStandardFoundationPhase(entityId);
     },
-    [editingStandardFoundation, isStandardFoundationEntity]
+    [editingStandardFoundation, isUnderStandardFoundationPhase]
   );
 
   // Expand phases and operations when opening so the table shows rows immediately
@@ -162,9 +208,10 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       const configs: Record<string, FlowTypeConfig> = {};
 
       operationsRes.data?.forEach((op) => {
-        if (op.flow_type) {
+        const ft = op.flow_type as string | null;
+        if (ft && ft !== 'prime' && ft !== 'blocked') {
           configs[op.id] = {
-            type: op.flow_type as 'if-necessary' | 'alternate' | 'dependent',
+            type: ft as 'if-necessary' | 'alternate' | 'dependent',
             decisionPrompt: undefined,
             alternateIds: undefined,
             dependentOn: undefined,
@@ -175,7 +222,29 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
       const rawPrereq = projectRes.data?.scheduling_prerequisites;
       if (rawPrereq && typeof rawPrereq === 'object' && !Array.isArray(rawPrereq)) {
-        for (const [entityId, preds] of Object.entries(rawPrereq as Record<string, unknown>)) {
+        const rawObj = rawPrereq as Record<string, unknown>;
+        const dtBlob = rawObj[DECISION_TREE_CONFIG_KEY];
+        if (dtBlob && typeof dtBlob === 'object' && !Array.isArray(dtBlob)) {
+          for (const [eid, data] of Object.entries(dtBlob as Record<string, unknown>)) {
+            if (typeof data !== 'object' || data === null || Array.isArray(data)) continue;
+            const d = data as StoredDecisionTreeEntity;
+            const prev = configs[eid] ?? { predecessorIds: [] as string[] };
+            configs[eid] = {
+              ...prev,
+              type: d.type ?? prev.type ?? null,
+              decisionPrompt:
+                d.decisionPrompt !== undefined && d.decisionPrompt !== null
+                  ? d.decisionPrompt || undefined
+                  : prev.decisionPrompt,
+              alternateIds: d.alternateIds ?? prev.alternateIds,
+              dependentOn: d.dependentOn ?? prev.dependentOn,
+              predecessorIds: prev.predecessorIds ?? [],
+            };
+          }
+        }
+
+        for (const [entityId, preds] of Object.entries(rawObj)) {
+          if (entityId === DECISION_TREE_CONFIG_KEY) continue;
           if (!Array.isArray(preds)) continue;
           const ids = preds.filter((x): x is string => typeof x === 'string' && x.length > 0);
           if (ids.length === 0) continue;
@@ -321,14 +390,16 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     itemId: string,
     itemName: string,
     availableAlternates: Array<{ id: string; label: string }>,
-    editable: boolean
+    editable: boolean,
+    options?: { allowBlocked?: boolean }
   ) => {
+    const allowBlocked = options?.allowBlocked === true;
     const config = flowConfigs[itemId] || { type: null };
 
     if (!editable) {
       const parts: string[] = [];
       if (config.type) {
-        parts.push(String(config.type));
+        parts.push(config.type === 'blocked' ? 'blocked' : String(config.type));
       }
       if (config.decisionPrompt) {
         parts.push('prompt');
@@ -354,9 +425,23 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             value={config.type || 'none'} 
             onValueChange={(value) => {
               if (value === 'none') {
-                updateFlowConfig(itemId, { type: null, decisionPrompt: undefined, alternateIds: [] });
+                updateFlowConfig(itemId, {
+                  type: null,
+                  decisionPrompt: undefined,
+                  alternateIds: [],
+                  dependentOn: undefined,
+                });
+              } else if (value === 'blocked') {
+                updateFlowConfig(itemId, {
+                  type: 'blocked',
+                  decisionPrompt: undefined,
+                  alternateIds: [],
+                  dependentOn: undefined,
+                });
               } else {
-                updateFlowConfig(itemId, { type: value as 'if-necessary' | 'alternate' });
+                updateFlowConfig(itemId, {
+                  type: value as 'if-necessary' | 'alternate' | 'dependent',
+                });
               }
             }}
           >
@@ -368,6 +453,9 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               <SelectItem value="if-necessary">If-Necessary</SelectItem>
               <SelectItem value="alternate">Alternate</SelectItem>
               <SelectItem value="dependent">Dependent</SelectItem>
+              {allowBlocked ? (
+                <SelectItem value="blocked">Blocked</SelectItem>
+              ) : null}
             </SelectContent>
           </Select>
 
@@ -414,7 +502,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           </div>
         )}
 
-        {config.type && (
+        {config.type && config.type !== 'blocked' && (
           <div>
             <Label className="text-sm font-semibold">Decision Prompt</Label>
             <Textarea
@@ -572,7 +660,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     );
   };
 
-  const handleSave = async () => {
+  const saveDecisionTree = async (closeAfter: boolean) => {
+    setIsSaving(true);
     try {
       console.log('💾 Saving decision tree configurations for project:', currentProject.id);
       
@@ -617,72 +706,114 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
         );
         
         if (isOperation) {
-          if (!editingStandardFoundation && isStandardFoundationEntity(itemId)) {
+          if (!editingStandardFoundation && isUnderStandardFoundationPhase(itemId)) {
             continue;
           }
-          // Update phase_operations with flow_type
-          // Note: phase_operations only supports flow_type (user_prompt, alternate_group, dependent_on do not exist)
+          const flowTypeDb =
+            config.type === null || config.type === undefined ? 'prime' : config.type;
           const { error } = await supabase
             .from('phase_operations')
             .update({
-              flow_type: config.type || null,
-              updated_at: new Date().toISOString()
+              flow_type: flowTypeDb,
+              updated_at: new Date().toISOString(),
             })
             .eq('id', itemId);
-          
+
           if (error) {
             console.error('Error updating operation:', itemId, error);
             errorCount++;
           }
         }
       }
-      
-      let scheduling_prerequisites: Record<string, string[]> = {};
+
+      const { data: projRow, error: prereqFetchErr } = await supabase
+        .from('projects')
+        .select('scheduling_prerequisites')
+        .eq('id', currentProject.id)
+        .maybeSingle();
+
+      if (prereqFetchErr) {
+        throw prereqFetchErr;
+      }
+
+      const raw = projRow?.scheduling_prerequisites;
+      const mergedStringPrereqs: Record<string, string[]> = {};
+      let existingDecisionBlob: Record<string, StoredDecisionTreeEntity> = {};
+
+      if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+        for (const [k, v] of Object.entries(raw)) {
+          if (k === DECISION_TREE_CONFIG_KEY) {
+            if (v && typeof v === 'object' && !Array.isArray(v)) {
+              existingDecisionBlob = { ...(v as Record<string, StoredDecisionTreeEntity>) };
+            }
+            continue;
+          }
+          if (
+            !editingStandardFoundation &&
+            Array.isArray(v) &&
+            v.every((x) => typeof x === 'string')
+          ) {
+            const ids = v.filter((x): x is string => typeof x === 'string' && x.length > 0);
+            if (ids.length > 0) {
+              mergedStringPrereqs[k] = ids;
+            }
+          }
+        }
+      }
 
       if (editingStandardFoundation) {
         for (const [itemId, config] of Object.entries(flowConfigs)) {
           const preds = config.predecessorIds?.filter((id) => typeof id === 'string' && id.length > 0);
           if (preds && preds.length > 0) {
-            scheduling_prerequisites[itemId] = preds;
+            mergedStringPrereqs[itemId] = preds;
           }
         }
       } else {
-        const { data: projRow, error: prereqFetchErr } = await supabase
-          .from('projects')
-          .select('scheduling_prerequisites')
-          .eq('id', currentProject.id)
-          .maybeSingle();
-
-        if (prereqFetchErr) {
-          throw prereqFetchErr;
-        }
-
-        const raw = projRow?.scheduling_prerequisites;
-        if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-          for (const [k, v] of Object.entries(raw)) {
-            if (Array.isArray(v) && v.every((x) => typeof x === 'string')) {
-              scheduling_prerequisites[k] = v as string[];
-            }
-          }
-        }
-
         for (const [itemId, config] of Object.entries(flowConfigs)) {
-          if (isStandardFoundationEntity(itemId)) {
+          if (isUnderStandardFoundationPhase(itemId)) {
             continue;
           }
           const preds = config.predecessorIds?.filter((id) => typeof id === 'string' && id.length > 0);
           if (preds && preds.length > 0) {
-            scheduling_prerequisites[itemId] = preds;
+            mergedStringPrereqs[itemId] = preds;
           } else {
-            delete scheduling_prerequisites[itemId];
+            delete mergedStringPrereqs[itemId];
           }
         }
+      }
+
+      let mergedDecisionBlob: Record<string, StoredDecisionTreeEntity> = {};
+      if (editingStandardFoundation) {
+        for (const [id, cfg] of Object.entries(flowConfigs)) {
+          const s = serializeDecisionTreeEntity(cfg);
+          if (s) {
+            mergedDecisionBlob[id] = s;
+          }
+        }
+      } else {
+        mergedDecisionBlob = { ...existingDecisionBlob };
+        for (const [id, cfg] of Object.entries(flowConfigs)) {
+          if (isUnderStandardFoundationPhase(id)) {
+            continue;
+          }
+          const s = serializeDecisionTreeEntity(cfg);
+          if (s === null) {
+            delete mergedDecisionBlob[id];
+          } else {
+            mergedDecisionBlob[id] = s;
+          }
+        }
+      }
+
+      const scheduling_prerequisites: Record<string, unknown> = { ...mergedStringPrereqs };
+      if (Object.keys(mergedDecisionBlob).length > 0) {
+        scheduling_prerequisites[DECISION_TREE_CONFIG_KEY] = mergedDecisionBlob;
       }
 
       const { error: prereqError } = await supabase
         .from('projects')
         .update({
-          scheduling_prerequisites,
+          scheduling_prerequisites: scheduling_prerequisites as Json,
           updated_at: new Date().toISOString(),
         })
         .eq('id', currentProject.id);
@@ -693,19 +824,31 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
         return;
       }
 
+      const { error: rebuildErr } = await supabase.rpc('rebuild_phases_json_from_project_phases', {
+        p_project_id: currentProject.id,
+      });
+      if (rebuildErr) {
+        console.warn('DecisionTreeManager: rebuild_phases_json_from_project_phases failed', rebuildErr);
+      }
+
       if (errorCount > 0) {
         toast.error(`Failed to save ${errorCount} operation(s)`);
       } else {
         console.log('✅ Successfully saved decision tree configurations');
-        toast.success('Decision tree saved successfully');
+        toast.success(
+          closeAfter ? 'Decision tree saved successfully' : 'Decision tree saved'
+        );
 
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        onOpenChange(false);
+        if (closeAfter) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          onOpenChange(false);
+        }
       }
     } catch (error) {
       console.error('Error saving decision tree:', error);
       toast.error('Failed to save decision tree configuration');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -721,10 +864,17 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       // Phase-level flowchart (horizontal)
       visiblePhases.forEach((phase, index) => {
         const config = flowConfigs[phase.id];
-        const nodeType = config?.type === 'if-necessary' ? 'if-necessary' : 
-                        config?.type === 'alternate' ? 'alternate' : 
-                        config?.type === 'dependent' ? 'dependent' : 'default';
-        
+        const nodeType =
+          config?.type === 'if-necessary'
+            ? 'if-necessary'
+            : config?.type === 'alternate'
+              ? 'alternate'
+              : config?.type === 'dependent'
+                ? 'dependent'
+                : config?.type === 'blocked'
+                  ? 'blocked'
+                  : 'default';
+
         nodes.push({
           id: phase.id,
           data: { 
@@ -735,13 +885,27 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           position: { x: xPos, y: 100 },
           type: 'default',
           style: {
-            background: config?.type === 'if-necessary' ? '#fef3c7' : 
-                       config?.type === 'alternate' ? '#dbeafe' : 
-                       config?.type === 'dependent' ? '#f3e8ff' : '#f3f4f6',
+            background:
+              config?.type === 'blocked'
+                ? '#e7e5e4'
+                : config?.type === 'if-necessary'
+                  ? '#fef3c7'
+                  : config?.type === 'alternate'
+                    ? '#dbeafe'
+                    : config?.type === 'dependent'
+                      ? '#f3e8ff'
+                      : '#f3f4f6',
             border: '2px solid',
-            borderColor: config?.type === 'if-necessary' ? '#f59e0b' : 
-                        config?.type === 'alternate' ? '#3b82f6' : 
-                        config?.type === 'dependent' ? '#a855f7' : '#9ca3af',
+            borderColor:
+              config?.type === 'blocked'
+                ? '#57534e'
+                : config?.type === 'if-necessary'
+                  ? '#f59e0b'
+                  : config?.type === 'alternate'
+                    ? '#3b82f6'
+                    : config?.type === 'dependent'
+                      ? '#a855f7'
+                      : '#9ca3af',
             borderRadius: '8px',
             padding: '10px',
             width: 180,
@@ -1124,10 +1288,27 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               Decision Tree Manager - {currentProject.name}
             </DialogTitle>
             <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 shrink-0 sm:h-9 sm:w-9"
+                disabled={isSaving}
+                onClick={() => void saveDecisionTree(false)}
+                title="Save"
+                aria-label="Save decision tree without closing"
+              >
+                <Save className="h-4 w-4" />
+              </Button>
               <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="button" size="sm" onClick={handleSave}>
+              <Button
+                type="button"
+                size="sm"
+                disabled={isSaving}
+                onClick={() => void saveDecisionTree(true)}
+              >
                 Save & Close
               </Button>
             </div>
@@ -1170,7 +1351,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 </Button>
               </div>
               {hasStandardPhases ? (
-                <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+                <div className="flex items-center gap-2 px-3 py-2">
                   <Switch
                     id="dtm-show-standard"
                     checked={showStandardPhaseContent}
@@ -1182,12 +1363,6 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 </div>
               ) : null}
             </div>
-
-            {hasStandardPhases && !editingStandardFoundation ? (
-              <p className="mb-2 text-xs text-muted-foreground sm:text-sm">
-                Standard foundation flow settings are read-only here. Use <span className="font-medium text-foreground">Edit Standard</span> to change them.
-              </p>
-            ) : null}
 
             {workflowPhases.length === 0 ? (
               <div className="flex min-h-[12rem] flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
@@ -1230,7 +1405,11 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                           )}
                         </Button>
                         <span className="min-w-0 break-words">{phase.name}</span>
-                        {phase.isStandard ? (
+                        {phase.isLinked ? (
+                          <Badge variant="secondary" className="shrink-0 text-[10px] sm:text-xs">
+                            Incorporated
+                          </Badge>
+                        ) : phase.isStandard ? (
                           <Badge variant="secondary" className="shrink-0 text-[10px] sm:text-xs">
                             Standard
                           </Badge>
@@ -1273,7 +1452,11 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                               )}
                             </Button>
                             <span className="min-w-0 break-words font-medium">{operation.name}</span>
-                            {operation.isStandard ? (
+                            {phase.isLinked ? (
+                              <Badge variant="secondary" className="shrink-0 text-[10px] sm:text-xs">
+                                Incorporated
+                              </Badge>
+                            ) : operation.isStandard ? (
                               <Badge variant="secondary" className="shrink-0 text-[10px] sm:text-xs">
                                 Standard
                               </Badge>
@@ -1308,7 +1491,11 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                           <TableCell className="min-w-0 align-top">
                             <div className="flex min-w-0 flex-wrap items-center gap-1.5 pl-8 sm:pl-16">
                               <span className="break-words text-xs sm:text-sm">{step.step}</span>
-                              {step.isStandard ? (
+                              {phase.isLinked ? (
+                                <Badge variant="secondary" className="shrink-0 text-[10px] sm:text-xs">
+                                  Incorporated
+                                </Badge>
+                              ) : step.isStandard ? (
                                 <Badge variant="secondary" className="shrink-0 text-[10px] sm:text-xs">
                                   Standard
                                 </Badge>
@@ -1385,7 +1572,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               </ReactFlow>
             </div>
 
-            <div className="mt-2 grid shrink-0 grid-cols-2 gap-2 rounded-lg bg-muted/30 p-2 sm:mt-4 sm:grid-cols-4 sm:gap-4 sm:p-4">
+            <div className="mt-2 grid shrink-0 grid-cols-2 gap-2 rounded-lg bg-muted/30 p-2 sm:mt-4 sm:grid-cols-3 sm:gap-4 sm:p-4 lg:grid-cols-5">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded border-2 border-gray-400 bg-gray-100"></div>
                 <span className="text-sm">Standard Flow</span>
@@ -1401,6 +1588,10 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded border-2 border-purple-500 bg-purple-100"></div>
                 <span className="text-sm">Dependent</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border-2 border-stone-600 bg-stone-200"></div>
+                <span className="text-sm">Blocked (incorporated phase)</span>
               </div>
             </div>
           </TabsContent>

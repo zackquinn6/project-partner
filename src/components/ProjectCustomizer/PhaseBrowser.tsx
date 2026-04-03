@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -17,6 +17,8 @@ import {
 import { Project, Phase } from '../../interfaces/Project';
 import { Search, Package, Clock, Plus, ChevronDown } from 'lucide-react';
 import { useIsMobile } from '../../hooks/use-mobile';
+import { supabase } from '@/integrations/supabase/client';
+import { getBlockedPhaseIdsFromSchedulingPrerequisites } from '@/utils/decisionTreeSchedulingPrereqs';
 
 interface PhaseBrowserProps {
   open: boolean;
@@ -46,7 +48,34 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
   const [selectedPhases, setSelectedPhases] = useState<PhaseWithProject[]>([]);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [showPhaseSelector, setShowPhaseSelector] = useState(false);
+  const [blockedPhaseIdsForBrowse, setBlockedPhaseIdsForBrowse] = useState<Set<string>>(new Set());
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    if (!selectedProject) {
+      setBlockedPhaseIdsForBrowse(new Set());
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('scheduling_prerequisites')
+        .eq('id', selectedProject)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        setBlockedPhaseIdsForBrowse(new Set());
+        return;
+      }
+      setBlockedPhaseIdsForBrowse(
+        getBlockedPhaseIdsFromSchedulingPrerequisites(data?.scheduling_prerequisites)
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedProject]);
 
   // Get available projects (excluding current project, drafts, Manual Project Template, and showing only latest revisions)
   const availableProjectsList = useMemo(() => {
@@ -97,7 +126,10 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
       if (phase.isStandard === true && !phase.isLinked) {
         return;
       }
-      
+      if (blockedPhaseIdsForBrowse.has(phase.id)) {
+        return;
+      }
+
       phases.push({
         ...phase,
         projectName: project.name,
@@ -107,7 +139,7 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
     });
     
     return phases;
-  }, [selectedProject, availableProjects]);
+  }, [selectedProject, availableProjects, blockedPhaseIdsForBrowse]);
 
   // Filter and search projects
   const filteredProjects = useMemo(() => {
