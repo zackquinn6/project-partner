@@ -26,6 +26,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { schedulingEngine } from '@/utils/schedulingEngine';
 import {
   applySchedulingPrerequisiteDependencies,
+  filterPrerequisitesForDeclinedIfNecessary,
   parsePrerequisites,
   type SchedulingTask,
 } from '@/utils/schedulingPrerequisiteDeps';
@@ -157,6 +158,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       cancelled = true;
     };
   }, [open, projectRun?.projectId]);
+
+  const effectiveSchedulingPrerequisites = useMemo(
+    () =>
+      filterPrerequisitesForDeclinedIfNecessary(
+        schedulingPrerequisites,
+        project,
+        projectRun?.customization_decisions
+      ),
+    [schedulingPrerequisites, project, projectRun?.customization_decisions]
+  );
 
   // Schedule sensitivity dialog state
   const [showSensitivity, setShowSensitivity] = useState(false);
@@ -710,7 +721,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
     const tasksWithPrereqs = applySchedulingPrerequisiteDependencies(
       tasks as SchedulingTask[],
-      schedulingPrerequisites,
+      effectiveSchedulingPrerequisites,
       project
     );
 
@@ -736,7 +747,14 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         high: highTotal
       }
     };
-  }, [project, projectRun, spaces, scheduleOptimizationMethod, scheduleTempo, schedulingPrerequisites]);
+  }, [
+    project,
+    projectRun,
+    spaces,
+    scheduleOptimizationMethod,
+    scheduleTempo,
+    effectiveSchedulingPrerequisites,
+  ]);
 
   // Calculate available hours per week from team members
   const availableHoursPerWeek = useMemo(() => {

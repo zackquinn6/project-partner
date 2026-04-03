@@ -38,6 +38,59 @@ function parsePrerequisites(raw: unknown): Record<string, string[]> {
 
 export { parsePrerequisites };
 
+/** Run-level customizer output: which if-necessary operations the homeowner kept per phase. */
+export type CustomizationDecisionsForPrereqs = {
+  ifNecessaryWork?: Record<string, string[]>;
+};
+
+/**
+ * Remove prerequisite edges that point at if-necessary operations the user declined in Project Customizer.
+ * Without this, scheduling still treats those IDs as blockers even though that work is out of scope.
+ */
+export function filterPrerequisitesForDeclinedIfNecessary(
+  prerequisites: Record<string, string[]>,
+  project: Project,
+  customization: CustomizationDecisionsForPrereqs | null | undefined
+): Record<string, string[]> {
+  if (
+    customization === null ||
+    customization === undefined ||
+    !Object.prototype.hasOwnProperty.call(customization, 'ifNecessaryWork')
+  ) {
+    return prerequisites;
+  }
+  const ifNecessaryWork = customization.ifNecessaryWork ?? {};
+
+  const ineligiblePredId = new Set<string>();
+  for (const phase of project.phases) {
+    const selected = ifNecessaryWork[phase.id] ?? [];
+    for (const op of phase.operations) {
+      const ft = op.flowType;
+      if (ft !== 'if-necessary') continue;
+      if (selected.includes(op.id)) continue;
+      ineligiblePredId.add(op.id);
+      for (const st of op.steps) {
+        if (typeof st.id === 'string' && st.id.length > 0) {
+          ineligiblePredId.add(st.id);
+        }
+      }
+    }
+  }
+
+  if (ineligiblePredId.size === 0) {
+    return prerequisites;
+  }
+
+  const out: Record<string, string[]> = {};
+  for (const [dependentKey, preds] of Object.entries(prerequisites)) {
+    const filtered = preds.filter((id) => !ineligiblePredId.has(id));
+    if (filtered.length > 0) {
+      out[dependentKey] = filtered;
+    }
+  }
+  return out;
+}
+
 /**
  * When the decision-tree prerequisite map is empty, only within-operation (and space-flow)
  * edges exist — the engine may order work across operations/phases for efficiency.
