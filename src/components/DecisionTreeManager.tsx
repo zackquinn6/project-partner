@@ -9,6 +9,7 @@ import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
+import { Switch } from './ui/switch';
 import { ChevronRight, ChevronDown, Plus, X, ChevronsDownUp, ChevronsUpDown, GitBranch, List } from 'lucide-react';
 import { Project, Phase, Operation, WorkflowStep } from '@/interfaces/Project';
 import { useProject } from '@/contexts/ProjectContext';
@@ -32,6 +33,11 @@ interface DecisionTreeManagerProps {
   currentProject: Project;
   /** Process Map / Workflow editor load phases in local state; pass them here so the table is not empty. */
   phases?: Phase[];
+  /**
+   * True only when Decision Tree is opened from Edit Standard (standard project foundation).
+   * Standard phase/operation/step flow settings are editable only in this mode.
+   */
+  editingStandardFoundation?: boolean;
 }
 
 interface FlowTypeConfig {
@@ -46,7 +52,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
   open,
   onOpenChange,
   currentProject,
-  phases: phasesProp
+  phases: phasesProp,
+  editingStandardFoundation = false,
 }) => {
   const workflowPhases = phasesProp ?? currentProject.phases ?? [];
   const { updateProject } = useProject();
@@ -54,6 +61,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
   const [expandedOperations, setExpandedOperations] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'table' | 'flowchart'>('table');
   const [flowchartLevel, setFlowchartLevel] = useState<'phase' | 'operation' | 'step'>('operation');
+  /** When false, rows under `isStandard` phases are omitted from table and flowchart. */
+  const [showStandardPhaseContent, setShowStandardPhaseContent] = useState(false);
   
   // Store flow type configurations by ID (phase/operation/step)
   const [flowConfigs, setFlowConfigs] = useState<Record<string, FlowTypeConfig>>({});
@@ -68,19 +77,64 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     }
   }, [open, currentProject.id]);
 
-  const phaseTreeKey = useMemo(
-    () => workflowPhases.map((p) => p.id).join(','),
+  const hasStandardPhases = useMemo(
+    () => workflowPhases.some((p) => p.isStandard === true),
     [workflowPhases]
+  );
+
+  const visiblePhases = useMemo(
+    () =>
+      workflowPhases.filter(
+        (p) => showStandardPhaseContent || p.isStandard !== true
+      ),
+    [workflowPhases, showStandardPhaseContent]
+  );
+
+  const visiblePhaseTreeKey = useMemo(
+    () => visiblePhases.map((p) => p.id).join(','),
+    [visiblePhases]
+  );
+
+  const isStandardFoundationEntity = useCallback(
+    (entityId: string): boolean => {
+      for (const phase of workflowPhases) {
+        if (phase.id === entityId) {
+          return phase.isStandard === true;
+        }
+        for (const op of phase.operations) {
+          if (op.id === entityId) {
+            return op.isStandard === true;
+          }
+          for (const step of op.steps) {
+            if (step.id === entityId) {
+              return step.isStandard === true;
+            }
+          }
+        }
+      }
+      return false;
+    },
+    [workflowPhases]
+  );
+
+  const canEditDecisionSettings = useCallback(
+    (entityId: string) => {
+      if (editingStandardFoundation) {
+        return true;
+      }
+      return !isStandardFoundationEntity(entityId);
+    },
+    [editingStandardFoundation, isStandardFoundationEntity]
   );
 
   // Expand phases and operations when opening so the table shows rows immediately
   useEffect(() => {
-    if (!open || workflowPhases.length === 0) return;
-    setExpandedPhases(new Set(workflowPhases.map((p) => p.id)));
+    if (!open || visiblePhases.length === 0) return;
+    setExpandedPhases(new Set(visiblePhases.map((p) => p.id)));
     setExpandedOperations(
-      new Set(workflowPhases.flatMap((p) => p.operations.map((o) => o.id)))
+      new Set(visiblePhases.flatMap((p) => p.operations.map((o) => o.id)))
     );
-  }, [open, phaseTreeKey]);
+  }, [open, visiblePhaseTreeKey]);
 
   const loadFlowConfigs = async () => {
     try {
@@ -174,8 +228,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
   };
 
   const expandAll = () => {
-    setExpandedPhases(new Set(workflowPhases.map(p => p.id)));
-    const allOps = workflowPhases.flatMap(p => p.operations.map(o => o.id));
+    setExpandedPhases(new Set(visiblePhases.map((p) => p.id)));
+    const allOps = visiblePhases.flatMap((p) => p.operations.map((o) => o.id));
     setExpandedOperations(new Set(allOps));
   };
 
@@ -264,11 +318,34 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
   };
 
   const renderFlowTypeControls = (
-    itemId: string, 
+    itemId: string,
     itemName: string,
-    availableAlternates: Array<{ id: string; label: string }>
+    availableAlternates: Array<{ id: string; label: string }>,
+    editable: boolean
   ) => {
     const config = flowConfigs[itemId] || { type: null };
+
+    if (!editable) {
+      const parts: string[] = [];
+      if (config.type) {
+        parts.push(String(config.type));
+      }
+      if (config.decisionPrompt) {
+        parts.push('prompt');
+      }
+      if (config.alternateIds && config.alternateIds.length > 0) {
+        parts.push(`${config.alternateIds.length} alternate(s)`);
+      }
+      if (config.type === 'dependent' && config.dependentOn) {
+        parts.push(`depends on ${getItemLabel(config.dependentOn)}`);
+      }
+      if (parts.length === 0) {
+        return <span className="text-muted-foreground">—</span>;
+      }
+      return (
+        <span className="text-xs text-muted-foreground">{parts.join(' · ')}</span>
+      );
+    }
 
     return (
       <div className="min-w-0 space-y-1.5 sm:space-y-2">
@@ -418,8 +495,28 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     );
   };
 
-  const renderPredecessorControls = (itemId: string, availableOps: Array<{ id: string; label: string }>) => {
+  const renderPredecessorControls = (
+    itemId: string,
+    availableOps: Array<{ id: string; label: string }>,
+    editable: boolean
+  ) => {
     const config = flowConfigs[itemId] || { predecessorIds: [] };
+
+    if (!editable) {
+      const preds = config.predecessorIds;
+      if (!preds || preds.length === 0) {
+        return <span className="text-muted-foreground">—</span>;
+      }
+      return (
+        <div className="flex min-w-0 flex-wrap gap-1">
+          {preds.map((predId) => (
+            <Badge key={predId} variant="outline" className="max-w-full truncate text-xs">
+              {getItemLabel(predId)}
+            </Badge>
+          ))}
+        </div>
+      );
+    }
 
     return (
       <div className="min-w-0 space-y-1.5 sm:space-y-2">
@@ -520,6 +617,9 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
         );
         
         if (isOperation) {
+          if (!editingStandardFoundation && isStandardFoundationEntity(itemId)) {
+            continue;
+          }
           // Update phase_operations with flow_type
           // Note: phase_operations only supports flow_type (user_prompt, alternate_group, dependent_on do not exist)
           const { error } = await supabase
@@ -537,11 +637,45 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
         }
       }
       
-      const scheduling_prerequisites: Record<string, string[]> = {};
-      for (const [itemId, config] of Object.entries(flowConfigs)) {
-        const preds = config.predecessorIds?.filter((id) => typeof id === 'string' && id.length > 0);
-        if (preds && preds.length > 0) {
-          scheduling_prerequisites[itemId] = preds;
+      let scheduling_prerequisites: Record<string, string[]> = {};
+
+      if (editingStandardFoundation) {
+        for (const [itemId, config] of Object.entries(flowConfigs)) {
+          const preds = config.predecessorIds?.filter((id) => typeof id === 'string' && id.length > 0);
+          if (preds && preds.length > 0) {
+            scheduling_prerequisites[itemId] = preds;
+          }
+        }
+      } else {
+        const { data: projRow, error: prereqFetchErr } = await supabase
+          .from('projects')
+          .select('scheduling_prerequisites')
+          .eq('id', currentProject.id)
+          .maybeSingle();
+
+        if (prereqFetchErr) {
+          throw prereqFetchErr;
+        }
+
+        const raw = projRow?.scheduling_prerequisites;
+        if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+          for (const [k, v] of Object.entries(raw)) {
+            if (Array.isArray(v) && v.every((x) => typeof x === 'string')) {
+              scheduling_prerequisites[k] = v as string[];
+            }
+          }
+        }
+
+        for (const [itemId, config] of Object.entries(flowConfigs)) {
+          if (isStandardFoundationEntity(itemId)) {
+            continue;
+          }
+          const preds = config.predecessorIds?.filter((id) => typeof id === 'string' && id.length > 0);
+          if (preds && preds.length > 0) {
+            scheduling_prerequisites[itemId] = preds;
+          } else {
+            delete scheduling_prerequisites[itemId];
+          }
         }
       }
 
@@ -585,7 +719,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
     if (flowchartLevel === 'phase') {
       // Phase-level flowchart (horizontal)
-      workflowPhases.forEach((phase, index) => {
+      visiblePhases.forEach((phase, index) => {
         const config = flowConfigs[phase.id];
         const nodeType = config?.type === 'if-necessary' ? 'if-necessary' : 
                         config?.type === 'alternate' ? 'alternate' : 
@@ -615,11 +749,11 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
         });
 
         // Add edges to next phase
-        if (index < workflowPhases.length - 1) {
+        if (index < visiblePhases.length - 1) {
           edges.push({
-            id: `${phase.id}-${workflowPhases[index + 1].id}`,
+            id: `${phase.id}-${visiblePhases[index + 1].id}`,
             source: phase.id,
-            target: workflowPhases[index + 1].id,
+            target: visiblePhases[index + 1].id,
             animated: true,
             markerEnd: { type: MarkerType.ArrowClosed },
           });
@@ -693,7 +827,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       });
     } else if (flowchartLevel === 'operation') {
       // Operation-level flowchart (horizontal)
-      workflowPhases.forEach((phase) => {
+      visiblePhases.forEach((phase) => {
         // Add phase header
         nodes.push({
           id: `phase-header-${phase.id}`,
@@ -828,7 +962,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       });
     } else {
       // Step-level flowchart (horizontal)
-      workflowPhases.forEach((phase) => {
+      visiblePhases.forEach((phase) => {
         phase.operations.forEach((operation) => {
           // Add operation header
           nodes.push({
@@ -970,7 +1104,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     }
 
     return { nodes, edges };
-  }, [workflowPhases, flowConfigs, flowchartLevel]);
+  }, [visiblePhases, workflowPhases, flowConfigs, flowchartLevel]);
 
   const { nodes, edges } = useMemo(() => generateFlowchart(), [generateFlowchart]);
 
@@ -1024,20 +1158,44 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             value="table"
             className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 data-[state=inactive]:hidden sm:px-6 sm:pb-6"
           >
-            <div className="mb-2 flex shrink-0 flex-wrap gap-2 sm:mb-4">
-              <Button size="sm" variant="outline" onClick={expandAll}>
-                <ChevronsUpDown className="mr-2 h-4 w-4" />
-                Expand All
-              </Button>
-              <Button size="sm" variant="outline" onClick={collapseAll}>
-                <ChevronsDownUp className="mr-2 h-4 w-4" />
-                Collapse All
-              </Button>
+            <div className="mb-2 flex shrink-0 flex-col gap-2 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={expandAll}>
+                  <ChevronsUpDown className="mr-2 h-4 w-4" />
+                  Expand All
+                </Button>
+                <Button size="sm" variant="outline" onClick={collapseAll}>
+                  <ChevronsDownUp className="mr-2 h-4 w-4" />
+                  Collapse All
+                </Button>
+              </div>
+              {hasStandardPhases ? (
+                <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+                  <Switch
+                    id="dtm-show-standard"
+                    checked={showStandardPhaseContent}
+                    onCheckedChange={setShowStandardPhaseContent}
+                  />
+                  <Label htmlFor="dtm-show-standard" className="cursor-pointer text-xs font-medium leading-snug sm:text-sm">
+                    Show standard phase rows
+                  </Label>
+                </div>
+              ) : null}
             </div>
+
+            {hasStandardPhases && !editingStandardFoundation ? (
+              <p className="mb-2 text-xs text-muted-foreground sm:text-sm">
+                Standard foundation flow settings are read-only here. Use <span className="font-medium text-foreground">Edit Standard</span> to change them.
+              </p>
+            ) : null}
 
             {workflowPhases.length === 0 ? (
               <div className="flex min-h-[12rem] flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
                 No workflow phases are loaded for this project. Open Process Map or Workflow editor so phases load, then open Decision Tree again.
+              </div>
+            ) : visiblePhases.length === 0 ? (
+              <div className="flex min-h-[12rem] flex-1 items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+                All phases are standard foundation rows and are hidden. Turn on <span className="font-medium text-foreground">Show standard phase rows</span> to view them.
               </div>
             ) : (
             <div className="min-h-0 flex-1 overflow-auto rounded-lg border">
@@ -1053,7 +1211,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {workflowPhases.map(phase => (
+              {visiblePhases.map((phase) => (
                 <React.Fragment key={phase.id}>
                   {/* Phase Row */}
                   <TableRow className="bg-muted/50">
@@ -1072,25 +1230,32 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                           )}
                         </Button>
                         <span className="min-w-0 break-words">{phase.name}</span>
+                        {phase.isStandard ? (
+                          <Badge variant="secondary" className="shrink-0 text-[10px] sm:text-xs">
+                            Standard
+                          </Badge>
+                        ) : null}
                       </div>
                     </TableCell>
                     <TableCell className="min-w-0 align-top">
                       {renderFlowTypeControls(
-                        phase.id, 
+                        phase.id,
                         phase.name,
-                        workflowPhases.map(p => ({ id: p.id, label: p.name }))
+                        workflowPhases.map((p) => ({ id: p.id, label: p.name })),
+                        canEditDecisionSettings(phase.id)
                       )}
                     </TableCell>
                     <TableCell className="min-w-0 align-top">
                       {renderPredecessorControls(
                         phase.id,
-                        workflowPhases.map(p => ({ id: p.id, label: p.name }))
+                        workflowPhases.map((p) => ({ id: p.id, label: p.name })),
+                        canEditDecisionSettings(phase.id)
                       )}
                     </TableCell>
                   </TableRow>
 
                   {/* Operations under this phase */}
-                  {expandedPhases.has(phase.id) && phase.operations.map(operation => (
+                  {expandedPhases.has(phase.id) && phase.operations.map((operation) => (
                     <React.Fragment key={operation.id}>
                       <TableRow className="bg-muted/20">
                         <TableCell className="min-w-0 align-top">
@@ -1108,50 +1273,64 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                               )}
                             </Button>
                             <span className="min-w-0 break-words font-medium">{operation.name}</span>
+                            {operation.isStandard ? (
+                              <Badge variant="secondary" className="shrink-0 text-[10px] sm:text-xs">
+                                Standard
+                              </Badge>
+                            ) : null}
                           </div>
                         </TableCell>
                         <TableCell className="min-w-0 align-top">
                           {renderFlowTypeControls(
                             operation.id,
                             operation.name,
-                            allOperations.map(op => ({ 
-                              id: op.id, 
-                              label: `${op.phaseName} > ${op.name}` 
-                            }))
+                            allOperations.map((op) => ({
+                              id: op.id,
+                              label: `${op.phaseName} > ${op.name}`,
+                            })),
+                            canEditDecisionSettings(operation.id)
                           )}
                         </TableCell>
                         <TableCell className="min-w-0 align-top">
                           {renderPredecessorControls(
                             operation.id,
                             allOperations
-                              .filter(op => op.phaseName === phase.name)
-                              .map(op => ({ id: op.id, label: op.name }))
+                              .filter((op) => op.phaseName === phase.name)
+                              .map((op) => ({ id: op.id, label: op.name })),
+                            canEditDecisionSettings(operation.id)
                           )}
                         </TableCell>
                       </TableRow>
 
                       {/* Steps under this operation */}
-                      {expandedOperations.has(operation.id) && operation.steps.map(step => (
+                      {expandedOperations.has(operation.id) && operation.steps.map((step) => (
                         <TableRow key={step.id}>
                           <TableCell className="min-w-0 align-top">
-                            <div className="flex min-w-0 items-center gap-1.5 pl-8 sm:pl-16">
+                            <div className="flex min-w-0 flex-wrap items-center gap-1.5 pl-8 sm:pl-16">
                               <span className="break-words text-xs sm:text-sm">{step.step}</span>
+                              {step.isStandard ? (
+                                <Badge variant="secondary" className="shrink-0 text-[10px] sm:text-xs">
+                                  Standard
+                                </Badge>
+                              ) : null}
                             </div>
                           </TableCell>
                           <TableCell className="min-w-0 align-top">
                             {renderFlowTypeControls(
                               step.id,
                               step.step,
-                              operation.steps.map(s => ({ 
-                                id: s.id, 
-                                label: s.step 
-                              }))
+                              operation.steps.map((s) => ({
+                                id: s.id,
+                                label: s.step,
+                              })),
+                              canEditDecisionSettings(step.id)
                             )}
                           </TableCell>
                           <TableCell className="min-w-0 align-top">
                             {renderPredecessorControls(
                               step.id,
-                              operation.steps.map(s => ({ id: s.id, label: s.step }))
+                              operation.steps.map((s) => ({ id: s.id, label: s.step })),
+                              canEditDecisionSettings(step.id)
                             )}
                           </TableCell>
                         </TableRow>

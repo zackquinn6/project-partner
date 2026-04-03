@@ -3945,6 +3945,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         onOpenChange={setShowDecisionTreeManager} 
         currentProject={currentProject}
         phases={phases}
+        editingStandardFoundation={isEditingStandardProject}
       />
       
       {/* Phase Incorporation Dialog */}

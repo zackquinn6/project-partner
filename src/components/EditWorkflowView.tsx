@@ -2859,6 +2859,7 @@ export default function EditWorkflowView({
         onOpenChange={setDecisionTreeOpen}
         currentProject={currentProject}
         phases={displayPhases}
+        editingStandardFoundation={isEditingStandardProject}
       />
     </div>;
 }
