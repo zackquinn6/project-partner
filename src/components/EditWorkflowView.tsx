@@ -390,10 +390,8 @@ export default function EditWorkflowView({
 
         (sourceProjects || []).forEach((project: any) => {
           const familyId = project.parent_project_id || project.id;
-          const latestProject = latestByFamily.get(familyId);
-          if (!latestProject) {
-            throw new Error(`Could not resolve latest incorporated project for source ${project.id}`);
-          }
+          // Prefer latest published in the family; if none exist, use the linked source row (FK on the phase).
+          const latestProject = latestByFamily.get(familyId) ?? project;
 
           sourceProjectsMap.set(project.id, {
             id: latestProject.id,
