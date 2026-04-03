@@ -2203,7 +2203,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           </SelectContent>
         </Select>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => }>
+          <Button variant="outline" size="sm" disabled title="Export is not available yet">
             Export
           </Button>
         </div>
