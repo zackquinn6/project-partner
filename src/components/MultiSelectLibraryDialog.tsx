@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Search, Minus, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { VariationSelector } from './VariationSelector';
+import { VariationSelector, type SelectedVariation } from './VariationSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { ToolsMaterialsWindow } from './ToolsMaterialsWindow';
 
@@ -101,7 +101,9 @@ export function MultiSelectLibraryDialog({
           sourceType: 'materials' as const,
         }));
 
-        allItems = [...toolItems, ...materialItems].sort((a, b) => a.item.localeCompare(b.item));
+        toolItems.sort((a, b) => a.item.localeCompare(b.item));
+        materialItems.sort((a, b) => a.item.localeCompare(b.item));
+        allItems = [...toolItems, ...materialItems];
       } else {
         const { data, error } = await supabase
           .from(type)
@@ -143,7 +145,7 @@ export function MultiSelectLibraryDialog({
       if (type !== 'ppe') {
         await fetchItemVariations(allItems);
       } else {
-        setItemVariations({});
+        await fetchPpeItemVariations(allItems);
       }
     } catch (error) {
       console.error(`Error fetching ${type}:`, error);
@@ -212,6 +214,57 @@ export function MultiSelectLibraryDialog({
     }
   };
 
+  /** PPE list mixes library tools + materials; fetch variations from the correct table per row. */
+  const fetchPpeItemVariations = async (itemsList: any[]) => {
+    if (itemsList.length === 0) {
+      setItemVariations({});
+      return;
+    }
+    const variationsMap: Record<string, any[]> = {};
+    itemsList.forEach((item) => {
+      variationsMap[item.id] = [];
+    });
+    try {
+      const toolIds = itemsList.filter((i) => i.sourceType === 'tools').map((i) => i.id);
+      const materialIds = itemsList.filter((i) => i.sourceType === 'materials').map((i) => i.id);
+
+      if (toolIds.length > 0) {
+        const { data, error } = await supabase
+          .from('tool_variations')
+          .select('*')
+          .in('core_item_id', toolIds);
+        if (error) throw error;
+        (data || []).forEach((variation: any) => {
+          const parentId = variation.core_item_id;
+          if (!variationsMap[parentId]) {
+            variationsMap[parentId] = [];
+          }
+          variationsMap[parentId].push(variation);
+        });
+      }
+
+      if (materialIds.length > 0) {
+        const { data, error } = await supabase
+          .from('materials_variants')
+          .select('*')
+          .in('material_id', materialIds);
+        if (error) throw error;
+        (data || []).forEach((variation: any) => {
+          const parentId = variation.material_id;
+          if (!variationsMap[parentId]) {
+            variationsMap[parentId] = [];
+          }
+          variationsMap[parentId].push(variation);
+        });
+      }
+
+      setItemVariations(variationsMap);
+    } catch (error) {
+      console.error('Error fetching PPE variations:', error);
+      setItemVariations(variationsMap);
+    }
+  };
+
   // For materials in edit workflow, show all items (no filtering by user ownership)
   // For tools, filter out items the user already owns
   const filteredItems = items
@@ -257,7 +310,17 @@ export function MultiSelectLibraryDialog({
       // 2. The core item itself is not owned
       return !allVariationsOwned && !coreItemOwned;
     })
-    .sort((a, b) => a.item.localeCompare(b.item));
+    .sort((a, b) => {
+      if (type !== 'ppe') {
+        return a.item.localeCompare(b.item);
+      }
+      const orderA = a.sourceType === 'tools' ? 0 : 1;
+      const orderB = b.sourceType === 'tools' ? 0 : 1;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.item.localeCompare(b.item);
+    });
 
   const addCoreItemDirect = (coreItem: any) => {
     const selectedId = `direct_${coreItem.id}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -285,6 +348,9 @@ export function MultiSelectLibraryDialog({
           attributes: {},
           isPrime: true,
           unit: coreItem.unit_size || (coreItem as { unit?: string | null }).unit || null,
+          sourceType:
+            coreItem.sourceType ??
+            (type === 'materials' ? 'materials' : 'tools'),
         },
       ];
     });
@@ -332,12 +398,44 @@ export function MultiSelectLibraryDialog({
           attributes: variation.attributes,
           isPrime: variation.isPrime,
           alternateToolId: variation.alternateToolId,
-          unit: coreItem?.unit_size || (coreItem as any)?.unit || null
+          unit: coreItem?.unit_size || (coreItem as any)?.unit || null,
+          sourceType:
+            coreItem?.sourceType ??
+            (type === 'materials' ? 'materials' : type === 'tools' ? 'tools' : undefined),
         }];
       }
     });
     
     console.log('  🔙 Closing variation selector');
+    setSelectingVariationFor(null);
+  };
+
+  const handlePpeVariationBatch = (vars: SelectedVariation[]) => {
+    if (vars.length === 0) return;
+    setSelectedItems((prev) => {
+      const additions: SelectedItem[] = [];
+      vars.forEach((variation, idx) => {
+        const coreItem = items.find((i) => i.id === variation.coreItemId);
+        if (!coreItem || (coreItem.sourceType !== 'tools' && coreItem.sourceType !== 'materials')) {
+          return;
+        }
+        const selectedId = `ppevar_${variation.coreItemId}_${variation.variationId}_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 9)}`;
+        additions.push({
+          id: selectedId,
+          coreItemId: variation.coreItemId,
+          variationId: variation.variationId,
+          item: variation.name,
+          quantity: 1,
+          category: coreItem.category ?? null,
+          description: coreItem.description ?? null,
+          attributes: variation.attributes,
+          isPrime: variation.isPrime,
+          sourceType: coreItem.sourceType,
+          unit: coreItem.unit_size || (coreItem as { unit?: string | null }).unit || null,
+        });
+      });
+      return [...prev, ...additions];
+    });
     setSelectingVariationFor(null);
   };
 
@@ -518,7 +616,11 @@ export function MultiSelectLibraryDialog({
                               className="flex-shrink-0"
                               onClick={() => handleAddItemClick(item)}
                             >
-                              {variationCount === 0 ? 'Add' : 'Choose variant'}
+                              {variationCount === 0
+                                ? 'Add'
+                                : type === 'ppe'
+                                  ? 'Choose variants'
+                                  : 'Choose variant'}
                             </Button>
                           </div>
                         </CardContent>
@@ -549,21 +651,30 @@ export function MultiSelectLibraryDialog({
         <DialogContent className="flex max-h-[min(90dvh,880px)] w-[min(96vw,42rem)] max-w-[96vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,42rem)]">
           <DialogHeader className="flex-shrink-0 border-b px-6 py-4">
             <DialogTitle className="text-left">
-              Select variant — {items.find(i => i.id === selectingVariationFor)?.item}
+              {type === 'ppe' ? 'Select variants' : 'Select variant'} —{' '}
+              {items.find((i) => i.id === selectingVariationFor)?.item}
             </DialogTitle>
           </DialogHeader>
-          {selectingVariationFor && (
-            <div className="max-h-[min(70dvh,640px)] min-h-0 overflow-y-auto overscroll-contain px-6 py-4">
-              <VariationSelector
-                coreItemId={selectingVariationFor}
-                itemType={type}
-                coreItemName={items.find(i => i.id === selectingVariationFor)?.item || ''}
-                onVariationSelect={handleVariationSelect}
-                allowPrimeToggle={true}
-                availableAlternateTools={type === 'tools' ? availableStepTools : []}
-              />
-            </div>
-          )}
+          {selectingVariationFor ? (
+            (() => {
+              const row = items.find((i) => i.id === selectingVariationFor);
+              const variationItemType: 'tools' | 'materials' =
+                row?.sourceType === 'materials' ? 'materials' : 'tools';
+              return (
+                <div className="max-h-[min(70dvh,640px)] min-h-0 overflow-y-auto overscroll-contain px-6 py-4">
+                  <VariationSelector
+                    coreItemId={selectingVariationFor}
+                    itemType={variationItemType}
+                    coreItemName={row?.item || ''}
+                    onVariationSelect={handleVariationSelect}
+                    onBatchSelect={type === 'ppe' ? handlePpeVariationBatch : undefined}
+                    allowPrimeToggle={type !== 'ppe'}
+                    availableAlternateTools={type === 'tools' ? availableStepTools : []}
+                  />
+                </div>
+              );
+            })()
+          ) : null}
         </DialogContent>
       </Dialog>
 

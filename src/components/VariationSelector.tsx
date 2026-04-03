@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import {
   fetchAttributeDefinitionsForCoreItem,
@@ -31,7 +32,7 @@ interface VariationInstance {
   attributes: Record<string, string>;
 }
 
-interface SelectedVariation {
+export interface SelectedVariation {
   variationId?: string;
   coreItemId: string;
   itemType: 'tools' | 'materials';
@@ -57,21 +58,28 @@ export function VariationSelector({
   itemType, 
   coreItemName, 
   onVariationSelect,
+  onBatchSelect,
   selectedVariation,
   allowPrimeToggle = false,
   compact = false,
   availableAlternateTools = []
 }: VariationSelectorProps) {
+  const multiSelect = typeof onBatchSelect === 'function';
   const [attributes, setAttributes] = useState<VariationAttribute[]>([]);
   const [variations, setVariations] = useState<VariationInstance[]>([]);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [matchingVariation, setMatchingVariation] = useState<VariationInstance | null>(null);
   const [isPrime, setIsPrime] = useState(selectedVariation?.isPrime ?? true);
   const [selectedAlternateTool, setSelectedAlternateTool] = useState<string>('');
+  const [multiPickedIds, setMultiPickedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchAttributes();
     fetchVariations();
+  }, [coreItemId, itemType]);
+
+  useEffect(() => {
+    setMultiPickedIds(new Set());
   }, [coreItemId, itemType]);
 
   useEffect(() => {
@@ -177,6 +185,22 @@ export function VariationSelector({
     setSelectedAttributes(newAttributes);
   };
 
+  const handleBatchAdd = () => {
+    if (!onBatchSelect) return;
+    const picked = variations.filter((v) => multiPickedIds.has(v.id));
+    if (picked.length === 0) return;
+    onBatchSelect(
+      picked.map((v) => ({
+        variationId: v.id,
+        coreItemId,
+        itemType,
+        name: v.name,
+        attributes: v.attributes || {},
+        isPrime: true,
+      }))
+    );
+  };
+
   const handleSelectVariation = () => {
     console.log('🔘 Add button clicked in VariationSelector:', {
       coreItemId,
@@ -239,6 +263,70 @@ export function VariationSelector({
 
     return availableValues;
   };
+
+  if (multiSelect) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Select one or more variants for <span className="font-medium text-foreground">{coreItemName}</span>.
+        </p>
+        {variations.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No variants are defined for this item.</p>
+        ) : (
+          <ul className="max-h-[min(60dvh,480px)] space-y-2 overflow-y-auto overscroll-contain pr-1">
+            {variations.map((v) => {
+              const attrLabel =
+                v.attributes && Object.keys(v.attributes).length > 0
+                  ? Object.entries(v.attributes)
+                      .map(([k, val]) => `${k}: ${val}`)
+                      .join(' · ')
+                  : null;
+              return (
+                <li
+                  key={v.id}
+                  className="flex items-start gap-3 rounded-md border bg-background p-3"
+                >
+                  <Checkbox
+                    id={`var-${v.id}`}
+                    checked={multiPickedIds.has(v.id)}
+                    onCheckedChange={(checked) => {
+                      setMultiPickedIds((prev) => {
+                        const next = new Set(prev);
+                        if (checked === true) {
+                          next.add(v.id);
+                        } else {
+                          next.delete(v.id);
+                        }
+                        return next;
+                      });
+                    }}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor={`var-${v.id}`} className="min-w-0 flex-1 cursor-pointer space-y-0.5">
+                    <div className="text-sm font-medium leading-snug">{v.name}</div>
+                    {attrLabel ? (
+                      <div className="text-xs text-muted-foreground">{attrLabel}</div>
+                    ) : null}
+                    {v.sku ? (
+                      <div className="text-xs text-muted-foreground">SKU: {v.sku}</div>
+                    ) : null}
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <Button
+          type="button"
+          className="w-full"
+          disabled={multiPickedIds.size === 0}
+          onClick={handleBatchAdd}
+        >
+          Add {multiPickedIds.size === 0 ? 'selected variants' : `${multiPickedIds.size} variant${multiPickedIds.size === 1 ? '' : 's'}`}
+        </Button>
+      </div>
+    );
+  }
 
   if (compact) {
     return (

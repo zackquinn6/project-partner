@@ -2375,10 +2375,7 @@ export default function EditWorkflowView({
                           <div className="pt-2 border-t space-y-4">
                             <h3 className="text-sm font-medium">Personal Protective Equipment</h3>
                             <div className="rounded-lg border bg-background/50 p-3 space-y-3">
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="text-sm text-muted-foreground">
-                                  Search one PPE library across both tools and materials.
-                                </div>
+                              <div className="flex items-center justify-end gap-3">
                                 <Button
                                   type="button"
                                   variant="outline"
