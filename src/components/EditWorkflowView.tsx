@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
 import { WorkflowStep, Tool, Material, Output, ContentSection, Phase, Operation, Project, AppReference, StepInput, getDefaultStepContentSections } from '@/interfaces/Project';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -83,6 +83,7 @@ export default function EditWorkflowView({
   // This ensures workflow editor and Process Map always match
   const [rawPhases, setRawPhases] = React.useState<Phase[]>([]);
   const [loadingPhases, setLoadingPhases] = React.useState(true);
+  const phasesProjectIdRef = React.useRef<string | undefined>(undefined);
   
   const loadPhasesFromDatabase = React.useCallback(async (projectId: string): Promise<Phase[]> => {
     if (!projectId) {
@@ -979,6 +980,21 @@ export default function EditWorkflowView({
       return [...customPhases, ...standardPhases];
     }
   }, [isEditingStandardProject]);
+
+  // Before paint: when the workflow project id changes, enter loading and drop stale phases so we
+  // never flash empty state (and spurious "no phases" toasts) while the async fetch is in flight.
+  useLayoutEffect(() => {
+    const id = currentProject?.id;
+    if (!id) {
+      phasesProjectIdRef.current = undefined;
+      return;
+    }
+    if (phasesProjectIdRef.current !== id) {
+      phasesProjectIdRef.current = id;
+      setLoadingPhases(true);
+      setRawPhases([]);
+    }
+  }, [currentProject?.id]);
   
   // Load phases when project changes
   React.useEffect(() => {
@@ -1104,6 +1120,22 @@ export default function EditWorkflowView({
   // Do NOT use enforceStandardPhaseOrdering here as it groups phases incorrectly
   const displayPhases = sortPhasesByOrderNumber(deduplicatedPhases);
 
+  // Stable counts for post-load validation (derive from rawPhases only — deduplicatedPhases is a new array each render).
+  const loadedStructureSummary = React.useMemo(() => {
+    const seen = new Set<string>();
+    const deduped: Phase[] = [];
+    for (const phase of rawPhases) {
+      const key = phase.isLinked ? `${phase.id}-${phase.sourceProjectId}` : phase.id;
+      if (!seen.has(key)) {
+        seen.add(key);
+        deduped.push(phase);
+      }
+    }
+    const phaseCount = deduped.length;
+    const operationCount = deduped.reduce((n, p) => n + (p.operations?.length ?? 0), 0);
+    return { phaseCount, operationCount };
+  }, [rawPhases]);
+
   // Helper to check if current step is from a standard or incorporated phase
   const isStepFromStandardOrIncorporatedPhase = (step: WorkflowStep | undefined) => {
     if (!step || isEditingStandardProject) return false;
@@ -1145,20 +1177,26 @@ export default function EditWorkflowView({
     return shouldBlock;
   };
 
-  // Debug log to check phases and show helpful message if empty
+  // After load completes: warn only on truly empty structure (not while phases are still fetching).
   useEffect(() => {
-    if (currentProject) {
-      const hasPhases = displayPhases && displayPhases.length > 0;
-      const hasOperations = hasPhases && displayPhases.some(p => p.operations && p.operations.length > 0);
-      
-      // Show warning if no phases
-      if (!hasPhases) {
-        toast.error('This project has no phases. The project data may be corrupted.');
-      } else if (!hasOperations) {
-        toast.error('This project has phases but no operations. The project structure may be incomplete.');
-      }
+    if (!currentProject?.id || loadingPhases) {
+      return;
     }
-  }, [currentProject?.id, isEditingStandardProject, displayPhases]);
+    const hasPhases = loadedStructureSummary.phaseCount > 0;
+    const hasOperations = hasPhases && loadedStructureSummary.operationCount > 0;
+
+    if (!hasPhases) {
+      toast.error('This project has no phases. The project data may be corrupted.');
+    } else if (!hasOperations) {
+      toast.error('This project has phases but no operations. The project structure may be incomplete.');
+    }
+  }, [
+    currentProject?.id,
+    loadingPhases,
+    isEditingStandardProject,
+    loadedStructureSummary.phaseCount,
+    loadedStructureSummary.operationCount,
+  ]);
   const [viewMode, setViewMode] = useState<'steps' | 'structure'>('steps');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
