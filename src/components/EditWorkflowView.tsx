@@ -26,11 +26,12 @@ import { CompactToolsTable } from '@/components/CompactToolsTable';
 import { CompactMaterialsTable } from '@/components/CompactMaterialsTable';
 import { CompactProcessVariablesTable } from '@/components/CompactProcessVariablesTable';
 import { CompactOutputsTable } from '@/components/CompactOutputsTable';
-import { CompactTimeEstimation } from '@/components/CompactTimeEstimation';
+import { CompactTimeEstimation, CompactTimeEstimationReadOnly } from '@/components/CompactTimeEstimation';
+import { CompactPpeTable } from '@/components/CompactPpeTable';
 import { CompactAppsSection } from '@/components/CompactAppsSection';
 import { AppsLibraryDialog } from '@/components/AppsLibraryDialog';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
-import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock, Shield, Menu, Info, Crosshair } from 'lucide-react';
+import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, X, Settings, Save, ChevronLeft, ChevronRight, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock, Shield, Menu, Info, Crosshair, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
@@ -59,6 +60,41 @@ interface StepTool extends Tool {
   purpose?: string;
   parentId?: string;
 }
+
+function viewOrderedToolRows(tools: StepTool[]): { tool: StepTool; depth: 0 | 1 }[] {
+  const safe = tools || [];
+  const indexOrder = new Map(safe.map((t, i) => [t.id, i]));
+  const primaries = safe.filter((t) => !t.parentId);
+  const rows: { tool: StepTool; depth: 0 | 1 }[] = [];
+  for (const p of primaries) {
+    rows.push({ tool: p, depth: 0 });
+    const children = safe
+      .filter((t) => t.parentId === p.id)
+      .sort((a, b) => (indexOrder.get(a.id) ?? 0) - (indexOrder.get(b.id) ?? 0));
+    for (const c of children) {
+      rows.push({ tool: c, depth: 1 });
+    }
+  }
+  return rows;
+}
+
+function viewOrderedMaterialRows(materials: StepMaterial[]): { material: StepMaterial; depth: 0 | 1 }[] {
+  const safe = materials || [];
+  const indexOrder = new Map(safe.map((m, i) => [m.id, i]));
+  const primaries = safe.filter((m) => !m.parentId);
+  const rows: { material: StepMaterial; depth: 0 | 1 }[] = [];
+  for (const p of primaries) {
+    rows.push({ material: p, depth: 0 });
+    const children = safe
+      .filter((m) => m.parentId === p.id)
+      .sort((a, b) => (indexOrder.get(a.id) ?? 0) - (indexOrder.get(b.id) ?? 0));
+    for (const c of children) {
+      rows.push({ material: c, depth: 1 });
+    }
+  }
+  return rows;
+}
+
 interface EditWorkflowViewProps {
   onBackToAdmin: () => void;
 }
@@ -1214,6 +1250,8 @@ export default function EditWorkflowView({
   /** Step row id of primary tool/material when picking a substitute from the library */
   const [alternateToolParentId, setAlternateToolParentId] = useState<string | null>(null);
   const [alternateMaterialParentId, setAlternateMaterialParentId] = useState<string | null>(null);
+  const [alternatePpeToolParentId, setAlternatePpeToolParentId] = useState<string | null>(null);
+  const [alternatePpeMaterialParentId, setAlternatePpeMaterialParentId] = useState<string | null>(null);
   const [appsLibraryOpen, setAppsLibraryOpen] = useState(false);
   const [aiProjectGeneratorOpen, setAiProjectGeneratorOpen] = useState(false);
   const [decisionTreeOpen, setDecisionTreeOpen] = useState(false);
@@ -1785,6 +1823,16 @@ export default function EditWorkflowView({
         </div>;
     }
 
+    if (!editMode && isLoadingContent && step.id === currentStep?.id) {
+      return (
+        <div className="flex items-center justify-center min-h-[8rem]">
+          <p className="text-muted-foreground text-sm">
+            Loading {instructionLevel} level content...
+          </p>
+        </div>
+      );
+    }
+
     // In view mode, try to load level-specific content first
     // If levelSpecificContent is available (loaded in edit mode), use it
     if (
@@ -2340,105 +2388,94 @@ export default function EditWorkflowView({
 
                 {/* Tools, Materials, PPE, Inputs, and Outputs */}
                 <div className="grid lg:grid-cols-1 gap-6">
-                  {/* Tools & Materials + PPE Card */}
                   {(() => {
-                    const ppeTools = (editingStep?.tools || []).filter(t => t.category === 'PPE');
-                    const nonPpeTools = (editingStep?.tools || []).filter(t => t.category !== 'PPE');
-                    const ppeMaterials = (editingStep?.materials || []).filter(m => m.category === 'PPE');
-                    const nonPpeMaterials = (editingStep?.materials || []).filter(m => m.category !== 'PPE');
+                    const ppeTools = (editingStep?.tools || []).filter((t) => t.category === 'PPE');
+                    const nonPpeTools = (editingStep?.tools || []).filter((t) => t.category !== 'PPE');
+                    const ppeMaterials = (editingStep?.materials || []).filter((m) => m.category === 'PPE');
+                    const nonPpeMaterials = (editingStep?.materials || []).filter((m) => m.category !== 'PPE');
 
                     return (
-                      <Card className="bg-muted/30 border shadow-sm">
-                        <CardHeader>
-                          <CardTitle>Tools & Materials</CardTitle>
-                          <CardDescription>Manage tools, materials, and PPE for this step</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <CompactToolsTable
-                            title="Tools"
-                            tools={nonPpeTools}
-                            onToolsChange={tools => updateEditingStep('tools', [...tools, ...ppeTools])}
-                            onAddTool={() => {
-                              setAlternateToolParentId(null);
-                              setToolsLibraryOpen(true);
-                            }}
-                            onAddAlternate={parentId => {
-                              setAlternateToolParentId(parentId);
-                              setToolsLibraryOpen(true);
-                            }}
-                          />
+                      <>
+                        <Card className="bg-muted/30 border shadow-sm">
+                          <CardHeader>
+                            <CardTitle>Tools</CardTitle>
+                            <CardDescription>Tools required for this step (excluding PPE)</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <CompactToolsTable
+                              title="Tools"
+                              tools={nonPpeTools}
+                              onToolsChange={(tools) => updateEditingStep('tools', [...tools, ...ppeTools])}
+                              onAddTool={() => {
+                                setAlternateToolParentId(null);
+                                setToolsLibraryOpen(true);
+                              }}
+                              onAddAlternate={(parentId) => {
+                                setAlternateToolParentId(parentId);
+                                setToolsLibraryOpen(true);
+                              }}
+                            />
+                          </CardContent>
+                        </Card>
 
-                          <CompactMaterialsTable
-                            title="Materials"
-                            materials={nonPpeMaterials}
-                            onMaterialsChange={materials => updateEditingStep('materials', [...materials, ...ppeMaterials])}
-                            onAddMaterial={() => {
-                              setAlternateMaterialParentId(null);
-                              setMaterialsLibraryOpen(true);
-                            }}
-                            onAddAlternate={parentId => {
-                              setAlternateMaterialParentId(parentId);
-                              setMaterialsLibraryOpen(true);
-                            }}
-                          />
+                        <Card className="bg-muted/30 border shadow-sm">
+                          <CardHeader>
+                            <CardTitle>Materials</CardTitle>
+                            <CardDescription>Materials for this step (excluding PPE)</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <CompactMaterialsTable
+                              title="Materials"
+                              materials={nonPpeMaterials}
+                              onMaterialsChange={(materials) =>
+                                updateEditingStep('materials', [...materials, ...ppeMaterials])
+                              }
+                              onAddMaterial={() => {
+                                setAlternateMaterialParentId(null);
+                                setMaterialsLibraryOpen(true);
+                              }}
+                              onAddAlternate={(parentId) => {
+                                setAlternateMaterialParentId(parentId);
+                                setMaterialsLibraryOpen(true);
+                              }}
+                            />
+                          </CardContent>
+                        </Card>
 
-                          <div className="pt-2 border-t space-y-4">
-                            <h3 className="text-sm font-medium">Personal Protective Equipment</h3>
-                            <div className="rounded-lg border bg-background/50 p-3 space-y-3">
-                              <div className="flex items-center justify-end gap-3">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setPpeLibraryOpen(true)}
-                                >
-                                  Add PPE
-                                </Button>
-                              </div>
-                              {ppeTools.length === 0 && ppeMaterials.length === 0 ? (
-                                <div className="text-sm text-muted-foreground">No PPE added to this step.</div>
-                              ) : (
-                                <div className="space-y-2">
-                                  {ppeTools.map((tool) => (
-                                    <div key={tool.id} className="flex items-start justify-between gap-3 rounded border bg-background px-3 py-2">
-                                      <div className="min-w-0">
-                                        <div className="font-medium text-sm break-words">{tool.name}</div>
-                                        <div className="text-xs text-muted-foreground">PPE tool</div>
-                                      </div>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-7 w-7 shrink-0"
-                                        onClick={() => updateEditingStep('tools', [...nonPpeTools, ...ppeTools.filter((t) => t.id !== tool.id)])}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  ))}
-                                  {ppeMaterials.map((material) => (
-                                    <div key={material.id} className="flex items-start justify-between gap-3 rounded border bg-background px-3 py-2">
-                                      <div className="min-w-0">
-                                        <div className="font-medium text-sm break-words">{material.name}</div>
-                                        <div className="text-xs text-muted-foreground">PPE material</div>
-                                      </div>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-7 w-7 shrink-0"
-                                        onClick={() => updateEditingStep('materials', [...nonPpeMaterials, ...ppeMaterials.filter((m) => m.id !== material.id)])}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                        <Card className="bg-muted/30 border shadow-sm">
+                          <CardHeader>
+                            <CardTitle>Personal protective equipment</CardTitle>
+                            <CardDescription>PPE items for this step</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <CompactPpeTable
+                              ppeTools={ppeTools}
+                              ppeMaterials={ppeMaterials}
+                              onPpeToolsChange={(tools) =>
+                                updateEditingStep('tools', [...nonPpeTools, ...tools])
+                              }
+                              onPpeMaterialsChange={(materials) =>
+                                updateEditingStep('materials', [...nonPpeMaterials, ...materials])
+                              }
+                              onAddPpe={() => {
+                                setAlternatePpeToolParentId(null);
+                                setAlternatePpeMaterialParentId(null);
+                                setPpeLibraryOpen(true);
+                              }}
+                              onAddAlternatePpeTool={(parentId) => {
+                                setAlternatePpeToolParentId(parentId);
+                                setAlternatePpeMaterialParentId(null);
+                                setPpeLibraryOpen(true);
+                              }}
+                              onAddAlternatePpeMaterial={(parentId) => {
+                                setAlternatePpeMaterialParentId(parentId);
+                                setAlternatePpeToolParentId(null);
+                                setPpeLibraryOpen(true);
+                              }}
+                            />
+                          </CardContent>
+                        </Card>
+                      </>
                     );
                   })()}
 
@@ -2592,140 +2629,330 @@ export default function EditWorkflowView({
                 </CardHeader>
               </Card>
 
-              {/* Content */}
+              {/* Instructions */}
               <Card className="bg-muted/30 border shadow-sm">
-                <CardContent className="p-8">
-                  {renderContent(currentStep)}
-                </CardContent>
-              </Card>
-
-              {/* Apps Section - View Mode */}
-              {(() => {
-            return null;
-          })()}
-              
-              {currentStep && currentStep.apps && currentStep.apps.length > 0 && <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-sm">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-xs font-medium">
-                      <Sparkles className="w-3 h-3" />
-                      Apps for This Step
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-2">
-                    <CompactAppsSection apps={currentStep.apps} onAppsChange={() => {}} onAddApp={() => {}} onLaunchApp={() => {}} editMode={false} />
-                  </CardContent>
-                </Card>}
-
-              {/* Tools, Materials, and Outputs */}
-              <Card className="bg-muted/30 border shadow-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Tools, Materials & Outputs</h3>
+                <CardHeader>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-1">
+                      <CardTitle>Instructions</CardTitle>
+                      <CardDescription>
+                        Step content for the selected detail level (matches the content editor).
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Label className="text-sm font-medium whitespace-nowrap">Detail level:</Label>
+                      <Select
+                        value={instructionLevel}
+                        onValueChange={(value: 'beginner' | 'intermediate' | 'advanced') =>
+                          setInstructionLevel(value)
+                        }
+                      >
+                        <SelectTrigger className="w-[160px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="beginner">Beginner</SelectItem>
+                          <SelectItem value="intermediate">Intermediate</SelectItem>
+                          <SelectItem value="advanced">Advanced</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <Accordion type="multiple" defaultValue={["materials", "tools", "outputs"]} className="w-full">
-                    {/* Materials */}
-                    {(() => {
-                      const nonPpeMaterials = (currentStep?.materials || []).filter(m => m.category !== 'PPE');
-                      if (nonPpeMaterials.length === 0) return null;
-                      return <AccordionItem value="materials">
-                        <AccordionTrigger className="text-lg font-semibold">
-                          Materials Needed ({nonPpeMaterials.length})
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-3 pt-2">
-                            {nonPpeMaterials.map(material => <div key={material.id} className="p-3 bg-background/50 rounded-lg">
-                                <div className="flex items-start gap-3">
-                                  <div className="flex-1">
-                                    <div className="font-medium">{material.name}</div>
-                                    {material.category && <Badge variant="outline" className="text-xs mt-1">{material.category}</Badge>}
-                                    {material.description && <div className="text-sm text-muted-foreground mt-1">{material.description}</div>}
-                                  </div>
-                                </div>
-                              </div>)}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>;
-                    })()}
-
-                    {/* Tools */}
-                    {(() => {
-                      const nonPpeTools = (currentStep?.tools || []).filter(t => t.category !== 'PPE');
-                      if (nonPpeTools.length === 0) return null;
-                      return <AccordionItem value="tools">
-                        <AccordionTrigger className="text-lg font-semibold">
-                          Tools Required ({nonPpeTools.length})
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-3 pt-2">
-                            {nonPpeTools.map(tool => <div key={tool.id} className="p-3 bg-background/50 rounded-lg">
-                                <div className="flex items-start gap-3">
-                                  <div className="flex-1">
-                                    <div className="font-medium">{tool.name}</div>
-                                    {tool.category && <Badge variant="outline" className="text-xs mt-1">{tool.category}</Badge>}
-                                    {tool.description && <div className="text-sm text-muted-foreground mt-1">{tool.description}</div>}
-                                  </div>
-                                </div>
-                              </div>)}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>;
-                    })()}
-
-                    {/* PPE */}
-                    {(() => {
-                      const ppeTools = (currentStep?.tools || []).filter(t => t.category === 'PPE');
-                      const ppeMaterials = (currentStep?.materials || []).filter(m => m.category === 'PPE');
-                      const totalPpe = ppeTools.length + ppeMaterials.length;
-                      if (totalPpe === 0) return null;
-                      return <AccordionItem value="ppe">
-                        <AccordionTrigger className="text-lg font-semibold">
-                          Personal Protective Equipment ({totalPpe})
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-3 pt-2">
-                            {[...ppeTools.map(item => ({ ...item, itemType: 'Tool' })), ...ppeMaterials.map(item => ({ ...item, itemType: 'Material' }))].map(item => <div key={`${item.itemType}-${item.id}`} className="p-3 bg-background/50 rounded-lg">
-                              <div className="flex items-start gap-3">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <div className="font-medium">{item.name}</div>
-                                    <Badge variant="outline" className="text-xs">{item.itemType}</Badge>
-                                  </div>
-                                  {item.description && <div className="text-sm text-muted-foreground mt-1">{item.description}</div>}
-                                </div>
-                              </div>
-                            </div>)}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>;
-                    })()}
-
-                    {/* Outputs */}
-                    {currentStep?.outputs?.length > 0 && <AccordionItem value="outputs">
-                        <AccordionTrigger className="text-lg font-semibold">
-                          Outputs ({currentStep.outputs.length})
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-3 pt-2">
-                            {currentStep.outputs.map(output => <div key={output.id} className="p-3 bg-background/50 rounded-lg">
-                                <div className="flex items-start gap-3">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                       <div className="font-medium">{output.name}</div>
-                                       {output.type !== "none" && ['major-aesthetics', 'performance-durability', 'safety'].includes(output.type) && (
-                                         <Badge variant="outline" className="text-xs capitalize">{output.type.replace('-', ' ')}</Badge>
-                                       )}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground mt-1">{output.description}</div>
-                                  </div>
-                                  
-                                </div>
-                              </div>)}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>}
-                  </Accordion>
-                </CardContent>
+                </CardHeader>
+                <CardContent className="p-8 pt-0">{renderContent(currentStep)}</CardContent>
               </Card>
+
+              {currentStep &&
+                (() => {
+                  const nonPpeTools = (currentStep.tools || []).filter((t) => t.category !== 'PPE') as StepTool[];
+                  const toolRows = viewOrderedToolRows(nonPpeTools);
+                  return (
+                    <Card className="bg-muted/30 border shadow-sm">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <Wrench className="w-5 h-5" />
+                          Tools
+                        </CardTitle>
+                        <CardDescription>Tools required for this step</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {toolRows.length === 0 ? (
+                          <div className="text-center py-4 text-sm text-muted-foreground border border-dashed rounded-md">
+                            No tools on this step.
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {toolRows.map(({ tool, depth }) => (
+                              <div
+                                key={tool.id}
+                                className={`p-3 bg-background/50 rounded-lg ${depth === 1 ? 'ml-3 border-l-2 border-l-primary/20' : ''}`}
+                              >
+                                <div className="font-medium">{tool.name}</div>
+                                {tool.category && depth === 0 && (
+                                  <Badge variant="outline" className="text-xs mt-1">
+                                    {tool.category}
+                                  </Badge>
+                                )}
+                                {tool.description && (
+                                  <div className="text-sm text-muted-foreground mt-1">{tool.description}</div>
+                                )}
+                                {(tool.quantity !== undefined || (tool.purpose && tool.purpose.trim().length > 0)) && (
+                                  <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
+                                    {tool.quantity !== undefined && (
+                                      <div>Quantity: {tool.quantity}</div>
+                                    )}
+                                    {tool.purpose && tool.purpose.trim().length > 0 && (
+                                      <div>Purpose: {tool.purpose}</div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+
+              {currentStep &&
+                (() => {
+                  const nonPpeMaterials = (currentStep.materials || []).filter(
+                    (m) => m.category !== 'PPE'
+                  ) as StepMaterial[];
+                  const materialRows = viewOrderedMaterialRows(nonPpeMaterials);
+                  return (
+                    <Card className="bg-muted/30 border shadow-sm">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <Package className="w-5 h-5" />
+                          Materials
+                        </CardTitle>
+                        <CardDescription>Materials for this step</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {materialRows.length === 0 ? (
+                          <div className="text-center py-4 text-sm text-muted-foreground border border-dashed rounded-md">
+                            No materials on this step.
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {materialRows.map(({ material, depth }) => (
+                              <div
+                                key={material.id}
+                                className={`p-3 bg-background/50 rounded-lg ${depth === 1 ? 'ml-3 border-l-2 border-l-primary/20' : ''}`}
+                              >
+                                <div className="font-medium">{material.name}</div>
+                                {material.category && depth === 0 && (
+                                  <Badge variant="outline" className="text-xs mt-1">
+                                    {material.category}
+                                  </Badge>
+                                )}
+                                {material.description && (
+                                  <div className="text-sm text-muted-foreground mt-1">{material.description}</div>
+                                )}
+                                {(material.quantity !== undefined ||
+                                  (material.purpose && material.purpose.trim().length > 0) ||
+                                  (material.unit && material.unit.trim().length > 0)) && (
+                                  <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
+                                    {material.quantity !== undefined && (
+                                      <div>
+                                        Quantity: {material.quantity}
+                                        {material.unit && material.unit.trim().length > 0
+                                          ? ` ${material.unit}`
+                                          : ''}
+                                      </div>
+                                    )}
+                                    {material.purpose && material.purpose.trim().length > 0 && (
+                                      <div>Purpose: {material.purpose}</div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+
+              {currentStep &&
+                (() => {
+                  const ppeTools = (currentStep.tools || []).filter((t) => t.category === 'PPE') as StepTool[];
+                  const ppeMaterials = (currentStep.materials || []).filter(
+                    (m) => m.category === 'PPE'
+                  ) as StepMaterial[];
+                  const ppeToolRows = viewOrderedToolRows(ppeTools);
+                  const ppeMaterialRows = viewOrderedMaterialRows(ppeMaterials);
+                  const hasPpe = ppeToolRows.length > 0 || ppeMaterialRows.length > 0;
+                  return (
+                    <Card className="bg-muted/30 border shadow-sm">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <Shield className="w-5 h-5" />
+                          Personal protective equipment
+                        </CardTitle>
+                        <CardDescription>PPE for this step</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {!hasPpe ? (
+                          <div className="text-center py-4 text-sm text-muted-foreground border border-dashed rounded-md">
+                            No ppe on this step.
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {ppeToolRows.map(({ tool, depth }) => (
+                              <div
+                                key={tool.id}
+                                className={`p-3 bg-background/50 rounded-lg ${depth === 1 ? 'ml-3 border-l-2 border-l-primary/20' : ''}`}
+                              >
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-medium">{tool.name}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    Tool
+                                  </Badge>
+                                </div>
+                                {tool.description && (
+                                  <div className="text-sm text-muted-foreground mt-1">{tool.description}</div>
+                                )}
+                                {(tool.quantity !== undefined || (tool.purpose && tool.purpose.trim().length > 0)) && (
+                                  <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
+                                    {tool.quantity !== undefined && (
+                                      <div>Quantity: {tool.quantity}</div>
+                                    )}
+                                    {tool.purpose && tool.purpose.trim().length > 0 && (
+                                      <div>Purpose: {tool.purpose}</div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                            {ppeMaterialRows.map(({ material, depth }) => (
+                              <div
+                                key={material.id}
+                                className={`p-3 bg-background/50 rounded-lg ${depth === 1 ? 'ml-3 border-l-2 border-l-primary/20' : ''}`}
+                              >
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-medium">{material.name}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    Material
+                                  </Badge>
+                                </div>
+                                {material.description && (
+                                  <div className="text-sm text-muted-foreground mt-1">{material.description}</div>
+                                )}
+                                {(material.quantity !== undefined ||
+                                  (material.purpose && material.purpose.trim().length > 0) ||
+                                  (material.unit && material.unit.trim().length > 0)) && (
+                                  <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
+                                    {material.quantity !== undefined && (
+                                      <div>
+                                        Quantity: {material.quantity}
+                                        {material.unit && material.unit.trim().length > 0
+                                          ? ` ${material.unit}`
+                                          : ''}
+                                      </div>
+                                    )}
+                                    {material.purpose && material.purpose.trim().length > 0 && (
+                                      <div>Purpose: {material.purpose}</div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+
+              {currentStep && (
+                <Card className="bg-muted/30 border shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <FileOutput className="w-5 h-5" />
+                      Outputs
+                    </CardTitle>
+                    <CardDescription>What this step produces</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {!currentStep.outputs || currentStep.outputs.length === 0 ? (
+                      <div className="text-center py-4 text-sm text-muted-foreground border border-dashed rounded-md">
+                        No outputs on this step.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {currentStep.outputs.map((output) => (
+                          <div key={output.id} className="p-3 bg-background/50 rounded-lg">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <div className="font-medium">{output.name}</div>
+                              {output.type !== 'none' &&
+                                ['major-aesthetics', 'performance-durability', 'safety'].includes(
+                                  output.type
+                                ) && (
+                                  <Badge variant="outline" className="text-xs capitalize">
+                                    {output.type.replace('-', ' ')}
+                                  </Badge>
+                                )}
+                            </div>
+                            {output.description && (
+                              <div className="text-sm text-muted-foreground mt-1">{output.description}</div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {currentStep && (
+                <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Sparkles className="w-5 h-5" />
+                      Apps for this step
+                    </CardTitle>
+                    <CardDescription>Linked apps and tools</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {!currentStep.apps || currentStep.apps.length === 0 ? (
+                      <div className="text-center py-4 text-sm text-muted-foreground border border-dashed rounded-md border-primary/20">
+                        No apps linked to this step.
+                      </div>
+                    ) : (
+                      <CompactAppsSection
+                        apps={currentStep.apps}
+                        onAppsChange={() => {}}
+                        onAddApp={() => {}}
+                        onLaunchApp={() => {}}
+                        editMode={false}
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {currentStep && (
+                <Card className="bg-muted/30 border shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Clock className="w-5 h-5" />
+                      Time estimation
+                    </CardTitle>
+                    <CardDescription>Duration, workers, and skill (preview only)</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CompactTimeEstimationReadOnly
+                      step={currentStep}
+                      scalingUnit={currentProject?.scalingUnit}
+                      typicalProjectSize={currentProject?.typicalProjectSize}
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Navigation */}
               <div className="flex justify-between">
@@ -2857,10 +3084,25 @@ export default function EditWorkflowView({
 
       <MultiSelectLibraryDialog
         open={ppeLibraryOpen}
-        onOpenChange={setPpeLibraryOpen}
+        onOpenChange={(open) => {
+          setPpeLibraryOpen(open);
+          if (!open) {
+            setAlternatePpeToolParentId(null);
+            setAlternatePpeMaterialParentId(null);
+          }
+        }}
         type="ppe"
-        titleOverride="Select PPE"
+        titleOverride={
+          alternatePpeToolParentId || alternatePpeMaterialParentId
+            ? 'Select substitute PPE'
+            : 'Select PPE'
+        }
         onSelect={(selectedItems) => {
+          const parentToolId = alternatePpeToolParentId;
+          const parentMaterialId = alternatePpeMaterialParentId;
+          setAlternatePpeToolParentId(null);
+          setAlternatePpeMaterialParentId(null);
+
           const selectedTools = selectedItems.filter((item) => item.sourceType === 'tools');
           const selectedMaterials = selectedItems.filter((item) => item.sourceType === 'materials');
 
@@ -2871,6 +3113,7 @@ export default function EditWorkflowView({
             category: item.category as StepTool['category'],
             alternates: [],
             quantity: item.quantity,
+            ...(parentToolId ? { parentId: parentToolId } : {}),
           }));
 
           const newPpeMaterials: StepMaterial[] = selectedMaterials.map((item) => ({
@@ -2881,6 +3124,7 @@ export default function EditWorkflowView({
             alternates: [],
             quantity: item.quantity,
             unit: item.unit || undefined,
+            ...(parentMaterialId ? { parentId: parentMaterialId } : {}),
           }));
 
           if (!editingStep) {

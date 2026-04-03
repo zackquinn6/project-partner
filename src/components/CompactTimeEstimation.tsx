@@ -6,6 +6,38 @@ import { Clock, Timer, Info, Users, GraduationCap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { WorkflowStep } from '@/interfaces/Project';
 
+function getScalingUnitDisplay(scalingUnit: string | undefined): string {
+  switch (scalingUnit) {
+    case 'per square feet':
+    case 'per square foot':
+      return 'square foot';
+    case 'per 10x10 room':
+      return '10x10 room';
+    case 'per linear feet':
+    case 'per linear foot':
+      return 'linear foot';
+    case 'per cubic yard':
+      return 'cubic yard';
+    case 'per item':
+      return 'item';
+    default:
+      return 'unit';
+  }
+}
+
+function formatStepTypeLabel(stepType: WorkflowStep['stepType'] | undefined): string {
+  if (stepType === 'prime') return 'Prime';
+  if (stepType === 'scaled') return 'Scaled';
+  if (stepType === 'quality_control_non_scaled') return 'Quality control (non-scaled)';
+  if (stepType === 'quality_control_scaled') return 'Quality control (scaled)';
+  return '—';
+}
+
+function formatHoursCell(value: number | undefined): string {
+  if (value === undefined || Number.isNaN(value)) return '—';
+  return String(value);
+}
+
 interface CompactTimeEstimationProps {
   step: WorkflowStep;
   scalingUnit?: string;
@@ -227,6 +259,87 @@ export function CompactTimeEstimation({
           </Select>
         </div>
       )}
+    </div>
+  );
+}
+
+export interface CompactTimeEstimationReadOnlyProps {
+  step: WorkflowStep;
+  scalingUnit?: string;
+  typicalProjectSize?: number;
+}
+
+/** Read-only summary for workflow preview (no inputs). */
+export function CompactTimeEstimationReadOnly({
+  step,
+  scalingUnit,
+  typicalProjectSize,
+}: CompactTimeEstimationReadOnlyProps) {
+  const stepType = step.stepType === 'prime' ? 'prime' : 'scaled';
+  const unit = getScalingUnitDisplay(scalingUnit);
+  const primeSize = typeof typicalProjectSize === 'number' && typicalProjectSize > 0 ? typicalProjectSize : null;
+  const unitPlural = primeSize === 1 ? unit : `${unit}s`;
+  const scaleLabel =
+    stepType === 'prime'
+      ? primeSize != null
+        ? `${primeSize} ${unitPlural}`
+        : `Typical project size (${unitPlural})`
+      : `1 ${unit}`;
+
+  const vt = step.timeEstimation?.variableTime;
+
+  return (
+    <div className="space-y-4">
+      <div className="text-xs space-y-1">
+        <div>
+          <span className="text-muted-foreground">Step type: </span>
+          <span className="font-medium">{formatStepTypeLabel(step.stepType)}</span>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Timer className="w-3 h-3 text-primary" />
+          <span className="text-xs font-medium">Work time (hours)</span>
+        </div>
+        <div className="overflow-x-auto rounded-md border">
+          <table className="w-full text-xs">
+            <thead className="bg-muted/40">
+              <tr>
+                <th className="px-2 py-1 text-left font-medium">Low</th>
+                <th className="px-2 py-1 text-left font-medium">Expected</th>
+                <th className="px-2 py-1 text-left font-medium">High</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="p-2">{formatHoursCell(vt?.low)}</td>
+                <td className="p-2">{formatHoursCell(vt?.medium)}</td>
+                <td className="p-2">{formatHoursCell(vt?.high)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          {stepType === 'prime' ? `Prime basis: ${scaleLabel}` : `Scaled basis: ${scaleLabel}`}
+        </p>
+      </div>
+
+      <div className="space-y-1 text-xs">
+        <div className="flex items-center gap-2">
+          <Users className="w-3 h-3 text-primary" />
+          <span className="font-medium">Workers needed</span>
+        </div>
+        <p>{step.workersNeeded === undefined ? '—' : String(step.workersNeeded)}</p>
+      </div>
+
+      <div className="space-y-1 text-xs">
+        <div className="flex items-center gap-2">
+          <GraduationCap className="w-3 h-3 text-primary" />
+          <span className="font-medium">Skill level</span>
+        </div>
+        <p>{step.skillLevel ?? '—'}</p>
+      </div>
     </div>
   );
 }
