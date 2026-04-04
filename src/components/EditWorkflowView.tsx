@@ -2235,13 +2235,13 @@ export default function EditWorkflowView({
           <div
             className={
               hasStandardFoundationPhases && !isEditingStandardProject
-                ? 'mb-6 flex flex-row flex-wrap items-start gap-2 sm:gap-3'
+                ? 'mb-6 grid grid-cols-1 gap-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-stretch sm:gap-2'
                 : 'mb-6'
             }
           >
             {hasStandardFoundationPhases && !isEditingStandardProject ? (
-              <Card className="w-fit max-w-[min(100%,16rem)] shrink-0 border-border/80 p-0 shadow-sm sm:max-w-[min(100%,18rem)]">
-                <div className="flex items-center gap-2 px-2 py-1.5 sm:gap-2 sm:px-2 sm:py-2">
+              <Card className="flex h-full min-h-0 max-w-full flex-col border-border/80 p-0 shadow-sm sm:max-w-[10.75rem]">
+                <div className="flex h-full min-h-0 flex-1 items-center gap-1.5 px-1.5 py-2 sm:px-2 sm:py-2">
                   <Switch
                     id="show-standard-project-content"
                     checked={showStandardFoundationPhases}
@@ -2250,9 +2250,11 @@ export default function EditWorkflowView({
                   />
                   <Label
                     htmlFor="show-standard-project-content"
-                    className="cursor-pointer text-xs font-normal leading-snug sm:text-sm"
+                    className="cursor-pointer text-[11px] font-normal leading-[1.2] sm:text-xs sm:leading-tight"
                   >
-                    Show Standard Project Content
+                    Show Standard
+                    <br />
+                    Project Content
                   </Label>
                 </div>
               </Card>
@@ -2260,18 +2262,18 @@ export default function EditWorkflowView({
             <Card
               className={
                 hasStandardFoundationPhases && !isEditingStandardProject
-                  ? 'min-w-0 flex-1 border-border/80 p-0 overflow-hidden'
+                  ? 'flex min-h-0 min-w-0 flex-col border-border/80 p-0 overflow-hidden'
                   : 'border-border/80 p-0 overflow-hidden'
               }
             >
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="instruction-data-sources" className="border-0">
-                  <AccordionTrigger className="px-4 py-4 hover:no-underline sm:px-6 [&[data-state=open]]:border-b border-border/80">
-                    <span className="min-w-0 flex-1 text-left text-base font-semibold">Instruction data sources</span>
+                  <AccordionTrigger className="px-3 py-2.5 text-left hover:no-underline sm:px-3.5 sm:py-2.5 [&[data-state=open]]:border-b border-border/80 [&>svg]:shrink-0">
+                    <span className="min-w-0 flex-1 text-sm font-semibold sm:text-base">Instruction data sources</span>
                   </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-3 px-6 pb-6 pt-2">
-                      <p className="text-sm text-muted-foreground">
+                  <AccordionContent className="!pb-0">
+                    <div className="space-y-2 px-3 pb-3 pt-1 sm:px-3.5">
+                      <p className="text-xs text-muted-foreground sm:text-sm">
                         Document where this project&apos;s step instructions come from (manuals, codes, internal
                         references, SMEs, etc.). One field for the whole template.
                       </p>
@@ -2286,6 +2288,7 @@ export default function EditWorkflowView({
                       <Button
                         type="button"
                         size="sm"
+                        className="h-8"
                         onClick={handleSaveInstructionsDataSources}
                         disabled={savingInstructionsDataSources}
                       >
