@@ -25,6 +25,7 @@ import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { countDueSoon } from '@/utils/maintenanceProgress';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
+import { countProjectRunsInProgressOnDashboard } from '@/utils/projectDashboardStatus';
 import { 
   Home as HomeIcon,
   User,
@@ -103,7 +104,11 @@ export function MobileOptimizedHome() {
         return (run.progress || 0) >= 100;
       }
     }).length;
-    setStats(prev => ({ ...prev, completedProjects: completed }));
+    setStats((prev) => ({
+      ...prev,
+      completedProjects: completed,
+      activeProjects: countProjectRunsInProgressOnDashboard(projectRuns),
+    }));
   }, [projectRuns]);
 
   useEffect(() => {
@@ -120,18 +125,10 @@ export function MobileOptimizedHome() {
       }
 
       let openTasksCount = 0;
-      let activeProjectsFromTasks = 0;
 
       if (homeTasks && Array.isArray(homeTasks)) {
         const openTasks = homeTasks.filter((t: any) => t.status !== 'closed');
         openTasksCount = openTasks.length;
-        const projectIds = new Set<string>();
-        openTasks.forEach((t: any) => {
-          if (t.project_run_id) {
-            projectIds.add(t.project_run_id);
-          }
-        });
-        activeProjectsFromTasks = projectIds.size;
       }
 
       // Maintenance due soon: same definition as Home Maintenance tracker (90–99% toward due)
@@ -154,10 +151,9 @@ export function MobileOptimizedHome() {
         }
       }
 
-      setStats(prev => ({
+      setStats((prev) => ({
         ...prev,
         openTasks: openTasksCount,
-        activeProjects: activeProjectsFromTasks,
         maintenanceDueSoon,
       }));
     })();

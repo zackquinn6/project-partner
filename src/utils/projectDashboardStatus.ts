@@ -1,3 +1,6 @@
+import type { ProjectRun } from '@/interfaces/ProjectRun';
+import { calculateProjectProgress } from '@/utils/progressCalculation';
+
 /** Project Dashboard status derived only from calculated progress (0–100). */
 
 export type DashboardRunStatus = 'not-started' | 'in-progress' | 'complete';
@@ -36,4 +39,23 @@ export function dashboardStatusBadgeClassName(status: DashboardRunStatus): strin
     case 'complete':
       return 'bg-green-100 text-green-800 border-green-200';
   }
+}
+
+/**
+ * Counts project runs that show as **In progress** on the Project Dashboard (same rule as
+ * {@link dashboardStatusFromProgressPercent} on calculated progress). Cancelled runs are excluded.
+ */
+export function countProjectRunsInProgressOnDashboard(runs: ProjectRun[] | undefined | null): number {
+  if (!runs?.length) return 0;
+  return runs.filter((run) => {
+    if (run.status === 'cancelled') return false;
+    try {
+      const p = calculateProjectProgress(run);
+      return dashboardStatusFromProgressPercent(p) === 'in-progress';
+    } catch {
+      if (run.status === 'in-progress') return true;
+      const raw = run.progress ?? 0;
+      return raw > 0 && raw < 100;
+    }
+  }).length;
 }

@@ -30,6 +30,7 @@ import { PreSignInNavigation } from '@/components/PreSignInNavigation';
 import { TrialBanner } from '@/components/TrialBanner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { countDueSoon } from '@/utils/maintenanceProgress';
+import { countProjectRunsInProgressOnDashboard } from '@/utils/projectDashboardStatus';
 interface HomeProps {
   onViewChange: (view: 'admin' | 'user') => void;
 }
@@ -77,7 +78,8 @@ export default function Home({
       const completed = projectRuns.filter(run => run.status !== 'cancelled' && (run.progress || 0) >= 100).length;
       setStats(prev => ({
         ...prev,
-        completedProjects: completed
+        completedProjects: completed,
+        activeProjects: countProjectRunsInProgressOnDashboard(projectRuns),
       }));
     }
   }, [projectRuns]);
@@ -96,18 +98,10 @@ export default function Home({
       }
 
       let openTasksCount = 0;
-      let activeProjectsFromTasks = 0;
 
       if (homeTasks && Array.isArray(homeTasks)) {
         const openTasks = homeTasks.filter((t: any) => t.status !== 'closed');
         openTasksCount = openTasks.length;
-        const projectIds = new Set<string>();
-        openTasks.forEach((t: any) => {
-          if (t.project_run_id) {
-            projectIds.add(t.project_run_id);
-          }
-        });
-        activeProjectsFromTasks = projectIds.size;
       }
 
       // Maintenance due soon: same definition as Home Maintenance tracker (90–99% toward due)
@@ -133,7 +127,6 @@ export default function Home({
       setStats(prev => ({
         ...prev,
         openTasks: openTasksCount,
-        activeProjects: activeProjectsFromTasks,
         maintenanceDueSoon,
       }));
     })();
@@ -214,7 +207,10 @@ export default function Home({
                           </span>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="max-w-xs text-[11px]">
-                          <p>Unique projects that currently have at least one open task linked to them.</p>
+                          <p>
+                            Project runs that show as <span className="font-medium">In progress</span> on your
+                            Project Dashboard (workflow started, not yet complete).
+                          </p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
