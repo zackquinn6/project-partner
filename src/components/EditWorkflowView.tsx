@@ -2092,8 +2092,8 @@ export default function EditWorkflowView({
       {/* Header with Project Name and Controls */}
       <div className="sticky top-0 z-10 border-b bg-background">
         <div className="w-full px-3 py-3 sm:px-6 sm:py-4">
-          <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-6">
-            <div className="flex min-w-0 w-full flex-1 items-start gap-2 md:items-center md:pr-2">
+          <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
+            <div className="flex min-w-0 w-full flex-1 items-start gap-2 lg:min-w-[12rem] lg:pr-4">
               <h1 className="min-w-0 flex-1 text-lg font-bold leading-tight sm:text-xl md:text-2xl lg:text-3xl">
                 {isEditingStandardProject
                   ? '🔒 Standard Project Foundation Editor'
@@ -2120,103 +2120,107 @@ export default function EditWorkflowView({
                 </TooltipProvider>
               ) : null}
             </div>
-            <div className="flex w-full min-w-0 shrink-0 flex-wrap items-center justify-end gap-2 md:w-auto md:max-w-none">
+            <div className="flex w-full min-w-0 shrink-0 flex-col items-stretch gap-2 lg:w-auto lg:max-w-none lg:items-end">
               {editMode && (
-                <Badge variant="outline" className="max-w-full truncate bg-primary/10 text-primary border-primary/20">
+                <Badge variant="outline" className="max-w-full truncate bg-primary/10 text-primary border-primary/20 lg:self-end">
                   Editing: {currentStep?.step}
                 </Badge>
               )}
 
               {/* Desktop/tablet header actions */}
-              <div className="hidden md:flex flex-wrap gap-2">
+              <div className="hidden md:flex flex-col items-end gap-2">
                 {editMode ? (
-                  <>
+                  <div className="flex flex-wrap justify-end gap-2">
                     <Button onClick={handleSaveEdit} size="icon" variant="outline" title="Save Changes">
                       <Save className="w-4 h-4" />
                     </Button>
                     <Button onClick={handleCancelEdit} size="icon" variant="outline" title="Cancel">
                       <X className="w-4 h-4" />
                     </Button>
-                  </>
+                  </div>
                 ) : (
                   <>
-                    <Button
-                      onClick={() => setViewMode('structure')}
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <List className="w-4 h-4 max-lg:hidden" />
-                      Process Map
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        if (!currentProject?.id) {
-                          toast.error('No project selected');
-                          return;
-                        }
-                        setPfmeaRefreshNonce((n) => n + 1);
-                        setPfmeaOpen(true);
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                      disabled={!currentProject?.id}
-                      title="PFMEA"
-                    >
-                      <FileText className="w-4 h-4" />
-                      PFMEA
-                    </Button>
-                    <Button
-                      onClick={() => setRiskManagementOpen(true)}
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                      disabled={!currentProject?.id}
-                      title="Risk-Less — project risks for this template"
-                    >
-                      <Crosshair className="w-4 h-4" />
-                      Risk-Less
-                    </Button>
-                    <Button
-                      onClick={() => setDecisionTreeOpen(true)}
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Brain className="w-4 h-4" />
-                      Decision Tree
-                    </Button>
-                    <Button
-                      onClick={() => setImportOpen(true)}
-                      variant="outline"
-                      size="icon"
-                      title="Import"
-                      className="h-9 w-9 p-0 flex items-center justify-center"
-                    >
-                      <Upload className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      onClick={() => setAiProjectGeneratorOpen(true)}
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                      title="AI project generator"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      AI
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        onBackToAdmin();
-                      }}
-                      variant="default"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Save className="w-4 h-4" />
-                      Save and Close
-                    </Button>
+                    <div className="grid w-full max-w-md grid-cols-2 gap-2 lg:w-[min(100%,20rem)]">
+                      <Button
+                        onClick={() => setViewMode('structure')}
+                        variant="outline"
+                        size="sm"
+                        className="flex w-full items-center justify-center gap-2"
+                      >
+                        <List className="h-4 w-4 shrink-0" />
+                        Process Map
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (!currentProject?.id) {
+                            toast.error('No project selected');
+                            return;
+                          }
+                          setPfmeaRefreshNonce((n) => n + 1);
+                          setPfmeaOpen(true);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="flex w-full items-center justify-center gap-2"
+                        disabled={!currentProject?.id}
+                        title="PFMEA"
+                      >
+                        <FileText className="h-4 w-4 shrink-0" />
+                        PFMEA
+                      </Button>
+                      <Button
+                        onClick={() => setRiskManagementOpen(true)}
+                        variant="outline"
+                        size="sm"
+                        className="col-span-2 flex w-full items-center justify-center gap-2"
+                        disabled={!currentProject?.id}
+                        title="Risk-Less — project risks for this template"
+                      >
+                        <Crosshair className="h-4 w-4 shrink-0" />
+                        Risk-Less
+                      </Button>
+                    </div>
+                    <div className="flex w-full max-w-md flex-wrap justify-end gap-2 lg:max-w-none">
+                      <Button
+                        onClick={() => setDecisionTreeOpen(true)}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <Brain className="w-4 h-4" />
+                        Decision Tree
+                      </Button>
+                      <Button
+                        onClick={() => setImportOpen(true)}
+                        variant="outline"
+                        size="icon"
+                        title="Import"
+                        className="h-9 w-9 p-0 flex items-center justify-center"
+                      >
+                        <Upload className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        onClick={() => setAiProjectGeneratorOpen(true)}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                        title="AI project generator"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        AI
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          onBackToAdmin();
+                        }}
+                        variant="default"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <Save className="w-4 h-4" />
+                        Save and Close
+                      </Button>
+                    </div>
                   </>
                 )}
               </div>
@@ -2344,33 +2348,30 @@ export default function EditWorkflowView({
       </div>
 
       <div className="w-full px-3 py-4 sm:px-6 sm:py-8">
+        {!editMode && hasStandardFoundationPhases && !isEditingStandardProject ? (
+          <Card className="mb-6 border-border/80 p-4 sm:p-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <Switch
+                id="show-standard-project-content"
+                checked={showStandardFoundationPhases}
+                onCheckedChange={setShowStandardFoundationPhases}
+              />
+              <Label
+                htmlFor="show-standard-project-content"
+                className="cursor-pointer text-sm font-normal leading-snug"
+              >
+                Show Standard Project Content
+              </Label>
+            </div>
+          </Card>
+        ) : null}
+
         {!editMode && (
           <Card className="mb-6 border-border/80 p-0 overflow-hidden">
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="instruction-data-sources" className="border-0">
                 <AccordionTrigger className="px-4 py-4 hover:no-underline sm:px-6 [&[data-state=open]]:border-b border-border/80">
-                  <div className="flex min-w-0 flex-1 items-center gap-3 pr-2 text-left sm:gap-4">
-                    {hasStandardFoundationPhases && !isEditingStandardProject ? (
-                      <div
-                        className="flex shrink-0 items-center gap-2"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Switch
-                          id="show-standard-project-content"
-                          checked={showStandardFoundationPhases}
-                          onCheckedChange={setShowStandardFoundationPhases}
-                        />
-                        <Label
-                          htmlFor="show-standard-project-content"
-                          className="cursor-pointer text-sm font-normal leading-snug"
-                        >
-                          Show Standard Project Content
-                        </Label>
-                      </div>
-                    ) : null}
-                    <span className="min-w-0 flex-1 text-base font-semibold">Instruction data sources</span>
-                  </div>
+                  <span className="min-w-0 flex-1 text-left text-base font-semibold">Instruction data sources</span>
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-3 px-6 pb-6 pt-2">
