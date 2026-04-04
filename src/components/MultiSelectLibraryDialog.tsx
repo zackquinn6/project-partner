@@ -37,6 +37,8 @@ interface MultiSelectLibraryDialogProps {
   categoryExclude?: string | null;
   /** Overrides default "Select … from Library" title (e.g. alternate picker) */
   titleOverride?: string | null;
+  /** When true, list rows show only the item name (e.g. substitute pickers) */
+  hideItemDescriptions?: boolean;
 }
 
 export function MultiSelectLibraryDialog({
@@ -47,7 +49,8 @@ export function MultiSelectLibraryDialog({
   availableStepTools = [],
   categoryInclude = null,
   categoryExclude = null,
-  titleOverride = null
+  titleOverride = null,
+  hideItemDescriptions = false
 }: MultiSelectLibraryDialogProps) {
   const [items, setItems] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
@@ -590,7 +593,7 @@ export function MultiSelectLibraryDialog({
                                   </Badge>
                                 )}
                               </div>
-                              {item.description && (
+                              {!hideItemDescriptions && item.description && (
                                 <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
                               )}
                               {item.sourceType === 'materials' && item.unit_size && (

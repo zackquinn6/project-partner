@@ -3232,6 +3232,7 @@ export default function EditWorkflowView({
         type="tools"
         categoryExclude="PPE"
         titleOverride={alternateToolParentId ? 'Select substitute tool' : null}
+        hideItemDescriptions={!!alternateToolParentId}
         availableStepTools={editingStep?.tools?.map((t) => ({
           id: t.id,
           name: t.name,
@@ -3242,7 +3243,7 @@ export default function EditWorkflowView({
           const newTools: StepTool[] = selectedItems.map((item) => ({
             id: `tool-${Date.now()}-${Math.random()}`,
             name: item.item,
-            description: item.description || '',
+            description: parentId ? '' : item.description || '',
             category: item.category as StepTool['category'],
             alternates: [],
             quantity: item.quantity,
@@ -3261,13 +3262,14 @@ export default function EditWorkflowView({
         type="materials"
         categoryExclude="PPE"
         titleOverride={alternateMaterialParentId ? 'Select substitute material' : null}
+        hideItemDescriptions={!!alternateMaterialParentId}
         onSelect={(selectedItems) => {
           const parentId = alternateMaterialParentId;
           setAlternateMaterialParentId(null);
           const newMaterials: StepMaterial[] = selectedItems.map((item) => ({
             id: `material-${Date.now()}-${Math.random()}`,
             name: item.item,
-            description: item.description || '',
+            description: parentId ? '' : item.description || '',
             category: item.category as StepMaterial['category'],
             alternates: [],
             quantity: item.quantity,
@@ -3293,6 +3295,7 @@ export default function EditWorkflowView({
             ? 'Select substitute PPE'
             : 'Select PPE'
         }
+        hideItemDescriptions={!!(alternatePpeToolParentId || alternatePpeMaterialParentId)}
         onSelect={(selectedItems) => {
           const parentToolId = alternatePpeToolParentId;
           const parentMaterialId = alternatePpeMaterialParentId;
@@ -3302,10 +3305,11 @@ export default function EditWorkflowView({
           const selectedTools = selectedItems.filter((item) => item.sourceType === 'tools');
           const selectedMaterials = selectedItems.filter((item) => item.sourceType === 'materials');
 
+          const substitutingPpe = !!(parentToolId || parentMaterialId);
           const newPpeTools: StepTool[] = selectedTools.map((item) => ({
             id: `ppe-tool-${Date.now()}-${Math.random()}`,
             name: item.item,
-            description: item.description || '',
+            description: substitutingPpe ? '' : item.description || '',
             category: item.category as StepTool['category'],
             alternates: [],
             quantity: item.quantity,
@@ -3315,7 +3319,7 @@ export default function EditWorkflowView({
           const newPpeMaterials: StepMaterial[] = selectedMaterials.map((item) => ({
             id: `ppe-material-${Date.now()}-${Math.random()}`,
             name: item.item,
-            description: item.description || '',
+            description: substitutingPpe ? '' : item.description || '',
             category: item.category as StepMaterial['category'],
             alternates: [],
             quantity: item.quantity,
