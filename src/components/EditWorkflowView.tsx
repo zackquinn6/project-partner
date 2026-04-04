@@ -2092,9 +2092,9 @@ export default function EditWorkflowView({
       {/* Header with Project Name and Controls */}
       <div className="sticky top-0 z-10 border-b bg-background">
         <div className="w-full px-3 py-3 sm:px-6 sm:py-4">
-          <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
-            <div className="flex min-w-0 w-full flex-1 items-start gap-2 lg:min-w-[12rem] lg:pr-4">
-              <h1 className="min-w-0 flex-1 text-lg font-bold leading-tight sm:text-xl md:text-2xl lg:text-3xl">
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-2 sm:gap-x-3">
+            <div className="flex min-w-0 flex-[1_1_12rem] items-center gap-1.5 sm:gap-2">
+              <h1 className="min-w-0 text-lg font-bold leading-tight sm:text-xl md:text-2xl lg:text-3xl">
                 {isEditingStandardProject
                   ? '🔒 Standard Project Foundation Editor'
                   : `Workflow Editor: ${currentProject?.name?.replace(/\s*\([Dd]raft\)\s*/g, '').replace(/\s*\(Rev\s+\d+\)\s*/gi, '').trim() || 'Untitled Project'}`}
@@ -2107,7 +2107,7 @@ export default function EditWorkflowView({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="mt-0.5 h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground md:mt-0"
+                        className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
                         aria-label="About Workflow Editor"
                       >
                         <Info className="h-4 w-4" />
@@ -2120,225 +2120,111 @@ export default function EditWorkflowView({
                 </TooltipProvider>
               ) : null}
             </div>
-            <div className="flex w-full min-w-0 shrink-0 flex-col items-stretch gap-2 lg:w-auto lg:max-w-none lg:items-end">
-              {editMode && (
-                <Badge variant="outline" className="max-w-full truncate bg-primary/10 text-primary border-primary/20 lg:self-end">
-                  Editing: {currentStep?.step}
-                </Badge>
-              )}
-
-              {/* Desktop/tablet header actions */}
-              <div className="hidden md:flex flex-row flex-wrap items-center justify-end gap-2">
-                {editMode ? (
-                  <>
-                    <Button onClick={handleSaveEdit} size="icon" variant="outline" title="Save Changes">
-                      <Save className="w-4 h-4" />
-                    </Button>
-                    <Button onClick={handleCancelEdit} size="icon" variant="outline" title="Cancel">
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button type="button" variant="outline" size="sm" className="gap-2">
-                          Workflow Tools
-                          <ChevronDown className="h-4 w-4 shrink-0 opacity-70" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            setViewMode('structure');
-                          }}
-                        >
-                          <List className="w-4 h-4 mr-2" />
-                          Process Map
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={!currentProject?.id}
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            if (!currentProject?.id) return;
-                            setPfmeaRefreshNonce((n) => n + 1);
-                            setPfmeaOpen(true);
-                          }}
-                        >
-                          <FileText className="w-4 h-4 mr-2" />
-                          PFMEA
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={!currentProject?.id}
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            if (!currentProject?.id) return;
-                            setRiskManagementOpen(true);
-                          }}
-                        >
-                          <Crosshair className="w-4 h-4 mr-2" />
-                          Risk-Less
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            setDecisionTreeOpen(true);
-                          }}
-                        >
-                          <Brain className="w-4 h-4 mr-2" />
-                          Decision Tree
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            setImportOpen(true);
-                          }}
-                        >
-                          <Upload className="w-4 h-4 mr-2" />
-                          Import
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            setAiProjectGeneratorOpen(true);
-                          }}
-                        >
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          AI
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        onBackToAdmin();
-                      }}
-                      variant="default"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Save className="w-4 h-4" />
-                      Save and Close
-                    </Button>
-                  </>
-                )}
-              </div>
-
-              {/* Slim-width header actions */}
-              <div className="md:hidden flex items-center justify-end gap-2">
-                {editMode ? (
+            {editMode ? (
+              <Badge
+                variant="outline"
+                className="max-w-[min(100%,14rem)] shrink-0 truncate bg-primary/10 text-primary border-primary/20 sm:max-w-[min(100%,20rem)]"
+              >
+                Editing: {currentStep?.step}
+              </Badge>
+            ) : null}
+            <div className="ml-auto flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto">
+              {editMode ? (
+                <>
+                  <Button onClick={handleSaveEdit} size="icon" variant="outline" title="Save Changes">
+                    <Save className="w-4 h-4" />
+                  </Button>
+                  <Button onClick={handleCancelEdit} size="icon" variant="outline" title="Cancel">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" aria-label="Open actions menu">
-                        <Menu className="h-4 w-4" />
+                      <Button type="button" variant="outline" size="sm" className="gap-1.5 sm:gap-2">
+                        <span className="sm:hidden">Tools</span>
+                        <span className="hidden sm:inline">Workflow Tools</span>
+                        <ChevronDown className="h-4 w-4 shrink-0 opacity-70" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuItem
                         onSelect={(e) => {
                           e.preventDefault();
-                          handleSaveEdit();
+                          setViewMode('structure');
                         }}
                       >
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Changes
+                        <List className="w-4 h-4 mr-2" />
+                        Process Map
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={!currentProject?.id}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          if (!currentProject?.id) return;
+                          setPfmeaRefreshNonce((n) => n + 1);
+                          setPfmeaOpen(true);
+                        }}
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        PFMEA
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={!currentProject?.id}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          if (!currentProject?.id) return;
+                          setRiskManagementOpen(true);
+                        }}
+                      >
+                        <Crosshair className="w-4 h-4 mr-2" />
+                        Risk-Less
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onSelect={(e) => {
                           e.preventDefault();
-                          handleCancelEdit();
+                          setDecisionTreeOpen(true);
                         }}
                       >
-                        <X className="w-4 h-4 mr-2" />
-                        Cancel
+                        <Brain className="w-4 h-4 mr-2" />
+                        Decision Tree
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          setImportOpen(true);
+                        }}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Import
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          setAiProjectGeneratorOpen(true);
+                        }}
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        AI
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                ) : (
-                  <>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5 px-2">
-                          Workflow Tools
-                          <ChevronDown className="h-4 w-4 shrink-0 opacity-70" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            setViewMode('structure');
-                          }}
-                        >
-                          <List className="w-4 h-4 mr-2" />
-                          Process Map
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={!currentProject?.id}
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            if (!currentProject?.id) return;
-                            setPfmeaRefreshNonce((n) => n + 1);
-                            setPfmeaOpen(true);
-                          }}
-                        >
-                          <FileText className="w-4 h-4 mr-2" />
-                          PFMEA
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={!currentProject?.id}
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            if (!currentProject?.id) return;
-                            setRiskManagementOpen(true);
-                          }}
-                        >
-                          <Crosshair className="w-4 h-4 mr-2" />
-                          Risk-Less
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            setDecisionTreeOpen(true);
-                          }}
-                        >
-                          <Brain className="w-4 h-4 mr-2" />
-                          Decision Tree
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            setImportOpen(true);
-                          }}
-                        >
-                          <Upload className="w-4 h-4 mr-2" />
-                          Import
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            setAiProjectGeneratorOpen(true);
-                          }}
-                        >
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          AI
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <Button
-                      type="button"
-                      variant="default"
-                      size="sm"
-                      className="shrink-0 gap-2"
-                      onClick={() => onBackToAdmin()}
-                    >
-                      <Save className="h-4 w-4 shrink-0" />
-                      Save and Close
-                    </Button>
-                  </>
-                )}
-              </div>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      onBackToAdmin();
+                    }}
+                    variant="default"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Save className="w-4 h-4 shrink-0" />
+                    <span className="hidden min-[380px]:inline">Save and Close</span>
+                    <span className="min-[380px]:hidden">Save</span>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -2349,21 +2235,22 @@ export default function EditWorkflowView({
           <div
             className={
               hasStandardFoundationPhases && !isEditingStandardProject
-                ? 'mb-6 flex flex-col gap-6 lg:flex-row lg:items-stretch'
+                ? 'mb-6 flex flex-row flex-wrap items-start gap-2 sm:gap-3'
                 : 'mb-6'
             }
           >
             {hasStandardFoundationPhases && !isEditingStandardProject ? (
-              <Card className="shrink-0 border-border/80 p-4 sm:p-6 lg:w-[min(100%,22rem)] lg:self-stretch">
-                <div className="flex h-full flex-wrap items-center gap-3 lg:min-h-[3.25rem]">
+              <Card className="w-fit max-w-[min(100%,16rem)] shrink-0 border-border/80 p-0 shadow-sm sm:max-w-[min(100%,18rem)]">
+                <div className="flex items-center gap-2 px-2 py-1.5 sm:gap-2 sm:px-2 sm:py-2">
                   <Switch
                     id="show-standard-project-content"
                     checked={showStandardFoundationPhases}
                     onCheckedChange={setShowStandardFoundationPhases}
+                    className="shrink-0"
                   />
                   <Label
                     htmlFor="show-standard-project-content"
-                    className="cursor-pointer text-sm font-normal leading-snug"
+                    className="cursor-pointer text-xs font-normal leading-snug sm:text-sm"
                   >
                     Show Standard Project Content
                   </Label>
