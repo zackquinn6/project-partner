@@ -37,6 +37,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
 import { parseGeneralProjectDecisionsFromPrerequisites } from '@/utils/generalProjectDecisions';
+import { orderSectionsWithSafetyFirst } from '@/utils/instructionContentSections';
 import { parseProcessVariablesFromDb } from '@/utils/processVariablesUtils';
 import {
   resolveIncorporatedSourcePhase,
@@ -1443,7 +1444,8 @@ export default function EditWorkflowView({
     if (!stepId || !sections) return;
     
     try {
-      const sectionsWithDisplayOrder = sections.map((section, index) => ({
+      const ordered = orderSectionsWithSafetyFirst(sections);
+      const sectionsWithDisplayOrder = ordered.map((section, index) => ({
         ...section,
         display_order: index + 1
       }));

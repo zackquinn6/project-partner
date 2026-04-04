@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,15 +13,13 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { ContentSection, GeneralProjectDecision } from "@/interfaces/Project";
+import {
+  isInstructionWarningType,
+  orderSectionsWithSafetyFirst,
+} from "@/utils/instructionContentSections";
 
 const DECISION_APPLICABILITY_TOOLTIP =
   "Leave as default to show this section for every homeowner choice. Add rules so this section only appears when all listed decisions match the selected choices.";
-
-function orderSectionsWithSafetyFirst(sections: ContentSection[]): ContentSection[] {
-  const safety = sections.filter((s) => s.type === "safety-warning");
-  const rest = sections.filter((s) => s.type !== "safety-warning");
-  return [...safety, ...rest];
-}
 
 function getLayoutWidthClass(width?: ContentSection["width"]) {
   switch (width) {
@@ -212,15 +210,17 @@ function SectionDecisionApplicabilityBlock({
 
 export function MultiContentEditor({ sections, onChange, generalDecisions = [] }: MultiContentEditorProps) {
   const orderedSections = useMemo(() => orderSectionsWithSafetyFirst(sections), [sections]);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   useEffect(() => {
     const ordered = orderSectionsWithSafetyFirst(sections);
     const rawKey = sections.map((s) => s.id).join("|");
     const orderedKey = ordered.map((s) => s.id).join("|");
     if (rawKey !== orderedKey) {
-      onChange(ordered);
+      onChangeRef.current(ordered);
     }
-  }, [sections, onChange]);
+  }, [sections]);
 
   const addSection = (type: ContentSection["type"]) => {
     const newSection: ContentSection = {
@@ -231,55 +231,59 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
     };
     const base = orderSectionsWithSafetyFirst(sections);
     if (type === "safety-warning") {
-      const safety = base.filter((s) => s.type === "safety-warning");
-      const rest = base.filter((s) => s.type !== "safety-warning");
+      const safety = base.filter((s) => isInstructionWarningType(s.type));
+      const rest = base.filter((s) => !isInstructionWarningType(s.type));
       onChange([newSection, ...safety, ...rest]);
     } else {
       onChange([...base, newSection]);
     }
   };
 
-  const updateSection = (id: string, updates: Partial<ContentSection>) => {
-    const updated = sections.map((section) => (section.id === id ? { ...section, ...updates } : section));
+  const updateSection = (target: ContentSection, updates: Partial<ContentSection>) => {
+    const idx = sections.indexOf(target);
+    if (idx < 0) return;
+    const updated = sections.map((section, i) => (i === idx ? { ...section, ...updates } : section));
     onChange(updated);
   };
 
-  const removeSection = (id: string) => {
-    onChange(sections.filter((section) => section.id !== id));
+  const removeSection = (target: ContentSection) => {
+    const idx = sections.indexOf(target);
+    if (idx < 0) return;
+    onChange(sections.filter((_, i) => i !== idx));
   };
 
-  const moveSection = (id: string, direction: "up" | "down") => {
+  const moveSection = (target: ContentSection, direction: "up" | "down") => {
     const list = orderSectionsWithSafetyFirst(sections);
-    const index = list.findIndex((s) => s.id === id);
+    const index = list.indexOf(target);
     if (index < 0) return;
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= list.length) return;
     const cur = list[index];
     const adj = list[targetIndex];
-    const curSafety = cur.type === "safety-warning";
-    const adjSafety = adj.type === "safety-warning";
+    const curSafety = isInstructionWarningType(cur.type);
+    const adjSafety = isInstructionWarningType(adj.type);
     if (curSafety !== adjSafety) return;
     const newSections = [...list];
     [newSections[index], newSections[targetIndex]] = [newSections[targetIndex], newSections[index]];
     onChange(newSections);
   };
 
-  const canMoveUp = (id: string) => {
+  const canMoveUp = (target: ContentSection) => {
     const list = orderedSections;
-    const index = list.findIndex((s) => s.id === id);
+    const index = list.indexOf(target);
     if (index <= 0) return false;
     const cur = list[index];
     const prev = list[index - 1];
-    return (cur.type === "safety-warning") === (prev.type === "safety-warning");
+    return isInstructionWarningType(cur.type) === isInstructionWarningType(prev.type);
   };
 
-  const canMoveDown = (id: string) => {
+  const canMoveDown = (target: ContentSection) => {
     const list = orderedSections;
-    const index = list.findIndex((s) => s.id === id);
+    const index = list.indexOf(target);
     if (index < 0 || index >= list.length - 1) return false;
     const cur = list[index];
     const next = list[index + 1];
-    return (cur.type === "safety-warning") === (next.type === "safety-warning");
+    return isInstructionWarningType(cur.type) === isInstructionWarningType(next.type);
   };
 
   const getIcon = (type: ContentSection['type']) => {
@@ -289,6 +293,8 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
       case 'video': return <Video className="w-4 h-4" />;
       case 'link': return <ExternalLink className="w-4 h-4" />;
       case 'safety-warning': return <AlertTriangle className="w-4 h-4" />;
+      case 'warning': return <AlertTriangle className="w-4 h-4" />;
+      case 'button': return <FileText className="w-4 h-4" />;
     }
   };
 
@@ -348,7 +354,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
       <div className="flex flex-wrap gap-4 items-start">
         {orderedSections.map((section, index) => (
           <div
-            key={section.id}
+            key={`${sections.indexOf(section)}-${section.id}`}
             className={cn(
               getLayoutWidthClass(section.width),
               getLayoutAlignmentClass(section.alignment),
@@ -368,23 +374,23 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    onClick={() => moveSection(section.id, 'up')}
-                    disabled={!canMoveUp(section.id)}
+                    onClick={() => moveSection(section, 'up')}
+                    disabled={!canMoveUp(section)}
                   >
                     ↑
                   </Button>
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    onClick={() => moveSection(section.id, 'down')}
-                    disabled={!canMoveDown(section.id)}
+                    onClick={() => moveSection(section, 'down')}
+                    disabled={!canMoveDown(section)}
                   >
                     ↓
                   </Button>
                   <Button 
                     size="sm" 
                     variant="destructive" 
-                    onClick={() => removeSection(section.id)}
+                    onClick={() => removeSection(section)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -398,7 +404,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                   <Label>Width</Label>
                   <Select 
                     value={section.width || 'full'} 
-                    onValueChange={(value) => updateSection(section.id, { width: value as ContentSection['width'] })}
+                    onValueChange={(value) => updateSection(section, { width: value as ContentSection['width'] })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -415,7 +421,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                   <Label>Alignment</Label>
                   <Select 
                     value={section.alignment || 'left'} 
-                    onValueChange={(value) => updateSection(section.id, { alignment: value as ContentSection['alignment'] })}
+                    onValueChange={(value) => updateSection(section, { alignment: value as ContentSection['alignment'] })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -432,7 +438,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
               <SectionDecisionApplicabilityBlock
                 section={section}
                 generalDecisions={generalDecisions}
-                onUpdate={(app) => updateSection(section.id, { decisionApplicability: app })}
+                onUpdate={(app) => updateSection(section, { decisionApplicability: app })}
               />
 
               {section.type === 'text' && (
@@ -441,7 +447,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                     <Label>Section Title (Optional)</Label>
                     <Input
                       value={section.title || ''}
-                      onChange={(e) => updateSection(section.id, { title: e.target.value })}
+                      onChange={(e) => updateSection(section, { title: e.target.value })}
                       placeholder="Enter section title..."
                     />
                   </div>
@@ -449,7 +455,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                     <Label>Text Content</Label>
                     <Textarea
                       value={section.content}
-                      onChange={(e) => updateSection(section.id, { content: e.target.value })}
+                      onChange={(e) => updateSection(section, { content: e.target.value })}
                       placeholder="Enter text content..."
                       className="min-h-[100px]"
                     />
@@ -463,7 +469,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                     <Label>Image Title (Optional)</Label>
                     <Input
                       value={section.title || ''}
-                      onChange={(e) => updateSection(section.id, { title: e.target.value })}
+                      onChange={(e) => updateSection(section, { title: e.target.value })}
                       placeholder="Enter image title..."
                     />
                   </div>
@@ -471,7 +477,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                     <Label>Image URL or Upload</Label>
                     <Input
                       value={section.content}
-                      onChange={(e) => updateSection(section.id, { content: e.target.value })}
+                      onChange={(e) => updateSection(section, { content: e.target.value })}
                       placeholder="Enter image URL or upload below..."
                     />
                     <div className="flex items-center gap-2">
@@ -502,7 +508,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                               .from('library-photos')
                               .getPublicUrl(fileName);
                             
-                            updateSection(section.id, { content: publicUrl });
+                            updateSection(section, { content: publicUrl });
                           } catch (error) {
                             console.error('Upload error:', error);
                             alert('Failed to upload image');
@@ -533,7 +539,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                     <Label>Video Title (Optional)</Label>
                     <Input
                       value={section.title || ''}
-                      onChange={(e) => updateSection(section.id, { title: e.target.value })}
+                      onChange={(e) => updateSection(section, { title: e.target.value })}
                       placeholder="Enter video title..."
                     />
                   </div>
@@ -541,7 +547,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                     <Label>Video Embed URL</Label>
                     <Input
                       value={section.content}
-                      onChange={(e) => updateSection(section.id, { content: e.target.value })}
+                      onChange={(e) => updateSection(section, { content: e.target.value })}
                       placeholder="Enter video embed URL (YouTube, Vimeo, etc.)..."
                     />
                   </div>
@@ -566,7 +572,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                     <Label>Link Title</Label>
                     <Input
                       value={section.title || ''}
-                      onChange={(e) => updateSection(section.id, { title: e.target.value })}
+                      onChange={(e) => updateSection(section, { title: e.target.value })}
                       placeholder="Enter link title..."
                     />
                   </div>
@@ -574,7 +580,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                     <Label>URL</Label>
                     <Input
                       value={section.content}
-                      onChange={(e) => updateSection(section.id, { content: e.target.value })}
+                      onChange={(e) => updateSection(section, { content: e.target.value })}
                       placeholder="Enter URL..."
                     />
                   </div>
@@ -594,13 +600,13 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                 </>
               )}
 
-              {section.type === 'safety-warning' && (
+              {isInstructionWarningType(section.type) && (
                 <>
                   <div>
                     <Label>Warning Title</Label>
                     <Input
                       value={section.title || ''}
-                      onChange={(e) => updateSection(section.id, { title: e.target.value })}
+                      onChange={(e) => updateSection(section, { title: e.target.value })}
                       placeholder="Enter warning title..."
                     />
                   </div>
@@ -608,7 +614,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                     <Label>Severity Level</Label>
                     <Select 
                       value={section.severity || 'medium'} 
-                      onValueChange={(value) => updateSection(section.id, { severity: value as ContentSection['severity'] })}
+                      onValueChange={(value) => updateSection(section, { severity: value as ContentSection['severity'] })}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -625,7 +631,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                     <Label>Warning Message</Label>
                     <Textarea
                       value={section.content}
-                      onChange={(e) => updateSection(section.id, { content: e.target.value })}
+                      onChange={(e) => updateSection(section, { content: e.target.value })}
                       placeholder="Enter safety warning details..."
                       className="min-h-[80px]"
                     />

@@ -107,14 +107,17 @@ export interface ContentSectionDecisionRule {
 
 export interface ContentSection {
   id: string;
-  type: 'text' | 'image' | 'video' | 'link' | 'button' | 'safety-warning';
+  /** Legacy stored rows may use `warning`; treat like safety-warning everywhere. */
+  type: 'text' | 'image' | 'video' | 'link' | 'button' | 'safety-warning' | 'warning';
   content: string;
   title?: string;
   severity?: 'low' | 'medium' | 'high' | 'critical'; // For safety-warning type
   width?: 'full' | 'half' | 'third' | 'two-thirds';
   alignment?: 'left' | 'center' | 'right';
+  /** Persisted on save (step_instructions JSON); warnings are ordered first in the editor. */
+  display_order?: number;
   // Button-specific properties
-  buttonAction?: 'project-customizer' | 'project-scheduler' | 'shopping-checklist' | 'materials-selection' | 'project-budgeting' | 'project-performance';
+  buttonAction?: 'project-customizer' | 'project-scheduler' | 'shopping-checklist' | 'materials-selection' | 'project-budgeting' | 'project-performance' | 'after-action-review';
   buttonLabel?: string;
   buttonIcon?: string;
   buttonVariant?: 'default' | 'outline' | 'secondary';

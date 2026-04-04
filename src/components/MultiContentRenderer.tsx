@@ -2,22 +2,8 @@ import { ExternalLink, HelpCircle, Calendar as CalendarIcon, ShoppingCart, Alert
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-
-interface ContentSection {
-  id?: string;
-  type: 'text' | 'image' | 'video' | 'link' | 'button' | 'safety-warning';
-  content: string;
-  title?: string;
-  severity?: 'low' | 'medium' | 'high' | 'critical';
-  width?: 'full' | 'half' | 'third' | 'two-thirds';
-  alignment?: 'left' | 'center' | 'right';
-  display_order?: number;
-  // Button-specific properties
-  buttonAction?: 'project-customizer' | 'project-scheduler' | 'shopping-checklist' | 'materials-selection' | 'project-budgeting' | 'project-performance' | 'after-action-review';
-  buttonLabel?: string;
-  buttonIcon?: string;
-  buttonVariant?: 'default' | 'outline' | 'secondary';
-}
+import type { ContentSection } from "@/interfaces/Project";
+import { isInstructionWarningType } from "@/utils/instructionContentSections";
 
 interface MultiContentRendererProps {
   sections: ContentSection[];
@@ -64,8 +50,8 @@ export function MultiContentRenderer({ sections, onButtonAction }: MultiContentR
     return aOrder - bOrder;
   });
 
-  const warningSections = sortedSections.filter((s) => s.type === "safety-warning" && s.content);
-  const nonWarningSections = sortedSections.filter((s) => !(s.type === "safety-warning" && s.content));
+  const warningSections = sortedSections.filter((s) => isInstructionWarningType(s.type));
+  const nonWarningSections = sortedSections.filter((s) => !isInstructionWarningType(s.type));
 
   return (
     <div className="space-y-6">
