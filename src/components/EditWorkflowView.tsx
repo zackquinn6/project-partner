@@ -2123,7 +2123,7 @@ export default function EditWorkflowView({
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                            aria-label="Template editing restrictions"
+                            aria-label="About Workflow Editor"
                           >
                             <Info className="h-3.5 w-3.5" />
                           </Button>
@@ -2238,10 +2238,22 @@ export default function EditWorkflowView({
               </div>
 
               {/* Slim-width header actions */}
-              <div className="md:hidden">
+              <div className="md:hidden flex items-center justify-end gap-2">
+                {!editMode && (
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    className="shrink-0 gap-2"
+                    onClick={() => onBackToAdmin()}
+                  >
+                    <Save className="h-4 w-4 shrink-0" />
+                    Save and Close
+                  </Button>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="outline" size="icon" className="h-9 w-9" aria-label="Open actions menu">
+                    <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" aria-label="Open actions menu">
                       <Menu className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -2276,7 +2288,7 @@ export default function EditWorkflowView({
                           }}
                         >
                           <Info className="w-4 h-4 mr-2" />
-                          Template restrictions
+                          About Workflow Editor
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onSelect={(e) => {
@@ -2284,6 +2296,7 @@ export default function EditWorkflowView({
                             setViewMode('structure');
                           }}
                         >
+                          <List className="w-4 h-4 mr-2" />
                           Process Map
                         </DropdownMenuItem>
                         <DropdownMenuItem
@@ -2335,15 +2348,6 @@ export default function EditWorkflowView({
                         >
                           <Sparkles className="w-4 h-4 mr-2" />
                           AI Project Generator
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            onBackToAdmin();
-                          }}
-                        >
-                          <Save className="w-4 h-4 mr-2" />
-                          Save and Close
                         </DropdownMenuItem>
                       </>
                     )}
