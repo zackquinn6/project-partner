@@ -2414,22 +2414,6 @@ export default function EditWorkflowView({
         {editMode ?
       // Full-screen edit mode
       <div className="space-y-6">
-            {hasStandardFoundationPhases && !isEditingStandardProject ? (
-              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/80 bg-muted/15 px-4 py-3">
-                <Switch
-                  id="show-standard-project-content-edit"
-                  checked={showStandardFoundationPhases}
-                  onCheckedChange={setShowStandardFoundationPhases}
-                />
-                <Label
-                  htmlFor="show-standard-project-content-edit"
-                  className="cursor-pointer text-sm font-normal leading-snug"
-                >
-                  Show Standard Project Content
-                </Label>
-              </div>
-            ) : null}
-
             {/* Step Details */}
             {editingStep && <div className="space-y-6">
                 {/* Basic Info */}
