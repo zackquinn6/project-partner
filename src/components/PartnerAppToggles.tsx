@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
@@ -139,15 +137,6 @@ export const PartnerAppToggles: React.FC = () => {
             disabled={loading || updatingToolRentals || !partnerAppsEnabled}
           />
         </div>
-
-        {!expertSupportEnabled && (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              Support is off. The option will not appear in the project planning workflow or in Kickoff step 4 (Workflow Setup).
-            </AlertDescription>
-          </Alert>
-        )}
       </CardContent>
     </Card>
   );
