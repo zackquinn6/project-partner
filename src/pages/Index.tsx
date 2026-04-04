@@ -191,7 +191,9 @@ const Index = () => {
 
   // Removed debug logging - no longer tracking duplicate modals
 
-  // Handle navigation state changes (including view parameter)
+  // Handle navigation state changes (including view parameter).
+  // projectRuns is intentionally omitted from this effect's deps: it changes on every refetch and would
+  // re-apply stale location.state.view. Deferred run binding uses a separate effect below.
   useEffect(() => {
     // Full reload (F5) on My Workshop `/` only: clear stale history state once. If the user reloaded on `/projects`
     // or is returning from the catalog with `navigate('/', { state })`, do NOT return early — apply location.state.
@@ -274,7 +276,16 @@ const Index = () => {
         setForceListingMode(true);
       }
     }
-  }, [location.state, location.pathname, projectRuns, isMobile, setCurrentProjectRun, setCurrentProject, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, location.pathname, isMobile, setCurrentProjectRun, setCurrentProject, navigate]);
+
+  // When project runs arrive after navigation (or refetch), sync current run from history without re-driving view from stale state.
+  useEffect(() => {
+    const st = location.state as IndexLocationState | undefined;
+    if (st?.view !== 'user' || typeof st.projectRunId !== 'string' || st.projectRunId.length === 0) return;
+    const run = projectRuns.find((r) => r.id === st.projectRunId);
+    if (run) setCurrentProjectRun(run);
+  }, [location.state, projectRuns, setCurrentProjectRun]);
 
   // Prevent constant re-renders by memoizing navigation handlers
   const [hasHandledInitialState, setHasHandledInitialState] = useState(false);
@@ -471,6 +482,7 @@ const Index = () => {
       if (currentView === 'admin' || isAdmin) {
         console.log('✅ Index: Switching to editWorkflow view');
         setCurrentView('editWorkflow');
+        navigate('/', { replace: true, state: { view: 'editWorkflow' } });
       } else {
         console.warn('⚠️ Index: Ignoring edit workflow navigation (not in admin mode)');
       }
@@ -566,6 +578,7 @@ const Index = () => {
   const handleAdminAccess = () => {
     if (showAdminPanel) {
       setCurrentView('admin');
+      navigate('/', { replace: true, state: { view: 'admin' } });
     } else {
       toast.error('Access denied. Admin or Project Owner role required.');
     }
@@ -575,13 +588,14 @@ const Index = () => {
     const onMobileAdmin = () => {
       if (showAdminPanel) {
         setCurrentView('admin');
+        navigate('/', { replace: true, state: { view: 'admin' } });
       } else {
         toast.error('Access denied. Admin or Project Owner role required.');
       }
     };
     window.addEventListener('open-admin-panel-mobile', onMobileAdmin);
     return () => window.removeEventListener('open-admin-panel-mobile', onMobileAdmin);
-  }, [showAdminPanel]);
+  }, [showAdminPanel, navigate]);
 
   // CONDITIONAL LOGIC AFTER ALL HOOKS
   // Show Home component as landing page for non-authenticated users
@@ -815,7 +829,14 @@ const Index = () => {
           </ProjectNavigationErrorBoundary>
         );
       case 'editWorkflow':
-        return <EditWorkflowView onBackToAdmin={() => setCurrentView('admin')} />;
+        return (
+          <EditWorkflowView
+            onBackToAdmin={() => {
+              setCurrentView('admin');
+              navigate('/', { replace: true, state: { view: 'admin' } });
+            }}
+          />
+        );
       case 'home':
       default:
         return <Home onViewChange={setCurrentView} />;
