@@ -91,7 +91,7 @@ const DefaultLandingSetting: React.FC = () => {
       if (error) throw error;
 
       setMode(value);
-          } catch (err) {
+    } catch (err) {
       console.error('Error updating default landing view setting:', err);
       toast.error('Failed to update default landing view');
     } finally {
