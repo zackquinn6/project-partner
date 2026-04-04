@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MultiContentEditor } from '@/components/MultiContentEditor';
@@ -120,7 +121,10 @@ export default function EditWorkflowView({
   // This ensures workflow editor and Process Map always match
   const [rawPhases, setRawPhases] = React.useState<Phase[]>([]);
   const [loadingPhases, setLoadingPhases] = React.useState(true);
+  /** Custom templates only: when false, workflow nav hides Standard Project Foundation phases (isStandard + not linked). */
+  const [showStandardFoundationPhases, setShowStandardFoundationPhases] = React.useState(false);
   const phasesProjectIdRef = React.useRef<string | undefined>(undefined);
+  const currentNavStepIdRef = React.useRef<string | null>(null);
   
   const loadPhasesFromDatabase = React.useCallback(async (projectId: string): Promise<Phase[]> => {
     if (!projectId) {
@@ -1032,6 +1036,10 @@ export default function EditWorkflowView({
       setRawPhases([]);
     }
   }, [currentProject?.id]);
+
+  React.useEffect(() => {
+    setShowStandardFoundationPhases(false);
+  }, [currentProject?.id]);
   
   // Load phases when project changes
   React.useEffect(() => {
@@ -1147,15 +1155,35 @@ export default function EditWorkflowView({
     return sortedPhases;
   };
   
-  const deduplicatedPhases = deduplicatePhases(rawPhases);
-  
+  const deduplicatedPhases = React.useMemo(() => deduplicatePhases(rawPhases), [rawPhases]);
+
   // Order numbers are already set from database (position_rule/position_value)
-  // No need to preserve or restore from currentProject.phases JSON
-  
-  // CRITICAL: Sort ALL phases together by order number
-  // This ensures 'first' is first, 'last' is last, and numeric orders (2, 3, 4, etc.) are in between sequentially
-  // Do NOT use enforceStandardPhaseOrdering here as it groups phases incorrectly
-  const displayPhases = sortPhasesByOrderNumber(deduplicatedPhases);
+  // Full merged list (custom + foundation + incorporated): used for saves and permission checks — never drop phases here.
+  const sortedPhases = React.useMemo(
+    () => sortPhasesByOrderNumber(deduplicatedPhases),
+    [deduplicatedPhases]
+  );
+
+  const hasStandardFoundationPhases = React.useMemo(
+    () => sortedPhases.some((p) => p.isStandard === true && !p.isLinked),
+    [sortedPhases]
+  );
+
+  // Nav / sidebar: optional filter for custom projects (foundation phases hidden by default)
+  const displayPhases = React.useMemo(() => {
+    if (isEditingStandardProject || showStandardFoundationPhases) {
+      return sortedPhases;
+    }
+    return sortedPhases.filter((p) => !(p.isStandard === true && !p.isLinked));
+  }, [isEditingStandardProject, showStandardFoundationPhases, sortedPhases]);
+
+  const visibleStepsKey = React.useMemo(
+    () =>
+      displayPhases
+        .flatMap((p) => p.operations.flatMap((o) => o.steps.map((s) => s.id)))
+        .join(','),
+    [displayPhases]
+  );
 
   // Stable counts for post-load validation (derive from rawPhases only — deduplicatedPhases is a new array each render).
   const loadedStructureSummary = React.useMemo(() => {
@@ -1184,9 +1212,9 @@ export default function EditWorkflowView({
       return false;
     }
     
-    const phase = displayPhases.find(p => p.name === phaseName);
+    const phase = sortedPhases.find(p => p.name === phaseName);
     if (!phase) {
-      // Phase not found in displayPhases - allow editing
+      // Phase not found in sortedPhases - allow editing
       // This can happen with phases that haven't been properly loaded
       // We want to allow editing in this case
       return false;
@@ -1345,8 +1373,35 @@ export default function EditWorkflowView({
     phaseId: phase.id,
     operationId: operation.id
   }))));
-  const currentStep = allSteps[currentStepIndex];
-  const progress = allSteps.length > 0 ? (currentStepIndex + 1) / allSteps.length * 100 : 0;
+  const safeStepIndex =
+    allSteps.length === 0 ? 0 : Math.min(Math.max(0, currentStepIndex), allSteps.length - 1);
+  const currentStep = allSteps[safeStepIndex];
+  const progress = allSteps.length > 0 ? (safeStepIndex + 1) / allSteps.length * 100 : 0;
+
+  React.useEffect(() => {
+    currentNavStepIdRef.current = currentStep?.id ?? null;
+  }, [currentStep?.id]);
+
+  React.useLayoutEffect(() => {
+    const flat = displayPhases.flatMap((phase) =>
+      phase.operations.flatMap((operation) =>
+        operation.steps.map((step) => ({
+          ...step,
+          phaseName: phase.name,
+          operationName: operation.name,
+          phaseId: phase.id,
+          operationId: operation.id,
+        }))
+      )
+    );
+    if (flat.length === 0) {
+      setCurrentStepIndex(0);
+      return;
+    }
+    const want = currentNavStepIdRef.current;
+    const idx = want ? flat.findIndex((s) => s.id === want) : -1;
+    setCurrentStepIndex(idx >= 0 ? idx : 0);
+  }, [visibleStepsKey]);
   
   // Debug logging for current step (moved here after currentStep is declared)
   useEffect(() => {
@@ -1537,16 +1592,22 @@ export default function EditWorkflowView({
     window.scrollTo(0, 0);
   }, []);
   const handleNext = () => {
-    if (currentStepIndex < allSteps.length - 1) {
-      setCurrentStepIndex(currentStepIndex + 1);
-      setEditMode(false);
-    }
+    setCurrentStepIndex((i) => {
+      const n = allSteps.length;
+      if (n === 0) return 0;
+      const cur = Math.min(Math.max(0, i), n - 1);
+      return Math.min(cur + 1, n - 1);
+    });
+    setEditMode(false);
   };
   const handlePrevious = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(currentStepIndex - 1);
-      setEditMode(false);
-    }
+    setCurrentStepIndex((i) => {
+      const n = allSteps.length;
+      if (n === 0) return 0;
+      const cur = Math.min(Math.max(0, i), n - 1);
+      return Math.max(cur - 1, 0);
+    });
+    setEditMode(false);
   };
   const handleStartEdit = () => {
     // Check if this step is standard (unless allowContentEdit is true)
@@ -1590,7 +1651,7 @@ export default function EditWorkflowView({
     // Update only custom phases (standard phases are generated dynamically)
     const updatedProject = {
       ...currentProject,
-      phases: displayPhases.map(phase => ({
+      phases: sortedPhases.map(phase => ({
         ...phase,
         operations: phase.operations.map(operation => ({
           ...operation,
@@ -1654,7 +1715,7 @@ export default function EditWorkflowView({
       // For regular projects, also save to operation_steps if this is a custom step
       
       // Find the phase and operation to determine if this step should be saved to database
-      const currentPhase = displayPhases.find(p => p.operations.some(op => op.steps.some(s => s.id === editingStep.id)));
+      const currentPhase = sortedPhases.find(p => p.operations.some(op => op.steps.some(s => s.id === editingStep.id)));
       const isCustomStep = currentPhase && !currentPhase.isStandard && !currentPhase.isLinked;
       const isEditableStandardStep = editingStep.allowContentEdit === true;
       
@@ -1778,7 +1839,7 @@ export default function EditWorkflowView({
     if (!currentProject) return;
     const updatedProject = {
       ...currentProject,
-      phases: [...displayPhases, ...importedPhases],
+      phases: [...sortedPhases, ...importedPhases],
       updatedAt: new Date()
     };
     updateProject(updatedProject);
@@ -2037,25 +2098,42 @@ export default function EditWorkflowView({
               {isEditingStandardProject ? '🔒 Standard Project Foundation Editor' : `Workflow Editor: ${currentProject?.name?.replace(/\s*\([Dd]raft\)\s*/g, '').replace(/\s*\(Rev\s+\d+\)\s*/gi, '').trim() || 'Untitled Project'}`}
               </h1>
               {!isEditingStandardProject ? (
-                <div className="hidden md:flex mt-2 items-center gap-2">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                          aria-label="Template editing restrictions"
-                        >
-                          <Info className="h-3.5 w-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs text-xs">
-                        Standard and incorporated phases must be edited outside this template.
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+                  {hasStandardFoundationPhases ? (
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="show-standard-foundation-phases"
+                        checked={showStandardFoundationPhases}
+                        onCheckedChange={setShowStandardFoundationPhases}
+                      />
+                      <Label
+                        htmlFor="show-standard-foundation-phases"
+                        className="text-sm font-normal cursor-pointer leading-snug"
+                      >
+                        Show Standard Project Foundation phases
+                      </Label>
+                    </div>
+                  ) : null}
+                  <div className="hidden md:flex items-center gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                            aria-label="Template editing restrictions"
+                          >
+                            <Info className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs text-xs">
+                          Standard and incorporated phases must be edited outside this template.
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -2609,7 +2687,7 @@ export default function EditWorkflowView({
                 <div className="flex items-center justify-between gap-2">
                   <Button
                     onClick={handlePrevious}
-                    disabled={currentStepIndex === 0}
+                    disabled={safeStepIndex === 0}
                     variant="outline"
                     className="h-10 w-10 shrink-0 p-0 sm:h-9 sm:w-auto sm:gap-2 sm:px-3"
                     aria-label="Previous step"
@@ -2619,7 +2697,7 @@ export default function EditWorkflowView({
                   </Button>
                   <Button
                     onClick={handleNext}
-                    disabled={currentStepIndex >= allSteps.length - 1}
+                    disabled={safeStepIndex >= allSteps.length - 1}
                     className="h-10 w-10 shrink-0 p-0 sm:h-9 sm:w-auto sm:gap-2 sm:px-3"
                     aria-label="Next step"
                   >
@@ -2636,29 +2714,46 @@ export default function EditWorkflowView({
               <CardHeader>
                 <CardTitle className="text-lg">Workflow Steps</CardTitle>
                 <CardDescription>
-                  Step {currentStepIndex + 1} of {allSteps.length}
+                  Step {safeStepIndex + 1} of {allSteps.length}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-
                 <div className="space-y-4">
-                  {Object.entries(groupedSteps).map(([phase, operations]) => <div key={phase} className="space-y-2">
-                      <h4 className="font-semibold text-primary">{phase}</h4>
-                      {Object.entries(operations).map(([operation, opSteps]) => <div key={operation} className="ml-2 space-y-1">
-                          <h5 className="text-sm font-medium text-muted-foreground">{operation}</h5>
-                          {opSteps.map(step => {
-                    const stepIndex = allSteps.findIndex(s => s.id === step.id);
-                    return <div key={step.id} className={`ml-2 p-2 rounded text-sm cursor-pointer transition-fast ${step.id === currentStep?.id ? 'bg-primary/10 text-primary border border-primary/20' : 'hover:bg-muted/50'}`} onClick={() => {
-                      setCurrentStepIndex(stepIndex);
-                      setEditMode(false);
-                    }}>
-                                <div className="flex items-center gap-2">
-                                  <span className="truncate">{step.step}</span>
+                  {Object.keys(groupedSteps).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {!isEditingStandardProject && hasStandardFoundationPhases && !showStandardFoundationPhases
+                        ? 'No steps in this view. Turn on Show Standard Project Foundation phases in the header to list those steps.'
+                        : 'No workflow steps to display.'}
+                    </p>
+                  ) : (
+                    Object.entries(groupedSteps).map(([phase, operations]) => (
+                      <div key={phase} className="space-y-2">
+                        <h4 className="font-semibold text-primary">{phase}</h4>
+                        {Object.entries(operations).map(([operation, opSteps]) => (
+                          <div key={operation} className="ml-2 space-y-1">
+                            <h5 className="text-sm font-medium text-muted-foreground">{operation}</h5>
+                            {opSteps.map((step) => {
+                              const stepIndex = allSteps.findIndex((s) => s.id === step.id);
+                              return (
+                                <div
+                                  key={step.id}
+                                  className={`ml-2 p-2 rounded text-sm cursor-pointer transition-fast ${step.id === currentStep?.id ? 'bg-primary/10 text-primary border border-primary/20' : 'hover:bg-muted/50'}`}
+                                  onClick={() => {
+                                    setCurrentStepIndex(stepIndex);
+                                    setEditMode(false);
+                                  }}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="truncate">{step.step}</span>
+                                  </div>
                                 </div>
-                              </div>;
-                  })}
-                        </div>)}
-                    </div>)}
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -3027,7 +3122,7 @@ export default function EditWorkflowView({
               <div className="flex items-center justify-between gap-2">
                 <Button
                   onClick={handlePrevious}
-                  disabled={currentStepIndex === 0}
+                  disabled={safeStepIndex === 0}
                   variant="outline"
                   className="h-10 w-10 shrink-0 p-0 sm:h-9 sm:w-auto sm:gap-2 sm:px-3"
                   aria-label="Previous step"
@@ -3037,7 +3132,7 @@ export default function EditWorkflowView({
                 </Button>
                 <Button
                   onClick={handleNext}
-                  disabled={currentStepIndex >= allSteps.length - 1}
+                  disabled={safeStepIndex >= allSteps.length - 1}
                   className="h-10 w-10 shrink-0 p-0 sm:h-9 sm:w-auto sm:gap-2 sm:px-3"
                   aria-label="Next step"
                 >
@@ -3226,7 +3321,7 @@ export default function EditWorkflowView({
         open={decisionTreeOpen}
         onOpenChange={setDecisionTreeOpen}
         currentProject={currentProject}
-        phases={displayPhases}
+        phases={sortedPhases}
         editingStandardFoundation={isEditingStandardProject}
       />
     </div>;
