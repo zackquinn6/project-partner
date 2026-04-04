@@ -2235,13 +2235,13 @@ export default function EditWorkflowView({
           <div
             className={
               hasStandardFoundationPhases && !isEditingStandardProject
-                ? 'mb-2 grid grid-cols-1 gap-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-stretch sm:gap-2'
+                ? 'mb-2 grid grid-cols-1 gap-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start sm:gap-2'
                 : 'mb-2'
             }
           >
             {hasStandardFoundationPhases && !isEditingStandardProject ? (
-              <Card className="flex h-full min-h-0 max-w-full flex-col border-border/80 p-0 shadow-sm sm:max-w-[10.75rem]">
-                <div className="flex h-full min-h-0 flex-1 items-center gap-1.5 px-1.5 py-2 sm:px-2 sm:py-2">
+              <Card className="max-w-full shrink-0 self-start border-border/80 p-0 shadow-sm sm:max-w-[10.75rem]">
+                <div className="flex items-center gap-1.5 px-1.5 py-2 sm:px-2 sm:py-2">
                   <Switch
                     id="show-standard-project-content"
                     checked={showStandardFoundationPhases}
@@ -2268,8 +2268,8 @@ export default function EditWorkflowView({
             >
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="instruction-data-sources" className="border-0">
-                  <AccordionTrigger className="px-3 py-1.5 text-left text-xs font-medium hover:no-underline sm:px-3 sm:py-2 [&[data-state=open]]:border-b border-border/80 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:shrink-0">
-                    <span className="min-w-0 flex-1 text-left text-xs font-semibold sm:text-[13px]">
+                  <AccordionTrigger className="relative flex w-full items-center justify-center px-3 py-1.5 text-xs font-medium hover:no-underline sm:px-3 sm:py-2 [&[data-state=open]]:border-b border-border/80 [&>svg]:absolute [&>svg]:right-2.5 [&>svg]:top-1/2 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:-translate-y-1/2 [&>svg]:shrink-0">
+                    <span className="w-full pr-6 text-center text-xs font-semibold sm:text-[13px]">
                       Instruction data sources
                     </span>
                   </AccordionTrigger>
