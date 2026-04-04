@@ -12,7 +12,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Settings, BarChart3, Shield, Wrench, AlertTriangle, RefreshCw, Bell, FileText, MapPin, Cog, RefreshCcw, Edit, Grid3x3, Sparkles, GraduationCap } from 'lucide-react';
+import {
+  Settings,
+  BarChart3,
+  Shield,
+  Wrench,
+  AlertTriangle,
+  Bell,
+  FileText,
+  MapPin,
+  Grid3x3,
+  GraduationCap,
+  type LucideIcon,
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { StructureManager } from './StructureManager';
@@ -125,6 +137,52 @@ const DefaultLandingSetting: React.FC = () => {
     </SettingCard>
   );
 };
+
+type AdminLauncherItem = {
+  id: string;
+  title: string;
+  description: string;
+  actionLabel: string;
+  icon: LucideIcon;
+  onOpen: () => void;
+  requireFullAdmin: boolean;
+  comingSoon?: boolean;
+};
+
+function AdminAppIconTile({
+  item,
+  onActivate,
+}: {
+  item: AdminLauncherItem;
+  onActivate: () => void;
+}) {
+  const Icon = item.icon;
+  return (
+    <button
+      type="button"
+      onClick={onActivate}
+      aria-label={item.title}
+      className={`group flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+        item.comingSoon
+          ? 'border-dashed border-muted-foreground/40 bg-muted/20 hover:bg-muted/35'
+          : 'border-border/70 bg-card hover:border-primary/35 hover:bg-muted/30'
+      }`}
+    >
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+        <Icon className="h-6 w-6" aria-hidden />
+      </div>
+      <div className="flex min-h-10 flex-col items-center justify-center gap-1">
+        <span className="text-xs font-medium leading-snug text-foreground sm:text-sm">{item.title}</span>
+        {item.comingSoon ? (
+          <Badge variant="secondary" className="text-[10px] font-normal">
+            Coming soon
+          </Badge>
+        ) : null}
+      </div>
+    </button>
+  );
+}
+
 export const AdminView: React.FC = () => {
   const { isAdmin } = useUserRole();
   const { hasProjectOwnerRole } = useProjectOwner();
@@ -154,216 +212,188 @@ export const AdminView: React.FC = () => {
   if (currentView === 'process-map') {
     return <StructureManager onBack={() => setCurrentView('admin')} />;
   }
+
+  const launcherItems: AdminLauncherItem[] = [
+    {
+      id: 'action-center',
+      requireFullAdmin: true,
+      title: 'Action Center',
+      description: 'Review user feedback that still needs admin attention',
+      actionLabel: 'Open Action Center',
+      icon: Bell,
+      onOpen: () => setActionCenterOpen(true),
+    },
+    {
+      id: 'project-management',
+      requireFullAdmin: false,
+      title: 'Project Management',
+      description: 'Unified project management with integrated revision control',
+      actionLabel: 'Open Project Management',
+      icon: Settings,
+      onOpen: () => setEnhancedProjectManagementOpen(true),
+    },
+    {
+      id: 'analytics',
+      requireFullAdmin: false,
+      title: 'Project Analytics',
+      description: 'View project metrics, completion rates, and performance data',
+      actionLabel: 'Open Analytics',
+      icon: BarChart3,
+      onOpen: () => setAnalyticsOpen(true),
+    },
+    {
+      id: 'users-security',
+      requireFullAdmin: true,
+      title: 'Users & Security',
+      description: 'Manage user roles, permissions, agreements, and monitor security',
+      actionLabel: 'Users & Security',
+      icon: Shield,
+      onOpen: () => setUsersSecurityOpen(true),
+    },
+    {
+      id: 'tools-materials',
+      requireFullAdmin: true,
+      title: 'Tools & Materials',
+      description: 'Manage reusable tools and materials for projects',
+      actionLabel: 'Open Library',
+      icon: Wrench,
+      onOpen: () => setToolsMaterialsOpen(true),
+    },
+    {
+      id: 'home-risks',
+      requireFullAdmin: true,
+      title: 'Home Risks',
+      description: 'Manage construction risks based on home build years',
+      actionLabel: 'Home Risks',
+      icon: AlertTriangle,
+      onOpen: () => setHomeRiskManagerOpen(true),
+    },
+    {
+      id: 'roadmap',
+      requireFullAdmin: true,
+      title: 'Roadmap',
+      description: 'Manage feature roadmap items and user feature requests',
+      actionLabel: 'Roadmap Management',
+      icon: MapPin,
+      onOpen: () => setRoadmapManagerOpen(true),
+    },
+    {
+      id: 'app-manager',
+      requireFullAdmin: true,
+      title: 'App Manager',
+      description: 'Manage all apps: native apps, external apps, and workspace apps',
+      actionLabel: 'App Manager',
+      icon: Grid3x3,
+      onOpen: () => setAppManagerOpen(true),
+    },
+    {
+      id: 'skill-assessments',
+      requireFullAdmin: true,
+      title: 'Project Skill Assessments',
+      description: 'Configure per–project-type skill checks and view how users rate themselves',
+      actionLabel: 'Learn more',
+      icon: GraduationCap,
+      onOpen: () => setProjectSkillAssessmentsOpen(true),
+      comingSoon: true,
+    },
+  ];
+
+  const visibleLaunchers = launcherItems.filter(
+    (item) => !item.requireFullAdmin || !isProjectOwnerOnly
+  );
+
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-4">
+      <div className="mx-auto max-w-6xl space-y-8">
+        <div className="space-y-4 text-center md:text-left">
+          <div className="flex flex-col items-center gap-4 md:flex-row md:items-center md:justify-between">
             <h1 className="text-4xl font-bold text-primary">Administration Panel</h1>
-            <Button variant="outline" size="sm" onClick={() => setAdminGuideOpen(true)} className="text-xs">
-              <FileText className="w-4 h-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={() => setAdminGuideOpen(true)} className="text-xs shrink-0">
+              <FileText className="mr-2 h-4 w-4" />
               Admin Guide
             </Button>
-            
           </div>
           <p className="text-lg text-muted-foreground">Manage projects, analytics, and user permissions</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {!isProjectOwnerOnly && (
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setActionCenterOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Bell className="w-6 h-6 text-primary" />
-              </div>
-               <CardTitle>Action Center</CardTitle>
-               <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                 Review user feedback that still needs admin attention
-               </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-               <Button className="w-full" onClick={() => setActionCenterOpen(true)}>
-                 Open Action Center
-               </Button>
-            </CardContent>
-          </Card>
-          )}
+        <div>
+          <h2 className="mb-4 hidden text-sm font-semibold uppercase tracking-wide text-muted-foreground md:block">
+            Apps
+          </h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:hidden">
+            {visibleLaunchers.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Card
+                  key={item.id}
+                  className={`flex cursor-pointer flex-col transition-shadow hover:shadow-lg ${
+                    item.comingSoon ? 'border-dashed' : ''
+                  }`}
+                  onClick={item.onOpen}
+                >
+                  <CardHeader className="flex-1 text-center">
+                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                      <Icon className="h-6 w-6 text-primary" aria-hidden />
+                    </div>
+                    <CardTitle className="flex flex-col items-center gap-2">
+                      <span>{item.title}</span>
+                      {item.comingSoon ? (
+                        <Badge variant="secondary" className="text-[10px] font-normal">
+                          Coming soon
+                        </Badge>
+                      ) : null}
+                    </CardTitle>
+                    <CardDescription className="flex min-h-[3rem] items-center justify-center">
+                      {item.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="mt-auto">
+                    <Button
+                      className="w-full"
+                      variant={item.comingSoon ? 'outline' : 'default'}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        item.onOpen();
+                      }}
+                    >
+                      {item.actionLabel}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setEnhancedProjectManagementOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Settings className="w-6 h-6 text-primary" />
-              </div>
-               <CardTitle>Project Management</CardTitle>
-               <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                 Unified project management with integrated revision control
-               </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-               <Button className="w-full" onClick={() => setEnhancedProjectManagementOpen(true)}>
-                 Project Management
-               </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setAnalyticsOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <BarChart3 className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>Project Analytics</CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                View project metrics, completion rates, and performance data
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setAnalyticsOpen(true)}>
-                Open Analytics
-              </Button>
-            </CardContent>
-          </Card>
-
-          {!isProjectOwnerOnly && (
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setUsersSecurityOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>Users & Security</CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                Manage user roles, permissions, agreements, and monitor security
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setUsersSecurityOpen(true)}>
-                Users & Security
-              </Button>
-            </CardContent>
-          </Card>
-          )}
-
-          {!isProjectOwnerOnly && (
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setToolsMaterialsOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Wrench className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>Tools & Materials Library</CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                Manage reusable tools and materials for projects
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setToolsMaterialsOpen(true)}>
-                Open Library
-              </Button>
-            </CardContent>
-          </Card>
-          )}
-
-          {!isProjectOwnerOnly && (
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setHomeRiskManagerOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <AlertTriangle className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>Home Risks</CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                Manage construction risks based on home build years
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setHomeRiskManagerOpen(true)}>
-                Home Risks
-              </Button>
-            </CardContent>
-          </Card>
-          )}
-
-          {!isProjectOwnerOnly && (
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setRoadmapManagerOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <MapPin className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>Roadmap</CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                Manage feature roadmap items and user feature requests
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setRoadmapManagerOpen(true)}>
-                Roadmap Management
-              </Button>
-            </CardContent>
-          </Card>
-          )}
-
-          {!isProjectOwnerOnly && (
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col" onClick={() => setAppManagerOpen(true)}>
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Grid3x3 className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle>App Manager</CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                Manage all apps: native apps, external apps, and workspace apps
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button className="w-full" onClick={() => setAppManagerOpen(true)}>
-                App Manager
-              </Button>
-            </CardContent>
-          </Card>
-          )}
-
-          {!isProjectOwnerOnly && (
-          <Card
-            className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col border-dashed"
-            onClick={() => setProjectSkillAssessmentsOpen(true)}
-          >
-            <CardHeader className="text-center flex-1">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <GraduationCap className="w-6 h-6 text-primary" />
-              </div>
-              <CardTitle className="flex flex-col items-center gap-2">
-                <span>Project Skill Assessments</span>
-                <Badge variant="secondary" className="text-[10px] font-normal">
-                  Coming soon
-                </Badge>
-              </CardTitle>
-              <CardDescription className="min-h-[3rem] flex items-center justify-center">
-                Configure per–project-type skill checks and view how users rate themselves
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="mt-auto">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setProjectSkillAssessmentsOpen(true)}
-              >
-                Learn more
-              </Button>
-            </CardContent>
-          </Card>
-          )}
-
+          <div className="hidden grid-cols-4 gap-4 lg:grid-cols-5 md:grid">
+            {visibleLaunchers.map((item) => (
+              <AdminAppIconTile key={item.id} item={item} onActivate={item.onOpen} />
+            ))}
+          </div>
         </div>
 
         {!isProjectOwnerOnly && (
-          <>
-            {/* Beta Mode Toggle */}
-            <BetaModeToggle />
-
-            {/* Partner apps & Expert support toggles */}
-            <PartnerAppToggles />
-
-            {/* Default landing view setting */}
-            <DefaultLandingSetting />
-
-            <PublicSiteSettingsCard />
-          </>
+          <section className="flex flex-col gap-6 md:gap-0 md:overflow-hidden md:rounded-xl md:border md:bg-card">
+            <div className="hidden border-b bg-muted/30 px-6 py-4 md:block">
+              <h2 className="text-lg font-semibold tracking-tight">Admin tools</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Site-wide switches, partner apps, landing defaults, and public site options
+              </p>
+            </div>
+            <div className="flex flex-col gap-6 md:divide-y md:divide-border">
+              <div className="md:px-6 md:py-5 md:[&>div]:rounded-none md:[&>div]:border-0 md:[&>div]:shadow-none">
+                <BetaModeToggle />
+              </div>
+              <div className="md:px-6 md:py-5 md:[&>div]:rounded-none md:[&>div]:border-0 md:[&>div]:shadow-none">
+                <PartnerAppToggles />
+              </div>
+              <div className="md:px-6 md:py-5 md:[&>div]:rounded-none md:[&>div]:border-0 md:[&>div]:shadow-none">
+                <DefaultLandingSetting />
+              </div>
+              <div className="md:px-6 md:py-5 md:[&>div]:rounded-none md:[&>div]:border-0 md:[&>div]:shadow-none">
+                <PublicSiteSettingsCard />
+              </div>
+            </div>
+          </section>
         )}
 
         <Dialog open={enhancedProjectManagementOpen} onOpenChange={setEnhancedProjectManagementOpen}>
