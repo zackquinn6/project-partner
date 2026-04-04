@@ -2092,52 +2092,35 @@ export default function EditWorkflowView({
       {/* Header with Project Name and Controls */}
       <div className="sticky top-0 z-10 border-b bg-background">
         <div className="w-full px-3 py-3 sm:px-6 sm:py-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-            <div className="min-w-0 flex-1">
-              <h1 className="break-words text-base font-bold leading-snug sm:text-lg md:text-xl">
-              {isEditingStandardProject ? '🔒 Standard Project Foundation Editor' : `Workflow Editor: ${currentProject?.name?.replace(/\s*\([Dd]raft\)\s*/g, '').replace(/\s*\(Rev\s+\d+\)\s*/gi, '').trim() || 'Untitled Project'}`}
+          <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-6">
+            <div className="flex min-w-0 w-full flex-1 items-start gap-2 md:items-center md:pr-2">
+              <h1 className="min-w-0 flex-1 text-lg font-bold leading-tight sm:text-xl md:text-2xl lg:text-3xl">
+                {isEditingStandardProject
+                  ? '🔒 Standard Project Foundation Editor'
+                  : `Workflow Editor: ${currentProject?.name?.replace(/\s*\([Dd]raft\)\s*/g, '').replace(/\s*\(Rev\s+\d+\)\s*/gi, '').trim() || 'Untitled Project'}`}
               </h1>
               {!isEditingStandardProject ? (
-                <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-                  {hasStandardFoundationPhases ? (
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        id="show-standard-foundation-phases"
-                        checked={showStandardFoundationPhases}
-                        onCheckedChange={setShowStandardFoundationPhases}
-                      />
-                      <Label
-                        htmlFor="show-standard-foundation-phases"
-                        className="text-sm font-normal cursor-pointer leading-snug"
+                <TooltipProvider delayDuration={150}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="mt-0.5 h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground md:mt-0"
+                        aria-label="About Workflow Editor"
                       >
-                        Show Standard Project Foundation phases
-                      </Label>
-                    </div>
-                  ) : null}
-                  <div className="hidden md:flex items-center gap-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                            aria-label="About Workflow Editor"
-                          >
-                            <Info className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs text-xs">
-                          Standard and incorporated phases must be edited outside this template.
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </div>
+                        <Info className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs text-xs">
+                      Standard and incorporated phases must be edited outside this template.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               ) : null}
             </div>
-            <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-2 sm:w-auto sm:justify-start">
+            <div className="flex w-full min-w-0 shrink-0 flex-wrap items-center justify-end gap-2 md:w-auto md:max-w-none">
               {editMode && (
                 <Badge variant="outline" className="max-w-full truncate bg-primary/10 text-primary border-primary/20">
                   Editing: {currentStep?.step}
@@ -2218,9 +2201,10 @@ export default function EditWorkflowView({
                       variant="outline"
                       size="sm"
                       className="flex items-center gap-2"
+                      title="AI project generator"
                     >
                       <Sparkles className="w-4 h-4" />
-                      AI Project Generator
+                      AI
                     </Button>
                     <Button
                       onClick={() => {
@@ -2347,7 +2331,7 @@ export default function EditWorkflowView({
                           }}
                         >
                           <Sparkles className="w-4 h-4 mr-2" />
-                          AI Project Generator
+                          AI
                         </DropdownMenuItem>
                       </>
                     )}
@@ -2364,9 +2348,28 @@ export default function EditWorkflowView({
           <Card className="mb-6 border-border/80 p-0 overflow-hidden">
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="instruction-data-sources" className="border-0">
-                <AccordionTrigger className="px-6 py-4 hover:no-underline [&[data-state=open]]:border-b border-border/80">
-                  <div className="flex flex-col items-start gap-1 text-left pr-2">
-                    <span className="text-base font-semibold">Instruction data sources</span>
+                <AccordionTrigger className="px-4 py-4 hover:no-underline sm:px-6 [&[data-state=open]]:border-b border-border/80">
+                  <div className="flex min-w-0 flex-1 items-center gap-3 pr-2 text-left sm:gap-4">
+                    {hasStandardFoundationPhases && !isEditingStandardProject ? (
+                      <div
+                        className="flex shrink-0 items-center gap-2"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Switch
+                          id="show-standard-project-content"
+                          checked={showStandardFoundationPhases}
+                          onCheckedChange={setShowStandardFoundationPhases}
+                        />
+                        <Label
+                          htmlFor="show-standard-project-content"
+                          className="cursor-pointer text-sm font-normal leading-snug"
+                        >
+                          Show Standard Project Content
+                        </Label>
+                      </div>
+                    ) : null}
+                    <span className="min-w-0 flex-1 text-base font-semibold">Instruction data sources</span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
@@ -2411,6 +2414,21 @@ export default function EditWorkflowView({
         {editMode ?
       // Full-screen edit mode
       <div className="space-y-6">
+            {hasStandardFoundationPhases && !isEditingStandardProject ? (
+              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/80 bg-muted/15 px-4 py-3">
+                <Switch
+                  id="show-standard-project-content-edit"
+                  checked={showStandardFoundationPhases}
+                  onCheckedChange={setShowStandardFoundationPhases}
+                />
+                <Label
+                  htmlFor="show-standard-project-content-edit"
+                  className="cursor-pointer text-sm font-normal leading-snug"
+                >
+                  Show Standard Project Content
+                </Label>
+              </div>
+            ) : null}
 
             {/* Step Details */}
             {editingStep && <div className="space-y-6">
@@ -2726,7 +2744,7 @@ export default function EditWorkflowView({
                   {Object.keys(groupedSteps).length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                       {!isEditingStandardProject && hasStandardFoundationPhases && !showStandardFoundationPhases
-                        ? 'No steps in this view. Turn on Show Standard Project Foundation phases in the header to list those steps.'
+                        ? 'No steps in this view. Turn on Show Standard Project Content to list those steps.'
                         : 'No workflow steps to display.'}
                     </p>
                   ) : (
