@@ -200,12 +200,16 @@ export function ToolsLibrary() {
   };
 
   if (loading) {
-    return <div className="flex justify-center p-8">Loading tools...</div>;
+    return (
+      <div className="flex min-h-0 flex-1 items-center justify-center p-8 text-muted-foreground">
+        Loading tools...
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-4 h-full">
-      <div className="flex items-center gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
@@ -249,120 +253,120 @@ export function ToolsLibrary() {
         </Dialog>
       </div>
 
-      <div className="border rounded-lg">
-        <div className="max-h-[70vh] overflow-auto">
-          <Table wrapperClassName="overflow-visible">
-            <TableHeader className="bg-background border-b">
-              <TableRow>
-                <TableHead className="sticky top-0 z-20 w-12 border-b bg-background">Photo</TableHead>
-                <TableHead className="sticky top-0 z-20 w-32 border-b bg-background">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort('item')}
-                    className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
-                  >
-                    Tool Name
-                    {getSortIcon('item')}
-                  </Button>
-                </TableHead>
-                <TableHead className="sticky top-0 z-20 border-b bg-background">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort('description')}
-                    className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
-                  >
-                    Description
-                    {getSortIcon('description')}
-                  </Button>
-                </TableHead>
-                <TableHead className="sticky top-0 z-20 border-b bg-background">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort('variations')}
-                    className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
-                  >
-                    Variants
-                    {getSortIcon('variations')}
-                  </Button>
-                </TableHead>
-                <TableHead className="sticky top-0 z-20 w-20 border-b bg-background text-right">
-                  Actions
-                </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedTools.map((tool) => (
-              <TableRow 
-                key={tool.id} 
-                className="cursor-pointer hover:bg-muted/50 h-[72px]" 
-                onClick={() => setViewingVariations(tool)}
-              >
-                <TableCell className="py-0 px-1">
-                  {tool.photo_url ? (
-                    <img
-                      src={tool.photo_url}
-                      alt={tool.item}
-                      className="w-16 h-16 object-cover rounded-md"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center">
-                      <Image className="w-6 h-6 text-muted-foreground" />
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell className="font-medium capitalize py-0 px-1.5 w-32 break-words">
-                  {tool.item}
-                  <Badge variant="secondary" className="text-[10px] px-1 py-0 mt-0.5">
-                    {tool.category}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground py-0 px-1.5">
-                  <div className="break-words" title={tool.description || '-'}>
-                    {tool.description || '-'}
-                  </div>
-                </TableCell>
-                <TableCell className="text-xs py-0 px-1">
-                  {tool.variations && tool.variations.length > 0 ? (
-                    <div className="flex flex-wrap gap-0.5">
-                      {tool.variations.slice(0, 4).map((variation) => (
-                        <Badge key={variation.id} variant="secondary" className="text-xs whitespace-nowrap px-1 py-0">
-                          {variation.name}
-                        </Badge>
-                      ))}
-                      {tool.variations.length > 4 && (
-                        <Badge variant="outline" className="text-xs px-1 py-0">
-                          +{tool.variations.length - 4} more
-                        </Badge>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">No variants</span>
-                  )}
-                </TableCell>
-                <TableCell className="text-right py-0 px-1" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex justify-end gap-0.5">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border">
+        <div className="min-h-0 flex-1 overflow-auto">
+          {sortedTools.length === 0 ? (
+            <div className="px-4 py-12 text-center text-muted-foreground">
+              {searchTerm ? 'No tools found matching your search.' : 'No tools in library yet.'}
+            </div>
+          ) : (
+            <Table wrapperClassName="overflow-visible">
+              <TableHeader className="bg-background border-b">
+                <TableRow>
+                  <TableHead className="sticky top-0 z-20 w-12 border-b bg-background">Photo</TableHead>
+                  <TableHead className="sticky top-0 z-20 w-32 border-b bg-background">
                     <Button
                       variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(tool)}
-                      title="Edit Variations"
-                      className="w-8 h-8 p-0"
+                      onClick={() => handleSort('item')}
+                      className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
                     >
-                      <Edit className="w-3 h-3" />
+                      Tool Name
+                      {getSortIcon('item')}
                     </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-           </TableBody>
-          </Table>
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-20 border-b bg-background">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort('description')}
+                      className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
+                    >
+                      Description
+                      {getSortIcon('description')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-20 border-b bg-background">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort('variations')}
+                      className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
+                    >
+                      Variants
+                      {getSortIcon('variations')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-20 w-20 border-b bg-background text-right">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedTools.map((tool) => (
+                  <TableRow
+                    key={tool.id}
+                    className="cursor-pointer hover:bg-muted/50 h-[72px]"
+                    onClick={() => setViewingVariations(tool)}
+                  >
+                    <TableCell className="py-0 px-1">
+                      {tool.photo_url ? (
+                        <img
+                          src={tool.photo_url}
+                          alt={tool.item}
+                          className="w-16 h-16 object-cover rounded-md"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center">
+                          <Image className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium capitalize py-0 px-1.5 w-32 break-words">
+                      {tool.item}
+                      <Badge variant="secondary" className="text-[10px] px-1 py-0 mt-0.5">
+                        {tool.category}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground py-0 px-1.5">
+                      <div className="break-words" title={tool.description || '-'}>
+                        {tool.description || '-'}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs py-0 px-1">
+                      {tool.variations && tool.variations.length > 0 ? (
+                        <div className="flex flex-wrap gap-0.5">
+                          {tool.variations.slice(0, 4).map((variation) => (
+                            <Badge key={variation.id} variant="secondary" className="text-xs whitespace-nowrap px-1 py-0">
+                              {variation.name}
+                            </Badge>
+                          ))}
+                          {tool.variations.length > 4 && (
+                            <Badge variant="outline" className="text-xs px-1 py-0">
+                              +{tool.variations.length - 4} more
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">No variants</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right py-0 px-1" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex justify-end gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(tool)}
+                          title="Edit Variations"
+                          className="w-8 h-8 p-0"
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
-        
-        {sortedTools.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            {searchTerm ? 'No tools found matching your search.' : 'No tools in library yet.'}
-          </div>
-        )}
       </div>
 
       <Dialog

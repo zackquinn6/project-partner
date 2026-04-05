@@ -152,12 +152,16 @@ export function MaterialsLibrary() {
   };
 
   if (loading) {
-    return <div className="flex justify-center p-8">Loading materials...</div>;
+    return (
+      <div className="flex min-h-0 flex-1 items-center justify-center p-8 text-muted-foreground">
+        Loading materials...
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-4 h-full">
-      <div className="flex items-center gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
@@ -202,104 +206,104 @@ export function MaterialsLibrary() {
         </Dialog>
       </div>
 
-      <div className="border rounded-lg">
-        <div className="max-h-[70vh] overflow-auto">
-        <Table wrapperClassName="overflow-visible">
-          <TableHeader className="border-b bg-background">
-            <TableRow>
-              <TableHead className="sticky top-0 z-20 w-12 border-b bg-background">Photo</TableHead>
-              <TableHead className="sticky top-0 z-20 w-32 border-b bg-background">
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort('item')}
-                  className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
-                >
-                  Material Name
-                  {getSortIcon('item')}
-                </Button>
-              </TableHead>
-              <TableHead className="sticky top-0 z-20 border-b bg-background">
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort('description')}
-                  className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
-                >
-                  Description
-                  {getSortIcon('description')}
-                </Button>
-              </TableHead>
-              <TableHead className="sticky top-0 z-20 border-b bg-background">
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort('unit_size')}
-                  className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
-                >
-                  Unit Size
-                  {getSortIcon('unit_size')}
-                </Button>
-              </TableHead>
-              <TableHead className="sticky top-0 z-20 w-20 border-b bg-background text-right">
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedMaterials.map((material) => (
-              <TableRow key={material.id} className="hover:bg-muted/50">
-                <TableCell>
-                  {material.photo_url ? (
-                    <img
-                      src={material.photo_url}
-                      alt={material.item}
-                      className="w-10 h-10 object-cover rounded-md"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 bg-muted rounded-md flex items-center justify-center">
-                      <Image className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell className="font-medium capitalize w-32 break-words">
-                  {material.item}
-                  {material.category?.trim() ? (
-                    <Badge variant="secondary" className="text-xs px-1 py-0 mt-1">
-                      {material.category}
-                    </Badge>
-                  ) : null}
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground break-words">
-                  {material.description || '-'}
-                </TableCell>
-                <TableCell className="text-xs">
-                  {material.unit_size ? (
-                    <Badge variant="secondary" className="text-xs">
-                      {material.unit_size}
-                    </Badge>
-                  ) : (
-                    '-'
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border">
+        <div className="min-h-0 flex-1 overflow-auto">
+          {sortedMaterials.length === 0 ? (
+            <div className="px-4 py-12 text-center text-muted-foreground">
+              {searchTerm ? 'No materials found matching your search.' : 'No materials in library yet.'}
+            </div>
+          ) : (
+            <Table wrapperClassName="overflow-visible">
+              <TableHeader className="border-b bg-background">
+                <TableRow>
+                  <TableHead className="sticky top-0 z-20 w-12 border-b bg-background">Photo</TableHead>
+                  <TableHead className="sticky top-0 z-20 w-32 border-b bg-background">
                     <Button
                       variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(material)}
+                      onClick={() => handleSort('item')}
+                      className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
                     >
-                      <Edit className="w-4 h-4" />
+                      Material Name
+                      {getSortIcon('item')}
                     </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        
-        {sortedMaterials.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            {searchTerm ? 'No materials found matching your search.' : 'No materials in library yet.'}
-          </div>
-        )}
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-20 border-b bg-background">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort('description')}
+                      className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
+                    >
+                      Description
+                      {getSortIcon('description')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-20 border-b bg-background">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort('unit_size')}
+                      className="h-auto p-0 font-semibold hover:bg-transparent flex items-center"
+                    >
+                      Unit Size
+                      {getSortIcon('unit_size')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-20 w-20 border-b bg-background text-right">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedMaterials.map((material) => (
+                  <TableRow key={material.id} className="hover:bg-muted/50">
+                    <TableCell>
+                      {material.photo_url ? (
+                        <img
+                          src={material.photo_url}
+                          alt={material.item}
+                          className="w-10 h-10 object-cover rounded-md"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-muted rounded-md flex items-center justify-center">
+                          <Image className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium capitalize w-32 break-words">
+                      {material.item}
+                      {material.category?.trim() ? (
+                        <Badge variant="secondary" className="text-xs px-1 py-0 mt-1">
+                          {material.category}
+                        </Badge>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground break-words">
+                      {material.description || '-'}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {material.unit_size ? (
+                        <Badge variant="secondary" className="text-xs">
+                          {material.unit_size}
+                        </Badge>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(material)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
 
