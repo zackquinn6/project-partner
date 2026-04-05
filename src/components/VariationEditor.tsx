@@ -371,12 +371,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
                 />
               </div>
               <div>
-                <Label htmlFor="estimated-weight">
-                  Display weight (lbs)
-                </Label>
-                <p className="text-xs text-muted-foreground mb-1.5">
-                  Shown on variation details and in the catalog; shoppers see this value.
-                </p>
+                <Label htmlFor="estimated-weight">Weight (lbs)</Label>
                 <Input
                   id="estimated-weight"
                   type="number"
@@ -403,7 +398,6 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
                       estimated_weight_lbs: rounded,
                     });
                   }}
-                  placeholder="e.g., 12.5"
                 />
               </div>
               <div>
@@ -411,11 +405,27 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
                 <Input
                   id="lifespan"
                   type="number"
-                  value={editedVariation.estimated_rental_lifespan_days || ''}
-                  onChange={(e) => setEditedVariation({ 
-                    ...editedVariation, 
-                    estimated_rental_lifespan_days: e.target.value ? parseInt(e.target.value) : undefined 
-                  })}
+                  value={
+                    editedVariation.estimated_rental_lifespan_days != null
+                      ? editedVariation.estimated_rental_lifespan_days
+                      : ''
+                  }
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === '') {
+                      setEditedVariation({
+                        ...editedVariation,
+                        estimated_rental_lifespan_days: undefined,
+                      });
+                      return;
+                    }
+                    const v = parseInt(raw, 10);
+                    if (!Number.isFinite(v)) return;
+                    setEditedVariation({
+                      ...editedVariation,
+                      estimated_rental_lifespan_days: v,
+                    });
+                  }}
                 />
               </div>
             </div>
