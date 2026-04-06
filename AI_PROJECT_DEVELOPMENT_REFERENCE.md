@@ -25,13 +25,16 @@ Where **Step X** is one of the steps defined below (**Step 1** through **Step 10
 - **`public.project_phases`**
   - Stores phases for a template project (`project_id`).
   - **Step 1** decides whether to insert phases: if the project **already has at least one** phase row, **do not** create new phases—hang operations/steps off existing `project_phases.id`. If **no** phases exist, **create** them in Step 1 before `phase_operations` (see **Step 1 — Phases** below).
+  - When phases **already exist**, **assume they are sufficient** to cover the **entire** template project scope. If you identify a **discrepancy** (e.g. scope that cannot map to any existing phase, or an obvious structural gap), **do not** silently invent new phases—**notify the user** and proceed only as their prompt directs.
 
 - **`public.phase_operations`**
   - Stores operations under a phase (`phase_id`).
   - Required fields (typical): `operation_name`, `operation_description`, `display_order`, `estimated_time`, `flow_type`.
+  - When extending structure (**Step 1**), **consider existing operations**: **do not** delete or replace current `phase_operations` rows as part of routine project development. **Additional** operations may be inserted where needed (respect `display_order` and existing rows).
 
 - **`public.operation_steps`**
   - Stores steps under an operation (`operation_id`).
+  - When extending structure (**Step 1**), **consider existing steps**: **do not** delete or replace current `operation_steps` rows as part of routine project development. **Additional** steps may be inserted where needed (respect `display_order` and existing rows).
   - **Do not assume extra columns** (e.g. `content_type`, `content`, `content_sections`) exist unless the live schema or generated types say so. In this codebase, step copy lives in **`public.step_instructions`**, not on `operation_steps`.
   - Columns that **`src/integrations/supabase/types.ts`** exposes for `operation_steps` include: `id`, `operation_id`, `step_title`, `description`, `display_order`, `materials`, `tools`, `outputs`, `apps`, `process_variables`, `flow_type`, `step_type`, `time_estimate_low`, `time_estimate_med`, `time_estimate_high`, `number_of_workers`, `skill_level`, `allow_content_edit`, timestamps.
 
@@ -103,8 +106,15 @@ Where **Step X** is one of the steps defined below (**Step 1** through **Step 10
 
 - Query (or otherwise establish) whether **`public.project_phases`** already has **≥ 1** row for the target `project_id`.
   - **If at least one phase exists:** **Do not** `INSERT` new phases. Add **operations** and **steps** under the **existing** phases only—use each phase row’s **`id`** as `phase_id` on `public.phase_operations`. Do not recreate or duplicate phases for the same template unless the user’s prompt explicitly requires structural changes (and then follow that prompt precisely).
+  - **Existing phases = sufficient by default:** Treat current phase rows as **covering the full project** unless evidence in the prompt or schema says otherwise. If you find a **discrepancy** (unmapped scope, missing phase for required work, etc.), **notify the user**; do not add phases on your own to “fix” it without user direction.
   - **If no phases exist:** **Include phase creation** in Step 1: `INSERT` into `public.project_phases` with all required columns per live schema, then attach operations to those new `phase_id` values.
 - **Renaming:** do not rename existing phases unless the prompt requires it.
+
+**Existing operations and steps (additive structure)**
+
+- **Operations:** Read and respect **current** `public.phase_operations` for the project. **Do not** delete or bulk-replace existing operations when building or extending structure. You may **`INSERT` additional** operations (and set `display_order` coherently alongside existing rows).
+- **Steps:** Read and respect **current** `public.operation_steps` for those operations. **Do not** delete or bulk-replace existing steps when building or extending structure. You may **`INSERT` additional** steps (and set `display_order` coherently alongside existing rows).
+- Destructive changes (deletes, replacing rows, reordering that overwrites meaning) belong only when the **user’s prompt explicitly** requires them—not as default project-development behavior.
 
 **Deliverables**
 
@@ -468,7 +478,8 @@ A **process variable** is a fundamental, theoretically measurable parameter that
 
 - **Step 1**
   - **Structure only:** operations and steps with titles and **one-line** descriptions on `operation_steps` / process map fields. **No** `step_instructions` rows in this step.
-  - **Phases:** if **`project_phases`** already has **≥ 1** row for the project, **do not** insert new phases—use existing `phase_id`s. If **zero** phases, **create** `project_phases` rows in Step 1, then operations/steps.
+  - **Phases:** if **`project_phases`** already has **≥ 1** row for the project, **do not** insert new phases—use existing `phase_id`s; **assume existing phases cover the whole project**; on **discrepancy**, **notify the user** rather than silently adding phases. If **zero** phases, **create** `project_phases` rows in Step 1, then operations/steps.
+  - **Operations / steps:** **additive** by default—**do not** delete or replace existing `phase_operations` or `operation_steps` rows unless the prompt explicitly requires it; **additional** operations and steps may be inserted.
   - `INSERT` into `public.operation_steps` must use only columns that exist in schema (see **Schema alignment** above).
   - Minimize unnecessary use of **`the`** across process map names and step titles.
   - **Process map descriptions** (`project_phases.description`, `phase_operations.operation_description`, `operation_steps.description`): **one line** each — summary of **what happens** in that phase/operation/step; **not** a list of instructions or procedural steps (see **Process map / Structure Manager — descriptions** in Step 1 above).
