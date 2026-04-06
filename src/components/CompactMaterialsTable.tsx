@@ -111,8 +111,10 @@ export function CompactMaterialsTable({
   onAddAlternate,
   title = 'Materials',
   addButtonLabel = 'Add Material',
+  contentSectionOptions = [],
 }: CompactMaterialsTableProps) {
   const safeMaterials = materials || [];
+  const sectionOpts = contentSectionOptions || [];
   const orderedRows = useMemo(() => buildMaterialRows(safeMaterials), [safeMaterials]);
 
   const handleMaterialChange = (materialId: string, field: keyof StepMaterial, value: unknown) => {
