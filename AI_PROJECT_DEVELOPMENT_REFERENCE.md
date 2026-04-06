@@ -24,7 +24,7 @@ Where **Step X** is one of the steps defined below (**Step 1** through **Step 10
 
 - **`public.project_phases`**
   - Stores phases for a template project (`project_id`).
-  - Phases are assumed to exist before adding operations/steps when the prompt says phases are sufficient.
+  - **Step 1** decides whether to insert phases: if the project **already has at least one** phase row, **do not** create new phases—hang operations/steps off existing `project_phases.id`. If **no** phases exist, **create** them in Step 1 before `phase_operations` (see **Step 1 — Phases** below).
 
 - **`public.phase_operations`**
   - Stores operations under a phase (`phase_id`).
@@ -99,23 +99,30 @@ Where **Step X** is one of the steps defined below (**Step 1** through **Step 10
 
 ### Step 1 — Operations, steps, and step description (structure only)
 
+**Phases (required decision at start of Step 1)**
+
+- Query (or otherwise establish) whether **`public.project_phases`** already has **≥ 1** row for the target `project_id`.
+  - **If at least one phase exists:** **Do not** `INSERT` new phases. Add **operations** and **steps** under the **existing** phases only—use each phase row’s **`id`** as `phase_id` on `public.phase_operations`. Do not recreate or duplicate phases for the same template unless the user’s prompt explicitly requires structural changes (and then follow that prompt precisely).
+  - **If no phases exist:** **Include phase creation** in Step 1: `INSERT` into `public.project_phases` with all required columns per live schema, then attach operations to those new `phase_id` values.
+- **Renaming:** do not rename existing phases unless the prompt requires it.
+
 **Deliverables**
 
-- **Phases** (do not rename unless the prompt requires it), with:
-  - **Operations** under each phase:
-    - operation name
-    - operation description
-    - display order
-    - flow type (only if applicable; otherwise omit)
-  - **Steps** under each operation:
-    - step title
-    - step description
+- **Operations** under each relevant phase (existing or newly created):
+  - operation name
+  - operation description
+  - display order
+  - flow type (only if applicable; otherwise omit)
+- **Steps** under each operation:
+  - step title
+  - step description
 
 **Do not include in Step 1:** 3-level instruction body content. That is **Step 2** (`public.step_instructions`).
 
 **DB placement**
 
-- Operations → `public.phase_operations`
+- New phases only when none existed → `public.project_phases`
+- Operations → `public.phase_operations` (`phase_id` → existing or new phase)
 - Steps → `public.operation_steps` (title + description at minimum)
 
 **Prerequisite / cache**
@@ -460,7 +467,8 @@ A **process variable** is a fundamental, theoretically measurable parameter that
 - **All steps (1–10)** — Ship **one** migration file per step for a given project slug (see **One migration file per project-development step** above). Never duplicate the same step number across multiple files.
 
 - **Step 1**
-  - **Structure only:** phases (as needed), operations, steps with titles and **one-line** descriptions on `operation_steps` / process map fields. **No** `step_instructions` rows in this step.
+  - **Structure only:** operations and steps with titles and **one-line** descriptions on `operation_steps` / process map fields. **No** `step_instructions` rows in this step.
+  - **Phases:** if **`project_phases`** already has **≥ 1** row for the project, **do not** insert new phases—use existing `phase_id`s. If **zero** phases, **create** `project_phases` rows in Step 1, then operations/steps.
   - `INSERT` into `public.operation_steps` must use only columns that exist in schema (see **Schema alignment** above).
   - Minimize unnecessary use of **`the`** across process map names and step titles.
   - **Process map descriptions** (`project_phases.description`, `phase_operations.operation_description`, `operation_steps.description`): **one line** each — summary of **what happens** in that phase/operation/step; **not** a list of instructions or procedural steps (see **Process map / Structure Manager — descriptions** in Step 1 above).
