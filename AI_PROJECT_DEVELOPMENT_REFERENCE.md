@@ -38,6 +38,7 @@ Aligned with product rules: **if `project_phases` already has ≥1 row for the t
 ### Migrations — PostgreSQL / template resolution (field learnings)
 
 - **Recursive CTE:** Walking from a matched `projects.id` up `parent_project_id` to the family root uses **`WITH RECURSIVE`** on the whole `WITH` clause whenever a CTE references itself in `UNION ALL`—otherwise you get `relation "up" does not exist`.
+- **`max(uuid)` / `min(uuid)`:** Not available on all PostgreSQL versions (e.g. some managed pools). Prefer **`(SELECT id FROM … WHERE rn = n LIMIT 1)`** or `(array_agg(id ORDER BY …))[n]` instead of `max(id) FILTER` on UUIDs.
 - **Template rows:** Revisions may have `parent_project_id` set; resolve the **root** row (`parent_project_id IS NULL`) when attaching workflow to the canonical template family.
 - **Name matching:** Catalog titles vary (`&` vs `and` vs `+`, spacing). Prefer explicit lists or documented `LIKE` patterns; fail with a diagnostic query if zero or ambiguous matches.
 

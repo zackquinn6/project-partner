@@ -117,12 +117,8 @@ BEGIN
   ELSE
     -- Phases already exist: do not INSERT, UPDATE, or rename them. Map the three operation groups
     -- to existing rows by stable sort (same idea as process map ordering)—not by display name.
-    SELECT
-      max(s.id) FILTER (WHERE s.rn = 1),
-      max(s.id) FILTER (WHERE s.rn = LEAST(2, v_phase_count)),
-      max(s.id) FILTER (WHERE s.rn = LEAST(3, v_phase_count))
-    INTO v_prep, v_install, v_finish
-    FROM (
+    -- (Avoid max(uuid): not available on all PostgreSQL versions—use scalar subqueries.)
+    WITH sorted AS (
       SELECT
         pp.id,
         row_number() OVER (
@@ -134,7 +130,12 @@ BEGIN
         ) AS rn
       FROM public.project_phases pp
       WHERE pp.project_id = v_project_id
-    ) s;
+    )
+    SELECT
+      (SELECT s.id FROM sorted s WHERE s.rn = 1 LIMIT 1),
+      (SELECT s.id FROM sorted s WHERE s.rn = LEAST(2, v_phase_count) LIMIT 1),
+      (SELECT s.id FROM sorted s WHERE s.rn = LEAST(3, v_phase_count) LIMIT 1)
+    INTO v_prep, v_install, v_finish;
 
     IF v_prep IS NULL THEN
       RAISE EXCEPTION 'Baseboard+trim: project_id=% has phases but sort yielded no phase id', v_project_id;
@@ -358,12 +359,7 @@ BEGIN
     v_inst := 'd15a0001-1a7e-4c1d-9f01-d15a00000002'::uuid;
     v_test := 'd15a0001-1a7e-4c1d-9f01-d15a00000003'::uuid;
   ELSE
-    SELECT
-      max(s.id) FILTER (WHERE s.rn = 1),
-      max(s.id) FILTER (WHERE s.rn = LEAST(2, v_phase_count)),
-      max(s.id) FILTER (WHERE s.rn = LEAST(3, v_phase_count))
-    INTO v_disc, v_inst, v_test
-    FROM (
+    WITH sorted AS (
       SELECT
         pp.id,
         row_number() OVER (
@@ -375,7 +371,12 @@ BEGIN
         ) AS rn
       FROM public.project_phases pp
       WHERE pp.project_id = v_project_id
-    ) s;
+    )
+    SELECT
+      (SELECT s.id FROM sorted s WHERE s.rn = 1 LIMIT 1),
+      (SELECT s.id FROM sorted s WHERE s.rn = LEAST(2, v_phase_count) LIMIT 1),
+      (SELECT s.id FROM sorted s WHERE s.rn = LEAST(3, v_phase_count) LIMIT 1)
+    INTO v_disc, v_inst, v_test;
 
     IF v_disc IS NULL THEN
       RAISE EXCEPTION 'Dishwasher Replacement: project_id=% has phases but sort yielded no phase id', v_project_id;
