@@ -107,6 +107,8 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     data: any;
   } | null>(null);
   const [deletePhaseDialogOpen, setDeletePhaseDialogOpen] = useState(false);
+  /** When set, duplicate actions are in flight (single-flight for all duplicate buttons). */
+  const [duplicatingKey, setDuplicatingKey] = useState<string | null>(null);
   
   // Dialogs and other UI
   const [showOutputEdit, setShowOutputEdit] = useState<{
@@ -2739,6 +2741,530 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       toast.error(`Failed to add step: ${error.message || 'Unknown error'}`);
     }
   }, [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions]);
+
+  const cloneStepInstructionsForNewStep = useCallback(async (sourceStepId: string, newStepId: string) => {
+    const { data: rows, error } = await supabase
+      .from('step_instructions')
+      .select('instruction_level, content')
+      .eq('step_id', sourceStepId);
+
+    if (error) {
+      throw error;
+    }
+
+    for (const row of rows || []) {
+      const { error: insErr } = await supabase.from('step_instructions').insert({
+        step_id: newStepId,
+        instruction_level: row.instruction_level,
+        content: row.content,
+      });
+      if (insErr) {
+        throw insErr;
+      }
+    }
+  }, []);
+
+  /**
+   * Deep-copy one operation (and its steps + step_instructions) into a target phase at the given display_order.
+   */
+  const cloneOperationTreeToPhase = useCallback(
+    async (sourceOperationId: string, targetPhaseId: string, displayOrder: number) => {
+      const { data: opRow, error: opErr } = await supabase
+        .from('phase_operations')
+        .select('*')
+        .eq('id', sourceOperationId)
+        .single();
+
+      if (opErr || !opRow) {
+        throw opErr || new Error('Source operation not found');
+      }
+
+      const newOpId = crypto.randomUUID();
+      const {
+        id: _oid,
+        created_at: _oca,
+        updated_at: _oua,
+        phase_id: _pid,
+        ...opRest
+      } = opRow;
+
+      const { error: opInsErr } = await supabase.from('phase_operations').insert({
+        id: newOpId,
+        phase_id: targetPhaseId,
+        ...opRest,
+        display_order: displayOrder,
+      });
+
+      if (opInsErr) {
+        throw opInsErr;
+      }
+
+      const { data: stepRows, error: stErr } = await supabase
+        .from('operation_steps')
+        .select('*')
+        .eq('operation_id', sourceOperationId)
+        .order('display_order', { ascending: true });
+
+      if (stErr) {
+        throw stErr;
+      }
+
+      let stepOrd = 1;
+      for (const stepRow of stepRows || []) {
+        const newStepId = crypto.randomUUID();
+        const {
+          id: _sid,
+          created_at: _sca,
+          updated_at: _sua,
+          operation_id: _soid,
+          ...stepRest
+        } = stepRow;
+
+        const { error: stepInsErr } = await supabase.from('operation_steps').insert({
+          id: newStepId,
+          operation_id: newOpId,
+          ...stepRest,
+          display_order: stepOrd++,
+        });
+
+        if (stepInsErr) {
+          throw stepInsErr;
+        }
+
+        await cloneStepInstructionsForNewStep(stepRow.id, newStepId);
+      }
+    },
+    [cloneStepInstructionsForNewStep]
+  );
+
+  const handleDuplicatePhase = useCallback(
+    async (phaseId: string) => {
+      if (!currentProject?.id) {
+        toast.error('No project selected');
+        return;
+      }
+
+      if (validationError) {
+        toast.error('Cannot duplicate phase: Validation errors must be resolved first', {
+          description: validationError.message,
+        });
+        return;
+      }
+
+      const phase = phases.find((p) => p.id === phaseId);
+      if (!phase) {
+        toast.error('Phase not found');
+        return;
+      }
+
+      if (phase.isLinked) {
+        toast.error('Cannot duplicate incorporated phases');
+        return;
+      }
+
+      if (!isEditingStandardProject && isStandardPhase(phase)) {
+        toast.error('Cannot duplicate standard phases. Use Edit Standard if you need a copy there.');
+        return;
+      }
+
+      setDuplicatingKey(`phase:${phaseId}`);
+      try {
+        const { data: existingPhases } = await supabase
+          .from('project_phases')
+          .select('name')
+          .eq('project_id', currentProject.id);
+
+        const existingNames = new Set((existingPhases || []).map((p) => p.name.toLowerCase()));
+        let phaseName = `${phase.name} (copy)`;
+        let counter = 1;
+        while (existingNames.has(phaseName.toLowerCase())) {
+          phaseName = `${phase.name} (copy ${counter})`;
+          counter++;
+        }
+
+        let allPhases: { position_rule: string | null; position_value: number | null }[] = [];
+        let standardPhases: { position_rule: string | null; position_value: number | null }[] = [];
+
+        if (isEditingStandardProject) {
+          const { data: projectPhases } = await supabase
+            .from('project_phases')
+            .select('id, position_rule, position_value')
+            .eq('project_id', currentProject.id);
+          allPhases = projectPhases || [];
+        } else {
+          const { data: customPhases } = await supabase
+            .from('project_phases')
+            .select('id, position_rule, position_value')
+            .eq('project_id', currentProject.id);
+
+          let standardProjectId: string | null = null;
+          const { data: standardProject } = await supabase
+            .from('projects')
+            .select('id')
+            .eq('is_standard', true)
+            .maybeSingle();
+
+          if (standardProject?.id) {
+            standardProjectId = standardProject.id as string;
+          }
+
+          if (standardProjectId) {
+            const { data: fetchedStandardPhases } = await supabase
+              .from('project_phases')
+              .select('id, position_rule, position_value')
+              .eq('project_id', standardProjectId);
+            standardPhases = fetchedStandardPhases || [];
+          }
+
+          allPhases = [...standardPhases, ...(customPhases || [])];
+        }
+
+        const nthPhases = allPhases.filter(
+          (p) => p.position_rule === 'nth' && typeof p.position_value === 'number'
+        );
+        const maxNthValue =
+          nthPhases.length > 0 ? Math.max(...nthPhases.map((p) => p.position_value as number)) : 0;
+        const positionValue = maxNthValue + 1;
+
+        const { data: addedPhase, error: insertError } = await supabase
+          .from('project_phases')
+          .insert({
+            project_id: currentProject.id,
+            name: phaseName,
+            description: phase.description ?? null,
+            is_standard: isEditingStandardProject,
+            position_rule: 'nth',
+            position_value: positionValue,
+          })
+          .select('id')
+          .single();
+
+        if (insertError || !addedPhase?.id) {
+          throw insertError || new Error('Failed to duplicate phase');
+        }
+
+        const { data: sourceOps, error: soErr } = await supabase
+          .from('phase_operations')
+          .select('id')
+          .eq('phase_id', phaseId)
+          .order('display_order', { ascending: true });
+
+        if (soErr) {
+          throw soErr;
+        }
+
+        let ord = 1;
+        for (const row of sourceOps || []) {
+          await cloneOperationTreeToPhase(row.id, addedPhase.id, ord++);
+        }
+
+        const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: true });
+        loadedProjectIdRef.current = null;
+        setPhases(sortedPhases);
+        toast.success(`Duplicated phase as "${phaseName}"`);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error('Error duplicating phase:', error);
+        toast.error(`Failed to duplicate phase: ${message}`);
+      } finally {
+        setDuplicatingKey(null);
+      }
+    },
+    [
+      currentProject,
+      phases,
+      validationError,
+      isEditingStandardProject,
+      reloadPhasesWithPositions,
+      cloneOperationTreeToPhase,
+    ]
+  );
+
+  const handleDuplicateOperation = useCallback(
+    async (phaseId: string, operationId: string) => {
+      if (!currentProject?.id) {
+        toast.error('No project selected');
+        return;
+      }
+
+      const phase = phases.find((p) => p.id === phaseId);
+      if (!phase) {
+        toast.error('Phase not found');
+        return;
+      }
+
+      if (phase.isLinked) {
+        toast.error('Cannot duplicate operations in incorporated phases');
+        return;
+      }
+
+      if (!isEditingStandardProject && isStandardPhase(phase)) {
+        toast.error('Cannot duplicate operations in standard phases. Use Edit Standard to modify standard phases.');
+        return;
+      }
+
+      const operation = phase.operations.find((op) => op.id === operationId);
+      if (!operation) {
+        toast.error('Operation not found');
+        return;
+      }
+
+      if (operation.isStandard && !isEditingStandardProject) {
+        toast.error('Cannot duplicate standard operations. Use Edit Standard to modify standard phases.');
+        return;
+      }
+
+      setDuplicatingKey(`op:${operationId}`);
+      try {
+        const { data: existingOperations } = await supabase
+          .from('phase_operations')
+          .select('id, operation_name, display_order')
+          .eq('phase_id', phaseId)
+          .order('display_order', { ascending: true });
+
+        if (existingOperations && existingOperations.length > 0) {
+          for (let i = 0; i < existingOperations.length; i++) {
+            const op = existingOperations[i];
+            const correctOrder = i + 1;
+            if (op.display_order !== correctOrder) {
+              await supabase.from('phase_operations').update({ display_order: correctOrder }).eq('id', op.id);
+            }
+          }
+        }
+
+        const nextDisplayOrder = (existingOperations?.length || 0) + 1;
+
+        const { data: opFull, error: fetchErr } = await supabase
+          .from('phase_operations')
+          .select('*')
+          .eq('id', operationId)
+          .single();
+
+        if (fetchErr || !opFull) {
+          throw fetchErr || new Error('Operation not found');
+        }
+
+        const existingNames = new Set(
+          (existingOperations || []).map((o) => (o as { operation_name?: string }).operation_name?.toLowerCase() || '')
+        );
+        let operationName = `${opFull.operation_name} (copy)`;
+        let counter = 1;
+        while (existingNames.has(operationName.toLowerCase())) {
+          operationName = `${opFull.operation_name} (copy ${counter})`;
+          counter++;
+        }
+
+        const newOpId = crypto.randomUUID();
+        const {
+          id: _oid,
+          created_at: _oca,
+          updated_at: _oua,
+          phase_id: _pid,
+          ...opRest
+        } = opFull;
+
+        const { error: opInsErr } = await supabase.from('phase_operations').insert({
+          id: newOpId,
+          phase_id: phaseId,
+          ...opRest,
+          operation_name: operationName,
+          display_order: nextDisplayOrder,
+        });
+
+        if (opInsErr) {
+          throw opInsErr;
+        }
+
+        const { data: stepRows, error: stErr } = await supabase
+          .from('operation_steps')
+          .select('*')
+          .eq('operation_id', operationId)
+          .order('display_order', { ascending: true });
+
+        if (stErr) {
+          throw stErr;
+        }
+
+        let stepOrd = 1;
+        for (const stepRow of stepRows || []) {
+          const newStepId = crypto.randomUUID();
+          const {
+            id: _sid,
+            created_at: _sca,
+            updated_at: _sua,
+            operation_id: _soid,
+            ...stepRest
+          } = stepRow;
+
+          const { error: stepInsErr } = await supabase.from('operation_steps').insert({
+            id: newStepId,
+            operation_id: newOpId,
+            ...stepRest,
+            display_order: stepOrd++,
+          });
+
+          if (stepInsErr) {
+            throw stepInsErr;
+          }
+
+          await cloneStepInstructionsForNewStep(stepRow.id, newStepId);
+        }
+
+        await renumberOperationsForPhase(phaseId);
+
+        const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: true });
+        loadedProjectIdRef.current = null;
+        setPhases(sortedPhases);
+        toast.success(`Duplicated operation as "${operationName}"`);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error('Error duplicating operation:', error);
+        toast.error(`Failed to duplicate operation: ${message}`);
+      } finally {
+        setDuplicatingKey(null);
+      }
+    },
+    [
+      currentProject,
+      phases,
+      isEditingStandardProject,
+      reloadPhasesWithPositions,
+      cloneStepInstructionsForNewStep,
+      renumberOperationsForPhase,
+    ]
+  );
+
+  const handleDuplicateStep = useCallback(
+    async (phaseId: string, operationId: string, stepId: string) => {
+      if (!currentProject?.id) {
+        toast.error('No project selected');
+        return;
+      }
+
+      const phase = phases.find((p) => p.id === phaseId);
+      if (!phase) {
+        toast.error('Phase not found');
+        return;
+      }
+
+      if (phase.isLinked) {
+        toast.error('Cannot duplicate steps in incorporated phases');
+        return;
+      }
+
+      if (!isEditingStandardProject && isStandardPhase(phase)) {
+        toast.error('Cannot duplicate steps in standard phases. Use Edit Standard to modify standard phases.');
+        return;
+      }
+
+      const operation = phase.operations.find((op) => op.id === operationId);
+      if (!operation) {
+        toast.error('Operation not found');
+        return;
+      }
+
+      const step = operation.steps.find((s) => s.id === stepId);
+      if (!step) {
+        toast.error('Step not found');
+        return;
+      }
+
+      if (step.isStandard && !isEditingStandardProject) {
+        toast.error('Cannot duplicate standard steps. Use Edit Standard to modify standard phases.');
+        return;
+      }
+
+      setDuplicatingKey(`step:${stepId}`);
+      try {
+        const { data: sorted, error: loadErr } = await supabase
+          .from('operation_steps')
+          .select('*')
+          .eq('operation_id', operationId)
+          .order('display_order', { ascending: true });
+
+        if (loadErr || !sorted?.length) {
+          throw loadErr || new Error('Could not load steps for this operation');
+        }
+
+        const idx = sorted.findIndex((s) => s.id === stepId);
+        if (idx < 0) {
+          throw new Error('Source step not found in operation');
+        }
+
+        for (let i = 0; i < sorted.length; i++) {
+          const { error: uErr } = await supabase
+            .from('operation_steps')
+            .update({ display_order: -(i + 1) })
+            .eq('id', sorted[i].id);
+          if (uErr) {
+            throw uErr;
+          }
+        }
+
+        const source = sorted[idx];
+        const newStepId = crypto.randomUUID();
+        const titleSet = new Set(sorted.map((s) => (s.step_title || '').toLowerCase()));
+        let newTitle = `${source.step_title} (copy)`;
+        let tCounter = 1;
+        while (titleSet.has(newTitle.toLowerCase())) {
+          newTitle = `${source.step_title} (copy ${tCounter})`;
+          tCounter++;
+        }
+
+        const {
+          id: _sid,
+          created_at: _sca,
+          updated_at: _sua,
+          operation_id: _soid,
+          ...stepRest
+        } = source;
+
+        const { error: insErr } = await supabase.from('operation_steps').insert({
+          id: newStepId,
+          operation_id: operationId,
+          ...stepRest,
+          step_title: newTitle,
+          display_order: 0,
+        });
+
+        if (insErr) {
+          throw insErr;
+        }
+
+        await cloneStepInstructionsForNewStep(source.id, newStepId);
+
+        const orderIds: string[] = [];
+        for (let i = 0; i < sorted.length; i++) {
+          orderIds.push(sorted[i].id);
+          if (i === idx) {
+            orderIds.push(newStepId);
+          }
+        }
+
+        for (let i = 0; i < orderIds.length; i++) {
+          const { error: ordErr } = await supabase
+            .from('operation_steps')
+            .update({ display_order: i + 1 })
+            .eq('id', orderIds[i]);
+          if (ordErr) {
+            throw ordErr;
+          }
+        }
+
+        const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: true });
+        loadedProjectIdRef.current = null;
+        setPhases(sortedPhases);
+        toast.success(`Duplicated step as "${newTitle}"`);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error('Error duplicating step:', error);
+        toast.error(`Failed to duplicate step: ${message}`);
+      } finally {
+        setDuplicatingKey(null);
+      }
+    },
+    [currentProject, phases, isEditingStandardProject, reloadPhasesWithPositions, cloneStepInstructionsForNewStep]
+  );
   
   /**
    * Helper to update phase position in database
@@ -3436,6 +3962,21 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                 >
                                   <Edit className="w-4 h-4" />
                                 </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  title="Duplicate phase with all operations and steps"
+                                  onClick={() => void handleDuplicatePhase(phase.id)}
+                                  disabled={
+                                    isDeletingPhase ||
+                                    isAddingPhase ||
+                                    isReorderingPhase !== null ||
+                                    duplicatingKey !== null
+                                  }
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </Button>
                                 <Button 
                                   size="sm" 
                                   variant="ghost"
@@ -3612,6 +4153,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                       onClick={() => startEdit('operation', operation.id, operation)}
                                                     >
                                                       <Edit className="w-3 h-3" />
+                                                    </Button>
+                                                    <Button
+                                                      type="button"
+                                                      size="sm"
+                                                      variant="ghost"
+                                                      title="Duplicate operation and all its steps"
+                                                      onClick={() => void handleDuplicateOperation(phase.id, operation.id)}
+                                                      disabled={duplicatingKey !== null}
+                                                    >
+                                                      <Copy className="w-3 h-3" />
                                                     </Button>
                                                     <Button
                                                       size="sm"
@@ -3803,6 +4354,18 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                                     onClick={() => startEdit('step', step.id, step)}
                                                                   >
                                                                     <Edit className="w-3 h-3" />
+                                                                  </Button>
+                                                                  <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    title="Duplicate step (includes instruction levels)"
+                                                                    onClick={() =>
+                                                                      void handleDuplicateStep(phase.id, operation.id, step.id)
+                                                                    }
+                                                                    disabled={duplicatingKey !== null}
+                                                                  >
+                                                                    <Copy className="w-3 h-3" />
                                                                   </Button>
                                                                   <Button
                                                                     size="sm"
