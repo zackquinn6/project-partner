@@ -2417,11 +2417,11 @@ export default function EditWorkflowView({
                 </Card>
 
                 {/* Apps Section */}
-                <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-card">
+                <Card className="bg-muted/30 border shadow-card">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Sparkles className="w-5 h-5" />
-                      Apps for this step
+                      Apps
                     </CardTitle>
                     
                   </CardHeader>
@@ -2492,8 +2492,8 @@ export default function EditWorkflowView({
 
                         <Card className="bg-muted/30 border shadow-sm">
                           <CardHeader>
-                            <CardTitle>Personal protective equipment</CardTitle>
-                            <CardDescription>PPE items for this step</CardDescription>
+                            <CardTitle>PPE</CardTitle>
+                            <CardDescription>Personal Protective Equipment</CardDescription>
                           </CardHeader>
                           <CardContent>
                             <CompactPpeTable
@@ -2572,10 +2572,10 @@ export default function EditWorkflowView({
                   </Card>
                 </div>
 
-                {/* Time Estimation — admin workflow editor: always editable (incl. allow_content_edit steps) */}
+                {/* Time & Effort — admin workflow editor: always editable (incl. allow_content_edit steps) */}
                 <Card className="bg-muted/30 border shadow-sm">
                   <CardHeader>
-                    <CardTitle>Time Estimation & Step Type</CardTitle>
+                    <CardTitle>Time & Effort</CardTitle>
                     <CardDescription>Configure step type, time estimates (low / expected / high), workers, and skill level. Step type determines how time estimates are interpreted.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -2868,9 +2868,9 @@ export default function EditWorkflowView({
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-base">
                           <Shield className="w-5 h-5" />
-                          Personal protective equipment
+                          PPE
                         </CardTitle>
-                        <CardDescription>PPE for this step</CardDescription>
+                        <CardDescription>Personal Protective Equipment</CardDescription>
                       </CardHeader>
                       <CardContent>
                         {!hasPpe ? (
@@ -2986,17 +2986,17 @@ export default function EditWorkflowView({
               )}
 
               {currentStep && (
-                <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-sm">
+                <Card className="bg-muted/30 border shadow-sm">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Sparkles className="w-5 h-5" />
-                      Apps for this step
+                      Apps
                     </CardTitle>
                     <CardDescription>Linked apps and tools</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {!currentStep.apps || currentStep.apps.length === 0 ? (
-                      <div className="text-center py-4 text-sm text-muted-foreground border border-dashed rounded-md border-primary/20">
+                      <div className="text-center py-4 text-sm text-muted-foreground border border-dashed rounded-md">
                         No apps linked to this step.
                       </div>
                     ) : (
@@ -3017,9 +3017,9 @@ export default function EditWorkflowView({
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Clock className="w-5 h-5" />
-                      Time estimation
+                      Time & Effort
                     </CardTitle>
-                    <CardDescription>Duration, workers, and skill (preview only)</CardDescription>
+                    <CardDescription>Duration, workers, and skill</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <CompactTimeEstimationReadOnly
