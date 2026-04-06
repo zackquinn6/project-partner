@@ -1,5 +1,7 @@
 -- Step 1 — structure only (AI_PROJECT_DEVELOPMENT_REFERENCE.md):
--- phases (only if none exist), phase_operations, operation_steps (title + one-line description).
+-- phases: INSERT only when count = 0. If phases already exist, do not INSERT/UPDATE/rename them;
+--   map new operations to existing phase rows by sort order (position_rule/value, created_at, id).
+-- phase_operations + operation_steps (title + one-line description).
 -- No step_instructions, no outputs/time/tools/materials enrichment (later steps).
 --
 -- Templates:
@@ -113,17 +115,37 @@ BEGIN
     v_install := 'b45eb00d-1a7e-4c1d-9f01-b45e00000002'::uuid;
     v_finish := 'b45eb00d-1a7e-4c1d-9f01-b45e00000003'::uuid;
   ELSE
-    SELECT pp.id INTO v_prep FROM public.project_phases pp
-    WHERE pp.project_id = v_project_id AND lower(btrim(pp.name)) = 'preparation' LIMIT 1;
-    SELECT pp.id INTO v_install FROM public.project_phases pp
-    WHERE pp.project_id = v_project_id AND lower(btrim(pp.name)) = 'installation' LIMIT 1;
-    SELECT pp.id INTO v_finish FROM public.project_phases pp
-    WHERE pp.project_id = v_project_id AND lower(btrim(pp.name)) = 'finishing' LIMIT 1;
-    IF v_prep IS NULL OR v_install IS NULL OR v_finish IS NULL THEN
-      RAISE EXCEPTION
-        'Baseboard & trim installation already has % phase(s) but expected phases Preparation, Installation, and Finishing were not all found by name',
-        v_phase_count;
+    -- Phases already exist: do not INSERT, UPDATE, or rename them. Map the three operation groups
+    -- to existing rows by stable sort (same idea as process map ordering)—not by display name.
+    SELECT
+      max(s.id) FILTER (WHERE s.rn = 1),
+      max(s.id) FILTER (WHERE s.rn = LEAST(2, v_phase_count)),
+      max(s.id) FILTER (WHERE s.rn = LEAST(3, v_phase_count))
+    INTO v_prep, v_install, v_finish
+    FROM (
+      SELECT
+        pp.id,
+        row_number() OVER (
+          ORDER BY
+            CASE WHEN pp.position_rule = 'last' THEN 1 ELSE 0 END,
+            pp.position_value NULLS LAST,
+            pp.created_at ASC,
+            pp.id ASC
+        ) AS rn
+      FROM public.project_phases pp
+      WHERE pp.project_id = v_project_id
+    ) s;
+
+    IF v_prep IS NULL THEN
+      RAISE EXCEPTION 'Baseboard+trim: project_id=% has phases but sort yielded no phase id', v_project_id;
     END IF;
+
+    RAISE NOTICE
+      'Baseboard+trim: attaching new operations to % existing phase(s) by order (not by name). prep_phase=%, install_phase=%, finish_phase=%',
+      v_phase_count,
+      v_prep,
+      v_install,
+      v_finish;
   END IF;
 
   INSERT INTO public.phase_operations (id, phase_id, operation_name, operation_description, display_order, estimated_time, flow_type)
@@ -336,17 +358,35 @@ BEGIN
     v_inst := 'd15a0001-1a7e-4c1d-9f01-d15a00000002'::uuid;
     v_test := 'd15a0001-1a7e-4c1d-9f01-d15a00000003'::uuid;
   ELSE
-    SELECT pp.id INTO v_disc FROM public.project_phases pp
-    WHERE pp.project_id = v_project_id AND lower(btrim(pp.name)) = 'disconnect' LIMIT 1;
-    SELECT pp.id INTO v_inst FROM public.project_phases pp
-    WHERE pp.project_id = v_project_id AND lower(btrim(pp.name)) = 'installation' LIMIT 1;
-    SELECT pp.id INTO v_test FROM public.project_phases pp
-    WHERE pp.project_id = v_project_id AND lower(btrim(pp.name)) = 'verification' LIMIT 1;
-    IF v_disc IS NULL OR v_inst IS NULL OR v_test IS NULL THEN
-      RAISE EXCEPTION
-        'Dishwasher Replacement already has % phase(s) but expected phases Disconnect, Installation, and Verification were not all found by name',
-        v_phase_count;
+    SELECT
+      max(s.id) FILTER (WHERE s.rn = 1),
+      max(s.id) FILTER (WHERE s.rn = LEAST(2, v_phase_count)),
+      max(s.id) FILTER (WHERE s.rn = LEAST(3, v_phase_count))
+    INTO v_disc, v_inst, v_test
+    FROM (
+      SELECT
+        pp.id,
+        row_number() OVER (
+          ORDER BY
+            CASE WHEN pp.position_rule = 'last' THEN 1 ELSE 0 END,
+            pp.position_value NULLS LAST,
+            pp.created_at ASC,
+            pp.id ASC
+        ) AS rn
+      FROM public.project_phases pp
+      WHERE pp.project_id = v_project_id
+    ) s;
+
+    IF v_disc IS NULL THEN
+      RAISE EXCEPTION 'Dishwasher Replacement: project_id=% has phases but sort yielded no phase id', v_project_id;
     END IF;
+
+    RAISE NOTICE
+      'Dishwasher Replacement: attaching new operations to % existing phase(s) by order. disconnect=%, install=%, verify=%',
+      v_phase_count,
+      v_disc,
+      v_inst,
+      v_test;
   END IF;
 
   INSERT INTO public.phase_operations (id, phase_id, operation_name, operation_description, display_order, estimated_time, flow_type)
