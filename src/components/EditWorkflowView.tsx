@@ -117,7 +117,9 @@ export default function EditWorkflowView({
   // Detect if editing Standard Project Foundation
   // Check both the hardcoded ID and the isStandardTemplate flag
   const isEditingStandardProject = currentProject?.isStandardTemplate || currentProject?.id === 'd82dff80-e8ac-4511-be46-3d0e64bb5fc5';
-  
+  const isEditingStandardProjectRef = React.useRef(isEditingStandardProject);
+  isEditingStandardProjectRef.current = isEditingStandardProject;
+
   // Load phases directly from database - EXACTLY like Process Map does
   // This ensures workflow editor and Process Map always match
   const [rawPhases, setRawPhases] = React.useState<Phase[]>([]);
@@ -132,9 +134,9 @@ export default function EditWorkflowView({
       return [];
     }
     
-    // Check if this is the standard project by checking is_standard flag
-    // Use isEditingStandardProject flag which is set based on currentProject.isStandardTemplate
-    const isStandardProject = isEditingStandardProject;
+    // Read mode from ref so this callback stays stable; avoids re-fetching phases when the flag
+    // flips after a context refresh (same project id) and wiping unsaved editor state.
+    const isStandardProject = isEditingStandardProjectRef.current;
     
     if (isStandardProject) {
       // Edit Standard: Read directly from project_phases table (same approach as UnifiedProjectManagement)
@@ -1021,7 +1023,7 @@ export default function EditWorkflowView({
       // Combine custom and standard phases
       return [...customPhases, ...standardPhases];
     }
-  }, [isEditingStandardProject]);
+  }, []);
 
   // Before paint: when the workflow project id changes, enter loading and drop stale phases so we
   // never flash empty state (and spurious "no phases" toasts) while the async fetch is in flight.

@@ -110,6 +110,9 @@ export function UnifiedProjectManagement({
     trackClick
   } = useButtonTracker();
   const [projects, setProjects] = useState<Project[]>([]);
+  /** Keeps latest list for fetchProjects without adding `projects` to useCallback deps (stale closure). */
+  const projectsRef = useRef<Project[]>(projects);
+  projectsRef.current = projects;
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [projectRevisions, setProjectRevisions] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -226,7 +229,11 @@ export function UnifiedProjectManagement({
   );
   const fetchProjects = useCallback(async () => {
     try {
-      setLoading(true);
+      // Only swap the revisions tab for a full-page spinner on the first load (empty list).
+      // After that, refresh in the background so in-progress edits and scroll position are not wiped.
+      if (projectsRef.current.length === 0) {
+        setLoading(true);
+      }
       const {
         data,
         error
