@@ -20,7 +20,8 @@ DECLARE
   v_finish uuid;
 BEGIN
   -- Match common catalog spellings and walk up to family root (covers draft/revision rows).
-  WITH matched AS (
+  -- RECURSIVE required: CTE "up" self-references in UNION ALL (PostgreSQL).
+  WITH RECURSIVE matched AS (
     SELECT p.id
     FROM public.projects p
     WHERE (p.is_standard IS DISTINCT FROM true)
@@ -29,7 +30,9 @@ BEGIN
           'baseboard & trim installation',
           'baseboard & trim replacement',
           'baseboard and trim installation',
-          'baseboard and trim replacement'
+          'baseboard and trim replacement',
+          'baseboard + trim installation',
+          'baseboard + trim replacement'
         )
         OR (
           lower(btrim(p.name)) LIKE '%baseboard%'
@@ -65,7 +68,7 @@ BEGIN
   IF v_nroots > 1 THEN
     RAISE EXCEPTION
       'Multiple (%) distinct baseboard+trim template roots matched. List them with: '
-      'WITH matched AS (SELECT id FROM projects p WHERE (p.is_standard IS DISTINCT FROM true) AND (lower(btrim(name)) LIKE ''%%baseboard%%'' AND lower(btrim(name)) LIKE ''%%trim%%'')), '
+      'WITH RECURSIVE matched AS (SELECT id FROM projects p WHERE (p.is_standard IS DISTINCT FROM true) AND (lower(btrim(name)) LIKE ''%%baseboard%%'' AND lower(btrim(name)) LIKE ''%%trim%%'')), '
       'up AS (SELECT id, parent_project_id FROM projects WHERE id IN (SELECT id FROM matched) UNION ALL SELECT par.id, par.parent_project_id FROM projects par INNER JOIN up ON par.id = up.parent_project_id) '
       'SELECT id, name FROM projects WHERE id IN (SELECT DISTINCT id FROM up WHERE parent_project_id IS NULL);',
       v_nroots;
