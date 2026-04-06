@@ -18,37 +18,58 @@ DECLARE
   v_prep uuid;
   v_install uuid;
   v_finish uuid;
-  v_op uuid;
 BEGIN
-  SELECT count(*)::integer
-  INTO v_nroots
-  FROM public.projects p
-  WHERE (p.is_standard IS DISTINCT FROM true)
-    AND (p.parent_project_id IS NULL)
-    AND lower(btrim(p.name)) IN (
-      'baseboard & trim installation',
-      'baseboard & trim replacement'
-    );
+  -- Match common catalog spellings and walk up to family root (covers draft/revision rows).
+  WITH matched AS (
+    SELECT p.id
+    FROM public.projects p
+    WHERE (p.is_standard IS DISTINCT FROM true)
+      AND (
+        lower(btrim(p.name)) IN (
+          'baseboard & trim installation',
+          'baseboard & trim replacement',
+          'baseboard and trim installation',
+          'baseboard and trim replacement'
+        )
+        OR (
+          lower(btrim(p.name)) LIKE '%baseboard%'
+          AND lower(btrim(p.name)) LIKE '%trim%'
+        )
+      )
+  ),
+  up AS (
+    SELECT pr.id, pr.parent_project_id
+    FROM public.projects pr
+    WHERE pr.id IN (SELECT id FROM matched)
+    UNION ALL
+    SELECT par.id, par.parent_project_id
+    FROM public.projects par
+    INNER JOIN up ON par.id = up.parent_project_id
+  ),
+  roots AS (
+    SELECT DISTINCT id AS root_id
+    FROM up
+    WHERE parent_project_id IS NULL
+  )
+  SELECT
+    (SELECT count(*)::integer FROM roots),
+    (SELECT root_id FROM roots LIMIT 1)
+  INTO v_nroots, v_project_id;
 
   IF v_nroots = 0 THEN
     RAISE EXCEPTION
-      'No root template found named "Baseboard & trim installation" or "Baseboard & trim replacement" (case-insensitive)';
-  END IF;
-  IF v_nroots > 1 THEN
-    RAISE EXCEPTION
-      'Multiple root templates match baseboard trim names; resolve duplicates before running';
+      'No project found for baseboard+trim (tried exact titles with &/and, and names containing both ''baseboard'' and ''trim''). '
+      'Query: SELECT id, name, parent_project_id FROM projects WHERE lower(name) LIKE ''%%baseboard%%'' ORDER BY name;';
   END IF;
 
-  SELECT p.id
-  INTO v_project_id
-  FROM public.projects p
-  WHERE (p.is_standard IS DISTINCT FROM true)
-    AND (p.parent_project_id IS NULL)
-    AND lower(btrim(p.name)) IN (
-      'baseboard & trim installation',
-      'baseboard & trim replacement'
-    )
-  LIMIT 1;
+  IF v_nroots > 1 THEN
+    RAISE EXCEPTION
+      'Multiple (%) distinct baseboard+trim template roots matched. List them with: '
+      'WITH matched AS (SELECT id FROM projects p WHERE (p.is_standard IS DISTINCT FROM true) AND (lower(btrim(name)) LIKE ''%%baseboard%%'' AND lower(btrim(name)) LIKE ''%%trim%%'')), '
+      'up AS (SELECT id, parent_project_id FROM projects WHERE id IN (SELECT id FROM matched) UNION ALL SELECT par.id, par.parent_project_id FROM projects par INNER JOIN up ON par.id = up.parent_project_id) '
+      'SELECT id, name FROM projects WHERE id IN (SELECT DISTINCT id FROM up WHERE parent_project_id IS NULL);',
+      v_nroots;
+  END IF;
 
   SELECT count(*)::integer INTO v_phase_count FROM public.project_phases pp WHERE pp.project_id = v_project_id;
 
