@@ -2713,7 +2713,7 @@ export default function EditWorkflowView({
                     <div className="space-y-1">
                       <CardTitle>Instructions</CardTitle>
                       <CardDescription>
-                        Step content for the selected detail level (matches the content editor).
+                        Step content for selected detail level
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
