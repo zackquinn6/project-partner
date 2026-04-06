@@ -30,17 +30,44 @@
 
 Aligned with product rules: **if `project_phases` already has ≥1 row for the template, do not create, edit, or rename phases** in that migration. Assume existing phases cover the project; attach new **`phase_operations`** and **`operation_steps`** only.
 
-- **Resolve `phase_id` for new operations** using **deterministic ordering** of existing `project_phases` rows—**not** by requiring fixed display names like “Preparation” or “Disconnect” (catalog phases may use any labels).
-- **Recommended sort key** (matches typical process-map ordering): `position_rule` rows with `'last'` after non-last; then `position_value` NULLS LAST; then `created_at`; then `id`.
-- **Fewer than three phases:** map multiple operation groups onto the same phase as needed (e.g. 1st sorted phase → first group; 2nd sorted → second group; if only one phase, all groups use that `phase_id`). Use `LEAST(2, n)` / `LEAST(3, n)` row numbers so 1–2 phase templates still get a consistent mapping.
-- **Zero phases:** `INSERT` the phase set for that template in Step 1, then attach operations (same as greenfield Step 1).
+- **Resolve `phase_id` for new operations** using **deterministic ordering** of existing `project_phases` rows—**not** by requiring fixed display names like “Preparation” or “Disconnect” (catalog phases may use any labels). Requiring name matches caused real migrations to fail when the catalog used different phase titles.
+- **Recommended sort key** (matches typical process-map ordering): non-`last` before `last` (`CASE WHEN position_rule = 'last' THEN 1 ELSE 0 END`); then `position_value` NULLS LAST; then `created_at`; then `id`.
+- **Fewer than three phases:** map multiple operation groups onto the same phase as needed. Use row numbers **`1`**, **`LEAST(2, n)`**, **`LEAST(3, n)`** against `n = count(*)` so one phase repeats for all three slots when `n = 1`, and the third group shares the second phase when `n = 2`.
+- **Zero phases:** `INSERT` the phase set for that template in Step 1, then attach operations (greenfield).
+- **After structure changes:** `UPDATE public.projects SET phases = public.rebuild_phases_json_from_project_phases(<project_id>) WHERE id = <project_id>;`
+- **Optional:** `RAISE NOTICE` with resolved `phase_id`s when mapping by order—helps verify behavior in SQL editor logs.
+
+**Phase → slot pattern (portable across Postgres versions):** do **not** use `max(uuid)` / `min(uuid)` aggregates on ids (not defined on all versions). Use a sorted CTE and scalar subqueries:
+
+```sql
+WITH sorted AS (
+  SELECT pp.id,
+         row_number() OVER (
+           ORDER BY
+             CASE WHEN pp.position_rule = 'last' THEN 1 ELSE 0 END,
+             pp.position_value NULLS LAST,
+             pp.created_at ASC,
+             pp.id ASC
+         ) AS rn
+  FROM public.project_phases pp
+  WHERE pp.project_id = v_project_id
+)
+SELECT
+  (SELECT s.id FROM sorted s WHERE s.rn = 1 LIMIT 1),
+  (SELECT s.id FROM sorted s WHERE s.rn = LEAST(2, v_phase_count) LIMIT 1),
+  (SELECT s.id FROM sorted s WHERE s.rn = LEAST(3, v_phase_count) LIMIT 1)
+INTO v_phase_a, v_phase_b, v_phase_c;
+```
+
+Reference implementation: `2026_04_04_migration_baseboard_dishwasher_caulking_step1_structure.sql` (baseboard + dishwasher blocks).
 
 ### Migrations — PostgreSQL / template resolution (field learnings)
 
-- **Recursive CTE:** Walking from a matched `projects.id` up `parent_project_id` to the family root uses **`WITH RECURSIVE`** on the whole `WITH` clause whenever a CTE references itself in `UNION ALL`—otherwise you get `relation "up" does not exist`.
-- **`max(uuid)` / `min(uuid)`:** Not available on all PostgreSQL versions (e.g. some managed pools). Prefer **`(SELECT id FROM … WHERE rn = n LIMIT 1)`** or `(array_agg(id ORDER BY …))[n]` instead of `max(id) FILTER` on UUIDs.
-- **Template rows:** Revisions may have `parent_project_id` set; resolve the **root** row (`parent_project_id IS NULL`) when attaching workflow to the canonical template family.
-- **Name matching:** Catalog titles vary (`&` vs `and` vs `+`, spacing). Prefer explicit lists or documented `LIKE` patterns; fail with a diagnostic query if zero or ambiguous matches.
+- **Recursive CTE:** Walking from matched `projects` rows **up** `parent_project_id` to the family root requires **`WITH RECURSIVE`** on the **entire** `WITH` clause when a branch does `UNION ALL … INNER JOIN up ON …` (self-reference). Without `RECURSIVE` you get **`relation "up" does not exist`**.
+- **Ancestor walk shape:** seed = all matched template/revision ids; recursive part = join `projects par` on `par.id = up.parent_project_id`; **roots** = rows where `parent_project_id IS NULL`. **Exactly one** distinct root after resolution, or **RAISE** (include a diagnostic `SELECT` in the error text when multiple roots match broad `LIKE` patterns).
+- **`max(uuid)` / `min(uuid)`:** Not available on all PostgreSQL / managed pools. Use the **scalar subquery** pattern above, or `(array_agg(id ORDER BY rn))[subscript]`, not `max(id) FILTER (…)`.
+- **Template rows:** Revisions may have `parent_project_id` set; attach normalized workflow to the **root** `projects.id` (`parent_project_id IS NULL`) for the canonical template family.
+- **Name matching:** Catalog titles vary (`&` vs `and` vs `+`, punctuation). Use an explicit `IN (...)` list of normalized `lower(btrim(name))` values plus optional **`LIKE`** guards; **never** assume a single spelling. If zero matches, **RAISE** with a suggested `SELECT id, name, parent_project_id FROM projects WHERE …`.
 
 ### Tables (template workflow)
 
