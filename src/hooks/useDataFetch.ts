@@ -39,6 +39,8 @@ export function useDataFetch<T = any>({
   const [error, setError] = useState<Error | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastFetchParams = useRef<string>('');
+  /** Latest data for refetch/silent logic without stale closures */
+  const dataRef = useRef<T[]>([]);
 
   // Memoize fetch parameters to avoid unnecessary re-fetches
   const fetchParams = useMemo(() => {
@@ -52,14 +54,22 @@ export function useDataFetch<T = any>({
     });
   }, [table, select, filters, orderBy, cacheKey, enabled]);
 
-  const fetchData = useCallback(async (useCache = true) => {
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
+  const fetchData = useCallback(
+    async (useCache = true, options?: { silent?: boolean }) => {
     // Skip fetch if disabled
     if (!enabled) {
       return;
     }
 
+    const silentRefresh = options?.silent === true;
+    const hasRows = dataRef.current.length > 0;
+
     // Prevent duplicate fetches with same parameters (only for cached reads; refetch passes useCache=false and must hit the network)
-    if (useCache && fetchParams === lastFetchParams.current && data.length > 0 && !loading) {
+    if (useCache && fetchParams === lastFetchParams.current && hasRows) {
       return;
     }
 
@@ -77,7 +87,10 @@ export function useDataFetch<T = any>({
     }
 
     abortControllerRef.current = new AbortController();
-    setLoading(true);
+    // Background refetch: keep showing existing data — avoids app-wide "reset" when Project Management dispatches refetch-projects.
+    if (!silentRefresh || !hasRows) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -146,9 +159,9 @@ export function useDataFetch<T = any>({
     } finally {
       setLoading(false);
     }
-  }, [table, select, JSON.stringify(filters), JSON.stringify(orderBy), cacheKey, transform, enabled]);
+  }, [table, select, JSON.stringify(filters), JSON.stringify(orderBy), cacheKey, transform, enabled, fetchParams]);
 
-  const refetch = useCallback(() => fetchData(false), [fetchData]);
+  const refetch = useCallback(() => fetchData(false, { silent: true }), [fetchData]);
 
   const mutate = useCallback((newData: T[]) => {
     setData(newData);

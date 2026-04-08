@@ -2,53 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Design system aligned with https://www.toolio.us (coral CTA #ff6b3d, warm sand, near-black type).
+   All colors MUST be HSL components for hsl(var(--token)).
 */
 
 @layer base {
 /* Enhanced responsive spacing system for mobile and desktop optimization */
 :root {
-  /* Professional Navy & Orange Sports DIY Palette */
-  --background: 250 100% 99%;
-  --foreground: 220 30% 15%;
+  /* Toolio.us marketing palette: coral CTA (#ff6b3d), warm sand, near-black type */
+  --background: 40 28% 97%;
+  --foreground: 24 12% 9%;
 
   --card: 0 0% 100%;
-  --card-foreground: 220 30% 15%;
+  --card-foreground: 24 12% 9%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 220 30% 15%;
+  --popover-foreground: 24 12% 9%;
 
-  /* Navy primary with orange accent */
-  --primary: 220 85% 18%;
+  /* Primary actions match toolio.us accent CTAs (Salient accent-color) */
+  --primary: 14 100% 58%;
   --primary-foreground: 0 0% 100%;
-  --primary-variant: 220 75% 25%;
-  --primary-light: 220 45% 35%;
+  --primary-variant: 16 92% 48%;
+  --primary-light: 14 86% 64%;
 
-  /* Sophisticated grays */
-  --secondary: 220 15% 96%;
-  --secondary-foreground: 220 30% 20%;
+  /* Warm neutrals (header #f8f8f8, sand #e6d9bd family) */
+  --secondary: 38 22% 96%;
+  --secondary-foreground: 24 14% 18%;
 
-  --muted: 220 20% 95%;
-  --muted-foreground: 220 15% 45%;
+  --muted: 36 24% 94%;
+  --muted-foreground: 24 10% 42%;
 
-  /* Vibrant orange accent */
-  --accent: 20 95% 55%;
+  /* Highlights / scribbles (#f2682e, #f27954) */
+  --accent: 18 88% 56%;
   --accent-foreground: 0 0% 100%;
-  --accent-light: 20 85% 65%;
+  --accent-light: 14 86% 64%;
 
   --destructive: 0 80% 55%;
   --destructive-foreground: 0 0% 100%;
 
-  /* Refined borders and inputs */
-  --border: 220 25% 88%;
-  --input: 220 30% 94%;
-  --ring: 20 95% 55%;
+  --border: 32 18% 88%;
+  --input: 36 20% 93%;
+  --ring: 14 100% 58%;
 
-  /* Professional gradients */
-  --gradient-primary: linear-gradient(135deg, hsl(220 85% 18%) 0%, hsl(220 75% 25%) 50%, hsl(20 95% 55%) 100%);
-  --gradient-hero: linear-gradient(135deg, hsl(220 85% 18%) 0%, hsl(220 70% 22%) 100%);
-  --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(220 30% 98%) 100%);
+  /* Hero-style: warm sand → coral (toolio.us radial hero) */
+  --gradient-primary: linear-gradient(135deg, hsl(14 95% 52%) 0%, hsl(18 88% 56%) 45%, hsl(24 90% 52%) 100%);
+  --gradient-hero: linear-gradient(165deg, hsl(38 42% 90%) 0%, hsl(14 100% 62%) 72%, hsl(16 92% 52%) 100%);
+  --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(40 30% 98%) 100%);
 
   /* Responsive spacing system */
   --spacing-mobile-xs: 0.25rem;   /* 4px mobile, for very tight spacing */
@@ -66,15 +65,14 @@ All colors MUST be HSL.
   /* Touch target optimization */
   --touch-target-minimum: 44px;   /* iOS/Android minimum */
   --mouse-target-minimum: 32px;   /* Desktop minimum */
-    --gradient-subtle: linear-gradient(135deg, hsl(250 100% 99%) 0%, hsl(220 20% 96%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(20 95% 55%) 0%, hsl(25 90% 60%) 100%);
+    --gradient-subtle: linear-gradient(135deg, hsl(42 32% 98%) 0%, hsl(36 24% 95%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(14 100% 58%) 0%, hsl(18 88% 56%) 100%);
     
-    /* Sophisticated shadows */
-    --shadow-elegant: 0 20px 40px -12px hsl(220 85% 18% / 0.25);
-    --shadow-card: 0 8px 30px -8px hsl(220 85% 18% / 0.12);
-    --shadow-soft: 0 4px 20px -4px hsl(220 50% 50% / 0.08);
-    --shadow-accent: 0 12px 35px -10px hsl(20 95% 55% / 0.3);
-    --shadow-float: 0 5px 15px -3px hsl(220 85% 18% / 0.1);
+    --shadow-elegant: 0 20px 40px -12px hsl(14 80% 40% / 0.22);
+    --shadow-card: 0 8px 30px -8px hsl(24 20% 20% / 0.1);
+    --shadow-soft: 0 4px 20px -4px hsl(30 25% 50% / 0.08);
+    --shadow-accent: 0 12px 35px -10px hsl(14 100% 58% / 0.28);
+    --shadow-float: 0 5px 15px -3px hsl(24 15% 25% / 0.09);
     
     /* Smooth micro-interactions */
     --transition-smooth: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -83,73 +81,69 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    /* Professional sidebar tokens */
-    --sidebar-background: 220 20% 96%;
-    --sidebar-foreground: 220 30% 20%;
-    --sidebar-primary: 220 85% 18%;
+    --sidebar-background: 40 24% 96%;
+    --sidebar-foreground: 24 14% 18%;
+    --sidebar-primary: 14 100% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 92%;
-    --sidebar-accent-foreground: 220 30% 20%;
-    --sidebar-border: 220 25% 88%;
-    --sidebar-ring: 20 95% 55%;
+    --sidebar-accent: 36 22% 92%;
+    --sidebar-accent-foreground: 24 14% 18%;
+    --sidebar-border: 32 18% 88%;
+    --sidebar-ring: 14 100% 58%;
   }
 
   .dark {
-    /* Professional Dark Navy & Orange */
-    --background: 220 40% 8%;
-    --foreground: 220 15% 92%;
+    /* Warm charcoal (not cool navy) + Toolio coral */
+    --background: 24 14% 9%;
+    --foreground: 40 25% 96%;
 
-    --card: 220 35% 10%;
-    --card-foreground: 220 15% 92%;
+    --card: 24 12% 12%;
+    --card-foreground: 40 25% 96%;
 
-    --popover: 220 35% 10%;
-    --popover-foreground: 220 15% 92%;
+    --popover: 24 12% 12%;
+    --popover-foreground: 40 25% 96%;
 
-    --primary: 220 85% 18%;
+    --primary: 14 100% 58%;
     --primary-foreground: 0 0% 100%;
-    --primary-variant: 220 75% 25%;
-    --primary-light: 220 45% 35%;
+    --primary-variant: 14 90% 52%;
+    --primary-light: 14 75% 68%;
 
-    --secondary: 220 20% 15%;
-    --secondary-foreground: 220 15% 85%;
+    --secondary: 24 10% 16%;
+    --secondary-foreground: 40 20% 92%;
 
-    --muted: 220 25% 12%;
-    --muted-foreground: 220 15% 60%;
+    --muted: 24 12% 15%;
+    --muted-foreground: 35 12% 65%;
 
-    --accent: 20 95% 55%;
-    --accent-foreground: 0 0% 100%;
-    --accent-light: 20 85% 65%;
+    --accent: 18 88% 58%;
+    --accent-foreground: 24 14% 9%;
+    --accent-light: 14 80% 70%;
 
     --destructive: 0 75% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 30% 18%;
-    --input: 220 30% 16%;
-    --ring: 20 95% 55%;
+    --border: 24 12% 20%;
+    --input: 24 12% 17%;
+    --ring: 14 100% 58%;
 
-    /* Dark mode gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(220 85% 18%) 0%, hsl(220 75% 25%) 50%, hsl(20 95% 55%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(220 40% 8%) 0%, hsl(220 35% 10%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(220 35% 10%) 0%, hsl(220 30% 12%) 100%);
-    --gradient-subtle: linear-gradient(135deg, hsl(220 40% 8%) 0%, hsl(220 25% 12%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(20 95% 55%) 0%, hsl(25 90% 60%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(14 95% 52%) 0%, hsl(18 85% 50%) 50%, hsl(14 100% 58%) 100%);
+    --gradient-hero: linear-gradient(165deg, hsl(24 14% 11%) 0%, hsl(24 12% 14%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(24 12% 12%) 0%, hsl(24 10% 14%) 100%);
+    --gradient-subtle: linear-gradient(135deg, hsl(24 14% 9%) 0%, hsl(24 12% 12%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(14 100% 58%) 0%, hsl(18 88% 56%) 100%);
     
-    /* Dark mode shadows */
-    --shadow-elegant: 0 20px 40px -12px hsl(0 0% 0% / 0.4);
-    --shadow-card: 0 8px 30px -8px hsl(0 0% 0% / 0.25);
-    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.15);
-    --shadow-accent: 0 12px 35px -10px hsl(20 95% 55% / 0.4);
-    --shadow-float: 0 5px 15px -3px hsl(0 0% 0% / 0.2);
+    --shadow-elegant: 0 20px 40px -12px hsl(0 0% 0% / 0.45);
+    --shadow-card: 0 8px 30px -8px hsl(0 0% 0% / 0.28);
+    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.18);
+    --shadow-accent: 0 12px 35px -10px hsl(14 100% 58% / 0.35);
+    --shadow-float: 0 5px 15px -3px hsl(0 0% 0% / 0.22);
     
-    /* Dark sidebar tokens */
-    --sidebar-background: 220 35% 10%;
-    --sidebar-foreground: 220 15% 85%;
-    --sidebar-primary: 220 85% 18%;
+    --sidebar-background: 24 12% 11%;
+    --sidebar-foreground: 40 22% 92%;
+    --sidebar-primary: 14 100% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 25% 12%;
-    --sidebar-accent-foreground: 220 15% 85%;
-    --sidebar-border: 220 30% 18%;
-    --sidebar-ring: 20 95% 55%;
+    --sidebar-accent: 24 10% 16%;
+    --sidebar-accent-foreground: 40 22% 92%;
+    --sidebar-border: 24 12% 20%;
+    --sidebar-ring: 14 100% 58%;
   }
 }
 
@@ -197,18 +191,18 @@ All colors MUST be HSL.
 /* Workflow Theme Styles */
 .dark-theme {
   --workflow-text: 0 0% 100%;
-  --workflow-bg: 220 40% 8%;
-  --workflow-card-bg: 220 35% 10%;
-  --workflow-border: 220 30% 18%;
+  --workflow-bg: 24 14% 9%;
+  --workflow-card-bg: 24 12% 12%;
+  --workflow-border: 24 12% 20%;
   color: hsl(var(--workflow-text));
   background-color: hsl(var(--workflow-bg));
 }
 
 .light-theme {
-  --workflow-text: 220 30% 15%;
-  --workflow-bg: 250 100% 99%;
+  --workflow-text: 24 12% 9%;
+  --workflow-bg: 40 28% 97%;
   --workflow-card-bg: 0 0% 100%;
-  --workflow-border: 220 25% 88%;
+  --workflow-border: 32 18% 88%;
   color: hsl(var(--workflow-text));
   background-color: hsl(var(--workflow-bg));
 }
@@ -233,9 +227,9 @@ All colors MUST be HSL.
 }
 
 [data-color-scheme="orange"] {
-  --workflow-primary: 25 95% 53%;
-  --workflow-secondary: 25 95% 95%;
-  --workflow-accent: 25 95% 98%;
+  --workflow-primary: 14 100% 58%;
+  --workflow-secondary: 36 30% 95%;
+  --workflow-accent: 40 35% 98%;
 }
 
 [data-color-scheme="red"] {
@@ -245,14 +239,14 @@ All colors MUST be HSL.
 }
 
 [data-color-scheme="default"] {
-  --workflow-primary: 222.2 47.4% 11.2%;
-  --workflow-secondary: 210 40% 96.1%;
-  --workflow-accent: 210 40% 98%;
+  --workflow-primary: 14 100% 58%;
+  --workflow-secondary: 38 22% 96%;
+  --workflow-accent: 40 28% 98%;
 }
 
 /* Dark mode color scheme adjustments for better visibility */
 main.flex-1.overflow-auto.dark-theme[data-color-scheme="default"] {
-  --workflow-primary: 220 50% 70%;
+  --workflow-primary: 14 100% 62%;
 }
 
 main.flex-1.overflow-auto.dark-theme[data-color-scheme="blue"] {
@@ -268,7 +262,7 @@ main.flex-1.overflow-auto.dark-theme[data-color-scheme="purple"] {
 }
 
 main.flex-1.overflow-auto.dark-theme[data-color-scheme="orange"] {
-  --workflow-primary: 25 95% 65%;
+  --workflow-primary: 14 100% 62%;
 }
 
 main.flex-1.overflow-auto.dark-theme[data-color-scheme="red"] {
@@ -316,7 +310,7 @@ main.flex-1.overflow-auto.dark-theme label {
 }
 
 main.flex-1.overflow-auto.dark-theme .text-muted-foreground {
-  color: hsl(220 15% 70%) !important;
+  color: hsl(35 12% 68%) !important;
 }
 
 /* Primary text should use primary color but ensure visibility */
@@ -324,16 +318,16 @@ main.flex-1.overflow-auto.dark-theme .text-primary {
   color: hsl(var(--workflow-primary)) !important;
 }
 
-/* Force app icons to be visible with hardcoded color */
+/* App icons: Toolio coral (matches marketing accent) */
 .icon-container,
 .icon-container svg,
 .app-icon {
-  color: #2563eb !important;
+  color: hsl(var(--primary)) !important;
 }
 
 .icon-container svg path,
 .app-icon path {
-  stroke: #2563eb !important;
+  stroke: hsl(var(--primary)) !important;
 }
 
 /* Ensure buttons have proper text color in dark mode */
@@ -344,7 +338,7 @@ main.flex-1.overflow-auto.dark-theme button:not(.bg-primary):not(.text-primary) 
 /* Cards and backgrounds should have dark backgrounds with light text */
 main.flex-1.overflow-auto.dark-theme [class*="card"],
 main.flex-1.overflow-auto.dark-theme [class*="Card"] {
-  background-color: hsl(220 35% 10%) !important;
+  background-color: hsl(24 12% 12%) !important;
   color: hsl(0 0% 95%) !important;
 }
 

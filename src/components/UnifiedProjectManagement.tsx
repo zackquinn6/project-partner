@@ -113,10 +113,22 @@ export function UnifiedProjectManagement({
   /** Keeps latest list for fetchProjects without adding `projects` to useCallback deps (stale closure). */
   const projectsRef = useRef<Project[]>(projects);
   projectsRef.current = projects;
+  const editingProjectRef = useRef(false);
+  const selectedProjectIdRef = useRef<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [projectRevisions, setProjectRevisions] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  /** Revisions tab only — decoupled from project list refresh so list fetches do not wipe workflow UI */
+  const [revisionsLoading, setRevisionsLoading] = useState(false);
   const [editingProject, setEditingProject] = useState(false);
+
+  useEffect(() => {
+    editingProjectRef.current = editingProject;
+  }, [editingProject]);
+
+  useEffect(() => {
+    selectedProjectIdRef.current = selectedProject?.id ?? null;
+  }, [selectedProject?.id]);
   const [editedProject, setEditedProject] = useState<Partial<Project>>({});
   const [activeView, setActiveView] = useState<'details' | 'revisions'>('details');
   const [projectSearch, setProjectSearch] = useState('');
@@ -249,6 +261,8 @@ export function UnifiedProjectManagement({
         project_type: project.project_type || 'primary'
       })) as Project[];
 
+      let nextList: Project[];
+
       // If project owner (non-admin), restrict to projects they are assigned to
       if (user && hasProjectOwnerRole && !isAdmin) {
         const { data: ownerRows, error: ownerError } = await supabase
@@ -276,9 +290,19 @@ export function UnifiedProjectManagement({
             p.parent_project_id ?? p.id
           )
         );
-        setProjects(mappedData.filter((p) => parentIds.has(p.id)));
+        nextList = mappedData.filter((p) => parentIds.has(p.id));
+        setProjects(nextList);
       } else {
-        setProjects(mappedData);
+        nextList = mappedData;
+        setProjects(nextList);
+      }
+
+      const sid = selectedProjectIdRef.current;
+      if (sid && !editingProjectRef.current) {
+        const row = nextList.find((p) => p.id === sid);
+        if (row) {
+          setSelectedProject(row);
+        }
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -291,13 +315,9 @@ export function UnifiedProjectManagement({
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
-  useEffect(() => {
-    if (selectedProject) {
-      fetchProjectRevisions();
-    }
-  }, [selectedProject]);
-  const fetchProjectRevisions = async () => {
+  const fetchProjectRevisions = useCallback(async () => {
     if (!selectedProject) return;
+    setRevisionsLoading(true);
     try {
       const parentId = selectedProject.parent_project_id || selectedProject.id;
       const {
@@ -311,8 +331,16 @@ export function UnifiedProjectManagement({
     } catch (error) {
       console.error('Error fetching project revisions:', error);
       toast.error("Failed to load project revisions");
+    } finally {
+      setRevisionsLoading(false);
     }
-  };
+  }, [selectedProject]);
+
+  useEffect(() => {
+    if (selectedProject) {
+      void fetchProjectRevisions();
+    }
+  }, [selectedProject, fetchProjectRevisions]);
   const handleProjectSelect = (projectId: string) => {
     const project = projects.find(p => p.id === projectId);
     setSelectedProject(project || null);
@@ -1263,16 +1291,9 @@ export function UnifiedProjectManagement({
 
       console.log('✅ Revision reset complete via database RPC:', resetProjectId);
 
-      // Refresh projects list first
-      await fetchProjects();
-      
       toast.dismiss(loadingToast);
-            setResetRevisionsDialogOpen(false);
-      // Ensure the UI reflects the new root revision immediately.
-      // Users reported it can look like the project was deleted until a refresh.
-      setTimeout(() => {
-        window.location.reload();
-      }, 50);
+      setResetRevisionsDialogOpen(false);
+      toast.success('Revisions reset. The latest revision is now the root project.');
     } catch (error: any) {
       console.error('❌ Error resetting revisions:', error);
       toast.dismiss(loadingToast);
@@ -2419,7 +2440,7 @@ export function UnifiedProjectManagement({
                         </div>
                       </CardHeader>
                       <CardContent>
-                        {loading ? <div className="flex items-center justify-center py-8">
+                        {revisionsLoading ? <div className="flex items-center justify-center py-8">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                           </div> : <div className="space-y-4">
                             {projectRevisions.map(revision => <Card key={revision.id} className="border-l-4 border-l-primary/20">
