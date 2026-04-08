@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, Shield, DollarSign, ShoppingCart, ClipboardCheck, ClipboardList, Handshake, Crosshair, Trash2, Eye } from "lucide-react";
+import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, Shield, DollarSign, ShoppingCart, ClipboardCheck, ClipboardList, Handshake, Crosshair, Trash2, Eye, Video } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -44,6 +44,8 @@ interface WorkflowSidebarProps {
   onUnplannedWorkClick: () => void;
   onKeysToSuccessClick: () => void;
   onPhotosClick: () => void;
+  /** When set (e.g. post-kickoff), shows “Show Videos” next to Photos. */
+  onShowVideosClick?: () => void;
   onNotesClick: () => void;
   onViewScheduleClick: () => void;
   onProgressViewsClick?: () => void;
@@ -73,6 +75,7 @@ export function WorkflowSidebar({
   onUnplannedWorkClick,
   onKeysToSuccessClick,
   onPhotosClick,
+  onShowVideosClick,
   onNotesClick,
   onViewScheduleClick,
   onProgressViewsClick,
@@ -558,28 +561,43 @@ export function WorkflowSidebar({
                         </Button>
                       )}
                     </div>
-                    {/* Notes, Photos */}
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={onNotesClick}
-                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
-                        style={{ backgroundColor: 'rgba(34, 197, 94, 0.40)', color: 'black' }}
-                      >
-                        <FileText className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
-                        <span className="truncate">Notes</span>
-                      </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={onPhotosClick}
-                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
-                        style={{ backgroundColor: 'rgba(251, 146, 60, 0.40)', color: 'black' }}
-                      >
-                        <Image className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
-                        <span className="truncate">Photos</span>
-                      </Button>
+                    {/* Notes, Photos, Videos */}
+                    <div className="flex flex-col gap-1.5 min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={onNotesClick}
+                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
+                          style={{ backgroundColor: 'rgba(34, 197, 94, 0.40)', color: 'black' }}
+                        >
+                          <FileText className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
+                          <span className="truncate">Notes</span>
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={onPhotosClick}
+                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
+                          style={{ backgroundColor: 'rgba(251, 146, 60, 0.40)', color: 'black' }}
+                        >
+                          <Image className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
+                          <span className="truncate">Photos</span>
+                        </Button>
+                      </div>
+                      {onShowVideosClick ? (
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          onClick={onShowVideosClick}
+                          className="h-8 w-full min-w-0 justify-center px-2 text-[11px] font-medium flex items-center gap-1.5"
+                          style={{ backgroundColor: 'rgba(59, 130, 246, 0.45)', color: 'black' }}
+                        >
+                          <Video className="h-3.5 w-3.5 shrink-0" style={{ color: 'black' }} />
+                          <span className="truncate">Show Videos</span>
+                        </Button>
+                      ) : null}
                     </div>
 
                         {/* Partner Tools + Progress first (A–Z); project apps below (A–Z): Budget, Quality Control, Risk-Less, Scheduler, Shopping */}

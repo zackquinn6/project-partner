@@ -46,6 +46,8 @@ import { MaterialsSelectionDialog } from './MaterialsSelectionDialog';
 import { KickoffWorkflow } from './KickoffWorkflow';
 import { ProjectWorkflowOverviewPage } from './ProjectWorkflowOverviewPage';
 import { ProjectVisualizerDialog } from './ProjectVisualizerDialog';
+import { WorkflowVideosDialog } from './WorkflowVideosDialog';
+import { loadAllWorkflowVideos, type WorkflowVideoItem } from '@/utils/workflowVideos';
 import { ProjectPlanningWizard } from './ProjectPlanningWizard';
 import { UnplannedWorkWindow } from './UnplannedWorkWindow';
 import { ProjectSurvey } from './ProjectSurvey';
@@ -265,6 +267,9 @@ export default function UserView({
   const [qualityCheckOpen, setQualityCheckOpen] = useState(false);
   const [qualityCheckExpandSettingsAccordion, setQualityCheckExpandSettingsAccordion] = useState(false);
   const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false);
+  const [workflowVideosOpen, setWorkflowVideosOpen] = useState(false);
+  const [workflowVideosLoading, setWorkflowVideosLoading] = useState(false);
+  const [workflowVideosItems, setWorkflowVideosItems] = useState<WorkflowVideoItem[]>([]);
   const [notesGalleryOpen, setNotesGalleryOpen] = useState(false);
   const [notesGalleryInitialStepId, setNotesGalleryInitialStepId] = useState<string>('');
   const [progressViewsOpen, setProgressViewsOpen] = useState(false);
@@ -905,6 +910,39 @@ export default function UserView({
 
     return baseSteps;
   }, [organizedNavigation, appOverrides, currentProjectRun, microRuntime]);
+
+  const openWorkflowVideosGallery = useCallback(async () => {
+    if (allSteps.length === 0) {
+      toast.error('No workflow steps to scan for videos.');
+      return;
+    }
+    setWorkflowVideosOpen(true);
+    setWorkflowVideosLoading(true);
+    try {
+      const options =
+        currentProjectRun?.id != null
+          ? ({ mode: 'run' as const, projectRunId: currentProjectRun.id })
+          : ({ mode: 'template' as const });
+      const items = await loadAllWorkflowVideos(
+        allSteps.map((s) => ({
+          id: s.id,
+          step: s.step,
+          phaseName: s.phaseName,
+          operationName: s.operationName,
+          contentSections: s.contentSections,
+          content: s.content,
+        })),
+        options
+      );
+      setWorkflowVideosItems(items);
+    } catch (err) {
+      console.error(err);
+      toast.error('Could not load project videos');
+      setWorkflowVideosItems([]);
+    } finally {
+      setWorkflowVideosLoading(false);
+    }
+  }, [allSteps, currentProjectRun?.id]);
 
   const persistedCompletedStepsSignature = useMemo(() => {
     const arr = currentProjectRun?.completedSteps;
@@ -3415,6 +3453,9 @@ export default function UserView({
             choices: microRuntime.choices,
             catalog: microRuntime.catalog,
           }}
+          onShowVideosClick={
+            isKickoffComplete && allSteps.length > 0 ? openWorkflowVideosGallery : undefined
+          }
         />
       ) : (
         /* Desktop Workflow View */
@@ -3468,6 +3509,9 @@ export default function UserView({
             }}
             onKeysToSuccessClick={() => setKeyCharacteristicsOpen(true)}
             onPhotosClick={() => setPhotoGalleryOpen(true)}
+            onShowVideosClick={
+              isKickoffComplete && allSteps.length > 0 ? openWorkflowVideosGallery : undefined
+            }
             onNotesClick={() => {
               if (!currentStep?.id) return;
               setNotesGalleryInitialStepId(currentStep.id);
@@ -4516,6 +4560,19 @@ export default function UserView({
           title="My Project Photos"
         />
       )}
+
+      <WorkflowVideosDialog
+        open={workflowVideosOpen}
+        onOpenChange={setWorkflowVideosOpen}
+        title={
+          currentProjectRun?.customProjectName ||
+          currentProjectRun?.name ||
+          activeProject?.name ||
+          'Project videos'
+        }
+        loading={workflowVideosLoading}
+        items={workflowVideosItems}
+      />
 
       {/* Notes Gallery */}
       {currentProjectRun && (

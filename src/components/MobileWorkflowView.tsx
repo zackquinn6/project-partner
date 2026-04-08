@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Circle, Clock, Menu, Eye, EyeOff, HelpCircle, Calendar as CalendarIcon, BookOpen, Settings2, Sparkles, DollarSign, ClipboardCheck, ShoppingCart, MessageCircle, Crosshair } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Circle, Clock, Menu, Eye, EyeOff, HelpCircle, Calendar as CalendarIcon, BookOpen, Settings2, Sparkles, DollarSign, ClipboardCheck, ShoppingCart, MessageCircle, Crosshair, Video } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -46,6 +46,7 @@ interface MobileWorkflowViewProps {
     choices: GeneralProjectChoicesMap;
     catalog: GeneralProjectDecision[];
   };
+  onShowVideosClick?: () => void;
 }
 
 export function MobileWorkflowView({
@@ -69,7 +70,8 @@ export function MobileWorkflowView({
   onToolInstructions,
   instructionLevel = 'intermediate',
   onInstructionLevelChange,
-  microDecisions
+  microDecisions,
+  onShowVideosClick
 }: MobileWorkflowViewProps) {
   const [showMaterials, setShowMaterials] = useState(true);
   const [showTools, setShowTools] = useState(true);
@@ -463,6 +465,18 @@ export function MobileWorkflowView({
               <CollapsibleContent>
                 <CardContent className="space-y-3 pt-0 p-3 sm:p-4">
                   <div className="grid grid-cols-2 gap-2">
+                    {onShowVideosClick ? (
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="sm"
+                        className="col-span-2 w-full justify-center gap-2 text-xs font-medium"
+                        onClick={onShowVideosClick}
+                      >
+                        <Video className="h-4 w-4 shrink-0" />
+                        Show Videos
+                      </Button>
+                    ) : null}
                     <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => window.dispatchEvent(new CustomEvent('openProjectScheduler'))}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       Scheduler

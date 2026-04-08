@@ -32,7 +32,9 @@ import { CompactPpeTable } from '@/components/CompactPpeTable';
 import { CompactAppsSection } from '@/components/CompactAppsSection';
 import { AppsLibraryDialog } from '@/components/AppsLibraryDialog';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
-import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, X, Settings, Save, ChevronLeft, ChevronRight, ChevronDown, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock, Shield, Menu, Info, Crosshair, Clock } from 'lucide-react';
+import { WorkflowVideosDialog } from '@/components/WorkflowVideosDialog';
+import { loadAllWorkflowVideos, type WorkflowVideoItem } from '@/utils/workflowVideos';
+import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, X, Settings, Save, ChevronLeft, ChevronRight, ChevronDown, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock, Shield, Menu, Info, Crosshair, Clock, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
@@ -1334,6 +1336,9 @@ export default function EditWorkflowView({
 
   const [instructionsDataSourcesDraft, setInstructionsDataSourcesDraft] = useState('');
   const [savingInstructionsDataSources, setSavingInstructionsDataSources] = useState(false);
+  const [workflowVideosOpen, setWorkflowVideosOpen] = useState(false);
+  const [workflowVideosLoading, setWorkflowVideosLoading] = useState(false);
+  const [workflowVideosItems, setWorkflowVideosItems] = useState<WorkflowVideoItem[]>([]);
 
   useEffect(() => {
     if (!currentProject?.id) {
@@ -1380,6 +1385,31 @@ export default function EditWorkflowView({
     allSteps.length === 0 ? 0 : Math.min(Math.max(0, currentStepIndex), allSteps.length - 1);
   const currentStep = allSteps[safeStepIndex];
   const progress = allSteps.length > 0 ? (safeStepIndex + 1) / allSteps.length * 100 : 0;
+
+  const handleOpenWorkflowVideos = useCallback(async () => {
+    setWorkflowVideosOpen(true);
+    setWorkflowVideosLoading(true);
+    try {
+      const items = await loadAllWorkflowVideos(
+        allSteps.map((s) => ({
+          id: s.id,
+          step: s.step,
+          phaseName: s.phaseName,
+          operationName: s.operationName,
+          contentSections: s.contentSections,
+          content: s.content,
+        })),
+        { mode: 'template' }
+      );
+      setWorkflowVideosItems(items);
+    } catch (err) {
+      console.error(err);
+      toast.error('Could not load project videos');
+      setWorkflowVideosItems([]);
+    } finally {
+      setWorkflowVideosLoading(false);
+    }
+  }, [allSteps]);
 
   React.useEffect(() => {
     currentNavStepIdRef.current = currentStep?.id ?? null;
@@ -2161,6 +2191,16 @@ export default function EditWorkflowView({
                       >
                         <List className="w-4 h-4 mr-2" />
                         Process Map
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={allSteps.length === 0}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          void handleOpenWorkflowVideos();
+                        }}
+                      >
+                        <Video className="w-4 h-4 mr-2" />
+                        Show Videos
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         disabled={!currentProject?.id}
@@ -3088,6 +3128,14 @@ export default function EditWorkflowView({
           templateProjectDisplayName={currentProject.name}
         />
       )}
+
+      <WorkflowVideosDialog
+        open={workflowVideosOpen}
+        onOpenChange={setWorkflowVideosOpen}
+        title={`Videos — ${currentProject?.name?.replace(/\s*\([Dd]raft\)\s*/g, '').replace(/\s*\(Rev\s+\d+\)\s*/gi, '').trim() || 'Project'}`}
+        loading={workflowVideosLoading}
+        items={workflowVideosItems}
+      />
 
       {/* PFMEA */}
       <Dialog open={pfmeaOpen} onOpenChange={setPfmeaOpen}>
