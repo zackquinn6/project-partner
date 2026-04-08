@@ -107,8 +107,8 @@ export interface ContentSectionDecisionRule {
 
 export interface ContentSection {
   id: string;
-  /** Legacy stored rows may use `warning`; treat like safety-warning everywhere. */
-  type: 'text' | 'image' | 'video' | 'link' | 'button' | 'safety-warning' | 'warning';
+  /** Legacy stored rows may use `warning`; treat like safety-warning everywhere. `standard` / `tip` are prose (SQL seed data). */
+  type: 'text' | 'image' | 'video' | 'link' | 'button' | 'safety-warning' | 'warning' | 'standard' | 'tip';
   content: string;
   title?: string;
   severity?: 'low' | 'medium' | 'high' | 'critical'; // For safety-warning type

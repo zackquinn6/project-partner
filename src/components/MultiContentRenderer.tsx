@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import type { ContentSection } from "@/interfaces/Project";
-import { isInstructionWarningType } from "@/utils/instructionContentSections";
+import { isInstructionWarningType, isInstructionProseSectionType } from "@/utils/instructionContentSections";
+import { cn } from "@/lib/utils";
 
 interface MultiContentRendererProps {
   sections: ContentSection[];
@@ -86,8 +87,13 @@ export function MultiContentRenderer({ sections, onButtonAction }: MultiContentR
             key={section.id || `section-${index}`} 
             className={`${getWidthClass(section.width)} ${getAlignmentClass(section.alignment)} min-w-0 shrink-0`}
           >
-            {section.type === 'text' && (
-              <div className="space-y-2">
+            {isInstructionProseSectionType(section.type) && (
+              <div
+                className={cn(
+                  "space-y-2",
+                  section.type === "tip" && "rounded-md border border-primary/25 bg-muted/40 p-3"
+                )}
+              >
                 {section.title && (
                   <h4 className="text-lg font-semibold text-foreground">{section.title}</h4>
                 )}

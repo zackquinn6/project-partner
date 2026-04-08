@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import type { ContentSection, GeneralProjectDecision } from "@/interfaces/Project";
 import {
   isInstructionWarningType,
+  isInstructionProseSectionType,
   orderSectionsWithSafetyFirst,
 } from "@/utils/instructionContentSections";
 
@@ -288,7 +289,10 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
 
   const getIcon = (type: ContentSection['type']) => {
     switch (type) {
-      case 'text': return <FileText className="w-4 h-4" />;
+      case 'text':
+      case 'standard':
+      case 'tip':
+        return <FileText className="w-4 h-4" />;
       case 'image': return <Image className="w-4 h-4" />;
       case 'video': return <Video className="w-4 h-4" />;
       case 'link': return <ExternalLink className="w-4 h-4" />;
@@ -441,7 +445,7 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                 onUpdate={(app) => updateSection(section, { decisionApplicability: app })}
               />
 
-              {section.type === 'text' && (
+              {isInstructionProseSectionType(section.type) && (
                 <>
                   <div>
                     <Label>Section Title (Optional)</Label>
