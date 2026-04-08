@@ -94,7 +94,6 @@ import { ProjectPerformanceWindow } from './ProjectPerformanceWindow';
 import { RiskManagementWindow } from './RiskManagementWindow';
 import { CommunicationPlanWindow } from './communication-plan/CommunicationPlanWindow';
 import { QualityCheckWindow } from './QualityCheckWindow';
-import { getSafeEmbedUrl } from '@/utils/videoEmbedSanitizer';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
 import { PostKickoffNotification } from './PostKickoffNotification';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -2404,7 +2403,10 @@ export default function UserView({
       const videoRows = (instruction.content.videos || []).map((video, idx) => ({
         type: 'video' as const,
         title: video.title || '',
-        content: video.embed ? (getSafeEmbedUrl(video.embed) || video.url) : video.url,
+        content:
+          typeof video.embed === 'string' && video.embed.trim().length > 0
+            ? video.embed.trim()
+            : video.url,
         display_order: 2000 + idx
       }));
       const linkRows = (instruction.content.links || []).map((link, idx) => ({

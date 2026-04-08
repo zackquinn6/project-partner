@@ -18,6 +18,7 @@ import {
   isInstructionProseSectionType,
   orderSectionsWithSafetyFirst,
 } from "@/utils/instructionContentSections";
+import { VideoEmbedFrame } from "@/components/VideoEmbedFrame";
 
 const DECISION_APPLICABILITY_TOOLTIP =
   "Leave as default to show this section for every homeowner choice. Add rules so this section only appears when all listed decisions match the selected choices.";
@@ -548,25 +549,20 @@ export function MultiContentEditor({ sections, onChange, generalDecisions = [] }
                     />
                   </div>
                   <div>
-                    <Label>Video Embed URL</Label>
-                    <Input
+                    <Label>Video embed code</Label>
+                    <Textarea
                       value={section.content}
                       onChange={(e) => updateSection(section, { content: e.target.value })}
-                      placeholder="Enter video embed URL (YouTube, Vimeo, etc.)..."
+                      placeholder={'Paste the full iframe from YouTube or Vimeo (Share → Embed), e.g.\n<iframe src="https://www.youtube.com/embed/VIDEO_ID" ...></iframe>\n\nPlain HTTPS embed URLs still work for older steps.'}
+                      className="min-h-[140px] font-mono text-xs"
                     />
                   </div>
-                  {section.content && (
-                    <div className="mt-2">
-                      <div className="aspect-video rounded-lg overflow-hidden border">
-                        <iframe 
-                          src={section.content} 
-                          className="w-full h-full" 
-                          allowFullScreen 
-                          title={section.title || 'Video content'}
-                        />
-                      </div>
+                  {section.content?.trim() ? (
+                    <div className="mt-2 space-y-1">
+                      <Label className="text-muted-foreground">Preview</Label>
+                      <VideoEmbedFrame raw={section.content} title={section.title} />
                     </div>
-                  )}
+                  ) : null}
                 </>
               )}
 

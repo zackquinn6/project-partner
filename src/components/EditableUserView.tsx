@@ -35,7 +35,6 @@ import {
   filterToolsByVisibleSections,
   filterMaterialsByVisibleSections,
 } from '@/utils/microDecisionVisibility';
-import { getSafeEmbedUrl } from '@/utils/videoEmbedSanitizer';
 
 interface EditableUserViewProps {
   onBackToAdmin: () => void;
@@ -517,7 +516,10 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
       const videoRows = (instruction.content.videos || []).map((video, idx) => ({
         type: 'video' as const,
         title: video.title || '',
-        content: video.embed ? (getSafeEmbedUrl(video.embed) || video.url) : video.url,
+        content:
+          typeof video.embed === 'string' && video.embed.trim().length > 0
+            ? video.embed.trim()
+            : video.url,
         display_order: 2000 + idx,
       }));
       const linkRows = (instruction.content.links || []).map((link, idx) => ({

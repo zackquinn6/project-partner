@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import type { ContentSection } from "@/interfaces/Project";
 import { isInstructionWarningType, isInstructionProseSectionType } from "@/utils/instructionContentSections";
 import { cn } from "@/lib/utils";
+import { VideoEmbedFrame } from "@/components/VideoEmbedFrame";
 
 interface MultiContentRendererProps {
   sections: ContentSection[];
@@ -124,14 +125,7 @@ export function MultiContentRenderer({ sections, onButtonAction }: MultiContentR
                 {section.title && (
                   <h4 className="text-lg font-semibold text-foreground">{section.title}</h4>
                 )}
-                <div className="aspect-video rounded-lg overflow-hidden border shadow-sm">
-                  <iframe 
-                    src={section.content} 
-                    className="w-full h-full" 
-                    allowFullScreen 
-                    title={section.title || 'Video content'}
-                  />
-                </div>
+                <VideoEmbedFrame raw={section.content} title={section.title} />
               </div>
             )}
 

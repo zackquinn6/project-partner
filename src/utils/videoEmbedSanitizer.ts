@@ -70,3 +70,40 @@ export const isAllowedVideoDomain = (url: string): boolean => {
     return false;
   }
 };
+
+export interface TrustedVideoEmbedSource {
+  src: string;
+}
+
+/**
+ * Workflow editor stores either pasted iframe HTML (preferred) or a legacy plain https URL.
+ * Returns a validated iframe `src` for whitelisted hosts, or null.
+ */
+export function parseTrustedVideoEmbedSource(raw: string): TrustedVideoEmbedSource | null {
+  if (!raw || typeof raw !== 'string') {
+    return null;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (/<\s*iframe/i.test(trimmed)) {
+    const src = getSafeEmbedUrl(trimmed);
+    return src ? { src } : null;
+  }
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== 'https:') {
+      console.warn('Non-HTTPS video URL blocked');
+      return null;
+    }
+    const href = url.toString();
+    if (!isAllowedVideoDomain(href)) {
+      console.warn('Video URL from untrusted domain blocked:', url.hostname);
+      return null;
+    }
+    return { src: href };
+  } catch {
+    return null;
+  }
+}
