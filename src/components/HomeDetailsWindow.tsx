@@ -28,6 +28,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { computeMaintenanceHealthScore, type TaskForHealthScore } from '@/utils/maintenanceHealthScore';
+import { useSignedStorageUrls } from '@/utils/privateStorageUrls';
 
 interface Home {
   id: string;
@@ -114,6 +115,8 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [fullScreenPhoto, setFullScreenPhoto] = useState<string | null>(null);
   const [maintenanceTasksForHealth, setMaintenanceTasksForHealth] = useState<TaskForHealthScore[]>([]);
+  // home-photos is a private bucket: resolve stored paths/URLs into short-lived signed URLs
+  const signedPhotoUrls = useSignedStorageUrls(home?.photos ?? [], 'home-photos');
 
   useEffect(() => {
     if (open && home && user) {
