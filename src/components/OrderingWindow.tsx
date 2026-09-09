@@ -28,6 +28,11 @@ import {
   OwnedToolRecord,
   ToolRequirementLike,
 } from "@/utils/ownedToolsMatching";
+import {
+  addMaterialOccurrence,
+  resolveScopeScale,
+  type MaterialRiskLevel as QtyRiskLevel,
+} from "@/utils/materialQuantity";
 import { useAuth } from "@/contexts/AuthContext";
 interface OrderingWindowProps {
   open: boolean;
@@ -319,6 +324,15 @@ export function OrderingWindow({
     // Original logic for when no materials are pre-selected
     // Get phases directly from project - no dynamic addition needed
     const processedPhases = activeProject.phases || [];
+    const scopeScale = resolveScopeScale({
+      initialSizing: projectRun?.initial_sizing ?? projectRun?.initialSizing,
+      typicalProjectSize:
+        projectRun?.typical_project_size ??
+        (project as { typical_project_size?: number; typicalProjectSize?: number } | null)
+          ?.typical_project_size ??
+        (project as { typicalProjectSize?: number } | null)?.typicalProjectSize,
+    });
+    const riskForQty = materialRiskLevel as QtyRiskLevel;
 
     // For materials: count total quantity needed (sum across all steps)
     const materialsMap = new Map<string, any>();
@@ -334,42 +348,46 @@ export function OrderingWindow({
         }
         operation.steps.forEach((step, stepIndex) => {
           // Include materials/tools from ALL steps for the shopping cart
-          // The ordering step should show everything needed, not just incomplete steps
           const stepId = step.id || `step-${phaseIndex}-${opIndex}-${stepIndex}`;
-          const isStepComplete = completedSteps?.has(stepId) || false;
 
-          // Use actual materials and tools from database - no sample data
           let materials = step.materials || [];
           let tools = step.tools || [];
-          console.log('🛒 Processing step for shopping cart:', {
-            stepName: step.step,
-            stepId: stepId,
-            materialsCount: materials.length,
-            toolsCount: tools.length,
-            materials: materials.map(m => m.name),
-            tools: tools.map(t => t.name)
-          });
 
-          // Process materials - include from all steps (completed or not) since we need to buy everything
+          // Process materials with scope × waste × pack math
           if (materials && Array.isArray(materials) && materials.length > 0) {
             materials.forEach((material, materialIndex) => {
               const key = material.id || material.name || `material-${materialIndex}-${Date.now()}`;
+              const prior = materialsMap.has(key) ? materialsMap.get(key).totalQuantity || 0 : 0;
+              const { total, last } = addMaterialOccurrence(
+                prior,
+                {
+                  quantity: (material as { quantity?: number }).quantity,
+                  unit: material.unit,
+                  unit_size: material.unit_size,
+                  coveragePerUnit: (material as { coveragePerUnit?: number }).coveragePerUnit,
+                  wasteFactor: (material as { wasteFactor?: number }).wasteFactor,
+                  packSize: (material as { packSize?: number }).packSize,
+                },
+                { scopeScale, riskLevel: riskForQty }
+              );
               if (materialsMap.has(key)) {
                 const existing = materialsMap.get(key);
-                existing.totalQuantity = (existing.totalQuantity || 1) + 1;
+                existing.totalQuantity = total;
+                existing.qtyExplanation = last.explanation;
                 existing.usedInSteps.push(step.step);
               } else {
-                const newMaterial = {
+                materialsMap.set(key, {
                   id: material.id || key,
                   name: material.name,
                   description: material.description || '',
                   category: typeof material.category === 'string' ? material.category : '',
                   alternates: material.alternates || [],
                   unit: material.unit || 'pieces',
-                  totalQuantity: 1,
-                  usedInSteps: [step.step]
-                };
-                materialsMap.set(key, newMaterial);
+                  unit_size: material.unit_size,
+                  totalQuantity: total,
+                  qtyExplanation: last.explanation,
+                  usedInSteps: [step.step],
+                });
               }
             });
           }
@@ -405,7 +423,7 @@ export function OrderingWindow({
       materials: Array.from(materialsMap.values()),
       tools: Array.from(toolsMap.values())
     };
-  }, [project, projectRun, selectedMaterials]);
+  }, [project, projectRun, selectedMaterials, materialRiskLevel]);
   const uniqueTools = projectRollup.tools;
   const uniqueMaterials = projectRollup.materials;
 
@@ -797,6 +815,11 @@ export function OrderingWindow({
                               {material.totalQuantity && <Badge variant="secondary" className="text-xs mt-2 ml-7">
                                   Qty: {material.totalQuantity} {material.unit || 'pieces'}
                                 </Badge>}
+                              {material.qtyExplanation ? (
+                                <p className="text-[10px] text-muted-foreground mt-1 ml-7" title={material.qtyExplanation}>
+                                  Why this qty: {material.qtyExplanation}
+                                </p>
+                              ) : null}
                             </div>
                             <Button variant="outline" size="sm" onClick={() => handleItemDetails(material, 'material')} className="ml-2 flex-shrink-0">
                               <Info className="w-4 h-4" />

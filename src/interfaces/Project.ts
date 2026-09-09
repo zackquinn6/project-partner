@@ -17,6 +17,15 @@ export interface Material {
   unit?: string;
   item?: string;
   unit_size?: string;
+  /** Optional step quantity (defaults to 1 when absent). */
+  quantity?: number;
+  /** Coverage per package unit for scope-based math (e.g. sq ft per gallon). */
+  coveragePerUnit?: number;
+  /** Waste fraction 0–1 (e.g. 0.1 = 10%). */
+  wasteFactor?: number;
+  /** Units per package for rounding. */
+  packSize?: number;
+  linkedContentSectionIds?: string[];
 }
 
 export interface Tool {

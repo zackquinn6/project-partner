@@ -50,6 +50,13 @@ interface MobileWorkflowViewProps {
   onSomethingWrong?: () => void;
   onAskAi?: () => void;
   onPhotosClick?: () => void;
+  checkedOutputs?: Record<string, Set<string>>;
+  onToggleOutput?: (stepId: string, outputId: string) => void;
+  requireAllOutputs?: boolean;
+  requirePhotosPerStep?: boolean;
+  stepPhotoCount?: number;
+  onUploadPhoto?: () => void;
+  canCompleteStep?: boolean;
 }
 
 export function MobileWorkflowView({
@@ -78,6 +85,13 @@ export function MobileWorkflowView({
   onSomethingWrong,
   onAskAi,
   onPhotosClick,
+  checkedOutputs = {},
+  onToggleOutput,
+  requireAllOutputs = true,
+  requirePhotosPerStep = false,
+  stepPhotoCount = 0,
+  onUploadPhoto,
+  canCompleteStep = true,
 }: MobileWorkflowViewProps) {
   const [showMaterials, setShowMaterials] = useState(true);
   const [showTools, setShowTools] = useState(true);
@@ -103,16 +117,27 @@ export function MobileWorkflowView({
   const canMoveNext = currentStepIndex < totalSteps - 1;
   const canMovePrevious = currentStepIndex > 0;
 
+  const stepOutputs = currentStep?.outputs || [];
+  const checkedForStep = checkedOutputs[currentStep?.id] || new Set<string>();
+  const requiredOutputs = requireAllOutputs
+    ? stepOutputs.filter((o: { type?: string }) => o.type && o.type !== 'none')
+    : stepOutputs.filter((o: { type?: string }) => o.type && o.type !== 'none');
+  const outputsComplete =
+    requiredOutputs.length === 0 ||
+    requiredOutputs.every((o: { id: string }) => checkedForStep.has(o.id));
+  const photosComplete = !requirePhotosPerStep || stepPhotoCount >= 1;
+  const qcBlocksComplete = !isStepCompleted && (!outputsComplete || !photosComplete);
+
   const handleStepToggle = () => {
+    if (!currentStep?.id) return;
     if (isStepCompleted) {
-      // Remove from completed steps
-      const newCompleted = new Set(completedSteps);
-      newCompleted.delete(currentStep.id);
       onStepComplete(currentStep.id);
-    } else {
-      // Mark as completed
-      onStepComplete(currentStep.id);
+      return;
     }
+    if (qcBlocksComplete || !canCompleteStep) {
+      return;
+    }
+    onStepComplete(currentStep.id);
   };
 
   const toggleSection = (section: string) => {
@@ -234,7 +259,13 @@ export function MobileWorkflowView({
                   variant={isStepCompleted ? "outline" : "default"}
                   size="sm"
                   onClick={handleStepToggle}
+                  disabled={qcBlocksComplete}
                   className="text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0"
+                  title={
+                    qcBlocksComplete
+                      ? 'Complete checklist / photo requirements first'
+                      : undefined
+                  }
                 >
                   {isStepCompleted ? "Undo" : "Complete"}
                 </Button>
@@ -282,6 +313,56 @@ export function MobileWorkflowView({
                   ) : null}
                 </div>
               )}
+              {stepOutputs.length > 0 && onToggleOutput ? (
+                <div className="mt-3 space-y-2 rounded-lg border bg-muted/30 p-2">
+                  <p className="text-xs font-semibold text-foreground">Step checklist</p>
+                  {stepOutputs.map((output: { id: string; name: string; description?: string; type?: string }) => {
+                    const required =
+                      requireAllOutputs && output.type && output.type !== 'none';
+                    return (
+                      <label
+                        key={output.id}
+                        className="flex items-start gap-2 text-xs"
+                      >
+                        <Checkbox
+                          checked={checkedForStep.has(output.id)}
+                          onCheckedChange={() => onToggleOutput(currentStep.id, output.id)}
+                          className="mt-0.5"
+                        />
+                        <span>
+                          <span className="font-medium">{output.name}</span>
+                          {!required ? (
+                            <Badge variant="secondary" className="ml-1 text-[9px]">
+                              Optional
+                            </Badge>
+                          ) : null}
+                          {output.description ? (
+                            <span className="block text-muted-foreground">{output.description}</span>
+                          ) : null}
+                        </span>
+                      </label>
+                    );
+                  })}
+                  {requirePhotosPerStep ? (
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <p className="text-[10px] text-amber-800 dark:text-amber-100">
+                        Photo required ({stepPhotoCount}/1)
+                      </p>
+                      {onUploadPhoto ? (
+                        <Button type="button" size="sm" variant="outline" className="h-7 text-[10px]" onClick={onUploadPhoto}>
+                          <Camera className="h-3 w-3 mr-1" />
+                          Add photo
+                        </Button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {qcBlocksComplete ? (
+                    <p className="text-[10px] text-muted-foreground">
+                      Complete required checklist items{requirePhotosPerStep ? ' and photo' : ''} before marking the step done.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </CardHeader>
             <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6 pt-0 sm:pt-0">
               <div className="space-y-4">

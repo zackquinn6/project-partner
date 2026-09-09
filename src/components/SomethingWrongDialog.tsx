@@ -48,6 +48,8 @@ export interface SomethingWrongDialogProps {
   onOpenToolRentals?: () => void;
   onOpenExpertHelp?: () => void;
   onAskAi?: () => void;
+  /** Called when recovery includes schedule_slip — parent applies regen + shows delta */
+  onScheduleSlip?: () => Promise<void> | void;
 }
 
 function actionLabel(action: RecoveryAction): string {
@@ -93,6 +95,7 @@ export function SomethingWrongDialog({
   onOpenToolRentals,
   onOpenExpertHelp,
   onAskAi,
+  onScheduleSlip,
 }: SomethingWrongDialogProps) {
   const [triageType, setTriageType] = useState<TriageType | null>(null);
   const [comments, setComments] = useState('');
@@ -228,6 +231,9 @@ export function SomethingWrongDialog({
       }
       if (recoveryPlan.actions.includes('open_tool_rentals')) {
         onOpenToolRentals?.();
+      }
+      if (recoveryPlan.actions.includes('schedule_slip')) {
+        await onScheduleSlip?.();
       }
       if (recoveryPlan.actions.includes('ask_ai')) {
         onAskAi?.();

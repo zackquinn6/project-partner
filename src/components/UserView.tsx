@@ -89,6 +89,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { UpgradePrompt } from './UpgradePrompt';
 import { markOrderingStepIncompleteIfNeeded, extractProjectToolsAndMaterials } from '@/utils/shoppingUtils';
 import { loadUserOwnedTools, OwnedToolRecord } from '@/utils/ownedToolsMatching';
+import { applyScheduleSlip } from '@/utils/scheduleSlip';
 import { MobileDIYDropdown } from './MobileDIYDropdown';
 import { ProjectCompletionHandler } from './ProjectCompletionHandler';
 import { ProjectBudgetingWindow } from './ProjectBudgetingWindow';
@@ -278,6 +279,7 @@ export default function UserView({
   const [qualityCheckOpen, setQualityCheckOpen] = useState(false);
   const [qualityCheckExpandSettingsAccordion, setQualityCheckExpandSettingsAccordion] = useState(false);
   const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false);
+  const [mobilePhotoUploadOpen, setMobilePhotoUploadOpen] = useState(false);
   const [workflowVideosOpen, setWorkflowVideosOpen] = useState(false);
   const [workflowVideosLoading, setWorkflowVideosLoading] = useState(false);
   const [workflowVideosItems, setWorkflowVideosItems] = useState<WorkflowVideoItem[]>([]);
@@ -2897,9 +2899,8 @@ export default function UserView({
           updatedSteps.push(stepId);
         }
       });
-      setProjectPlanningWizardOpen(true);
 
-      // Update project run with all steps complete
+      // Update project run with all steps complete — do not force planning wizard (fast path)
       updateProjectRun({
         ...currentProjectRun,
         completedSteps: updatedSteps,
@@ -2917,9 +2918,9 @@ export default function UserView({
       <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden md:h-auto md:min-h-0 md:flex-none md:overflow-visible">
       <KickoffWorkflow 
         onBeforeFinalKickoffPersistence={() => {
-          // Must run before updateProjectRun marks kickoff complete in context; otherwise UserView
-          // renders main workflow for one frame with the wizard still closed.
-          setProjectPlanningWizardOpen(true);
+          // Fast path: skip opening the full planning wizard before first build step.
+          // Kickoff already persisted selected_planning_tools (defaults: scope + risk).
+          // Full planning remains available from project apps.
         }}
         onKickoffComplete={async persist => {
           console.log("🎯 onKickoffComplete called - closing kickoff and switching to workflow");
@@ -3123,6 +3124,16 @@ export default function UserView({
               // This ensures the completedSteps state is in sync with the database
               console.log("🔄 Refreshing completedSteps state after kickoff completion");
               setCompletedSteps(new Set(uniqueSteps));
+
+              // Fast path: auto-complete default planning tools so the user reaches build steps
+              // without walking the full planning wizard. Tools remain editable from apps.
+              const toolsFromPersist = (persist?.customization_decisions as { selected_planning_tools?: PlanningToolId[] } | undefined)
+                ?.selected_planning_tools;
+              const fastPathTools: PlanningToolId[] =
+                Array.isArray(toolsFromPersist) && toolsFromPersist.length > 0
+                  ? toolsFromPersist
+                  : (['scope', 'risk'] as PlanningToolId[]);
+              await handlePlanningWizardFullyComplete(fastPathTools);
             } else {
               // Update project run if kickoff phase not found
               const phasesForProgressElse = Array.isArray(currentProjectRun.phases) ? currentProjectRun.phases : [];
@@ -3430,6 +3441,19 @@ export default function UserView({
             setProjectHelpChatOpen(true);
           }}
           onPhotosClick={() => setPhotoGalleryOpen(true)}
+          checkedOutputs={checkedOutputs}
+          onToggleOutput={toggleOutputCheck}
+          requireAllOutputs={
+            mergeQualityControlSettings(currentProjectRun?.quality_control_settings)
+              .require_all_outputs
+          }
+          requirePhotosPerStep={
+            mergeQualityControlSettings(currentProjectRun?.quality_control_settings)
+              .require_photos_per_step
+          }
+          stepPhotoCount={stepPhotoCountForCompletion ?? 0}
+          onUploadPhoto={() => setMobilePhotoUploadOpen(true)}
+          canCompleteStep={areAllOutputsCompleted(currentStep)}
         />
       ) : (
         /* Desktop Workflow View */
@@ -4137,6 +4161,35 @@ export default function UserView({
         onOpenShopping={() => setOrderingWindowOpen(true)}
         onOpenToolRentals={() => setToolRentalsOpen(true)}
         onOpenExpertHelp={() => setExpertHelpOpen(true)}
+        onScheduleSlip={async () => {
+          if (!currentProjectRun || !workflowTemplateProject) {
+            toast.message('Schedule slip noted', {
+              description: 'Create a schedule in Timekeeper to see finish-date updates.',
+            });
+            return;
+          }
+          const previousLabel = estimatedFinishDate
+            ? formatEstimatedFinishDate(estimatedFinishDate)
+            : 'TBD';
+          const delta = await applyScheduleSlip({
+            projectRun: currentProjectRun,
+            project: workflowTemplateProject,
+            workflowPhases: workflowPhases || [],
+            completedSteps,
+            updateProjectRun,
+            bufferDays: 2,
+          });
+          await refreshEstimatedFinishDate(true);
+          if (delta) {
+            toast.success('Schedule updated', {
+              description: `${previousLabel} → ${delta.nextLabel}${
+                delta.daysDelta != null
+                  ? ` (${delta.daysDelta >= 0 ? '+' : ''}${delta.daysDelta}d)`
+                  : ''
+              }`,
+            });
+          }
+        }}
         onAskAi={() => {
           setHelpChatInitialMessage(
             currentStep?.step
@@ -4460,6 +4513,23 @@ export default function UserView({
           projectId={currentProjectRun.projectId || undefined}
           mode="user"
           title="My Project Photos"
+        />
+      )}
+
+      {currentProjectRun && currentStep && (
+        <PhotoUpload
+          projectRunId={currentProjectRun.id}
+          projectId={currentProjectRun.projectId || null}
+          stepId={currentStep.id}
+          stepName={currentStep.step}
+          phaseId={currentStep.phaseId}
+          phaseName={currentStep.phaseName}
+          operationId={currentStep.operationId}
+          operationName={currentStep.operationName}
+          showButton={false}
+          open={mobilePhotoUploadOpen}
+          onOpenChange={setMobilePhotoUploadOpen}
+          onPhotoUploaded={() => setStepPhotosRefreshNonce((n) => n + 1)}
         />
       )}
 

@@ -1,4 +1,5 @@
 import { ProjectRun } from '@/interfaces/ProjectRun';
+import { addMaterialOccurrence, resolveScopeScale } from '@/utils/materialQuantity';
 // Removed deprecated addStandardPhasesToProjectRun import - project runs already have standard phases
 
 interface NeedDate {
@@ -255,9 +256,18 @@ export function isShoppingNeededAfterReplan(
 /**
  * Extracts all tools and materials needed for a project run
  */
-export function extractProjectToolsAndMaterials(projectRun: ProjectRun) {
+export function extractProjectToolsAndMaterials(
+  projectRun: ProjectRun,
+  options?: { riskLevel?: string | null }
+) {
   // Project runs already have standard phases from the database, no need to add them
   const processedPhases = projectRun.phases || [];
+  
+  const scopeScale = resolveScopeScale({
+    initialSizing: projectRun.initial_sizing,
+    typicalProjectSize: (projectRun as { typical_project_size?: number }).typical_project_size,
+  });
+  const riskLevel = options?.riskLevel || 'balanced';
   
   const materialsMap = new Map<string, any>();
   const toolsMap = new Map<string, any>();
@@ -273,23 +283,37 @@ export function extractProjectToolsAndMaterials(projectRun: ProjectRun) {
       }
       
       operation.steps.forEach((step, stepIndex) => {
-        // Process materials - add quantities (materials are consumed per step)
+        // Process materials - scope × waste × pack math
         if (step.materials && Array.isArray(step.materials) && step.materials.length > 0) {
           step.materials.forEach((material, materialIndex) => {
             const key = material.id || material.name || `material-${materialIndex}-${Date.now()}`;
+            const prior = materialsMap.has(key) ? materialsMap.get(key).totalQuantity || 0 : 0;
+            const { total, last } = addMaterialOccurrence(
+              prior,
+              {
+                quantity: (material as { quantity?: number }).quantity,
+                unit: material.unit,
+                unit_size: material.unit_size,
+                coveragePerUnit: (material as { coveragePerUnit?: number }).coveragePerUnit,
+                wasteFactor: (material as { wasteFactor?: number }).wasteFactor,
+                packSize: (material as { packSize?: number }).packSize,
+              },
+              { scopeScale, riskLevel }
+            );
             if (materialsMap.has(key)) {
               const existing = materialsMap.get(key);
-              existing.totalQuantity = (existing.totalQuantity || 1) + 1;
+              existing.totalQuantity = total;
+              existing.qtyExplanation = last.explanation;
             } else {
-              const newMaterial = {
+              materialsMap.set(key, {
                 id: material.id || key,
                 name: material.name,
                 description: material.description || '',
                 category: typeof material.category === 'string' ? material.category : '',
                 alternates: material.alternates || [],
-                totalQuantity: 1,
-              };
-              materialsMap.set(key, newMaterial);
+                totalQuantity: total,
+                qtyExplanation: last.explanation,
+              });
             }
           });
         }
