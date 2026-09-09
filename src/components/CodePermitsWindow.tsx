@@ -87,7 +87,7 @@ export function CodePermitsWindow({ open, onOpenChange }: CodePermitsWindowProps
           const d = detailsByHomeId.get(h.id);
           return { ...h, city: d?.city, state: d?.state };
         });
-        setUserHomes(merged || []);
+        setUserHomes((merged || []) as unknown as UserHome[]);
       } catch (error) {
         console.error('Error fetching user homes:', error);
       }
