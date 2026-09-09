@@ -160,7 +160,7 @@ export async function calculateEstimatedFinishDate(
 
     // Run scheduler
     const scheduler = new SchedulingEngine();
-    const result = scheduler.computeSchedule(schedulingInputs);
+    const result = scheduler.computeSchedule(schedulingInputs as unknown as SchedulingInputs);
 
     // Find the latest completion date from scheduled tasks
     if (result.scheduledTasks.length === 0) {

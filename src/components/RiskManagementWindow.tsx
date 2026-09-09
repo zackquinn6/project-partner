@@ -76,7 +76,7 @@ function riskFocusProgressSelectValue(progress: number | null | undefined): stri
     return String(RISK_FOCUS_PROGRESS_STOPS[0]);
   }
   const x = Math.round(Math.min(100, Math.max(0, progress)));
-  let best = RISK_FOCUS_PROGRESS_STOPS[0];
+  let best: number = RISK_FOCUS_PROGRESS_STOPS[0];
   let bestDiff = Math.abs(x - best);
   for (const v of RISK_FOCUS_PROGRESS_STOPS) {
     const d = Math.abs(x - v);
@@ -163,7 +163,7 @@ function parseMitigationActionsFromDb(raw: unknown): { action: string; benefit?:
       const completed = o.completed === true;
       return { action, benefit, completed };
     })
-    .filter((x): x is { action: string; benefit?: string | null; completed?: boolean } => x != null);
+    .filter((x) => x != null) as unknown as { action: string; benefit: string; completed: boolean }[];
 }
 
 function severitySortRank(severity: string | null | undefined): number {
