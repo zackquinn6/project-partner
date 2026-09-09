@@ -18,6 +18,8 @@ interface StepTool {
   parentId?: string;
   quantity?: number;
   purpose?: string;
+  /** When set, limits this tool to specific instruction content sections */
+  linkedContentSectionIds?: string[];
 }
 
 interface CompactToolsTableProps {
