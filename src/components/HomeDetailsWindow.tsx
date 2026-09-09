@@ -566,10 +566,10 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
                     {home.photos.map((photo, index) => (
                       <div key={index} className="relative group">
                         <img
-                          src={photo}
+                          src={signedPhotoUrls[photo] || ''}
                           alt={`Home photo ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg cursor-zoom-in"
-                          onClick={() => setFullScreenPhoto(photo)}
+                          className="w-full h-32 object-cover rounded-lg cursor-zoom-in bg-muted"
+                          onClick={() => setFullScreenPhoto(signedPhotoUrls[photo] || null)}
                         />
                         <Button
                           variant="destructive"
