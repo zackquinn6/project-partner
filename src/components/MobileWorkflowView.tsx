@@ -380,22 +380,22 @@ export function MobileWorkflowView({
                       )}
                       
                       {instruction.content.sections && (() => {
-                        const base = [...instruction.content.sections];
+                        const base = [...instruction.content.sections] as any[];
                         const filtered = microOn
                           ? filterSectionRowsForMicroDecisions(
-                              base,
+                              base as any,
                               true,
                               microDecisions!.choices,
                               microDecisions!.catalog
                             )
                           : base;
                         return [...filtered]
-                        .sort((a, b) => {
+                        .sort((a: any, b: any) => {
                           // Sort warnings to top, then tips, then standard
                           const order = { warning: 0, tip: 1, standard: 2 };
                           return (order[a.type || 'standard'] || 2) - (order[b.type || 'standard'] || 2);
                         })
-                        .map((section, idx) => (
+                        .map((section: any, idx) => (
                         <div
                           key={idx}
                           className={`p-3 rounded-lg border text-xs ${

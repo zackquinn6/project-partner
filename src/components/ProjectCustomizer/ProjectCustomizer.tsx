@@ -21,6 +21,10 @@ import { HomeManager } from '../HomeManager';
 import { useAuth } from '../../contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
+import { Label } from '../ui/label';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import type { GeneralProjectDecision } from '../../interfaces/Project';
+import { filterGeneralDecisionsForPhases, parseGeneralProjectDecisionsFromPrerequisites } from '../../utils/generalProjectDecisions';
 import { PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME } from '../PlanningWizardSteps/planningToolWindowChrome';
 import { cn } from '@/lib/utils';
 
@@ -194,7 +198,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
           .from('project_run_spaces')
           .select('*')
           .eq('project_run_id', currentProjectRun.id)
-          .order('priority', { ascending: true, nullsLast: true });
+          .order('priority', { ascending: true, nullsFirst: false } as any);
 
         if (error) throw error;
 

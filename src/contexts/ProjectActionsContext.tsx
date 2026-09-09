@@ -502,8 +502,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           p_category:
             Array.isArray(projectData.category) && projectData.category.length > 0
               ? projectData.category[0]
-              : typeof projectData.category === 'string' && projectData.category.trim()
-                ? projectData.category.trim()
+              : typeof projectData.category === 'string' && (projectData.category as string).trim()
+                ? (projectData.category as string).trim()
                 : undefined,
         });
 
@@ -865,10 +865,10 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         if (projectRunData.effortLevel !== undefined) updateFields.effort_level = projectRunData.effortLevel || null;
         if (projectRunData.skillLevel !== undefined) updateFields.skill_level = projectRunData.skillLevel || null;
         if (projectRunData.estimatedTime !== undefined) updateFields.estimated_time = projectRunData.estimatedTime || null;
-        if (projectRunData.estimatedTotalTime !== undefined) updateFields.estimated_total_time = projectRunData.estimatedTotalTime || null;
-        if (projectRunData.typicalProjectSize !== undefined) updateFields.typical_project_size = projectRunData.typicalProjectSize || null;
+        if ((projectRunData as any).estimatedTotalTime !== undefined) updateFields.estimated_total_time = (projectRunData as any).estimatedTotalTime || null;
+        if ((projectRunData as any).typicalProjectSize !== undefined) updateFields.typical_project_size = (projectRunData as any).typicalProjectSize || null;
         if (projectRunData.scalingUnit !== undefined) updateFields.scaling_unit = projectRunData.scalingUnit || null;
-        if (projectRunData.itemType !== undefined) updateFields.item_type = projectRunData.itemType || null;
+        if ((projectRunData as any).itemType !== undefined) updateFields.item_type = (projectRunData as any).itemType || null;
         if (projectRunData.projectChallenges !== undefined) updateFields.project_challenges = projectRunData.projectChallenges || null;
         
         // Always update (at minimum updated_at, but usually description and other fields too)
@@ -1528,7 +1528,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
     try {
       // Call the database function to refresh the project run
-      const { data, error } = await supabase.rpc('refresh_project_run_from_template', {
+      const { data, error } = await (supabase as any).rpc('refresh_project_run_from_template', {
         p_run_id: runId
       });
 
@@ -1584,7 +1584,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           // CRITICAL: Include initial_budget, initial_timeline, initial_sizing from database
           initial_budget: freshRun.initial_budget || null,
           initial_timeline: freshRun.initial_timeline || null,
-          initial_sizing: freshRun.initial_sizing || null,
+          initial_sizing: (freshRun.initial_sizing as any) || null,
           quality_control_settings: parseQualityControlSettingsColumn(freshRun.quality_control_settings),
           planningCompletedAt: freshRun.planning_completed_at
             ? new Date(freshRun.planning_completed_at)

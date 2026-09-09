@@ -26,6 +26,7 @@ import { StepCompletionTracker } from './StepCompletionTracker';
 import { EnhancedProjectPlanning } from './EnhancedProjectPlanning';
 import { toast } from "@/hooks/use-toast";
 import { useWorkflowMicroDecisions } from '@/hooks/useWorkflowMicroDecisions';
+import { isStepCompleted, getStepCompletionKey } from '@/utils/projectUtils';
 import { useStepInstructions } from '@/hooks/useStepInstructions';
 import {
   filterSectionRowsForMicroDecisions,
@@ -537,14 +538,14 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
             : 10 + idx,
       }));
       const filteredSectionRows = filterSectionRowsForMicroDecisions(
-        normalizedSectionRows,
+        normalizedSectionRows as any,
         microRuntime.shouldApply && !microRuntime.loading,
         microRuntime.choices,
         microRuntime.catalog
       );
       return (
         <MultiContentRenderer
-          sections={[...textRows, ...filteredSectionRows, ...photoRows, ...videoRows, ...linkRows]}
+          sections={[...textRows, ...filteredSectionRows, ...photoRows, ...videoRows, ...linkRows] as any}
         />
       );
     }
@@ -557,11 +558,11 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
       const sections =
         previewRunMatchesTemplate && microRuntime.shouldApply && !microRuntime.loading
           ? filterSectionRowsForMicroDecisions(
-              step.contentSections,
+              step.contentSections as any,
               true,
               microRuntime.choices,
               microRuntime.catalog
-            )
+            ) as any
           : step.contentSections;
       return <MultiContentRenderer sections={sections} />;
     }

@@ -87,7 +87,7 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
       }
 
       const sizingMap = new Map<string, Record<string, number>>();
-      (data || []).forEach((row: { id: string; sizing_by_unit?: Record<string, number> | null }) => {
+      (data || []).forEach((row: any) => {
         const byUnit = row.sizing_by_unit && typeof row.sizing_by_unit === 'object' ? row.sizing_by_unit : {};
         sizingMap.set(row.id, byUnit as Record<string, number>);
       });

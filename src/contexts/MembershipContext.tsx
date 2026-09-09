@@ -181,7 +181,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
         Math.ceil((new Date(trialEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
       );
             setLastTrialNotificationDate(today);
-      supabase.rpc('record_trial_notification_shown').then(() => {}).catch(() => {});
+      (supabase.rpc('record_trial_notification_shown') as any).then(() => {}).catch(() => {});
     };
 
     const t = setTimeout(showReminder, 1500);

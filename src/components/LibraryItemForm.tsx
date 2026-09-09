@@ -325,7 +325,7 @@ export function LibraryItemForm({
             const payload = secs.length > 0 ? secs : [];
             const { error: variationInstructionError } = await supabase
               .from('tool_variations')
-              .update({ instructions: payload })
+              .update({ instructions: payload as any })
               .eq('id', v.id);
             if (variationInstructionError) throw variationInstructionError;
           }
@@ -551,7 +551,7 @@ export function LibraryItemForm({
             type === 'tools' ? null : (
               <div className="flex gap-2 pt-4">
                 <Button type="submit" disabled={uploading} className="flex-1">
-                  {uploading ? 'Saving...' : (item ? 'Update' : 'Add')} {type === 'tools' ? 'Tool' : 'Material'}
+                  {uploading ? 'Saving...' : (item ? 'Update' : 'Add')} {(type as string) === 'tools' ? 'Tool' : 'Material'}
                 </Button>
                 <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
                   Cancel

@@ -89,7 +89,7 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
       }
 
       const sizingMap = new Map<string, Record<string, number>>();
-      (data || []).forEach((row: { id: string; sizing_by_unit?: Record<string, number> | null }) => {
+      (data || []).forEach((row: any) => {
         const sizing = (row.sizing_by_unit && typeof row.sizing_by_unit === 'object') ? row.sizing_by_unit as Record<string, number> : {};
         sizingMap.set(row.id, sizing);
       });
@@ -116,18 +116,18 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
           .from('project_run_spaces')
           .select('*')
           .eq('project_run_id', projectRunId)
-          .order('priority', { ascending: true, nullsLast: true });
+          .order('priority', { ascending: true, nullsFirst: false } as any);
 
         if (spacesError) throw spacesError;
 
         // Build sizing map from project_run_spaces.sizing_by_unit
         const sizingMap = new Map<string, Record<string, number>>();
-        (spacesData || []).forEach((space: { id: string; sizing_by_unit?: Record<string, number> | null }) => {
+        (spacesData || []).forEach((space: any) => {
           const sizing = (space.sizing_by_unit && typeof space.sizing_by_unit === 'object') ? space.sizing_by_unit as Record<string, number> : {};
           sizingMap.set(space.id, sizing);
         });
 
-        const loadedSpaces: ProjectSpace[] = (spacesData || []).map((space, index) => {
+        const loadedSpaces: ProjectSpace[] = (spacesData || []).map((space: any, index: number) => {
           const relationalSizing = sizingMap.get(space.id) || {};
           // Use relational data if available, otherwise fall back to legacy columns
           const primarySizing = Object.keys(relationalSizing).length > 0 

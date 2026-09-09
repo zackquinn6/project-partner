@@ -259,7 +259,7 @@ export function UnifiedProjectManagement({
         ...project,
         project_challenges: project.project_challenges ?? project.diy_length_challenges ?? null,
         project_type: project.project_type || 'primary'
-      })) as Project[];
+      })) as unknown as Project[];
 
       let nextList: Project[];
 
@@ -327,7 +327,7 @@ export function UnifiedProjectManagement({
         ascending: false
       });
       if (error) throw error;
-      setProjectRevisions((allRevisions || []) as Project[]);
+      setProjectRevisions((allRevisions || []) as unknown as Project[]);
     } catch (error) {
       console.error('Error fetching project revisions:', error);
       toast.error("Failed to load project revisions");
@@ -516,14 +516,14 @@ export function UnifiedProjectManagement({
               project_challenges: freshData.project_challenges ?? null
             };
             console.log('🔄 Fresh project data (fallback):', mappedData);
-            setSelectedProject(mappedData as Project);
+            setSelectedProject(mappedData as unknown as Project);
                       } else if (retryData && retryData[0]) {
             // Fallback: map the retry data
             const mappedRetryData = {
               ...retryData[0],
               project_challenges: retryData[0].project_challenges ?? null
             };
-            setSelectedProject(mappedRetryData as Project);
+            setSelectedProject(mappedRetryData as unknown as Project);
                       } else {
             toast.error("Project saved but failed to refresh. Please reload the page.");
           }
@@ -562,7 +562,7 @@ export function UnifiedProjectManagement({
         console.log('🔄 Fresh project_challenges:', mappedData.project_challenges);
         console.log('🔄 Fresh budget_per_unit:', mappedData.budget_per_unit, 'type:', typeof mappedData.budget_per_unit);
         console.log('🔄 Fresh budget_per_typical_size:', mappedData.budget_per_typical_size, 'type:', typeof mappedData.budget_per_typical_size);
-        setSelectedProject(mappedData as Project);
+        setSelectedProject(mappedData as unknown as Project);
               } else if (data && data[0]) {
         // Fallback to data from update response - map columns
         const mappedData = {
@@ -570,7 +570,7 @@ export function UnifiedProjectManagement({
           project_challenges: data[0].project_challenges ?? null
         };
         console.log('⚠️ Using update response data as fallback:', mappedData);
-        setSelectedProject(mappedData as Project);
+        setSelectedProject(mappedData as unknown as Project);
               } else {
         toast.error("Project saved but failed to refresh. Please reload the page.");
       }
@@ -596,7 +596,7 @@ export function UnifiedProjectManagement({
             ...freshData,
             project_challenges: freshData.project_challenges ?? null
           };
-          setSelectedProject(mappedData as Project);
+          setSelectedProject(mappedData as unknown as Project);
         }
       }
     }
@@ -619,7 +619,7 @@ export function UnifiedProjectManagement({
           ...freshData,
           project_challenges: freshData.project_challenges ?? null
         };
-        setSelectedProject(mappedData as Project);
+        setSelectedProject(mappedData as unknown as Project);
       }
     }
   };
@@ -648,7 +648,7 @@ export function UnifiedProjectManagement({
           .single();
         
         if (!refreshError && refreshedRevision) {
-          setSelectedRevision(refreshedRevision as Project);
+          setSelectedRevision(refreshedRevision as unknown as Project);
           console.log('✅ Refreshed revision data before opening dialog');
         }
       } catch (error) {
@@ -742,7 +742,7 @@ export function UnifiedProjectManagement({
             .single();
           
           if (!parentError && parentProject) {
-            projectToValidate = parentProject as Project;
+            projectToValidate = parentProject as unknown as Project;
             console.log('✅ Using parent project for validation:', parentProject.id);
           } else {
             console.warn('⚠️ Could not fetch parent project, using revision data');
@@ -754,7 +754,7 @@ export function UnifiedProjectManagement({
               .single();
             
             if (!refreshError && refreshedRevision) {
-              projectToValidate = refreshedRevision as Project;
+              projectToValidate = refreshedRevision as unknown as Project;
               console.log('✅ Refreshed revision data before validation');
             }
           }
@@ -773,7 +773,7 @@ export function UnifiedProjectManagement({
             .single();
           
           if (!refreshError && refreshedProject) {
-            projectToValidate = refreshedProject as Project;
+            projectToValidate = refreshedProject as unknown as Project;
             console.log('✅ Refreshed parent project data before validation');
           }
         } catch (error) {
@@ -1284,7 +1284,7 @@ export function UnifiedProjectManagement({
         project_type: updatedProject.project_type || 'primary',
         images: updatedProject.images || [],
         cover_image: updatedProject.cover_image || null
-      } as Project;
+      } as unknown as Project;
 
       setSelectedProject(mappedProject);
       await fetchProjectRevisions();
@@ -1490,7 +1490,7 @@ export function UnifiedProjectManagement({
           (createdRow as { diy_length_challenges?: string | null }).diy_length_challenges ??
           null,
         project_type: (createdRow as { project_type?: string | null }).project_type || 'primary',
-      } as Project;
+      } as unknown as Project;
 
       setSelectedProject(createdProject);
       setCurrentProject(unifiedTemplateRowToContextProject(createdProject));
@@ -2349,7 +2349,7 @@ export function UnifiedProjectManagement({
                               project_type: data.project_type || 'primary',
                               images: data.images || [],
                               cover_image: data.cover_image || null
-                            } as Project;
+                            } as unknown as Project;
                             setSelectedProject(updatedProject);
                             // Also update editedProject to preserve images when saving
                             setEditedProject(prev => ({

@@ -44,7 +44,7 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
   onAddCustomWork
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedPhases, setSelectedPhases] = useState<PhaseWithProject[]>([]);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [showPhaseSelector, setShowPhaseSelector] = useState(false);

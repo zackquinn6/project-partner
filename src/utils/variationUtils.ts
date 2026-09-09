@@ -22,7 +22,7 @@ export const clearAllToolVariations = async (): Promise<boolean> => {
 
 export const clearAllMaterialVariations = async (): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    const { error } = await db
       .from('materials_variants')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000');
@@ -51,7 +51,7 @@ export const clearAllTools = async (): Promise<boolean> => {
     // Delete in correct order to respect foreign key constraints (pricing lives on tool_variations.pricing)
     console.log('Deleting variation warning flags...');
     if (variationIds.length > 0) {
-      await supabase
+      await db
         .from('variation_warning_flags')
         .delete()
         .in('variation_instance_id', variationIds);
@@ -61,7 +61,7 @@ export const clearAllTools = async (): Promise<boolean> => {
     await db.from('tool_variations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
     console.log('Deleting core tools...');
-    const { error } = await supabase
+    const { error } = await db
       .from('tools')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000');
@@ -84,7 +84,7 @@ export const clearAllTools = async (): Promise<boolean> => {
 export const clearAllMaterials = async (): Promise<boolean> => {
   try {
     console.log('Deleting core materials...');
-    const { error } = await supabase
+    const { error } = await db
       .from('materials')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000');
@@ -107,7 +107,7 @@ export const clearAllMaterials = async (): Promise<boolean> => {
 export const clearAllProjectRuns = async (): Promise<boolean> => {
   try {
     console.log('Deleting all project runs...');
-    const { error } = await supabase
+    const { error } = await db
       .from('project_runs')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000');
@@ -130,7 +130,7 @@ export const clearAllProjectRuns = async (): Promise<boolean> => {
 export const clearAllProjectTemplates = async (): Promise<boolean> => {
   try {
     // Get the Standard Project Foundation ID
-    const { data: standardProject } = await supabase
+    const { data: standardProject } = await db
       .from('projects')
       .select('id')
       .eq('name', 'Standard Project Foundation')
@@ -143,7 +143,7 @@ export const clearAllProjectTemplates = async (): Promise<boolean> => {
     }
 
     console.log('Fetching all project templates except Standard Project...');
-    const { data: projects } = await supabase
+    const { data: projects } = await db
       .from('projects')
       .select('id')
       .neq('id', standardProject.id);
@@ -157,14 +157,14 @@ export const clearAllProjectTemplates = async (): Promise<boolean> => {
 
     // Delete template_steps first
     console.log('Deleting template steps...');
-    const { data: operations } = await supabase
+    const { data: operations } = await db
       .from('template_operations')
       .select('id')
       .in('project_id', projectIds);
 
     if (operations && operations.length > 0) {
       const operationIds = operations.map(op => op.id);
-      await supabase
+      await db
         .from('template_steps')
         .delete()
         .in('operation_id', operationIds);
@@ -172,14 +172,14 @@ export const clearAllProjectTemplates = async (): Promise<boolean> => {
 
     // Delete template_operations
     console.log('Deleting template operations...');
-    await supabase
+    await db
       .from('template_operations')
       .delete()
       .in('project_id', projectIds);
 
     // Delete projects
     console.log('Deleting project templates...');
-    const { error } = await supabase
+    const { error } = await db
       .from('projects')
       .delete()
       .in('id', projectIds);

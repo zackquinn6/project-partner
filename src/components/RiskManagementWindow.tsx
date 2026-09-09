@@ -2706,7 +2706,7 @@ export function RiskManagementWindow({
                     <Button
                       type="button"
                       variant="outline"
-                      size="xs"
+                      size="sm"
                       onClick={() =>
                         setFormData((prev) => ({
                           ...prev,

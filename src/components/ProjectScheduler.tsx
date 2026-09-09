@@ -236,8 +236,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           }
           
           // Set last scheduled date from fresh data
-          if (freshData?.schedule_events?.lastScheduledAt) {
-            setLastScheduledDate(freshData.schedule_events.lastScheduledAt);
+          if ((freshData?.schedule_events as any)?.lastScheduledAt) {
+            setLastScheduledDate((freshData.schedule_events as any).lastScheduledAt);
           } else {
             setLastScheduledDate(null);
           }

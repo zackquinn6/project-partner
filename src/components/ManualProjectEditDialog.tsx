@@ -194,7 +194,7 @@ export function ManualProjectEditDialog({ open, onOpenChange, projectRun, onProj
                       key={option.value}
                       type="button"
                       variant={selected ? 'default' : 'outline'}
-                      size="xs"
+                      size="sm"
                       className="text-[11px] px-2 py-1 h-7"
                       onClick={() => {
                         setFormData(prev => {
