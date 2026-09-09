@@ -17,6 +17,7 @@ import { format, differenceInDays, addDays, startOfDay, endOfDay, isSameDay } fr
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useEnhancedAchievements } from '@/hooks/useEnhancedAchievements';
 import { AddMaintenanceTaskDialog } from './AddMaintenanceTaskDialog';
 import { TaskCompletionDialog } from './TaskCompletionDialog';
 import { MaintenanceHistoryTab } from './MaintenanceHistoryTab';
@@ -375,6 +376,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     user
   } = useAuth();
   const { toast } = useToast();
+  const { checkMilestoneUnlocks } = useEnhancedAchievements(user?.id);
   const [homes, setHomes] = useState<Home[]>([]);
   const [tasks, setTasks] = useState<MaintenanceTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -537,6 +539,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     if (completed) {
       try {
         await Promise.all([fetchTasks(), fetchCompletions()]);
+        void checkMilestoneUnlocks();
       } catch (error) {
         console.error('Error refreshing after detailed completion:', error);
       }
@@ -587,8 +590,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
         .eq('user_id', user.id);
       if (updateError) throw updateError;
       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, last_completed: now.toISOString(), next_due: nextDue } : t));
-            fetchTasks();
+      fetchTasks();
       fetchCompletions();
+      void checkMilestoneUnlocks();
     } catch (error) {
       console.error('Error quick-logging task:', error);
       toast({

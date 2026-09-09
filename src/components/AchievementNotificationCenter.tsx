@@ -2,7 +2,25 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { achievementDefinitionById } from '@/constants/achievementDefinitions';
-import { Medal } from 'lucide-react';
+import {
+  Medal,
+  Trophy,
+  Home,
+  Paintbrush,
+  Droplet,
+  Zap,
+  Calendar,
+  TrendingUp,
+  Star,
+  Award,
+  Grid3x3,
+  Repeat,
+  Layers,
+  Camera,
+  ClipboardList,
+  Hammer,
+  type LucideIcon,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -14,6 +32,25 @@ import { Badge } from '@/components/ui/badge';
 import { AchievementsFullDialog } from '@/components/AchievementsFullDialog';
 
 const RECENT_ACHIEVEMENTS_SHOWN = 5;
+
+const iconMap: Record<string, LucideIcon> = {
+  Trophy,
+  Home,
+  Paintbrush,
+  Droplet,
+  Zap,
+  Calendar,
+  TrendingUp,
+  Star,
+  Award,
+  Medal,
+  Grid3x3,
+  Repeat,
+  Layers,
+  Camera,
+  ClipboardList,
+  Hammer,
+};
 
 interface Notification {
   id: string;
@@ -38,8 +75,7 @@ export function AchievementNotificationCenter() {
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      
-      // Set up real-time subscription on user_achievements (unlock rows)
+
       const channel = supabase
         .channel('user_achievements')
         .on(
@@ -75,10 +111,12 @@ export function AchievementNotificationCenter() {
 
       if (error) throw error;
 
-      const unlockRows = (rows || []).filter(
-        (r: { achievement_id?: string | null; type?: string | null }) =>
-          Boolean(r.achievement_id) && (r.type ?? 'unlock') !== 'xp'
-      ).slice(0, 10);
+      const unlockRows = (rows || [])
+        .filter(
+          (r: { achievement_id?: string | null; type?: string | null }) =>
+            Boolean(r.achievement_id) && (r.type ?? 'unlock') !== 'xp'
+        )
+        .slice(0, 10);
 
       if (!unlockRows.length) {
         setNotifications([]);
@@ -87,18 +125,20 @@ export function AchievementNotificationCenter() {
         return;
       }
 
-      const list = unlockRows.map((row: { id: string; achievement_id: string; is_read: boolean; created_at: string }) => {
-        const def = achievementDefinitionById(row.achievement_id);
-        return {
-          id: row.id,
-          achievement_id: row.achievement_id,
-          is_read: row.is_read,
-          created_at: row.created_at,
-          achievement: def
-            ? { name: def.name, description: def.description, icon: def.icon }
-            : null,
-        };
-      });
+      const list = unlockRows.map(
+        (row: { id: string; achievement_id: string; is_read: boolean; created_at: string }) => {
+          const def = achievementDefinitionById(row.achievement_id);
+          return {
+            id: row.id,
+            achievement_id: row.achievement_id,
+            is_read: row.is_read,
+            created_at: row.created_at,
+            achievement: def
+              ? { name: def.name, description: def.description, icon: def.icon }
+              : null,
+          };
+        }
+      );
       setNotifications(list);
       setUnreadCount(list.filter((n) => !n.is_read).length);
     } catch (error) {
@@ -168,8 +208,8 @@ export function AchievementNotificationCenter() {
         <PopoverContent className="w-[min(100vw-2rem,20rem)] p-0 sm:w-80" align="end">
           <div className="flex items-start justify-between gap-2 border-b px-3 py-3 sm:px-4">
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold leading-tight">Recent achievements</h3>
-              <p className="text-xs text-muted-foreground">Latest unlocks</p>
+              <h3 className="text-sm font-semibold leading-tight">Recent trophies</h3>
+              <p className="text-xs text-muted-foreground">Latest craft unlocks</p>
             </div>
             {unreadCount > 0 ? (
               <Button
@@ -190,50 +230,52 @@ export function AchievementNotificationCenter() {
             ) : notifications.length === 0 ? (
               <div className="px-4 py-6 text-center text-muted-foreground">
                 <Medal className="mx-auto mb-2 h-10 w-10 opacity-50" />
-                <p className="text-sm">No achievements yet</p>
-                <p className="mt-1 text-xs">Complete projects to unlock badges.</p>
+                <p className="text-sm">No trophies yet</p>
+                <p className="mt-1 text-xs">Finish projects to unlock craft badges.</p>
               </div>
             ) : (
               <div className="divide-y">
-                {recentNotifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    role="button"
-                    tabIndex={0}
-                    className={`cursor-pointer px-3 py-2.5 transition-colors sm:px-4 sm:py-3 ${
-                      !notification.is_read ? 'bg-muted/50' : ''
-                    } hover:bg-muted`}
-                    onClick={() => markAsRead(notification.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        markAsRead(notification.id);
-                      }
-                    }}
-                  >
-                    <div className="flex items-start gap-2.5 sm:gap-3">
-                      <div className="rounded-lg bg-primary/10 p-1.5 sm:p-2">
-                        <span className="text-xl sm:text-2xl">
-                          {notification.achievement?.icon === 'Trophy' ? '🏆' : '⭐'}
-                        </span>
+                {recentNotifications.map((notification) => {
+                  const IconComponent =
+                    iconMap[notification.achievement?.icon ?? ''] || Trophy;
+                  return (
+                    <div
+                      key={notification.id}
+                      role="button"
+                      tabIndex={0}
+                      className={`cursor-pointer px-3 py-2.5 transition-colors sm:px-4 sm:py-3 ${
+                        !notification.is_read ? 'bg-muted/50' : ''
+                      } hover:bg-muted`}
+                      onClick={() => markAsRead(notification.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          markAsRead(notification.id);
+                        }
+                      }}
+                    >
+                      <div className="flex items-start gap-2.5 sm:gap-3">
+                        <div className="rounded-lg bg-primary/10 p-1.5 text-primary sm:p-2">
+                          <IconComponent className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold leading-snug">
+                            {notification.achievement?.name ?? 'Achievement'}
+                          </p>
+                          <p className="line-clamp-2 text-xs text-muted-foreground">
+                            {notification.achievement?.description ?? ''}
+                          </p>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+                            {new Date(notification.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        {!notification.is_read ? (
+                          <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                        ) : null}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold leading-snug">
-                          {notification.achievement?.name ?? 'Achievement'}
-                        </p>
-                        <p className="line-clamp-2 text-xs text-muted-foreground">
-                          {notification.achievement?.description ?? ''}
-                        </p>
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          {new Date(notification.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      {!notification.is_read ? (
-                        <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                      ) : null}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </ScrollArea>
@@ -245,7 +287,7 @@ export function AchievementNotificationCenter() {
               </p>
             ) : null}
             <Button type="button" variant="default" className="w-full" size="sm" onClick={openFullAchievements}>
-              View all achievements
+              View trophy case
             </Button>
           </div>
         </PopoverContent>

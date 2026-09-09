@@ -10,6 +10,8 @@ import { Pencil, ChevronDown, ChevronUp, Plus, Link2, ExternalLink } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/useResponsive";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEnhancedAchievements } from "@/hooks/useEnhancedAchievements";
 
 interface HomeTask {
   id: string;
@@ -58,6 +60,8 @@ export function HomeTasksTable({
 }: HomeTasksTableProps) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const { checkMilestoneUnlocks } = useEnhancedAchievements(user?.id);
   const [sortField, setSortField] = useState<SortField>('due_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterPriority, setFilterPriority] = useState<string>('all');
@@ -146,6 +150,9 @@ export function HomeTasksTable({
       if (error) return;
 
       onTaskUpdate?.();
+      if (newStatus === "closed") {
+        void checkMilestoneUnlocks();
+      }
     } finally {
       toggleCompleteInFlight.current = false;
     }

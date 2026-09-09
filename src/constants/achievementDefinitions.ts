@@ -2,17 +2,33 @@
  * Achievement catalog (no public.achievements table). Unlocks use user_achievements.achievement_id.
  * IDs are stable UUIDs so existing rows keep matching after deploys.
  *
+ * Craft model (Strava/Garmin-inspired):
+ * - Volume: lifetime completed project runs
+ * - Trade: category mastery (Local Legend rail)
+ * - Peak: High-effort / Advanced / Professional finishes
+ * - Cadence: busy month / year
+ * - Evidence: photos on finished jobs (not raw upload counts)
+ * - Stewardship: home maintenance + punch-list discipline
+ *
  * XP model (summary):
  * - Milestone achievements grant base_xp (and points) once when unlocked.
- * - Project completion also grants variable XP via calculateXPForProject (steps, size, difficulty)
- *   plus a repeat-completion bonus for every finished project, even when no new badge unlocks.
- * - Home task completion grants XP per close (diy level & priority), separate from this catalog.
+ * - Project completion also grants variable XP via calculateXPForProject
+ *   plus a repeat-completion bonus for every finished project.
  */
+
+export type AchievementShelf =
+  | 'volume'
+  | 'trade'
+  | 'peak'
+  | 'cadence'
+  | 'evidence'
+  | 'stewardship';
+
 export interface AchievementDefinition {
   id: string;
   name: string;
   description: string;
-  category: string;
+  category: AchievementShelf;
   icon: string;
   points: number;
   base_xp: number;
@@ -20,24 +36,30 @@ export interface AchievementDefinition {
   criteria: Record<string, unknown>;
 }
 
-/** Aggregates loaded for non–project-run criteria (photos, profile, tasks, etc.). */
+/** Aggregates loaded for non–project-run criteria (evidence, tasks, maintenance). */
 export interface UserAchievementStats {
-  photoCount: number;
-  toolsInLibrary: number;
+  documentedFinishes: number;
+  beforeAfterFinishes: number;
   tasksClosed: number;
-  homesCount: number;
-  risksLogged: number;
-  linkedTasksCount: number;
   maintenanceCompletions: number;
 }
 
+export const ACHIEVEMENT_SHELF_LABELS: Record<AchievementShelf, string> = {
+  volume: 'Shop volume',
+  trade: 'Trade mastery',
+  peak: 'Hard finishes',
+  cadence: 'Cadence',
+  evidence: 'Jobsite evidence',
+  stewardship: 'Home stewardship',
+};
+
 export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
-  // —— Core project completion ladder (IDs a100…001–009 preserved) ——
+  // —— Shop volume (completion ladder) ——
   {
     id: 'a1000000-0000-4000-8000-000000000001',
     name: 'First Finish',
     description: 'Complete your first home improvement project run.',
-    category: 'foundational',
+    category: 'volume',
     icon: 'Trophy',
     points: 50,
     base_xp: 120,
@@ -46,9 +68,9 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   },
   {
     id: 'a1000000-0000-4000-8000-000000000002',
-    name: 'Triple Threat',
+    name: 'Hat Trick',
     description: 'Complete three project runs.',
-    category: 'frequency',
+    category: 'volume',
     icon: 'Medal',
     points: 100,
     base_xp: 220,
@@ -57,9 +79,9 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   },
   {
     id: 'a1000000-0000-4000-8000-000000000003',
-    name: 'Steady Builder',
+    name: 'Shop Rhythm',
     description: 'Complete five project runs.',
-    category: 'frequency',
+    category: 'volume',
     icon: 'Repeat',
     points: 160,
     base_xp: 320,
@@ -67,78 +89,10 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
     criteria: { project_count: 5 },
   },
   {
-    id: 'a1000000-0000-4000-8000-000000000004',
-    name: 'Category Focus',
-    description: 'Complete two runs in the same project category.',
-    category: 'overlapping',
-    icon: 'Layers',
-    points: 90,
-    base_xp: 170,
-    scales_with_project_size: false,
-    criteria: { category_repeat: 2 },
-  },
-  {
-    id: 'a1000000-0000-4000-8000-000000000005',
-    name: 'Well Rounded',
-    description: 'Complete runs in at least three different categories.',
-    category: 'skill',
-    icon: 'Grid3x3',
-    points: 140,
-    base_xp: 280,
-    scales_with_project_size: false,
-    criteria: { category_breadth: 3 },
-  },
-  {
-    id: 'a1000000-0000-4000-8000-000000000006',
-    name: 'Go Deep',
-    description: 'Complete three or more runs in a single category.',
-    category: 'scale',
-    icon: 'TrendingUp',
-    points: 165,
-    base_xp: 340,
-    scales_with_project_size: true,
-    criteria: { category_depth: 3 },
-  },
-  {
-    id: 'a1000000-0000-4000-8000-000000000007',
-    name: 'Paint Pro',
-    description: 'Complete two painting-category runs.',
-    category: 'legacy',
-    icon: 'Paintbrush',
-    points: 85,
-    base_xp: 150,
-    scales_with_project_size: false,
-    criteria: { category: 'painting', project_count: 2 },
-  },
-  {
-    id: 'a1000000-0000-4000-8000-000000000008',
-    name: 'Busy Month',
-    description: 'Complete two or more runs in the last 30 days.',
-    category: 'frequency',
-    icon: 'Calendar',
-    points: 110,
-    base_xp: 200,
-    scales_with_project_size: false,
-    criteria: { projects_in_month: 2 },
-  },
-  {
-    id: 'a1000000-0000-4000-8000-000000000009',
-    name: 'Year of Projects',
-    description: 'Complete four or more runs in the last year.',
-    category: 'legacy',
-    icon: 'Star',
-    points: 200,
-    base_xp: 420,
-    scales_with_project_size: false,
-    criteria: { projects_in_year: 4 },
-  },
-
-  // —— Extended project volume ——
-  {
     id: 'b1000000-0000-4000-8000-000000000001',
-    name: 'Ten & Counting',
+    name: 'Decade in the Shop',
     description: 'Complete ten home improvement project runs.',
-    category: 'frequency',
+    category: 'volume',
     icon: 'Award',
     points: 240,
     base_xp: 480,
@@ -149,7 +103,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
     id: 'b1000000-0000-4000-8000-000000000002',
     name: 'Quarter-Century Shop',
     description: 'Complete twenty-five project runs.',
-    category: 'frequency',
+    category: 'volume',
     icon: 'Trophy',
     points: 400,
     base_xp: 800,
@@ -157,12 +111,102 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
     criteria: { project_count: 25 },
   },
 
-  // —— Effort & skill (maps to project_runs.effort_level / skill_level) ——
+  // —— Trade mastery ——
+  {
+    id: 'a1000000-0000-4000-8000-000000000004',
+    name: 'Trade Repeat',
+    description: 'Complete two runs in the same project category.',
+    category: 'trade',
+    icon: 'Layers',
+    points: 90,
+    base_xp: 170,
+    scales_with_project_size: false,
+    criteria: { category_repeat: 2 },
+  },
+  {
+    id: 'a1000000-0000-4000-8000-000000000005',
+    name: 'Multi-Trade',
+    description: 'Complete runs in at least three different categories.',
+    category: 'trade',
+    icon: 'Grid3x3',
+    points: 140,
+    base_xp: 280,
+    scales_with_project_size: false,
+    criteria: { category_breadth: 3 },
+  },
+  {
+    id: 'a1000000-0000-4000-8000-000000000006',
+    name: 'Shop Regular',
+    description: 'Complete five or more runs in a single category.',
+    category: 'trade',
+    icon: 'TrendingUp',
+    points: 200,
+    base_xp: 400,
+    scales_with_project_size: true,
+    criteria: { category_depth: 5 },
+  },
+  {
+    id: 'a1000000-0000-4000-8000-000000000007',
+    name: 'Brush Hand',
+    description: 'Complete two Painting & Finishing project runs.',
+    category: 'trade',
+    icon: 'Paintbrush',
+    points: 85,
+    base_xp: 150,
+    scales_with_project_size: false,
+    criteria: { category: 'Painting & Finishing', project_count: 2 },
+  },
+  {
+    id: 'b1000000-0000-4000-8000-00000000001c',
+    name: 'Tile Setter',
+    description: 'Complete two Tile project runs.',
+    category: 'trade',
+    icon: 'Grid3x3',
+    points: 85,
+    base_xp: 150,
+    scales_with_project_size: false,
+    criteria: { category: 'Tile', project_count: 2 },
+  },
+  {
+    id: 'b1000000-0000-4000-8000-00000000001d',
+    name: 'Pipe Fit',
+    description: 'Complete two Plumbing project runs.',
+    category: 'trade',
+    icon: 'Droplet',
+    points: 85,
+    base_xp: 150,
+    scales_with_project_size: false,
+    criteria: { category: 'Plumbing', project_count: 2 },
+  },
+  {
+    id: 'b1000000-0000-4000-8000-00000000001e',
+    name: 'Circuit Sense',
+    description: 'Complete two Electrical project runs.',
+    category: 'trade',
+    icon: 'Zap',
+    points: 85,
+    base_xp: 150,
+    scales_with_project_size: false,
+    criteria: { category: 'Electrical', project_count: 2 },
+  },
+  {
+    id: 'b1000000-0000-4000-8000-00000000001f',
+    name: 'Plumb Line',
+    description: 'Complete two Interior Carpentry project runs.',
+    category: 'trade',
+    icon: 'Hammer',
+    points: 85,
+    base_xp: 150,
+    scales_with_project_size: false,
+    criteria: { category: 'Interior Carpentry', project_count: 2 },
+  },
+
+  // —— Hard effort & skill (peak) ——
   {
     id: 'b1000000-0000-4000-8000-000000000003',
-    name: 'Heavy Hitter',
-    description: 'Complete your first High-effort project run.',
-    category: 'skill',
+    name: 'Heavy Lift',
+    description: 'Complete a High-effort project run.',
+    category: 'peak',
     icon: 'Zap',
     points: 75,
     base_xp: 160,
@@ -171,9 +215,9 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   },
   {
     id: 'b1000000-0000-4000-8000-000000000004',
-    name: 'Triple Heavy',
+    name: 'Three Heavy Lifts',
     description: 'Complete three High-effort project runs.',
-    category: 'scale',
+    category: 'peak',
     icon: 'Zap',
     points: 180,
     base_xp: 360,
@@ -182,9 +226,9 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   },
   {
     id: 'b1000000-0000-4000-8000-000000000005',
-    name: 'Advanced Debut',
-    description: 'Complete your first Advanced-skill project run.',
-    category: 'skill',
+    name: 'Advanced Ticket',
+    description: 'Complete an Advanced-skill project run.',
+    category: 'peak',
     icon: 'TrendingUp',
     points: 80,
     base_xp: 170,
@@ -193,232 +237,92 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   },
   {
     id: 'b1000000-0000-4000-8000-000000000006',
-    name: 'Pro Debut',
-    description: 'Complete your first Professional-skill project run.',
-    category: 'skill',
+    name: 'Pro Ticket',
+    description: 'Complete a Professional-skill project run.',
+    category: 'peak',
     icon: 'Star',
     points: 95,
     base_xp: 200,
     scales_with_project_size: false,
     criteria: { skill_completions: { minCount: 1, level: 'Professional' } },
   },
+  {
+    id: 'b1000000-0000-4000-8000-000000000020',
+    name: 'Pro Bench',
+    description: 'Complete three Professional-skill project runs.',
+    category: 'peak',
+    icon: 'Star',
+    points: 220,
+    base_xp: 450,
+    scales_with_project_size: false,
+    criteria: { skill_completions: { minCount: 3, level: 'Professional' } },
+  },
 
-  // —— Documentation & photos (project_photos) ——
+  // —— Cadence ——
+  {
+    id: 'a1000000-0000-4000-8000-000000000008',
+    name: 'Hot Month',
+    description: 'Complete two or more runs in the last 30 days.',
+    category: 'cadence',
+    icon: 'Calendar',
+    points: 110,
+    base_xp: 200,
+    scales_with_project_size: false,
+    criteria: { projects_in_month: 2 },
+  },
+  {
+    id: 'a1000000-0000-4000-8000-000000000009',
+    name: 'Seasoned Year',
+    description: 'Complete six or more runs in the last year.',
+    category: 'cadence',
+    icon: 'Star',
+    points: 220,
+    base_xp: 460,
+    scales_with_project_size: false,
+    criteria: { projects_in_year: 6 },
+  },
+
+  // —— Jobsite evidence ——
   {
     id: 'b1000000-0000-4000-8000-000000000007',
-    name: 'First Snapshot',
-    description: 'Upload your first project photo.',
-    category: 'documentation',
+    name: 'Documented Finish',
+    description: 'Complete a project run with at least one jobsite photo.',
+    category: 'evidence',
     icon: 'Camera',
-    points: 30,
-    base_xp: 65,
+    points: 55,
+    base_xp: 115,
     scales_with_project_size: false,
-    criteria: { photos_total: 1 },
+    criteria: { documented_finishes: 1 },
   },
   {
     id: 'b1000000-0000-4000-8000-000000000008',
-    name: 'Growing Album',
-    description: 'Capture 5 project photos.',
-    category: 'documentation',
-    icon: 'Camera',
-    points: 45,
-    base_xp: 95,
-    scales_with_project_size: false,
-    criteria: { photos_total: 5 },
-  },
-  {
-    id: 'b1000000-0000-4000-8000-000000000009',
-    name: 'Jobsite Journalist',
-    description: 'Capture 25 project photos.',
-    category: 'documentation',
+    name: 'Before & After',
+    description: 'Complete a project run with both before and after photos.',
+    category: 'evidence',
     icon: 'Camera',
     points: 90,
     base_xp: 190,
     scales_with_project_size: false,
-    criteria: { photos_total: 25 },
+    criteria: { before_after_finishes: 1 },
   },
   {
-    id: 'b1000000-0000-4000-8000-00000000000a',
-    name: 'Century Frame',
-    description: 'Capture 100 project photos.',
-    category: 'documentation',
+    id: 'b1000000-0000-4000-8000-000000000009',
+    name: 'Portfolio Builder',
+    description: 'Complete five documented project finishes.',
+    category: 'evidence',
     icon: 'Camera',
-    points: 220,
-    base_xp: 450,
+    points: 180,
+    base_xp: 360,
     scales_with_project_size: false,
-    criteria: { photos_total: 100 },
+    criteria: { documented_finishes: 5 },
   },
 
-  // —— Tool library (user_profiles.owned_tools) ——
-  {
-    id: 'b1000000-0000-4000-8000-00000000000b',
-    name: 'Tool Rookie',
-    description: 'Add 10 tools to your library.',
-    category: 'planning',
-    icon: 'Wrench',
-    points: 40,
-    base_xp: 85,
-    scales_with_project_size: false,
-    criteria: { tools_in_library: 10 },
-  },
-  {
-    id: 'b1000000-0000-4000-8000-00000000000c',
-    name: 'Well Equipped',
-    description: 'Add 25 tools to your library.',
-    category: 'planning',
-    icon: 'Wrench',
-    points: 70,
-    base_xp: 140,
-    scales_with_project_size: false,
-    criteria: { tools_in_library: 25 },
-  },
-  {
-    id: 'b1000000-0000-4000-8000-00000000000d',
-    name: 'Full Shed',
-    description: 'Add 100 tools to your library.',
-    category: 'planning',
-    icon: 'Wrench',
-    points: 200,
-    base_xp: 400,
-    scales_with_project_size: false,
-    criteria: { tools_in_library: 100 },
-  },
-
-  // —— Home tasks ——
-  {
-    id: 'b1000000-0000-4000-8000-00000000000e',
-    name: 'Task Checked Off',
-    description: 'Complete your first home task.',
-    category: 'homelab',
-    icon: 'ClipboardList',
-    points: 25,
-    base_xp: 55,
-    scales_with_project_size: false,
-    criteria: { tasks_closed: 1 },
-  },
-  {
-    id: 'b1000000-0000-4000-8000-00000000000f',
-    name: 'Honey-Do Flow',
-    description: 'Complete 10 home tasks.',
-    category: 'homelab',
-    icon: 'ClipboardList',
-    points: 55,
-    base_xp: 115,
-    scales_with_project_size: false,
-    criteria: { tasks_closed: 10 },
-  },
-  {
-    id: 'b1000000-0000-4000-8000-000000000010',
-    name: 'Household Operator',
-    description: 'Complete 25 home tasks.',
-    category: 'homelab',
-    icon: 'ClipboardList',
-    points: 95,
-    base_xp: 195,
-    scales_with_project_size: false,
-    criteria: { tasks_closed: 25 },
-  },
-  {
-    id: 'b1000000-0000-4000-8000-000000000011',
-    name: 'Closing Machine',
-    description: 'Complete 100 home tasks.',
-    category: 'homelab',
-    icon: 'ClipboardList',
-    points: 250,
-    base_xp: 500,
-    scales_with_project_size: false,
-    criteria: { tasks_closed: 100 },
-  },
-
-  // —— Homes & linking ——
-  {
-    id: 'b1000000-0000-4000-8000-000000000012',
-    name: 'Two Roofs',
-    description: 'Add a second home to your workspace.',
-    category: 'homelab',
-    icon: 'Home',
-    points: 60,
-    base_xp: 125,
-    scales_with_project_size: false,
-    criteria: { homes_count: 2 },
-  },
-  {
-    id: 'b1000000-0000-4000-8000-000000000013',
-    name: 'Project Linker',
-    description: 'Link at least one home task to a project run.',
-    category: 'planning',
-    icon: 'Link2',
-    points: 45,
-    base_xp: 95,
-    scales_with_project_size: false,
-    criteria: { linked_tasks: 1 },
-  },
-  {
-    id: 'b1000000-0000-4000-8000-000000000014',
-    name: 'Orchestrator',
-    description: 'Keep 5 or more tasks linked to projects.',
-    category: 'planning',
-    icon: 'Network',
-    points: 100,
-    base_xp: 210,
-    scales_with_project_size: false,
-    criteria: { linked_tasks: 5 },
-  },
-
-  // —— Risk register ——
-  {
-    id: 'b1000000-0000-4000-8000-000000000015',
-    name: 'Risk Planner',
-    description: 'Log your first risk on a project run.',
-    category: 'risk',
-    icon: 'Shield',
-    points: 35,
-    base_xp: 75,
-    scales_with_project_size: false,
-    criteria: { risks_logged: 1 },
-  },
-  {
-    id: 'b1000000-0000-4000-8000-000000000016',
-    name: 'What-If Vault',
-    description: 'Log 10 risks across your projects.',
-    category: 'risk',
-    icon: 'Shield',
-    points: 85,
-    base_xp: 175,
-    scales_with_project_size: false,
-    criteria: { risks_logged: 10 },
-  },
-  {
-    id: 'b1000000-0000-4000-8000-000000000017',
-    name: 'Risk Archivist',
-    description: 'Log 50 risks across your projects.',
-    category: 'risk',
-    icon: 'Shield',
-    points: 200,
-    base_xp: 400,
-    scales_with_project_size: false,
-    criteria: { risks_logged: 50 },
-  },
-
-  // —— Budget ——
-  {
-    id: 'b1000000-0000-4000-8000-000000000018',
-    name: 'Budget Minded',
-    description: 'Complete a run that used a budget with line items.',
-    category: 'planning',
-    icon: 'PiggyBank',
-    points: 55,
-    base_xp: 115,
-    scales_with_project_size: false,
-    criteria: { budgeted_project_completions: 1 },
-  },
-
-  // —— Maintenance ——
+  // —— Home stewardship ——
   {
     id: 'b1000000-0000-4000-8000-000000000019',
-    name: 'Upkeep Starter',
-    description: 'Complete your first home maintenance task check-off.',
-    category: 'homelab',
+    name: 'Upkeep',
+    description: 'Complete your first home maintenance check-off.',
+    category: 'stewardship',
     icon: 'Droplet',
     points: 30,
     base_xp: 65,
@@ -427,18 +331,76 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
   },
   {
     id: 'b1000000-0000-4000-8000-00000000001a',
-    name: 'Preventive Streak',
-    description: 'Complete 10 home maintenance task check-offs.',
-    category: 'homelab',
+    name: 'Preventive Cadence',
+    description: 'Complete 10 home maintenance check-offs.',
+    category: 'stewardship',
     icon: 'Droplet',
     points: 90,
     base_xp: 185,
     scales_with_project_size: false,
     criteria: { maintenance_completions: 10 },
   },
+  {
+    id: 'b1000000-0000-4000-8000-00000000001b',
+    name: 'Year-Round Steward',
+    description: 'Complete 25 home maintenance check-offs.',
+    category: 'stewardship',
+    icon: 'Home',
+    points: 160,
+    base_xp: 320,
+    scales_with_project_size: false,
+    criteria: { maintenance_completions: 25 },
+  },
+  {
+    id: 'b1000000-0000-4000-8000-000000000010',
+    name: 'Punch List Cleared',
+    description: 'Close 25 home tasks.',
+    category: 'stewardship',
+    icon: 'ClipboardList',
+    points: 95,
+    base_xp: 195,
+    scales_with_project_size: false,
+    criteria: { tasks_closed: 25 },
+  },
 ];
 
 const byId = new Map(ACHIEVEMENT_DEFINITIONS.map((a) => [a.id, a]));
+
+const SHELF_ORDER: AchievementShelf[] = [
+  'volume',
+  'trade',
+  'peak',
+  'cadence',
+  'evidence',
+  'stewardship',
+];
+
+/** Aliases so older run category strings still match trade badges. */
+const CATEGORY_ALIASES: Record<string, string[]> = {
+  'painting & finishing': ['painting & finishing', 'painting', 'paint'],
+  tile: ['tile', 'tiling'],
+  plumbing: ['plumbing'],
+  electrical: ['electrical', 'lighting & electrical'],
+  'interior carpentry': ['interior carpentry', 'carpentry'],
+};
+
+function normalizeCategoryKey(raw: string): string {
+  return raw.trim().toLowerCase();
+}
+
+function categoryKeysForProject(p: Record<string, unknown>): string[] {
+  const c = p.category;
+  if (typeof c === 'string') return [normalizeCategoryKey(c)];
+  if (Array.isArray(c)) return c.map((x) => normalizeCategoryKey(String(x)));
+  return [];
+}
+
+function projectMatchesCategory(p: Record<string, unknown>, want: string): boolean {
+  const wantKey = normalizeCategoryKey(want);
+  const aliases = CATEGORY_ALIASES[wantKey] ?? [wantKey];
+  const projectKeys = categoryKeysForProject(p);
+  return projectKeys.some((pk) => aliases.some((a) => pk === a || pk.includes(a)));
+}
 
 export function achievementDefinitionById(id: string): AchievementDefinition | undefined {
   return byId.get(id);
@@ -446,9 +408,10 @@ export function achievementDefinitionById(id: string): AchievementDefinition | u
 
 export function achievementDefinitionsSorted(): AchievementDefinition[] {
   return [...ACHIEVEMENT_DEFINITIONS].sort((a, b) => {
-    const c = a.category.localeCompare(b.category);
-    if (c !== 0) return c;
-    return a.name.localeCompare(b.name);
+    const ai = SHELF_ORDER.indexOf(a.category);
+    const bi = SHELF_ORDER.indexOf(b.category);
+    if (ai !== bi) return ai - bi;
+    return a.points - b.points || a.name.localeCompare(b.name);
   });
 }
 
@@ -469,11 +432,129 @@ function endDate(p: Record<string, unknown>): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function budgetHasLineItems(p: Record<string, unknown>): boolean {
-  const raw = p.budget_data;
-  if (!raw || typeof raw !== 'object') return false;
-  const lineItems = (raw as { lineItems?: unknown }).lineItems;
-  return Array.isArray(lineItems) && lineItems.length > 0;
+function stagePhotoCount(photos: unknown, stage: 'before' | 'during' | 'after'): number {
+  if (!photos || typeof photos !== 'object') return 0;
+  const arr = (photos as Record<string, unknown>)[stage];
+  return Array.isArray(arr) ? arr.length : 0;
+}
+
+/** Whether a completed run has any jobsite photo evidence. */
+export function runHasDocumentation(p: Record<string, unknown>): boolean {
+  const gallery = p.project_photos;
+  if (stagePhotoCount(gallery, 'before') > 0) return true;
+  if (stagePhotoCount(gallery, 'during') > 0) return true;
+  if (stagePhotoCount(gallery, 'after') > 0) return true;
+  const n = p._photo_count;
+  return typeof n === 'number' && n > 0;
+}
+
+export function runHasBeforeAndAfter(p: Record<string, unknown>): boolean {
+  const gallery = p.project_photos;
+  return stagePhotoCount(gallery, 'before') > 0 && stagePhotoCount(gallery, 'after') > 0;
+}
+
+export interface AchievementProgress {
+  current: number;
+  target: number;
+}
+
+/** Partial progress toward a ladder badge (for trophy-case UI). */
+export function achievementProgress(
+  criteria: Record<string, unknown>,
+  completedProjects: Record<string, unknown>[],
+  stats: UserAchievementStats | null
+): AchievementProgress | null {
+  if (criteria.documented_finishes !== undefined) {
+    const target = Number(criteria.documented_finishes);
+    return { current: stats?.documentedFinishes ?? 0, target };
+  }
+  if (criteria.before_after_finishes !== undefined) {
+    const target = Number(criteria.before_after_finishes);
+    return { current: stats?.beforeAfterFinishes ?? 0, target };
+  }
+  if (criteria.tasks_closed !== undefined) {
+    const target = Number(criteria.tasks_closed);
+    return { current: stats?.tasksClosed ?? 0, target };
+  }
+  if (criteria.maintenance_completions !== undefined) {
+    const target = Number(criteria.maintenance_completions);
+    return { current: stats?.maintenanceCompletions ?? 0, target };
+  }
+  if (criteria.effort_completions !== undefined && typeof criteria.effort_completions === 'object') {
+    const ec = criteria.effort_completions as { minCount?: number; level?: string };
+    const target = typeof ec.minCount === 'number' ? ec.minCount : 1;
+    const level = typeof ec.level === 'string' ? ec.level : '';
+    const current = completedProjects.filter(
+      (p) => rowEffortLevel(p).toLowerCase() === level.toLowerCase()
+    ).length;
+    return { current, target };
+  }
+  if (criteria.skill_completions !== undefined && typeof criteria.skill_completions === 'object') {
+    const sc = criteria.skill_completions as { minCount?: number; level?: string };
+    const target = typeof sc.minCount === 'number' ? sc.minCount : 1;
+    const level = typeof sc.level === 'string' ? sc.level : '';
+    const current = completedProjects.filter(
+      (p) => rowSkillLevel(p).toLowerCase() === level.toLowerCase()
+    ).length;
+    return { current, target };
+  }
+  if (criteria.category && criteria.project_count !== undefined && typeof criteria.project_count === 'number') {
+    const target = criteria.project_count;
+    const current = completedProjects.filter((p) => projectMatchesCategory(p, String(criteria.category))).length;
+    return { current, target };
+  }
+  if (
+    criteria.project_count !== undefined &&
+    typeof criteria.project_count === 'number' &&
+    !criteria.category
+  ) {
+    return { current: completedProjects.length, target: criteria.project_count };
+  }
+  if (criteria.projects_in_month !== undefined && typeof criteria.projects_in_month === 'number') {
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    const current = completedProjects.filter((p) => {
+      const d = endDate(p);
+      return d !== null && d >= oneMonthAgo;
+    }).length;
+    return { current, target: criteria.projects_in_month };
+  }
+  if (criteria.projects_in_year !== undefined && typeof criteria.projects_in_year === 'number') {
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    const current = completedProjects.filter((p) => {
+      const d = endDate(p);
+      return d !== null && d >= oneYearAgo;
+    }).length;
+    return { current, target: criteria.projects_in_year };
+  }
+  if (criteria.category_repeat !== undefined && typeof criteria.category_repeat === 'number') {
+    const categoryCounts = countByCategory(completedProjects);
+    const best = Math.max(0, ...Object.values(categoryCounts));
+    return { current: best, target: criteria.category_repeat };
+  }
+  if (criteria.category_depth !== undefined && typeof criteria.category_depth === 'number') {
+    const categoryCounts = countByCategory(completedProjects);
+    const best = Math.max(0, ...Object.values(categoryCounts));
+    return { current: best, target: criteria.category_depth };
+  }
+  if (criteria.category_breadth !== undefined && typeof criteria.category_breadth === 'number') {
+    const unique = new Set<string>();
+    for (const p of completedProjects) {
+      for (const k of categoryKeysForProject(p)) unique.add(k);
+    }
+    return { current: unique.size, target: criteria.category_breadth };
+  }
+  return null;
+}
+
+function countByCategory(completedProjects: Record<string, unknown>[]): Record<string, number> {
+  return completedProjects.reduce<Record<string, number>>((acc, p) => {
+    for (const k of categoryKeysForProject(p)) {
+      acc[k] = (acc[k] || 0) + 1;
+    }
+    return acc;
+  }, {});
 }
 
 /** Whether the user satisfies this achievement's criteria. */
@@ -482,155 +563,9 @@ export function achievementCriteriaMet(
   completedProjects: Record<string, unknown>[],
   stats: UserAchievementStats | null
 ): boolean {
-  if (criteria.photos_total !== undefined) {
-    const n = Number(criteria.photos_total);
-    return stats !== null && stats.photoCount >= n;
+  const progress = achievementProgress(criteria, completedProjects, stats);
+  if (progress) {
+    return progress.current >= progress.target;
   }
-  if (criteria.tools_in_library !== undefined) {
-    const n = Number(criteria.tools_in_library);
-    return stats !== null && stats.toolsInLibrary >= n;
-  }
-  if (criteria.tasks_closed !== undefined) {
-    const n = Number(criteria.tasks_closed);
-    return stats !== null && stats.tasksClosed >= n;
-  }
-  if (criteria.homes_count !== undefined) {
-    const n = Number(criteria.homes_count);
-    return stats !== null && stats.homesCount >= n;
-  }
-  if (criteria.risks_logged !== undefined) {
-    const n = Number(criteria.risks_logged);
-    return stats !== null && stats.risksLogged >= n;
-  }
-  if (criteria.linked_tasks !== undefined) {
-    const n = Number(criteria.linked_tasks);
-    return stats !== null && stats.linkedTasksCount >= n;
-  }
-  if (criteria.maintenance_completions !== undefined) {
-    const n = Number(criteria.maintenance_completions);
-    return stats !== null && stats.maintenanceCompletions >= n;
-  }
-
-  if (criteria.effort_completions !== undefined && typeof criteria.effort_completions === 'object') {
-    const ec = criteria.effort_completions as { minCount?: number; level?: string };
-    const minCount = typeof ec.minCount === 'number' ? ec.minCount : 1;
-    const level = typeof ec.level === 'string' ? ec.level : '';
-    const n = completedProjects.filter(
-      (p) => rowEffortLevel(p).toLowerCase() === level.toLowerCase()
-    ).length;
-    return n >= minCount;
-  }
-
-  if (criteria.skill_completions !== undefined && typeof criteria.skill_completions === 'object') {
-    const sc = criteria.skill_completions as { minCount?: number; level?: string };
-    const minCount = typeof sc.minCount === 'number' ? sc.minCount : 1;
-    const level = typeof sc.level === 'string' ? sc.level : '';
-    const n = completedProjects.filter(
-      (p) => rowSkillLevel(p).toLowerCase() === level.toLowerCase()
-    ).length;
-    return n >= minCount;
-  }
-
-  if (criteria.budgeted_project_completions !== undefined) {
-    const n = Number(criteria.budgeted_project_completions);
-    return completedProjects.filter((p) => budgetHasLineItems(p)).length >= n;
-  }
-
-  if (criteria.category && criteria.project_count !== undefined && typeof criteria.project_count === 'number') {
-    const cat = String(criteria.category);
-    const need = criteria.project_count;
-    const categoryProjects = completedProjects.filter((p) => {
-      const c = p.category;
-      if (typeof c === 'string') return c.toLowerCase() === cat.toLowerCase();
-      if (Array.isArray(c)) return c.some((x) => String(x).toLowerCase() === cat.toLowerCase());
-      return false;
-    });
-    return categoryProjects.length >= need;
-  }
-
-  if (
-    criteria.project_count !== undefined &&
-    typeof criteria.project_count === 'number' &&
-    !criteria.category
-  ) {
-    return completedProjects.length >= criteria.project_count;
-  }
-
-  if (criteria.difficulty !== undefined) {
-    const want = String(criteria.difficulty);
-    const min =
-      typeof criteria.difficulty_count === 'number' && criteria.difficulty_count > 0
-        ? criteria.difficulty_count
-        : 1;
-    const n = completedProjects.filter((p) => {
-      if (rowSkillLevel(p) === want) return true;
-      if (rowEffortLevel(p) === want) return true;
-      return false;
-    }).length;
-    return n >= min;
-  }
-
-  if (criteria.projects_in_month !== undefined && typeof criteria.projects_in_month === 'number') {
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    const recentProjects = completedProjects.filter((p) => {
-      const d = endDate(p);
-      return d !== null && d >= oneMonthAgo;
-    });
-    return recentProjects.length >= criteria.projects_in_month;
-  }
-
-  if (criteria.projects_in_year !== undefined && typeof criteria.projects_in_year === 'number') {
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-    const yearProjects = completedProjects.filter((p) => {
-      const d = endDate(p);
-      return d !== null && d >= oneYearAgo;
-    });
-    return yearProjects.length >= criteria.projects_in_year;
-  }
-
-  if (criteria.category_repeat !== undefined && typeof criteria.category_repeat === 'number') {
-    const categoryCounts = completedProjects.reduce<Record<string, number>>((acc, p) => {
-      const c = p.category;
-      if (typeof c === 'string') {
-        acc[c] = (acc[c] || 0) + 1;
-      } else if (Array.isArray(c)) {
-        for (const x of c) {
-          const k = String(x);
-          acc[k] = (acc[k] || 0) + 1;
-        }
-      }
-      return acc;
-    }, {});
-    return Object.values(categoryCounts).some((count) => count >= criteria.category_repeat);
-  }
-
-  if (criteria.category_depth !== undefined && typeof criteria.category_depth === 'number') {
-    const categoryCounts = completedProjects.reduce<Record<string, number>>((acc, p) => {
-      const c = p.category;
-      if (typeof c === 'string') {
-        acc[c] = (acc[c] || 0) + 1;
-      } else if (Array.isArray(c)) {
-        for (const x of c) {
-          const k = String(x);
-          acc[k] = (acc[k] || 0) + 1;
-        }
-      }
-      return acc;
-    }, {});
-    return Object.values(categoryCounts).some((count) => count >= criteria.category_depth);
-  }
-
-  if (criteria.category_breadth !== undefined && typeof criteria.category_breadth === 'number') {
-    const unique = new Set<string>();
-    for (const p of completedProjects) {
-      const c = p.category;
-      if (typeof c === 'string') unique.add(c);
-      else if (Array.isArray(c)) for (const x of c) unique.add(String(x));
-    }
-    return unique.size >= criteria.category_breadth;
-  }
-
   return false;
 }

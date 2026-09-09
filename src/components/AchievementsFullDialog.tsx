@@ -15,10 +15,10 @@ export function AchievementsFullDialog({
       <DialogPortal>
         <DialogOverlay className="z-[110]" />
         <DialogContent className="z-[111] flex h-screen max-h-full w-full max-w-full flex-col overflow-hidden p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
-          <DialogTitle className="sr-only">My Achievements</DialogTitle>
+          <DialogTitle className="sr-only">Trophy case</DialogTitle>
           <div className="flex h-full flex-col overflow-hidden">
             <div className="flex flex-shrink-0 items-center justify-between border-b px-4 py-4 md:px-6">
-              <h2 className="text-lg font-bold md:text-xl">My Achievements</h2>
+              <h2 className="text-lg font-bold md:text-xl">Trophy case</h2>
               <Button
                 type="button"
                 variant="outline"

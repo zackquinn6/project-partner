@@ -5,80 +5,94 @@ import {
   achievementCriteriaMet,
   achievementDefinitionById,
   achievementDefinitionsSorted,
+  runHasBeforeAndAfter,
+  runHasDocumentation,
   type AchievementDefinition,
   type UserAchievementStats,
 } from '@/constants/achievementDefinitions';
 
 /** `project_runs` columns for achievement passes (must match live PostgREST schema). */
 const PROJECT_RUNS_ACHIEVEMENT_SELECT =
-  'id, progress, status, budget_data, category, actual_end_date, end_date, instruction_level_preference, customization_decisions, completed_steps';
+  'id, progress, status, budget_data, category, actual_end_date, end_date, effort_level, skill_level, instruction_level_preference, customization_decisions, completed_steps, project_photos';
 
-/** Loads counts used for photo / task / tool / risk milestones. */
+function isCompletedRun(p: { progress?: number | null; status?: string | null }): boolean {
+  const progress = p.progress ?? 0;
+  return p.status === 'complete' || progress >= 100;
+}
+
+async function enrichCompletedProjects(
+  userId: string,
+  projects: Record<string, unknown>[]
+): Promise<Record<string, unknown>[]> {
+  if (projects.length === 0) return projects;
+
+  const { data: photos, error } = await supabase
+    .from('project_run_photos')
+    .select('project_run_id')
+    .eq('user_id', userId);
+  if (error) throw error;
+
+  const photoCountByRun = new Map<string, number>();
+  for (const row of photos ?? []) {
+    const runId = row.project_run_id;
+    if (!runId) continue;
+    photoCountByRun.set(runId, (photoCountByRun.get(runId) ?? 0) + 1);
+  }
+
+  return projects.map((p) => ({
+    ...p,
+    _photo_count: photoCountByRun.get(String(p.id)) ?? 0,
+  }));
+}
+
+/** Loads counts used for evidence / stewardship milestones. */
 export async function fetchUserAchievementStats(userId: string): Promise<UserAchievementStats> {
-  const [
-    photosRes,
-    profileRes,
-    tasksClosedRes,
-    homesRes,
-    linkedTasksRes,
-    maintRes,
-    runsRes,
-  ] = await Promise.all([
-    supabase.from('project_run_photos').select('id', { count: 'exact' }).eq('user_id', userId),
-    supabase.from('user_profiles').select('owned_tools').eq('user_id', userId).maybeSingle(),
+  const [tasksClosedRes, maintRes, runsRes, photosRes] = await Promise.all([
     supabase.from('home_tasks').select('id', { count: 'exact' }).eq('user_id', userId).eq('status', 'closed'),
-    supabase.from('homes').select('id', { count: 'exact' }).eq('user_id', userId),
-    supabase
-      .from('home_tasks')
-      .select('id', { count: 'exact' })
-      .eq('user_id', userId)
-      .not('project_run_id', 'is', null),
     supabase
       .from('user_maintenance_tasks')
       .select('id', { count: 'exact' })
       .eq('user_id', userId)
       .not('last_completed', 'is', null),
-    supabase.from('project_runs').select('id').eq('user_id', userId),
+    supabase
+      .from('project_runs')
+      .select('id, progress, status, project_photos')
+      .eq('user_id', userId),
+    supabase.from('project_run_photos').select('project_run_id').eq('user_id', userId),
   ]);
 
-  if (photosRes.error) throw photosRes.error;
-  if (profileRes.error) throw profileRes.error;
   if (tasksClosedRes.error) throw tasksClosedRes.error;
-  if (homesRes.error) throw homesRes.error;
-  if (linkedTasksRes.error) throw linkedTasksRes.error;
   if (maintRes.error) throw maintRes.error;
   if (runsRes.error) throw runsRes.error;
+  if (photosRes.error) throw photosRes.error;
 
-  if (photosRes.count === null) throw new Error(`Missing photo count for user ${userId}`);
   if (tasksClosedRes.count === null) throw new Error(`Missing closed task count for user ${userId}`);
-  if (homesRes.count === null) throw new Error(`Missing homes count for user ${userId}`);
-  if (linkedTasksRes.count === null) throw new Error(`Missing linked task count for user ${userId}`);
   if (maintRes.count === null) throw new Error(`Missing maintenance count for user ${userId}`);
 
-  const owned = profileRes.data?.owned_tools;
-  const toolsInLibrary = Array.isArray(owned) ? owned.length : 0;
+  const photoCountByRun = new Map<string, number>();
+  for (const row of photosRes.data ?? []) {
+    const runId = row.project_run_id;
+    if (!runId) continue;
+    photoCountByRun.set(runId, (photoCountByRun.get(runId) ?? 0) + 1);
+  }
 
-  const runIds = (runsRes.data ?? []).map((r) => r.id);
-  let risksLogged = 0;
-  if (runIds.length > 0) {
-    const { count, error } = await supabase
-      .from('project_run_risks')
-      .select('id', { count: 'exact' })
-      .in('project_run_id', runIds);
-    if (error) throw error;
-    if (count === null) {
-      throw new Error(`Missing project risk count for user ${userId}`);
-    }
-    risksLogged = count;
+  const completed = (runsRes.data ?? []).filter(isCompletedRun);
+  let documentedFinishes = 0;
+  let beforeAfterFinishes = 0;
+
+  for (const run of completed) {
+    const enriched: Record<string, unknown> = {
+      ...run,
+      _photo_count: photoCountByRun.get(run.id) ?? 0,
+    };
+    if (runHasDocumentation(enriched)) documentedFinishes += 1;
+    if (runHasBeforeAndAfter(enriched)) beforeAfterFinishes += 1;
   }
 
   return {
-    photoCount: photosRes.count,
-    toolsInLibrary,
+    documentedFinishes,
+    beforeAfterFinishes,
     tasksClosed: tasksClosedRes.count,
-    homesCount: homesRes.count,
-    risksLogged,
-    linkedTasksCount: linkedTasksRes.count,
     maintenanceCompletions: maintRes.count,
   };
 }
@@ -112,6 +126,8 @@ export function useEnhancedAchievements(userId?: string) {
   const [totalXP, setTotalXP] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
   const [level, setLevel] = useState(1);
+  const [progressStats, setProgressStats] = useState<UserAchievementStats | null>(null);
+  const [completedProjects, setCompletedProjects] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
     if (!userId) {
@@ -128,6 +144,25 @@ export function useEnhancedAchievements(userId?: string) {
 
   const xpForNextLevel = (currentLevel: number) => {
     return Math.pow(currentLevel, 2) * 100;
+  };
+
+  const fetchProgressContext = async () => {
+    if (!userId) return;
+    try {
+      const [stats, projectsRes] = await Promise.all([
+        fetchUserAchievementStats(userId),
+        supabase.from('project_runs').select(PROJECT_RUNS_ACHIEVEMENT_SELECT).eq('user_id', userId),
+      ]);
+      if (projectsRes.error) throw projectsRes.error;
+      const completed = await enrichCompletedProjects(
+        userId,
+        (projectsRes.data || []).filter(isCompletedRun) as Record<string, unknown>[]
+      );
+      setProgressStats(stats);
+      setCompletedProjects(completed);
+    } catch (error) {
+      console.error('Error fetching achievement progress context:', error);
+    }
   };
 
   const fetchAchievementsData = async () => {
@@ -186,6 +221,8 @@ export function useEnhancedAchievements(userId?: string) {
         return sum + (ua.achievement?.points ?? 0);
       }, 0);
       setTotalPoints(points);
+
+      await fetchProgressContext();
     } catch (error) {
       console.error('Error fetching achievements:', error);
     } finally {
@@ -287,7 +324,8 @@ export function useEnhancedAchievements(userId?: string) {
       }
 
       if (!options?.skipToast) {
-              }
+        toast.success(`+${xpAmount} XP`, { description: reason });
+      }
     } catch (error) {
       console.error('Error awarding XP:', error);
     }
@@ -362,7 +400,10 @@ export function useEnhancedAchievements(userId?: string) {
 
     if (newlyUnlocked.length > 0) {
       newlyUnlocked.forEach((achievement) => {
-              });
+        toast.success(`You earned ${achievement.name}`, {
+          description: achievement.description,
+        });
+      });
 
       await fetchAchievementsData();
     }
@@ -381,18 +422,18 @@ export function useEnhancedAchievements(userId?: string) {
 
       if (error) throw error;
 
-      const completedProjects = (projects || []).filter((p) => {
-        const progress = p.progress ?? 0;
-        return p.status === 'complete' || progress >= 100;
-      });
+      const completed = await enrichCompletedProjects(
+        userId,
+        (projects || []).filter(isCompletedRun) as Record<string, unknown>[]
+      );
 
-      await performAchievementUnlockPass(projectData, completedProjects as Record<string, unknown>[], stats);
+      await performAchievementUnlockPass(projectData, completed, stats);
     } catch (error) {
       console.error('Error checking achievements:', error);
     }
   };
 
-  /** Re-evaluate milestones that depend on photos, tasks, tools, etc. (no project completion required). */
+  /** Re-evaluate milestones that depend on photos, tasks, maintenance, etc. */
   const checkMilestoneUnlocks = async () => {
     if (!userId) return;
 
@@ -403,11 +444,11 @@ export function useEnhancedAchievements(userId?: string) {
       ]);
       const { data: projects, error } = projectsRes;
       if (error) throw error;
-      const completedProjects = (projects || []).filter((p) => {
-        const progress = p.progress ?? 0;
-        return p.status === 'complete' || progress >= 100;
-      });
-      await performAchievementUnlockPass(null, completedProjects as Record<string, unknown>[], stats);
+      const completed = await enrichCompletedProjects(
+        userId,
+        (projects || []).filter(isCompletedRun) as Record<string, unknown>[]
+      );
+      await performAchievementUnlockPass(null, completed, stats);
     } catch (error) {
       console.error('Error checking milestone achievements:', error);
     }
@@ -422,6 +463,8 @@ export function useEnhancedAchievements(userId?: string) {
     totalPoints,
     level,
     xpForNextLevel: xpForNextLevel(level),
+    progressStats,
+    completedProjects,
     calculateXPForProject,
     awardXP,
     checkAndUnlockAchievements,
