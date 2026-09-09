@@ -146,7 +146,7 @@ export async function calculateEstimatedFinishDate(
       addDays(new Date(), 30);
 
     // Create scheduling inputs
-    const schedulingInputs: SchedulingInputs = {
+    const schedulingInputs = {
       tasks,
       workers,
       targetCompletionDate: targetDate,

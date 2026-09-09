@@ -42,7 +42,7 @@ export function parseProcessVariablesFromDb(raw: unknown): StepInput[] {
         targetValue: typeof item.targetValue === 'string' ? item.targetValue : undefined,
       };
     })
-    .filter((item) => item.name.length > 0);
+    .filter((item) => item.name.length > 0) as unknown as StepInput[];
 }
 
 /** Row from `workflow_step_process_variables` (per-step links; optional join to `process_variables` in app layer). */

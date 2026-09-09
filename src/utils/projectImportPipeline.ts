@@ -941,7 +941,7 @@ export async function importGeneratedProject(
 
           // Match materials to library
           const materialNames = Array.isArray(step.materials) 
-            ? step.materials.map(m => typeof m === 'string' ? m : m.name)
+            ? step.materials.map((m: any) => typeof m === 'string' ? m : m?.name)
             : [];
 
           const matchedMaterials: any[] = [];

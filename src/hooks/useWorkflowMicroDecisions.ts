@@ -90,7 +90,7 @@ export function useWorkflowMicroDecisions(
                 Object.entries(rawChoices as Record<string, unknown>).filter(
                   ([k, v]) => typeof k === 'string' && k.length > 0 && typeof v === 'string' && v.length > 0
                 )
-              )
+              ) as GeneralProjectChoicesMap
             : {};
 
         const instructionSectionsByStepId = new Map<string, InstructionSectionLike[]>();
