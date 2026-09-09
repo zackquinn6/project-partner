@@ -354,7 +354,7 @@ export const HomeSpacesTab: React.FC<HomeSpacesTabProps> = ({ homeId }) => {
                     <TableCell>
                       {space.floor_plan_image_url ? (
                         <img 
-                          src={space.floor_plan_image_url} 
+                          src={signedFloorPlanUrls[space.floor_plan_image_url] || ''} 
                           alt="Floor plan"
                           className="w-16 h-16 object-cover rounded"
                         />
@@ -444,7 +444,7 @@ export const HomeSpacesTab: React.FC<HomeSpacesTabProps> = ({ homeId }) => {
                   />
                   {editingSpace?.floor_plan_image_url && !selectedFile && (
                     <img 
-                      src={editingSpace.floor_plan_image_url} 
+                      src={signedFloorPlanUrls[editingSpace.floor_plan_image_url] || ''} 
                       alt="Current floor plan"
                       className="w-16 h-16 object-cover rounded"
                     />
