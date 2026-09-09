@@ -773,7 +773,7 @@ export function HomeTaskList({
               </div>
 
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-background to-muted/30 px-2 pb-2 pt-0 md:px-6 md:pb-4 md:pt-0">
-                <TabsContent value="tasks" className="mt-0 flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden md:gap-3">
+                <TabsContent value="tasks" className="mt-0 flex h-full min-h-0 flex-1 flex-col gap-0.5 overflow-hidden md:gap-3">
                   <div className="shrink-0 space-y-0.5 md:space-y-3">
                   {/* Project Dashboard metrics (Project & Task Manager) */}
                   {(() => {
@@ -1216,19 +1216,19 @@ export function HomeTaskList({
                   </div>
 
                   <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                  <HomeTasksTable
-                    tasks={tasks}
-                    onEdit={handleEdit}
-                    onLinkProject={handleLinkProject}
-                    onRapidCosting={handleRapidCosting}
-                    onAddTask={() => {
-                      resetForm();
-                      setShowAddTask(true);
-                    }}
-                    onProjectNavigate={() => onOpenChange(false)}
-                    onOpenLinkedProjectRun={(id) => void tryOpenLinkedProjectRun(id)}
-                    onTaskUpdate={fetchTasks}
-                  />
+                    <HomeTasksTable
+                      tasks={tasks}
+                      onEdit={handleEdit}
+                      onLinkProject={handleLinkProject}
+                      onRapidCosting={handleRapidCosting}
+                      onAddTask={() => {
+                        resetForm();
+                        setShowAddTask(true);
+                      }}
+                      onProjectNavigate={() => onOpenChange(false)}
+                      onOpenLinkedProjectRun={(id) => void tryOpenLinkedProjectRun(id)}
+                      onTaskUpdate={fetchTasks}
+                    />
                   </div>
                 </TabsContent>
 
@@ -1289,7 +1289,7 @@ export function HomeTaskList({
         </div>
       ) : (
         <Dialog open={open} onOpenChange={handleMainOpenChange}>
-          <DialogContent className="flex h-screen max-h-full w-full max-w-full flex-col overflow-hidden p-0 md:h-[calc(100dvh-1.5rem)] md:max-h-[calc(100dvh-1.5rem)] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
+          <DialogContent className="flex h-screen max-h-full w-full max-w-full flex-col gap-0 overflow-hidden p-0 md:h-[calc(100dvh-1.5rem)] md:max-h-[calc(100dvh-1.5rem)] md:max-w-[90vw] md:p-0 md:rounded-lg [&>button]:hidden">
             <DialogTitle className="sr-only">Project & Task Manager</DialogTitle>
             <DialogDescription className="sr-only">
               Project & Task Manager for tasks, projects, sub-tasks, shopping list, and budgeting.
