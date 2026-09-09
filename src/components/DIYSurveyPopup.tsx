@@ -701,7 +701,7 @@ export default function DIYSurveyPopup({
               user_id: user.id,
               personality_profile: personalityProfile,
               updated_at: new Date().toISOString()
-            }, {
+            } as any, {
               onConflict: 'user_id'
             });
 

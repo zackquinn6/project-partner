@@ -81,7 +81,7 @@ export const AdminSecurityDashboard: React.FC = () => {
 
   const startSecureSession = async () => {
     try {
-      const { data, error } = await supabase.rpc('start_admin_session');
+      const { data, error } = await supabase.rpc('start_admin_session' as any);
       if (error) throw error;
       
             
