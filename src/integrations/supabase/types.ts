@@ -10,135 +10,10 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
-      achievement_notifications: {
-        Row: {
-          achievement_id: string
-          created_at: string | null
-          id: string
-          is_read: boolean | null
-          project_run_id: string | null
-          user_id: string
-        }
-        Insert: {
-          achievement_id: string
-          created_at?: string | null
-          id?: string
-          is_read?: boolean | null
-          project_run_id?: string | null
-          user_id: string
-        }
-        Update: {
-          achievement_id?: string
-          created_at?: string | null
-          id?: string
-          is_read?: boolean | null
-          project_run_id?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "achievement_notifications_achievement_id_fkey"
-            columns: ["achievement_id"]
-            isOneToOne: false
-            referencedRelation: "achievements"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "achievement_notifications_project_run_id_fkey"
-            columns: ["project_run_id"]
-            isOneToOne: false
-            referencedRelation: "project_runs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      achievements: {
-        Row: {
-          base_xp: number | null
-          category: string
-          created_at: string
-          criteria: Json | null
-          description: string
-          icon: string | null
-          id: string
-          name: string
-          points: number | null
-          scales_with_project_size: boolean | null
-          updated_at: string
-        }
-        Insert: {
-          base_xp?: number | null
-          category: string
-          created_at?: string
-          criteria?: Json | null
-          description: string
-          icon?: string | null
-          id?: string
-          name: string
-          points?: number | null
-          scales_with_project_size?: boolean | null
-          updated_at?: string
-        }
-        Update: {
-          base_xp?: number | null
-          category?: string
-          created_at?: string
-          criteria?: Json | null
-          description?: string
-          icon?: string | null
-          id?: string
-          name?: string
-          points?: number | null
-          scales_with_project_size?: boolean | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      after_action_reviews: {
-        Row: {
-          id: string
-          project_run_id: string
-          intent: string
-          experience: string
-          reasons: string
-          changes: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          project_run_id: string
-          intent?: string
-          experience?: string
-          reasons?: string
-          changes?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          project_run_id?: string
-          intent?: string
-          experience?: string
-          reasons?: string
-          changes?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "after_action_reviews_project_run_id_fkey"
-            columns: ["project_run_id"]
-            isOneToOne: false
-            referencedRelation: "project_runs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       admin_sensitive_data_access: {
         Row: {
           access_type: string
@@ -217,35 +92,46 @@ export type Database = {
         }
         Relationships: []
       }
-      user_sessions: {
+      after_action_reviews: {
         Row: {
+          changes: string
+          created_at: string
+          experience: string
           id: string
-          user_id: string
-          session_start: string
-          session_end: string | null
-          ip_address: unknown
-          user_agent: string | null
-          is_active: boolean
+          intent: string
+          project_run_id: string
+          reasons: string
+          updated_at: string
         }
         Insert: {
+          changes?: string
+          created_at?: string
+          experience?: string
           id?: string
-          user_id: string
-          session_start?: string
-          session_end?: string | null
-          ip_address?: unknown
-          user_agent?: string | null
-          is_active?: boolean
+          intent?: string
+          project_run_id: string
+          reasons?: string
+          updated_at?: string
         }
         Update: {
+          changes?: string
+          created_at?: string
+          experience?: string
           id?: string
-          user_id?: string
-          session_start?: string
-          session_end?: string | null
-          ip_address?: unknown
-          user_agent?: string | null
-          is_active?: boolean
+          intent?: string
+          project_run_id?: string
+          reasons?: string
+          updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "after_action_reviews_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agreement_templates: {
         Row: {
@@ -382,6 +268,194 @@ export type Database = {
         }
         Relationships: []
       }
+      communication_outbound_log: {
+        Row: {
+          body_text: string
+          channel: string
+          created_by_user_id: string
+          id: string
+          plan_id: string
+          project_run_id: string
+          recipient_email: string | null
+          sent_at: string
+          stakeholder_id: string | null
+          subject: string
+          template_key: string
+        }
+        Insert: {
+          body_text: string
+          channel: string
+          created_by_user_id: string
+          id?: string
+          plan_id: string
+          project_run_id: string
+          recipient_email?: string | null
+          sent_at?: string
+          stakeholder_id?: string | null
+          subject: string
+          template_key: string
+        }
+        Update: {
+          body_text?: string
+          channel?: string
+          created_by_user_id?: string
+          id?: string
+          plan_id?: string
+          project_run_id?: string
+          recipient_email?: string | null
+          sent_at?: string
+          stakeholder_id?: string | null
+          subject?: string
+          template_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_outbound_log_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "project_communication_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_outbound_log_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_outbound_log_stakeholder_id_fkey"
+            columns: ["stakeholder_id"]
+            isOneToOne: false
+            referencedRelation: "communication_stakeholders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_schedule_items: {
+        Row: {
+          cadence: string
+          created_at: string
+          id: string
+          last_sent_at: string | null
+          next_due_at: string | null
+          plan_id: string
+          stakeholder_id: string | null
+          template_key: string
+        }
+        Insert: {
+          cadence: string
+          created_at?: string
+          id?: string
+          last_sent_at?: string | null
+          next_due_at?: string | null
+          plan_id: string
+          stakeholder_id?: string | null
+          template_key: string
+        }
+        Update: {
+          cadence?: string
+          created_at?: string
+          id?: string
+          last_sent_at?: string | null
+          next_due_at?: string | null
+          plan_id?: string
+          stakeholder_id?: string | null
+          template_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_schedule_items_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "project_communication_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_schedule_items_stakeholder_id_fkey"
+            columns: ["stakeholder_id"]
+            isOneToOne: false
+            referencedRelation: "communication_stakeholders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_stakeholders: {
+        Row: {
+          concerns: string[]
+          created_at: string
+          delivery_method: string
+          display_name: string
+          email: string | null
+          id: string
+          plan_id: string
+          preferred_frequency: string
+          role_label: string
+          sort_order: number
+        }
+        Insert: {
+          concerns?: string[]
+          created_at?: string
+          delivery_method: string
+          display_name: string
+          email?: string | null
+          id?: string
+          plan_id: string
+          preferred_frequency: string
+          role_label: string
+          sort_order?: number
+        }
+        Update: {
+          concerns?: string[]
+          created_at?: string
+          delivery_method?: string
+          display_name?: string
+          email?: string | null
+          id?: string
+          plan_id?: string
+          preferred_frequency?: string
+          role_label?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_stakeholders_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "project_communication_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_trigger_rules: {
+        Row: {
+          enabled: boolean
+          id: string
+          plan_id: string
+          trigger_type: string
+        }
+        Insert: {
+          enabled?: boolean
+          id?: string
+          plan_id: string
+          trigger_type: string
+        }
+        Update: {
+          enabled?: boolean
+          id?: string
+          plan_id?: string
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_trigger_rules_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "project_communication_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contractor_phase_assignments: {
         Row: {
           assigned_at: string | null
@@ -433,193 +507,29 @@ export type Database = {
           },
         ]
       }
-      communication_outbound_log: {
+      core_item_attribute_definitions: {
         Row: {
-          id: string
-          plan_id: string
-          project_run_id: string
-          stakeholder_id: string | null
-          channel: string
-          recipient_email: string | null
-          subject: string
-          body_text: string
-          template_key: string
-          sent_at: string
-          created_by_user_id: string
-        }
-        Insert: {
-          id?: string
-          plan_id: string
-          project_run_id: string
-          stakeholder_id?: string | null
-          channel: string
-          recipient_email?: string | null
-          subject: string
-          body_text: string
-          template_key: string
-          sent_at?: string
-          created_by_user_id: string
-        }
-        Update: {
-          id?: string
-          plan_id?: string
-          project_run_id?: string
-          stakeholder_id?: string | null
-          channel?: string
-          recipient_email?: string | null
-          subject?: string
-          body_text?: string
-          template_key?: string
-          sent_at?: string
-          created_by_user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "communication_outbound_log_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "project_communication_plans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "communication_outbound_log_project_run_id_fkey"
-            columns: ["project_run_id"]
-            isOneToOne: false
-            referencedRelation: "project_runs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "communication_outbound_log_stakeholder_id_fkey"
-            columns: ["stakeholder_id"]
-            isOneToOne: false
-            referencedRelation: "communication_stakeholders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      communication_schedule_items: {
-        Row: {
-          id: string
-          plan_id: string
-          stakeholder_id: string | null
-          template_key: string
-          cadence: string
-          next_due_at: string | null
-          last_sent_at: string | null
+          attribute_definitions: Json
+          core_item_id: string
           created_at: string
+          item_type: string
+          updated_at: string
         }
         Insert: {
-          id?: string
-          plan_id: string
-          stakeholder_id?: string | null
-          template_key: string
-          cadence: string
-          next_due_at?: string | null
-          last_sent_at?: string | null
+          attribute_definitions: Json
+          core_item_id: string
           created_at?: string
+          item_type: string
+          updated_at?: string
         }
         Update: {
-          id?: string
-          plan_id?: string
-          stakeholder_id?: string | null
-          template_key?: string
-          cadence?: string
-          next_due_at?: string | null
-          last_sent_at?: string | null
+          attribute_definitions?: Json
+          core_item_id?: string
           created_at?: string
+          item_type?: string
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "communication_schedule_items_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "project_communication_plans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "communication_schedule_items_stakeholder_id_fkey"
-            columns: ["stakeholder_id"]
-            isOneToOne: false
-            referencedRelation: "communication_stakeholders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      communication_stakeholders: {
-        Row: {
-          id: string
-          plan_id: string
-          display_name: string
-          role_label: string
-          concerns: string[]
-          preferred_frequency: string
-          delivery_method: string
-          email: string | null
-          sort_order: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          plan_id: string
-          display_name: string
-          role_label: string
-          concerns?: string[]
-          preferred_frequency: string
-          delivery_method: string
-          email?: string | null
-          sort_order?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          plan_id?: string
-          display_name?: string
-          role_label?: string
-          concerns?: string[]
-          preferred_frequency?: string
-          delivery_method?: string
-          email?: string | null
-          sort_order?: number
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "communication_stakeholders_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "project_communication_plans"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      communication_trigger_rules: {
-        Row: {
-          id: string
-          plan_id: string
-          trigger_type: string
-          enabled: boolean
-        }
-        Insert: {
-          id?: string
-          plan_id: string
-          trigger_type: string
-          enabled?: boolean
-        }
-        Update: {
-          id?: string
-          plan_id?: string
-          trigger_type?: string
-          enabled?: boolean
-        }
-        Relationships: [
-          {
-            foreignKeyName: "communication_trigger_rules_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "project_communication_plans"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       coupon_codes: {
         Row: {
@@ -1074,6 +984,146 @@ export type Database = {
         }
         Relationships: []
       }
+      help_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          model: string | null
+          photo_paths: string[]
+          role: string
+          safety_flags: Json
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          photo_paths?: string[]
+          role: string
+          safety_flags?: Json
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          photo_paths?: string[]
+          role?: string
+          safety_flags?: Json
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "help_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      help_threads: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          phase_id: string | null
+          phase_name: string | null
+          project_run_id: string | null
+          status: string
+          step_id: string | null
+          step_title: string | null
+          template_family: string
+          template_project_id: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          phase_id?: string | null
+          phase_name?: string | null
+          project_run_id?: string | null
+          status?: string
+          step_id?: string | null
+          step_title?: string | null
+          template_family: string
+          template_project_id?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          phase_id?: string | null
+          phase_name?: string | null
+          project_run_id?: string | null
+          status?: string
+          step_id?: string | null
+          step_title?: string | null
+          template_family?: string
+          template_project_id?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_threads_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "help_threads_template_project_id_fkey"
+            columns: ["template_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      help_usage: {
+        Row: {
+          created_at: string
+          id: string
+          message_count: number
+          period_end: string
+          period_start: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_count?: number
+          period_end: string
+          period_start: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_count?: number
+          period_end?: string
+          period_start?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       home_details: {
         Row: {
           address: string | null
@@ -1162,6 +1212,54 @@ export type Database = {
             columns: ["home_id"]
             isOneToOne: true
             referencedRelation: "homes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      home_risk_mitigations: {
+        Row: {
+          created_at: string
+          home_id: string
+          id: string
+          is_mitigated: boolean
+          mitigation_notes: string | null
+          risk_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          home_id: string
+          id?: string
+          is_mitigated?: boolean
+          mitigation_notes?: string | null
+          risk_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          home_id?: string
+          id?: string
+          is_mitigated?: boolean
+          mitigation_notes?: string | null
+          risk_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_risk_mitigations_home_id_fkey"
+            columns: ["home_id"]
+            isOneToOne: false
+            referencedRelation: "homes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "home_risk_mitigations_risk_id_fkey"
+            columns: ["risk_id"]
+            isOneToOne: false
+            referencedRelation: "homes_risks"
             referencedColumns: ["id"]
           },
         ]
@@ -1612,45 +1710,6 @@ export type Database = {
         }
         Relationships: []
       }
-      usage_agreements: {
-        Row: {
-          agreement_type: string
-          agreed_at: string
-          created_at: string
-          full_name: string
-          id: string
-          pdf_storage_path: string | null
-          policy_text_snapshot: string | null
-          policy_version: string | null
-          project_id: string | null
-          user_id: string
-        }
-        Insert: {
-          agreement_type?: string
-          agreed_at?: string
-          created_at?: string
-          full_name: string
-          id?: string
-          pdf_storage_path?: string | null
-          policy_text_snapshot?: string | null
-          policy_version?: string | null
-          project_id?: string | null
-          user_id: string
-        }
-        Update: {
-          agreement_type?: string
-          agreed_at?: string
-          created_at?: string
-          full_name?: string
-          id?: string
-          pdf_storage_path?: string | null
-          policy_text_snapshot?: string | null
-          policy_version?: string | null
-          project_id?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       maintenance_completions: {
         Row: {
           completed_at: string | null
@@ -1884,13 +1943,96 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'materials_variants_material_id_fkey'
-            columns: ['material_id']
+            foreignKeyName: "materials_variants_material_id_fkey"
+            columns: ["material_id"]
             isOneToOne: false
-            referencedRelation: 'materials'
-            referencedColumns: ['id']
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
           },
         ]
+      }
+      membership_status: {
+        Row: {
+          created_at: string
+          id: string
+          last_trial_notification_date: string | null
+          member_status: boolean
+          membership_end_date: string | null
+          membership_start_date: string | null
+          trial_end_date: string | null
+          trial_extended_by: number | null
+          trial_start_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_trial_notification_date?: string | null
+          member_status?: boolean
+          membership_end_date?: string | null
+          membership_start_date?: string | null
+          trial_end_date?: string | null
+          trial_extended_by?: number | null
+          trial_start_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_trial_notification_date?: string | null
+          member_status?: boolean
+          membership_end_date?: string | null
+          membership_start_date?: string | null
+          trial_end_date?: string | null
+          trial_extended_by?: number | null
+          trial_start_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_status_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       operation_steps: {
         Row: {
@@ -1904,8 +2046,8 @@ export type Database = {
           materials: Json | null
           number_of_workers: number | null
           operation_id: string
-          process_variables: Json | null
           outputs: Json | null
+          process_variables: Json | null
           skill_level: string | null
           step_title: string
           step_type: string | null
@@ -1926,8 +2068,8 @@ export type Database = {
           materials?: Json | null
           number_of_workers?: number | null
           operation_id: string
-          process_variables?: Json | null
           outputs?: Json | null
+          process_variables?: Json | null
           skill_level?: string | null
           step_title: string
           step_type?: string | null
@@ -1948,8 +2090,8 @@ export type Database = {
           materials?: Json | null
           number_of_workers?: number | null
           operation_id?: string
-          process_variables?: Json | null
           outputs?: Json | null
+          process_variables?: Json | null
           skill_level?: string | null
           step_title?: string
           step_type?: string | null
@@ -1969,39 +2111,273 @@ export type Database = {
           },
         ]
       }
-      outputs: {
+      pfmea_action_items: {
+        Row: {
+          completion_notes: string | null
+          created_at: string
+          failure_mode_id: string
+          id: string
+          recommended_action: string
+          responsible_person: string | null
+          status: string
+          target_completion_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          completion_notes?: string | null
+          created_at?: string
+          failure_mode_id: string
+          id?: string
+          recommended_action?: string
+          responsible_person?: string | null
+          status?: string
+          target_completion_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          completion_notes?: string | null
+          created_at?: string
+          failure_mode_id?: string
+          id?: string
+          recommended_action?: string
+          responsible_person?: string | null
+          status?: string
+          target_completion_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pfmea_action_items_failure_mode_id_fkey"
+            columns: ["failure_mode_id"]
+            isOneToOne: false
+            referencedRelation: "pfmea_failure_modes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pfmea_controls: {
+        Row: {
+          cause_id: string | null
+          control_description: string
+          control_type: string
+          created_at: string
+          detection_score: number | null
+          failure_mode_id: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          cause_id?: string | null
+          control_description?: string
+          control_type: string
+          created_at?: string
+          detection_score?: number | null
+          failure_mode_id?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          cause_id?: string | null
+          control_description?: string
+          control_type?: string
+          created_at?: string
+          detection_score?: number | null
+          failure_mode_id?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pfmea_controls_cause_id_fkey"
+            columns: ["cause_id"]
+            isOneToOne: false
+            referencedRelation: "pfmea_potential_causes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pfmea_controls_failure_mode_id_fkey"
+            columns: ["failure_mode_id"]
+            isOneToOne: false
+            referencedRelation: "pfmea_failure_modes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pfmea_failure_modes: {
         Row: {
           created_at: string
-          description: string | null
+          failure_mode: string
           id: string
-          is_required: boolean | null
-          name: string
-          notes: string | null
-          type: string | null
+          operation_step_id: string
+          project_id: string
+          requirement_output_id: string
+          severity_score: number
           updated_at: string
-          validation_rules: Json | null
         }
         Insert: {
           created_at?: string
-          description?: string | null
+          failure_mode: string
           id?: string
-          is_required?: boolean | null
-          name: string
-          notes?: string | null
-          type?: string | null
+          operation_step_id: string
+          project_id: string
+          requirement_output_id: string
+          severity_score?: number
           updated_at?: string
-          validation_rules?: Json | null
         }
         Update: {
           created_at?: string
-          description?: string | null
+          failure_mode?: string
           id?: string
-          is_required?: boolean | null
-          name?: string
-          notes?: string | null
-          type?: string | null
+          operation_step_id?: string
+          project_id?: string
+          requirement_output_id?: string
+          severity_score?: number
           updated_at?: string
-          validation_rules?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pfmea_failure_modes_operation_step_id_fkey"
+            columns: ["operation_step_id"]
+            isOneToOne: false
+            referencedRelation: "operation_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pfmea_failure_modes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pfmea_potential_causes: {
+        Row: {
+          cause_description: string
+          created_at: string
+          failure_mode_id: string
+          id: string
+          occurrence_score: number
+          updated_at: string
+        }
+        Insert: {
+          cause_description?: string
+          created_at?: string
+          failure_mode_id: string
+          id?: string
+          occurrence_score?: number
+          updated_at?: string
+        }
+        Update: {
+          cause_description?: string
+          created_at?: string
+          failure_mode_id?: string
+          id?: string
+          occurrence_score?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pfmea_potential_causes_failure_mode_id_fkey"
+            columns: ["failure_mode_id"]
+            isOneToOne: false
+            referencedRelation: "pfmea_failure_modes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pfmea_potential_effects: {
+        Row: {
+          created_at: string
+          effect_description: string
+          failure_mode_id: string
+          id: string
+          severity_score: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          effect_description?: string
+          failure_mode_id: string
+          id?: string
+          severity_score?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          effect_description?: string
+          failure_mode_id?: string
+          id?: string
+          severity_score?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pfmea_potential_effects_failure_mode_id_fkey"
+            columns: ["failure_mode_id"]
+            isOneToOne: false
+            referencedRelation: "pfmea_failure_modes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pfmea_scoring: {
+        Row: {
+          cause_detection: string | null
+          created_at: string
+          criterion_type: string
+          detection_method_guidance: string | null
+          failure_mode_detection: string | null
+          id: string
+          mistake_proofing_requirement: string | null
+          occurrence_frequency_scale: string | null
+          occurrence_time_scale: string | null
+          prevention_control_examples: string | null
+          process_effects: string | null
+          process_examples: string | null
+          quality_effects: string | null
+          quality_examples: string | null
+          score: number
+          typical_detection_note: string | null
+          typical_occurrence_note: string | null
+        }
+        Insert: {
+          cause_detection?: string | null
+          created_at?: string
+          criterion_type: string
+          detection_method_guidance?: string | null
+          failure_mode_detection?: string | null
+          id?: string
+          mistake_proofing_requirement?: string | null
+          occurrence_frequency_scale?: string | null
+          occurrence_time_scale?: string | null
+          prevention_control_examples?: string | null
+          process_effects?: string | null
+          process_examples?: string | null
+          quality_effects?: string | null
+          quality_examples?: string | null
+          score: number
+          typical_detection_note?: string | null
+          typical_occurrence_note?: string | null
+        }
+        Update: {
+          cause_detection?: string | null
+          created_at?: string
+          criterion_type?: string
+          detection_method_guidance?: string | null
+          failure_mode_detection?: string | null
+          id?: string
+          mistake_proofing_requirement?: string | null
+          occurrence_frequency_scale?: string | null
+          occurrence_time_scale?: string | null
+          prevention_control_examples?: string | null
+          process_effects?: string | null
+          process_examples?: string | null
+          quality_effects?: string | null
+          quality_examples?: string | null
+          score?: number
+          typical_detection_note?: string | null
+          typical_occurrence_note?: string | null
         }
         Relationships: []
       }
@@ -2048,45 +2424,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      pricing_data: {
-        Row: {
-          availability_status: string | null
-          created_at: string
-          currency: string | null
-          id: string
-          last_scraped_at: string | null
-          model_id: string
-          price: number | null
-          product_url: string | null
-          retailer: string
-          updated_at: string
-        }
-        Insert: {
-          availability_status?: string | null
-          created_at?: string
-          currency?: string | null
-          id?: string
-          last_scraped_at?: string | null
-          model_id: string
-          price?: number | null
-          product_url?: string | null
-          retailer: string
-          updated_at?: string
-        }
-        Update: {
-          availability_status?: string | null
-          created_at?: string
-          currency?: string | null
-          id?: string
-          last_scraped_at?: string | null
-          model_id?: string
-          price?: number | null
-          product_url?: string | null
-          retailer?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       portfolio_notification_settings: {
         Row: {
@@ -2136,109 +2473,90 @@ export type Database = {
         }
         Relationships: []
       }
-      user_profiles: {
-        Row: {
-          avoid_projects: string[] | null
-          created_at: string
-          do_not_show_workflow_tutorial: boolean
-          full_name: string | null
-          home_build_year: string | null
-          home_ownership: string | null
-          home_state: string | null
-          id: string
-          nickname: string | null
-          owned_materials: Json
-          owned_tools: Json | null
-          personality_profile: Json | null
-          physical_capability: string | null
-          preferred_learning_methods: string[] | null
-          project_focus: string | null
-          project_skills: Json | null
-          roles: string[]
-          skill_level: string | null
-          survey_completed_at: string | null
-          time_zone: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          avoid_projects?: string[] | null
-          created_at?: string
-          do_not_show_workflow_tutorial?: boolean
-          full_name?: string | null
-          home_build_year?: string | null
-          home_ownership?: string | null
-          home_state?: string | null
-          id?: string
-          nickname?: string | null
-          owned_materials?: Json
-          owned_tools?: Json | null
-          personality_profile?: Json | null
-          physical_capability?: string | null
-          preferred_learning_methods?: string[] | null
-          project_focus?: string | null
-          project_skills?: Json | null
-          roles?: string[]
-          skill_level?: string | null
-          survey_completed_at?: string | null
-          time_zone?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          avoid_projects?: string[] | null
-          created_at?: string
-          do_not_show_workflow_tutorial?: boolean
-          full_name?: string | null
-          home_build_year?: string | null
-          home_ownership?: string | null
-          home_state?: string | null
-          id?: string
-          nickname?: string | null
-          owned_materials?: Json
-          owned_tools?: Json | null
-          personality_profile?: Json | null
-          physical_capability?: string | null
-          preferred_learning_methods?: string[] | null
-          project_focus?: string | null
-          project_skills?: Json | null
-          roles?: string[]
-          skill_level?: string | null
-          survey_completed_at?: string | null
-          time_zone?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_project_skill_levels: {
+      project_communication_plans: {
         Row: {
           created_at: string
+          enabled: boolean
           id: string
-          project_id: string
-          skill_level: string
+          project_run_id: string
+          sms_early_access_opt_in: boolean
           updated_at: string
-          user_id: string
         }
         Insert: {
           created_at?: string
+          enabled?: boolean
           id?: string
-          project_id: string
-          skill_level?: string
+          project_run_id: string
+          sms_early_access_opt_in?: boolean
           updated_at?: string
-          user_id: string
         }
         Update: {
           created_at?: string
+          enabled?: boolean
           id?: string
-          project_id?: string
-          skill_level?: string
+          project_run_id?: string
+          sms_early_access_opt_in?: boolean
           updated_at?: string
-          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "user_project_skill_levels_project_id_fkey"
+            foreignKeyName: "project_communication_plans_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: true
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_owners: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          invitation_status: string | null
+          invitation_token: string | null
+          invited_by: string | null
+          invited_email: string | null
+          invited_user_id: string | null
+          project_id: string | null
+          terms_version: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          invitation_status?: string | null
+          invitation_token?: string | null
+          invited_by?: string | null
+          invited_email?: string | null
+          invited_user_id?: string | null
+          project_id?: string | null
+          terms_version?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          invitation_status?: string | null
+          invitation_token?: string | null
+          invited_by?: string | null
+          invited_email?: string | null
+          invited_user_id?: string | null
+          project_id?: string | null
+          terms_version?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_owners_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -2298,6 +2616,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "project_phases_source_phase_id_fkey"
+            columns: ["source_phase_id"]
+            isOneToOne: false
+            referencedRelation: "project_phases"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "project_phases_source_project_id_fkey"
             columns: ["source_project_id"]
             isOneToOne: false
@@ -2305,276 +2630,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      pfmea_action_items: {
-        Row: {
-          id: string
-          failure_mode_id: string
-          recommended_action: string
-          responsible_person: string | null
-          target_completion_date: string | null
-          status: string
-          completion_notes: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          failure_mode_id: string
-          recommended_action?: string
-          responsible_person?: string | null
-          target_completion_date?: string | null
-          status?: string
-          completion_notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          failure_mode_id?: string
-          recommended_action?: string
-          responsible_person?: string | null
-          target_completion_date?: string | null
-          status?: string
-          completion_notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pfmea_action_items_failure_mode_id_fkey"
-            columns: ["failure_mode_id"]
-            isOneToOne: false
-            referencedRelation: "pfmea_failure_modes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pfmea_controls: {
-        Row: {
-          id: string
-          failure_mode_id: string | null
-          cause_id: string | null
-          control_type: string
-          control_description: string
-          detection_score: number | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          failure_mode_id?: string | null
-          cause_id?: string | null
-          control_type: string
-          control_description?: string
-          detection_score?: number | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          failure_mode_id?: string | null
-          cause_id?: string | null
-          control_type?: string
-          control_description?: string
-          detection_score?: number | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pfmea_controls_failure_mode_id_fkey"
-            columns: ["failure_mode_id"]
-            isOneToOne: false
-            referencedRelation: "pfmea_failure_modes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pfmea_controls_cause_id_fkey"
-            columns: ["cause_id"]
-            isOneToOne: false
-            referencedRelation: "pfmea_potential_causes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pfmea_failure_modes: {
-        Row: {
-          id: string
-          project_id: string
-          operation_step_id: string
-          requirement_output_id: string
-          failure_mode: string
-          severity_score: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          project_id: string
-          operation_step_id: string
-          requirement_output_id: string
-          failure_mode: string
-          severity_score?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          project_id?: string
-          operation_step_id?: string
-          requirement_output_id?: string
-          failure_mode?: string
-          severity_score?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pfmea_failure_modes_operation_step_id_fkey"
-            columns: ["operation_step_id"]
-            isOneToOne: false
-            referencedRelation: "operation_steps"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pfmea_failure_modes_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pfmea_potential_causes: {
-        Row: {
-          id: string
-          failure_mode_id: string
-          cause_description: string
-          occurrence_score: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          failure_mode_id: string
-          cause_description?: string
-          occurrence_score?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          failure_mode_id?: string
-          cause_description?: string
-          occurrence_score?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pfmea_potential_causes_failure_mode_id_fkey"
-            columns: ["failure_mode_id"]
-            isOneToOne: false
-            referencedRelation: "pfmea_failure_modes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pfmea_potential_effects: {
-        Row: {
-          id: string
-          failure_mode_id: string
-          effect_description: string
-          severity_score: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          failure_mode_id: string
-          effect_description?: string
-          severity_score?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          failure_mode_id?: string
-          effect_description?: string
-          severity_score?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pfmea_potential_effects_failure_mode_id_fkey"
-            columns: ["failure_mode_id"]
-            isOneToOne: false
-            referencedRelation: "pfmea_failure_modes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pfmea_scoring: {
-        Row: {
-          id: string
-          criterion_type: string
-          score: number
-          process_effects: string | null
-          process_examples: string | null
-          quality_effects: string | null
-          quality_examples: string | null
-          occurrence_time_scale: string | null
-          occurrence_frequency_scale: string | null
-          mistake_proofing_requirement: string | null
-          prevention_control_examples: string | null
-          typical_occurrence_note: string | null
-          failure_mode_detection: string | null
-          cause_detection: string | null
-          detection_method_guidance: string | null
-          typical_detection_note: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          criterion_type: string
-          score: number
-          process_effects?: string | null
-          process_examples?: string | null
-          quality_effects?: string | null
-          quality_examples?: string | null
-          occurrence_time_scale?: string | null
-          occurrence_frequency_scale?: string | null
-          mistake_proofing_requirement?: string | null
-          prevention_control_examples?: string | null
-          typical_occurrence_note?: string | null
-          failure_mode_detection?: string | null
-          cause_detection?: string | null
-          detection_method_guidance?: string | null
-          typical_detection_note?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          criterion_type?: string
-          score?: number
-          process_effects?: string | null
-          process_examples?: string | null
-          quality_effects?: string | null
-          quality_examples?: string | null
-          occurrence_time_scale?: string | null
-          occurrence_frequency_scale?: string | null
-          mistake_proofing_requirement?: string | null
-          prevention_control_examples?: string | null
-          typical_occurrence_note?: string | null
-          failure_mode_detection?: string | null
-          cause_detection?: string | null
-          detection_method_guidance?: string | null
-          typical_detection_note?: string | null
-          created_at?: string
-        }
-        Relationships: []
       }
       project_plans: {
         Row: {
@@ -2621,325 +2676,79 @@ export type Database = {
         }
         Relationships: []
       }
-      project_communication_plans: {
+      project_risks: {
         Row: {
+          benefit: string | null
+          budget_impact_high: number | null
+          budget_impact_low: number | null
+          created_at: string | null
+          display_order: number | null
           id: string
-          project_run_id: string
-          enabled: boolean
-          sms_early_access_opt_in: boolean
-          created_at: string
-          updated_at: string
+          impact: string | null
+          likelihood: string | null
+          mitigation_actions: Json | null
+          mitigation_cost: number | null
+          mitigation_effort_level: string | null
+          mitigation_strategy: string | null
+          project_id: string
+          recommendation: string | null
+          risk_description: string | null
+          risk_title: string
+          schedule_impact_high_days: number | null
+          schedule_impact_low_days: number | null
+          severity: string | null
+          updated_at: string | null
         }
         Insert: {
+          benefit?: string | null
+          budget_impact_high?: number | null
+          budget_impact_low?: number | null
+          created_at?: string | null
+          display_order?: number | null
           id?: string
-          project_run_id: string
-          enabled?: boolean
-          sms_early_access_opt_in?: boolean
-          created_at?: string
-          updated_at?: string
+          impact?: string | null
+          likelihood?: string | null
+          mitigation_actions?: Json | null
+          mitigation_cost?: number | null
+          mitigation_effort_level?: string | null
+          mitigation_strategy?: string | null
+          project_id: string
+          recommendation?: string | null
+          risk_description?: string | null
+          risk_title: string
+          schedule_impact_high_days?: number | null
+          schedule_impact_low_days?: number | null
+          severity?: string | null
+          updated_at?: string | null
         }
         Update: {
+          benefit?: string | null
+          budget_impact_high?: number | null
+          budget_impact_low?: number | null
+          created_at?: string | null
+          display_order?: number | null
           id?: string
-          project_run_id?: string
-          enabled?: boolean
-          sms_early_access_opt_in?: boolean
-          created_at?: string
-          updated_at?: string
+          impact?: string | null
+          likelihood?: string | null
+          mitigation_actions?: Json | null
+          mitigation_cost?: number | null
+          mitigation_effort_level?: string | null
+          mitigation_strategy?: string | null
+          project_id?: string
+          recommendation?: string | null
+          risk_description?: string | null
+          risk_title?: string
+          schedule_impact_high_days?: number | null
+          schedule_impact_low_days?: number | null
+          severity?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "project_communication_plans_project_run_id_fkey"
-            columns: ["project_run_id"]
-            isOneToOne: true
-            referencedRelation: "project_runs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_run_planning_change_events: {
-        Row: {
-          id: string
-          project_run_id: string
-          user_id: string
-          occurred_at: string
-          planning_tool: string
-          change_summary: string
-          change_detail: Json | null
-        }
-        Insert: {
-          id?: string
-          project_run_id: string
-          user_id: string
-          occurred_at?: string
-          planning_tool: string
-          change_summary: string
-          change_detail?: Json | null
-        }
-        Update: {
-          id?: string
-          project_run_id?: string
-          user_id?: string
-          occurred_at?: string
-          planning_tool?: string
-          change_summary?: string
-          change_detail?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_run_planning_change_events_project_run_id_fkey"
-            columns: ["project_run_id"]
+            foreignKeyName: "project_risks_project_id_fkey"
+            columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "project_runs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      help_threads: {
-        Row: {
-          id: string
-          user_id: string
-          project_run_id: string | null
-          template_project_id: string | null
-          template_family: string
-          step_id: string | null
-          step_title: string | null
-          phase_id: string | null
-          phase_name: string | null
-          title: string | null
-          status: string
-          last_message_at: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          project_run_id?: string | null
-          template_project_id?: string | null
-          template_family: string
-          step_id?: string | null
-          step_title?: string | null
-          phase_id?: string | null
-          phase_name?: string | null
-          title?: string | null
-          status?: string
-          last_message_at?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          project_run_id?: string | null
-          template_project_id?: string | null
-          template_family?: string
-          step_id?: string | null
-          step_title?: string | null
-          phase_id?: string | null
-          phase_name?: string | null
-          title?: string | null
-          status?: string
-          last_message_at?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      help_messages: {
-        Row: {
-          id: string
-          thread_id: string
-          user_id: string
-          role: string
-          content: string
-          photo_paths: string[]
-          safety_flags: Json
-          model: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          thread_id: string
-          user_id: string
-          role: string
-          content?: string
-          photo_paths?: string[]
-          safety_flags?: Json
-          model?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          thread_id?: string
-          user_id?: string
-          role?: string
-          content?: string
-          photo_paths?: string[]
-          safety_flags?: Json
-          model?: string | null
-          created_at?: string
-        }
-        Relationships: []
-      }
-      help_usage: {
-        Row: {
-          id: string
-          user_id: string
-          period_start: string
-          period_end: string
-          message_count: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          period_start: string
-          period_end: string
-          message_count?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          period_start?: string
-          period_end?: string
-          message_count?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      rework_events: {
-        Row: {
-          id: string
-          user_id: string
-          project_run_id: string
-          template_project_id: string | null
-          template_family: string | null
-          phase_id: string | null
-          phase_name: string | null
-          step_id: string | null
-          step_title: string | null
-          triage_type: string
-          severity: string
-          comments: string | null
-          photo_paths: string[]
-          recovery_plan: Json
-          status: string
-          applied_at: string | null
-          resolved_at: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          project_run_id: string
-          template_project_id?: string | null
-          template_family?: string | null
-          phase_id?: string | null
-          phase_name?: string | null
-          step_id?: string | null
-          step_title?: string | null
-          triage_type: string
-          severity: string
-          comments?: string | null
-          photo_paths?: string[]
-          recovery_plan?: Json
-          status?: string
-          applied_at?: string | null
-          resolved_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          project_run_id?: string
-          template_project_id?: string | null
-          template_family?: string | null
-          phase_id?: string | null
-          phase_name?: string | null
-          step_id?: string | null
-          step_title?: string | null
-          triage_type?: string
-          severity?: string
-          comments?: string | null
-          photo_paths?: string[]
-          recovery_plan?: Json
-          status?: string
-          applied_at?: string | null
-          resolved_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rework_events_project_run_id_fkey"
-            columns: ["project_run_id"]
-            isOneToOne: false
-            referencedRelation: "project_runs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      stuck_events: {
-        Row: {
-          id: string
-          user_id: string
-          project_run_id: string | null
-          template_project_id: string | null
-          template_family: string | null
-          phase_id: string | null
-          step_id: string | null
-          step_title: string | null
-          triage_type: string
-          resolution_action: string | null
-          rework_event_id: string | null
-          time_to_unstick_seconds: number | null
-          thumbs: number | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          project_run_id?: string | null
-          template_project_id?: string | null
-          template_family?: string | null
-          phase_id?: string | null
-          step_id?: string | null
-          step_title?: string | null
-          triage_type: string
-          resolution_action?: string | null
-          rework_event_id?: string | null
-          time_to_unstick_seconds?: number | null
-          thumbs?: number | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          project_run_id?: string | null
-          template_project_id?: string | null
-          template_family?: string | null
-          phase_id?: string | null
-          step_id?: string | null
-          step_title?: string | null
-          triage_type?: string
-          resolution_action?: string | null
-          rework_event_id?: string | null
-          time_to_unstick_seconds?: number | null
-          thumbs?: number | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "stuck_events_project_run_id_fkey"
-            columns: ["project_run_id"]
-            isOneToOne: false
-            referencedRelation: "project_runs"
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -2997,6 +2806,44 @@ export type Database = {
           },
         ]
       }
+      project_run_planning_change_events: {
+        Row: {
+          change_detail: Json | null
+          change_summary: string
+          id: string
+          occurred_at: string
+          planning_tool: string
+          project_run_id: string
+          user_id: string
+        }
+        Insert: {
+          change_detail?: Json | null
+          change_summary: string
+          id?: string
+          occurred_at?: string
+          planning_tool: string
+          project_run_id: string
+          user_id: string
+        }
+        Update: {
+          change_detail?: Json | null
+          change_summary?: string
+          id?: string
+          occurred_at?: string
+          planning_tool?: string
+          project_run_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_planning_change_events_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_run_risks: {
         Row: {
           benefit: string | null
@@ -3019,8 +2866,8 @@ export type Database = {
           risk_title: string
           schedule_impact_high_days: number | null
           schedule_impact_low_days: number | null
-          status: string | null
           severity: string | null
+          status: string | null
           template_risk_id: string | null
           updated_at: string | null
         }
@@ -3045,8 +2892,8 @@ export type Database = {
           risk_title: string
           schedule_impact_high_days?: number | null
           schedule_impact_low_days?: number | null
-          status?: string | null
           severity?: string | null
+          status?: string | null
           template_risk_id?: string | null
           updated_at?: string | null
         }
@@ -3071,8 +2918,8 @@ export type Database = {
           risk_title?: string
           schedule_impact_high_days?: number | null
           schedule_impact_low_days?: number | null
-          status?: string | null
           severity?: string | null
+          status?: string | null
           template_risk_id?: string | null
           updated_at?: string | null
         }
@@ -3082,48 +2929,6 @@ export type Database = {
             columns: ["project_run_id"]
             isOneToOne: false
             referencedRelation: "project_runs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_run_risks_template_risk_id_fkey"
-            columns: ["template_risk_id"]
-            isOneToOne: false
-            referencedRelation: "project_risks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_run_space_sizing: {
-        Row: {
-          created_at: string
-          id: string
-          scaling_unit: string
-          size_value: Json
-          space_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          scaling_unit: string
-          size_value: Json
-          space_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          scaling_unit?: string
-          size_value?: Json
-          space_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_run_space_sizing_space_id_fkey"
-            columns: ["space_id"]
-            isOneToOne: false
-            referencedRelation: "project_run_spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -3237,8 +3042,8 @@ export type Database = {
           custom_project_name: string | null
           customization_decisions: Json | null
           description: string | null
-          end_date: string | null
           effort_level: string | null
+          end_date: string | null
           estimated_time: string | null
           estimated_total_time: string | null
           home_id: string | null
@@ -3251,6 +3056,7 @@ export type Database = {
           issue_reports: Json | null
           item_type: string | null
           name: string
+          notes_data: Json
           phase_ratings: Json | null
           phases: Json | null
           plan_end_date: string | null
@@ -3259,8 +3065,10 @@ export type Database = {
           progress: number | null
           progress_reporting_style: string | null
           project_challenges: string | null
+          project_id: string | null
           project_leader: string | null
           project_photos: Json | null
+          quality_control_settings: Json | null
           scaling_unit: string | null
           schedule_events: Json | null
           schedule_optimization_method: string | null
@@ -3268,7 +3076,6 @@ export type Database = {
           skill_level: string | null
           start_date: string | null
           status: string | null
-          project_id: string | null
           time_tracking: Json | null
           typical_project_size: string | null
           updated_at: string
@@ -3287,8 +3094,8 @@ export type Database = {
           custom_project_name?: string | null
           customization_decisions?: Json | null
           description?: string | null
-          end_date?: string | null
           effort_level?: string | null
+          end_date?: string | null
           estimated_time?: string | null
           estimated_total_time?: string | null
           home_id?: string | null
@@ -3301,6 +3108,7 @@ export type Database = {
           issue_reports?: Json | null
           item_type?: string | null
           name: string
+          notes_data?: Json
           phase_ratings?: Json | null
           phases?: Json | null
           plan_end_date?: string | null
@@ -3309,8 +3117,10 @@ export type Database = {
           progress?: number | null
           progress_reporting_style?: string | null
           project_challenges?: string | null
+          project_id?: string | null
           project_leader?: string | null
           project_photos?: Json | null
+          quality_control_settings?: Json | null
           scaling_unit?: string | null
           schedule_events?: Json | null
           schedule_optimization_method?: string | null
@@ -3318,7 +3128,6 @@ export type Database = {
           skill_level?: string | null
           start_date?: string | null
           status?: string | null
-          project_id?: string | null
           time_tracking?: Json | null
           typical_project_size?: string | null
           updated_at?: string
@@ -3337,8 +3146,8 @@ export type Database = {
           custom_project_name?: string | null
           customization_decisions?: Json | null
           description?: string | null
-          end_date?: string | null
           effort_level?: string | null
+          end_date?: string | null
           estimated_time?: string | null
           estimated_total_time?: string | null
           home_id?: string | null
@@ -3351,6 +3160,7 @@ export type Database = {
           issue_reports?: Json | null
           item_type?: string | null
           name?: string
+          notes_data?: Json
           phase_ratings?: Json | null
           phases?: Json | null
           plan_end_date?: string | null
@@ -3359,8 +3169,10 @@ export type Database = {
           progress?: number | null
           progress_reporting_style?: string | null
           project_challenges?: string | null
+          project_id?: string | null
           project_leader?: string | null
           project_photos?: Json | null
+          quality_control_settings?: Json | null
           scaling_unit?: string | null
           schedule_events?: Json | null
           schedule_optimization_method?: string | null
@@ -3368,7 +3180,6 @@ export type Database = {
           skill_level?: string | null
           start_date?: string | null
           status?: string | null
-          project_id?: string | null
           time_tracking?: Json | null
           typical_project_size?: string | null
           updated_at?: string
@@ -3391,131 +3202,6 @@ export type Database = {
           },
         ]
       }
-      project_risks: {
-        Row: {
-          benefit: string | null
-          budget_impact_high: number | null
-          budget_impact_low: number | null
-          created_at: string | null
-          display_order: number | null
-          id: string
-          impact: string | null
-          likelihood: string | null
-          mitigation_actions: Json | null
-          mitigation_cost: number | null
-          mitigation_effort_level: string | null
-          mitigation_strategy: string | null
-          project_id: string
-          recommendation: string | null
-          risk_description: string | null
-          risk_title: string
-          schedule_impact_high_days: number | null
-          schedule_impact_low_days: number | null
-          severity: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          benefit?: string | null
-          budget_impact_high?: number | null
-          budget_impact_low?: number | null
-          created_at?: string | null
-          display_order?: number | null
-          id?: string
-          impact?: string | null
-          likelihood?: string | null
-          mitigation_actions?: Json | null
-          mitigation_cost?: number | null
-          mitigation_effort_level?: string | null
-          mitigation_strategy?: string | null
-          project_id: string
-          recommendation?: string | null
-          risk_description?: string | null
-          risk_title: string
-          schedule_impact_high_days?: number | null
-          schedule_impact_low_days?: number | null
-          severity?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          benefit?: string | null
-          budget_impact_high?: number | null
-          budget_impact_low?: number | null
-          created_at?: string | null
-          display_order?: number | null
-          id?: string
-          impact?: string | null
-          likelihood?: string | null
-          mitigation_actions?: Json | null
-          mitigation_cost?: number | null
-          mitigation_effort_level?: string | null
-          mitigation_strategy?: string | null
-          project_id?: string
-          recommendation?: string | null
-          risk_description?: string | null
-          risk_title?: string
-          schedule_impact_high_days?: number | null
-          schedule_impact_low_days?: number | null
-          severity?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_risks_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_owners: {
-        Row: {
-          id: string
-          project_id: string | null
-          user_id: string | null
-          created_by: string | null
-          created_at: string
-          updated_at: string
-          invited_email: string | null
-          invited_by: string | null
-          invited_user_id: string | null
-          invitation_token: string | null
-          expires_at: string | null
-          terms_version: string | null
-          invitation_status: string | null
-        }
-        Insert: {
-          id?: string
-          project_id?: string | null
-          user_id?: string | null
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-          invited_email?: string | null
-          invited_by?: string | null
-          invited_user_id?: string | null
-          invitation_token?: string | null
-          expires_at?: string | null
-          terms_version?: string | null
-          invitation_status?: string | null
-        }
-        Update: {
-          id?: string
-          project_id?: string | null
-          user_id?: string | null
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-          invited_email?: string | null
-          invited_by?: string | null
-          invited_user_id?: string | null
-          invitation_token?: string | null
-          expires_at?: string | null
-          terms_version?: string | null
-          invitation_status?: string | null
-        }
-        Relationships: []
-      }
       projects: {
         Row: {
           budget_per_typical_size: string | null
@@ -3532,6 +3218,8 @@ export type Database = {
           id: string
           images: string[] | null
           instructions_data_sources: string | null
+          is_current_version: boolean | null
+          is_popular: boolean
           is_standard: boolean | null
           item_type: string | null
           name: string
@@ -3540,10 +3228,11 @@ export type Database = {
           project_challenges: string | null
           project_type: string | null
           publish_status: string | null
+          release_date: string | null
           revision_notes: string | null
           revision_number: number | null
           scaling_unit: string | null
-          scheduling_prerequisites: Json | null
+          scheduling_prerequisites: Json
           skill_level: string | null
           tags: string[] | null
           typical_project_size: number | null
@@ -3566,6 +3255,8 @@ export type Database = {
           id?: string
           images?: string[] | null
           instructions_data_sources?: string | null
+          is_current_version?: boolean | null
+          is_popular?: boolean
           is_standard?: boolean | null
           item_type?: string | null
           name: string
@@ -3574,6 +3265,7 @@ export type Database = {
           project_challenges?: string | null
           project_type?: string | null
           publish_status?: string | null
+          release_date?: string | null
           revision_notes?: string | null
           revision_number?: number | null
           scaling_unit?: string | null
@@ -3600,6 +3292,8 @@ export type Database = {
           id?: string
           images?: string[] | null
           instructions_data_sources?: string | null
+          is_current_version?: boolean | null
+          is_popular?: boolean
           is_standard?: boolean | null
           item_type?: string | null
           name?: string
@@ -3608,6 +3302,7 @@ export type Database = {
           project_challenges?: string | null
           project_type?: string | null
           publish_status?: string | null
+          release_date?: string | null
           revision_notes?: string | null
           revision_number?: number | null
           scaling_unit?: string | null
@@ -3623,6 +3318,87 @@ export type Database = {
           {
             foreignKeyName: "projects_parent_project_id_fkey"
             columns: ["parent_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rework_events: {
+        Row: {
+          applied_at: string | null
+          comments: string | null
+          created_at: string
+          id: string
+          phase_id: string | null
+          phase_name: string | null
+          photo_paths: string[]
+          project_run_id: string
+          recovery_plan: Json
+          resolved_at: string | null
+          severity: string
+          status: string
+          step_id: string | null
+          step_title: string | null
+          template_family: string | null
+          template_project_id: string | null
+          triage_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          comments?: string | null
+          created_at?: string
+          id?: string
+          phase_id?: string | null
+          phase_name?: string | null
+          photo_paths?: string[]
+          project_run_id: string
+          recovery_plan?: Json
+          resolved_at?: string | null
+          severity: string
+          status?: string
+          step_id?: string | null
+          step_title?: string | null
+          template_family?: string | null
+          template_project_id?: string | null
+          triage_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          comments?: string | null
+          created_at?: string
+          id?: string
+          phase_id?: string | null
+          phase_name?: string | null
+          photo_paths?: string[]
+          project_run_id?: string
+          recovery_plan?: Json
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          step_id?: string | null
+          step_title?: string | null
+          template_family?: string | null
+          template_project_id?: string | null
+          triage_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rework_events_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rework_events_template_project_id_fkey"
+            columns: ["template_project_id"]
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
@@ -3811,6 +3587,79 @@ export type Database = {
         }
         Relationships: []
       }
+      stuck_events: {
+        Row: {
+          created_at: string
+          id: string
+          phase_id: string | null
+          project_run_id: string | null
+          resolution_action: string | null
+          rework_event_id: string | null
+          step_id: string | null
+          step_title: string | null
+          template_family: string | null
+          template_project_id: string | null
+          thumbs: number | null
+          time_to_unstick_seconds: number | null
+          triage_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phase_id?: string | null
+          project_run_id?: string | null
+          resolution_action?: string | null
+          rework_event_id?: string | null
+          step_id?: string | null
+          step_title?: string | null
+          template_family?: string | null
+          template_project_id?: string | null
+          thumbs?: number | null
+          time_to_unstick_seconds?: number | null
+          triage_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phase_id?: string | null
+          project_run_id?: string | null
+          resolution_action?: string | null
+          rework_event_id?: string | null
+          step_id?: string | null
+          step_title?: string | null
+          template_family?: string | null
+          template_project_id?: string | null
+          thumbs?: number | null
+          time_to_unstick_seconds?: number | null
+          triage_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stuck_events_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stuck_events_rework_event_id_fkey"
+            columns: ["rework_event_id"]
+            isOneToOne: false
+            referencedRelation: "rework_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stuck_events_template_project_id_fkey"
+            columns: ["template_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_shopping_list: {
         Row: {
           id: string
@@ -3859,6 +3708,7 @@ export type Database = {
           instructions: Json | null
           name: string
           photo_url: string | null
+          pricing: Json | null
           quick_add: boolean | null
           sku: string | null
           updated_at: string | null
@@ -3876,6 +3726,7 @@ export type Database = {
           instructions?: Json | null
           name: string
           photo_url?: string | null
+          pricing?: Json | null
           quick_add?: boolean | null
           sku?: string | null
           updated_at?: string | null
@@ -3893,6 +3744,7 @@ export type Database = {
           instructions?: Json | null
           name?: string
           photo_url?: string | null
+          pricing?: Json | null
           quick_add?: boolean | null
           sku?: string | null
           updated_at?: string | null
@@ -3904,7 +3756,7 @@ export type Database = {
         Row: {
           alternates: string | null
           attribute_definitions: Json
-          category: string
+          category: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -3918,7 +3770,7 @@ export type Database = {
         Insert: {
           alternates?: string | null
           attribute_definitions?: Json
-          category: string
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -3932,8 +3784,8 @@ export type Database = {
         Update: {
           alternates?: string | null
           attribute_definitions?: Json
+          category?: string | null
           created_at?: string
-          category?: string
           created_by?: string | null
           description?: string | null
           id?: string
@@ -3945,83 +3797,43 @@ export type Database = {
         }
         Relationships: []
       }
-      trial_tracking: {
+      usage_agreements: {
         Row: {
+          agreed_at: string
+          agreement_type: string
           created_at: string
           id: string
-          trial_end_date: string
-          trial_extended_by: number | null
-          trial_start_date: string
-          updated_at: string
+          pdf_storage_path: string | null
+          project_id: string | null
           user_id: string
         }
         Insert: {
+          agreed_at?: string
+          agreement_type?: string
           created_at?: string
           id?: string
-          trial_end_date: string
-          trial_extended_by?: number | null
-          trial_start_date?: string
-          updated_at?: string
+          pdf_storage_path?: string | null
+          project_id?: string | null
           user_id: string
         }
         Update: {
+          agreed_at?: string
+          agreement_type?: string
           created_at?: string
           id?: string
-          trial_end_date?: string
-          trial_extended_by?: number | null
-          trial_start_date?: string
-          updated_at?: string
+          pdf_storage_path?: string | null
+          project_id?: string | null
           user_id?: string
         }
-        Relationships: []
-      }
-      membership_status: {
-        Row: {
-          created_at: string
-          id: string
-          user_id: string
-          updated_at: string
-          member_status: boolean
-          membership_start_date: string | null
-          membership_end_date: string | null
-          trial_start_date: string | null
-          trial_end_date: string | null
-          trial_extended_days: number | null
-          email_sent_1day_before: boolean | null
-          email_sent_on_expiry: boolean | null
-          last_trial_notification_date: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          user_id: string
-          updated_at?: string
-          member_status?: boolean
-          membership_start_date?: string | null
-          membership_end_date?: string | null
-          trial_start_date?: string | null
-          trial_end_date?: string | null
-          trial_extended_days?: number | null
-          email_sent_1day_before?: boolean | null
-          email_sent_on_expiry?: boolean | null
-          last_trial_notification_date?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          user_id?: string
-          updated_at?: string
-          member_status?: boolean
-          membership_start_date?: string | null
-          membership_end_date?: string | null
-          trial_start_date?: string | null
-          trial_end_date?: string | null
-          trial_extended_days?: number | null
-          email_sent_1day_before?: boolean | null
-          email_sent_on_expiry?: boolean | null
-          last_trial_notification_date?: string | null
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "usage_agreements_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_achievements: {
         Row: {
@@ -4036,7 +3848,7 @@ export type Database = {
           reason: string | null
           type: string
           user_id: string
-          xp_amount: number | null
+          xp_amount: number
         }
         Insert: {
           achievement_id?: string | null
@@ -4050,7 +3862,7 @@ export type Database = {
           reason?: string | null
           type?: string
           user_id: string
-          xp_amount?: number | null
+          xp_amount?: number
         }
         Update: {
           achievement_id?: string | null
@@ -4064,7 +3876,7 @@ export type Database = {
           reason?: string | null
           type?: string
           user_id?: string
-          xp_amount?: number | null
+          xp_amount?: number
         }
         Relationships: [
           {
@@ -4127,47 +3939,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_projects_runtime: {
-        Row: {
-          canonical_step_id: string
-          created_at: string
-          ended_at: string | null
-          id: string
-          project_run_id: string
-          started_at: string | null
-          step_id: string
-          updated_at: string
-        }
-        Insert: {
-          canonical_step_id: string
-          created_at?: string
-          ended_at?: string | null
-          id?: string
-          project_run_id: string
-          started_at?: string | null
-          step_id: string
-          updated_at?: string
-        }
-        Update: {
-          canonical_step_id?: string
-          created_at?: string
-          ended_at?: string | null
-          id?: string
-          project_run_id?: string
-          started_at?: string | null
-          step_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_projects_runtime_project_run_id_fkey"
-            columns: ["project_run_id"]
-            isOneToOne: false
-            referencedRelation: "project_runs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_maintenance_tasks: {
         Row: {
           benefits_of_maintenance: string | null
@@ -4181,13 +3952,14 @@ export type Database = {
           instructions: string | null
           is_active: boolean | null
           last_completed: string | null
+          maintenance_template_id: string | null
           next_due: string
           priority: string | null
           progress_percentage: number | null
+          recurrence_start_date: string | null
           repair_cost_savings: string | null
           risks_of_skipping: string | null
           summary: string | null
-          maintenance_template_id: string | null
           title: string
           updated_at: string
           user_id: string
@@ -4204,13 +3976,14 @@ export type Database = {
           instructions?: string | null
           is_active?: boolean | null
           last_completed?: string | null
+          maintenance_template_id?: string | null
           next_due: string
           priority?: string | null
           progress_percentage?: number | null
+          recurrence_start_date?: string | null
           repair_cost_savings?: string | null
           risks_of_skipping?: string | null
           summary?: string | null
-          maintenance_template_id?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -4227,13 +4000,14 @@ export type Database = {
           instructions?: string | null
           is_active?: boolean | null
           last_completed?: string | null
+          maintenance_template_id?: string | null
           next_due?: string
           priority?: string | null
           progress_percentage?: number | null
+          recurrence_start_date?: string | null
           repair_cost_savings?: string | null
           risks_of_skipping?: string | null
           summary?: string | null
-          maintenance_template_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -4311,26 +4085,183 @@ export type Database = {
           },
         ]
       }
-      user_roles: {
+      user_profiles: {
+        Row: {
+          avoid_projects: string[] | null
+          created_at: string
+          do_not_show_workflow_tutorial: boolean
+          full_name: string | null
+          home_build_year: string | null
+          home_ownership: string | null
+          home_state: string | null
+          id: string
+          nickname: string | null
+          owned_materials: Json
+          owned_tools: Json | null
+          personality_profile: Json | null
+          physical_capability: string | null
+          preferred_learning_methods: string[] | null
+          project_focus: string | null
+          project_skills: Json | null
+          roles: string[]
+          skill_level: string | null
+          survey_completed_at: string | null
+          time_zone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avoid_projects?: string[] | null
+          created_at?: string
+          do_not_show_workflow_tutorial?: boolean
+          full_name?: string | null
+          home_build_year?: string | null
+          home_ownership?: string | null
+          home_state?: string | null
+          id?: string
+          nickname?: string | null
+          owned_materials?: Json
+          owned_tools?: Json | null
+          personality_profile?: Json | null
+          physical_capability?: string | null
+          preferred_learning_methods?: string[] | null
+          project_focus?: string | null
+          project_skills?: Json | null
+          roles?: string[]
+          skill_level?: string | null
+          survey_completed_at?: string | null
+          time_zone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avoid_projects?: string[] | null
+          created_at?: string
+          do_not_show_workflow_tutorial?: boolean
+          full_name?: string | null
+          home_build_year?: string | null
+          home_ownership?: string | null
+          home_state?: string | null
+          id?: string
+          nickname?: string | null
+          owned_materials?: Json
+          owned_tools?: Json | null
+          personality_profile?: Json | null
+          physical_capability?: string | null
+          preferred_learning_methods?: string[] | null
+          project_focus?: string | null
+          project_skills?: Json | null
+          roles?: string[]
+          skill_level?: string | null
+          survey_completed_at?: string | null
+          time_zone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_project_skill_levels: {
         Row: {
           created_at: string
           id: string
-          role: string
+          project_id: string
+          skill_level: string
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          role: string
+          project_id: string
+          skill_level?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          role?: string
+          project_id?: string
+          skill_level?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_project_skill_levels_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_projects_runtime: {
+        Row: {
+          canonical_step_id: string
+          created_at: string
+          ended_at: string | null
+          id: string
+          project_run_id: string
+          started_at: string | null
+          step_id: string
+          updated_at: string
+        }
+        Insert: {
+          canonical_step_id: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          project_run_id: string
+          started_at?: string | null
+          step_id: string
+          updated_at?: string
+        }
+        Update: {
+          canonical_step_id?: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          project_run_id?: string
+          started_at?: string | null
+          step_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_projects_runtime_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_sessions: {
+        Row: {
+          id: string
+          ip_address: unknown
+          is_active: boolean
+          session_end: string | null
+          session_start: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          ip_address?: unknown
+          is_active?: boolean
+          session_end?: string | null
+          session_start?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          ip_address?: unknown
+          is_active?: boolean
+          session_end?: string | null
+          session_start?: string
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []
@@ -4382,44 +4313,6 @@ export type Database = {
           },
         ]
       }
-      user_xp_history: {
-        Row: {
-          created_at: string
-          id: string
-          phase_name: string | null
-          project_run_id: string | null
-          reason: string
-          user_id: string
-          xp_amount: number
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          phase_name?: string | null
-          project_run_id?: string | null
-          reason: string
-          user_id: string
-          xp_amount?: number
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          phase_name?: string | null
-          project_run_id?: string | null
-          reason?: string
-          user_id?: string
-          xp_amount?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_xp_history_project_run_id_fkey"
-            columns: ["project_run_id"]
-            isOneToOne: false
-            referencedRelation: "project_runs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       feature_requests_public: {
@@ -4437,6 +4330,34 @@ export type Database = {
           updated_at: string | null
           votes: number | null
         }
+        Insert: {
+          admin_response?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          priority_request?: string | null
+          roadmap_item_id?: string | null
+          status?: string | null
+          submitted_by?: string | null
+          title?: string | null
+          updated_at?: string | null
+          votes?: number | null
+        }
+        Update: {
+          admin_response?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          priority_request?: string | null
+          roadmap_item_id?: string | null
+          status?: string | null
+          submitted_by?: string | null
+          title?: string | null
+          updated_at?: string | null
+          votes?: number | null
+        }
         Relationships: [
           {
             foreignKeyName: "feature_requests_roadmap_item_id_fkey"
@@ -4449,6 +4370,11 @@ export type Database = {
       }
     }
     Functions: {
+      accept_project_owner_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: Json
+      }
+      can_manage_tool_variation_catalog: { Args: never; Returns: boolean }
       check_rate_limit: {
         Args: {
           identifier: string
@@ -4458,21 +4384,25 @@ export type Database = {
         Returns: boolean
       }
       cleanup_old_sessions: { Args: never; Returns: number }
-      copy_template_risks_to_project_run: {
-        Args: { p_project_run_id: string; p_template_project_id: string }
-        Returns: number
+      complete_project_owner_invitation: {
+        Args: {
+          p_invitation_id: string
+          p_terms_version?: string
+          p_user_agent?: string
+        }
+        Returns: Json
       }
       copy_draft_revision_workflow: {
         Args: { p_source_project_id: string; p_target_project_id: string }
         Returns: string
       }
-      create_draft_project_revision: {
-        Args: { p_payload: Json }
-        Returns: string
+      copy_template_risks_to_project_run: {
+        Args: { p_project_run_id: string; p_template_project_id: string }
+        Returns: number
       }
-      create_project_revision: {
-        Args: { new_name: string; p_source_project_id: string }
-        Returns: string
+      create_default_home_for_user: {
+        Args: { p_user_id: string }
+        Returns: undefined
       }
       create_project_run_snapshot: {
         Args: {
@@ -4485,6 +4415,29 @@ export type Database = {
         }
         Returns: string
       }
+      create_project_run_snapshot__legacy_v2rename:
+        | {
+            Args: {
+              p_home_id?: string
+              p_plan_end_date?: string
+              p_run_name: string
+              p_start_date?: string
+              p_template_id: string
+              p_user_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_home_id?: string
+              p_plan_end_date?: string
+              p_run_name: string
+              p_start_date?: string
+              p_template_id: string
+              p_user_id: string
+            }
+            Returns: string
+          }
       create_project_with_standard_foundation: {
         Args: {
           p_category?: string
@@ -4503,21 +4456,62 @@ export type Database = {
         }
         Returns: string
       }
+      get_help_usage_status: {
+        Args: { p_user_id?: string }
+        Returns: {
+          capped: boolean
+          message_cap: number
+          message_count: number
+          period_end: string
+          period_start: string
+          remaining: number
+        }[]
+      }
+      get_operation_steps_json: {
+        Args: { p_is_reference?: boolean; p_operation_id: string }
+        Returns: Json
+      }
+      get_photos_by_project_type: {
+        Args: never
+        Returns: {
+          personal_count: number
+          photo_count: number
+          project_id: string
+          project_partner_count: number
+          public_count: number
+          template_name: string
+        }[]
+      }
+      get_project_owner_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          expires_at: string
+          id: string
+          invited_email: string
+          project_id: string
+          project_name: string
+          status: string
+        }[]
+      }
+      get_project_workflow_with_standards: {
+        Args: { p_project_id: string }
+        Returns: Json
+      }
       get_standard_project_template: {
         Args: never
         Returns: {
           category: string
           created_at: string
           description: string
-          effort_level: string | null
+          difficulty_level: string
           estimated_cost: string
           estimated_time: string
           icon: string
           id: string
           is_standard: boolean
+          is_template: boolean
           name: string
           phases: Json
-          skill_level: string | null
           tags: string[]
           updated_at: string
           user_id: string
@@ -4525,49 +4519,28 @@ export type Database = {
         }[]
       }
       get_standard_project_with_phases: { Args: never; Returns: Json }
-      get_project_owner_invitation_by_token: {
-        Args: { p_token: string }
-        Returns: {
-          id: string
-          project_id: string
-          project_name: string
-          invited_email: string
-          status: string
-          expires_at: string
-        }[]
-      }
-      accept_project_owner_invitation: {
-        Args: { p_invitation_id: string }
-        Returns: Json
-      }
-      complete_project_owner_invitation: {
-        Args: {
-          p_invitation_id: string
-          p_terms_version?: string
-          p_user_agent?: string | null
-        }
-        Returns: Json
-      }
-      is_admin: { Args: { check_user_id?: string }; Returns: boolean }
       get_step_stuck_aggregates: {
-        Args: { p_template_family: string; p_step_id?: string | null }
+        Args: { p_step_id?: string; p_template_family: string }
         Returns: {
+          event_count: number
           step_id: string
           triage_type: string
-          event_count: number
         }[]
       }
-      get_help_usage_status: {
-        Args: { p_user_id?: string }
+      get_user_profiles_for_role_management: {
+        Args: never
         Returns: {
-          message_count: number
-          message_cap: number
-          remaining: number
-          period_start: string
-          period_end: string
-          capped: boolean
+          display_name: string
+          email: string
+          full_name: string
+          nickname: string
+          roles: string[]
+          user_id: string
         }[]
       }
+      is_admin:
+        | { Args: never; Returns: boolean }
+        | { Args: { check_user_id: string }; Returns: boolean }
       log_failed_login: {
         Args: {
           ip_addr?: string
@@ -4576,13 +4549,32 @@ export type Database = {
         }
         Returns: undefined
       }
-      rebuild_phases_json_from_project_phases: {
-        Args: { p_project_id: string }
+      notifications_notify_project_owners: {
+        Args: {
+          p_body: string
+          p_metadata?: Json
+          p_project_run_id: string
+          p_title: string
+          p_type: string
+        }
         Returns: undefined
       }
+      notifications_resolve_parent_project_id: {
+        Args: { p_template_id: string }
+        Returns: string
+      }
+      rebuild_phases_json_from_project_phases: {
+        Args: { p_project_id: string }
+        Returns: Json
+      }
+      record_trial_notification_shown: { Args: never; Returns: undefined }
       reset_project_revisions_preserve_latest: {
         Args: { p_project_id: string }
         Returns: string
+      }
+      set_user_role_for_management: {
+        Args: { p_new_role: string; p_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
@@ -4602,12 +4594,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4631,11 +4623,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4656,11 +4648,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4681,11 +4673,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4698,11 +4690,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
