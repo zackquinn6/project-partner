@@ -21,7 +21,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Output, Project, AppReference, Phase } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import ProjectListing from './ProjectListing';
-import { MobileProjectListing } from './MobileProjectListing';
 import { MobileWorkflowView } from './MobileWorkflowView';
 import { OutputDetailPopup } from './OutputDetailPopup';
 import { calculateProjectProgress, getWorkflowStepsCount } from '@/utils/progressCalculation';
@@ -90,7 +89,6 @@ import { UpgradePrompt } from './UpgradePrompt';
 import { markOrderingStepIncompleteIfNeeded, extractProjectToolsAndMaterials } from '@/utils/shoppingUtils';
 import { loadUserOwnedTools, OwnedToolRecord } from '@/utils/ownedToolsMatching';
 import { applyScheduleSlip } from '@/utils/scheduleSlip';
-import { MobileDIYDropdown } from './MobileDIYDropdown';
 import { ProjectCompletionHandler } from './ProjectCompletionHandler';
 import { ProjectBudgetingWindow } from './ProjectBudgetingWindow';
 import { AfterActionReviewWindow } from './AfterActionReviewWindow';
@@ -3328,19 +3326,6 @@ export default function UserView({
   }
   return (
     <>
-      {/* Mobile DIY Dropdown */}
-      {isMobile && activeProject && (
-        <MobileDIYDropdown
-          onHelpClick={() => setExpertHelpOpen(true)}
-          onKeysToSuccessClick={() => setKeyCharacteristicsOpen(true)}
-          onUnplannedWorkClick={() => {
-            setDecisionRollupMode('unplanned-work');
-            setDecisionRollupOpen(true);
-          }}
-          isKickoffComplete={isKickoffComplete}
-        />
-      )}
-
       {/* Planning wizard should render immediately after kickoff on all devices */}
       {projectPlanningWizardOpen && currentProjectRun ? (
         <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden md:h-auto md:min-h-0 md:flex-none md:overflow-visible">
@@ -3455,6 +3440,22 @@ export default function UserView({
           stepPhotoCount={stepPhotoCountForCompletion ?? 0}
           onUploadPhoto={() => setMobilePhotoUploadOpen(true)}
           canCompleteStep={areAllOutputsCompleted(currentStep)}
+          onKeysToSuccessClick={() => setKeyCharacteristicsOpen(true)}
+          onUnplannedWorkClick={() => {
+            setDecisionRollupMode('unplanned-work');
+            setDecisionRollupOpen(true);
+          }}
+          onNotesClick={() => {
+            if (!currentStep?.id) return;
+            setNotesGalleryInitialStepId(currentStep.id);
+            setNotesGalleryOpen(true);
+          }}
+          onProgressViewsClick={() => setProgressViewsOpen(true)}
+          onProjectNameClick={handleProjectNameClick}
+          onExpertHelpClick={() => setExpertHelpOpen(true)}
+          estimatedFinishDate={estimatedFinishDate}
+          estimatedFinishDateLoading={estimatedFinishDateLoading}
+          isKickoffComplete={isKickoffComplete}
         />
       ) : (
         /* Desktop Workflow View */
@@ -3778,8 +3779,8 @@ export default function UserView({
           {/* Navigation */}
           <Card className="gradient-card border-0 shadow-card">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between" data-tutorial="navigation-buttons">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between" data-tutorial="navigation-buttons">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button 
                     onClick={handlePrevious} 
                     disabled={currentStepIndex === 0}
@@ -3801,7 +3802,7 @@ export default function UserView({
                   </Button>
                 </div>
 
-                <div className="flex items-center gap-3" data-tutorial="photos-notes">
+                <div className="flex flex-wrap items-center gap-2" data-tutorial="photos-notes">
                   {/* Photo Upload and Note Upload Buttons - Always visible for current step */}
                   {currentStep && currentProjectRun && (
                     <>
@@ -4323,57 +4324,6 @@ export default function UserView({
         />
       )}
 
-      {/* Project Planning Wizard — dialog on mobile only; desktop uses fullscreen shell above */}
-      {isMobile ? (
-        <ProjectPlanningWizard
-          open={projectPlanningWizardOpen}
-          layout="dialog"
-          onOpenChange={setProjectPlanningWizardOpen}
-          onWorkflowFullyComplete={handlePlanningWizardFullyComplete}
-          onGoToWorkflow={() => {
-            setProjectPlanningWizardOpen(false);
-          }}
-          onOpenBudgeting={(options) => {
-            if (options?.fromPlanningWizard) {
-              registerPlanningWizardToolCloseCallback('budget', options.onComplete);
-            }
-            setProjectBudgetingOpen(true);
-          }}
-          onOpenRiskManagement={(options) => {
-            if (options?.fromPlanningWizard) {
-              registerPlanningWizardToolCloseCallback('risk', options.onComplete);
-            }
-            setRiskManagementPlanningPresentation(Boolean(options?.fromPlanningWizard));
-            setRiskManagementOpen(true);
-          }}
-          onOpenQualityControl={(options) => {
-            if (options?.fromPlanningWizard) {
-              registerPlanningWizardToolCloseCallback('quality', options.onComplete);
-            }
-            setQualityCheckExpandSettingsAccordion(true);
-            setQualityCheckOpen(true);
-          }}
-          onOpenToolRentals={(options) => {
-            if (options?.fromPlanningWizard) {
-              registerPlanningWizardToolCloseCallback('toolRentals', options.onComplete);
-            }
-            setToolRentalsOpen(true);
-          }}
-          onOpenExpertSupport={(options) => {
-            if (options?.fromPlanningWizard) {
-              registerPlanningWizardToolCloseCallback('expertSupport', options.onComplete);
-            }
-            setExpertHelpOpen(true);
-          }}
-          onOpenCommunicationPlan={(options) => {
-            if (options?.fromPlanningWizard) {
-              registerPlanningWizardToolCloseCallback('communicationPlan', options.onComplete);
-            }
-            setCommunicationPlanOpen(true);
-          }}
-        />
-      ) : null}
-      
       {/* Project Completion Popup */}
       {currentProjectRun && (
         <ProjectCompletionPopup

@@ -714,9 +714,7 @@ export function MaintenancePlanWorkflow({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`h-[85vh] min-h-[560px] max-h-[90vh] overflow-hidden flex flex-col p-0 ${
-          isMobile ? 'max-w-[95vw]' : 'max-w-[90vw] md:max-w-6xl'
-        }`}
+        className="h-[100dvh] max-h-[100dvh] w-full max-w-full rounded-none md:h-[85vh] md:max-h-[90vh] md:w-auto md:max-w-[90vw] md:max-w-6xl md:rounded-lg overflow-hidden flex flex-col p-0"
       >
         <DialogHeader className="px-4 md:px-8 pt-4 md:pt-6 pb-2 md:pb-3 border-b bg-gradient-to-r from-primary/5 to-primary/10">
           <div className="flex items-start justify-between gap-3">
@@ -735,7 +733,7 @@ export function MaintenancePlanWorkflow({
               type="button"
               variant="ghost"
               size="sm"
-              className="hidden md:inline-flex text-muted-foreground hover:text-foreground"
+              className="inline-flex min-h-11 md:min-h-0 md:h-8 text-muted-foreground hover:text-foreground"
               onClick={() => onOpenChange(false)}
             >
               Close
@@ -750,12 +748,12 @@ export function MaintenancePlanWorkflow({
         </DialogHeader>
 
         {loadingDetails ? (
-          <div className="flex-1 flex items-center justify-center min-h-[400px]">
+          <div className="flex-1 flex items-center justify-center min-h-0">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto px-4 md:px-8 py-3 md:py-5 min-h-[380px]">
+            <div className="flex-1 overflow-y-auto px-4 md:px-8 py-3 md:py-5 min-h-0 md:min-h-[380px]">
               {/* Step 0 — Heating & Cooling */}
               {step === 0 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
@@ -769,7 +767,7 @@ export function MaintenancePlanWorkflow({
                           <HelpCircle className="h-4 w-4" />
                         </button>
                       </PopoverTrigger>
-                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
+                      <PopoverContent side={isMobile ? "bottom" : "left"} collisionPadding={16} className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[0]}
                       </PopoverContent>
                     </Popover>
@@ -803,7 +801,7 @@ export function MaintenancePlanWorkflow({
                           <HelpCircle className="h-4 w-4" />
                         </button>
                       </PopoverTrigger>
-                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
+                      <PopoverContent side={isMobile ? "bottom" : "left"} collisionPadding={16} className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[1]}
                       </PopoverContent>
                     </Popover>
@@ -843,7 +841,7 @@ export function MaintenancePlanWorkflow({
                           <HelpCircle className="h-4 w-4" />
                         </button>
                       </PopoverTrigger>
-                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
+                      <PopoverContent side={isMobile ? "bottom" : "left"} collisionPadding={16} className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[2]}
                       </PopoverContent>
                     </Popover>
@@ -880,7 +878,7 @@ export function MaintenancePlanWorkflow({
                           <HelpCircle className="h-4 w-4" />
                         </button>
                       </PopoverTrigger>
-                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
+                      <PopoverContent side={isMobile ? "bottom" : "left"} collisionPadding={16} className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[3]}
                       </PopoverContent>
                     </Popover>
@@ -992,7 +990,7 @@ export function MaintenancePlanWorkflow({
                           <HelpCircle className="h-4 w-4" />
                         </button>
                       </PopoverTrigger>
-                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
+                      <PopoverContent side={isMobile ? "bottom" : "left"} collisionPadding={16} className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[4]}
                       </PopoverContent>
                     </Popover>
@@ -1028,7 +1026,7 @@ export function MaintenancePlanWorkflow({
                           <HelpCircle className="h-4 w-4" />
                         </button>
                       </PopoverTrigger>
-                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
+                      <PopoverContent side={isMobile ? "bottom" : "left"} collisionPadding={16} className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[5]}
                       </PopoverContent>
                     </Popover>
@@ -1090,7 +1088,7 @@ export function MaintenancePlanWorkflow({
                           <HelpCircle className="h-4 w-4" />
                         </button>
                       </PopoverTrigger>
-                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
+                      <PopoverContent side={isMobile ? "bottom" : "left"} collisionPadding={16} className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[6]}
                       </PopoverContent>
                     </Popover>
@@ -1158,7 +1156,7 @@ export function MaintenancePlanWorkflow({
                           <HelpCircle className="h-4 w-4" />
                         </button>
                       </PopoverTrigger>
-                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
+                      <PopoverContent side={isMobile ? "bottom" : "left"} collisionPadding={16} className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[7]}
                       </PopoverContent>
                     </Popover>
@@ -1214,7 +1212,7 @@ export function MaintenancePlanWorkflow({
                           <HelpCircle className="h-4 w-4" />
                         </button>
                       </PopoverTrigger>
-                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
+                      <PopoverContent side={isMobile ? "bottom" : "left"} collisionPadding={16} className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[8]}
                       </PopoverContent>
                     </Popover>
@@ -1311,7 +1309,7 @@ export function MaintenancePlanWorkflow({
                           <HelpCircle className="h-4 w-4" />
                         </button>
                       </PopoverTrigger>
-                      <PopoverContent side="left" className="max-w-[280px] p-3 text-sm">
+                      <PopoverContent side={isMobile ? "bottom" : "left"} collisionPadding={16} className="max-w-[280px] p-3 text-sm">
                         {STEP_TOOLTIPS[9]}
                       </PopoverContent>
                     </Popover>

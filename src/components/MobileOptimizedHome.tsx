@@ -20,6 +20,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectOwner } from '@/hooks/useProjectOwner';
 import { MembershipWindow } from '@/components/MembershipWindow';
 import { DataPrivacyManager } from '@/components/DataPrivacyManager';
+import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { useProject } from '@/contexts/ProjectContext';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { supabase } from '@/integrations/supabase/client';
@@ -68,6 +69,7 @@ export function MobileOptimizedHome() {
   const [userNickname, setUserNickname] = useState<string>('');
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [isCodePermitsOpen, setIsCodePermitsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const handleSignOut = async () => {
@@ -253,7 +255,7 @@ export function MobileOptimizedHome() {
       icon: Building2,
       title: 'Code & Compliance',
       description: 'Building codes and permits',
-      action: () => {} // Add action when ready
+      action: () => setIsCodePermitsOpen(true)
     }
   ];
 
@@ -497,6 +499,7 @@ export function MobileOptimizedHome() {
 
       <DataPrivacyManager open={isPrivacyOpen} onOpenChange={setIsPrivacyOpen} />
       <MembershipWindow open={isMembershipOpen} onOpenChange={setIsMembershipOpen} />
+      <CodePermitsWindow open={isCodePermitsOpen} onOpenChange={setIsCodePermitsOpen} />
     </div>
   );
 }

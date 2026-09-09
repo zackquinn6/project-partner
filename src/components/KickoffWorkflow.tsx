@@ -1,8 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft, MoreHorizontal } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useProject } from '@/contexts/ProjectContext';
 import { DIYProfileStep } from './KickoffSteps/DIYProfileStep';
 import { ProjectOverviewStep } from './KickoffSteps/ProjectOverviewStep';
@@ -662,7 +668,49 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         <CardContent className="p-2.5 sm:p-4">
           {!isStepCompleted(currentKickoffStep) ? (
             <div className="flex min-h-[3rem] flex-col gap-2 sm:min-h-[3.25rem] sm:flex-row sm:items-stretch sm:gap-3">
-              <div className="flex min-h-12 min-w-0 flex-1 flex-col justify-center sm:min-h-[3.25rem]">
+              {/* Mobile: secondary actions collapsed into More menu */}
+              <div className="sm:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      className="h-11 min-h-11 w-full px-3 text-sm"
+                    >
+                      <MoreHorizontal className="mr-2 h-4 w-4 shrink-0" />
+                      More
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-[min(100vw-2rem,20rem)]">
+                    {currentStepId === 'kickoff-step-1' ? (
+                      <DropdownMenuItem
+                        className="text-red-700 focus:text-red-700"
+                        onSelect={async () => {
+                          if (currentProjectRun) {
+                            await deleteProjectRun(currentProjectRun.id);
+                            if (onExit) onExit();
+                          }
+                        }}
+                      >
+                        <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
+                        Not a match — back to catalog
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          onKickoffComplete();
+                        }}
+                      >
+                        Skip direct to project workflow
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Desktop: secondary CTA side-by-side with Continue */}
+              <div className="hidden min-h-12 min-w-0 flex-1 flex-col justify-center sm:flex sm:min-h-[3.25rem]">
                 {currentStepId === 'kickoff-step-1' ? (
                   <Button
                     onClick={async () => {
@@ -677,8 +725,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                   >
                     <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
                     <span className="text-left leading-tight sm:line-clamp-2">
-                      <span className="hidden sm:inline">Not a match — back to catalog</span>
-                      <span className="sm:hidden">Not a match — back</span>
+                      Not a match — back to catalog
                     </span>
                   </Button>
                 ) : (
@@ -692,8 +739,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                     }}
                   >
                     <span className="text-left leading-tight sm:line-clamp-2">
-                      <span className="hidden sm:inline">Skip direct to project workflow</span>
-                      <span className="sm:hidden">Skip to workflow</span>
+                      Skip direct to project workflow
                     </span>
                   </Button>
                 )}

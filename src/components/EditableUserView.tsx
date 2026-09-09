@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Edit, Save, X, Upload, Info, ChevronDown, ChevronUp, FileText, ShoppingCart, Lock, Users, BookOpen } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Edit, Save, X, Upload, Info, ChevronDown, ChevronUp, FileText, ShoppingCart, Lock, Users, BookOpen, Menu } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useProject } from '@/contexts/ProjectContext';
 import { WorkflowStep, Output } from '@/interfaces/Project';
 import { OutputDetailPopup } from './OutputDetailPopup';
@@ -36,6 +37,7 @@ import {
   filterToolsByVisibleSections,
   filterMaterialsByVisibleSections,
 } from '@/utils/microDecisionVisibility';
+import { isStepCompleted, getStepCompletionKey } from '@/utils/projectUtils';
 
 interface EditableUserViewProps {
   onBackToAdmin: () => void;
@@ -83,6 +85,7 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
   const [signatures, setSignatures] = useState<Record<string, string>>({});
   const [orderingWindowOpen, setOrderingWindowOpen] = useState(false);
   const [completionTrackerOpen, setCompletionTrackerOpen] = useState(false);
+  const [isStepsSheetOpen, setIsStepsSheetOpen] = useState(false);
   const [toolInstructions, setToolInstructions] = useState<{ id: string; name: string } | null>(null);
   const [stepCompletionPercentages, setStepCompletionPercentages] = useState<Record<string, number>>(
     currentProjectRun?.stepCompletionPercentages || {}
@@ -692,17 +695,57 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
   }
 
   return (
-    <div className="container mx-auto px-6 py-8">
-      <div className="mb-6">
+    <div className="container mx-auto px-3 py-6 sm:px-6 sm:py-8">
+      <div className="mb-6 flex flex-wrap items-center gap-2">
         <Button onClick={onBackToAdmin} variant="outline">
           <ChevronLeft className="w-4 h-4 mr-2" />
           Back to Admin
         </Button>
+        <Sheet open={isStepsSheetOpen} onOpenChange={setIsStepsSheetOpen}>
+          <SheetTrigger asChild>
+            <Button type="button" variant="outline" className="lg:hidden gap-2">
+              <Menu className="h-4 w-4" />
+              Steps
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[85vw] sm:w-80 p-0 flex flex-col">
+            <SheetHeader className="p-4 border-b text-left">
+              <SheetTitle>Workflow Progress</SheetTitle>
+              <p className="text-sm text-muted-foreground">
+                Step {currentStepIndex + 1} of {allSteps.length}
+              </p>
+            </SheetHeader>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {allSteps.map((step, index) => {
+                const isCompleted = isStepCompleted(completedSteps, step.id);
+                const isCurrent = index === currentStepIndex;
+                return (
+                  <button
+                    key={step.id}
+                    type="button"
+                    className={`w-full text-left rounded p-2 text-sm transition-fast ${
+                      isCurrent ? 'bg-primary/10 text-primary border border-primary/20' : 'hover:bg-muted/50'
+                    }`}
+                    onClick={() => {
+                      setCurrentStepIndex(index);
+                      setIsStepsSheetOpen(false);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                  >
+                    <span className={isCompleted ? 'line-through text-muted-foreground' : ''}>
+                      {step.step}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
 
       <div className="grid lg:grid-cols-4 gap-8">
-        {/* Sidebar - Move Help button to top */}
-        <Card className="lg:col-span-1 gradient-card border-0 shadow-card">
+        {/* Sidebar - Move Help button to top; desktop only */}
+        <Card className="hidden lg:col-span-1 lg:block gradient-card border-0 shadow-card">
           <CardHeader>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -1245,7 +1288,8 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
 
       {/* Step Completion Tracker */}
       {completionTrackerOpen && currentStep && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-lg mx-4">
           <StepCompletionTracker
             stepId={currentStep.id}
             stepName={currentStep.step}
@@ -1253,6 +1297,7 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
             onComplete={handleStepCompletion}
             onCancel={() => setCompletionTrackerOpen(false)}
           />
+          </div>
         </div>
       )}
 

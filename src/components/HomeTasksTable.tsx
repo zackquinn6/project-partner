@@ -6,12 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Pencil, ChevronDown, ChevronUp, Plus, Link2, ExternalLink } from "lucide-react";
+import { Pencil, ChevronDown, ChevronUp, Plus, Link2, ExternalLink, MoreVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/useResponsive";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnhancedAchievements } from "@/hooks/useEnhancedAchievements";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface HomeTask {
   id: string;
@@ -386,12 +392,12 @@ export function HomeTasksTable({
           placeholder="Search tasks..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="text-sm h-7 w-full"
+          className="text-sm h-11 min-h-11 w-full"
         />
         
         <div className="flex gap-2">
           <Select value={filterPriority} onValueChange={setFilterPriority}>
-            <SelectTrigger className="h-7 text-xs flex-1">
+            <SelectTrigger className="h-11 min-h-11 text-xs flex-1">
               <SelectValue>
                 {filterPriority === 'all' ? 'Priority' : filterPriority === 'high' ? 'High' : filterPriority === 'medium' ? 'Med' : 'Low'}
               </SelectValue>
@@ -405,7 +411,7 @@ export function HomeTasksTable({
           </Select>
 
           <Select value={filterDiyLevel} onValueChange={setFilterDiyLevel}>
-            <SelectTrigger className="h-7 text-xs flex-1">
+            <SelectTrigger className="h-11 min-h-11 text-xs flex-1">
               <SelectValue>
                 {filterDiyLevel === 'all' ? 'DIY' : filterDiyLevel === 'beginner' ? 'Beg' : filterDiyLevel === 'intermediate' ? 'Int' : filterDiyLevel === 'advanced' ? 'Adv' : 'Pro'}
               </SelectValue>
@@ -423,7 +429,7 @@ export function HomeTasksTable({
             variant="outline"
             size="sm"
             onClick={() => setShowCompleted(!showCompleted)}
-            className="h-7 text-[10px] whitespace-nowrap px-2 border"
+            className="h-11 min-h-11 text-[10px] whitespace-nowrap px-2 border"
           >
             {showCompleted ? 'Hide' : 'Show'} Done
           </Button>
@@ -432,7 +438,7 @@ export function HomeTasksTable({
             <Button 
               onClick={onAddTask} 
               size="sm"
-              className="h-7 w-7 p-0"
+              className="h-11 w-11 min-h-11 min-w-11 p-0"
               title="Add Task"
             >
               <Plus className="h-4 w-4" />
@@ -446,7 +452,7 @@ export function HomeTasksTable({
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-none border border-x-0 border-border md:rounded-lg md:border-x">
         <div className="min-h-0 flex-1 overflow-auto">
           <Table wrapperClassName="overflow-visible">
-            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:!h-auto [&_th]:!min-h-[4.25rem] [&_th]:!px-1 [&_th]:!py-3 [&_th]:leading-none md:[&_th]:!min-h-11 md:[&_th]:!px-3 md:[&_th]:!py-2.5">
+            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:!h-auto [&_th]:!min-h-11 [&_th]:!px-1 [&_th]:!py-2 [&_th]:leading-none md:[&_th]:!min-h-11 md:[&_th]:!px-3 md:[&_th]:!py-2.5">
               <TableRow className="border-sky-500/50">
                 <TableHead className="w-11 shrink-0 text-center text-xs leading-none text-white md:w-14" aria-label="Complete">
                   <span className="sr-only">Complete</span>
@@ -498,12 +504,17 @@ export function HomeTasksTable({
                     Due <SortIcon field="due_date" />
                   </Button>
                 </TableHead>
+                {isMobile && (
+                  <TableHead className="w-11 shrink-0 text-xs text-white">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                )}
                 {!isMobile && <TableHead className="w-[150px] text-xs text-right text-white">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody className="max-md:[&_td]:!px-1.5 max-md:[&_td]:!py-3 md:[&_td]:!px-4 md:[&_td]:!py-3">
               {filteredAndSortedTasks.length === 0 ? <TableRow>
-                  <TableCell colSpan={isMobile ? 3 : 7} className="text-center py-6 md:py-8 text-sm md:text-[18px] text-muted-foreground">
+                  <TableCell colSpan={isMobile ? 4 : 7} className="text-center py-6 md:py-8 text-sm md:text-[18px] text-muted-foreground">
                     No tasks found. Add your first task to get started!
                   </TableCell>
                 </TableRow> : filteredAndSortedTasks.map(task => (
@@ -517,7 +528,7 @@ export function HomeTasksTable({
                             onTouchMove: handleTouchMove,
                             onTouchEnd: () => handleTouchEnd(task.id),
                             onClick: (e: React.MouseEvent) => {
-                              if ((e.target as HTMLElement).closest('button')) return;
+                              if ((e.target as HTMLElement).closest('button, [role="menu"], [data-radix-collection-item]')) return;
                               onEdit(task);
                             },
                           }
@@ -600,6 +611,69 @@ export function HomeTasksTable({
                     <TableCell className="text-sm md:text-[18px] whitespace-nowrap">
                       {task.due_date ? new Date(task.due_date).toLocaleDateString(undefined, isMobile ? { month: 'numeric', day: 'numeric', year: '2-digit' } : undefined) : '-'}
                     </TableCell>
+                    {isMobile && (
+                      <TableCell className="w-11 !p-1 align-middle">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-11 w-11 min-h-11 min-w-11 p-0"
+                              aria-label="Task actions"
+                              onClick={(e) => e.stopPropagation()}
+                              onTouchStart={(e) => e.stopPropagation()}
+                              onTouchMove={(e) => e.stopPropagation()}
+                              onTouchEnd={(e) => e.stopPropagation()}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="z-[100]">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                onEdit(task);
+                                setSwipedTaskId(null);
+                              }}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                if (task.project_run_id) {
+                                  if (onOpenLinkedProjectRun) {
+                                    onOpenLinkedProjectRun(task.project_run_id);
+                                  } else {
+                                    onProjectNavigate?.();
+                                    navigate('/', { state: { view: 'user', projectRunId: task.project_run_id } });
+                                  }
+                                } else {
+                                  onLinkProject(task);
+                                }
+                                setSwipedTaskId(null);
+                              }}
+                            >
+                              {task.project_run_id ? (
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                              ) : (
+                                <Link2 className="mr-2 h-4 w-4" />
+                              )}
+                              {task.project_run_id ? 'Open project' : 'Link project'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                onRapidCosting(task);
+                                setSwipedTaskId(null);
+                              }}
+                            >
+                              <span className="mr-2 inline-flex h-4 w-4 items-center justify-center text-sm font-medium">$</span>
+                              Budget
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                     {!isMobile && (
                       <TableCell className="text-right">
                         <div className="flex gap-1 justify-end">
@@ -654,7 +728,7 @@ export function HomeTasksTable({
                   </TableRow>
                   {isMobile && swipedTaskId === task.id && (
                     <TableRow key={`${task.id}-swipe-actions`} className="bg-muted/50">
-                      <TableCell colSpan={3} className="py-2">
+                      <TableCell colSpan={4} className="py-2">
                         <div className="flex flex-wrap gap-2 justify-end">
                           <Button
                             variant="outline"
@@ -716,7 +790,7 @@ export function HomeTasksTable({
                   )}
                    {expandedRows.has(task.id) && subtasks[task.id]?.length > 0 && (
                     <TableRow key={`${task.id}-subtasks`}>
-                      <TableCell colSpan={isMobile ? 3 : 7} className="bg-muted/30 p-2 md:p-4 border-l-4 border-l-primary/20">
+                      <TableCell colSpan={isMobile ? 4 : 7} className="bg-muted/30 p-2 md:p-4 border-l-4 border-l-primary/20">
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <div className="text-[18px] font-semibold text-primary">Subtasks</div>

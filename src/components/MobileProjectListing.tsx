@@ -152,6 +152,7 @@ export function MobileProjectListing({
     <div className="flex h-full min-h-0 flex-col bg-background">
       <WorkspaceSubViewHeader
         compactMobile
+        mobileTwoRowHomeControls
         screenTitle="Project Dashboard"
         screenIcon={<FolderKanban className="h-4 w-4 md:h-[18px] md:w-[18px]" aria-hidden />}
         helpTitle="About Project Dashboard"
@@ -169,16 +170,16 @@ export function MobileProjectListing({
               placeholder="Search projects..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 pl-8 text-xs md:h-10 md:pl-9 md:text-sm"
+              className="h-11 pl-8 text-xs md:h-10 md:pl-9 md:text-sm"
             />
           </div>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="h-8 shrink-0 px-2.5 md:h-10 md:px-3"
+            className="h-11 shrink-0 px-2.5 md:h-10 md:px-3"
             title="Sort order"
-            aria-label="Sort projects"
+            aria-label={`Sort: ${sortBy}`}
             onClick={() => {
               const nextSort = sortBy === 'recent' ? 'name' : sortBy === 'name' ? 'progress' : 'recent';
               setSortBy(nextSort);
@@ -191,7 +192,7 @@ export function MobileProjectListing({
               type="button"
               variant="default"
               size="sm"
-              className="h-8 shrink-0 px-2.5 md:h-10 md:px-3"
+              className="h-11 shrink-0 px-2.5 md:h-10 md:px-3"
               onClick={() => {
                 onNewProject();
               }}
