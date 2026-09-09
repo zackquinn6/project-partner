@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { parseProcessVariablesFromDb, serializeProcessVariablesForDb } from '@/utils/processVariablesUtils';
 import { cn } from '@/lib/utils';
@@ -215,7 +216,7 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
       const { error: upErr } = await supabase
         .from('operation_steps')
         .update({
-          outputs: next,
+          outputs: next as unknown as Json,
           updated_at: new Date().toISOString(),
         })
         .eq('id', dialog.stepId);
@@ -278,7 +279,7 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
       const { error: upErr } = await supabase
         .from('operation_steps')
         .update({
-          process_variables: serializeProcessVariablesForDb(next),
+          process_variables: serializeProcessVariablesForDb(next) as unknown as Json,
           updated_at: new Date().toISOString(),
         })
         .eq('id', dialog.stepId);
@@ -309,7 +310,7 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
         const next = current.filter((o) => o.id !== deleteTarget.outputId);
         const { error: upErr } = await supabase
           .from('operation_steps')
-          .update({ outputs: next, updated_at: new Date().toISOString() })
+          .update({ outputs: next as unknown as Json, updated_at: new Date().toISOString() })
           .eq('id', deleteTarget.stepId);
         if (upErr) throw upErr;
               } else {
@@ -324,7 +325,7 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
         const { error: upErr } = await supabase
           .from('operation_steps')
           .update({
-            process_variables: serializeProcessVariablesForDb(next),
+            process_variables: serializeProcessVariablesForDb(next) as unknown as Json,
             updated_at: new Date().toISOString(),
           })
           .eq('id', deleteTarget.stepId);

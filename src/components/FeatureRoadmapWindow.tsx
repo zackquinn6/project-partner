@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+
+const db: any = supabase;
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -120,13 +122,13 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
     };
     if (user) {
       try {
-        const userVotesResponse = await supabase
+        const userVotesResponse = await db
           .from('feature_votes')
           .select('item_id, item_type')
           .eq('user_id', user.id);
 
         if (userVotesResponse.error) throw userVotesResponse.error;
-        (userVotesResponse.data || []).forEach(vote => {
+        (userVotesResponse.data || []).forEach((vote: any) => {
           const t = vote.item_type as 'roadmap' | 'request';
           if (t === 'roadmap' || t === 'request') {
             votes[t].add(vote.item_id);
@@ -152,7 +154,7 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
     try {
       const {
         error
-      } = await supabase.from('feature_requests').insert({
+      } = await db.from('feature_requests').insert({
         ...requestForm,
         submitted_by: user.id
       });
@@ -190,7 +192,7 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
         // Remove vote
         const {
           error
-        } = await supabase.from('feature_votes').delete().eq('user_id', user.id).eq('item_id', itemId).eq('item_type', itemType);
+        } = await db.from('feature_votes').delete().eq('user_id', user.id).eq('item_id', itemId).eq('item_type', itemType);
         if (error) throw error;
         setUserVotes(prev => ({
           ...prev,
@@ -200,7 +202,7 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
         // Add vote
         const {
           error
-        } = await supabase.from('feature_votes').insert({
+        } = await db.from('feature_votes').insert({
           user_id: user.id,
           item_id: itemId,
           item_type: itemType

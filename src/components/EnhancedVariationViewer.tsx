@@ -19,6 +19,8 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+
+const db: any = supabase;
 import { toast } from 'sonner';
 import { buildPricingModelRowsForVariation } from '@/utils/pricingModelLabels';
 
@@ -108,7 +110,7 @@ export function EnhancedVariationViewer({
           .eq('core_item_id', coreItemId),
         skipWarningFlagsFetch
           ? Promise.resolve({ data: [] as WarningFlag[] | null, error: null })
-          : supabase.from('warning_flags').select('*').order('name'),
+          : db.from('warning_flags').select('*').order('name'),
       ]);
 
       const { data: variationsData, error: variationsError } = variationsRes;
@@ -128,7 +130,7 @@ export function EnhancedVariationViewer({
           throw flagsError;
         }
       } else {
-        setWarningFlags(flagsData || []);
+        setWarningFlags((flagsData || []) as WarningFlag[]);
       }
 
       setVariations((variationsData || []).map(v => ({
@@ -142,7 +144,7 @@ export function EnhancedVariationViewer({
         const pricingByModel: Record<string, PricingData[]> = {};
 
         for (const v of variationsData) {
-          const raw = v.pricing as PricingData[] | null;
+          const raw = v.pricing as unknown as PricingData[] | null;
           const list = Array.isArray(raw) ? raw : [];
           modelsByVariation[v.id] = buildPricingModelRowsForVariation({
             variationId: v.id,

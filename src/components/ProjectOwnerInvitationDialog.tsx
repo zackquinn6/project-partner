@@ -45,7 +45,7 @@ export const ProjectOwnerInvitationDialog: React.FC<ProjectOwnerInvitationDialog
       expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
 
       // Check if user already exists
-      const { data: profileData } = await supabase
+      const { data: profileData } = await (supabase as any)
         .from('user_profiles')
         .select('user_id')
         .eq('email', email.toLowerCase())

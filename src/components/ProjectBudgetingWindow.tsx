@@ -332,7 +332,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         budget_data: budgetData
       };
 
-      await updateProjectRun(updatedProjectRun);
+      await updateProjectRun(updatedProjectRun as any);
       
       // CRITICAL: Update local state immediately to reflect the saved data
       // This ensures the UI shows the saved data even if context hasn't updated yet
@@ -413,7 +413,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
     setNewItemSection(item.section);
     setNewItemName(item.item);
     setNewItemAmount(item.budgetedAmount.toString());
-    setNewItemCategory(item.category);
+    setNewItemCategory(item.category as any);
   };
 
   const cancelEditItem = () => {
@@ -636,7 +636,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
           />
         )}
         <div
-          data-dialog-content
+          {...({ 'data-dialog-content': true } as any)}
           onClick={(e) => e.stopPropagation()}
           className={cn(
             // Mobile: Full screen
@@ -652,7 +652,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             pointerEvents: 'auto',
             position: 'fixed'
           }}
-          onPointerDownOutside={(e) => {
+          {...({ onPointerDownOutside: (e: any) => {
             // CRITICAL: Prevent closing when clicking outside if performance window is open
             if (performanceWindowOpen) {
               e.preventDefault();
@@ -663,7 +663,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
             if (target.closest('[data-dialog-content]') && target.closest('[data-dialog-content]') !== e.currentTarget) {
               e.preventDefault();
             }
-          }}
+          } } as any)}
         >
         <DialogHeader className={cn(PLANNING_TOOL_WINDOW_HEADER_CLASSNAME, 'flex-shrink-0')}>
           <DialogTitle className={PLANNING_TOOL_WINDOW_TITLE_CLASSNAME}>Project Budgeting</DialogTitle>

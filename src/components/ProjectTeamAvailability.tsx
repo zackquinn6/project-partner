@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+const db: any = supabase;
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -79,7 +80,7 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
       if (!user) return;
 
       try {
-        const { data, error } = await supabase
+        const { data, error } = await db
           .from('user_team_members')
           .select('*')
           .eq('user_id', user.id)
@@ -279,7 +280,7 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
 
     try {
       // Save to database
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('user_team_members')
         .insert({
           user_id: user.id,
@@ -330,7 +331,7 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
     if (member.dbId && user) {
       setIsLoading(true);
       try {
-        const { error } = await supabase
+        const { error } = await db
           .from('user_team_members')
           .delete()
           .eq('id', member.dbId)
@@ -403,7 +404,7 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
     try {
       // If member has database ID, update in database
       if (updatedMember.dbId) {
-        const { error } = await supabase
+        const { error } = await db
           .from('user_team_members')
           .update({
             name: updatedMember.name,

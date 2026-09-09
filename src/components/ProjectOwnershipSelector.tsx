@@ -74,7 +74,7 @@ export const ProjectOwnershipSelector: React.FC<ProjectOwnershipSelectorProps> =
         // Get profiles for current owners
         if (ownersData && ownersData.length > 0) {
           const ownerUserIds = ownersData.map((o:any) => o.user_id).filter(Boolean) as string[];
-          const { data: ownerProfiles } = await supabase
+          const { data: ownerProfiles } = await (supabase as any)
             .from('user_profiles')
             .select('user_id, email, display_name')
             .in('user_id', ownerUserIds);
@@ -128,7 +128,7 @@ export const ProjectOwnershipSelector: React.FC<ProjectOwnershipSelectorProps> =
       // Get profiles for current owners
       if (ownersData && ownersData.length > 0) {
         const ownerUserIds = ownersData.map((o:any) => o.user_id).filter(Boolean) as string[];
-        const { data: ownerProfiles } = await supabase
+        const { data: ownerProfiles } = await (supabase as any)
           .from('user_profiles')
           .select('user_id, email, display_name')
           .in('user_id', ownerUserIds);

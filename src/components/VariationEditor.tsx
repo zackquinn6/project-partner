@@ -10,6 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
+
+const db: any = supabase;
 import { toast } from 'sonner';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { MultiContentEditor } from './MultiContentEditor';
@@ -121,7 +124,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
         .single();
 
       if (varError) throw varError;
-      const raw = varData?.pricing as PricingData[] | null;
+      const raw = varData?.pricing as unknown as PricingData[] | null;
       const list = Array.isArray(raw) ? raw : [];
       setPricing(list);
 
@@ -151,7 +154,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
         return;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('warning_flags')
         .select('*')
         .order('name');
@@ -169,7 +172,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
         }
         throw error;
       }
-      setAvailableWarnings(data || []);
+      setAvailableWarnings((data || []) as WarningFlag[]);
     } catch (error) {
       console.error('Error fetching warning flags:', error);
       setAvailableWarnings([]);
@@ -249,7 +252,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
 
       const { error } = await supabase
         .from('tool_variations')
-        .update({ pricing: nextPricing, updated_at: new Date().toISOString() })
+        .update({ pricing: nextPricing as unknown as Json, updated_at: new Date().toISOString() })
         .eq('id', variation.id);
 
       if (error) throw error;
@@ -267,7 +270,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
       const nextPricing = pricing.filter(p => p.id !== pricingId);
       const { error } = await supabase
         .from('tool_variations')
-        .update({ pricing: nextPricing, updated_at: new Date().toISOString() })
+        .update({ pricing: nextPricing as unknown as Json, updated_at: new Date().toISOString() })
         .eq('id', variation.id);
 
       if (error) throw error;

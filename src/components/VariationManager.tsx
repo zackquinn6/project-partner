@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, X, Edit2, Trash2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+
+const db: any = supabase;
 import { toast } from 'sonner';
 import {
   fetchAttributeDefinitionsForCoreItem,
@@ -320,7 +322,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
         coreItemId
       );
 
-      const { data: variationData, error } = await supabase
+      const { data: variationData, error } = await db
         .from('tool_variations')
         .insert({
           id: crypto.randomUUID(),

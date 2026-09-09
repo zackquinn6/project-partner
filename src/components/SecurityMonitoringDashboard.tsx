@@ -33,7 +33,7 @@ export const SecurityMonitoringDashboard: React.FC = () => {
 
   const loadSecurityEvents = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('security_events_log')
         .select('*')
         .order('created_at', { ascending: false })

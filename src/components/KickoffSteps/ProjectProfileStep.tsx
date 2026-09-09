@@ -710,7 +710,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     );
   }
 
-  const scalingLabel = getScalingUnitShortLabel(scalingUnit, itemType, templateProject);
+  const scalingLabel = getScalingUnitShortLabel(scalingUnit, itemType, templateProject as any);
 
   const renderGoalFieldsGrid = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 max-w-md md:max-w-none mx-auto md:mx-0">

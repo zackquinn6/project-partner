@@ -104,7 +104,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
         ...profileData,
         owned_tools: Array.isArray(profileData.owned_tools) ? profileData.owned_tools : [],
       };
-      setExistingProfile(completeProfile);
+      setExistingProfile(completeProfile as any);
     } catch (error) {
       console.error('Error loading profile:', error);
       setExistingProfile(null);
@@ -351,7 +351,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
           homeOwnership: existingProfile?.home_ownership || "",
           homeBuildYear: existingProfile?.home_build_year || "",
           homeState: existingProfile?.home_state || "",
-          projectFocus: existingProfile?.project_focus ?? undefined,
+          projectFocus: (existingProfile?.project_focus ?? undefined) as any,
           ownedTools: existingProfile?.owned_tools || [],
           fullName: existingProfile?.full_name || "",
           nickname: existingProfile?.nickname || "",

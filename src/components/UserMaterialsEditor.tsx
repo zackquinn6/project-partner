@@ -117,7 +117,7 @@ export function UserMaterialsEditor({ initialMode = 'library', onBackToLibrary }
 
       // Link to canonical photos (core + variation) instead of copying image data.
       const materialIds = Array.from(new Set(rawMaterials.map(m => m.material_id).filter(Boolean))) as string[];
-      const [corePhotosRes, variationPhotosRes] = await Promise.all([
+      const [corePhotosRes, variationPhotosRes]: any = await Promise.all([
         materialIds.length > 0
           ? supabase.from('materials').select('id, photo_url').in('id', materialIds)
           : Promise.resolve({ data: [], error: null } as const),

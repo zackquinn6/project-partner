@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
+
+const db: any = supabase;
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -600,7 +603,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       const stepIds = [...new Set(rows.map((r) => r.operation_step_id))];
       const wfByStep: Record<string, WorkflowStepProcessVariableRow[]> = {};
       if (stepIds.length > 0) {
-        const { data: wspv, error: wspvErr } = await supabase
+        const { data: wspv, error: wspvErr } = await db
           .from('workflow_step_process_variables')
           .select('id, step_id, variable_key, label, description, variable_type, unit, required')
           .in('step_id', stepIds)
@@ -608,7 +611,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         if (wspvErr) {
           console.error('workflow_step_process_variables load:', wspvErr);
         } else {
-          for (const row of wspv ?? []) {
+          for (const row of (wspv ?? []) as any[]) {
             const sid = row.step_id as string;
             if (!wfByStep[sid]) wfByStep[sid] = [];
             wfByStep[sid].push(row as WorkflowStepProcessVariableRow);
@@ -761,7 +764,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
         const { error: upErr } = await supabase
           .from('operation_steps')
-          .update({ outputs: next })
+          .update({ outputs: next as unknown as Json })
           .eq('id', req.operation_step_id);
         if (upErr) throw upErr;
 
@@ -1572,7 +1575,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
       const { error: updateErr } = await supabase
         .from('operation_steps')
-        .update({ outputs: next })
+        .update({ outputs: next as unknown as Json })
         .eq('id', operationStepId);
       if (updateErr) throw updateErr;
 
@@ -1635,7 +1638,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
       const { error: updateErr } = await supabase
         .from('operation_steps')
-        .update({ process_variables: serializeProcessVariablesForDb(next) })
+        .update({ process_variables: serializeProcessVariablesForDb(next) as unknown as Json })
         .eq('id', operationStepId);
       if (updateErr) throw updateErr;
 

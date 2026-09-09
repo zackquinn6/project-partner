@@ -636,7 +636,7 @@ export function MaintenancePlanWorkflow({
       }
 
       if (toInsert.length > 0) {
-        const { error } = await supabase.from('user_maintenance_tasks').insert(toInsert);
+        const { error } = await (supabase as any).from('user_maintenance_tasks').insert(toInsert);
         if (error) throw error;
       }
 
@@ -1166,7 +1166,7 @@ export function MaintenancePlanWorkflow({
                   <div className="space-y-4">
                     <Slider
                       value={[maintenanceLevel]}
-                      onValueChange={([v]) => setMaintenanceLevel(v)}
+                      onValueChange={([v]) => setMaintenanceLevel(v as 1 | 2 | 3)}
                       min={1}
                       max={3}
                       step={1}

@@ -71,7 +71,7 @@ export function ProjectCertificate({ projectRun, onClose }: ProjectCertificatePr
         image_data: imageDataUrl
       };
 
-      const { error: saveError } = await supabase
+      const { error: saveError } = await (supabase as any)
         .from('project_certificates')
         .upsert({
           user_id: user.id,

@@ -32,11 +32,16 @@ export interface Worker {
   id: string;
   name: string;
   type: 'owner' | 'helper';
-  skillLevel: 'novice' | 'intermediate' | 'expert';
+  skillLevel: 'novice' | 'intermediate' | 'expert' | string;
   availability: TimeSlot[];
   costPerHour?: number;
   email?: string;
   phone?: string;
+  maxTotalHours?: number;
+  weekendsOnly?: boolean;
+  weekdaysAfterFivePm?: boolean;
+  workingHours?: { start: string; end: string };
+  effortLevel?: string;
   notificationPreferences?: {
     email: boolean;
     sms: boolean;
@@ -51,6 +56,7 @@ export interface SiteConstraints {
   weekendsOnly: boolean;
   allowNightWork: boolean;
   noiseCurfew?: string; // Time after which noisy work is not allowed
+  lunchDuration?: number;
 }
 
 export interface SchedulingInputs {
@@ -67,6 +73,7 @@ export interface SchedulingInputs {
   completionPriority?: 'agile' | 'waterfall'; // Agile: complete space end-to-end, Waterfall: complete phase across all spaces
   scheduleOptimizationMethod?: string;
   planningMode?: string;
+  quietHours?: { start: string; end: string };
 }
 
 export interface ScheduledTask {

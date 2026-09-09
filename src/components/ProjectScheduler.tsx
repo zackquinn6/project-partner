@@ -368,14 +368,14 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           email: false,
           sms: false
         }
-      })) as TeamMember[];
+      })) as unknown as TeamMember[];
       setTeamMembers(mergedTeamMembers);
     }
     if (savedData.globalSettings?.quietHours) {
       setQuietHours(savedData.globalSettings.quietHours);
     }
-    if (savedData.lunchDuration) {
-      setLunchDuration(savedData.lunchDuration);
+    if ((savedData as any).lunchDuration) {
+      setLunchDuration((savedData as any).lunchDuration);
     }
     // Load schedule optimization method from project run
     if (projectRun?.schedule_optimization_method) {
@@ -417,11 +417,11 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           .from('project_run_spaces')
           .select('id, space_name, priority, scale_value, scale_unit, sizing_by_unit')
           .eq('project_run_id', projectRun.id)
-          .order('priority', { ascending: true, nullsLast: true });
+          .order('priority', { ascending: true, nullsFirst: false } as any);
 
         if (spacesError) throw spacesError;
 
-        setSpaces((spacesData || []).map((space: { id: string; space_name: string; priority?: number; scale_value?: number; scale_unit?: string; sizing_by_unit?: Record<string, number> | null }) => {
+        setSpaces((spacesData || []).map((space: any) => {
           const relationalSizing = (space.sizing_by_unit && typeof space.sizing_by_unit === 'object') ? space.sizing_by_unit as Record<string, number> : {};
           const sizing = Object.keys(relationalSizing).length > 0 ? relationalSizing : (space.scale_value != null && space.scale_unit ? { [space.scale_unit]: space.scale_value } : {});
           return {
@@ -954,7 +954,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             workerId: tm.id,
             isAvailable: true
           }]
-        })),
+        })) as unknown as Worker[],
         siteConstraints: {
           allowedWorkHours: {
             weekdays: {
@@ -1511,10 +1511,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               scheduleOptimizationMethod={scheduleOptimizationMethod} 
               setScheduleOptimizationMethod={setScheduleOptimizationMethod} 
               onPresetApply={applyPreset} 
-              teamMembers={teamMembers} 
+              teamMembers={teamMembers as any} 
               addTeamMember={addTeamMember} 
               removeTeamMember={removeTeamMember} 
-              updateTeamMember={updateTeamMember} 
+              updateTeamMember={updateTeamMember as any} 
               openCalendar={openCalendar} 
               onGenerateSchedule={computeAdvancedSchedule} 
               isComputing={isComputing} 
@@ -1991,7 +1991,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             <PhaseAssignment
               projectRunId={projectRun.id}
               phases={project.phases}
-              teamMembers={teamMembers}
+              teamMembers={teamMembers as any}
               userId={user.id}
             />
           )}
@@ -2036,7 +2036,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           type: tm.type,
           skillLevel: tm.skillLevel,
           availability: []
-        }))}
+        })) as any}
       />
     )}
     

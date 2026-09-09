@@ -139,7 +139,7 @@ export function UnifiedProjectManagement({
     if (!selectedProject || !selectedProject.phases || selectedProject.phases.length === 0) {
       return null;
     }
-    return calculateProjectTimeEstimate(selectedProject);
+    return calculateProjectTimeEstimate(selectedProject as any);
   }, [
     selectedProject?.id, // Recalculate when project changes
     selectedProject?.scaling_unit, // Recalculate when scaling unit changes
@@ -1280,7 +1280,7 @@ export function UnifiedProjectManagement({
 
       const mappedProject = {
         ...updatedProject,
-        project_challenges: updatedProject.project_challenges ?? updatedProject.diy_length_challenges ?? null,
+        project_challenges: updatedProject.project_challenges ?? (updatedProject as any).diy_length_challenges ?? null,
         project_type: updatedProject.project_type || 'primary',
         images: updatedProject.images || [],
         cover_image: updatedProject.cover_image || null
@@ -1386,7 +1386,7 @@ export function UnifiedProjectManagement({
         createdAt: new Date(standardProject.created_at),
         updatedAt: new Date(standardProject.updated_at),
         publishStatus: 'draft' as const,
-        phases: transformedPhases,
+        phases: transformedPhases as any,
         isStandardTemplate: true,
         category: []
       });
@@ -2345,7 +2345,7 @@ export function UnifiedProjectManagement({
                           if (!error && data) {
                             const updatedProject = {
                               ...data,
-                              project_challenges: data.project_challenges ?? data.diy_length_challenges ?? null,
+                              project_challenges: data.project_challenges ?? (data as any).diy_length_challenges ?? null,
                               project_type: data.project_type || 'primary',
                               images: data.images || [],
                               cover_image: data.cover_image || null

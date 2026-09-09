@@ -103,7 +103,7 @@ export const ScheduleViewDialog: React.FC<ScheduleViewDialogProps> = ({
                         end: '17:00'
                       },
                       availability: []
-                    }))}
+                    })) as any}
                   />
                 </TabsContent>
               </div>

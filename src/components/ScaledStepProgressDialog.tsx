@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+const db: any = supabase;
 import { toast } from 'sonner';
 
 interface ProjectRunSpace {
@@ -57,7 +58,7 @@ export const ScaledStepProgressDialog: React.FC<ScaledStepProgressDialogProps> =
     setLoading(true);
     try {
       // Load project spaces
-      const { data: spacesData, error: spacesError } = await supabase
+      const { data: spacesData, error: spacesError } = await db
         .from('project_run_spaces')
         .select('*')
         .eq('project_run_id', projectRunId)
@@ -66,7 +67,7 @@ export const ScaledStepProgressDialog: React.FC<ScaledStepProgressDialogProps> =
       if (spacesError) throw spacesError;
 
       // Load existing progress for this step
-      const { data: progressData, error: progressError } = await supabase
+      const { data: progressData, error: progressError } = await db
         .from('scaled_step_progress')
         .select('*')
         .eq('project_run_id', projectRunId)
@@ -140,7 +141,7 @@ export const ScaledStepProgressDialog: React.FC<ScaledStepProgressDialogProps> =
         progress_percentage: percentage
       }));
 
-      const { error } = await supabase
+      const { error } = await db
         .from('scaled_step_progress')
         .upsert(progressRecords, {
           onConflict: 'project_run_id,step_id,space_id'

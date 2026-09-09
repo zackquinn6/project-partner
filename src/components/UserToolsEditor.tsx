@@ -207,7 +207,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
       }
       
       // Map 'name' to 'item' for backward compatibility if needed
-      const mappedData = (data || []).map(tool => ({
+      const mappedData = (data || []).map((tool: any) => ({
         ...tool,
         item: tool.name || tool.item || ''
       }));
@@ -235,7 +235,7 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
 
       const fromProfileRaw = profile?.owned_tools;
       const fromProfile: UserOwnedTool[] = Array.isArray(fromProfileRaw)
-        ? (fromProfileRaw as UserOwnedTool[]).map((t) => ({
+        ? (fromProfileRaw as any[]).map((t: any) => ({
             ...t,
             item: t.item ?? t.name ?? '',
           }))

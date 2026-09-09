@@ -161,7 +161,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
 
   const repairSavingsStr = String(form.repair_cost_savings ?? '').trim();
   const repairSavingsNum = repairSavingsStr === '' ? '' : parseInt(repairSavingsStr, 10);
-  const repairSavingsValid = repairSavingsStr === '' || (Number.isInteger(repairSavingsNum) && repairSavingsNum >= 0);
+  const repairSavingsValid = repairSavingsStr === '' || (Number.isInteger(repairSavingsNum) && (repairSavingsNum as number) >= 0);
 
   return (
     <div className="flex flex-col min-h-0 flex-1 text-[0.75rem]">
@@ -1362,7 +1362,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
         }}
       />
 
-      {selectedTask && <TaskCompletionDialog open={!!selectedTask} onOpenChange={open => !open && setSelectedTask(null)} task={selectedTask} onCompleted={handleTaskCompleted} />}
+      {selectedTask && <TaskCompletionDialog open={!!selectedTask} onOpenChange={open => !open && setSelectedTask(null)} task={selectedTask as any} onCompleted={handleTaskCompleted} />}
 
       <Dialog open={showAlerts} onOpenChange={setShowAlerts}>
         <DialogContent

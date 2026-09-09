@@ -3269,7 +3269,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   /**
    * Helper to update phase position in database
    */
-  const updatePhasePosition = useCallback(async (phaseId: string, orderNumber: number | 'last', totalPhases: number) => {
+  const updatePhasePosition = useCallback(async (phaseId: string, orderNumber: number | 'first' | 'last', totalPhases: number) => {
     if (!currentProject?.id) return;
     
     let positionRule: string;

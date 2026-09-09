@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Edit, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+
+const db: any = supabase;
 import {
   fetchAttributeDefinitionsForCoreItem,
   fetchAttributeDefinitionsForMaterial,
@@ -118,7 +120,7 @@ export function VariationViewer({ open, onOpenChange, coreItemId, coreItemName, 
           setPricing([]);
         } else {
           const flatPricing = (variationsData || []).flatMap(
-            (v) => (v.pricing as PricingData[] | null) || []
+            (v) => (v.pricing as unknown as PricingData[] | null) || []
           );
           setPricing(flatPricing);
 
