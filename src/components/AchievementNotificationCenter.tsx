@@ -30,6 +30,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { AchievementsFullDialog } from '@/components/AchievementsFullDialog';
+import { cn } from '@/lib/utils';
 
 const RECENT_ACHIEVEMENTS_SHOWN = 5;
 
@@ -182,7 +183,6 @@ export function AchievementNotificationCenter() {
   };
 
   const recentNotifications = notifications.slice(0, RECENT_ACHIEVEMENTS_SHOWN);
-  const hasMoreUnlocks = notifications.length > RECENT_ACHIEVEMENTS_SHOWN;
 
   const openFullAchievements = () => {
     setPopoverOpen(false);
@@ -195,105 +195,112 @@ export function AchievementNotificationCenter() {
         <PopoverTrigger asChild>
           <Button variant="ghost" size="icon" className="relative" aria-label="Achievements">
             <Medal className="h-5 w-5" />
-            {unreadCount > 0 && (
+            {unreadCount > 0 ? (
               <Badge
                 variant="destructive"
-                className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center p-0 text-xs"
+                className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center px-1 text-[10px]"
               >
-                {unreadCount}
+                {unreadCount > 9 ? '9+' : unreadCount}
               </Badge>
-            )}
+            ) : null}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[min(100vw-2rem,20rem)] p-0 sm:w-80" align="end">
-          <div className="flex items-start justify-between gap-2 border-b px-3 py-3 sm:px-4">
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold leading-tight">Recent trophies</h3>
-              <p className="text-xs text-muted-foreground">Latest craft unlocks</p>
-            </div>
+        <PopoverContent
+          className="w-[min(100vw-1.25rem,20rem)] overflow-hidden rounded-2xl p-0 shadow-lg sm:w-80"
+          align="end"
+          sideOffset={8}
+        >
+          <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
+            <h3 className="text-sm font-semibold tracking-tight">Achievements</h3>
             {unreadCount > 0 ? (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={markAllAsRead}
-                className="h-8 shrink-0 text-xs"
+                className="h-7 px-2 text-xs text-muted-foreground"
               >
-                Mark all read
+                Mark read
               </Button>
             ) : null}
           </div>
 
-          <ScrollArea className="max-h-[min(50vh,280px)]">
+          <ScrollArea className="max-h-[min(55vh,22rem)]">
             {loading ? (
-              <div className="p-4 text-center text-sm text-muted-foreground">Loading…</div>
+              <div className="space-y-2 p-4" aria-busy="true">
+                <div className="h-12 animate-pulse rounded-xl bg-muted" />
+                <div className="h-12 animate-pulse rounded-xl bg-muted" />
+                <div className="h-12 animate-pulse rounded-xl bg-muted" />
+              </div>
             ) : notifications.length === 0 ? (
-              <div className="px-4 py-6 text-center text-muted-foreground">
-                <Medal className="mx-auto mb-2 h-10 w-10 opacity-50" />
-                <p className="text-sm">No trophies yet</p>
-                <p className="mt-1 text-xs">Finish projects to unlock craft badges.</p>
+              <div className="flex flex-col items-center px-4 py-8 text-center">
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
+                  <Medal className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm font-medium text-foreground">None yet</p>
+                <p className="mt-1 max-w-[14rem] text-xs text-muted-foreground">
+                  Finish a project to earn your first badge.
+                </p>
               </div>
             ) : (
-              <div className="divide-y">
+              <div className="p-2">
                 {recentNotifications.map((notification) => {
                   const IconComponent =
                     iconMap[notification.achievement?.icon ?? ''] || Trophy;
                   return (
-                    <div
+                    <button
                       key={notification.id}
-                      role="button"
-                      tabIndex={0}
-                      className={`cursor-pointer px-3 py-2.5 transition-colors sm:px-4 sm:py-3 ${
-                        !notification.is_read ? 'bg-muted/50' : ''
-                      } hover:bg-muted`}
+                      type="button"
+                      className={cn(
+                        'flex w-full items-start gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors',
+                        !notification.is_read ? 'bg-primary/[0.06]' : 'hover:bg-muted/70'
+                      )}
                       onClick={() => markAsRead(notification.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          markAsRead(notification.id);
-                        }
-                      }}
                     >
-                      <div className="flex items-start gap-2.5 sm:gap-3">
-                        <div className="rounded-lg bg-primary/10 p-1.5 text-primary sm:p-2">
-                          <IconComponent className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0 flex-1">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <IconComponent className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
                           <p className="text-sm font-semibold leading-snug">
                             {notification.achievement?.name ?? 'Achievement'}
                           </p>
-                          <p className="line-clamp-2 text-xs text-muted-foreground">
-                            {notification.achievement?.description ?? ''}
-                          </p>
-                          <p className="mt-0.5 text-[11px] text-muted-foreground">
-                            {new Date(notification.created_at).toLocaleDateString()}
-                          </p>
+                          {!notification.is_read ? (
+                            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                          ) : null}
                         </div>
-                        {!notification.is_read ? (
-                          <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                        ) : null}
+                        <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                          {notification.achievement?.description ?? ''}
+                        </p>
+                        <p className="mt-1 text-[11px] text-muted-foreground/80">
+                          {new Date(notification.created_at).toLocaleDateString()}
+                        </p>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
             )}
           </ScrollArea>
 
-          <div className="border-t p-3 sm:p-4">
-            {hasMoreUnlocks ? (
-              <p className="mb-2 text-center text-[11px] text-muted-foreground">
-                Showing {RECENT_ACHIEVEMENTS_SHOWN} most recent
-              </p>
-            ) : null}
-            <Button type="button" variant="default" className="w-full" size="sm" onClick={openFullAchievements}>
-              View trophy case
+          <div className="border-t p-3">
+            <Button
+              type="button"
+              variant="default"
+              className="h-9 w-full rounded-xl"
+              size="sm"
+              onClick={openFullAchievements}
+            >
+              View all
             </Button>
           </div>
         </PopoverContent>
       </Popover>
 
-      <AchievementsFullDialog open={fullAchievementsOpen} onOpenChange={setFullAchievementsOpen} />
+      <AchievementsFullDialog
+        open={fullAchievementsOpen}
+        onOpenChange={setFullAchievementsOpen}
+      />
     </>
   );
 }

@@ -45,12 +45,12 @@ export interface UserAchievementStats {
 }
 
 export const ACHIEVEMENT_SHELF_LABELS: Record<AchievementShelf, string> = {
-  volume: 'Shop volume',
-  trade: 'Trade mastery',
-  peak: 'Hard finishes',
+  volume: 'Volume',
+  trade: 'Trade',
+  peak: 'Peak',
   cadence: 'Cadence',
-  evidence: 'Jobsite evidence',
-  stewardship: 'Home stewardship',
+  evidence: 'Evidence',
+  stewardship: 'Upkeep',
 };
 
 export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
@@ -458,7 +458,7 @@ export interface AchievementProgress {
   target: number;
 }
 
-/** Partial progress toward a ladder badge (for trophy-case UI). */
+/** Partial progress toward a ladder badge (for achievements UI). */
 export function achievementProgress(
   criteria: Record<string, unknown>,
   completedProjects: Record<string, unknown>[],
