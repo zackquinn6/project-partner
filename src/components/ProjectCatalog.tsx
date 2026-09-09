@@ -258,7 +258,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (Array.isArray(project.category)
           ? project.category.some(cat => cat?.toLowerCase().includes(searchTerm.toLowerCase()))
-          : project.category?.toLowerCase().includes(searchTerm.toLowerCase()));
+          : (project.category as string | undefined)?.toLowerCase().includes(searchTerm.toLowerCase()));
 
       // Category filter
       const projectCategories = Array.isArray(project.category) ? project.category : (project.category ? [project.category] : []);
@@ -267,7 +267,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
       // Difficulty filter
       const matchesDifficulty = selectedDifficulties.length === 0 || 
-        (project.difficulty && selectedDifficulties.includes(project.difficulty));
+        ((project as any).difficulty && selectedDifficulties.includes((project as any).difficulty));
 
       // Effort level filter
       const matchesEffortLevel = selectedEffortLevels.length === 0 || 
