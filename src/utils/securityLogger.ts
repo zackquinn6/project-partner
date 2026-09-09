@@ -21,7 +21,7 @@ export interface SecurityEvent {
 export const logSecurityEvent = async (event: SecurityEvent): Promise<void> => {
   try {
     // Use the existing log_security_event function
-    const { error } = await supabase.rpc('log_security_event', {
+    const { error } = await supabase.rpc('log_security_event' as any, {
       event_type: event.eventType,
       event_description: `${event.severity.toUpperCase()}: ${event.description}${event.additionalData ? ` | Data: ${JSON.stringify(event.additionalData)}` : ''}`,
       user_email: event.userEmail,

@@ -105,7 +105,7 @@ export const ProjectTimeEstimator: React.FC<ProjectTimeEstimatorProps> = ({
   };
 
   const getScalingUnitDisplay = () => {
-    switch (scalingUnit) {
+  switch (scalingUnit as string) {
       case 'per square feet':
       case 'per square foot': return 'sq ft';
       case 'per 10x10 room': return 'rooms';

@@ -224,6 +224,12 @@ export interface WorkflowStep {
   isStandard?: boolean;
   // Allow content editing flag - if true, allows editing content even in standard phases
   allowContentEdit?: boolean;
+  // Additive scheduling/import helper fields
+  scalingUnit?: string;
+  operationId?: string;
+  stepTitle?: string;
+  phaseId?: string;
+  phaseName?: string;
 }
 
 export interface Operation {
@@ -234,6 +240,7 @@ export interface Operation {
   dependentOn?: string; // ID of operation that must be completed first
   // Standard content flag - marks operations from Standard Project Foundation
   isStandard?: boolean;
+  flowType?: 'prime' | 'alternate' | 'if-necessary';
 }
 
 export interface Phase {
@@ -254,6 +261,8 @@ export interface Phase {
   isStandard?: boolean;
   // Phase order number: 'first', 'last', or integer (1-based)
   phaseOrderNumber?: 'first' | 'last' | number;
+  position_rule?: string;
+  position_value?: number;
 }
 
 export interface Project {

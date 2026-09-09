@@ -33,7 +33,7 @@ export async function syncPhaseToDatabase(
       
       // Check if operation already exists in database
       // Note: custom_phase_name removed, match by phase_id instead
-      const { data: phaseRecord } = await supabase
+      const { data: phaseRecord } = await db
         .from('project_phases')
         .select('id')
         .eq('project_id', projectId)
@@ -45,7 +45,7 @@ export async function syncPhaseToDatabase(
         continue;
       }
       
-      const { data: existingOp, error: checkError } = await supabase
+      const { data: existingOp, error: checkError } = await db
         .from('template_operations')
         .select('id')
         .eq('project_id', projectId)
@@ -64,7 +64,7 @@ export async function syncPhaseToDatabase(
         // Update existing operation
         console.log('🔄 Updating existing operation:', operation.name);
         
-        const { error: updateError } = await supabase
+        const { error: updateError } = await db
           .from('template_operations')
           .update({
             operation_description: operation.description || null,  // Changed from description
@@ -81,7 +81,7 @@ export async function syncPhaseToDatabase(
         
         // Note: is_standard_phase, custom_phase_name, custom_phase_description, and standard_phase_id removed
         // Phase standard status comes from project_phases.is_standard
-        const { data: newOp, error: insertError } = await supabase
+        const { data: newOp, error: insertError } = await db
           .from('template_operations')
           .insert({
             project_id: projectId,
@@ -119,7 +119,7 @@ async function syncStepsForOperation(
   // Delete existing steps that are no longer in the array
   const stepIds = steps.filter(s => s.id).map(s => s.id);
   if (stepIds.length > 0) {
-    await supabase
+    await db
       .from('operation_steps')
       .delete()
       .eq('operation_id', operationId)
@@ -150,7 +150,7 @@ async function syncStepsForOperation(
 
     if (step.id) {
       // Update existing step
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from('operation_steps')
         .update(stepData)
         .eq('id', step.id)
@@ -162,7 +162,7 @@ async function syncStepsForOperation(
       }
     } else {
       // Insert new step
-      const { error: insertError } = await supabase
+      const { error: insertError } = await db
         .from('operation_steps')
         .insert(stepData);
 
@@ -220,7 +220,7 @@ export async function deletePhaseFromDatabase(
 
   try {
     // Get phase ID first
-    const { data: phaseRecord } = await supabase
+    const { data: phaseRecord } = await db
       .from('project_phases')
       .select('id')
       .eq('project_id', projectId)
@@ -234,7 +234,7 @@ export async function deletePhaseFromDatabase(
     }
     
     // Get all operations for this custom phase
-    const { data: operations, error: fetchError } = await supabase
+    const { data: operations, error: fetchError } = await db
       .from('template_operations')
       .select('id')
       .eq('project_id', projectId)
@@ -246,7 +246,7 @@ export async function deletePhaseFromDatabase(
       const operationIds = operations.map(op => op.id);
 
       // Delete all steps for these operations
-      const { error: deleteStepsError } = await supabase
+      const { error: deleteStepsError } = await db
         .from('operation_steps')
         .delete()
         .in('operation_id', operationIds);
@@ -254,7 +254,7 @@ export async function deletePhaseFromDatabase(
       if (deleteStepsError) throw deleteStepsError;
 
       // Delete all operations for this custom phase
-      const { error: deleteOpsError } = await supabase
+      const { error: deleteOpsError } = await db
         .from('template_operations')
         .delete()
         .eq('project_id', projectId)

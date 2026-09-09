@@ -115,7 +115,7 @@ export default function ProfileManager({
       let primaryWithLocation = primaryHome ?? undefined;
       if (primaryHome?.id) {
         const { data: details } = await supabase.from('home_details').select('city, state').eq('home_id', primaryHome.id).maybeSingle();
-        if (details) primaryWithLocation = { ...primaryHome, city: details.city ?? undefined, state: details.state ?? undefined };
+        if (details) primaryWithLocation = { ...primaryHome, city: details.city ?? undefined, state: details.state ?? undefined } as any;
       }
 
       const completeProfile = {
@@ -123,7 +123,7 @@ export default function ProfileManager({
         owned_tools: Array.isArray(profileData.owned_tools) ? profileData.owned_tools : [],
         primary_home: primaryWithLocation
       };
-      setExistingProfile(completeProfile);
+      setExistingProfile(completeProfile as any);
     } catch (error) {
       console.error('Error loading profile:', error);
       setExistingProfile(null);

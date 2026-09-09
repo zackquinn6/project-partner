@@ -58,8 +58,8 @@ export const SecurityDashboard: React.FC = () => {
       if (auditResult.error) throw auditResult.error;
       if (failedResult.error) throw failedResult.error;
 
-      setAuditLogs(auditResult.data || []);
-      setFailedLogins((failedResult.data || []) as FailedLogin[]);
+      setAuditLogs((auditResult.data || []) as unknown as AuditLog[]);
+      setFailedLogins((failedResult.data || []) as unknown as FailedLogin[]);
       setUserSessions(sessionsResult.error ? [] : ((sessionsResult.data || []) as UserSession[]));
     } catch (error) {
       console.error('Error loading security data:', error);

@@ -60,7 +60,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
       estimatedTime: newProjectForm.estimatedTime || undefined,
       estimatedTotalTime: newProjectForm.estimatedTotalTime || undefined,
       typicalProjectSize: newProjectForm.typicalProjectSize ? parseFloat(newProjectForm.typicalProjectSize) : undefined,
-      scalingUnit: newProjectForm.scalingUnit || undefined,
+      scalingUnit: (newProjectForm.scalingUnit || undefined) as any,
       projectChallenges: '', // Initialize empty project challenges field for new projects
       createdAt: new Date(),
       updatedAt: new Date(),

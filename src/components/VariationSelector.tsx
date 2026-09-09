@@ -47,6 +47,7 @@ interface VariationSelectorProps {
   itemType: 'tools' | 'materials';
   coreItemName: string;
   onVariationSelect: (variation: SelectedVariation) => void;
+  onBatchSelect?: (variations: SelectedVariation[]) => void;
   selectedVariation?: SelectedVariation;
   allowPrimeToggle?: boolean;
   compact?: boolean;

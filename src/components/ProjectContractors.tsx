@@ -100,7 +100,7 @@ export function ProjectContractors({ projectRunId, phases }: ProjectContractorsP
         if (error) throw error;
 
         if (data) {
-          const loadedContractors: Contractor[] = data.map(contractor => ({
+          const loadedContractors: Contractor[] = data.map((contractor: any) => ({
             id: contractor.id,
             dbId: contractor.id,
             name: contractor.name,

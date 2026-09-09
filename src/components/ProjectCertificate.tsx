@@ -76,7 +76,7 @@ export function ProjectCertificate({ projectRun, onClose }: ProjectCertificatePr
         .upsert({
           user_id: user.id,
           project_run_id: projectRun.id,
-          certificate_data: certificateData,
+          certificate_data: certificateData as any,
           shared_via_email: true
         });
 

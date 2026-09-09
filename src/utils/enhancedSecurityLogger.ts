@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+const db: any = supabase;
 
 /**
  * Enhanced security logger using the new comprehensive security logging system
@@ -20,7 +21,7 @@ export interface SecurityEventData {
  */
 export const logSecurityEvent = async (eventData: SecurityEventData): Promise<void> => {
   try {
-    const { error } = await supabase.rpc('log_comprehensive_security_event', {
+    const { error } = await db.rpc('log_comprehensive_security_event', {
       p_event_type: eventData.eventType,
       p_severity: eventData.severity,
       p_description: eventData.description,
@@ -55,7 +56,7 @@ export const checkEnhancedRateLimit = async (
   windowMinutes: number = 15
 ): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc('enhanced_rate_limit_check', {
+    const { data, error } = await db.rpc('enhanced_rate_limit_check', {
       identifier,
       operation_type: operationType,
       max_attempts: maxAttempts,

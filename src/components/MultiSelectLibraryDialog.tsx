@@ -668,7 +668,7 @@ export function MultiSelectLibraryDialog({
                   <VariationSelector
                     coreItemId={selectingVariationFor}
                     itemType={variationItemType}
-                    coreItemName={row?.item || ''}
+                    coreItemName={(row as any)?.item || ''}
                     onVariationSelect={handleVariationSelect}
                     onBatchSelect={type === 'ppe' ? handlePpeVariationBatch : undefined}
                     allowPrimeToggle={type !== 'ppe'}

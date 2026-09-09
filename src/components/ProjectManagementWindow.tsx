@@ -159,7 +159,7 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
         createdAt: new Date(standardProject.created_at || Date.now()),
         updatedAt: new Date(standardProject.updated_at || Date.now()),
         publishStatus: 'draft' as const,
-        phases: transformedPhases,
+        phases: transformedPhases as any,
         isStandardTemplate: true,
         category: standardProject.category || []
       });
@@ -1063,8 +1063,8 @@ export const ProjectManagementWindow: React.FC<ProjectManagementWindowProps> = (
                       
                       // Step 2: Sync custom phases to template_operations tables
                       const { error: syncError } = await supabase.rpc(
-                        'sync_custom_phases_to_tables',
-                        { p_project_id: currentProject.id }
+                        'sync_custom_phases_to_tables' as any,
+                        { p_project_id: currentProject.id } as any
                       );
                       
                       if (syncError) {

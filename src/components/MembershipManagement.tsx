@@ -40,7 +40,7 @@ export const MembershipManagement: React.FC = () => {
         .eq('user_id', user.id)
         .single();
       
-      setHasSignedAgreement(!!data?.signed_agreement);
+      setHasSignedAgreement(!!(data as any)?.signed_agreement);
     };
     
     checkAgreement();

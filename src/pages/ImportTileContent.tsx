@@ -102,7 +102,7 @@ export default function ImportTileContent() {
     
     for (const phase of customPhases) {
       // Create phase in project_phases for this project
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('project_phases')
         .insert({
           project_id: PROJECT_ID,
@@ -237,7 +237,7 @@ Prime|Finish|Post-install inspection|Inspect grout and tile|Check for cracks in 
         for (const [operationName, steps] of operationMap) {
           addLog(`  ➕ Creating operation: ${operationName}`);
           
-          const { data: operation, error: opError } = await supabase
+          const { data: operation, error: opError } = await db
             .from('template_operations')
             .insert({
               project_id: PROJECT_ID,
@@ -262,7 +262,7 @@ Prime|Finish|Post-install inspection|Inspect grout and tile|Check for cracks in 
               content: step.description
             }];
             
-            const { error: stepError } = await supabase
+            const { error: stepError } = await db
               .from('template_steps')
               .insert({
                 operation_id: operation.id,

@@ -202,7 +202,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       customization_decisions: {
         ...decisions,
         planning_wizard_first_pass_completed: true,
-      },
+      } as any,
       updatedAt: new Date(),
     });
   }, [currentProjectRun, planningWizardFirstPassCompleted, updateProjectRun]);
@@ -419,7 +419,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       setLocalSelectedTools(next);
       updateProjectRun({
         ...currentProjectRun,
-        customization_decisions: { ...decisions, selected_planning_tools: next },
+        customization_decisions: { ...decisions, selected_planning_tools: next } as any,
         updatedAt: new Date()
       });
     },

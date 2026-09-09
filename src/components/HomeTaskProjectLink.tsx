@@ -129,6 +129,8 @@ export function HomeTaskProjectLink({
 
   const handleCreateAndLinkProject = async (templateId: string) => {
     if (!user) return;
+    const membershipLoading = false;
+    const hasProjectsTier = true;
     if (!membershipLoading && !hasProjectsTier) {
       toast.error("Projects membership is required to start a new project from the catalog.");
       return;

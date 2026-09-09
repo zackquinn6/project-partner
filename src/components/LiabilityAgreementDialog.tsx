@@ -144,7 +144,7 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
 
   const generatePdfBlob = async (displayName: string): Promise<Blob> => {
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageW = pdf.getPageWidth();
+    const pageW = (pdf as any).getPageWidth();
     const margin = 20;
     let y = margin;
 

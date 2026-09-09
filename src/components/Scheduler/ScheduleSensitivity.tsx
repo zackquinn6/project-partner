@@ -109,7 +109,7 @@ export const ScheduleSensitivity: React.FC<ScheduleSensitivityProps> = ({
     const currentTempoImpact = tempoImpacts[scheduleTempo] || tempoImpacts['steady'];
     sensitivities.push({
       parameter: 'Schedule Tempo',
-      baseValue: scheduleTempo === 'fast-track' ? 'Fast-track' : scheduleTempo === 'extended' ? 'Extended' : 'Steady',
+      baseValue: (scheduleTempo as string) === 'fast-track' ? 'Fast-track' : scheduleTempo === 'extended' ? 'Extended' : 'Steady',
       lowImpact: currentTempoImpact.low,
       highImpact: currentTempoImpact.high
     });

@@ -55,7 +55,7 @@ export const useProjectOwner = (projectId?: string) => {
             console.error('Error checking project ownership:', projectError);
           }
 
-          setIsProjectOwner(projectData?.owner_id === user.id);
+          setIsProjectOwner((projectData as any)?.owner_id === user.id);
         } else {
           setIsProjectOwner(hasRole);
         }

@@ -65,6 +65,8 @@ export interface SchedulingInputs {
   preferHelpers: boolean;
   mode: PlanningMode;
   completionPriority?: 'agile' | 'waterfall'; // Agile: complete space end-to-end, Waterfall: complete phase across all spaces
+  scheduleOptimizationMethod?: string;
+  planningMode?: string;
 }
 
 export interface ScheduledTask {

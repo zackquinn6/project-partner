@@ -52,7 +52,7 @@ export function PhaseAssignment({ projectRunId, phases, teamMembers, userId }: P
 
     try {
       const { data: existingAssignments, error } = await supabase
-        .from('project_run_phase_assignments')
+        .from('project_run_phase_assignments' as any)
         .select('phase_id, person_id')
         .eq('project_run_id', projectRunId)
         .eq('user_id', userId);
@@ -67,7 +67,7 @@ export function PhaseAssignment({ projectRunId, phases, teamMembers, userId }: P
 
       // Populate with existing assignments
       if (existingAssignments) {
-        existingAssignments.forEach(assignment => {
+        (existingAssignments as any[]).forEach((assignment: any) => {
           const phase = phases.find(p => p.id === assignment.phase_id);
           if (phase && assignmentsByPerson[assignment.person_id]) {
             assignmentsByPerson[assignment.person_id].push({
@@ -178,15 +178,15 @@ export function PhaseAssignment({ projectRunId, phases, teamMembers, userId }: P
 
       // Clear existing assignments and insert new ones
       await supabase
-        .from('project_run_phase_assignments')
+        .from('project_run_phase_assignments' as any)
         .delete()
         .eq('project_run_id', projectRunId)
         .eq('user_id', userId);
 
       if (allAssignments.length > 0) {
         const { error } = await supabase
-          .from('project_run_phase_assignments')
-          .insert(allAssignments);
+          .from('project_run_phase_assignments' as any)
+          .insert(allAssignments as any);
 
         if (error) throw error;
       }

@@ -92,7 +92,7 @@ export function AIProjectGenerator({
       const fetchTemplates = async () => {
         try {
           // Fetch all projects to find latest draft revisions
-          const { data: allProjects, error: fetchError } = await supabase
+          const { data: allProjects, error: fetchError } = await db
             .from('projects')
             .select('id, name, description, category, publish_status, parent_project_id, revision_number')
             .neq('id', '00000000-0000-0000-0000-000000000000') // Exclude Manual Project Template
@@ -194,7 +194,7 @@ export function AIProjectGenerator({
           // Fetch existing phases, operations, steps
           // CRITICAL: When structure is deselected, we need the full structure to use as context
           // and to preserve during import
-          const { data: existingPhases } = await supabase
+          const { data: existingPhases } = await db
             .from('project_phases')
             .select(`
               id,
@@ -215,7 +215,7 @@ export function AIProjectGenerator({
             .order('position_value', { ascending: true, nullsFirst: false });
 
           // Fetch existing risks from relational table
-          const { data: existingRisksData } = await supabase
+          const { data: existingRisksData } = await db
             .from('project_risks')
             .select('risk_title, mitigation_strategy')
             .eq('project_id', selectedExistingProject);
@@ -330,7 +330,7 @@ export function AIProjectGenerator({
     // Check for duplicate project name (query database directly to ensure accuracy)
     if (!selectedExistingProject) {
       const normalizedName = projectName.trim().toLowerCase();
-      const { data: existingProjects, error: checkError } = await supabase
+      const { data: existingProjects, error: checkError } = await db
         .from('projects')
         .select('id, name')
         .ilike('name', projectName.trim());

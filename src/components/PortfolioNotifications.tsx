@@ -41,7 +41,7 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
 
   const ianaTimeZones = useMemo(() => {
     try {
-      return Intl.supportedValuesOf("timeZone");
+      return (Intl as any).supportedValuesOf("timeZone");
     } catch {
       return [
         "UTC",

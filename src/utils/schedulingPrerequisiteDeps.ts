@@ -65,7 +65,7 @@ export function filterPrerequisitesForDeclinedIfNecessary(
   for (const phase of project.phases) {
     const selected = ifNecessaryWork[phase.id] ?? [];
     for (const op of phase.operations) {
-      const ft = op.flowType;
+      const ft = (op as any).flowType;
       if (ft !== 'if-necessary') continue;
       if (selected.includes(op.id)) continue;
       ineligiblePredId.add(op.id);

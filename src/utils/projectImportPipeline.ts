@@ -22,6 +22,7 @@ export interface ImportResult {
     materialsMatched: number;
     processVariablesCreated: number;
     outputsCreated: number;
+    risksCreated?: number;
   };
 }
 
@@ -40,7 +41,7 @@ async function updateStepContent(
       const instructionContent = generatedStep.instructions[level];
       
       // Check if instruction already exists
-      const { data: existingInstruction } = await supabase
+      const { data: existingInstruction } = await db
         .from('step_instructions')
         .select('id')
         .eq('step_id', stepId)
@@ -49,7 +50,7 @@ async function updateStepContent(
 
       if (existingInstruction) {
         // Update existing instruction
-        const { error: updateError } = await supabase
+        const { error: updateError } = await db
           .from('step_instructions')
           .update({
             content: {
@@ -69,7 +70,7 @@ async function updateStepContent(
         }
       } else {
         // Create new instruction
-        const { error: insertError } = await supabase
+        const { error: insertError } = await db
           .from('step_instructions')
           .insert({
             step_id: stepId,
@@ -115,7 +116,7 @@ async function updateStepContent(
     const toolsWithAlternates: any[] = [];
     const unmatchedTools: string[] = [];
     for (const toolName of toolNames) {
-      const { data: matchedTool } = await supabase
+      const { data: matchedTool } = await db
         .from('tools')
         .select('id, item')
         .ilike('item', toolName)
@@ -143,7 +144,7 @@ async function updateStepContent(
     }
 
     // Update step with new tools
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from('template_steps')
       .update({
         tools: JSON.stringify(toolsWithAlternates.map(t => ({
@@ -170,7 +171,7 @@ async function updateStepContent(
     const matchedMaterials: any[] = [];
     const unmatchedMaterials: string[] = [];
     for (const materialName of materialNames) {
-      const { data: matchedMaterial } = await supabase
+      const { data: matchedMaterial } = await db
         .from('materials')
         .select('id, item')
         .ilike('item', materialName)
@@ -197,7 +198,7 @@ async function updateStepContent(
     }
 
     // Update step with new materials
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from('template_steps')
       .update({
         materials: JSON.stringify(matchedMaterials.map(m => ({
@@ -216,7 +217,7 @@ async function updateStepContent(
   // Update outputs if selected
   if (contentSelection?.outputs !== false && Array.isArray(generatedStep.outputs) && generatedStep.outputs.length > 0) {
     // Delete existing outputs for this step
-    await supabase
+    await db
       .from('workflow_step_outputs')
       .delete()
       .eq('step_id', stepId);
@@ -237,7 +238,7 @@ async function updateStepContent(
       }
       seenOutputNames.add(output.name.toLowerCase().trim());
       
-      const { data: existingOutput } = await supabase
+      const { data: existingOutput } = await db
         .from('outputs')
         .select('id')
         .eq('name', output.name)
@@ -247,7 +248,7 @@ async function updateStepContent(
       if (existingOutput) {
         outputId = existingOutput.id;
       } else {
-        const { data: newOutput, error: outputError } = await supabase
+        const { data: newOutput, error: outputError } = await db
           .from('outputs')
           .insert({
             name: output.name,
@@ -268,7 +269,7 @@ async function updateStepContent(
       }
 
       // Link output to step
-      const { error: linkError } = await supabase
+      const { error: linkError } = await db
         .from('workflow_step_outputs')
         .insert({
           step_id: stepId,
@@ -287,14 +288,14 @@ async function updateStepContent(
   // Update process variables if selected
   if (contentSelection?.processVariables !== false) {
     // Delete existing process variables for this step
-    await supabase
+    await db
       .from('workflow_step_process_variables')
       .delete()
       .eq('step_id', stepId);
 
     // Create new process variables
     for (const pv of generatedStep.processVariables) {
-      const { data: existingVar } = await supabase
+      const { data: existingVar } = await db
         .from('process_variables')
         .select('id')
         .eq('name', pv.name)
@@ -304,7 +305,7 @@ async function updateStepContent(
       if (existingVar) {
         variableId = existingVar.id;
       } else {
-        const { data: newVar, error: varError } = await supabase
+        const { data: newVar, error: varError } = await db
           .from('process_variables')
           .insert({
             name: pv.name,
@@ -326,7 +327,7 @@ async function updateStepContent(
       }
 
       // Link variable to step
-      const { error: linkError } = await supabase
+      const { error: linkError } = await db
         .from('workflow_step_process_variables')
         .insert({
           step_id: stepId,
@@ -354,7 +355,7 @@ async function updateStepContent(
     const high = typeof timeEstimates.high === 'number' && timeEstimates.high >= 0 ? timeEstimates.high : null;
 
     // Update step with time estimates
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from('template_steps')
       .update({
         time_estimate_low: low,
@@ -420,7 +421,7 @@ export async function importGeneratedProject(
 
     if (existingProjectId) {
       // Update existing project
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from('projects')
         .update({
           name: projectName,
@@ -448,7 +449,7 @@ export async function importGeneratedProject(
         // IMPORTANT: Only delete NON-STANDARD phases, operations, and steps
         // Standard phases (Kickoff, Planning, Ordering, Close Project) must be preserved
         console.log('🔄 Importing to existing project - preserving standard phases');
-        const { data: existingPhases } = await supabase
+        const { data: existingPhases } = await db
           .from('project_phases')
           .select('id, is_standard')
           .eq('project_id', projectId);
@@ -463,7 +464,7 @@ export async function importGeneratedProject(
           // Only delete custom (non-standard) phases
           if (customPhaseIds.length > 0) {
             // Get operations for custom phases only
-            const { data: existingOperations } = await supabase
+            const { data: existingOperations } = await db
               .from('template_operations')
               .select('id')
               .in('phase_id', customPhaseIds);
@@ -472,19 +473,19 @@ export async function importGeneratedProject(
               const operationIds = existingOperations.map(op => op.id);
               
               // Delete steps for custom operations
-              await supabase
+              await db
                 .from('template_steps')
                 .delete()
                 .in('operation_id', operationIds);
 
               // Delete step instructions for custom steps
-              const { data: stepIds } = await supabase
+              const { data: stepIds } = await db
                 .from('template_steps')
                 .select('id')
                 .in('operation_id', operationIds);
               
               if (stepIds && stepIds.length > 0) {
-                await supabase
+                await db
                   .from('step_instructions')
                   .delete()
                   .in('step_id', stepIds.map(s => s.id));
@@ -492,13 +493,13 @@ export async function importGeneratedProject(
             }
 
             // Delete operations for custom phases
-            await supabase
+            await db
               .from('template_operations')
               .delete()
               .in('phase_id', customPhaseIds);
 
             // Delete custom phases only
-            await supabase
+            await db
               .from('project_phases')
               .delete()
               .in('id', customPhaseIds);
@@ -512,7 +513,7 @@ export async function importGeneratedProject(
     } else {
       // Check for duplicate project name before creating
       const normalizedName = projectName.trim().toLowerCase();
-      const { data: existingProjects, error: checkError } = await supabase
+      const { data: existingProjects, error: checkError } = await db
         .from('projects')
         .select('id, name')
         .ilike('name', projectName.trim());
@@ -558,7 +559,7 @@ export async function importGeneratedProject(
       projectId = newProjectId;
 
       // Update project with additional fields
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from('projects')
         .update({
           category,
@@ -584,7 +585,7 @@ export async function importGeneratedProject(
       
       // Fetch all existing steps for this project
       // FIX: Use correct column names - operation_name not name
-      const { data: allPhases, error: fetchError } = await supabase
+      const { data: allPhases, error: fetchError } = await db
         .from('project_phases')
         .select(`
           id,
@@ -671,7 +672,7 @@ export async function importGeneratedProject(
 
     // Normal structure import mode - create/update phases, operations, and steps
     // Get current max display_order to place generated phases after standard phases
-    const { data: existingPhases } = await supabase
+    const { data: existingPhases } = await db
       .from('project_phases')
       .select('display_order')
       .eq('project_id', projectId)
@@ -688,7 +689,7 @@ export async function importGeneratedProject(
       // Check if phase exists in Standard Project Foundation with is_standard: true
       // Standard Project Foundation is the source of truth for standard phases
       const standardProjectId = '00000000-0000-0000-0000-000000000001';
-      const { data: existingStandardPhase } = await supabase
+      const { data: existingStandardPhase } = await db
         .from('project_phases')
         .select('id, is_standard')
         .eq('project_id', standardProjectId)
@@ -704,7 +705,7 @@ export async function importGeneratedProject(
       if (existingStandardPhase && isCoreStandardPhase) {
         // Use existing standard phase from Standard Project Foundation
         // Find or create project_phases entry with same name and is_standard flag
-        const { data: existingProjectPhase } = await supabase
+        const { data: existingProjectPhase } = await db
           .from('project_phases')
           .select('id')
           .eq('project_id', projectId)
@@ -717,7 +718,7 @@ export async function importGeneratedProject(
         } else {
           // Create project_phases entry for standard phase
           // Note: standard_phase_id removed, use is_standard flag instead
-          const { data: newProjectPhase, error: phaseError } = await supabase
+          const { data: newProjectPhase, error: phaseError } = await db
             .from('project_phases')
             .insert({
               project_id: projectId,
@@ -739,7 +740,7 @@ export async function importGeneratedProject(
       } else {
         // Create custom phase - same as manually created phases
         // Note: standard_phase_id removed, use is_standard flag instead
-        const { data: newProjectPhase, error: phaseError } = await supabase
+        const { data: newProjectPhase, error: phaseError } = await db
           .from('project_phases')
           .insert({
             project_id: projectId,
@@ -819,7 +820,7 @@ export async function importGeneratedProject(
           flowType = 'prime';
         }
 
-        const { data: createdOperation, error: opError } = await supabase
+        const { data: createdOperation, error: opError } = await db
           .from('template_operations')
           .insert({
             project_id: projectId,
@@ -911,7 +912,7 @@ export async function importGeneratedProject(
           const toolsWithAlternates: any[] = [];
           const unmatchedTools: string[] = [];
           for (const toolName of toolNames) {
-            const { data: matchedTool } = await supabase
+            const { data: matchedTool } = await db
               .from('tools')
               .select('id, item')
               .ilike('item', toolName)
@@ -946,7 +947,7 @@ export async function importGeneratedProject(
           const matchedMaterials: any[] = [];
           const unmatchedMaterials: string[] = [];
           for (const materialName of materialNames) {
-            const { data: matchedMaterial } = await supabase
+            const { data: matchedMaterial } = await db
               .from('materials')
               .select('id, item')
               .ilike('item', materialName)
@@ -984,7 +985,7 @@ export async function importGeneratedProject(
             ? timeEstimates.high 
             : null;
 
-          const { data: createdStep, error: stepError } = await supabase
+          const { data: createdStep, error: stepError } = await db
             .from('template_steps')
             .insert({
               operation_id: createdOperation.id,
@@ -1036,7 +1037,7 @@ export async function importGeneratedProject(
             for (const level of ['quick', 'detailed', 'contractor'] as const) {
               const instructionContent = step.instructions[level];
 
-              const { error: instructionError } = await supabase
+              const { error: instructionError } = await db
                 .from('step_instructions')
                 .insert({
                   step_id: createdStep.id,
@@ -1065,7 +1066,7 @@ export async function importGeneratedProject(
                 continue; // Skip invalid process variables
               }
               // Check if variable exists
-              const { data: existingVar } = await supabase
+              const { data: existingVar } = await db
                 .from('process_variables')
                 .select('id')
                 .eq('name', pv.name)
@@ -1076,7 +1077,7 @@ export async function importGeneratedProject(
               if (existingVar) {
                 variableId = existingVar.id;
               } else {
-                const { data: newVar, error: varError } = await supabase
+                const { data: newVar, error: varError } = await db
                   .from('process_variables')
                   .insert({
                     name: pv.name,
@@ -1098,7 +1099,7 @@ export async function importGeneratedProject(
               }
 
               // Link variable to step
-              const { error: linkError } = await supabase
+              const { error: linkError } = await db
                 .from('workflow_step_process_variables')
                 .insert({
                   step_id: createdStep.id,
@@ -1134,7 +1135,7 @@ export async function importGeneratedProject(
               seenOutputNames.add(output.name.toLowerCase().trim());
               
               // Check if output already linked to this step (prevent duplicate links)
-              const { data: existingLink } = await supabase
+              const { data: existingLink } = await db
                 .from('workflow_step_outputs')
                 .select('id')
                 .eq('step_id', createdStep.id)
@@ -1147,7 +1148,7 @@ export async function importGeneratedProject(
               }
               
               // Check if output exists
-              const { data: existingOutput } = await supabase
+              const { data: existingOutput } = await db
                 .from('outputs')
                 .select('id')
                 .eq('name', output.name)
@@ -1158,7 +1159,7 @@ export async function importGeneratedProject(
               if (existingOutput) {
                 outputId = existingOutput.id;
               } else {
-                const { data: newOutput, error: outputError } = await supabase
+                const { data: newOutput, error: outputError } = await db
                   .from('outputs')
                   .insert({
                     name: output.name,
@@ -1179,7 +1180,7 @@ export async function importGeneratedProject(
               }
 
               // Link output to step via workflow_step_outputs
-              const { error: linkError } = await supabase
+              const { error: linkError } = await db
                 .from('workflow_step_outputs')
                 .insert({
                   step_id: createdStep.id,
@@ -1198,7 +1199,7 @@ export async function importGeneratedProject(
         
         // Final validation: Ensure operation has at least one step
         // If no steps were created (all failed), create a default step
-        const { data: operationSteps, error: stepsCheckError } = await supabase
+        const { data: operationSteps, error: stepsCheckError } = await db
           .from('template_steps')
           .select('id')
           .eq('operation_id', createdOperation.id)
@@ -1211,7 +1212,7 @@ export async function importGeneratedProject(
           console.warn(`⚠️ Operation "${operation.name}" has no steps after import. Creating default step.`);
           result.warnings.push(`Operation "${operation.name}" had no steps after import - created default step`);
           
-          const { data: defaultStep, error: defaultStepError } = await supabase
+          const { data: defaultStep, error: defaultStepError } = await db
             .from('template_steps')
             .insert({
               operation_id: createdOperation.id,
@@ -1241,7 +1242,7 @@ export async function importGeneratedProject(
       }
       
       // Final validation: Ensure phase has at least one operation
-      const { data: phaseOperations, error: opsCheckError } = await supabase
+      const { data: phaseOperations, error: opsCheckError } = await db
         .from('template_operations')
         .select('id')
         .eq('phase_id', phaseId)
@@ -1254,7 +1255,7 @@ export async function importGeneratedProject(
         console.warn(`⚠️ Phase "${phase.name}" has no operations after import. Creating default operation and step.`);
         result.warnings.push(`Phase "${phase.name}" had no operations after import - created default operation and step`);
         
-        const { data: defaultOp, error: defaultOpError } = await supabase
+        const { data: defaultOp, error: defaultOpError } = await db
           .from('template_operations')
           .insert({
             project_id: projectId,
@@ -1273,7 +1274,7 @@ export async function importGeneratedProject(
           result.stats.operationsCreated++;
           
           // Create default step for the default operation
-          const { data: defaultStep, error: defaultStepError } = await supabase
+          const { data: defaultStep, error: defaultStepError } = await db
             .from('template_steps')
             .insert({
               operation_id: defaultOp.id,
@@ -1328,7 +1329,7 @@ export async function importGeneratedProject(
       console.log(`📋 Importing ${generatedStructure.risks.length} risks for project ${projectId}`);
       
       // Fetch existing risks from relational table
-      const { data: existingRisks, error: fetchError } = await supabase
+      const { data: existingRisks, error: fetchError } = await db
         .from('project_risks')
         .select('risk_title, mitigation_strategy')
         .eq('project_id', projectId);
@@ -1342,7 +1343,7 @@ export async function importGeneratedProject(
       console.log(`📋 Found ${existingRisksList.length} existing risks`);
       
       // Get current max display_order
-      const { data: maxOrderData } = await supabase
+      const { data: maxOrderData } = await db
         .from('project_risks')
         .select('display_order')
         .eq('project_id', projectId)
@@ -1395,7 +1396,7 @@ export async function importGeneratedProject(
 
         console.log('📋 Inserting risks:', risksToInsert);
 
-        const { error: risksError } = await supabase
+        const { error: risksError } = await db
           .from('project_risks')
           .insert(risksToInsert);
 
@@ -1433,7 +1434,7 @@ export async function importGeneratedProject(
       console.log('✅ Phases JSON rebuilt successfully');
       
       // Verify the rebuild worked by fetching the updated project
-      const { data: updatedProject, error: fetchError } = await supabase
+      const { data: updatedProject, error: fetchError } = await db
         .from('projects')
         .select('id, phases')
         .eq('id', projectId)

@@ -44,7 +44,7 @@ export function ToolInstructionsPopup({
               ? (JSON.parse(variation.instructions || "[]") as ContentSection[])
               : [];
           if (parsed.length > 0) {
-            setSections(parsed);
+            setSections(parsed as ContentSection[]);
             setLoading(false);
             return;
           }
@@ -63,7 +63,7 @@ export function ToolInstructionsPopup({
             : typeof tool.instructions === "string"
               ? (JSON.parse(tool.instructions || "[]") as ContentSection[])
               : [];
-          setSections(parsed);
+          setSections(parsed as ContentSection[]);
         } else {
           setSections([]);
         }

@@ -247,7 +247,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
           toolRentalsEnabled,
           wasteRemovalEnabled
         );
-        customization_decisions = { ...existingDecisions, selected_planning_tools: normalized };
+        customization_decisions = { ...existingDecisions, selected_planning_tools: normalized } as any;
       }
 
       // Update project run with completed step - WAIT for completion

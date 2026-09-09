@@ -303,7 +303,7 @@ export function QualityCheckWindow({
 
       const existingIssueReports: Record<string, unknown> =
         projectRun.issue_reports && typeof projectRun.issue_reports === 'object'
-          ? (projectRun.issue_reports as Record<string, unknown>)
+          ? (projectRun.issue_reports as unknown as Record<string, unknown>)
           : {};
       const maybeDocuments = existingIssueReports.quality_control_documents;
       const existingDocuments = Array.isArray(maybeDocuments)
@@ -324,7 +324,7 @@ export function QualityCheckWindow({
 
       await updateProjectRun({
         ...projectRun,
-        issue_reports: nextIssueReports
+        issue_reports: nextIssueReports as unknown as ProjectRun['issue_reports']
       });
 
           } catch (e) {

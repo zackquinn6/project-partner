@@ -56,8 +56,8 @@ export const SecurityAuditLog: React.FC = () => {
 
         if (loginError) throw loginError;
 
-        setAuditLogs(roleData || []);
-        setFailedLogins(loginData || []);
+        setAuditLogs((roleData || []) as unknown as AuditLogEntry[]);
+        setFailedLogins((loginData || []) as unknown as FailedLoginAttempt[]);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load security data');
       } finally {
