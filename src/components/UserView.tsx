@@ -3403,6 +3403,16 @@ export default function UserView({
           onShowVideosClick={
             isKickoffComplete && allSteps.length > 0 ? openWorkflowVideosGallery : undefined
           }
+          onSomethingWrong={() => setIssueReportOpen(true)}
+          onAskAi={() => {
+            setHelpChatInitialMessage(
+              currentStep?.step
+                ? `I'm stuck on step "${currentStep.step}". Please help me figure out what to do next.`
+                : `I'm stuck on this step. Please help me figure out what to do next.`
+            );
+            setProjectHelpChatOpen(true);
+          }}
+          onPhotosClick={() => setPhotoGalleryOpen(true)}
         />
       ) : (
         /* Desktop Workflow View */

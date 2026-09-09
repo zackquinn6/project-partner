@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Circle, Clock, Menu, Eye, EyeOff, HelpCircle, Calendar as CalendarIcon, BookOpen, Settings2, Sparkles, DollarSign, ClipboardCheck, ShoppingCart, MessageCircle, Crosshair, Video } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Circle, Clock, Menu, Eye, EyeOff, HelpCircle, Calendar as CalendarIcon, BookOpen, Settings2, Sparkles, DollarSign, ClipboardCheck, ShoppingCart, MessageCircle, Crosshair, Video, AlertTriangle, Camera } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -47,6 +47,9 @@ interface MobileWorkflowViewProps {
     catalog: GeneralProjectDecision[];
   };
   onShowVideosClick?: () => void;
+  onSomethingWrong?: () => void;
+  onAskAi?: () => void;
+  onPhotosClick?: () => void;
 }
 
 export function MobileWorkflowView({
@@ -71,7 +74,10 @@ export function MobileWorkflowView({
   instructionLevel = 'intermediate',
   onInstructionLevelChange,
   microDecisions,
-  onShowVideosClick
+  onShowVideosClick,
+  onSomethingWrong,
+  onAskAi,
+  onPhotosClick,
 }: MobileWorkflowViewProps) {
   const [showMaterials, setShowMaterials] = useState(true);
   const [showTools, setShowTools] = useState(true);
@@ -236,6 +242,46 @@ export function MobileWorkflowView({
               <CardTitle className="text-base sm:text-lg leading-tight mt-2">
                 {currentStep.step}
               </CardTitle>
+              {(onSomethingWrong || onAskAi || onPhotosClick) && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {onSomethingWrong ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-[10px] sm:text-xs h-7 sm:h-8"
+                      onClick={onSomethingWrong}
+                    >
+                      <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+                      Something Wrong?
+                    </Button>
+                  ) : null}
+                  {onAskAi ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-[10px] sm:text-xs h-7 sm:h-8"
+                      onClick={onAskAi}
+                    >
+                      <Sparkles className="h-3.5 w-3.5 mr-1" />
+                      Ask AI
+                    </Button>
+                  ) : null}
+                  {onPhotosClick ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-[10px] sm:text-xs h-7 sm:h-8"
+                      onClick={onPhotosClick}
+                    >
+                      <Camera className="h-3.5 w-3.5 mr-1" />
+                      Photos
+                    </Button>
+                  ) : null}
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6 pt-0 sm:pt-0">
               <div className="space-y-4">
