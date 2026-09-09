@@ -23,7 +23,6 @@ export const MembershipManagement: React.FC = () => {
     openCustomerPortal,
     redeemCoupon,
     trialDaysRemaining,
-    canManageStripeSubscription,
   } = useMembership();
   
   const { user } = useAuth();
@@ -130,39 +129,45 @@ export const MembershipManagement: React.FC = () => {
       </Card>
 
       {/* Upgrade / Manage Subscription */}
-      {!isAdmin && !isProjectOwner && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Subscription Management
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!isSubscribed && (
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Upgrade to unlock the Project Catalog and Project Workflows for just $25/year.
-                </p>
-                <Button onClick={handleSubscribeClick} className="w-full">
-                  Subscribe Now - $59/year
-                </Button>
-              </div>
-            )}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Subscription Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!isAdmin && !isProjectOwner && !isSubscribed && (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Upgrade to unlock the Project Catalog and Project Workflows for just $25/year.
+              </p>
+              <Button onClick={handleSubscribeClick} className="w-full">
+                Subscribe Now - $59/year
+              </Button>
+            </div>
+          )}
 
-            {canManageStripeSubscription && (
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Manage your subscription, update payment method, or cancel anytime.
-                </p>
-                <Button onClick={openCustomerPortal} variant="outline" className="w-full">
-                  Manage Subscription
-                </Button>
-              </div>
+          {(isAdmin || isProjectOwner) && (
+            <p className="text-sm text-muted-foreground">
+              {isAdmin
+                ? 'Admin accounts have unlimited access and do not require Stripe billing.'
+                : 'Project owner accounts have unlimited access and do not require Stripe billing.'}
+            </p>
+          )}
+
+          <div className="space-y-2">
+            {!isAdmin && !isProjectOwner && isSubscribed && (
+              <p className="text-sm text-muted-foreground">
+                Manage your subscription, update payment method, or cancel anytime.
+              </p>
             )}
-          </CardContent>
-        </Card>
-      )}
+            <Button onClick={openCustomerPortal} variant="outline" className="w-full">
+              Manage Subscription
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Coupon Code */}
       {!isAdmin && !isProjectOwner && inTrial && (

@@ -26,8 +26,6 @@ interface MembershipContextType {
   hasProjectsTier: boolean;
   /** Risk-less apps; includes everyone who has Projects tier. */
   hasRiskLessTier: boolean;
-  /** True only when the user has a Stripe-billed subscription that can be managed in the portal. */
-  canManageStripeSubscription: boolean;
   checkSubscription: () => Promise<void>;
   createCheckout: () => Promise<void>;
   openCustomerPortal: () => Promise<void>;
@@ -130,6 +128,16 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   const openCustomerPortal = async () => {
+    if (isAdmin || isProjectOwner) {
+      toast({
+        title: 'Unlimited access',
+        description: isAdmin
+          ? 'Admin accounts have unlimited access and do not use Stripe billing.'
+          : 'Project owner accounts have unlimited access and do not use Stripe billing.',
+      });
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
 
@@ -228,8 +236,6 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
     [hasProjectsTier, subscriptionTier]
   );
 
-  const canManageStripeSubscription = Boolean(subscriptionEnd) && !isAdmin && !isProjectOwner;
-
   const canAccessPaidFeatures = isBetaMode || isAdmin || isProjectOwner || inTrial || isSubscribed;
 
   const canAccessApp = useCallback(
@@ -263,7 +269,6 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
         subscriptionTier,
         hasProjectsTier,
         hasRiskLessTier,
-        canManageStripeSubscription,
         checkSubscription,
         createCheckout,
         openCustomerPortal,
