@@ -49,7 +49,7 @@ export async function autoRegenerateSchedule(
     const scheduleTempo = scheduleEvents?.scheduleTempo || 'steady';
     const planningMode = scheduleEvents?.planningMode || 'standard';
     const scheduleOptimizationMethod = projectRun.schedule_optimization_method || 'single-piece-flow';
-    const teamMembers = scheduleEvents?.teamMembers || [];
+    const teamMembers: any[] = scheduleEvents?.teamMembers || [];
     const globalSettings = scheduleEvents?.globalSettings || { quietHours: { start: '21:00', end: '07:00' } };
     
     // Get target date from project run or default
@@ -61,14 +61,14 @@ export async function autoRegenerateSchedule(
       .from('project_run_spaces')
       .select('id, space_name, priority, scale_value, scale_unit, sizing_by_unit')
       .eq('project_run_id', projectRun.id)
-      .order('priority', { ascending: true, nullsLast: true });
+      .order('priority', { ascending: true, nullsLast: true } as any);
 
     if (spacesError) {
       console.error('Error loading spaces for auto-schedule:', spacesError);
       return false;
     }
 
-    const spaces = (spacesData || []).map((space: { id: string; space_name: string; priority?: number; scale_value?: number; scale_unit?: string; sizing_by_unit?: Record<string, number> | null }) => {
+    const spaces = (spacesData || []).map((space: any) => {
       const relationalSizing = (space.sizing_by_unit && typeof space.sizing_by_unit === 'object') ? space.sizing_by_unit as Record<string, number> : {};
       const sizingValues = Object.keys(relationalSizing).length > 0 ? relationalSizing : (space.scale_value != null && space.scale_unit ? { [space.scale_unit]: space.scale_value } : {});
       return {
@@ -229,7 +229,7 @@ export async function autoRegenerateSchedule(
       preferHelpers: teamMembers.some(tm => tm.type === 'helper'),
       mode: planningMode,
       scheduleOptimizationMethod: scheduleOptimizationMethod
-    };
+    } as any;
     
     // Compute schedule
     const schedulingEngine = new SchedulingEngine();

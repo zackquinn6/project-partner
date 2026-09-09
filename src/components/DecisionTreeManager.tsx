@@ -256,7 +256,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           for (const [eid, data] of Object.entries(dtBlob as Record<string, unknown>)) {
             if (typeof data !== 'object' || data === null || Array.isArray(data)) continue;
             const d = data as StoredDecisionTreeEntity;
-            const prev = configs[eid] ?? { predecessorIds: [] as string[] };
+            const prev = (configs[eid] ?? { predecessorIds: [] as string[] }) as any;
             configs[eid] = {
               ...prev,
               type: d.type ?? prev.type ?? null,
@@ -267,7 +267,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               alternateIds: d.alternateIds ?? prev.alternateIds,
               dependentOn: d.dependentOn ?? prev.dependentOn,
               predecessorIds: prev.predecessorIds ?? [],
-            };
+            } as any;
           }
         }
 
@@ -773,7 +773,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
         for (const [k, v] of Object.entries(raw)) {
           if (k === DECISION_TREE_CONFIG_KEY) {
             if (v && typeof v === 'object' && !Array.isArray(v)) {
-              existingDecisionBlob = { ...(v as Record<string, StoredDecisionTreeEntity>) };
+              existingDecisionBlob = { ...(v as unknown as Record<string, StoredDecisionTreeEntity>) };
             }
             continue;
           }

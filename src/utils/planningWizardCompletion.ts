@@ -23,6 +23,7 @@ const TOOL_TO_BUTTON_ACTIONS: Record<PlanningToolId, readonly string[]> = {
   tool_rentals: ['tool-access'],
   quality_control: [],
   expert_support: [],
+  waste_removal: [],
 };
 
 /** Standard output ids that indicate a step is covered by a planning tool. */
@@ -36,6 +37,7 @@ const TOOL_TO_OUTPUT_IDS: Record<PlanningToolId, readonly string[]> = {
   tool_rentals: [],
   quality_control: [],
   expert_support: [],
+  waste_removal: [],
 };
 
 function stepReferencesAction(

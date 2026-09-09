@@ -169,7 +169,7 @@ export default function EditWorkflowView({
       }
       
       // Load operations and steps separately for each phase to avoid nested select issues
-      const phases: Phase[] = await Promise.all(phasesData.map(async (phaseData: any) => {
+      const phases = (await Promise.all(phasesData.map(async (phaseData: any) => {
         // Get operations for this phase
         const { data: operations, error: operationsError } = await supabase
           .from('phase_operations')
@@ -293,7 +293,7 @@ export default function EditWorkflowView({
             : 999,
           operations: operationsWithSteps.sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
         };
-      }));
+      })) as unknown as Phase[];
       
       return phases;
     } else {

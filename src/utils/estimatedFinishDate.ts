@@ -74,7 +74,7 @@ export async function calculateEstimatedFinishDate(
         weekendsOnly: false,
         weekdaysAfterFivePm: false,
         workingHours: { start: '09:00', end: '17:00' },
-        availability: defaultAvailability
+        availability: defaultAvailability as any
       });
     } else {
       // Ensure all workers have some availability
@@ -92,7 +92,7 @@ export async function calculateEstimatedFinishDate(
               end: new Date(`${dateStr}T17:00:00`)
             }];
           }
-          worker.availability = defaultAvailability;
+          worker.availability = defaultAvailability as any;
         }
       });
     }
@@ -151,7 +151,7 @@ export async function calculateEstimatedFinishDate(
       workers,
       targetCompletionDate: targetDate,
       scheduleTempo: scheduleTempo,
-      planningMode: scheduleSettings?.planningMode || 'standard',
+      mode: (scheduleSettings?.planningMode || 'standard') as any,
       quietHours: {
         start: '21:00',
         end: '07:00'
