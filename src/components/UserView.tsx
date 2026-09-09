@@ -223,6 +223,11 @@ export default function UserView({
     }
   }, [showProfile, showProfileManager]);
 
+  const [phaseCompletionPopupOpen, setPhaseCompletionPopupOpen] = useState(false);
+  const [selectedPhase, setSelectedPhase] = useState<any>(null);
+  const [orderingWindowOpen, setOrderingWindowOpen] = useState(false);
+  const [userOwnedTools, setUserOwnedTools] = useState<OwnedToolRecord[]>([]);
+
   // Sync owned tools for shopping personalization (Own vs Need)
   useEffect(() => {
     if (!user?.id) {
@@ -237,10 +242,6 @@ export default function UserView({
       cancelled = true;
     };
   }, [user?.id, orderingWindowOpen]);
-  const [phaseCompletionPopupOpen, setPhaseCompletionPopupOpen] = useState(false);
-  const [selectedPhase, setSelectedPhase] = useState<any>(null);
-  const [orderingWindowOpen, setOrderingWindowOpen] = useState(false);
-  const [userOwnedTools, setUserOwnedTools] = useState<OwnedToolRecord[]>([]);
   const [accountabilityPopupOpen, setAccountabilityPopupOpen] = useState(false);
   const [messageType, setMessageType] = useState<'phase-complete' | 'issue-report'>('phase-complete');
 
