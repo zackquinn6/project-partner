@@ -3,10 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Shield, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
+import { useMarketingCopy } from '@/hooks/useMarketingCopy';
 
 export const FinalCTASection = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const { finalCta } = useMarketingCopy();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +29,7 @@ export const FinalCTASection = () => {
 
       <div className="container mx-auto px-4 text-center relative z-10">
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-          Ready for better projects?
+          {finalCta.headline}
         </h2>
 
         {/* Email capture form */}
@@ -46,7 +48,7 @@ export const FinalCTASection = () => {
               size="lg"
               className="h-14 px-8 bg-accent hover:bg-accent/90 text-accent-foreground font-bold"
             >
-              Start Free Trial
+              {finalCta.submitLabel}
             </Button>
           </div>
         </form>

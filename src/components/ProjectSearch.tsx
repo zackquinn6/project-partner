@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
+import { projectHasTileCategory } from '@/utils/catalogProjectFilters';
 
 interface SearchResult {
   id: string;
@@ -50,6 +52,7 @@ const DIY_SYNONYMS = {
 
 export const ProjectSearch: React.FC = () => {
   const navigate = useNavigate();
+  const { tileFocusMode } = useGlobalPublicSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [projects, setProjects] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -65,12 +68,14 @@ export const ProjectSearch: React.FC = () => {
         .in('publish_status', ['published', 'beta-testing']);
       
       if (data && !error) {
-        setProjects(data);
+        setProjects(
+          tileFocusMode ? data.filter((p) => projectHasTileCategory(p)) : data
+        );
       }
     };
     
     fetchProjects();
-  }, []);
+  }, [tileFocusMode]);
 
   // Calculate Levenshtein distance for fuzzy matching
   const levenshteinDistance = (str1: string, str2: string): number => {

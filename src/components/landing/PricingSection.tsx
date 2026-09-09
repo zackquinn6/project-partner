@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { useMarketingCopy } from '@/hooks/useMarketingCopy';
 
 function AppIconTile({
   icon: Icon,
@@ -34,16 +35,17 @@ function AppIconTile({
 
 export const PricingSection: React.FC = () => {
   const navigate = useNavigate();
+  const { pricing } = useMarketingCopy();
 
   return (
     <section className="px-4 py-16 md:py-20">
       <div className="container mx-auto">
         <div className="mb-12 text-center md:mb-16">
           <h2 className="mb-4 text-3xl font-bold md:text-4xl lg:text-5xl">
-            Simple pricing for every level of projects
+            {pricing.title}
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground md:text-xl">
-            Start free and unlock project control when you need it
+            {pricing.subtitle}
           </p>
         </div>
 
@@ -125,7 +127,7 @@ export const PricingSection: React.FC = () => {
                 />
               </div>
               <p className="flex-1 text-center text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
-                A complete suite of apps and tools to run one great project.
+                {pricing.projectsTierBlurb}
               </p>
               <Button className="w-full" onClick={() => navigate('/auth?mode=signup')}>
                 Get full access

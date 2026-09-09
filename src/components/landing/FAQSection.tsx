@@ -4,9 +4,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { faqItems } from '@/data/faq';
+import { useMarketingCopy } from '@/hooks/useMarketingCopy';
 
 export const FAQSection = () => {
+  const { faq } = useMarketingCopy();
+
   return (
     <section className="section-spacing bg-muted/30">
       <div className="container mx-auto px-4 max-w-4xl">
@@ -15,7 +17,7 @@ export const FAQSection = () => {
         </h2>
 
         <Accordion type="single" collapsible className="space-y-4">
-          {faqItems.map((item, index) => (
+          {faq.map((item, index) => (
             <AccordionItem
               key={index}
               value={`faq-${index}`}

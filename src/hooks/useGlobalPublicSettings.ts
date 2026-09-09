@@ -5,12 +5,14 @@ const KEYS = [
   'simplified_public_landing',
   'project_catalog_enabled',
   'workshop_labs_accordion_enabled',
+  'tile_focus_mode',
 ] as const;
 
 export function useGlobalPublicSettings() {
   const [simplifiedPublicLanding, setSimplifiedPublicLanding] = useState(false);
   const [projectCatalogEnabled, setProjectCatalogEnabled] = useState(true);
   const [workshopLabsAccordionEnabled, setWorkshopLabsAccordionEnabled] = useState(true);
+  const [tileFocusMode, setTileFocusMode] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -36,6 +38,9 @@ export function useGlobalPublicSettings() {
         }
         if (row.setting_key === 'workshop_labs_accordion_enabled') {
           setWorkshopLabsAccordionEnabled(enabled);
+        }
+        if (row.setting_key === 'tile_focus_mode') {
+          setTileFocusMode(enabled);
         }
       }
     } catch (err) {
@@ -73,6 +78,7 @@ export function useGlobalPublicSettings() {
     simplifiedPublicLanding,
     projectCatalogEnabled,
     workshopLabsAccordionEnabled,
+    tileFocusMode,
     loading,
     refetch: load,
   };

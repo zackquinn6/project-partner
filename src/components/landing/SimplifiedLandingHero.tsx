@@ -7,6 +7,7 @@ import { ArrowRight, FolderKanban, House, ListTodo, Shield } from 'lucide-react'
 import { OnboardingDialog } from './OnboardingDialog';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { useMarketingCopy } from '@/hooks/useMarketingCopy';
 
 interface SimplifiedLandingHeroProps {
   onLearnMore: () => void;
@@ -41,6 +42,7 @@ function AppIconTile({
 export function SimplifiedLandingHero({ onLearnMore }: SimplifiedLandingHeroProps) {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const navigate = useNavigate();
+  const { simplifiedHero } = useMarketingCopy();
 
   return (
     <>
@@ -62,15 +64,15 @@ export function SimplifiedLandingHero({ onLearnMore }: SimplifiedLandingHeroProp
             id="simplified-hero-heading"
             className="font-display text-[2rem] font-semibold leading-[1.15] tracking-tight text-foreground sm:text-4xl md:text-5xl"
           >
-            Project Management,
+            {simplifiedHero.headlineLines[0]}
             <br />
-            Pre-Built for
+            {simplifiedHero.headlineLines[1]}
             <br />
-            Home&nbsp;Improvement.
+            {simplifiedHero.headlineLines[2]}
           </h1>
 
           <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Helping you run one great project.
+            {simplifiedHero.subhead}
           </p>
 
           <div className="mt-10 flex flex-col items-center gap-5 sm:mt-12">
@@ -171,7 +173,7 @@ export function SimplifiedLandingHero({ onLearnMore }: SimplifiedLandingHeroProp
                           />
                         </div>
                         <p className="flex-1 text-center text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
-                          A complete suite of apps and tools to run one great project.
+                          {simplifiedHero.projectsTierBlurb}
                         </p>
                         <Button className="w-full" onClick={() => navigate('/auth?mode=signup')}>
                           Get full access

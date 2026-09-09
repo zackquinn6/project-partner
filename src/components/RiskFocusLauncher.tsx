@@ -13,11 +13,7 @@ import {
   getProjectCatalogPublishStatus,
   getProjectCatalogVisibility,
 } from '@/utils/catalogProjectFilters';
-
-/** Same listing as the user-facing project catalog (visibility + revision collapse); not admin “all drafts” mode. */
-function getRiskLessTemplateOptions(projects: Project[]): Project[] {
-  return filterProjectsForCatalog(projects, false);
-}
+import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 
 function RiskFocusStartControls({
   onSessionStarted,
@@ -29,12 +25,17 @@ function RiskFocusStartControls({
 }) {
   const { projects, createProjectRun, loading: projectsLoading } = useProject();
   const { canAccessApp, loading: membershipLoading } = useMembership();
+  const { tileFocusMode } = useGlobalPublicSettings();
   const [selectedId, setSelectedId] = useState<string>('');
   const [starting, setStarting] = useState(false);
   const [comingSoonProject, setComingSoonProject] = useState<Project | null>(null);
   const [betaWarningProject, setBetaWarningProject] = useState<Project | null>(null);
 
-  const templates = useMemo(() => getRiskLessTemplateOptions(projects), [projects]);
+  /** Same listing as the user-facing project catalog (visibility + revision collapse); not admin “all drafts” mode. */
+  const templates = useMemo(
+    () => filterProjectsForCatalog(projects, false, { tileFocusOnly: tileFocusMode }),
+    [projects, tileFocusMode]
+  );
 
   const doStartSession = async (project: Project) => {
     setStarting(true);

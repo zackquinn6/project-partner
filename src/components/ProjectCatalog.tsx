@@ -35,6 +35,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { isKickoffPhaseComplete } from '@/utils/projectUtils';
 import { filterProjectsForCatalog } from '@/utils/catalogProjectFilters';
+import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { reportUserFacingError } from '@/utils/errorReporting';
 import { toast } from 'sonner';
 interface ProjectTemplate {
@@ -98,6 +99,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     projectRuns,
     fetchProjects
   } = useProject();
+  const { tileFocusMode } = useGlobalPublicSettings();
 
   // State for published projects when not authenticated
   const [publicProjects, setPublicProjects] = useState<any[]>([]);
@@ -208,63 +210,14 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   // Use appropriate projects based on authentication status
   const availableProjects = user ? projects : publicProjects;
 
-  // Filter projects to show published, beta, and coming-soon projects or all projects in admin mode
+  // Filter projects to show published, beta, and coming-soon projects or all projects in admin mode.
+  // Tile focus hides non-Tile templates from the member/public catalog only (not admin mode).
   const publishedProjects = useMemo(() => {
-    if (user) {
-      return filterProjectsForCatalog(projects, isAdminMode);
-    }
-
-    const filteredFromDb = publicProjects.filter((project) => {
-      const visibility =
-        (project as any).visibilityStatus ??
-        (project as any).visibility_status ??
-        'default';
-
-      const isHidden = visibility === 'hidden';
-      const isNotManualTemplate = project.id !== '00000000-0000-0000-0000-000000000000';
-
-      const isStandardByFlag = !!(project as any).is_standard;
-      const isStandardById = project.id === '00000000-0000-0000-0000-000000000001';
-      const isStandardByName =
-        typeof (project as any).name === 'string' &&
-        (project as any).name.trim().toLowerCase() === 'standard project foundation';
-
-      const isNotStandardFoundation = !(isStandardByFlag || isStandardById || isStandardByName);
-
-      return !isHidden && isNotManualTemplate && isNotStandardFoundation;
+    const source = (user ? projects : publicProjects) as Project[];
+    return filterProjectsForCatalog(source, isAdminMode, {
+      tileFocusOnly: tileFocusMode && !isAdminMode,
     });
-
-    let finalProjects = filteredFromDb;
-
-    if (!isAdminMode) {
-      const byFamily = new Map<string, any>();
-      for (const project of filteredFromDb) {
-        const rootId =
-          (project as any).parent_project_id ||
-          (project as any).parentProjectId ||
-          project.id;
-        const revisionNumber =
-          (project as any).revision_number ??
-          (project as any).revisionNumber ??
-          0;
-        const existing = byFamily.get(rootId);
-        if (!existing) {
-          byFamily.set(rootId, project);
-        } else {
-          const existingRev =
-            (existing as any).revision_number ??
-            (existing as any).revisionNumber ??
-            0;
-          if (revisionNumber > existingRev) {
-            byFamily.set(rootId, project);
-          }
-        }
-      }
-      finalProjects = Array.from(byFamily.values());
-    }
-
-    return [...finalProjects].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  }, [projects, user, isAdminMode, publicProjects]);
+  }, [projects, user, isAdminMode, publicProjects, tileFocusMode]);
 
   // Get unique filter options
   const availableCategories = useMemo(() => {

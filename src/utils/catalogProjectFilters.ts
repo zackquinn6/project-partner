@@ -17,9 +17,26 @@ export function getProjectCatalogPublishStatus(project: Project): string {
   return typeof ps === 'string' ? ps.trim().toLowerCase() : '';
 }
 
+/** Normalize project.category (array or string) for catalog checks. */
+export function getProjectCategories(project: Project | { category?: unknown }): string[] {
+  const category = (project as { category?: unknown }).category;
+  if (Array.isArray(category)) {
+    return category.filter((c): c is string => typeof c === 'string' && !!c.trim());
+  }
+  if (typeof category === 'string' && category.trim()) {
+    return [category.trim()];
+  }
+  return [];
+}
+
+export function projectHasTileCategory(project: Project | { category?: unknown }): boolean {
+  return getProjectCategories(project).some((c) => c.trim().toLowerCase() === 'tile');
+}
+
 /**
  * Which templates appear in the project catalog grid (`publishedProjects` in ProjectCatalog.tsx).
  * Pass `isAdminMode: true` to include non-published rows that catalog shows to admins.
+ * Pass `tileFocusOnly: true` to keep only templates whose category includes Tile.
  */
 /** When two revision rows tie on revision_number, prefer the more "released" row (published over draft). */
 function pickCatalogFamilyWinner(a: Project, b: Project): Project {
@@ -47,7 +64,13 @@ function pickCatalogFamilyWinner(a: Project, b: Project): Project {
   return t(a) >= t(b) ? a : b;
 }
 
-export function filterProjectsForCatalog(projects: Project[], isAdminMode: boolean): Project[] {
+export function filterProjectsForCatalog(
+  projects: Project[],
+  isAdminMode: boolean,
+  options?: { tileFocusOnly?: boolean }
+): Project[] {
+  const tileFocusOnly = !!options?.tileFocusOnly;
+
   const filteredFromDb = projects.filter((project) => {
     const publishStatus = getProjectCatalogPublishStatus(project);
     const visibility = getProjectCatalogVisibility(project);
@@ -65,7 +88,15 @@ export function filterProjectsForCatalog(projects: Project[], isAdminMode: boole
       typeof p.name === 'string' && p.name.trim().toLowerCase() === 'standard project foundation';
     const isNotStandardFoundation = !(isStandardByFlag || isStandardById || isStandardByName);
 
-    return isValidStatus && isNotManualTemplate && isNotStandardFoundation;
+    if (!(isValidStatus && isNotManualTemplate && isNotStandardFoundation)) {
+      return false;
+    }
+
+    if (tileFocusOnly && !projectHasTileCategory(project)) {
+      return false;
+    }
+
+    return true;
   });
 
   let finalProjects: Project[] = filteredFromDb;

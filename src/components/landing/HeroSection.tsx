@@ -9,6 +9,7 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import { OnboardingDialog } from './OnboardingDialog';
+import { useMarketingCopy } from '@/hooks/useMarketingCopy';
 
 const HERO_SCREENSHOTS = [
   {
@@ -32,6 +33,7 @@ interface HeroSectionProps {
 
 export const HeroSection = ({ onOpenDemo, onScrollToSection }: HeroSectionProps) => {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const { hero } = useMarketingCopy();
   
   return (
     <>
@@ -54,11 +56,11 @@ export const HeroSection = ({ onOpenDemo, onScrollToSection }: HeroSectionProps)
           {/* Left Column - Copy */}
           <div className="text-center lg:text-left space-y-6">
             <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight">
-              Project Management,<br className="sm:hidden" /> Built for Home Improvement
+              {hero.headlineLine1}<br className="sm:hidden" /> {hero.headlineLine2}
             </h1>
 
             <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              Transform scattered DIY content and tools to a predictable execution system
+              {hero.subhead}
             </p>
 
             {/* CTAs */}
@@ -68,7 +70,7 @@ export const HeroSection = ({ onOpenDemo, onScrollToSection }: HeroSectionProps)
                 className="bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300" 
                 onClick={() => setIsOnboardingOpen(true)}
               >
-                Get Started Today
+                {hero.ctaPrimary}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
 
@@ -78,7 +80,7 @@ export const HeroSection = ({ onOpenDemo, onScrollToSection }: HeroSectionProps)
                 className="border-2 hover:bg-muted" 
                 onClick={() => onScrollToSection?.('value-prop')}
               >
-                Learn More
+                {hero.ctaSecondary}
               </Button>
             </div>
 

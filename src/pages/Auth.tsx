@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, ArrowLeft, AlertCircle, User } from 'lucide-react';
 import { useGuest } from '@/contexts/GuestContext';
+import { useMarketingCopy } from '@/hooks/useMarketingCopy';
 
 const ONBOARDING_STORAGE_KEY = 'project_partner_onboarding';
 
@@ -53,6 +54,7 @@ export default function Auth() {
   } = useAuth();
   const { validateAndSanitize, startFormTracking, trackFormSubmission, commonRules } = useSecureInput();
   const { guestData, transferGuestDataToUser } = useGuest();
+  const { auth: authCopy } = useMarketingCopy();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -451,7 +453,7 @@ export default function Auth() {
               
               <TabsContent value="signup" className="mt-0 space-y-0">
                 <p className="text-sm text-muted-foreground mb-4">
-                  Project Partner saves your plans and progress, so you can always pick up where you left off. Your login keeps everything secure and ready when you return.
+                  {authCopy.signupBlurb}
                 </p>
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">

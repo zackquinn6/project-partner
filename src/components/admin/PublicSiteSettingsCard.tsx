@@ -17,18 +17,21 @@ export const PublicSiteSettingsCard: React.FC = () => {
     simplifiedPublicLanding,
     projectCatalogEnabled,
     workshopLabsAccordionEnabled,
+    tileFocusMode,
     loading,
     refetch,
   } = useGlobalPublicSettings();
   const [updatingSimplified, setUpdatingSimplified] = useState(false);
   const [updatingCatalog, setUpdatingCatalog] = useState(false);
   const [updatingLabs, setUpdatingLabs] = useState(false);
+  const [updatingTileFocus, setUpdatingTileFocus] = useState(false);
 
   const updateSetting = async (
     settingKey:
       | 'simplified_public_landing'
       | 'project_catalog_enabled'
-      | 'workshop_labs_accordion_enabled',
+      | 'workshop_labs_accordion_enabled'
+      | 'tile_focus_mode',
     enabled: boolean,
     setBusy: (v: boolean) => void
   ) => {
@@ -51,8 +54,11 @@ export const PublicSiteSettingsCard: React.FC = () => {
           ? 'Simplified public landing'
           : settingKey === 'project_catalog_enabled'
             ? 'Project catalog'
-            : 'Workshop Labs accordion';
-          } catch (err) {
+            : settingKey === 'tile_focus_mode'
+              ? 'Tile focus mode'
+              : 'Workshop Labs accordion';
+      toast.success(`${label} ${enabled ? 'enabled' : 'disabled'}`);
+    } catch (err) {
       console.error('Error updating public site setting:', err);
       toast.error('Failed to update setting');
     } finally {
@@ -122,6 +128,24 @@ export const PublicSiteSettingsCard: React.FC = () => {
               updateSetting('workshop_labs_accordion_enabled', checked, setUpdatingLabs)
             }
             disabled={loading || updatingLabs}
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <Label htmlFor="tile-focus" className="flex-1">
+            <div className="font-medium">Tile focus mode</div>
+            <div className="text-sm text-muted-foreground">
+              Landing copy focuses on tile projects (floors, backsplashes, showers/baths). The member
+              catalog shows only templates categorized as Tile.
+            </div>
+          </Label>
+          <Switch
+            id="tile-focus"
+            checked={tileFocusMode}
+            onCheckedChange={(checked) =>
+              updateSetting('tile_focus_mode', checked, setUpdatingTileFocus)
+            }
+            disabled={loading || updatingTileFocus}
           />
         </div>
       </CardContent>
