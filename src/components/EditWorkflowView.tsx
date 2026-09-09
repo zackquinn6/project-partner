@@ -293,7 +293,7 @@ export default function EditWorkflowView({
             : 999,
           operations: operationsWithSteps.sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0))
         };
-      })) as unknown as Phase[];
+      }))) as unknown as Phase[];
       
       return phases;
     } else {
