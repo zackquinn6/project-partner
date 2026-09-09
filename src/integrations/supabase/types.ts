@@ -2694,6 +2694,139 @@ export type Database = {
           },
         ]
       }
+      rework_events: {
+        Row: {
+          id: string
+          user_id: string
+          project_run_id: string
+          template_project_id: string | null
+          template_family: string | null
+          phase_id: string | null
+          phase_name: string | null
+          step_id: string | null
+          step_title: string | null
+          triage_type: string
+          severity: string
+          comments: string | null
+          photo_paths: string[]
+          recovery_plan: Json
+          status: string
+          applied_at: string | null
+          resolved_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          project_run_id: string
+          template_project_id?: string | null
+          template_family?: string | null
+          phase_id?: string | null
+          phase_name?: string | null
+          step_id?: string | null
+          step_title?: string | null
+          triage_type: string
+          severity: string
+          comments?: string | null
+          photo_paths?: string[]
+          recovery_plan?: Json
+          status?: string
+          applied_at?: string | null
+          resolved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          project_run_id?: string
+          template_project_id?: string | null
+          template_family?: string | null
+          phase_id?: string | null
+          phase_name?: string | null
+          step_id?: string | null
+          step_title?: string | null
+          triage_type?: string
+          severity?: string
+          comments?: string | null
+          photo_paths?: string[]
+          recovery_plan?: Json
+          status?: string
+          applied_at?: string | null
+          resolved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rework_events_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stuck_events: {
+        Row: {
+          id: string
+          user_id: string
+          project_run_id: string | null
+          template_project_id: string | null
+          template_family: string | null
+          phase_id: string | null
+          step_id: string | null
+          step_title: string | null
+          triage_type: string
+          resolution_action: string | null
+          rework_event_id: string | null
+          time_to_unstick_seconds: number | null
+          thumbs: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          project_run_id?: string | null
+          template_project_id?: string | null
+          template_family?: string | null
+          phase_id?: string | null
+          step_id?: string | null
+          step_title?: string | null
+          triage_type: string
+          resolution_action?: string | null
+          rework_event_id?: string | null
+          time_to_unstick_seconds?: number | null
+          thumbs?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          project_run_id?: string | null
+          template_project_id?: string | null
+          template_family?: string | null
+          phase_id?: string | null
+          step_id?: string | null
+          step_title?: string | null
+          triage_type?: string
+          resolution_action?: string | null
+          rework_event_id?: string | null
+          time_to_unstick_seconds?: number | null
+          thumbs?: number | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stuck_events_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_run_photos: {
         Row: {
           caption: string | null
@@ -4299,6 +4432,14 @@ export type Database = {
         Returns: Json
       }
       is_admin: { Args: { check_user_id?: string }; Returns: boolean }
+      get_step_stuck_aggregates: {
+        Args: { p_template_family: string; p_step_id?: string | null }
+        Returns: {
+          step_id: string
+          triage_type: string
+          event_count: number
+        }[]
+      }
       log_failed_login: {
         Args: {
           ip_addr?: string

@@ -25,9 +25,9 @@ export const FeaturesSection = () => {
     },
     {
       icon: HelpCircle,
-      title: "Expert Help on Demand",
-      description: "Stuck? Get help from real contractors and experienced DIYers",
-      badge: "Human Support",
+      title: "AI Help When You're Stuck",
+      description: "Seconds-fast answers scoped to your project family, with a recovery plan and premium live-pro escalate",
+      badge: "In-step support",
       color: "bg-purple-600"
     }
   ];
@@ -262,7 +262,7 @@ export const FeaturesSection = () => {
                     <ul className="space-y-3">
                       <li className="text-sm text-muted-foreground flex items-start">
                         <span className="mr-2 mt-1.5 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
-                        <span>Call a pro on demand when you need expert help (optional upgrade)</span>
+                        <span>Ask AI on your step when you are stuck (usage-capped); escalate to a live pro on Projects</span>
                       </li>
                       <li className="text-sm text-muted-foreground flex items-start">
                         <span className="mr-2 mt-1.5 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
