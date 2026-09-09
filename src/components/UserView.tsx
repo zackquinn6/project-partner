@@ -2617,7 +2617,7 @@ export default function UserView({
           
           // Initialize phase map if needed
           if (!stepsByPhase.has(phaseName)) {
-            stepsByPhase.set(phaseName, new Map<string, WorkflowStep[]>());
+            stepsByPhase.set(phaseName, new Map<string, any[]>());
           }
           
           // Initialize operation array if needed
