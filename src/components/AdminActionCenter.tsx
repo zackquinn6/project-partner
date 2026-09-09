@@ -41,7 +41,10 @@ export const AdminActionCenter: React.FC<AdminActionCenterProps> = ({
       
       if (error) throw error;
       
-      setFeedbackItems(data || []);
+      setFeedbackItems(((data || []) as any[]).map((f) => ({
+        ...f,
+        submitter_display: f.submitter_display ?? (f.user_id ? 'Registered user' : 'Anonymous'),
+      })) as FeedbackItem[]);
     } catch (error) {
       console.error('Error fetching feedback:', error);
       toast({

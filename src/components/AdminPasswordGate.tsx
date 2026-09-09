@@ -27,7 +27,7 @@ const AdminPasswordGate: React.FC<AdminPasswordGateProps> = ({ onAuthenticated, 
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.rpc('is_admin', { user_id: user.id });
+      const { data, error } = await supabase.rpc('is_admin', { check_user_id: user.id });
       
       if (error) {
         console.error('Error checking admin role:', error);

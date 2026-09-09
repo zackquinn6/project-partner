@@ -19,8 +19,7 @@ export function CompactOutputsTable({ outputs, onOutputsChange, onAddOutput, onE
   // Filter out invalid output types (quality, condition, etc.) and normalize to 'none'
   const safeOutputs = (outputs || []).map(output => ({
     ...output,
-    type: (output.type === 'quality' || output.type === 'condition' || 
-           !['none', 'major-aesthetics', 'performance-durability', 'safety'].includes(output.type))
+    type: !['none', 'major-aesthetics', 'performance-durability', 'safety'].includes(output.type as string)
       ? 'none' as Output['type']
       : output.type
   }));
