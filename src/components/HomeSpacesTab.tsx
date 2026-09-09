@@ -11,6 +11,7 @@ import { Plus, Edit2, Trash2, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useSignedStorageUrls } from '@/utils/privateStorageUrls';
 
 interface HomeSpace {
   id: string;
@@ -40,6 +41,12 @@ export const HomeSpacesTab: React.FC<HomeSpacesTabProps> = ({ homeId }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingSpace, setEditingSpace] = useState<HomeSpace | null>(null);
   const [uploading, setUploading] = useState(false);
+  // home-photos is a private bucket: floor plans need short-lived signed URLs
+  const signedFloorPlanUrls = useSignedStorageUrls(
+    spaces.map((s) => s.floor_plan_image_url),
+    'home-photos'
+  );
+  
   
   const [formData, setFormData] = useState({
     space_name: '',
@@ -347,7 +354,7 @@ export const HomeSpacesTab: React.FC<HomeSpacesTabProps> = ({ homeId }) => {
                     <TableCell>
                       {space.floor_plan_image_url ? (
                         <img 
-                          src={space.floor_plan_image_url} 
+                          src={signedFloorPlanUrls[space.floor_plan_image_url] || ''} 
                           alt="Floor plan"
                           className="w-16 h-16 object-cover rounded"
                         />
@@ -437,7 +444,7 @@ export const HomeSpacesTab: React.FC<HomeSpacesTabProps> = ({ homeId }) => {
                   />
                   {editingSpace?.floor_plan_image_url && !selectedFile && (
                     <img 
-                      src={editingSpace.floor_plan_image_url} 
+                      src={signedFloorPlanUrls[editingSpace.floor_plan_image_url] || ''} 
                       alt="Current floor plan"
                       className="w-16 h-16 object-cover rounded"
                     />
