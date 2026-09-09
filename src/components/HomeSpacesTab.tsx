@@ -41,6 +41,12 @@ export const HomeSpacesTab: React.FC<HomeSpacesTabProps> = ({ homeId }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingSpace, setEditingSpace] = useState<HomeSpace | null>(null);
   const [uploading, setUploading] = useState(false);
+  // home-photos is a private bucket: floor plans need short-lived signed URLs
+  const signedFloorPlanUrls = useSignedStorageUrls(
+    spaces.map((s) => s.floor_plan_image_url),
+    'home-photos'
+  );
+  
   
   const [formData, setFormData] = useState({
     space_name: '',
