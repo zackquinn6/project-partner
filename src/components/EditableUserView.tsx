@@ -37,7 +37,6 @@ import {
   filterToolsByVisibleSections,
   filterMaterialsByVisibleSections,
 } from '@/utils/microDecisionVisibility';
-import { isStepCompleted, getStepCompletionKey } from '@/utils/projectUtils';
 
 interface EditableUserViewProps {
   onBackToAdmin: () => void;

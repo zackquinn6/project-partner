@@ -225,8 +225,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     publishedProjects.forEach(p => {
       if (Array.isArray(p.category)) {
         p.category.forEach(cat => cat && categories.add(cat));
-      } else if (typeof p.category === 'string' && p.category.trim()) {
-        categories.add(p.category);
+      } else if (typeof p.category === 'string' && (p.category as string).trim()) {
+        categories.add(p.category as string);
       }
     });
     return Array.from(categories).sort();
