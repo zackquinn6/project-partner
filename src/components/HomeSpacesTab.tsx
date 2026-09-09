@@ -11,6 +11,7 @@ import { Plus, Edit2, Trash2, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useSignedStorageUrls } from '@/utils/privateStorageUrls';
 
 interface HomeSpace {
   id: string;
