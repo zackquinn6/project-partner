@@ -61,7 +61,7 @@ export const SecureAdminUserView: React.FC<SecureAdminUserViewProps> = ({ userId
 
     try {
       setLoading(true);
-      const { data, error } = await supabase.rpc('get_masked_profile_for_admin', {
+      const { data, error } = await supabase.rpc('get_masked_profile_for_admin' as any, {
         profile_user_id: userId,
         access_reason: reason
       });
@@ -69,7 +69,7 @@ export const SecureAdminUserView: React.FC<SecureAdminUserViewProps> = ({ userId
       if (error) throw error;
       
       if (data && data.length > 0) {
-        setProfile(data[0]);
+        setProfile(data[0] as any);
               }
     } catch (error) {
       console.error('Error loading masked profile:', error);
@@ -95,7 +95,7 @@ export const SecureAdminUserView: React.FC<SecureAdminUserViewProps> = ({ userId
 
     try {
       setLoading(true);
-      const { data, error } = await supabase.rpc('get_masked_home_for_admin', {
+      const { data, error } = await supabase.rpc('get_masked_home_for_admin' as any, {
         home_user_id: userId,
         access_reason: reason
       });
@@ -103,7 +103,7 @@ export const SecureAdminUserView: React.FC<SecureAdminUserViewProps> = ({ userId
       if (error) throw error;
       
       if (data) {
-        setHomes(data);
+        setHomes(data as any);
               }
     } catch (error) {
       console.error('Error loading masked homes:', error);
@@ -138,7 +138,7 @@ export const SecureAdminUserView: React.FC<SecureAdminUserViewProps> = ({ userId
 
     try {
       setLoading(true);
-      const { data, error } = await supabase.rpc('request_emergency_data_access', {
+      const { data, error } = await supabase.rpc('request_emergency_data_access' as any, {
         target_user_id: userId,
         emergency_reason: emergencyReason,
         supervisor_email: supervisorEmail

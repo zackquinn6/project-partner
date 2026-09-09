@@ -19,7 +19,7 @@ export const UserDataManagement: React.FC = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('export_user_data', {
+      const { data, error } = await supabase.rpc('export_user_data' as any, {
         user_uuid: user.id
       });
 
@@ -53,7 +53,7 @@ export const UserDataManagement: React.FC = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('delete_user_data', {
+      const { data, error } = await supabase.rpc('delete_user_data' as any, {
         user_uuid: user.id
       });
 

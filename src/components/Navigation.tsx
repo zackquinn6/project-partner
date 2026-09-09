@@ -18,6 +18,7 @@ import { UpgradePrompt } from './UpgradePrompt';
 import { MembershipWindow } from './MembershipWindow';
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { toast } from 'sonner';
 import { DataPrivacyManager } from './DataPrivacyManager';
 import { FeatureRoadmapWindow } from './FeatureRoadmapWindow';
 import { AppDocumentationWindow } from './AppDocumentationWindow';
@@ -259,7 +260,7 @@ export default function Navigation({
       id: freshRun.id,
       projectId: freshRun.project_id ?? '',
       name: freshRun.name,
-      description: freshRun.description || '',
+      description: (freshRun.description as any) || '',
       projectChallenges: freshRun.project_challenges,
       isManualEntry: freshRun.is_manual_entry || false,
       createdAt: new Date(freshRun.created_at),
@@ -292,7 +293,7 @@ export default function Navigation({
       // Initial project goals from kickoff step 3
       initial_budget: freshRun.initial_budget,
       initial_timeline: freshRun.initial_timeline,
-      initial_sizing: freshRun.initial_sizing,
+      initial_sizing: freshRun.initial_sizing as any,
       progress_reporting_style: freshRun.progress_reporting_style
         ? (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
         : undefined,

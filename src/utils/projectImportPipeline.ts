@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+const db: any = supabase;
 import { GeneratedProjectStructure } from './aiProjectGenerator';
 import { toast } from 'sonner';
 
@@ -654,7 +655,7 @@ export async function importGeneratedProject(
       }
 
       // Rebuild phases JSON after content updates
-      const { error: rebuildError } = await supabase.rpc(
+      const { error: rebuildError } = await db.rpc(
         'rebuild_phases_json_from_project_phases',
         { p_project_id: projectId }
       );
@@ -1420,7 +1421,7 @@ export async function importGeneratedProject(
     // Step 9: Rebuild phases JSON from relational tables
     // This ensures the projects.phases JSONB column is in sync with the relational data
     console.log('🔄 Rebuilding phases JSON for project:', projectId);
-    const { error: rebuildError } = await supabase.rpc(
+    const { error: rebuildError } = await db.rpc(
       'rebuild_phases_json_from_project_phases',
       { p_project_id: projectId }
     );

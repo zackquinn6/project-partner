@@ -60,7 +60,7 @@ export const ProjectOwnershipSelector: React.FC<ProjectOwnershipSelectorProps> =
 
         if (profileError) throw profileError;
 
-        setAvailableOwners(profileData || []);
+        setAvailableOwners((profileData as any) || []);
 
         // Load current project owners
         const { data: ownersData, error: ownersError } = await supabase
@@ -73,13 +73,13 @@ export const ProjectOwnershipSelector: React.FC<ProjectOwnershipSelectorProps> =
 
         // Get profiles for current owners
         if (ownersData && ownersData.length > 0) {
-          const ownerUserIds = ownersData.map(o => o.user_id).filter(Boolean) as string[];
+          const ownerUserIds = ownersData.map((o:any) => o.user_id).filter(Boolean) as string[];
           const { data: ownerProfiles } = await supabase
             .from('user_profiles')
             .select('user_id, email, display_name')
             .in('user_id', ownerUserIds);
 
-          const ownersWithProfiles = ownersData.map(owner => ({
+          const ownersWithProfiles = ownersData.map((owner:any) => ({
             ...owner,
             profiles: ownerProfiles?.find(p => p.user_id === owner.user_id) || {
               email: '',
@@ -87,7 +87,7 @@ export const ProjectOwnershipSelector: React.FC<ProjectOwnershipSelectorProps> =
             }
           }));
 
-          setCurrentOwners(ownersWithProfiles);
+          setCurrentOwners(ownersWithProfiles as any);
         } else {
           setCurrentOwners([]);
         }
@@ -127,13 +127,13 @@ export const ProjectOwnershipSelector: React.FC<ProjectOwnershipSelectorProps> =
 
       // Get profiles for current owners
       if (ownersData && ownersData.length > 0) {
-        const ownerUserIds = ownersData.map(o => o.user_id).filter(Boolean) as string[];
+        const ownerUserIds = ownersData.map((o:any) => o.user_id).filter(Boolean) as string[];
         const { data: ownerProfiles } = await supabase
           .from('user_profiles')
           .select('user_id, email, display_name')
           .in('user_id', ownerUserIds);
 
-        const ownersWithProfiles = ownersData.map(owner => ({
+        const ownersWithProfiles = ownersData.map((owner:any) => ({
           ...owner,
           profiles: ownerProfiles?.find(p => p.user_id === owner.user_id) || {
             email: '',
@@ -141,7 +141,7 @@ export const ProjectOwnershipSelector: React.FC<ProjectOwnershipSelectorProps> =
           }
         }));
 
-        setCurrentOwners(ownersWithProfiles);
+        setCurrentOwners(ownersWithProfiles as any);
       } else {
         setCurrentOwners([]);
       }

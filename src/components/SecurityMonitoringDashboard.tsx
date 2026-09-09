@@ -40,7 +40,7 @@ export const SecurityMonitoringDashboard: React.FC = () => {
         .limit(50);
 
       if (error) throw error;
-      setSecurityEvents(data || []);
+      setSecurityEvents((data as any) || []);
     } catch (error) {
       console.error('Error loading security events:', error);
       toast({
@@ -53,9 +53,9 @@ export const SecurityMonitoringDashboard: React.FC = () => {
 
   const loadSuspiciousActivity = async () => {
     try {
-      const { data, error } = await supabase.rpc('detect_suspicious_activity');
+      const { data, error } = await supabase.rpc('detect_suspicious_activity' as any);
       if (error) throw error;
-      setSuspiciousActivity(data || []);
+      setSuspiciousActivity((data as any) || []);
     } catch (error) {
       console.error('Error loading suspicious activity:', error);
       // Don't show toast for this as it might be a permissions issue

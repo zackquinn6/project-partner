@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+const db: any = supabase;
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';

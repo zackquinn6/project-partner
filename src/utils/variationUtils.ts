@@ -1,9 +1,10 @@
 import { supabase } from '@/integrations/supabase/client';
+const db: any = supabase;
 import { toast } from 'sonner';
 
 export const clearAllToolVariations = async (): Promise<boolean> => {
   try {
-    const { error } = await supabase.from('tool_variations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    const { error } = await db.from('tool_variations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
     if (error) {
       console.error('Error clearing tool variations:', error);
@@ -43,7 +44,7 @@ export const clearAllMaterialVariations = async (): Promise<boolean> => {
 export const clearAllTools = async (): Promise<boolean> => {
   try {
     // Get all variation instance IDs for tools first
-    const { data: toolVariations } = await supabase.from('tool_variations').select('id');
+    const { data: toolVariations } = await db.from('tool_variations').select('id');
 
     const variationIds = toolVariations?.map(v => v.id) || [];
 
@@ -57,7 +58,7 @@ export const clearAllTools = async (): Promise<boolean> => {
     }
 
     console.log('Deleting tool variations...');
-    await supabase.from('tool_variations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await db.from('tool_variations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
     console.log('Deleting core tools...');
     const { error } = await supabase

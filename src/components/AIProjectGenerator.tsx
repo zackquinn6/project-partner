@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+const db: any = supabase;
 import { toast } from 'sonner';
 import { useProject } from '@/contexts/ProjectContext';
 import { 

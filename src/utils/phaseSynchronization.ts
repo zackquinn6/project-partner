@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+const db: any = supabase;
 import { Project, Phase, Operation, WorkflowStep } from '@/interfaces/Project';
 import { toast } from 'sonner';
 

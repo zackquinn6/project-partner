@@ -133,8 +133,8 @@ export const MembershipAgreementDialog: React.FC<MembershipAgreementDialogProps>
           .eq('user_id', user.id)
           .single();
         
-        if (data?.display_name) {
-          setSignerName(data.display_name);
+        if ((data as any)?.display_name) {
+          setSignerName((data as any).display_name);
         }
       };
       fetchProfile();
@@ -160,7 +160,7 @@ export const MembershipAgreementDialog: React.FC<MembershipAgreementDialogProps>
       const { error } = await supabase
         .from('user_profiles')
         .update({
-          signed_agreement: agreement as any,
+          ...( { signed_agreement: agreement as any } as any),
           agreement_signed_at: new Date().toISOString()
         })
         .eq('user_id', user.id);

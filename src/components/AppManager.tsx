@@ -235,7 +235,7 @@ export function AppManager({
       const {
         data: updateData,
         error: updateError
-      } = await supabase.rpc('update_app_names_in_templates', {
+      } = await supabase.rpc('update_app_names_in_templates' as any, {
         p_app_id: actionKey,
         p_app_name: appName,
         p_description: editForm.description?.trim() || null,
@@ -349,7 +349,7 @@ export function AppManager({
         data: projectsData
       } = await supabase.from('projects').select('id').not('id', 'eq', '00000000-0000-0000-0000-000000000001');
       for (const project of projectsData || []) {
-        await supabase.rpc('rebuild_phases_json_from_templates', {
+        await supabase.rpc('rebuild_phases_json_from_templates' as any, {
           p_project_id: project.id
         });
       }
@@ -435,7 +435,7 @@ export function AppManager({
         data: projectsData
       } = await supabase.from('projects').select('id').not('id', 'eq', '00000000-0000-0000-0000-000000000001');
       for (const project of projectsData || []) {
-        await supabase.rpc('rebuild_phases_json_from_templates', {
+        await supabase.rpc('rebuild_phases_json_from_templates' as any, {
           p_project_id: project.id
         });
       }
