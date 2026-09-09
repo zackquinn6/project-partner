@@ -588,7 +588,7 @@ export default function UserView({
     const loadSpaces = async () => {
       setSpacesLoading(true);
       try {
-        const { data: spacesData, error } = await supabase
+        const { data: spacesData, error } = await (supabase as any)
           .from('project_run_spaces')
           .select('id, space_name, space_type, priority')
           .eq('project_run_id', currentProjectRun.id)
@@ -1102,7 +1102,7 @@ export default function UserView({
               if (error.code === 'PGRST116' || error.message?.includes('0 rows')) {
                 setCurrentProjectRun(null);
                 setViewMode('listing');
-                onProjectSelected?.('listing' as any);
+                (onProjectSelected as any)?.('listing');
                 navigate('/', {
                   replace: true,
                   state: isMobile ? { view: 'user', mobileView: 'projects' } : { view: 'user' },
@@ -1117,7 +1117,7 @@ export default function UserView({
               console.log('🚪 Project run was deleted, returning to listing');
               setCurrentProjectRun(null);
               setViewMode('listing');
-              onProjectSelected?.('listing' as any);
+              (onProjectSelected as any)?.('listing');
               navigate('/', {
                 replace: true,
                 state: isMobile ? { view: 'user', mobileView: 'projects' } : { view: 'user' },
@@ -1142,7 +1142,7 @@ export default function UserView({
             let parsedCompletedSteps: string[] = [];
             if (freshRun.completed_steps) {
               if (Array.isArray(freshRun.completed_steps)) {
-                parsedCompletedSteps = freshRun.completed_steps;
+                parsedCompletedSteps = freshRun.completed_steps as any;
               } else if (typeof freshRun.completed_steps === 'string') {
                 try {
                   parsedCompletedSteps = JSON.parse(freshRun.completed_steps);
@@ -1186,7 +1186,7 @@ export default function UserView({
               completedSteps: Array.isArray(parsedCompletedSteps) ? parsedCompletedSteps : [],
               progress: freshRun.progress,
               phases: Array.isArray(parsedPhases) ? parsedPhases : [],
-              category: freshRun.category,
+              category: freshRun.category as any,
               effortLevel: freshRun.effort_level as Project['effortLevel'],
               skillLevel: freshRun.skill_level as Project['skillLevel'],
               estimatedTime: freshRun.estimated_time,
@@ -1195,7 +1195,7 @@ export default function UserView({
               instruction_level_preference: (freshRun.instruction_level_preference as 'beginner' | 'intermediate' | 'advanced') || 'intermediate',
               initial_budget: freshRun.initial_budget,
               initial_timeline: freshRun.initial_timeline,
-              initial_sizing: freshRun.initial_sizing,
+              initial_sizing: freshRun.initial_sizing as any,
               progress_reporting_style: freshRun.progress_reporting_style
                 ? (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
                 : undefined,
@@ -2609,7 +2609,7 @@ export default function UserView({
         
         // Group steps by phase name first, then by operation
         // This preserves the phase structure within each space container
-        const stepsByPhase = new Map<string, Map<string, WorkflowStep[]>>();
+        const stepsByPhase = new Map<string, Map<string, any[]>>();
         
         item.steps.forEach(step => {
           const phaseName = (step as any).phaseName || item.phase?.name || 'Workflow';
@@ -2687,9 +2687,9 @@ export default function UserView({
         }
         
         // Group steps by operation, preserving operation order from original phase
-        const stepsByOperation = new Map<string, WorkflowStep[]>();
+        const stepsByOperation = new Map<string, any[]>();
         item.steps.forEach(step => {
-          const operationName = (step as any).operationName || step.operationName || 'General';
+          const operationName = (step as any).operationName || 'General';
           
           if (!stepsByOperation.has(operationName)) {
             stepsByOperation.set(operationName, []);
@@ -3035,7 +3035,7 @@ export default function UserView({
                   if (!budgetError && budgetData) {
                     preservedBudget = budgetData.initial_budget || null;
                     preservedTimeline = budgetData.initial_timeline || null;
-                    preservedSizing = budgetData.initial_sizing || null;
+                    preservedSizing = (budgetData.initial_sizing as any) || null;
                   } else {
                     // Fallback to context if database fetch fails
                     preservedBudget = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
@@ -3090,7 +3090,7 @@ export default function UserView({
               };
               
               // CRITICAL: Wait for database update to complete (kickoff completion is marked as immediate save)
-              await updateProjectRun(updatedRun);
+              await updateProjectRun(updatedRun as any);
               
               // CRITICAL: Small delay to ensure database write completes before refreshing
               await new Promise(resolve => setTimeout(resolve, 100));
@@ -3160,7 +3160,7 @@ export default function UserView({
               };
               
               // CRITICAL: Wait for database update to complete (kickoff completion is marked as immediate save)
-              await updateProjectRun(updatedRun);
+              await updateProjectRun(updatedRun as any);
               
               // CRITICAL: Small delay to ensure database write completes before refreshing
               await new Promise(resolve => setTimeout(resolve, 100));
@@ -3228,7 +3228,7 @@ export default function UserView({
           }
           
           // Notify parent component to return to listing
-          onProjectSelected?.('listing' as any);
+          (onProjectSelected as any)?.('listing');
           
           // Clear reset flags
           window.dispatchEvent(new CustomEvent('clear-reset-flags'));
@@ -3283,7 +3283,7 @@ export default function UserView({
   // Check if currentProjectRun has phases data that needs to be processed
   const hasPhasesData = currentProjectRun && (
     (currentProjectRun.phases && Array.isArray(currentProjectRun.phases) && currentProjectRun.phases.length > 0) ||
-    (typeof currentProjectRun.phases === 'string' && currentProjectRun.phases.trim() !== '' && currentProjectRun.phases !== '[]')
+    (typeof currentProjectRun.phases === 'string' && (currentProjectRun.phases as any).trim() !== '' && currentProjectRun.phases !== '[]')
   );
   
   // Also check if we're waiting for phases to be processed
@@ -3307,7 +3307,7 @@ export default function UserView({
     projectRunIdMatches: projectRunId && currentProjectRun ? currentProjectRun.id === projectRunId : false,
     phasesDataType: typeof currentProjectRun?.phases,
     phasesDataIsArray: Array.isArray(currentProjectRun?.phases),
-    phasesDataLength: Array.isArray(currentProjectRun?.phases) ? currentProjectRun.phases.length : (typeof currentProjectRun?.phases === 'string' ? currentProjectRun.phases.length : 0)
+    phasesDataLength: Array.isArray(currentProjectRun?.phases) ? currentProjectRun.phases.length : (typeof currentProjectRun?.phases === 'string' ? (currentProjectRun.phases as any).length : 0)
   });
   
   // If there are no phases in the project run snapshot, show "under construction"
