@@ -22,6 +22,13 @@ import { toast } from "sonner";
 import { extractNeedDatesFromSchedule, detectScheduleChanges, createScheduleSnapshot } from "@/utils/shoppingUtils";
 import { format } from "date-fns";
 import { reportUserFacingError } from "@/utils/errorReporting";
+import {
+  isToolRequirementOwned,
+  loadUserOwnedTools,
+  OwnedToolRecord,
+  ToolRequirementLike,
+} from "@/utils/ownedToolsMatching";
+import { useAuth } from "@/contexts/AuthContext";
 interface OrderingWindowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -92,12 +99,13 @@ export function OrderingWindow({
   const {
     updateProjectRun
   } = useProject();
+  const { user } = useAuth();
+  const [resolvedOwnedTools, setResolvedOwnedTools] = useState<OwnedToolRecord[]>([]);
   const [orderedTools, setOrderedTools] = useState<Set<string>>(new Set());
   const [orderedMaterials, setOrderedMaterials] = useState<Set<string>>(new Set());
   const [shoppedTools, setShoppedTools] = useState<Set<string>>(new Set());
   const [shoppedMaterials, setShoppedMaterials] = useState<Set<string>>(new Set());
   const [materialLeadTimes, setMaterialLeadTimes] = useState<Record<string, number>>({});
-  const [userProfile, setUserProfile] = useState<any>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [itemDetailsOpen, setItemDetailsOpen] = useState(false);
   const [accordionOpenValues, setAccordionOpenValues] = useState<string[]>([]);
@@ -228,24 +236,29 @@ export function OrderingWindow({
     }
   };
 
-  // Fetch user profile to get owned tools
+  // Resolve owned tools: prefer prop; otherwise load from user_tools + profile
   useEffect(() => {
-    const fetchUserProfile = async () => {
+    if (!open) return;
+    let cancelled = false;
+    void (async () => {
       try {
-        const {
-          data: {
-            user
-          }
-        } = await supabase.auth.getUser();
-        if (user) {
-          const {
-            data,
-            error
-          } = await supabase.from('user_profiles').select('owned_tools').eq('user_id', user.id).single();
-          if (!error && data) {
-            setUserProfile(data);
-          }
+        if (Array.isArray(userOwnedTools) && userOwnedTools.length > 0) {
+          const mapped: OwnedToolRecord[] = userOwnedTools.map((t: any, i: number) => ({
+            id: String(t?.id ?? t?.tool_id ?? `owned-${i}`),
+            tool_id: t?.tool_id ?? null,
+            name: t?.name || t?.item || t?.tool || '',
+            item: t?.item || t?.name || t?.tool || '',
+            quantity: t?.quantity,
+          }));
+          if (!cancelled) setResolvedOwnedTools(mapped.filter((t) => t.name || t.tool_id));
+          return;
         }
+        if (!user?.id) {
+          if (!cancelled) setResolvedOwnedTools([]);
+          return;
+        }
+        const loaded = await loadUserOwnedTools(user.id);
+        if (!cancelled) setResolvedOwnedTools(loaded);
       } catch (error) {
         await reportUserFacingError({
           source: 'shopping_checklist',
@@ -253,15 +266,15 @@ export function OrderingWindow({
           projectId: project?.id ?? projectRun?.projectId ?? null,
           projectRunId: projectRun?.id ?? null,
           error,
-          userMessage: 'Failed to load shopping checklist settings.',
-          notificationTitle: 'Shopping checklist profile load failed',
+          userMessage: 'Failed to load owned tools for shopping.',
+          notificationTitle: 'Shopping checklist owned tools load failed',
         });
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-    if (open) {
-      fetchUserProfile();
-    }
-  }, [open]);
+  }, [open, user?.id, userOwnedTools, project?.id, projectRun?.projectId, projectRun?.id]);
 
   // Extract all tools and materials from project using rollup logic with proper aggregation
   const projectRollup = React.useMemo(() => {
@@ -396,17 +409,20 @@ export function OrderingWindow({
   const uniqueTools = projectRollup.tools;
   const uniqueMaterials = projectRollup.materials;
 
-  // Auto-check tools that user already owns
-  useEffect(() => {
-    const ownedToolIds = new Set<string>();
-    uniqueTools.forEach(tool => {
-      // Check if user owns this tool using the userOwnedTools prop
-      if (userOwnedTools.some((ownedTool: any) => ownedTool.tool === tool.name || ownedTool.name === tool.name || ownedTool === tool.name)) {
-        ownedToolIds.add(tool.id);
+  const ownedToolIds = useMemo(() => {
+    const ids = new Set<string>();
+    uniqueTools.forEach((tool: ToolRequirementLike & { id: string }) => {
+      if (isToolRequirementOwned(tool, resolvedOwnedTools)) {
+        ids.add(tool.id);
       }
     });
-    setOrderedTools(ownedToolIds);
-  }, [uniqueTools, userOwnedTools]);
+    return ids;
+  }, [uniqueTools, resolvedOwnedTools]);
+
+  // Auto-mark owned tools (and owned alternates) as satisfied
+  useEffect(() => {
+    setOrderedTools(new Set(ownedToolIds));
+  }, [ownedToolIds]);
   const handleToolToggle = (toolId: string) => {
     let newShoppedTools: Set<string>;
     let newOrderedTools: Set<string>;
@@ -489,8 +505,11 @@ export function OrderingWindow({
     saveShoppingData(shoppedTools, shoppedMaterials, { materialLeadTimes: nextLeadTimes });
   };
 
-  // Filter items for display
-  const activeTools = uniqueTools.filter(tool => !shoppedTools.has(tool.id));
+  // Filter items for display — owned tools (incl. owned alternates) stay out of the buy list
+  const ownedToolsList = uniqueTools.filter((tool) => ownedToolIds.has(tool.id));
+  const activeTools = uniqueTools.filter(
+    (tool) => !shoppedTools.has(tool.id) && !ownedToolIds.has(tool.id)
+  );
   const activeMaterials = uniqueMaterials.filter(material => !shoppedMaterials.has(material.id));
   const shoppedToolsList = uniqueTools.filter(tool => shoppedTools.has(tool.id));
   const shoppedMaterialsList = uniqueMaterials.filter(material => shoppedMaterials.has(material.id));
@@ -799,15 +818,14 @@ export function OrderingWindow({
                     </div> : <>
                       {/* Active Tools */}
                       {activeTools.map((tool, index) => {
-                    const isOwned = userOwnedTools.some((ownedTool: any) => ownedTool.tool === tool.name || ownedTool.name === tool.name || ownedTool === tool.name);
-                    const needDate = !isOwned ? getNeedDate(tool.id, tool.name, 'tool') : null;
+                    const needDate = getNeedDate(tool.id, tool.name, 'tool');
                     return <div key={`active-${tool.id}-${index}`} className="border rounded-lg p-1.5 hover:bg-muted/50 transition-colors">
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-3">
                                 <input type="checkbox" checked={shoppedTools.has(tool.id)} onChange={() => handleToolToggle(tool.id)} className="rounded w-4 h-4 flex-shrink-0" />
                                 <h4 className="font-medium text-sm">{tool.name}</h4>
-                                {isOwned && <Badge variant="secondary" className="text-xs">Owned</Badge>}
+                                <Badge variant="outline" className="text-xs">Need</Badge>
                               </div>
                               <p className="text-xs text-muted-foreground mt-2 ml-7">
                                 {tool.description}
@@ -828,6 +846,27 @@ export function OrderingWindow({
                           </div>
                         </div>;
                   })}
+                      {ownedToolsList.length > 0 ? (
+                        <div className="pt-2 space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground px-1">
+                            Covered by tools you own (removed from buy list)
+                          </p>
+                          {ownedToolsList.map((tool, index) => (
+                            <div
+                              key={`owned-${tool.id}-${index}`}
+                              className="border border-dashed rounded-lg p-1.5 bg-muted/20"
+                            >
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-sm">{tool.name}</h4>
+                                <Badge variant="secondary" className="text-xs">Owned</Badge>
+                              </div>
+                              {tool.description ? (
+                                <p className="text-xs text-muted-foreground mt-1">{tool.description}</p>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
                     </>}
                 </div>
               </ScrollArea>
