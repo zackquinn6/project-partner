@@ -3,9 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Play, CheckCircle, ExternalLink, Image, Video, AlertTriangle, Info, ShoppingCart, Plus, Award, Eye, EyeOff, HelpCircle, Calendar as CalendarIcon, Sparkles, Camera } from "lucide-react";
@@ -39,6 +37,7 @@ import {
 import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
 import { PhaseRatingPopup } from './PhaseRatingPopup';
 import { ExpertHelpWindow } from './ExpertHelpWindow';
+import { SomethingWrongDialog } from './SomethingWrongDialog';
 import { PhaseCompletionPopup } from './PhaseCompletionPopup';
 import { OrderingWindow } from './OrderingWindow';
 import { MaterialsSelectionWindow } from './MaterialsSelectionWindow';
@@ -197,21 +196,8 @@ export default function UserView({
   const [estimatedFinishDateLoading, setEstimatedFinishDateLoading] = useState(false);
   const [lastFinishDateRefresh, setLastFinishDateRefresh] = useState<Date | null>(null);
   
-  // Issue report state
+  // Something Wrong? / rework triage
   const [issueReportOpen, setIssueReportOpen] = useState(false);
-  const [reportIssues, setReportIssues] = useState({
-    instructionsNotClear: false,
-    missingTools: false,
-    toolMalfunction: false,
-    missingWrongMaterials: false,
-    defectiveMaterials: false,
-    unplannedWork: false,
-    mistakeMade: false,
-    injuryNearMiss: false,
-    partnerDelay: false,
-    weatherDelay: false
-  });
-  const [reportComments, setReportComments] = useState("");
   const [selectedOutput, setSelectedOutput] = useState<Output | null>(null);
   const [outputPopupOpen, setOutputPopupOpen] = useState(false);
   const [expertHelpOpen, setExpertHelpOpen] = useState(false);
@@ -2189,53 +2175,6 @@ export default function UserView({
     setPhaseRatingOpen(false);
     setIssueReportOpen(true);
   };
-  // Handle issue report submission
-  const handleReportSubmit = async () => {
-    if (!currentProjectRun) return;
-
-    const issueReportData = {
-      stepId: currentStep?.id,
-      phaseId: getCurrentPhase()?.id,
-      phaseName: getCurrentPhase()?.name,
-      step: currentStep?.step,
-      issues: reportIssues,
-      comments: reportComments,
-      timestamp: new Date().toISOString()
-    };
-
-    // Add to existing issue reports array
-    const updatedIssueReports = [
-      ...(currentProjectRun.issue_reports || []),
-      issueReportData
-    ];
-
-    // Update project run with new issue report
-    await updateProjectRun({
-      ...currentProjectRun,
-      issue_reports: updatedIssueReports,
-      updatedAt: new Date()
-    });
-
-    // Log the issue report for debugging
-    console.log("Issue Report submitted and saved:", issueReportData);
-    
-        
-    // Reset form and close dialog
-    setReportIssues({
-      instructionsNotClear: false,
-      missingTools: false,
-      toolMalfunction: false,
-      missingWrongMaterials: false,
-      defectiveMaterials: false,
-      unplannedWork: false,
-      mistakeMade: false,
-      injuryNearMiss: false,
-      partnerDelay: false,
-      weatherDelay: false
-    });
-    setReportComments("");
-    setIssueReportOpen(false);
-  };
   
   // Handle app launches
   const handleLaunchApp = (app: AppReference) => {
@@ -3878,162 +3817,18 @@ export default function UserView({
                     )
                   )}
                   
-                  {/* Report Issue Button */}
-                  <Dialog open={issueReportOpen} onOpenChange={setIssueReportOpen}>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant="outline"
-                        data-tutorial="report-issue" 
-                        size="sm"
-                        className="gap-2 text-xs"
-                        title={isMobile ? "Report Issue" : undefined}
-                      >
-                        <AlertTriangle className="w-4 h-4" />
-                        {!isMobile && <span className="ml-2 text-xs">Report Issue</span>}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Oh no - What happened?</DialogTitle>
-                        <DialogDescription>
-                          Help us improve this step by reporting any issues you encountered.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-3">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="instructions-not-clear"
-                              checked={reportIssues.instructionsNotClear}
-                              onCheckedChange={(checked) => 
-                                setReportIssues(prev => ({ ...prev, instructionsNotClear: !!checked }))
-                              }
-                            />
-                            <Label htmlFor="instructions-not-clear">Instructions not clear — missing steps, measurements, or sequence confusion</Label>
-                          </div>
-                          
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="missing-tools"
-                              checked={reportIssues.missingTools}
-                              onCheckedChange={(checked) => 
-                                setReportIssues(prev => ({ ...prev, missingTools: !!checked }))
-                              }
-                            />
-                            <Label htmlFor="missing-tools">Missing tools — item not delivered or misplaced before use</Label>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="tool-malfunction"
-                              checked={reportIssues.toolMalfunction}
-                              onCheckedChange={(checked) => 
-                                setReportIssues(prev => ({ ...prev, toolMalfunction: !!checked }))
-                              }
-                            />
-                            <Label htmlFor="tool-malfunction">Tool malfunction — breaks or operates incorrectly during project</Label>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="missing-wrong-materials"
-                              checked={reportIssues.missingWrongMaterials}
-                              onCheckedChange={(checked) => 
-                                setReportIssues(prev => ({ ...prev, missingWrongMaterials: !!checked }))
-                              }
-                            />
-                            <Label htmlFor="missing-wrong-materials">Missing / wrong materials — absent, wrong type, or wrong quantity</Label>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="defective-materials"
-                              checked={reportIssues.defectiveMaterials}
-                              onCheckedChange={(checked) => 
-                                setReportIssues(prev => ({ ...prev, defectiveMaterials: !!checked }))
-                              }
-                            />
-                            <Label htmlFor="defective-materials">Defective materials — damaged, expired, or unsafe to use</Label>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="unplanned-work"
-                              checked={reportIssues.unplannedWork}
-                              onCheckedChange={(checked) => 
-                                setReportIssues(prev => ({ ...prev, unplannedWork: !!checked }))
-                              }
-                            />
-                            <Label htmlFor="unplanned-work">Unplanned work discovered — hidden damage, compliance surprises, new tasks needed</Label>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="mistake-made"
-                              checked={reportIssues.mistakeMade}
-                              onCheckedChange={(checked) => 
-                                setReportIssues(prev => ({ ...prev, mistakeMade: !!checked }))
-                              }
-                            />
-                            <Label htmlFor="mistake-made">Mistake made / materials damaged — user error that requires fix or replacement</Label>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="injury-near-miss"
-                              checked={reportIssues.injuryNearMiss}
-                              onCheckedChange={(checked) => 
-                                setReportIssues(prev => ({ ...prev, injuryNearMiss: !!checked }))
-                              }
-                            />
-                            <Label htmlFor="injury-near-miss">Injury or near‑miss — any safety incident needing immediate attention</Label>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="partner-delay"
-                              checked={reportIssues.partnerDelay}
-                              onCheckedChange={(checked) => 
-                                setReportIssues(prev => ({ ...prev, partnerDelay: !!checked }))
-                              }
-                            />
-                            <Label htmlFor="partner-delay">Partner delay — delivery, pickup, or on‑site support arrives late/no‑show</Label>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="weather-delay"
-                              checked={reportIssues.weatherDelay}
-                              onCheckedChange={(checked) => 
-                                setReportIssues(prev => ({ ...prev, weatherDelay: !!checked }))
-                              }
-                            />
-                            <Label htmlFor="weather-delay">Weather delay — wind, rain, freeze, or other environmental hazard</Label>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="comments">Comments</Label>
-                          <Textarea
-                            id="comments"
-                            placeholder="Please describe the issue in detail..."
-                            value={reportComments}
-                            onChange={(e) => setReportComments(e.target.value)}
-                            rows={4}
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-end gap-3">
-                        <Button variant="outline" onClick={() => setIssueReportOpen(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleReportSubmit}>
-                          Submit Report
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  {/* Something Wrong? — rework triage */}
+                  <Button 
+                    variant="outline"
+                    data-tutorial="report-issue" 
+                    size="sm"
+                    className="gap-2 text-xs"
+                    title={isMobile ? "Something wrong?" : undefined}
+                    onClick={() => setIssueReportOpen(true)}
+                  >
+                    <AlertTriangle className="w-4 h-4" />
+                    {!isMobile && <span className="ml-2 text-xs">Something Wrong?</span>}
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -4242,6 +4037,37 @@ export default function UserView({
         onClose={() => {
           setExpertHelpOpen(false);
           completePlanningWizardToolCloseCallback('expertSupport');
+        }}
+        onRequestUpgrade={() => {
+          setExpertHelpOpen(false);
+          setUpgradePromptFeature('Video chat with a pro');
+          setShowUpgradePrompt(true);
+        }}
+      />
+
+      <SomethingWrongDialog
+        open={issueReportOpen}
+        onOpenChange={setIssueReportOpen}
+        userId={user?.id}
+        projectRun={currentProjectRun}
+        templateName={workflowTemplateProject?.name || currentProjectRun?.name}
+        templateCategories={workflowTemplateProject?.category || currentProjectRun?.category}
+        phaseId={getCurrentPhase()?.id}
+        phaseName={getCurrentPhase()?.name}
+        stepId={currentStep?.id}
+        stepTitle={currentStep?.step}
+        spaceId={(currentStep as { spaceId?: string } | null)?.spaceId}
+        completedSteps={[...completedSteps]}
+        updateProjectRun={updateProjectRun}
+        setCompletedSteps={setCompletedSteps}
+        onOpenUnplannedWork={() => setUnplannedWorkOpen(true)}
+        onOpenShopping={() => setOrderingWindowOpen(true)}
+        onOpenToolRentals={() => setToolRentalsOpen(true)}
+        onOpenExpertHelp={() => setExpertHelpOpen(true)}
+        onAskAi={() => {
+          toast.message('AI help is next', {
+            description: 'Ask AI on this step is coming in the next wave. Your issue is already logged.',
+          });
         }}
       />
 

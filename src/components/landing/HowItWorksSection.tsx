@@ -3,9 +3,9 @@ interface HowItWorksSectionProps {
 }
 
 const steps = [
-  { number: 1, title: "Choose Your Project", description: "Browse 50+ proven templates or describe your own custom project" },
-  { number: 2, title: "Get Your Personalized Plan", description: "Answer 3 quick questions about your skills, tools, and timeline" },
-  { number: 3, title: "Build with Confidence", description: "Follow your custom workflow with photos, videos, and expert support" }
+  { number: 1, title: "Choose Your Project", description: "Start with proven playbooks for tile, painting, flooring, and carpentry" },
+  { number: 2, title: "Get Your Personalized Plan", description: "Answer a few questions about your skills, tools, and timeline" },
+  { number: 3, title: "Build with Confidence", description: "Follow your workflow with checkpoints, photos, and AI help when something goes wrong" }
 ];
 
 export const HowItWorksSection = ({ onOpenDemo }: HowItWorksSectionProps) => {
