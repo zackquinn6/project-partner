@@ -38,6 +38,7 @@ import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
 import { PhaseRatingPopup } from './PhaseRatingPopup';
 import { ExpertHelpWindow } from './ExpertHelpWindow';
 import { SomethingWrongDialog } from './SomethingWrongDialog';
+import { ProjectHelpChatWindow } from './ProjectHelpChatWindow';
 import { PhaseCompletionPopup } from './PhaseCompletionPopup';
 import { OrderingWindow } from './OrderingWindow';
 import { MaterialsSelectionWindow } from './MaterialsSelectionWindow';
@@ -201,6 +202,13 @@ export default function UserView({
   const [selectedOutput, setSelectedOutput] = useState<Output | null>(null);
   const [outputPopupOpen, setOutputPopupOpen] = useState(false);
   const [expertHelpOpen, setExpertHelpOpen] = useState(false);
+  const [projectHelpChatOpen, setProjectHelpChatOpen] = useState(false);
+  const [helpChatInitialMessage, setHelpChatInitialMessage] = useState<string | null>(null);
+  const [expertEscalateContext, setExpertEscalateContext] = useState<{
+    threadId?: string | null;
+    stepTitle?: string | null;
+    recentMessages?: Array<{ role: string; content: string }>;
+  } | null>(null);
   const [showProfileManager, setShowProfileManager] = useState(false);
   
   // App overrides state - loaded from database to get custom app names/icons
@@ -3829,6 +3837,19 @@ export default function UserView({
                     <AlertTriangle className="w-4 h-4" />
                     {!isMobile && <span className="ml-2 text-xs">Something Wrong?</span>}
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-xs"
+                    title={isMobile ? "Ask AI" : undefined}
+                    onClick={() => {
+                      setHelpChatInitialMessage(null);
+                      setProjectHelpChatOpen(true);
+                    }}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    {!isMobile && <span className="ml-2 text-xs">Ask AI</span>}
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -4036,12 +4057,37 @@ export default function UserView({
         isOpen={expertHelpOpen}
         onClose={() => {
           setExpertHelpOpen(false);
+          setExpertEscalateContext(null);
           completePlanningWizardToolCloseCallback('expertSupport');
         }}
         onRequestUpgrade={() => {
           setExpertHelpOpen(false);
           setUpgradePromptFeature('Video chat with a pro');
           setShowUpgradePrompt(true);
+        }}
+        escalateContext={expertEscalateContext}
+      />
+
+      <ProjectHelpChatWindow
+        isOpen={projectHelpChatOpen}
+        onClose={() => {
+          setProjectHelpChatOpen(false);
+          setHelpChatInitialMessage(null);
+        }}
+        projectRunId={currentProjectRun?.id}
+        templateProjectId={currentProjectRun?.projectId || workflowTemplateProject?.id}
+        templateName={workflowTemplateProject?.name || currentProjectRun?.name}
+        templateCategories={workflowTemplateProject?.category || currentProjectRun?.category}
+        stepId={currentStep?.id}
+        stepTitle={currentStep?.step}
+        phaseId={getCurrentPhase()?.id}
+        phaseName={getCurrentPhase()?.name}
+        instructionLevel={currentProjectRun?.instruction_level_preference}
+        initialMessage={helpChatInitialMessage}
+        onEscalateToPro={(ctx) => {
+          setProjectHelpChatOpen(false);
+          setExpertEscalateContext(ctx);
+          setExpertHelpOpen(true);
         }}
       />
 
@@ -4065,9 +4111,12 @@ export default function UserView({
         onOpenToolRentals={() => setToolRentalsOpen(true)}
         onOpenExpertHelp={() => setExpertHelpOpen(true)}
         onAskAi={() => {
-          toast.message('AI help is next', {
-            description: 'Ask AI on this step is coming in the next wave. Your issue is already logged.',
-          });
+          setHelpChatInitialMessage(
+            currentStep?.step
+              ? `I'm stuck on step "${currentStep.step}". Please help me figure out what to do next.`
+              : `I'm stuck on this step. Please help me figure out what to do next.`
+          );
+          setProjectHelpChatOpen(true);
         }}
       />
 

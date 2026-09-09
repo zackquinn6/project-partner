@@ -367,3 +367,6 @@ verify_jwt = false
 
 [functions.send-communication-plan-email]
 verify_jwt = true
+
+[functions.project-help-chat]
+verify_jwt = true

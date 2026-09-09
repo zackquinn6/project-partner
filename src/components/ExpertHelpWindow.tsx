@@ -15,12 +15,19 @@ interface ExpertHelpWindowProps {
   isOpen: boolean;
   onClose: () => void;
   onRequestUpgrade?: () => void;
+  /** Optional AI chat handoff context for the pro session */
+  escalateContext?: {
+    threadId?: string | null;
+    stepTitle?: string | null;
+    recentMessages?: Array<{ role: string; content: string }>;
+  } | null;
 }
 
 export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({
   isOpen,
   onClose,
   onRequestUpgrade,
+  escalateContext,
 }) => {
   const { hasProjectsTier, loading } = useMembership();
   const canEscalate = !loading && hasProjectsTier;
@@ -35,7 +42,9 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({
       )}
       <ScrollableDialog
         open={isOpen}
-        onOpenChange={onClose}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
         title="Video Chat With a Pro"
         description="Premium escalate — book a human expert when AI help is not enough"
         planningToolHeader
@@ -63,6 +72,25 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
               In-step AI help is the default for Project Partner. Use this when you want a live video session with a pro — included with the Projects plan.
             </p>
+            {escalateContext?.stepTitle || (escalateContext?.recentMessages?.length ?? 0) > 0 ? (
+              <div className="mt-4 text-left max-w-md mx-auto rounded-lg border bg-muted/40 p-3 space-y-2">
+                <p className="text-xs font-semibold text-foreground">Hand-off context for your pro</p>
+                {escalateContext?.stepTitle ? (
+                  <p className="text-xs text-muted-foreground">Step: {escalateContext.stepTitle}</p>
+                ) : null}
+                {escalateContext?.threadId ? (
+                  <p className="text-xs text-muted-foreground break-all">Thread: {escalateContext.threadId}</p>
+                ) : null}
+                {(escalateContext?.recentMessages || []).slice(-4).map((m, i) => (
+                  <p key={i} className="text-xs text-muted-foreground line-clamp-3">
+                    <span className="font-medium">{m.role}:</span> {m.content}
+                  </p>
+                ))}
+                <p className="text-[10px] text-muted-foreground">
+                  Paste or summarize this when you book so the expert has your AI thread context.
+                </p>
+              </div>
+            ) : null}
           </div>
           
           <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-primary/5">

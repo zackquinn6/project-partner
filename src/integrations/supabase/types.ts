@@ -2694,6 +2694,123 @@ export type Database = {
           },
         ]
       }
+      help_threads: {
+        Row: {
+          id: string
+          user_id: string
+          project_run_id: string | null
+          template_project_id: string | null
+          template_family: string
+          step_id: string | null
+          step_title: string | null
+          phase_id: string | null
+          phase_name: string | null
+          title: string | null
+          status: string
+          last_message_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          project_run_id?: string | null
+          template_project_id?: string | null
+          template_family: string
+          step_id?: string | null
+          step_title?: string | null
+          phase_id?: string | null
+          phase_name?: string | null
+          title?: string | null
+          status?: string
+          last_message_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          project_run_id?: string | null
+          template_project_id?: string | null
+          template_family?: string
+          step_id?: string | null
+          step_title?: string | null
+          phase_id?: string | null
+          phase_name?: string | null
+          title?: string | null
+          status?: string
+          last_message_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      help_messages: {
+        Row: {
+          id: string
+          thread_id: string
+          user_id: string
+          role: string
+          content: string
+          photo_paths: string[]
+          safety_flags: Json
+          model: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          thread_id: string
+          user_id: string
+          role: string
+          content?: string
+          photo_paths?: string[]
+          safety_flags?: Json
+          model?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          thread_id?: string
+          user_id?: string
+          role?: string
+          content?: string
+          photo_paths?: string[]
+          safety_flags?: Json
+          model?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      help_usage: {
+        Row: {
+          id: string
+          user_id: string
+          period_start: string
+          period_end: string
+          message_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          period_start: string
+          period_end: string
+          message_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          period_start?: string
+          period_end?: string
+          message_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rework_events: {
         Row: {
           id: string
@@ -4438,6 +4555,17 @@ export type Database = {
           step_id: string
           triage_type: string
           event_count: number
+        }[]
+      }
+      get_help_usage_status: {
+        Args: { p_user_id?: string }
+        Returns: {
+          message_count: number
+          message_cap: number
+          remaining: number
+          period_start: string
+          period_end: string
+          capped: boolean
         }[]
       }
       log_failed_login: {

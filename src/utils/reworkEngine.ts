@@ -116,7 +116,7 @@ export function buildRecoveryPlan(triageType: TriageType): RecoveryPlan {
         actions: ['reopen_step', 'ask_ai'],
         userSteps: [
           'Stay on this step',
-          'Ask AI for clarification (coming next wave)',
+          'Ask AI for clarification on this project family',
           'Continue once the sequence is clear',
         ],
       };

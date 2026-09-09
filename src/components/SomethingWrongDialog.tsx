@@ -66,8 +66,8 @@ function actionLabel(action: RecoveryAction): string {
       return 'Slip schedule';
     case 'stop_and_seek_help':
       return 'Stop for safety';
-    case 'ask_ai':
-      return 'Ask AI (next)';
+      case 'ask_ai':
+      return 'Ask AI';
     default:
       return action;
   }
