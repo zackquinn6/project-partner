@@ -11,6 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { HomeDetailsWindow } from './HomeDetailsWindow';
+import { cn } from '@/lib/utils';
+import { responsiveDialogClasses } from '@/utils/responsive';
 interface Home {
   id: string;
   user_id: string;
@@ -241,7 +243,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
   if (showSelector) {
     // Simple selector mode for project creation
     return <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
+        <DialogContent className={cn(responsiveDialogClasses.standardWindow, 'overflow-y-auto md:max-w-md md:h-auto md:max-h-[85vh]')}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Home className="w-5 h-5" />
@@ -276,7 +278,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
   }
   return <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+      <DialogContent className={cn(responsiveDialogClasses.standardWindow, 'p-0 overflow-hidden flex flex-col md:rounded-lg [&>button]:hidden')}>
         <div className="flex flex-col h-full overflow-hidden">
           {/* Header with close button */}
           <div className="px-4 md:px-6 py-4 border-b flex items-center justify-between flex-shrink-0">

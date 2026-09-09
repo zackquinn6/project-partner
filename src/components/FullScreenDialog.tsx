@@ -30,10 +30,10 @@ export function FullScreenDialog({
         <DialogOverlay className="bg-black/60 backdrop-blur-md fixed inset-0 z-50" />
         <div
           className={cn(
-            "fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%]",
-            "w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh]",
-            "bg-background border rounded-lg shadow-lg",
-            "flex flex-col",
+            "fixed z-50 bg-background border shadow-lg flex flex-col",
+            isMobile
+              ? "inset-0 h-[100dvh] w-full max-w-full max-h-[100dvh] translate-x-0 translate-y-0 left-0 top-0 rounded-none"
+              : "left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh] rounded-lg",
             className
           )}
         >

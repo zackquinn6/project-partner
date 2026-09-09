@@ -53,6 +53,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 // Extended interfaces for step-level usage
 interface StepMaterial extends Material {
@@ -1268,6 +1269,7 @@ export default function EditWorkflowView({
     loadedStructureSummary.operationCount,
   ]);
   const [viewMode, setViewMode] = useState<'steps' | 'structure'>('steps');
+  const [isStepsSheetOpen, setIsStepsSheetOpen] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [editingStep, setEditingStep] = useState<WorkflowStep | null>(null);
   const [editMode, setEditMode] = useState(false);
@@ -2025,6 +2027,47 @@ export default function EditWorkflowView({
     }, {} as Record<string, any[]>);
     return acc;
   }, {} as Record<string, Record<string, any[]>>);
+
+  const renderWorkflowStepsNav = (opts?: { onNavigate?: () => void }) => (
+    <div className="space-y-4">
+      {Object.keys(groupedSteps).length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {!isEditingStandardProject && hasStandardFoundationPhases && !showStandardFoundationPhases
+            ? 'No steps in this view. Turn on Show Standard Project Content to list those steps.'
+            : 'No workflow steps to display.'}
+        </p>
+      ) : (
+        Object.entries(groupedSteps).map(([phase, operations]) => (
+          <div key={phase} className="space-y-2">
+            <h4 className="font-semibold text-primary">{phase}</h4>
+            {Object.entries(operations).map(([operation, opSteps]) => (
+              <div key={operation} className="ml-2 space-y-1">
+                <h5 className="text-sm font-medium text-muted-foreground">{operation}</h5>
+                {opSteps.map((step) => {
+                  const stepIndex = allSteps.findIndex((s) => s.id === step.id);
+                  return (
+                    <div
+                      key={step.id}
+                      className={`ml-2 p-2 rounded text-sm cursor-pointer transition-fast ${step.id === currentStep?.id ? 'bg-primary/10 text-primary border border-primary/20' : 'hover:bg-muted/50'}`}
+                      onClick={() => {
+                        setCurrentStepIndex(stepIndex);
+                        setEditMode(false);
+                        opts?.onNavigate?.();
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="truncate">{step.step}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        ))
+      )}
+    </div>
+  );
   
   if (!currentProject) {
     return <div className="fixed inset-0 bg-background overflow-auto z-50 flex items-center justify-center">
@@ -2052,7 +2095,7 @@ export default function EditWorkflowView({
   if (viewMode === 'structure') {
     return <div className="fixed inset-0 bg-background overflow-auto z-50">
         {/* Header with Back Button and View Toggle */}
-        <div className="w-full px-6 py-6">
+        <div className="w-full px-3 py-6 sm:px-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <div className="hidden md:block">
@@ -2101,7 +2144,7 @@ export default function EditWorkflowView({
           </div>
         </div>
 
-        <div className="w-full px-6">
+        <div className="w-full px-3 sm:px-6">
           <StructureManager
             onBack={() => {
               setViewMode('steps');
@@ -2174,6 +2217,25 @@ export default function EditWorkflowView({
                 </>
               ) : (
                 <>
+                  <Sheet open={isStepsSheetOpen} onOpenChange={setIsStepsSheetOpen}>
+                    <SheetTrigger asChild>
+                      <Button type="button" variant="outline" size="sm" className="gap-1.5 lg:hidden">
+                        <List className="h-4 w-4 shrink-0" />
+                        Steps
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-[85vw] sm:w-80 p-0 flex flex-col">
+                      <SheetHeader className="p-4 border-b text-left">
+                        <SheetTitle>Workflow Steps</SheetTitle>
+                        <p className="text-sm text-muted-foreground">
+                          Step {safeStepIndex + 1} of {allSteps.length}
+                        </p>
+                      </SheetHeader>
+                      <div className="flex-1 overflow-y-auto p-4">
+                        {renderWorkflowStepsNav({ onNavigate: () => setIsStepsSheetOpen(false) })}
+                      </div>
+                    </SheetContent>
+                  </Sheet>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button type="button" variant="outline" size="sm" className="gap-1.5 sm:gap-2">
@@ -2488,6 +2550,7 @@ export default function EditWorkflowView({
                             <CardDescription>Tools required for this step (excluding PPE)</CardDescription>
                           </CardHeader>
                           <CardContent>
+                            <div className="overflow-x-auto">
                             <CompactToolsTable
                               title="Tools"
                               tools={nonPpeTools}
@@ -2502,6 +2565,7 @@ export default function EditWorkflowView({
                                 setToolsLibraryOpen(true);
                               }}
                             />
+                            </div>
                           </CardContent>
                         </Card>
 
@@ -2511,6 +2575,7 @@ export default function EditWorkflowView({
                             <CardDescription>Materials for this step (excluding PPE)</CardDescription>
                           </CardHeader>
                           <CardContent>
+                            <div className="overflow-x-auto">
                             <CompactMaterialsTable
                               title="Materials"
                               materials={nonPpeMaterials}
@@ -2527,6 +2592,7 @@ export default function EditWorkflowView({
                                 setMaterialsLibraryOpen(true);
                               }}
                             />
+                            </div>
                           </CardContent>
                         </Card>
 
@@ -2662,8 +2728,8 @@ export default function EditWorkflowView({
           </div> :
       // Normal grid layout with sidebar
       <div className="grid lg:grid-cols-4 gap-6 lg:gap-8">
-            {/* Sidebar */}
-            <Card className="lg:col-span-1 bg-muted/20 border shadow-sm">
+            {/* Sidebar — desktop only; mobile uses Steps sheet in header */}
+            <Card className="hidden lg:col-span-1 lg:block bg-muted/20 border shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg">Workflow Steps</CardTitle>
                 <CardDescription>
@@ -2671,43 +2737,7 @@ export default function EditWorkflowView({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  {Object.keys(groupedSteps).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      {!isEditingStandardProject && hasStandardFoundationPhases && !showStandardFoundationPhases
-                        ? 'No steps in this view. Turn on Show Standard Project Content to list those steps.'
-                        : 'No workflow steps to display.'}
-                    </p>
-                  ) : (
-                    Object.entries(groupedSteps).map(([phase, operations]) => (
-                      <div key={phase} className="space-y-2">
-                        <h4 className="font-semibold text-primary">{phase}</h4>
-                        {Object.entries(operations).map(([operation, opSteps]) => (
-                          <div key={operation} className="ml-2 space-y-1">
-                            <h5 className="text-sm font-medium text-muted-foreground">{operation}</h5>
-                            {opSteps.map((step) => {
-                              const stepIndex = allSteps.findIndex((s) => s.id === step.id);
-                              return (
-                                <div
-                                  key={step.id}
-                                  className={`ml-2 p-2 rounded text-sm cursor-pointer transition-fast ${step.id === currentStep?.id ? 'bg-primary/10 text-primary border border-primary/20' : 'hover:bg-muted/50'}`}
-                                  onClick={() => {
-                                    setCurrentStepIndex(stepIndex);
-                                    setEditMode(false);
-                                  }}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span className="truncate">{step.step}</span>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ))}
-                      </div>
-                    ))
-                  )}
-                </div>
+                {renderWorkflowStepsNav()}
               </CardContent>
             </Card>
 

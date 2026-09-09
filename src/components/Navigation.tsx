@@ -10,7 +10,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectOwner } from '@/hooks/useProjectOwner';
 import { useMembership } from '@/contexts/MembershipContext';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useBetaMode } from '@/hooks/useBetaMode';
 import { FeedbackDialog } from './FeedbackDialog';
 import { ContactUsWindow } from './ContactUsWindow';
@@ -81,7 +80,6 @@ export default function Navigation({
   const showAdminPanel = isAdmin || hasProjectOwnerRole;
   const { hasProjectsTier, hasRiskLessTier, loading: membershipLoading } = useMembership();
   const { isBetaMode } = useBetaMode();
-  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -362,7 +360,6 @@ export default function Navigation({
     // Call onProjectSelected to clear forceListingMode in Index.tsx
     onProjectSelected?.();
   };
-  console.log('🔧 Navigation rendering with mobile:', isMobile, 'buttons should be visible');
   return <>
       <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-16 items-center px-4 relative">

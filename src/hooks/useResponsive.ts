@@ -46,9 +46,7 @@ export function useResponsive() {
 }
 
 /**
- * Simple hook that just returns mobile/desktop state for backwards compatibility
+ * Simple hook that just returns mobile/desktop state for backwards compatibility.
+ * Delegates to the shared `use-mobile` implementation (sync init, same breakpoint).
  */
-export function useIsMobile() {
-  const { isMobile } = useResponsive();
-  return isMobile;
-}
+export { useIsMobile } from '@/hooks/use-mobile';

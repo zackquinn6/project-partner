@@ -22,7 +22,7 @@ function RemindersButton({
       size="sm"
       className={
         compact
-          ? 'h-7 w-7 shrink-0 p-0'
+          ? 'min-h-11 min-w-11 h-11 w-11 shrink-0 p-0'
           : 'h-8 w-8 shrink-0 p-0 md:h-9 md:w-9'
       }
       onClick={onOpenReminders}
@@ -42,7 +42,7 @@ function HomeManagerButton({ onOpenHomeManager, compact }: { onOpenHomeManager: 
       size="sm"
       className={
         compact
-          ? 'h-7 w-7 shrink-0 p-0'
+          ? 'min-h-11 min-w-11 h-11 w-11 shrink-0 p-0'
           : 'h-8 w-8 shrink-0 p-0 md:h-9 md:w-9'
       }
       onClick={onOpenHomeManager}
@@ -70,7 +70,7 @@ function HomeSelect({
       <SelectTrigger
         className={
           compact
-            ? 'h-7 w-full min-w-0 max-w-full shrink px-1.5 text-[10px] leading-tight'
+            ? 'min-h-11 h-11 w-full min-w-0 max-w-full shrink px-1.5 text-xs leading-tight'
             : 'h-8 w-full min-w-0 max-w-full text-[11px] md:h-9 md:text-xs'
         }
         aria-label="Home"
@@ -225,10 +225,11 @@ export function WorkspaceSubViewHeader({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-7 max-w-[5.25rem] shrink-0 whitespace-normal px-1.5 py-1 text-center text-[9px] font-medium leading-tight"
+                  className="min-h-11 h-11 max-w-[5.25rem] shrink-0 whitespace-normal px-1.5 py-1 text-center text-xs font-medium leading-tight"
                   onClick={onGoToWorkspace}
+                  aria-label={BACK_LABEL}
                 >
-                  {BACK_LABEL}
+                  Workshop
                 </Button>
               </div>
             </div>
@@ -266,10 +267,11 @@ export function WorkspaceSubViewHeader({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-7 max-w-[5.25rem] shrink-0 whitespace-normal px-1.5 py-1 text-center text-[9px] font-medium leading-tight"
+                className="min-h-11 h-11 max-w-[5.25rem] shrink-0 whitespace-normal px-1.5 py-1 text-center text-xs font-medium leading-tight"
                 onClick={onGoToWorkspace}
+                aria-label={BACK_LABEL}
               >
-                {BACK_LABEL}
+                Workshop
               </Button>
             </div>
           </div>

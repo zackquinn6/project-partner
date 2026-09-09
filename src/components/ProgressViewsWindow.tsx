@@ -198,7 +198,7 @@ export function ProgressViewsWindow({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[90vh] max-h-[90vh] w-full max-w-[100vw] flex-col overflow-hidden p-0 md:max-w-[100vw] lg:w-[50vw] lg:max-w-[50vw] [&>button]:hidden">
+      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-full max-w-full flex-col overflow-hidden rounded-none p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[100vw] md:rounded-lg lg:w-[50vw] lg:max-w-[50vw] [&>button]:hidden">
         <DialogTitle className="sr-only">Progress views</DialogTitle>
         <DialogDescription className="sr-only">
           Gantt, Kanban, and process map views of project progress
@@ -210,7 +210,7 @@ export function ProgressViewsWindow({
             variant="outline"
             size="sm"
             onClick={() => onOpenChange(false)}
-            className="h-8 px-3 text-xs self-start sm:self-auto"
+            className="min-h-11 md:h-8 px-3 text-xs self-start sm:self-auto"
           >
             Close
           </Button>
@@ -244,8 +244,8 @@ export function ProgressViewsWindow({
                   const isComplete = completedSteps.has(step.id);
                   const isCurrent = step.id === currentStepId;
                   return (
-                    <div key={step.id} className="flex items-center gap-3 group">
-                      <div className="w-48 flex-shrink-0 text-sm truncate" title={step.step}>
+                    <div key={step.id} className="flex flex-col gap-1 md:flex-row md:items-center md:gap-3 group">
+                      <div className="w-full min-w-0 truncate md:w-48 md:flex-shrink-0 text-sm" title={step.step}>
                         {step.step}
                       </div>
                       <div className="flex-1 h-8 bg-muted rounded-md overflow-hidden flex">
@@ -282,7 +282,7 @@ export function ProgressViewsWindow({
             </TabsContent>
 
             <TabsContent value="kanban" className="mt-0 h-full">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-h-[400px]">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0 md:min-h-[400px]">
                 <Card className="flex flex-col">
                   <CardHeader className="py-3 px-4 border-b">
                     <CardTitle className="text-sm font-medium">

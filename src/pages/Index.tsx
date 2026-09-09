@@ -8,7 +8,6 @@ import { useProjectOwner } from '@/hooks/useProjectOwner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import Navigation from "@/components/Navigation";
 import Home from "@/components/Home";
-import { PostAuthLanding } from "@/components/PostAuthLanding";
 import { AdminView } from "@/components/AdminView";
 import { PreSignInNavigation } from '@/components/PreSignInNavigation';
 import EditWorkflowView from "@/components/EditWorkflowView";
@@ -21,7 +20,6 @@ import { MobileOptimizedHome } from '@/components/MobileOptimizedHome';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { MobileProjectListing } from '@/components/MobileProjectListing';
 import { ToolRentalsWindow } from '@/components/ToolRentalsWindow';
-import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
 import { CommunityPostsWindow } from '@/components/CommunityPostsWindow';
 import { AIRepairWindow } from '@/components/AIRepairWindow';
@@ -763,6 +761,7 @@ const Index = () => {
             </div>
           );
         case 'workflow':
+          // No MobileBottomNav during workflow/kickoff — workflow has its own header + Prev/Next chrome.
           return (
             <div className="flex h-[100dvh] min-h-0 flex-col">
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -779,11 +778,6 @@ const Index = () => {
                   showProfile={location.state?.showProfile}
                 />
               </div>
-              <MobileBottomNav
-                currentView={mobileNavCurrentView}
-                onViewChange={handleMobileNavigation}
-                onQuickAction={handleMobileQuickAction}
-              />
             </div>
           );
         case 'home':

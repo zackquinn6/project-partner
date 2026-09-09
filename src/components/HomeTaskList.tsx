@@ -625,7 +625,9 @@ export function HomeTaskList({
         {subtasks.length > 0 && (
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="border rounded-md overflow-hidden">
-              <div className={`grid grid-cols-[32px_auto_100px_120px_32px] ${subtasksOrdered ? 'md:grid-cols-[32px_48px_auto_100px_120px_32px]' : ''} gap-2 p-2 bg-muted text-xs font-medium`}>
+              <div
+                className={`hidden md:grid grid-cols-[32px_auto_100px_120px_32px] ${subtasksOrdered ? 'md:grid-cols-[32px_48px_auto_100px_120px_32px]' : ''} gap-2 p-2 bg-muted text-xs font-medium`}
+              >
                 <div></div>
                 {subtasksOrdered && <div>#</div>}
                 <div>Task Name</div>
@@ -642,50 +644,65 @@ export function HomeTaskList({
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`grid grid-cols-[32px_auto_100px_120px_32px] ${subtasksOrdered ? 'md:grid-cols-[32px_48px_auto_100px_120px_32px]' : ''} gap-2 p-2 border-t items-center ${snapshot.isDragging ? 'bg-accent' : ''}`}
+                            className={`flex flex-col gap-2 p-2 border-t md:grid md:grid-cols-[32px_auto_100px_120px_32px] ${subtasksOrdered ? 'md:grid-cols-[32px_48px_auto_100px_120px_32px]' : ''} md:gap-2 md:items-center ${snapshot.isDragging ? 'bg-accent' : ''}`}
                           >
-                            <div {...provided.dragHandleProps} className="flex items-center">
-                              <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
-                            </div>
-                            {subtasksOrdered && (
-                              <div className="font-medium text-muted-foreground text-xs">
-                                {index + 1}
+                            <div className="flex items-start gap-2 md:contents">
+                              <div {...provided.dragHandleProps} className="flex items-center pt-2 md:pt-0">
+                                <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
                               </div>
-                            )}
-                            <Input
-                              value={subtask.title}
-                              onChange={(e) => updateSubtask(subtask.id, 'title', e.target.value)}
-                              placeholder="Subtask name"
-                              className="h-7 text-xs"
-                            />
-                            <Input
-                              type="number"
-                              min="0.25"
-                              step="0.25"
-                              value={subtask.estimated_hours}
-                              onChange={(e) => updateSubtask(subtask.id, 'estimated_hours', parseFloat(e.target.value))}
-                              className="h-7 text-xs"
-                            />
-                            <Select value={subtask.diy_level} onValueChange={(val) => updateSubtask(subtask.id, 'diy_level', val)}>
-                              <SelectTrigger className="h-7 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="beginner">Beginner</SelectItem>
-                                <SelectItem value="intermediate">Intermediate</SelectItem>
-                                <SelectItem value="advanced">Advanced</SelectItem>
-                                <SelectItem value="pro">Professional</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeSubtask(subtask.id)}
-                              className="h-6 w-6 p-0 text-destructive"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
+                              {subtasksOrdered && (
+                                <div className="hidden md:block font-medium text-muted-foreground text-xs">
+                                  {index + 1}
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1 space-y-2 md:contents">
+                                <div className="flex items-center gap-2 md:contents">
+                                  {subtasksOrdered && (
+                                    <span className="md:hidden shrink-0 text-xs font-medium text-muted-foreground">
+                                      #{index + 1}
+                                    </span>
+                                  )}
+                                  <Input
+                                    value={subtask.title}
+                                    onChange={(e) => updateSubtask(subtask.id, 'title', e.target.value)}
+                                    placeholder="Subtask name"
+                                    className="h-11 w-full text-xs md:h-7"
+                                  />
+                                </div>
+                                <div className="flex items-center gap-2 md:contents">
+                                  <Input
+                                    type="number"
+                                    min="0.25"
+                                    step="0.25"
+                                    value={subtask.estimated_hours}
+                                    onChange={(e) => updateSubtask(subtask.id, 'estimated_hours', parseFloat(e.target.value))}
+                                    className="h-11 min-w-0 flex-1 text-xs md:h-7 md:flex-none"
+                                    aria-label="Hours"
+                                  />
+                                  <Select value={subtask.diy_level} onValueChange={(val) => updateSubtask(subtask.id, 'diy_level', val)}>
+                                    <SelectTrigger className="h-11 min-w-0 flex-1 text-xs md:h-7 md:flex-none" aria-label="DIY level">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="beginner">Beginner</SelectItem>
+                                      <SelectItem value="intermediate">Intermediate</SelectItem>
+                                      <SelectItem value="advanced">Advanced</SelectItem>
+                                      <SelectItem value="pro">Professional</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeSubtask(subtask.id)}
+                                    className="h-11 w-11 shrink-0 p-0 text-destructive md:h-6 md:w-6"
+                                    aria-label="Delete subtask"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </Draggable>
@@ -1359,7 +1376,7 @@ export function HomeTaskList({
 
       {/* Team Availability Window */}
       <Dialog open={showTeamWindow} onOpenChange={setShowTeamWindow}>
-        <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+        <DialogContent className="flex h-[100dvh] max-h-full w-full max-w-full flex-col overflow-hidden p-0 md:h-[90vh] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
           <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0">
             <div className="flex items-center justify-between gap-2">
               <DialogTitle className="text-lg md:text-xl font-bold">Team Availability</DialogTitle>
@@ -1367,7 +1384,7 @@ export function HomeTaskList({
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setShowTeamWindow(false)} 
-                className="h-7 px-2 text-[9px] md:text-xs"
+                className="min-h-11 h-11 px-2 text-xs md:h-8 md:min-h-0"
               >
                 Close
               </Button>
@@ -1386,7 +1403,7 @@ export function HomeTaskList({
 
       {/* Task Assignment Window */}
       <Dialog open={showAssignWindow} onOpenChange={setShowAssignWindow}>
-        <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+        <DialogContent className="flex h-[100dvh] max-h-full w-full max-w-full flex-col overflow-hidden p-0 md:h-[90vh] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
           <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0">
             <div className="flex items-center justify-between gap-2">
               <DialogTitle className="text-lg md:text-xl font-bold">Assign Tasks</DialogTitle>
@@ -1394,7 +1411,7 @@ export function HomeTaskList({
                 variant="ghost" 
                 size="sm" 
                 onClick={() => setShowAssignWindow(false)} 
-                className="h-7 px-2 text-[9px] md:text-xs"
+                className="min-h-11 h-11 px-2 text-xs md:h-8 md:min-h-0"
               >
                 Close
               </Button>

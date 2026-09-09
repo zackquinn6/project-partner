@@ -29,7 +29,6 @@ interface MobileProjectCardProps {
   project: Project | ProjectRun;
   onSelect: () => void;
   variant?: 'project' | 'run';
-  onDelete?: (projectId: string) => void;
   /** When set with onOpenAar, shows an AAR control on project run cards. */
   aarButtonVisible?: boolean;
   onOpenAar?: () => void;
@@ -39,7 +38,6 @@ export function MobileProjectCard({
   project,
   onSelect,
   variant = 'project',
-  onDelete,
   aarButtonVisible,
   onOpenAar,
 }: MobileProjectCardProps) {

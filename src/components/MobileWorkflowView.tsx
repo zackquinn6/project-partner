@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Circle, Clock, Menu, Eye, EyeOff, HelpCircle, Calendar as CalendarIcon, BookOpen, Settings2, Sparkles, DollarSign, ClipboardCheck, ShoppingCart, MessageCircle, Crosshair, Video, AlertTriangle, Camera } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Circle, Clock, Menu, Eye, EyeOff, HelpCircle, Calendar as CalendarIcon, BookOpen, Settings2, Sparkles, DollarSign, ClipboardCheck, ShoppingCart, MessageCircle, Crosshair, Video, AlertTriangle, Camera, Key, Settings, FileText, BarChart3 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -16,6 +16,8 @@ import { WorkflowThemeSelector } from './WorkflowThemeSelector';
 import type { GeneralProjectDecision } from '@/interfaces/Project';
 import type { GeneralProjectChoicesMap } from '@/utils/generalProjectDecisions';
 import { filterSectionRowsForMicroDecisions } from '@/utils/microDecisionVisibility';
+import { responsiveTouchTargets } from '@/utils/responsive';
+import { formatEstimatedFinishDate } from '@/utils/estimatedFinishDate';
 
 interface MobileWorkflowViewProps {
   projectName: string;
@@ -57,6 +59,15 @@ interface MobileWorkflowViewProps {
   stepPhotoCount?: number;
   onUploadPhoto?: () => void;
   canCompleteStep?: boolean;
+  onKeysToSuccessClick?: () => void;
+  onUnplannedWorkClick?: () => void;
+  onNotesClick?: () => void;
+  onProgressViewsClick?: () => void;
+  onProjectNameClick?: () => void;
+  onExpertHelpClick?: () => void;
+  estimatedFinishDate?: Date | null;
+  estimatedFinishDateLoading?: boolean;
+  isKickoffComplete?: boolean;
 }
 
 export function MobileWorkflowView({
@@ -92,6 +103,15 @@ export function MobileWorkflowView({
   stepPhotoCount = 0,
   onUploadPhoto,
   canCompleteStep = true,
+  onKeysToSuccessClick,
+  onUnplannedWorkClick,
+  onNotesClick,
+  onProgressViewsClick,
+  onProjectNameClick,
+  onExpertHelpClick,
+  estimatedFinishDate = null,
+  estimatedFinishDateLoading = false,
+  isKickoffComplete = false,
 }: MobileWorkflowViewProps) {
   const [showMaterials, setShowMaterials] = useState(true);
   const [showTools, setShowTools] = useState(true);
@@ -189,16 +209,26 @@ export function MobileWorkflowView({
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="flex-shrink-0 p-1.5 sm:p-2 h-8 w-8 sm:h-9 sm:w-9"
+            className={`flex-shrink-0 p-0 ${responsiveTouchTargets.icon}`}
           >
-            <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           
           <div className="min-w-0 flex-1 px-1">
             <div className="flex items-center justify-center">
-              <h1 className="max-w-[11rem] truncate text-center text-sm font-semibold text-card-foreground sm:max-w-none sm:text-base">
-                {projectName}
-              </h1>
+              {onProjectNameClick ? (
+                <button
+                  type="button"
+                  onClick={onProjectNameClick}
+                  className="max-w-[11rem] truncate text-center text-sm font-semibold text-primary underline-offset-2 hover:underline sm:max-w-none sm:text-base"
+                >
+                  {projectName}
+                </button>
+              ) : (
+                <h1 className="max-w-[11rem] truncate text-center text-sm font-semibold text-card-foreground sm:max-w-none sm:text-base">
+                  {projectName}
+                </h1>
+              )}
             </div>
             <p className="mt-0.5 text-center text-[10px] text-muted-foreground sm:text-xs">
               Step {currentStepIndex + 1} of {totalSteps}
@@ -207,8 +237,8 @@ export function MobileWorkflowView({
           
           <Sheet open={isStepListOpen} onOpenChange={setIsStepListOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex-shrink-0 p-1.5 sm:p-2 h-8 w-8 sm:h-9 sm:w-9">
-                <Menu className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <Button variant="ghost" size="sm" className={`flex-shrink-0 p-0 ${responsiveTouchTargets.icon}`}>
+                <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[85vw] sm:w-80 p-0">
@@ -236,8 +266,8 @@ export function MobileWorkflowView({
       </div>
 
       {/* Content */}
-      <ScrollArea className="flex-1" ref={stepRef}>
-        <div className="p-3 sm:p-4 space-y-4 sm:space-y-6 pb-20">
+      <div ref={stepRef} className="flex-1 overflow-y-auto">
+        <div className="p-3 sm:p-4 space-y-4 sm:space-y-6 pb-4">
           {/* Step Content */}
           <Card 
             key={instructionLevel}
@@ -260,7 +290,7 @@ export function MobileWorkflowView({
                   size="sm"
                   onClick={handleStepToggle}
                   disabled={qcBlocksComplete}
-                  className="text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 flex-shrink-0"
+                  className="text-[10px] sm:text-xs min-h-11 h-11 sm:min-h-8 sm:h-8 px-2 sm:px-3 flex-shrink-0"
                   title={
                     qcBlocksComplete
                       ? 'Complete checklist / photo requirements first'
@@ -280,7 +310,7 @@ export function MobileWorkflowView({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="text-[10px] sm:text-xs h-7 sm:h-8"
+                      className="text-[10px] sm:text-xs min-h-11 h-11 sm:min-h-8 sm:h-8"
                       onClick={onSomethingWrong}
                     >
                       <AlertTriangle className="h-3.5 w-3.5 mr-1" />
@@ -292,7 +322,7 @@ export function MobileWorkflowView({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="text-[10px] sm:text-xs h-7 sm:h-8"
+                      className="text-[10px] sm:text-xs min-h-11 h-11 sm:min-h-8 sm:h-8"
                       onClick={onAskAi}
                     >
                       <Sparkles className="h-3.5 w-3.5 mr-1" />
@@ -304,7 +334,7 @@ export function MobileWorkflowView({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="text-[10px] sm:text-xs h-7 sm:h-8"
+                      className="text-[10px] sm:text-xs min-h-11 h-11 sm:min-h-8 sm:h-8"
                       onClick={onPhotosClick}
                     >
                       <Camera className="h-3.5 w-3.5 mr-1" />
@@ -591,43 +621,83 @@ export function MobileWorkflowView({
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="space-y-3 pt-0 p-3 sm:p-4">
+                  {(estimatedFinishDateLoading || estimatedFinishDate) && (
+                    <p className="text-xs text-muted-foreground">
+                      Est. finish:{' '}
+                      <span className="font-medium text-foreground">
+                        {estimatedFinishDateLoading
+                          ? 'Calculating...'
+                          : formatEstimatedFinishDate(estimatedFinishDate ?? null)}
+                      </span>
+                    </p>
+                  )}
                   <div className="grid grid-cols-2 gap-2">
                     {onShowVideosClick ? (
                       <Button
                         type="button"
                         variant="default"
                         size="sm"
-                        className="col-span-2 w-full justify-center gap-2 text-xs font-medium"
+                        className="col-span-2 w-full justify-center gap-2 min-h-11 h-11 text-xs font-medium"
                         onClick={onShowVideosClick}
                       >
                         <Video className="h-4 w-4 shrink-0" />
                         Show Videos
                       </Button>
                     ) : null}
-                    <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => window.dispatchEvent(new CustomEvent('openProjectScheduler'))}>
+                    <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={() => window.dispatchEvent(new CustomEvent('openProjectScheduler'))}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       Scheduler
                     </Button>
-                    <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => launchActionKey('shopping-checklist')}>
+                    <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={() => launchActionKey('shopping-checklist')}>
                       <ShoppingCart className="mr-2 h-4 w-4" />
                       Shopping
                     </Button>
-                    <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => launchActionKey('risk-management')}>
+                    <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={() => launchActionKey('risk-management')}>
                       <Crosshair className="mr-2 h-4 w-4" />
                       Risk-Less
                     </Button>
-                    <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => launchActionKey('quality-check')}>
+                    <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={() => launchActionKey('quality-check')}>
                       <ClipboardCheck className="mr-2 h-4 w-4" />
                       Quality
                     </Button>
-                    <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => launchActionKey('project-budgeting')}>
+                    <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={() => launchActionKey('project-budgeting')}>
                       <DollarSign className="mr-2 h-4 w-4" />
                       Budget
                     </Button>
-                    <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => launchActionKey('communication-plan')}>
+                    <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={() => launchActionKey('communication-plan')}>
                       <MessageCircle className="mr-2 h-4 w-4" />
                       Comms
                     </Button>
+                    {onKeysToSuccessClick ? (
+                      <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={onKeysToSuccessClick}>
+                        <Key className="mr-2 h-4 w-4" />
+                        Critical Points
+                      </Button>
+                    ) : null}
+                    {onUnplannedWorkClick && isKickoffComplete ? (
+                      <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={onUnplannedWorkClick}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        Re-Plan
+                      </Button>
+                    ) : null}
+                    {onNotesClick ? (
+                      <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={onNotesClick}>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Notes
+                      </Button>
+                    ) : null}
+                    {onProgressViewsClick ? (
+                      <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={onProgressViewsClick}>
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        Progress
+                      </Button>
+                    ) : null}
+                    {onExpertHelpClick ? (
+                      <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={onExpertHelpClick}>
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Experts
+                      </Button>
+                    ) : null}
                   </div>
                   {stepApps.length > 0 && (
                     <div className="space-y-2 border-t pt-3">
@@ -644,7 +714,7 @@ export function MobileWorkflowView({
                               key={`${app.id || app.appName}-${index}`}
                               variant="secondary"
                               size="sm"
-                              className="justify-start text-xs"
+                              className="justify-start min-h-11 h-11 text-xs"
                               onClick={() => {
                                 if (actionKey) launchActionKey(actionKey);
                               }}
@@ -813,7 +883,7 @@ export function MobileWorkflowView({
             </Collapsible>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Navigation */}
       <div className="flex-shrink-0 bg-card/95 backdrop-blur-sm border-t border-border p-2 sm:p-3 md:p-4">
@@ -822,7 +892,7 @@ export function MobileWorkflowView({
             variant="outline"
             onClick={onPrevious}
             disabled={!canMovePrevious}
-            className="flex-1 text-xs sm:text-sm h-9 sm:h-10"
+            className="flex-1 text-xs sm:text-sm h-11 sm:h-10"
           >
             <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Previous</span>
@@ -839,7 +909,7 @@ export function MobileWorkflowView({
             variant="default"
             onClick={onNext}
             disabled={!canMoveNext}
-            className="flex-1 text-xs sm:text-sm h-9 sm:h-10"
+            className="flex-1 text-xs sm:text-sm h-11 sm:h-10"
           >
             <span className="hidden sm:inline">Next</span>
             <span className="sm:hidden">Next</span>
