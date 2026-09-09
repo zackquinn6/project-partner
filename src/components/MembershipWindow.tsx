@@ -10,7 +10,7 @@ interface MembershipWindowProps {
 }
 
 export const MembershipWindow: React.FC<MembershipWindowProps> = ({ open, onOpenChange }) => {
-  const { openCustomerPortal, isSubscribed } = useMembership();
+  const { openCustomerPortal, canManageStripeSubscription } = useMembership();
   
   return (
     <ResponsiveDialog
@@ -21,7 +21,7 @@ export const MembershipWindow: React.FC<MembershipWindowProps> = ({ open, onOpen
     >
       <div className="space-y-4">
         <MembershipStatusCard />
-        {isSubscribed && (
+        {canManageStripeSubscription && (
           <Button 
             onClick={openCustomerPortal} 
             variant="outline" 

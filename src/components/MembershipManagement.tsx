@@ -14,6 +14,7 @@ export const MembershipManagement: React.FC = () => {
   const {
     isSubscribed,
     isAdmin,
+    isProjectOwner,
     inTrial,
     trialEndDate,
     subscriptionEnd,
@@ -22,6 +23,7 @@ export const MembershipManagement: React.FC = () => {
     openCustomerPortal,
     redeemCoupon,
     trialDaysRemaining,
+    canManageStripeSubscription,
   } = useMembership();
   
   const { user } = useAuth();
@@ -90,23 +92,25 @@ export const MembershipManagement: React.FC = () => {
           </CardTitle>
           <CardDescription>
             {isAdmin && "You have admin access to all features"}
-            {!isAdmin && isSubscribed && "You have full access to all premium features"}
-            {!isAdmin && inTrial && !isSubscribed && "You're in your free trial period"}
-            {!isAdmin && !inTrial && !isSubscribed && "You're using the free tier"}
+            {!isAdmin && isProjectOwner && "You have project owner access to all features"}
+            {!isAdmin && !isProjectOwner && isSubscribed && "You have full access to all premium features"}
+            {!isAdmin && !isProjectOwner && inTrial && !isSubscribed && "You're in your free trial period"}
+            {!isAdmin && !isProjectOwner && !inTrial && !isSubscribed && "You're using the free tier"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Current Plan:</span>
             {isAdmin && <Badge variant="default">Admin</Badge>}
-            {!isAdmin && isSubscribed && <Badge variant="default">Annual Member - $59/year</Badge>}
-            {!isAdmin && inTrial && !isSubscribed && (
+            {!isAdmin && isProjectOwner && <Badge variant="default">Project Owner</Badge>}
+            {!isAdmin && !isProjectOwner && isSubscribed && <Badge variant="default">Annual Member - $59/year</Badge>}
+            {!isAdmin && !isProjectOwner && inTrial && !isSubscribed && (
               <Badge variant="secondary">Free Trial ({trialDaysRemaining} days left)</Badge>
             )}
-            {!isAdmin && !inTrial && !isSubscribed && <Badge variant="outline">Free Tier</Badge>}
+            {!isAdmin && !isProjectOwner && !inTrial && !isSubscribed && <Badge variant="outline">Free Tier</Badge>}
           </div>
 
-          {!isAdmin && isSubscribed && subscriptionEnd && (
+          {!isAdmin && !isProjectOwner && isSubscribed && subscriptionEnd && (
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Renews on:</span>
               <span className="font-medium">{format(new Date(subscriptionEnd), 'PPP')}</span>
@@ -126,7 +130,7 @@ export const MembershipManagement: React.FC = () => {
       </Card>
 
       {/* Upgrade / Manage Subscription */}
-      {!isAdmin && (
+      {!isAdmin && !isProjectOwner && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -146,7 +150,7 @@ export const MembershipManagement: React.FC = () => {
               </div>
             )}
 
-            {isSubscribed && (
+            {canManageStripeSubscription && (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">
                   Manage your subscription, update payment method, or cancel anytime.
@@ -161,7 +165,7 @@ export const MembershipManagement: React.FC = () => {
       )}
 
       {/* Coupon Code */}
-      {!isAdmin && inTrial && (
+      {!isAdmin && !isProjectOwner && inTrial && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -213,7 +217,7 @@ export const MembershipManagement: React.FC = () => {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span>Project Catalog</span>
-              {isSubscribed || isAdmin || inTrial ? (
+              {isSubscribed || isAdmin || isProjectOwner || inTrial ? (
                 <Badge variant="default">Unlocked</Badge>
               ) : (
                 <Badge variant="secondary">Locked</Badge>
@@ -221,7 +225,7 @@ export const MembershipManagement: React.FC = () => {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span>Project Workflows</span>
-              {isSubscribed || isAdmin || inTrial ? (
+              {isSubscribed || isAdmin || isProjectOwner || inTrial ? (
                 <Badge variant="default">Unlocked</Badge>
               ) : (
                 <Badge variant="secondary">Locked</Badge>

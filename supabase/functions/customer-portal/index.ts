@@ -40,21 +40,44 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    
-    if (customers.data.length === 0) {
-      throw new Error("No Stripe customer found for this user");
+
+    let customerId: string | null = null;
+
+    const { data: subscriptionRow } = await supabaseClient
+      .from("stripe_subscriptions")
+      .select("stripe_customer_id")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (subscriptionRow?.stripe_customer_id) {
+      customerId = subscriptionRow.stripe_customer_id;
+      logStep("Found Stripe customer from subscription record", { customerId });
+    } else {
+      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+        logStep("Found Stripe customer by email", { customerId });
+      }
     }
-    
-    const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
+
+    if (!customerId) {
+      logStep("No Stripe customer for user");
+      return new Response(JSON.stringify({
+        error: "No Stripe billing account found for this user. Subscribe first to manage billing.",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404,
+      });
+    }
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: `${origin}/`,
     });
-    
+
     logStep("Customer portal session created", { sessionId: portalSession.id });
 
     return new Response(JSON.stringify({ url: portalSession.url }), {

@@ -15,6 +15,7 @@ export const RISK_LESS_APP_ACTION_KEYS = ['risk-management', 'risk-focus'] as co
 interface MembershipContextType {
   isSubscribed: boolean;
   isAdmin: boolean;
+  isProjectOwner: boolean;
   inTrial: boolean;
   trialEndDate: string | null;
   subscriptionEnd: string | null;
@@ -25,6 +26,8 @@ interface MembershipContextType {
   hasProjectsTier: boolean;
   /** Risk-less apps; includes everyone who has Projects tier. */
   hasRiskLessTier: boolean;
+  /** True only when the user has a Stripe-billed subscription that can be managed in the portal. */
+  canManageStripeSubscription: boolean;
   checkSubscription: () => Promise<void>;
   createCheckout: () => Promise<void>;
   openCustomerPortal: () => Promise<void>;
@@ -54,6 +57,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
   const { isBetaMode } = useBetaMode();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isProjectOwner, setIsProjectOwner] = useState(false);
   const [inTrial, setInTrial] = useState(false);
   const [trialEndDate, setTrialEndDate] = useState<string | null>(null);
   const [lastTrialNotificationDate, setLastTrialNotificationDate] = useState<string | null>(null);
@@ -65,6 +69,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
     if (!user) {
       setIsSubscribed(false);
       setIsAdmin(false);
+      setIsProjectOwner(false);
       setInTrial(false);
       setTrialEndDate(null);
       setLastTrialNotificationDate(null);
@@ -92,6 +97,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
 
       setIsSubscribed(data.subscribed || false);
       setIsAdmin(data.isAdmin || false);
+      setIsProjectOwner(data.isProjectOwner || false);
       setInTrial(data.inTrial || false);
       setTrialEndDate(data.trialEndDate || null);
       setLastTrialNotificationDate(data.lastTrialNotificationDate ?? null);
@@ -127,7 +133,23 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
 
-      if (error) throw error;
+      if (error) {
+        let message = 'Failed to open customer portal. Please try again.';
+        const context = (error as { context?: Response }).context;
+        if (context) {
+          try {
+            const body = await context.json();
+            if (typeof body?.error === 'string') message = body.error;
+          } catch {
+            // keep default message
+          }
+        }
+        throw new Error(message);
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       if (data?.url) {
         window.open(data.url, '_blank');
@@ -136,7 +158,10 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
       console.error('Error opening customer portal:', error);
       toast({
         title: 'Error',
-        description: 'Failed to open customer portal. Please try again.',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Failed to open customer portal. Please try again.',
         variant: 'destructive',
       });
     }
@@ -192,9 +217,10 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
     () =>
       isBetaMode ||
       isAdmin ||
+      isProjectOwner ||
       inTrial ||
       subscriptionTier === 'projects',
-    [isBetaMode, isAdmin, inTrial, subscriptionTier]
+    [isBetaMode, isAdmin, isProjectOwner, inTrial, subscriptionTier]
   );
 
   const hasRiskLessTier = useMemo(
@@ -202,7 +228,9 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
     [hasProjectsTier, subscriptionTier]
   );
 
-  const canAccessPaidFeatures = isBetaMode || isAdmin || inTrial || isSubscribed;
+  const canManageStripeSubscription = Boolean(subscriptionEnd) && !isAdmin && !isProjectOwner;
+
+  const canAccessPaidFeatures = isBetaMode || isAdmin || isProjectOwner || inTrial || isSubscribed;
 
   const canAccessApp = useCallback(
     (actionKey: string): boolean => {
@@ -227,6 +255,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
       value={{
         isSubscribed,
         isAdmin,
+        isProjectOwner,
         inTrial,
         trialEndDate,
         subscriptionEnd,
@@ -234,6 +263,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
         subscriptionTier,
         hasProjectsTier,
         hasRiskLessTier,
+        canManageStripeSubscription,
         checkSubscription,
         createCheckout,
         openCustomerPortal,

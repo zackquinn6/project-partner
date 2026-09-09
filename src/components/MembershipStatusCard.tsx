@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useMembership } from '@/contexts/MembershipContext';
@@ -10,6 +10,7 @@ export const MembershipStatusCard: React.FC = () => {
   const {
     isSubscribed,
     isAdmin,
+    isProjectOwner,
     inTrial,
     trialEndDate,
     subscriptionEnd,
@@ -30,6 +31,8 @@ export const MembershipStatusCard: React.FC = () => {
     );
   }
 
+  const hasPremiumAccess = isSubscribed || isAdmin || isProjectOwner || inTrial;
+
   return (
     <Card>
       <CardHeader>
@@ -39,22 +42,23 @@ export const MembershipStatusCard: React.FC = () => {
             <CardTitle className="text-lg">Membership Status</CardTitle>
           </div>
           {isAdmin && <Badge variant="default">Admin</Badge>}
-          {!isAdmin && isSubscribed && <Badge variant="default">Member</Badge>}
-          {!isAdmin && inTrial && !isSubscribed && (
+          {!isAdmin && isProjectOwner && <Badge variant="default">Project Owner</Badge>}
+          {!isAdmin && !isProjectOwner && isSubscribed && <Badge variant="default">Member</Badge>}
+          {!isAdmin && !isProjectOwner && inTrial && !isSubscribed && (
             <Badge variant="secondary">Trial ({trialDaysRemaining}d)</Badge>
           )}
-          {!isAdmin && !inTrial && !isSubscribed && <Badge variant="outline">Free</Badge>}
+          {!isAdmin && !isProjectOwner && !inTrial && !isSubscribed && <Badge variant="outline">Free</Badge>}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!isAdmin && isSubscribed && subscriptionEnd && (
+        {!isAdmin && !isProjectOwner && isSubscribed && subscriptionEnd && (
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Renews:</span>
             <span className="font-medium">{format(new Date(subscriptionEnd), 'PP')}</span>
           </div>
         )}
 
-        {!isAdmin && inTrial && trialEndDate && (
+        {!isAdmin && !isProjectOwner && inTrial && trialEndDate && (
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground flex items-center gap-2">
               <Clock className="h-4 w-4" />
@@ -78,28 +82,28 @@ export const MembershipStatusCard: React.FC = () => {
             <span>My Tools</span>
           </div>
           <div className="flex items-center gap-2">
-            {isSubscribed || isAdmin || inTrial ? (
+            {hasPremiumAccess ? (
               <CheckCircle className="h-4 w-4 text-green-500" />
             ) : (
               <div className="h-4 w-4 rounded-full border-2 border-muted" />
             )}
-            <span className={!isSubscribed && !isAdmin && !inTrial ? 'text-muted-foreground' : ''}>
+            <span className={!hasPremiumAccess ? 'text-muted-foreground' : ''}>
               Project Catalog
             </span>
           </div>
           <div className="flex items-center gap-2">
-            {isSubscribed || isAdmin || inTrial ? (
+            {hasPremiumAccess ? (
               <CheckCircle className="h-4 w-4 text-green-500" />
             ) : (
               <div className="h-4 w-4 rounded-full border-2 border-muted" />
             )}
-            <span className={!isSubscribed && !isAdmin && !inTrial ? 'text-muted-foreground' : ''}>
+            <span className={!hasPremiumAccess ? 'text-muted-foreground' : ''}>
               Project Workflows
             </span>
           </div>
         </div>
 
-        {!isAdmin && !isSubscribed && (
+        {!isAdmin && !isProjectOwner && !isSubscribed && (
           <Button onClick={createCheckout} className="w-full" size="sm">
             <Crown className="h-4 w-4 mr-2" />
             {inTrial ? 'Subscribe Now - $59/year' : 'Upgrade to Member'}
