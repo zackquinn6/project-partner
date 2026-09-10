@@ -102,7 +102,6 @@ export function FeedbackDialog({ open, onOpenChange }: FeedbackDialogProps) {
           }
         });
       } catch (emailError) {
-        console.log('Email notification failed (non-critical):', emailError);
       }
 
       setCategory('');

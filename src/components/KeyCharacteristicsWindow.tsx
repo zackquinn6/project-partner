@@ -25,16 +25,12 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
   // Effect to find and navigate to the operation containing the current step
   React.useEffect(() => {
     if (currentStepId && operations.length > 0) {
-      console.log('🔍 Critical Points window: Looking for operation containing step:', currentStepId);
       
       const operationIndex = operations.findIndex(operation => 
         operation.steps.some(step => step.id === currentStepId)
       );
       
-      console.log('🎯 Critical Points window: Found operation index:', operationIndex, 'for step:', currentStepId);
-      
       if (operationIndex >= 0 && operationIndex !== selectedOperationIndex) {
-        console.log('📍 Critical Points window: Switching to operation:', operations[operationIndex].name);
         setSelectedOperationIndex(operationIndex);
       }
     }
@@ -43,7 +39,6 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
   // Reset to first operation if no current step when window opens
   React.useEffect(() => {
     if (open && operations.length > 0 && !currentStepId) {
-      console.log('🔄 Critical Points window: No current step, resetting to first operation');
       setSelectedOperationIndex(0);
     }
   }, [open, operations.length, currentStepId]);

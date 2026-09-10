@@ -15,16 +15,8 @@ export async function syncPhaseToDatabase(
 ): Promise<void> {
   // Skip standard phases (they're managed by the Standard Project Foundation)
   if (phase.isStandard || phase.isLinked) {
-    console.log('⏭️ Skipping standard/linked phase:', phase.name);
     return;
   }
-
-  console.log('🔄 Syncing custom phase to database:', {
-    projectId,
-    phaseName: phase.name,
-    operationCount: phase.operations.length,
-    displayOrder
-  });
 
   try {
     // Sync each operation in the custom phase
@@ -61,8 +53,6 @@ export async function syncPhaseToDatabase(
       let operationId: string;
 
       if (existingOp) {
-        // Update existing operation
-        console.log('🔄 Updating existing operation:', operation.name);
         
         const { error: updateError } = await db
           .from('template_operations')
@@ -76,8 +66,6 @@ export async function syncPhaseToDatabase(
         if (updateError) throw updateError;
         operationId = existingOp.id;
       } else {
-        // Insert new operation
-        console.log('➕ Creating new operation:', operation.name);
         
         // Note: is_standard_phase, custom_phase_name, custom_phase_description, and standard_phase_id removed
         // Phase standard status comes from project_phases.is_standard
@@ -101,8 +89,6 @@ export async function syncPhaseToDatabase(
       // Sync steps for this operation
       await syncStepsForOperation(operationId, operation.steps);
     }
-
-    console.log('✅ Custom phase synced successfully:', phase.name);
   } catch (error) {
     console.error('❌ Error syncing custom phase:', error);
     throw error;
@@ -180,16 +166,12 @@ async function syncStepsForOperation(
  */
 export async function syncAllPhasesToDatabase(project: Project): Promise<void> {
   if (!project.phases || project.phases.length === 0) {
-    console.log('⏭️ No phases to sync');
     return;
   }
 
   const customPhases = project.phases.filter(p => !p.isStandard && !p.isLinked);
   
   console.group('🔄 Syncing Custom Phases to Database');
-  console.log('Project:', project.id, project.name);
-  console.log('Total phases:', project.phases.length);
-  console.log('Custom phases:', customPhases.length);
 
   try {
     let customPhaseDisplayOrder = 100; // Start after standard phases
@@ -198,8 +180,6 @@ export async function syncAllPhasesToDatabase(project: Project): Promise<void> {
       await syncPhaseToDatabase(project.id, phase, customPhaseDisplayOrder);
       customPhaseDisplayOrder += 10;
     }
-
-    console.log('✅ All custom phases synced successfully');
     console.groupEnd();
   } catch (error) {
     console.error('❌ Error syncing custom phases:', error);
@@ -216,7 +196,6 @@ export async function deletePhaseFromDatabase(
   projectId: string,
   phaseName: string
 ): Promise<void> {
-  console.log('🗑️ Deleting custom phase from database:', { projectId, phaseName });
 
   try {
     // Get phase ID first
@@ -261,8 +240,6 @@ export async function deletePhaseFromDatabase(
         .eq('phase_id', phaseRecord.id);
 
       if (deleteOpsError) throw deleteOpsError;
-
-      console.log('✅ Custom phase deleted from database');
     }
   } catch (error) {
     console.error('❌ Error deleting custom phase:', error);

@@ -34,12 +34,10 @@ export class ProjectNavigationErrorBoundary extends Component<Props, State> {
   }
 
   handleRetry = () => {
-    console.log('🔄 ProjectNavigationErrorBoundary: User clicked retry');
     this.setState({ hasError: false, error: undefined });
   };
 
   handleRefresh = () => {
-    console.log('🔄 ProjectNavigationErrorBoundary: User clicked refresh');
     window.location.reload();
   };
 

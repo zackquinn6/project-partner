@@ -244,9 +244,6 @@ export function LiabilityAgreementDialog({ open, onAccepted }: LiabilityAgreemen
       });
       if (insertError) throw insertError;
 
-      if (pdfPath) {
-              } else {
-              }
       onAccepted();
     } catch (e) {
       console.error('Usage agreement save error:', e);

@@ -20,12 +20,10 @@ export const EnhancedUserView: React.FC<EnhancedUserViewProps> = (props) => {
   const [currentProjectRun, setCurrentProjectRun] = useState<ProjectRun | null>(null);
 
   const handleWeatherRecommendationApply = (recommendation: any) => {
-    console.log('Applying weather recommendation:', recommendation);
     // Logic to apply the recommendation to the project schedule
   };
 
   const handleCalendarEventCreated = (event: any) => {
-    console.log('Calendar event created:', event);
     // Logic to sync with project timeline
   };
 

@@ -112,16 +112,6 @@ export const isKickoffPhaseComplete = (completedSteps: string[] | null | undefin
     completedSteps.includes(stepId)
   );
   
-  console.log('🎯 isKickoffPhaseComplete check:', {
-    completedSteps,
-    kickoffStepIds,
-    stepCompletion: kickoffStepIds.map(id => ({
-      id,
-      completed: completedSteps.includes(id)
-    })),
-    result: allKickoffStepsComplete
-  });
-  
   return allKickoffStepsComplete;
 };
 

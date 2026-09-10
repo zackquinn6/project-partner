@@ -88,13 +88,6 @@ export const MaterialsAdjustmentWindow: React.FC<MaterialsAdjustmentWindowProps>
 
   const handleSave = () => {
     const changedMaterials = adjustments.filter(adj => adj.currentQuantity !== adj.newQuantity);
-    
-    // In a real implementation, this would update the project materials
-    console.log('Material adjustments:', {
-      adjustments: changedMaterials,
-      additionalMaterials: additionalMaterials.trim(),
-      generalReason: generalReason.trim()
-    });
 
     onComplete?.();
     onOpenChange(false);

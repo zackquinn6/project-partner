@@ -200,7 +200,6 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
   const loadFlowConfigs = async () => {
     try {
-      console.log('🔍 Loading decision tree config for project:', currentProject.id, 'Name:', currentProject.name);
 
       const phasesRes = await supabase
         .from('project_phases')
@@ -692,7 +691,6 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
   const saveDecisionTree = async (closeAfter: boolean) => {
     setIsSaving(true);
     try {
-      console.log('💾 Saving decision tree configurations for project:', currentProject.id);
       
       // Build a map of operations to their alternate groups
       // Each group of alternates should share the same group identifier
@@ -889,7 +887,6 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
       if (errorCount > 0) {
         toast.error(`Failed to save ${errorCount} operation(s)`);
       } else {
-        console.log('✅ Successfully saved decision tree configurations');
 
         if (closeAfter) {
           await new Promise((resolve) => setTimeout(resolve, 500));

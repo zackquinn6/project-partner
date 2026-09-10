@@ -267,16 +267,12 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
   const handleDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;
 
-    console.log('Drag ended:', { source, destination, draggableId });
-
     if (!destination) {
-      console.log('No destination - drag cancelled');
       return;
     }
 
     // Don't allow dropping back to available tasks
     if (destination.droppableId === 'available-tasks') {
-      console.log('Cannot drop back to available tasks');
       return;
     }
 
@@ -285,20 +281,16 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
     const firstHyphen = draggableId.indexOf('-');
     const type = draggableId.substring(0, firstHyphen);
     const id = draggableId.substring(firstHyphen + 1);
-    
-    console.log('Parsed drag item:', { type, id });
 
     // Get the person being assigned to
     const targetPerson = people.find(p => p.id === destination.droppableId);
     if (!targetPerson) {
-      console.log('Target person not found');
       return;
     }
 
     if (type === 'task') {
       const task = tasks.find(t => t.id === id);
       if (!task) {
-        console.log('Task not found:', id);
         return;
       }
 
@@ -320,8 +312,6 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
           return;
         }
       }
-
-      console.log('Assigning task:', task.title, 'to person:', destination.droppableId);
 
       const newAssignments: Assignment[] = [];
 
@@ -351,13 +341,11 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
           ...prev,
           [destination.droppableId]: [...(prev[destination.droppableId] || []), ...newAssignments]
         };
-        console.log('Updated assignments:', updated);
         return updated;
       });
     } else if (type === 'subtask') {
       const subtask = subtasks.find(st => st.id === id);
       if (!subtask) {
-        console.log('Subtask not found:', id);
         return;
       }
 
@@ -374,8 +362,6 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
         return;
       }
 
-      console.log('Assigning subtask:', subtask.title, 'to person:', destination.droppableId);
-
       const newAssignment: Assignment = {
         taskId: subtask.task_id,
         subtaskId: subtask.id,
@@ -389,7 +375,6 @@ export function HomeTaskAssignment({ userId, homeId }: HomeTaskAssignmentProps) 
           ...prev,
           [destination.droppableId]: [...(prev[destination.droppableId] || []), newAssignment]
         };
-        console.log('Updated assignments:', updated);
         return updated;
       });
     }

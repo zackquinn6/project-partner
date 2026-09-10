@@ -522,7 +522,6 @@ export function MobileWorkflowView({
                       {(currentStep.step?.toLowerCase().includes('project') && (currentStep.step?.toLowerCase().includes('plan') || currentStep.step?.toLowerCase().includes('scope'))) && (
                         <Button 
                           onClick={() => {
-                            console.log('Opening project customizer for mobile step:', currentStep.step);
                             window.dispatchEvent(new CustomEvent('openProjectCustomizer'));
                           }}
                           variant="outline"
@@ -538,7 +537,6 @@ export function MobileWorkflowView({
                       {currentStep.step?.toLowerCase().includes('scheduling') && (
                         <Button 
                           onClick={() => {
-                            console.log('Opening project scheduler for mobile step:', currentStep.step);
                             window.dispatchEvent(new CustomEvent('openProjectScheduler'));
                           }}
                           variant="outline"

@@ -37,7 +37,6 @@ export default function ImportTileContent() {
   
   const addLog = (message: string) => {
     setLog(prev => [...prev, message]);
-    console.log(message);
   };
 
   const consolidateSteps = (rows: ExcelRow[]): ConsolidatedStep[] => {

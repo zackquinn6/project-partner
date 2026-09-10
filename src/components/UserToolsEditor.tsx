@@ -213,7 +213,6 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
       }));
       
       setAvailableTools(mappedData);
-      console.log('✅ Fetched available tools:', mappedData.length);
     } catch (error) {
       console.error('Error fetching tools:', error);
     }
@@ -286,13 +285,6 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
       if (profileSyncErr) {
         console.error('UserToolsEditor: sync owned_tools failed', profileSyncErr);
       }
-
-      console.log('✅ UserToolsEditor - Merged library tools:', {
-        count: nextList.length,
-        fromProfile: fromProfile.length,
-        fromTable: fromTableRaw.length,
-        deduped: changed,
-      });
 
       setUserTools(nextList);
     } catch (error) {
@@ -467,12 +459,6 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
         return;
       }
 
-      console.log('💾 UserToolsEditor - Inserting tool into user_tools:', {
-        userId: user.id,
-        toolId: tool.id,
-        toolName: tool.name || tool.item
-      });
-
       const { data, error } = await supabase
         .from('user_tools')
         .insert({
@@ -624,7 +610,6 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
           <Button 
             variant="outline" 
             onClick={async () => {
-              console.log('Back to My Library clicked');
               // Save tools before closing
               if (user && userTools.length > 0) {
                 try {
@@ -635,8 +620,6 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
                   
                   if (error) {
                     console.error('Failed to save tools:', error);
-                  } else {
-                    console.log('Tools saved successfully');
                   }
                 } catch (error) {
                   console.error('Error saving tools:', error);

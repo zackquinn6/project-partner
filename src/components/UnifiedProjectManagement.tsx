@@ -431,40 +431,10 @@ export function UnifiedProjectManagement({
       if (editedProject.hasOwnProperty('project_challenges')) {
         // User has edited the field - preserve the exact value (even if empty string)
         updateData.project_challenges = editedProject.project_challenges ?? null;
-        console.log('📝 Using project_challenges from editedProject:', editedProject.project_challenges, '→', updateData.project_challenges);
       } else if (selectedProject.project_challenges !== undefined && selectedProject.project_challenges !== null) {
         // Preserve existing value if not being edited
         updateData.project_challenges = selectedProject.project_challenges;
-        console.log('📝 Using project_challenges from selectedProject:', selectedProject.project_challenges);
-      } else {
-        // Keep as null (already set above)
-        console.log('📝 Keeping project_challenges as null (no existing value)');
       }
-
-      // Note: estimated_total_time and typical_project_size are already set in updateData above
-      // This duplicate logic is removed since they're handled in the initial updateData object
-
-      console.log('💾 Saving project edit:', {
-        projectId: selectedProject.id,
-        fields: Object.keys(updateData),
-        changes: updateData,
-        budget_per_unit: {
-          edited: (editedProject as any).budget_per_unit,
-          editedType: typeof (editedProject as any).budget_per_unit,
-          hasOwnProperty: (editedProject as any).hasOwnProperty('budget_per_unit'),
-          selected: (selectedProject as any).budget_per_unit,
-          final: updateData.budget_per_unit,
-          finalType: typeof updateData.budget_per_unit
-        },
-        budget_per_typical_size: {
-          edited: (editedProject as any).budget_per_typical_size,
-          editedType: typeof (editedProject as any).budget_per_typical_size,
-          hasOwnProperty: (editedProject as any).hasOwnProperty('budget_per_typical_size'),
-          selected: (selectedProject as any).budget_per_typical_size,
-          final: updateData.budget_per_typical_size,
-          finalType: typeof updateData.budget_per_typical_size
-        }
-      });
 
       const {
         error,
@@ -474,7 +444,6 @@ export function UnifiedProjectManagement({
       if (error) {
         // If error is about project_challenges column not existing, try with old column name
         if (error.message && error.message.includes('project_challenges')) {
-          console.log('⚠️ project_challenges column not found, trying with diy_length_challenges');
           const fallbackValue = updateData.project_challenges;
           delete updateData.project_challenges;
           if (fallbackValue !== undefined) {
@@ -491,8 +460,6 @@ export function UnifiedProjectManagement({
             console.error('❌ Save error (retry):', retryError);
             throw retryError;
           }
-          
-          console.log('✅ Project saved successfully (with fallback):', retryData);
           
           // Clear edited state BEFORE refreshing to prevent showing unsaved data
           setEditingProject(false);
@@ -515,7 +482,6 @@ export function UnifiedProjectManagement({
               ...freshData,
               project_challenges: freshData.project_challenges ?? null
             };
-            console.log('🔄 Fresh project data (fallback):', mappedData);
             setSelectedProject(mappedData as unknown as Project);
                       } else if (retryData && retryData[0]) {
             // Fallback: map the retry data
@@ -533,9 +499,6 @@ export function UnifiedProjectManagement({
         console.error('❌ Save error:', error);
         throw error;
       }
-      
-      console.log('✅ Project saved successfully:', data);
-      console.log('📋 Saved project_challenges value:', data?.[0]?.project_challenges);
       
       // Clear edited state BEFORE refreshing to prevent showing unsaved data
       setEditingProject(false);
@@ -558,10 +521,6 @@ export function UnifiedProjectManagement({
           ...freshData,
           project_challenges: freshData.project_challenges ?? null
         };
-        console.log('🔄 Fresh project data after save:', mappedData);
-        console.log('🔄 Fresh project_challenges:', mappedData.project_challenges);
-        console.log('🔄 Fresh budget_per_unit:', mappedData.budget_per_unit, 'type:', typeof mappedData.budget_per_unit);
-        console.log('🔄 Fresh budget_per_typical_size:', mappedData.budget_per_typical_size, 'type:', typeof mappedData.budget_per_typical_size);
         setSelectedProject(mappedData as unknown as Project);
               } else if (data && data[0]) {
         // Fallback to data from update response - map columns
@@ -569,7 +528,6 @@ export function UnifiedProjectManagement({
           ...data[0],
           project_challenges: data[0].project_challenges ?? null
         };
-        console.log('⚠️ Using update response data as fallback:', mappedData);
         setSelectedProject(mappedData as unknown as Project);
               } else {
         toast.error("Project saved but failed to refresh. Please reload the page.");
@@ -624,11 +582,6 @@ export function UnifiedProjectManagement({
     }
   };
   const handleStatusChange = async (revision: Project, status: 'beta-testing' | 'published') => {
-    console.log('🎯 handleStatusChange called:', {
-      revision: revision.id,
-      status,
-      revisionNumber: revision.revision_number
-    });
     setSelectedRevision(revision);
     setNewStatus(status);
 
@@ -649,7 +602,6 @@ export function UnifiedProjectManagement({
         
         if (!refreshError && refreshedRevision) {
           setSelectedRevision(refreshedRevision as unknown as Project);
-          console.log('✅ Refreshed revision data before opening dialog');
         }
       } catch (error) {
         console.warn('⚠️ Error refreshing revision data:', error);
@@ -715,11 +667,6 @@ export function UnifiedProjectManagement({
   };
 
   const confirmStatusChangeDirect = async (revision: Project, status: 'beta-testing' | 'published', notes: string) => {
-    console.log('🎯 confirmStatusChangeDirect called:', {
-      revisionId: revision.id,
-      status,
-      notes
-    });
     if (!notes.trim()) {
       console.error('❌ No release notes provided');
       toast.error("Release notes are required");
@@ -743,7 +690,6 @@ export function UnifiedProjectManagement({
           
           if (!parentError && parentProject) {
             projectToValidate = parentProject as unknown as Project;
-            console.log('✅ Using parent project for validation:', parentProject.id);
           } else {
             console.warn('⚠️ Could not fetch parent project, using revision data');
             // Fallback: refresh revision data
@@ -755,7 +701,6 @@ export function UnifiedProjectManagement({
             
             if (!refreshError && refreshedRevision) {
               projectToValidate = refreshedRevision as unknown as Project;
-              console.log('✅ Refreshed revision data before validation');
             }
           }
         } catch (error) {
@@ -774,7 +719,6 @@ export function UnifiedProjectManagement({
           
           if (!refreshError && refreshedProject) {
             projectToValidate = refreshedProject as unknown as Project;
-            console.log('✅ Refreshed parent project data before validation');
           }
         } catch (error) {
           console.warn('⚠️ Error refreshing project data:', error);
@@ -828,7 +772,6 @@ export function UnifiedProjectManagement({
     }
 
     try {
-      console.log('🚀 Updating project status...');
 
       // When publishing, ensure revision_number semantics:
       // - Initial release starts at 0
@@ -866,12 +809,6 @@ export function UnifiedProjectManagement({
           );
           nextRevisionNumber = maxPublishedRevision + 1;
         }
-
-        console.log('🔢 Computed next revision_number for publish:', {
-          parentId,
-          nextRevisionNumber,
-          publishedCount: publishedProjects.length
-        });
       }
 
       const updatePayload: any = {
@@ -890,7 +827,6 @@ export function UnifiedProjectManagement({
         console.error('❌ Supabase error:', error);
         throw error;
       }
-      console.log('✅ Project status updated successfully');
             setPublishDialogOpen(false);
       setReleaseNotes('');
       fetchProjects();
@@ -904,12 +840,6 @@ export function UnifiedProjectManagement({
     }
   };
   const confirmStatusChange = async () => {
-    console.log('🎯 confirmStatusChange called:', {
-      hasRevision: !!selectedRevision,
-      revisionId: selectedRevision?.id,
-      newStatus,
-      releaseNotes
-    });
     if (!selectedRevision) {
       console.error('❌ No selected revision');
       return;
@@ -1061,13 +991,6 @@ export function UnifiedProjectManagement({
         console.error('Error fetching new revision:', fetchError);
         throw fetchError;
       }
-      console.log('🔍 New revision created:', {
-        id: newRevision.id,
-        name: newRevision.name,
-        revisionNumber: newRevision.revision_number,
-        phaseCount: Array.isArray(newRevision.phases) ? newRevision.phases.length : 0,
-        phases: newRevision.phases
-      });
 
       // If phases are empty, try to rebuild (this should rarely happen as the function does this)
       if (!newRevision.phases || Array.isArray(newRevision.phases) && newRevision.phases.length === 0) {
@@ -1085,7 +1008,6 @@ export function UnifiedProjectManagement({
           await supabase.from('projects').update({
             phases: rebuiltPhases
           }).eq('id', newRevisionId);
-          console.log('✅ Successfully rebuilt phases:', rebuiltPhases.length);
         }
       }
       toast.dismiss(loadingToast);
@@ -1245,7 +1167,6 @@ export function UnifiedProjectManagement({
 
     const loadingToast = toast.loading("Resetting revisions...");
     try {
-      console.log('🔄 Starting reset revisions for project:', selectedProject.id, selectedProject.name);
 
       const { data: resetProjectId, error: resetError } = await supabase.rpc(
         'reset_project_revisions_preserve_latest',
@@ -1288,8 +1209,6 @@ export function UnifiedProjectManagement({
 
       setSelectedProject(mappedProject);
       await fetchProjectRevisions();
-
-      console.log('✅ Revision reset complete via database RPC:', resetProjectId);
 
       toast.dismiss(loadingToast);
       setResetRevisionsDialogOpen(false);
@@ -1391,12 +1310,6 @@ export function UnifiedProjectManagement({
         category: []
       });
 
-      console.log('✅ Loaded standard project from relational tables:', {
-        projectId: standardProject.id,
-        phasesCount: transformedPhases.length,
-        phases: transformedPhases.map(p => p.name)
-      });
-
       // Navigate to edit workflow view
       navigate('/', {
         state: {
@@ -1443,7 +1356,6 @@ export function UnifiedProjectManagement({
 
     try {
       setIsCreatingProject(true);
-      console.log('🔨 Creating project:', { ...newProject, name: projectName });
       const projectId = await addProject({
         name: projectName,
         description: newProject.description || '',
@@ -2400,11 +2312,6 @@ export function UnifiedProjectManagement({
                           <CardTitle className="text-base sm:text-lg">Workflow Editor</CardTitle>
                           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
                             <Button onClick={async () => {
-                          console.log('🔵 Create Revision button clicked', {
-                            hasSelectedProject: !!selectedProject,
-                            projectId: selectedProject?.id,
-                            projectName: selectedProject?.name
-                          });
                           
                           if (!selectedProject) {
                             toast.error("No project selected");
@@ -2496,19 +2403,6 @@ export function UnifiedProjectManagement({
                                     phases = JSON.parse(phases);
                                   }
                                   parsedPhases = phases || [];
-                                  console.log('🔍 Setting current project for edit:', {
-                                    revisionId: revision.id,
-                                    revisionName: revision.name,
-                                    revisionNumber: revision.revision_number,
-                                    phaseCount: Array.isArray(parsedPhases) ? parsedPhases.length : 0,
-                                    phases: parsedPhases.map((p: any) => ({
-                                      id: p.id,
-                                      name: p.name,
-                                      isStandard: p.isStandard,
-                                      isLinked: p.isLinked,
-                                      operationCount: p.operations?.length || 0
-                                    }))
-                                  });
                                 } catch (e) {
                                   console.error('Failed to parse phases for revision:', revision.id, e);
                                   parsedPhases = [];
@@ -2566,7 +2460,6 @@ export function UnifiedProjectManagement({
                                           <Button size="sm" variant="outline" onClick={e => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  console.log('🎯 Beta button clicked');
                                   handleStatusChange(revision, 'beta-testing');
                                 }} className="flex items-center gap-1">
                                             <ArrowRight className="w-3 h-3" />
@@ -2575,7 +2468,6 @@ export function UnifiedProjectManagement({
                                            <Button size="sm" onClick={e => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  console.log('🎯 Production button clicked');
                                   handleStatusChange(revision, 'published');
                                 }} className="flex items-center justify-center gap-1 px-2 text-xs whitespace-nowrap">
                                              <ArrowRight className="w-3 h-3" />
@@ -2600,7 +2492,6 @@ export function UnifiedProjectManagement({
                                       {revision.publish_status === 'beta-testing' && <Button size="sm" onClick={e => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                console.log('🎯 Promote to Production button clicked');
                                 handleStatusChange(revision, 'published');
                               }} className="flex items-center gap-1">
                                            <ArrowRight className="w-3 h-3" />
@@ -2705,7 +2596,6 @@ export function UnifiedProjectManagement({
               <Button onClick={e => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('🎯 Confirm button clicked in dialog');
               confirmStatusChange();
             }} disabled={!releaseNotes.trim() || (newStatus === 'published' && selectedRevision && (() => {
               // For validation, check parent project if revision has one
@@ -2730,7 +2620,6 @@ export function UnifiedProjectManagement({
 
       {/* Create Revision Dialog */}
       <Dialog open={createRevisionDialogOpen} onOpenChange={open => {
-      console.log('🟡 Create Revision Dialog open state changed:', open);
       setCreateRevisionDialogOpen(open);
     }}>
         <DialogContent className="max-w-md">
@@ -2771,7 +2660,6 @@ export function UnifiedProjectManagement({
                 Cancel
               </Button>
               <Button onClick={async () => {
-              console.log('🟢 Create Draft Revision button (inside dialog) clicked');
               await createNewRevision();
               // Dialog will be closed in createNewRevision on success
             }}>

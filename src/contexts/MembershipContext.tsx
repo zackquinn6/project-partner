@@ -83,7 +83,6 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
       if (error) throw error;
 
       if (data.requiresReauth) {
-        console.log('User account not found, signing out:', data.error);
         toast({
           title: 'Session Expired',
           description: 'Please sign in again to continue.',

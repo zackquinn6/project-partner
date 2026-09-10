@@ -647,7 +647,6 @@ export function RiskManagementWindow({
     setLoading(true);
     try {
       if (mode === 'template' && projectId) {
-        console.log('🔍 RiskManagementWindow: Fetching risks for template project:', projectId);
         // First, check if this is a revision and get the parent/template project ID
         let templateProjectId = projectId;
         
@@ -662,7 +661,6 @@ export function RiskManagementWindow({
         } else if (projectData?.parent_project_id) {
           // This is a revision, use the parent project ID
           templateProjectId = projectData.parent_project_id;
-          console.log('📋 RiskManagementWindow: Detected revision, using parent project ID:', templateProjectId);
         }
 
         setTemplateProjectIdForRisks(templateProjectId);
@@ -680,7 +678,6 @@ export function RiskManagementWindow({
 
         let mergedRisksData: any[] = [];
         if (standardProject.id === templateProjectId) {
-          console.log('📊 RiskManagementWindow: Template is the standard foundation; querying only foundation risks');
           const { data, error } = await supabase
             .from('project_risks')
             .select('*')
@@ -690,7 +687,6 @@ export function RiskManagementWindow({
           if (error) throw error;
           mergedRisksData = data || [];
         } else {
-          console.log('📊 RiskManagementWindow: Querying foundation + project risks for merged view');
           const [{ data: foundationRisks, error: foundationError }, { data: projectRisks, error: projectRisksError }] =
             await Promise.all([
               supabase

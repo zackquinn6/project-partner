@@ -63,7 +63,6 @@ export const ProcessImprovementEngine: React.FC<ProcessImprovementEngineProps> =
     setAnalysisComplete(false);
 
     try {
-      console.log('Starting process improvement analysis for project:', project.name);
       
       const { data, error } = await supabase.functions.invoke('process-improvement-analysis', {
         body: { project }
@@ -73,8 +72,6 @@ export const ProcessImprovementEngine: React.FC<ProcessImprovementEngineProps> =
         console.error('Analysis error:', error);
         throw new Error(error.message || 'Analysis failed');
       }
-
-      console.log('Analysis completed successfully:', data);
       
       setImprovements(data.improvements || []);
       setSearchQueriesUsed(data.searchQueriesUsed || []);
@@ -210,7 +207,6 @@ export const ProcessImprovementEngine: React.FC<ProcessImprovementEngineProps> =
         break;
 
       default:
-        console.log('Improvement type not yet implemented:', improvement.type);
     }
 
     return updatedProject;

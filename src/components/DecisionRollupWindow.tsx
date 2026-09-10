@@ -212,26 +212,21 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
 
   // Handle audible options
   const handleAudibleOptionSelect = (option: string) => {
-    console.log('🎯 DecisionRollup: Audible option selected:', option);
     setSelectedAudibleOption(option);
     onOpenChange(false);
     
     // Emit custom events for the UserView to handle these window openings
     switch (option) {
       case 'Schedule update needed':
-        console.log('🎯 DecisionRollup: Dispatching openProjectScheduler event');
         window.dispatchEvent(new CustomEvent('openProjectScheduler'));
         break;
       case 'New materials needed':
-        console.log('🎯 DecisionRollup: Dispatching openMaterialsSelection event');
         window.dispatchEvent(new CustomEvent('openMaterialsSelection'));
         break;
       case 'New work needed':
-        console.log('🎯 DecisionRollup: Dispatching openProjectCustomizer event with unplanned-work mode');
         window.dispatchEvent(new CustomEvent('openProjectCustomizer', { detail: { mode: 'unplanned-work' } }));
         break;
       default:
-        console.log('🎯 DecisionRollup: Unknown option:', option);
         break;
     }
   };

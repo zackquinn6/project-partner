@@ -362,15 +362,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   const handleSave = useCallback(async () => {
     if (!currentProjectRun) return;
     
-    console.log('🚀 ProjectProfileStep.handleSave: Starting save with form data:', {
-      customProjectName: projectForm.customProjectName,
-      initialSizing: projectForm.initialSizing,
-      initialTimeline: projectForm.initialTimeline,
-      initialBudget: projectForm.initialBudget,
-      selectedHomeId,
-      homesCount: homes.length
-    });
-    
     // REQUIREMENT 4: Only require home selection if user has multiple homes
     if (homes.length > 1 && !selectedHomeId) {
       toast.error('Please select a home for this project');
@@ -486,13 +477,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         if (!isNaN(parsedSizing) && parsedSizing > 0) {
           const projectScaleUnit = scalingUnit || 'per item';
           
-          console.log('💾 ProjectProfileStep: FIRST saving sizing to Room 1 space tables:', {
-            room1SpaceId,
-            size: parsedSizing,
-            unit: projectScaleUnit
-          });
-          console.log('📝 Note: Space tables MUST be saved FIRST, then project_runs (for database trigger)');
-          
           // Update Room 1 space with sizing (scale_value, scale_unit, sizing_by_unit)
           const { data: room1Row } = await supabase
             .from('project_run_spaces')
@@ -516,8 +500,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             console.error('❌ Error updating Room 1 sizing:', spaceUpdateError);
             throw spaceUpdateError;
           }
-
-          console.log('✅ Sizing saved to project_run_spaces');
         }
       }
       
@@ -531,14 +513,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         updated_at: new Date().toISOString()
       };
       
-      console.log('💾 ProjectProfileStep: Saving ALL 3 fields to project_runs (after space tables created):', {
-        projectRunId: currentProjectRun.id,
-        initial_budget: finalBudgetValue,
-        initial_timeline: projectForm.initialTimeline || null,
-        initial_sizing: finalSizingValue,
-        room1Exists: !!room1SpaceId
-      });
-      
       const { error: mainError, data: mainUpdateResult } = await supabase
         .from('project_runs')
         .update(mainUpdateData)
@@ -549,14 +523,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         console.error('❌ ProjectProfileStep: Error saving to project_runs:', mainError);
         throw mainError;
       }
-      
-      if (mainUpdateResult && mainUpdateResult.length > 0) {
-        console.log('✅ ALL 3 fields saved to project_runs (canonical source):', {
-          initial_budget: mainUpdateResult[0].initial_budget,
-          initial_timeline: mainUpdateResult[0].initial_timeline,
-          initial_sizing: mainUpdateResult[0].initial_sizing
-        });
-      }
 
       // CRITICAL: Final verification - fetch the saved values from database
       const { data: verificationData, error: verificationError } = await supabase
@@ -566,12 +532,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         .single();
       
       if (!verificationError && verificationData) {
-        console.log('✅ ProjectProfileStep: Final verification - ALL 3 fields in project_runs:', {
-          initial_budget: verificationData.initial_budget,
-          initial_timeline: verificationData.initial_timeline,
-          initial_sizing: verificationData.initial_sizing
-        });
-        console.log('📝 Note: initial_sizing is also stored in project_run_spaces (scale_value / sizing_by_unit)');
         
         // Check for mismatches
         if (verificationData.initial_budget !== finalBudgetValue) {
@@ -616,7 +576,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         
         // Compare normalized values
         if (normalizedActual !== normalizedExpected) {
-          console.error('❌ initial_timeline mismatch:', { 
+          console.error('initial_timeline mismatch:', { 
             expected: expectedTimeline, 
             actual: actualTimeline, 
             normalizedExpected,
@@ -625,12 +585,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
               expectedType: typeof expectedTimeline,
               actualType: typeof actualTimeline
             }
-          });
-        } else {
-          console.log('✅ initial_timeline verified:', { 
-            expected: expectedTimeline, 
-            actual: actualTimeline, 
-            normalized: normalizedActual 
           });
         }
         if (verificationData.initial_sizing !== finalSizingValue) {
@@ -651,16 +605,8 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         updatedAt: new Date()
       };
       
-      console.log('🔄 ProjectProfileStep: Updating context with ALL saved values:', {
-        initial_budget: contextUpdatedRun.initial_budget,
-        initial_timeline: contextUpdatedRun.initial_timeline,
-        initial_sizing: contextUpdatedRun.initial_sizing
-      });
-      
       // Update context (this won't trigger another database save since we already saved above)
       await updateProjectRun(contextUpdatedRun);
-      
-      console.log('✅ ProjectProfileStep.handleSave: COMPLETED SUCCESSFULLY - all 3 fields saved to database');
             
       // CRITICAL: Don't call onComplete() here - let the parent component (KickoffWorkflow) handle step completion
       // This prevents double-calling handleStepComplete and ensures proper sequencing

@@ -108,23 +108,18 @@ export function MobileProjectCard({
   };
   
   const handleClick = (e: React.MouseEvent) => {
-    console.log("🎯 Card clicked - target:", e.target, "currentTarget:", e.currentTarget);
     
     // Don't handle card clicks if clicking on a button
     if ((e.target as HTMLElement).closest('button')) {
-      console.log("🎯 Click on button detected, ignoring card click");
       return;
     }
     
     // If delete button is showing, don't trigger onSelect
     if (swipeOffset > 50) {
-      console.log("🎯 Delete button showing, preventing onSelect");
       e.preventDefault();
       e.stopPropagation();
       return;
     }
-    
-    console.log("🎯 Calling onSelect from card click");
     onSelect();
   };
   
@@ -346,8 +341,6 @@ function ActionButton({
     e.stopPropagation();
     
     if (isLoading) return;
-    
-    console.log(`🎯 ActionButton clicked: ${status}`);
     setIsLoading(true);
     
     // REMOVED artificial delay - direct execution

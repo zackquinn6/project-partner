@@ -135,11 +135,6 @@ export function MaintenanceNotifications({
     }
 
     const testEmail = emailAddress.trim();
-    console.log(`${DEBUG_PREFIX} 2. Resolved email`, {
-      testEmail: testEmail || '(empty)',
-      userEmail: user?.email ?? '(no user email)',
-      inputEmailAddress: emailAddress.trim() || '(empty)',
-    });
     if (!testEmail) {
       console.warn(`${DEBUG_PREFIX} 2b. Abort — no email address available`);
       toast({
@@ -164,20 +159,10 @@ export function MaintenanceNotifications({
       email: testEmail,
       userName,
     };
-    console.log(`${DEBUG_PREFIX} 3. Invoking edge function send-maintenance-reminder`, { payload });
     setSendingTest(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-maintenance-reminder', {
         body: payload,
-      });
-      console.log(`${DEBUG_PREFIX} 4. Edge function returned`, {
-        hasError: !!error,
-        errorKeys: error ? Object.keys(error) : [],
-        errorMessage: (error as { message?: string } | null)?.message,
-        errorDetails: (error as { details?: string } | null)?.details,
-        dataType: data === null ? 'null' : typeof data,
-        dataKeys: data && typeof data === 'object' ? Object.keys(data) : [],
-        data,
       });
       if (error) {
         let errMsg = 'Failed to send test email';
@@ -204,7 +189,6 @@ export function MaintenanceNotifications({
         console.error(`${DEBUG_PREFIX} 5b. Body contained error`, { bodyError });
         throw new Error(bodyError);
       }
-      console.log(`${DEBUG_PREFIX} 6. Success — showing toast for ${testEmail}`);
           } catch (error) {
       console.error(`${DEBUG_PREFIX} 7. Caught error`, {
         message: error instanceof Error ? error.message : String(error),
@@ -217,7 +201,6 @@ export function MaintenanceNotifications({
       });
     } finally {
       setSendingTest(false);
-      console.log(`${DEBUG_PREFIX} 8. Done (sendingTest cleared)`);
     }
   };
   const showSMSNotAvailable = () => {

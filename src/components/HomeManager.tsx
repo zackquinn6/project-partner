@@ -182,7 +182,6 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
     }
   };
   const handleEdit = (home: Home) => {
-    console.log('🏠 DEBUG: Editing home with type:', home.home_type);
     setEditingHome(home);
     setFormData({
       name: home.name,

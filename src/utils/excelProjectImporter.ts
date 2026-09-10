@@ -48,9 +48,7 @@ export async function importExcelDirectToProject(file: File, projectId: string):
             rowData[cleanHeader] = row[index] || '';
           });
           return rowData as ExcelProjectRow;
-        }).filter(row => row.phase && row.operation && row.step); // Filter out empty rows
-        
-        console.log('Parsed Excel rows:', excelRows.length);
+        }).filter(row => row.phase && row.operation && row.step);
         
         // Convert to Project structure
         const project = convertExcelDataToProject(excelRows, projectId);

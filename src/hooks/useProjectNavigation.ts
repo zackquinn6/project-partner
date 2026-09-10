@@ -13,7 +13,6 @@ export function useProjectNavigation() {
     projectRun: ProjectRun,
     onNavigate?: (mode: 'workflow') => void
   ) => {
-    console.log('🎯 useProjectNavigation: Starting navigation to:', projectRun.name);
     
     // 1. Set project run immediately (synchronous)
     setCurrentProjectRun(projectRun);
@@ -23,11 +22,8 @@ export function useProjectNavigation() {
     
     // 3. Signal navigation mode change (synchronous)
     if (onNavigate) {
-      console.log('🎯 useProjectNavigation: Calling onNavigate with workflow mode');
       onNavigate('workflow');
     }
-    
-    console.log('🎯 useProjectNavigation: Navigation completed for:', projectRun.name);
   }, [setCurrentProjectRun]);
 
   return { navigateToProject };

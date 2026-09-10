@@ -335,8 +335,6 @@ export function LibraryItemForm({
           toast.error('You must be logged in to create library items');
           return;
         }
-        // Create new item
-        console.log(`💾 Creating new ${type} item:`, dataToSave);
         const { error } = await supabase
           .from(type)
           .insert({
@@ -352,7 +350,6 @@ export function LibraryItemForm({
           }
           throw error;
         }
-        console.log(`✅ Successfully created new ${type} item`);
       }
 
       onSave();

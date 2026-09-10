@@ -159,23 +159,8 @@ export function organizeStepsForSinglePieceFlow(
     return !isStandardPhase; // Only include non-standard phases
   });
   
-  console.log('🔍 organizeStepsForSinglePieceFlow (CUSTOM PHASES ONLY):', {
-    inputPhasesCount: phases.length,
-    customPhasesCount: customPhases.length,
-    customPhases: customPhases.map(p => p.name),
-    sortedSpacesCount: sortedSpaces.length,
-    sortedSpaces: sortedSpaces.map(s => s.space_name),
-    note: 'Standard phases are handled at top level in organizeWorkflowNavigation'
-  });
-  
   // 2. Create space containers with ALL custom phases (if spaces exist)
   if (sortedSpaces.length > 0 && customPhases.length > 0) {
-    console.log('🔧 Creating space containers for single-piece-flow:', {
-      spacesCount: sortedSpaces.length,
-      customPhasesCount: customPhases.length,
-      spaces: sortedSpaces.map(s => s.space_name),
-      customPhases: customPhases.map(p => p.name)
-    });
     
     sortedSpaces.forEach(space => {
       // Collect ALL steps from ALL custom phases for this space
@@ -212,11 +197,7 @@ export function organizeStepsForSinglePieceFlow(
           phaseSteps.push(...operationSteps);
           allSpaceSteps.push(...operationSteps);
         });
-        
-        console.log(`  - Space "${space.space_name}": Phase "${phase.name}" = ${phaseSteps.length} steps`);
       });
-      
-      console.log(`  - Created space container "${space.space_name}" with ${allSpaceSteps.length} total steps from ${customPhases.length} phases`);
       
       result.push({
         type: 'space-container',
@@ -439,26 +420,6 @@ export function organizeWorkflowNavigation(
     }
   });
   
-  console.log('🔍 Phase categorization:', {
-    totalPhases: phases.length,
-    standardPhasesCount: standardPhases.length,
-    customPhasesCount: customPhases.length,
-    closeProjectPhase: !!closeProjectPhase,
-    phaseDetails: phases.map(p => ({
-      name: p.name,
-      isStandard: p.isStandard,
-      isLinked: p.isLinked,
-      phaseOrderNumber: p.phaseOrderNumber,
-      categorizedAs: p.isStandard === true && !p.isLinked && p.phaseOrderNumber === 'last' 
-        ? 'close-project' 
-        : p.isStandard === true && !p.isLinked 
-          ? 'standard' 
-          : 'custom',
-      operationsCount: p.operations?.length || 0,
-      totalSteps: p.operations?.reduce((sum, op) => sum + (op.steps?.length || 0), 0) || 0
-    }))
-  });
-  
   // Sort standard phases by phaseOrderNumber
   standardPhases.sort((a, b) => {
     if (a.phaseOrderNumber === 'first') return -1;
@@ -470,20 +431,6 @@ export function organizeWorkflowNavigation(
   });
   
   const flowType = getFlowType(projectRun);
-  
-  console.log('🔄 organizeWorkflowNavigation:', {
-    phasesCount: phases.length,
-    spacesCount: spaces.length,
-    flowType,
-    projectRunId: projectRun?.id,
-    schedule_optimization_method: projectRun?.schedule_optimization_method,
-    standardPhasesCount: standardPhases.length,
-    standardPhases: standardPhases.map(p => p.name),
-    customPhasesCount: customPhases.length,
-    customPhases: customPhases.map(p => p.name),
-    phases: phases.map(p => ({ name: p.name, isStandard: p.isStandard, isLinked: p.isLinked })),
-    spaces: spaces.map(s => ({ name: s.space_name, priority: s.priority }))
-  });
   
   // Build result: Standard phases first, then flow-specific organization, then Close Project
   const result: Array<{
@@ -507,15 +454,6 @@ export function organizeWorkflowNavigation(
       }))
     );
     
-    console.log(`📋 Adding standard phase "${phase.name}":`, {
-      operationsCount: phase.operations?.length || 0,
-      stepsCount: steps.length,
-      operations: phase.operations?.map(op => ({
-        name: op.name,
-        stepsCount: op.steps?.length || 0
-      }))
-    });
-    
     result.push({
       type: 'standard-phase',
       id: phase.id,
@@ -535,13 +473,6 @@ export function organizeWorkflowNavigation(
       // These functions should only return custom-phase types, but be defensive
       return item.type !== 'standard-phase' && item.type !== 'close-project';
     });
-    console.log('📋 Batch flow custom phases result:', {
-      inputCustomPhasesCount: customPhases.length,
-      batchResultCount: batchResult.length,
-      filteredCount: customOnly.length,
-      resultTypes: batchResult.map(r => r.type),
-      filteredTypes: customOnly.map(r => r.type)
-    });
     result.push(...customOnly);
   } else {
     // Default to single-piece-flow
@@ -552,15 +483,6 @@ export function organizeWorkflowNavigation(
       // Only include items that are NOT standard phases or close-project
       // These functions should only return space-container types, but be defensive
       return item.type !== 'standard-phase' && item.type !== 'close-project';
-    });
-    console.log('📋 Single-piece flow custom phases result:', {
-      inputCustomPhasesCount: customPhases.length,
-      singlePieceResultCount: singlePieceResult.length,
-      filteredCount: customOnly.length,
-      resultTypes: singlePieceResult.map(r => r.type),
-      filteredTypes: customOnly.map(r => r.type),
-      resultStepsCount: singlePieceResult.reduce((sum, r) => sum + r.steps.length, 0),
-      filteredStepsCount: customOnly.reduce((sum, r) => sum + r.steps.length, 0)
     });
     result.push(...customOnly);
   }
@@ -586,17 +508,6 @@ export function organizeWorkflowNavigation(
   }
   
   const totalSteps = result.reduce((sum, r) => sum + r.steps.length, 0);
-  console.log('📋 Final navigation result:', {
-    totalItems: result.length,
-    totalSteps: totalSteps,
-    items: result.map(r => ({ 
-      type: r.type, 
-      name: r.name, 
-      spacesCount: r.spaces?.length || 0, 
-      stepsCount: r.steps.length,
-      hasSteps: r.steps.length > 0
-    }))
-  });
   
   // CRITICAL: If result has no steps, log a warning
   if (totalSteps === 0 && phases.length > 0) {

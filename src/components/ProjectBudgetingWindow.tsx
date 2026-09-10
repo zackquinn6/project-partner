@@ -111,15 +111,6 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
     // Debug: Log initial_budget value to help diagnose the issue
     if (currentProjectRun && open) {
       const budgetValue = (currentProjectRun as any)?.initial_budget || (currentProjectRun as any)?.initialBudget;
-      console.log('💰 ProjectBudgetingWindow: Checking initial_budget:', {
-        hasCurrentProjectRun: !!currentProjectRun,
-        initial_budget: (currentProjectRun as any)?.initial_budget,
-        initialBudget: (currentProjectRun as any)?.initialBudget,
-        budgetValue,
-        budgetValueType: typeof budgetValue,
-        allKeys: Object.keys(currentProjectRun).filter(k => k.toLowerCase().includes('budget')),
-        projectRunId: currentProjectRun.id
-      });
       // Update budget goal state
       setBudgetGoal(budgetValue);
     }
@@ -156,10 +147,6 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         
         setBudgetItems(normalizedItems);
         setActualEntries(normalizedEntries);
-        console.log('✅ Loaded budget data:', { 
-          itemsCount: normalizedItems.length, 
-          entriesCount: normalizedEntries.length 
-        });
       } catch (error) {
         console.error('❌ Error parsing budget data:', error);
         toast({ 
@@ -183,7 +170,6 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
     if (open && currentProjectRun?.id) {
       const fetchBudgetGoal = async () => {
         try {
-          console.log('🔍 ProjectBudgetingWindow: Fetching initial_budget from database for project:', currentProjectRun.id);
           const { data: freshRun, error } = await supabase
             .from('project_runs')
             .select('initial_budget')
@@ -200,18 +186,11 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
           
           if (freshRun) {
             const budgetValue = freshRun.initial_budget || null;
-            console.log('✅ ProjectBudgetingWindow: Fetched initial_budget from database:', {
-              value: budgetValue,
-              type: typeof budgetValue,
-              isEmpty: !budgetValue || budgetValue === '',
-              projectRunId: currentProjectRun.id
-            });
             setBudgetGoal(budgetValue);
             
             // Also update context if it's missing or different
             const contextBudget = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
             if (contextBudget !== budgetValue) {
-              console.log('🔄 ProjectBudgetingWindow: Updating context with fresh budget value');
               const updatedRun = {
                 ...currentProjectRun,
                 initial_budget: budgetValue
@@ -321,12 +300,6 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         lastUpdated: new Date().toISOString()
       };
 
-      console.log('💾 ProjectBudgetingWindow: Saving budget data:', {
-        itemsCount: items.length,
-        entriesCount: entries.length,
-        projectRunId: currentProjectRun.id
-      });
-
       const updatedProjectRun = {
         ...currentProjectRun,
         budget_data: budgetData
@@ -338,8 +311,6 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
       // This ensures the UI shows the saved data even if context hasn't updated yet
       setBudgetItems(items);
       setActualEntries(entries);
-      
-      console.log('✅ Budget data saved successfully to database');
     } catch (error) {
       console.error('❌ Error saving budget data:', error);
       toast({ 
@@ -614,9 +585,6 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
           // Check if performance window is actually open before closing
           if (!performanceWindowOpen) {
             onOpenChange(false);
-          } else {
-            // Performance window is open, don't close budgeting window
-            console.log('💰 Budgeting window: Preventing close because performance window is open');
           }
         }
       }} 

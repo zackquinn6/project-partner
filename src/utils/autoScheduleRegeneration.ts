@@ -297,8 +297,6 @@ export async function autoRegenerateSchedule(
     window.dispatchEvent(new CustomEvent('project-scheduler-updated', {
       detail: { projectRunId: projectRun.id }
     }));
-    
-    console.log('✅ Auto-regenerated schedule successfully');
     return true;
   } catch (error) {
     console.error('Error auto-regenerating schedule:', error);

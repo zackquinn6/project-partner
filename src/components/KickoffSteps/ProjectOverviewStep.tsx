@@ -340,32 +340,6 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const displayBudgetPerTypicalSize = rawBudgetPerTypicalSize && typeof rawBudgetPerTypicalSize === 'string' 
     ? (rawBudgetPerTypicalSize.trim() || null)
     : (rawBudgetPerTypicalSize || null);
-  
-  // Debug logging to help diagnose missing fields
-  useEffect(() => {
-    console.log('📊 ProjectOverviewStep - Display Values:', {
-      hasTemplateProject: !!templateProject,
-      templateProjectId: templateProject?.id,
-      templateProjectName: templateProject?.name,
-      displaySkillLevel,
-      templateSkillLevel: templateProject?.skillLevel,
-      displayEffortLevel,
-      templateEffortLevel: templateProject?.effortLevel,
-      displayProjectChallenges,
-      templateProjectChallenges: templateProject?.projectChallenges,
-      // All 4 estimated time fields
-      displayEstimatedTime, // Field 1: Estimated time per unit
-      displayScalingUnit, // Field 2: Unit (scaling unit)
-      displayEstimatedTotalTime, // Field 3: Total time per typical size
-      displayTypicalProjectSize, // Field 4: Typical project size (number of units)
-      templateEstimatedTime: templateProject?.estimatedTime,
-      templateEstimatedTotalTime: templateProject?.estimatedTotalTime,
-      templateTypicalProjectSize: templateProject?.typicalProjectSize,
-      templateScalingUnit: templateProject?.scalingUnit,
-      fetchedProjectInfo,
-      currentProjectRunEstimatedTime: (currentProjectRun as any)?.estimatedTime
-    });
-  }, [templateProject, displaySkillLevel, displayEffortLevel, displayProjectChallenges, displayEstimatedTime, displayScalingUnit, displayEstimatedTotalTime, displayTypicalProjectSize, fetchedProjectInfo, currentProjectRun]);
 
   // Helper function to get position index for slider (0, 1, or 2)
   const getLevelPosition = (level: string | null | undefined, levels: string[]): number => {

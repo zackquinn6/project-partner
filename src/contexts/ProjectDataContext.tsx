@@ -1,11 +1,10 @@
-import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useEffect } from 'react';
 import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
 import { useDataFetch } from '@/hooks/useDataFetch';
 import { useAuth } from './AuthContext';
 import { useGuest } from './GuestContext';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ProjectDataContextType {
   projects: Project[];
@@ -178,21 +177,6 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
           phases = typeof run.phases === 'string' 
             ? JSON.parse(run.phases) 
             : run.phases;
-          
-          // ROOT CAUSE DEBUG: Log what's actually stored in database
-          if (run.id) {
-            console.log('🔍 ProjectDataContext - Project Run Phases (FROM DATABASE):', {
-              runId: run.id,
-              runName: run.name,
-              phasesRawType: typeof run.phases,
-              phasesIsString: typeof run.phases === 'string',
-              phasesParsedLength: Array.isArray(phases) ? phases.length : 'not array',
-              firstPhase: phases[0],
-              firstPhaseOperations: phases[0]?.operations,
-              firstPhaseOperationsLength: Array.isArray(phases[0]?.operations) ? phases[0].operations.length : 'N/A',
-              RAW_PHASES_JSON: typeof run.phases === 'string' ? run.phases : JSON.stringify(run.phases, null, 2)
-            });
-          }
         } catch (e) {
           console.error('Failed to parse project run phases JSON:', e);
           phases = [];
@@ -285,59 +269,16 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     cacheKey: 'projects',
     enabled: true // Explicitly enable
   });
-  
-  // Additional debug: Try direct query if projects are empty
-  React.useEffect(() => {
-    if (!projectsLoading && projects.length === 0 && !projectsError) {
-      console.log('⚠️ ProjectDataContext: No projects loaded, trying direct query...');
-      supabase
-        .from('projects')
-        .select('id, name, publish_status, revision_number')
-        .limit(5)
-        .then(({ data, error }) => {
-          console.log('🔍 Direct query to projects table:', {
-            dataCount: data?.length || 0,
-            error,
-            sample: data?.[0]
-          });
-          
-          // Also try projects table directly to see if data exists
-          if (data?.length === 0) {
-            supabase
-              .from('projects')
-              .select('id, name, publish_status, revision_number')
-              .in('publish_status', ['published', 'beta-testing'])
-              .limit(5)
-              .then(({ data: projectsData, error: projectsError }) => {
-                console.log('🔍 Direct query to projects table (published only):', {
-                  dataCount: projectsData?.length || 0,
-                  error: projectsError,
-                  sample: projectsData?.[0]
-                });
-              });
-          }
-        });
-    }
-  }, [projectsLoading, projects.length, projectsError]);
-  
-  // Debug logging
+
   React.useEffect(() => {
     if (projectsError) {
-      console.error('❌ ProjectDataContext: Error fetching projects:', projectsError);
+      console.error('ProjectDataContext: Error fetching projects:', projectsError);
     }
-    if (projects) {
-      console.log('📦 ProjectDataContext: Fetched projects:', { 
-        count: projects.length, 
-        projectNames: projects.map(p => p.name),
-        firstProject: projects[0] ? { id: projects[0].id, name: projects[0].name, phasesCount: projects[0].phases?.length || 0 } : null
-      });
-    }
-  }, [projects, projectsError, projectsLoading]);
+  }, [projectsError]);
 
   // Listen for refetch requests from cascade operations
   useEffect(() => {
     const handleRefetchRequest = () => {
-      console.log('🔄 ProjectDataContext: Refetching projects due to cascade');
       refetchProjects();
     };
 
@@ -347,18 +288,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
 
   // Fetch project runs data - only when authenticated
   const shouldFetchProjectRuns = !isGuest && !!user;
-  
-  // Debug log for project runs fetching
-  React.useEffect(() => {
-    if (shouldFetchProjectRuns) {
-      console.log('📊 ProjectDataContext - Fetching project runs for user:', {
-        userId: user.id,
-        userEmail: user.email,
-        shouldFetch: shouldFetchProjectRuns
-      });
-    }
-  }, [shouldFetchProjectRuns, user?.id]);
-  
+
   const {
     data: projectRuns,
     loading: projectRunsLoading,
@@ -374,16 +304,6 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     dependencies: [user?.id, shouldFetchProjectRuns],
     cacheKey: shouldFetchProjectRuns ? `project_runs_${user.id}` : undefined,
     enabled: shouldFetchProjectRuns
-  });
-
-  // Project runs already have complete phases JSON when created (immutable snapshot)
-  // No need to enrich from template_steps - just use them as-is
-  
-  // Log project data being returned for debugging
-  console.log('📦 ProjectDataContext returning:', {
-    projectCount: projects.length,
-    projectsWithPhases: projects.filter(p => p.phases && p.phases.length > 0).length,
-    projectPhasesCounts: projects.map(p => ({ name: p.name, phaseCount: p.phases?.length || 0 }))
   });
 
   const value = {

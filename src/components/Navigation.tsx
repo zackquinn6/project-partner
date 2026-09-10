@@ -129,15 +129,11 @@ export default function Navigation({
   useEffect(() => {
     // Only handle Navigation-specific events
     const handleToolsLibraryEvent = (event: Event) => {
-      console.log('🔧 Opening Tools Library');
       event.stopPropagation();
       setIsToolsLibraryOpen(true);
     };
     const handleNavigateToProjectsEvent = (event: Event) => {
-      console.log('🔄 Navigation: My Projects event - checking access');
       event.stopPropagation();
-
-      console.log('✅ Navigation: Opening project dashboard listing');
       onViewChange('user');
       onProjectsView?.();
     };
@@ -166,7 +162,6 @@ export default function Navigation({
     }
   };
   const handleProjectSelect = async (projectRunId: string) => {
-    console.log('🎯 Navigation: Fetching fresh project data from database for:', projectRunId);
     
     // CRITICAL: Clear currentProject to prevent edit workflow from opening
     setCurrentProject(null);
@@ -234,10 +229,8 @@ export default function Navigation({
       
       // Try to fetch template and rebuild phases
       if (freshRun.project_id) {
-        console.log('🔄 Attempting to fetch template phases for:', freshRun.project_id);
         const template = projects.find(p => p.id === freshRun.project_id);
         if (template?.phases && Array.isArray(template.phases) && template.phases.length > 0) {
-          console.log('✅ Found template phases, using template data');
           parsedPhases = template.phases;
         } else {
           const errorMsg = `Project run "${freshRun.name}" has no phases and template is unavailable. Please recreate this project.`;
@@ -297,15 +290,6 @@ export default function Navigation({
         : undefined,
       quality_control_settings: parseQualityControlSettingsColumn(freshRun.quality_control_settings)
     };
-    
-    console.log('✅ Navigation: Fresh project data loaded:', {
-      name: projectRun.name,
-      progress: projectRun.progress,
-      completedStepsCount: projectRun.completedSteps.length,
-      completedSteps: projectRun.completedSteps,
-      phasesCount: projectRun.phases?.length || 0,
-      hasPhases: !!(projectRun.phases && Array.isArray(projectRun.phases) && projectRun.phases.length > 0)
-    });
 
     if (!projectRun.isManualEntry) {
       if (isRiskFocusRun(projectRun)) {
@@ -352,11 +336,6 @@ export default function Navigation({
     
     // Update projectRuns cache to include this project run if it's not already there
     const existingRun = projectRuns.find(run => run.id === projectRun.id);
-    if (!existingRun) {
-      // Project run not in cache - add it temporarily
-      // UserView will fetch it properly, but having it in context helps
-      console.log('⚠️ Navigation: Project run not in cache, will be fetched by UserView');
-    }
     
     // Call onProjectSelected to clear forceListingMode in Index.tsx
     onProjectSelected?.();
@@ -426,7 +405,6 @@ export default function Navigation({
                 <DropdownMenuContent align="start" className="w-80 z-50 bg-background border shadow-lg" sideOffset={8}>
                   {/* My Projects Link at top */}
                   <DropdownMenuItem onClick={() => {
-                  console.log('🔄 Navigation: My Projects — project dashboard listing');
                   setCurrentProjectRun(null);
                   setCurrentProject(null);
                   onViewChange('user');

@@ -47,20 +47,13 @@ export const clearAllTools = async (): Promise<boolean> => {
     const { data: toolVariations } = await db.from('tool_variations').select('id');
 
     const variationIds = toolVariations?.map(v => v.id) || [];
-
-    // Delete in correct order to respect foreign key constraints (pricing lives on tool_variations.pricing)
-    console.log('Deleting variation warning flags...');
     if (variationIds.length > 0) {
       await db
         .from('variation_warning_flags')
         .delete()
         .in('variation_instance_id', variationIds);
     }
-
-    console.log('Deleting tool variations...');
     await db.from('tool_variations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-
-    console.log('Deleting core tools...');
     const { error } = await db
       .from('tools')
       .delete()
@@ -71,8 +64,6 @@ export const clearAllTools = async (): Promise<boolean> => {
       toast.error('Failed to clear tools');
       return false;
     }
-
-    console.log('All tools cleared successfully');
     return true;
   } catch (error) {
     console.error('Error clearing tools:', error);
@@ -83,7 +74,6 @@ export const clearAllTools = async (): Promise<boolean> => {
 
 export const clearAllMaterials = async (): Promise<boolean> => {
   try {
-    console.log('Deleting core materials...');
     const { error } = await db
       .from('materials')
       .delete()
@@ -94,8 +84,6 @@ export const clearAllMaterials = async (): Promise<boolean> => {
       toast.error('Failed to clear materials');
       return false;
     }
-
-    console.log('All materials cleared successfully');
     return true;
   } catch (error) {
     console.error('Error clearing materials:', error);
@@ -106,7 +94,6 @@ export const clearAllMaterials = async (): Promise<boolean> => {
 
 export const clearAllProjectRuns = async (): Promise<boolean> => {
   try {
-    console.log('Deleting all project runs...');
     const { error } = await db
       .from('project_runs')
       .delete()
@@ -117,8 +104,6 @@ export const clearAllProjectRuns = async (): Promise<boolean> => {
       toast.error('Failed to clear project runs');
       return false;
     }
-
-    console.log('All project runs cleared successfully');
         return true;
   } catch (error) {
     console.error('Error clearing project runs:', error);
@@ -141,22 +126,16 @@ export const clearAllProjectTemplates = async (): Promise<boolean> => {
       toast.error('Cannot find Standard Project - aborting cleanup');
       return false;
     }
-
-    console.log('Fetching all project templates except Standard Project...');
     const { data: projects } = await db
       .from('projects')
       .select('id')
       .neq('id', standardProject.id);
 
     if (!projects || projects.length === 0) {
-      console.log('No templates to delete');
             return true;
     }
 
     const projectIds = projects.map(p => p.id);
-
-    // Delete template_steps first
-    console.log('Deleting template steps...');
     const { data: operations } = await db
       .from('template_operations')
       .select('id')
@@ -169,16 +148,10 @@ export const clearAllProjectTemplates = async (): Promise<boolean> => {
         .delete()
         .in('operation_id', operationIds);
     }
-
-    // Delete template_operations
-    console.log('Deleting template operations...');
     await db
       .from('template_operations')
       .delete()
       .in('project_id', projectIds);
-
-    // Delete projects
-    console.log('Deleting project templates...');
     const { error } = await db
       .from('projects')
       .delete()
@@ -189,8 +162,6 @@ export const clearAllProjectTemplates = async (): Promise<boolean> => {
       toast.error('Failed to clear project templates');
       return false;
     }
-
-    console.log(`Deleted ${projectIds.length} project templates successfully`);
         return true;
   } catch (error) {
     console.error('Error clearing project templates:', error);

@@ -63,14 +63,12 @@ export function MultiSelectLibraryDialog({
 
   useEffect(() => {
     if (open && user) {
-      console.log(`🚀 MultiSelectLibraryDialog opened for ${type}`);
       fetchItems();
       fetchUserOwnedItems();
     }
   }, [open, type, user]);
 
   const fetchItems = async () => {
-    console.log(`📚 Fetching ${type} from library...`);
     setLoading(true);
     try {
       // Materials table uses 'name' column, tools table uses 'name' column
@@ -118,8 +116,6 @@ export function MultiSelectLibraryDialog({
           throw error;
         }
 
-        console.log(`✅ Fetched ${data?.length || 0} ${type} from database`);
-
         if (!data || data.length === 0) {
           console.warn(`⚠️ No ${type} found in library! You need to add ${type} to the library first using the "Manage ${type === 'tools' ? 'Tools' : 'Materials'} Library" button.`);
         }
@@ -142,7 +138,6 @@ export function MultiSelectLibraryDialog({
       }
       
       setItems(allItems);
-      console.log(`📦 Processed ${allItems.length} items for UI:`, allItems.map(i => i.item));
       
       // Fetch variations for all items
       if (type !== 'ppe') {
@@ -171,7 +166,6 @@ export function MultiSelectLibraryDialog({
       if (error) throw error;
       
       const ownedItems = (data?.[columnName] as any[]) || [];
-      console.log(`User owned ${type}:`, ownedItems);
       setUserOwnedItems(ownedItems);
     } catch (error) {
       console.error(`Error fetching user owned ${type}:`, error);
@@ -181,8 +175,6 @@ export function MultiSelectLibraryDialog({
 
   const fetchItemVariations = async (itemsList: any[]) => {
     if (itemsList.length === 0) return;
-    
-    console.log(`🔄 Fetching variations for ${itemsList.length} items...`);
     const variationsMap: Record<string, any[]> = {};
     
     try {
@@ -209,8 +201,6 @@ export function MultiSelectLibraryDialog({
           variationsMap[item.id] = [];
         }
       });
-      
-      console.log(`✅ Fetched variations for ${itemsList.length} items in one query`);
       setItemVariations(variationsMap);
     } catch (error) {
       console.error('Error fetching variations:', error);
@@ -369,26 +359,18 @@ export function MultiSelectLibraryDialog({
   };
 
   const handleVariationSelect = (variation: any) => {
-    console.log('🎯 Variation selected:', {
-      variationName: variation.name,
-      coreItemId: variation.coreItemId,
-      isPrime: variation.isPrime,
-      attributes: variation.attributes
-    });
     
     const selectedId = `${variation.coreItemId}_${JSON.stringify(variation.attributes)}_${variation.isPrime}`;
     
     setSelectedItems(prev => {
       const existing = prev.find(item => item.id === selectedId);
       if (existing) {
-        console.log('  ➕ Incrementing existing item quantity');
         return prev.map(item =>
           item.id === selectedId
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       } else {
-        console.log('  ✨ Adding new item to selection');
         const coreItem = items.find(i => i.id === variation.coreItemId);
         return [...prev, {
           id: selectedId,
@@ -408,8 +390,6 @@ export function MultiSelectLibraryDialog({
         }];
       }
     });
-    
-    console.log('  🔙 Closing variation selector');
     setSelectingVariationFor(null);
   };
 
@@ -455,10 +435,6 @@ export function MultiSelectLibraryDialog({
   };
 
   const handleConfirm = () => {
-    console.log('✅ Confirming selection:', {
-      selectedItemsCount: selectedItems.length,
-      items: selectedItems.map(i => i.item)
-    });
     onSelect(selectedItems);
     setSelectedItems([]);
     setSearchTerm('');

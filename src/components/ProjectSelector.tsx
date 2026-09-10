@@ -25,10 +25,6 @@ interface ProjectSelectorProps {
 export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = false, onProjectSelected, onEditProjectDetails }) => {
   const { projects, currentProject, setCurrentProject, addProject, updateProject, deleteProject, projectRuns } = useProject();
   const { user } = useAuth();
-  
-  // Debug logging
-  console.log('ProjectSelector - projects count:', projects.length, 'isAdminMode:', isAdminMode);
-  console.log('Projects available:', projects.map(p => ({ name: p.name, publishStatus: p.publishStatus })));
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
   const [isProjectSetupOpen, setIsProjectSetupOpen] = useState(false);
   const [newProjectForm, setNewProjectForm] = useState({
@@ -83,8 +79,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
   };
 
   const handleProjectSelect = (project: Project) => {
-    console.log('handleProjectSelect called with project:', project.name, 'ID:', project.id);
-    console.log('Current project:', currentProject?.name, 'ID:', currentProject?.id);
     
     if (project && project.id !== currentProject?.id) {
       setCurrentProject(project);
@@ -190,7 +184,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
 
   const handleDeleteProject = () => {
     if (!currentProject) return;
-    console.log('handleDeleteProject called for project:', currentProject.name, 'with id:', currentProject.id);
     deleteProject(currentProject.id);
   };
 
@@ -230,7 +223,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                     // - hidden: never show in selector
                     // - coming-soon: hide for non-admin users even if published
                     if (isHidden) {
-                      console.log('ProjectSelector filter: hiding hidden project', project.name);
                       return false;
                     }
                     if (!isAdminMode && isComingSoon) {
@@ -250,7 +242,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                     const isNotStandardProject = !(isStandardByFlag || isStandardById || isStandardByName);
 
                     const include = shouldInclude && isNotManualTemplate && isNotStandardProject;
-                    console.log('Project filter:', project.name, 'publishStatus:', project.publishStatus, 'visibility:', visibility, 'is_standard:', (project as any).is_standard, 'include:', include);
                     return include;
                   })
                   .map((project) => {
@@ -575,7 +566,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                       size="sm" 
                       onClick={(e) => {
                         e.preventDefault();
-                        console.log('🏠 ProjectSelector: Add Home button clicked');
                         setShowHomeManager(true);
                       }}
                       className="px-3"

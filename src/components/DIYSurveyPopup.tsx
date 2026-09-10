@@ -613,9 +613,6 @@ export default function DIYSurveyPopup({
           avoid_projects: avoidPayload.length > 0 ? avoidPayload : null,
         });
       }
-
-      if (showSavedToast && user) {
-              }
       onProfileSaved?.();
       return true;
     } catch (error) {

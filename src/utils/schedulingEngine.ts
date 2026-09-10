@@ -591,8 +591,6 @@ export class SchedulingEngine {
   }
 
   commitSchedule(result: SchedulingResult): void {
-    // In a real implementation, this would persist the schedule
-    console.log('Schedule committed:', result);
   }
 }
 

@@ -83,7 +83,6 @@ export class SecurityMaintenance {
         this.cleanupOldAuditLogs(),
         this.cleanupOldFailedLogins()
       ]);
-      console.log('Security maintenance tasks completed');
     } catch (error) {
       console.error('Security maintenance failed:', error);
     }
@@ -96,9 +95,6 @@ export class SecurityMaintenance {
     try {
       const { data, error } = await supabase.rpc('cleanup_old_sessions');
       if (error) throw error;
-      if (data > 0) {
-        console.log(`Cleaned up ${data} old sessions`);
-      }
     } catch (error) {
       console.error('Failed to cleanup old sessions:', error);
     }

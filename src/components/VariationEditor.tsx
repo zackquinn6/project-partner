@@ -188,11 +188,6 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
 
     setLoading(true);
     try {
-      console.log('💾 Saving variation:', {
-        id: variation.id,
-        name: editedVariation.name,
-        description: editedVariation.description
-      });
 
       const updatePayload: Record<string, unknown> = {
         name: editedVariation.name.trim(),
@@ -221,8 +216,6 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
         console.error('❌ Error saving variation:', error);
         throw error;
       }
-
-      console.log('✅ Variation saved successfully');
             onSave();
     } catch (error) {
       console.error('Error saving variation:', error);

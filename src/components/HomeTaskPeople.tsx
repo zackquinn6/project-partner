@@ -175,8 +175,6 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
       return;
     }
 
-    console.log('Saving person:', editingPerson);
-
     const { error } = await supabase
       .from('home_task_people')
       .update({
@@ -200,8 +198,6 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
       console.error('Save error:', error);
       return;
     }
-
-    console.log('Save successful');
     setEditingPersonId(null);
     setEditingPerson(null);
     fetchPeople();

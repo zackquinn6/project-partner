@@ -112,7 +112,6 @@ export const PostAuthLanding = () => {
     icon: FolderOpen,
     title: "Project Dashboard",
     action: () => {
-      console.log('🔄 PostAuthLanding: Project Dashboard clicked - forcing listing mode');
       window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'));
       navigate('/', { state: { view: 'user' } });
     },
@@ -122,7 +121,6 @@ export const PostAuthLanding = () => {
     icon: Home,
     title: "My Home Maintenance",
     action: () => {
-      console.log('🏠 PostAuthLanding: My Home Maintenance clicked - dispatching event');
       const event = new CustomEvent('show-home-maintenance');
       window.dispatchEvent(event);
     },
@@ -138,7 +136,6 @@ export const PostAuthLanding = () => {
     icon: Wrench,
     title: "My Tool Library",
     action: () => {
-      console.log('🔧 PostAuthLanding: My Tool Library clicked - dispatching event');
       const event = new CustomEvent('show-user-tools-materials');
       window.dispatchEvent(event);
     },
@@ -188,10 +185,8 @@ export const PostAuthLanding = () => {
     icon: User,
     title: "My Profile",
     action: () => {
-      console.log('🔄 PostAuthLanding: My Profile button clicked - dispatching event');
       const event = new CustomEvent('open-profile-manager');
       window.dispatchEvent(event);
-      console.log('🔄 PostAuthLanding: Event dispatched');
     },
     color: "bg-slate-600", // Profile: Gray
     textColor: "text-white"
@@ -199,7 +194,6 @@ export const PostAuthLanding = () => {
     icon: Home,
     title: "My Homes",
     action: () => {
-      console.log('🏠 PostAuthLanding: My Homes clicked - dispatching event');
       const event = new CustomEvent('show-home-manager');
       window.dispatchEvent(event);
     },

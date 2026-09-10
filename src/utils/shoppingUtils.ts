@@ -386,8 +386,6 @@ export function markOrderingStepIncompleteIfNeeded(
             const newCompletedSteps = new Set(completedSteps);
             newCompletedSteps.delete(stepId);
             setCompletedSteps(newCompletedSteps);
-            
-            console.log('🛒 Shopping needed after replan - marked ordering step as incomplete:', stepId);
           }
         });
       });

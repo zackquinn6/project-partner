@@ -128,7 +128,6 @@ const Index = () => {
   // CRITICAL: All hooks must be at the top - before any conditional logic
   const handleMobileProjectSelect = useCallback(
     (project: any) => {
-      console.log('🎯 Index: Mobile project selected:', project.name);
 
       if ('progress' in project) {
         const run = project as ProjectRun;
@@ -248,7 +247,6 @@ const Index = () => {
       }
     }
     if (location.state?.view) {
-      console.log('🎯 Index: Setting view from navigation state:', location.state.view);
       setCurrentView(location.state.view);
 
       // Opening a specific project (e.g. from catalog) → go to kickoff, not dashboard
@@ -263,13 +261,11 @@ const Index = () => {
 
       // Mobile: open workflow (kickoff) immediately when coming from catalog
       if (location.state.projectRunId && isMobile) {
-        console.log('📱 Index: Mobile navigation with projectRunId:', location.state.projectRunId);
         // Always open workflow when projectRunId is in state; UserView will fetch run by ID if needed
         setMobileView('workflow');
       }
       
       if (location.state.resetToListing) {
-        console.log('🔄 Index: Setting reset flags from navigation state');
         setResetUserView(true);
         setForceListingMode(true);
       }
@@ -293,17 +289,14 @@ const Index = () => {
     if (isPageReload()) return;
     // Only handle state changes once per location change
     if (location.state?.view && !hasHandledInitialState) {
-      console.log('🎯 Index: Setting view from navigation state:', location.state.view);
       setCurrentView(location.state.view);
       
       // Handle mobile view state
       if (location.state.mobileView && isMobile) {
-        console.log('📱 Index: Setting mobile view from state:', location.state.mobileView);
         setMobileView(location.state.mobileView);
       }
       
       if (location.state.resetToListing) {
-        console.log('🔄 Index: Setting reset flags from navigation state');
         setResetUserView(true);
         setForceListingMode(true);
       }
@@ -319,62 +312,52 @@ const Index = () => {
   // Add event listeners for modal windows (works on both mobile and desktop)
   useEffect(() => {
     const handleHomeManagerEvent = (event: Event) => {
-      console.log('🏠 Opening Home Manager');
       event.stopPropagation();
       setIsHomeManagerOpen(true);
     };
 
     const handleHomeMaintenanceEvent = (event: Event) => {
-      console.log('🏡 Opening Home Maintenance');
       event.stopPropagation();
       setIsHomeMaintenanceOpen(true);
     };
 
     const handleProfileManagerEvent = (event: Event) => {
-      console.log('👤 Opening Profile Manager');
       event.stopPropagation();
       setIsProfileOpen(true);
     };
 
     const handleCommunityPostsEvent = (event: Event) => {
-      console.log('👥 Opening Community Posts');
       event.stopPropagation();
       setIsCommunityPostsOpen(true);
     };
 
     const handleToolRentalsEvent = (event: Event) => {
-      console.log('🔨 Opening Tool Rentals');
       event.stopPropagation();
       setIsToolRentalsOpen(true);
     };
 
 
     const handleAIRepairEvent = (event: Event) => {
-      console.log('🤖 Opening AI Repair');
       event.stopPropagation();
       setIsAIRepairOpen(true);
     };
 
     const handleContractorFinderEvent = (event: Event) => {
-      console.log('👷 Opening Contractor Finder');
       event.stopPropagation();
       setIsContractorFinderOpen(true);
     };
 
     const handleExpertHelpEvent = (event: Event) => {
-      console.log('💡 Opening Expert Help');
       event.stopPropagation();
       setIsExpertHelpOpen(true);
     };
 
     const handleToolsLibraryGridEvent = (event: Event) => {
-      console.log('🔧 Opening Tools Library Grid');
       event.stopPropagation();
       setIsToolsLibraryGridOpen(true);
     };
 
     const handleHomeTaskListEvent = (event: Event) => {
-      console.log('📋 Opening Home Task List');
       event.stopPropagation();
       if (isMobile) {
         setMobileView('tasks');
@@ -432,7 +415,6 @@ const Index = () => {
   // Listen for force-project-dashboard-listing event - CRITICAL for Project Dashboard button
   useEffect(() => {
     const handleForceProgressBoardListing = () => {
-      console.log('🔄 Index: Force Project Dashboard listing event received - clearing project and forcing listing mode');
       setCurrentProjectRun(null);
       setCurrentProject(null);
       setResetUserView(true);
@@ -457,7 +439,6 @@ const Index = () => {
   // Listen for clear reset flags event and sync with Index
   useEffect(() => {
     const handleClearResetFlags = () => {
-      console.log('🔄 Index: Clearing reset flags');
       setResetUserView(false);
       setForceListingMode(false);
       
@@ -474,11 +455,9 @@ const Index = () => {
   // Listen for edit workflow navigation event
   useEffect(() => {
     const handleEditWorkflowNavigation = () => {
-      console.log('📝 Index: Edit workflow navigation requested');
       // Only switch to edit workflow view if we're in admin mode
       // This prevents accidental triggering when opening project runs
       if (currentView === 'admin' || isAdmin) {
-        console.log('✅ Index: Switching to editWorkflow view');
         setCurrentView('editWorkflow');
         navigate('/', { replace: true, state: { view: 'editWorkflow' } });
       } else {
@@ -488,7 +467,6 @@ const Index = () => {
 
     const handleKickoffNavigation = (event: CustomEvent) => {
       const { projectRunId } = event.detail;
-      console.log("🎯 Index: Received kickoff navigation event:", projectRunId);
       navigate('/', {
         state: {
           view: 'user',
@@ -504,26 +482,22 @@ const Index = () => {
 
     // Mobile-specific projects navigation (Navigation.tsx only handles desktop)
     const handleProjectsNavigationMobile = () => {
-      if (!isMobile) return; // Only handle on mobile
-      console.log('📱 Index: Mobile "My Projects" clicked - always showing projects listing');
+      if (!isMobile) return;
       handleProjectsView();
     };
 
     const handleProfileNavigation = () => {
-      console.log('🔄 Index: "My Profile" clicked - dispatching to Navigation');
       // Let Navigation.tsx handle this
       window.dispatchEvent(new CustomEvent('open-profile-manager'));
     };
 
     const handleToolLibraryNavigation = (event: Event) => {
-      console.log('🔧 Index: Tool Library navigation received');
       event.stopPropagation();
       // Set the view to user to ensure the Navigation component can handle it
       setCurrentView('user');
     };
 
     const handleAdminPanelNavigation = () => {
-      console.log('🛡️ Index: Admin Panel navigation received');
       handleAdminAccess();
     };
 
@@ -558,14 +532,12 @@ const Index = () => {
 
   // Define functions BEFORE they are used in useEffect
   const handleProjectsView = () => {
-    console.log('🔄 Index: handleProjectsView called');
     setResetUserView(true);
     setForceListingMode(true);
     setCurrentView('user');
     
     // Set mobile view for mobile devices
     if (isMobile) {
-      console.log('📱 Index: Setting mobile view to projects');
       setMobileView('projects');
     }
     
@@ -618,7 +590,6 @@ const Index = () => {
   }
 
   const handleProjectSelected = () => {
-    console.log('🎯 Index: Project selected from dropdown - clearing reset flags');
     setForceListingMode(false);
     setResetUserView(false);
   };
@@ -668,7 +639,6 @@ const Index = () => {
   // This useEffect is now at the top with other hooks
 
   const renderView = () => {
-    console.log('Index renderView - currentView:', currentView);
     
     // Mobile-specific rendering
     if (isMobile && user) {
@@ -679,7 +649,6 @@ const Index = () => {
       
       switch (mobileView) {
         case 'catalog':
-          console.log('🔍 RENDERING Index ProjectCatalog - mobileView is catalog');
           if (!membershipLoading && !hasProjectsTier) {
             return (
               <div className="flex h-screen flex-col items-center justify-center gap-4 p-6">
@@ -703,7 +672,6 @@ const Index = () => {
           return (
             <div className="h-screen flex flex-col">
               <ProjectCatalog onClose={() => {
-                console.log('📱 Index: ProjectCatalog closed, returning to projects');
                 setMobileView('projects');
               }} />
             </div>
@@ -731,7 +699,6 @@ const Index = () => {
             </div>
           );
         case 'projects':
-          console.log('🔍 RENDERING Index MobileProjectListing - mobileView is projects');
           return (
             <div className="flex h-screen min-h-0 flex-col">
               <div className="min-h-0 flex-1 overflow-hidden pb-20">
@@ -769,7 +736,6 @@ const Index = () => {
                   resetToListing={resetUserView && !currentProjectRun}
                   forceListingMode={forceListingMode}
                   onProjectSelected={() => {
-                    console.log('🎯 Index: Mobile workflow - onProjectSelected called');
                     setForceListingMode(false);
                     setResetUserView(false);
                     setMobileView('workflow');
@@ -800,19 +766,12 @@ const Index = () => {
       case 'admin':
         return <AdminView />;
       case 'user':
-        console.log('🎯 Index: Rendering UserView with state:', {
-          resetToListing: resetUserView,
-          projectRunId: location.state?.projectRunId,
-          hasProjectRunId: !!location.state?.projectRunId,
-          currentView: currentView
-        });
         return (
           <ProjectNavigationErrorBoundary fallbackMessage="Failed to load project view. Please refresh the page.">
             <UserView 
               resetToListing={resetUserView && !currentProjectRun} 
               forceListingMode={forceListingMode}
               onProjectSelected={() => {
-                console.log('🎯 Index: onProjectSelected called - clearing all reset flags');
                 setForceListingMode(false);
                 setResetUserView(false);
                 setCurrentView('user');

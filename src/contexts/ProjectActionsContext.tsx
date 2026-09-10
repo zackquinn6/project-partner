@@ -935,10 +935,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     }
 
     try {
-      console.log('🔧 updateProject called:', { 
-        projectId: project.id, 
-        phasesCount: project.phases?.length 
-      });
       
       // Check for duplicate project name if name is being changed
       if (project.name && project.name.trim()) {
@@ -1017,8 +1013,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         console.error('❌ Error updating project:', updateError);
         throw updateError;
       }
-
-      console.log('✅ Project metadata updated successfully');
       
       // NOTE: step_number was renamed to display_order in template_steps
       // Ordering is handled by position_rule/position_value for phases and display_order for steps
@@ -1098,7 +1092,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     
     // Skip if this is the exact same update as the last one
     if (lastUpdateRef.current === updateKey) {
-      console.log("🔄 ProjectActions - Skipping duplicate update");
       return;
     }
 
@@ -1129,7 +1122,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     
     if (currentProjectRun?.id === projectRun.id) {
       setCurrentProjectRun(updatedProjectRun);
-      console.log('✅ ProjectActions: Updated currentProjectRun with initial_budget:', (updatedProjectRun as any).initial_budget);
     }
 
     // CRITICAL: For budget_data, issue_reports, time_tracking, initial budget fields, and kickoff completion updates, save immediately
@@ -1180,7 +1172,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     const saveToDatabase = async () => {
       // Prevent concurrent updates
       if (updateInProgressRef.current) {
-        console.log("🔄 ProjectActions - Update already in progress, queuing...");
         setTimeout(() => updateProjectRun(projectRun), 100);
         return;
       }
@@ -1267,20 +1258,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         ) {
           preservedScheduleOptimizationMethod = 'single-piece-flow';
         }
-
-        console.log('💾 ProjectActions - Saving project run to database:', {
-          projectRunId: projectRun.id,
-          userId: user.id,
-          name: projectRun.name,
-          completedStepsCount: projectRun.completedSteps.length,
-          progress: safeProgress,
-          initial_budget: preservedBudget,
-          initial_timeline: preservedTimeline,
-          initial_sizing: preservedSizing,
-          hasBudgetData: !!projectRun.budget_data,
-          hasPhotos: !!(projectRun.project_photos),
-          home_id: (projectRun as any).home_id
-        });
 
         const isPlanningCompletionTransition =
           projectRun.planningCompletedAt != null && currentProjectRun?.planningCompletedAt == null;
@@ -1405,8 +1382,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             }
           }
         }
-
-        console.log("✅ ProjectActions - Project run updated successfully in database for user:", user.id);
         
       } catch (error) {
         await reportUserFacingError({
@@ -1515,7 +1490,6 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
   }, [isGuest, deleteGuestProjectRun, user, projectRuns, updateProjectRunsCache, currentProjectRun, setCurrentProjectRun]);
 
   const refreshProjectRunFromTemplate = useCallback(async (runId: string) => {
-    console.log('🔄 refreshProjectRunFromTemplate CALLED:', { runId });
     
     if (!user) {
       toast({

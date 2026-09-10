@@ -128,29 +128,6 @@ export function WorkflowSidebar({
     return Icon;
   };
   
-  // Debug logging - check for apps in steps
-  const stepsWithApps = allSteps.filter(s => s.apps && Array.isArray(s.apps) && s.apps.length > 0);
-  console.log('🔍 WorkflowSidebar Debug:', {
-    allStepsLength: allSteps.length,
-    stepsWithAppsCount: stepsWithApps.length,
-    sampleStepWithApps: stepsWithApps.length > 0 ? {
-      step: stepsWithApps[0].step,
-      appsCount: stepsWithApps[0].apps?.length,
-      apps: stepsWithApps[0].apps?.map((app: AppReference) => ({
-        id: app.id,
-        appName: app.appName,
-        icon: app.icon
-      }))
-    } : null,
-    groupedStepsKeys: Object.keys(groupedSteps || {}),
-    groupedStepsPhases: Object.entries(groupedSteps || {}).map(([phase, ops]) => ({
-      phase,
-      operationsCount: Object.keys(ops as any).length,
-      operations: Object.keys(ops as any)
-    })),
-    isKickoffComplete,
-    collapsed
-  });
   const [showStepTypesInfo, setShowStepTypesInfo] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);

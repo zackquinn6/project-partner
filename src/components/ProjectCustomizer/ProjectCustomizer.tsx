@@ -482,7 +482,6 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     if (!currentProjectRun) return;
 
     try {
-      console.log('💾 Saving customization decisions:', customizationState);
       
       // Create a deep copy of phases
       let newPhases = JSON.parse(JSON.stringify(currentProjectRun.phases || []));
@@ -491,8 +490,6 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       newPhases = newPhases.map(phase => {
         const standardChoices = customizationState.standardDecisions[phase.id] || [];
         const ifNecessaryChoices = customizationState.ifNecessaryWork[phase.id] || [];
-
-        console.log(`Processing phase ${phase.name}:`, { standardChoices, ifNecessaryChoices });
 
         // Extract selected operation IDs from "groupKey:operationId" format
         const selectedOpIds = new Set(standardChoices.map(choice => {
@@ -510,14 +507,12 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
           // For alternate operations, only keep selected ones
           if (flowType === 'alternate') {
             const isSelected = selectedOpIds.has(op.id);
-            console.log(`Operation ${op.name} (${op.id}) is alternate, selected:`, isSelected);
             return isSelected;
           }
           
           // For if-necessary operations, only keep selected ones
           if (flowType === 'if-necessary') {
             const isSelected = ifNecessaryChoices.includes(op.id);
-            console.log(`Operation ${op.name} (${op.id}) is if-necessary, selected:`, isSelected);
             return isSelected;
           }
           
@@ -555,8 +550,6 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
           orderedPhases.push(phase);
         }
       });
-
-      console.log(`✅ Filtered workflow from ${currentProjectRun.phases.length} to ${orderedPhases.length} phases`);
 
       // Update the project run with filtered phases and saved decisions
       const updatedProjectRun = {

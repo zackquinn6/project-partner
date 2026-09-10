@@ -6,12 +6,10 @@ export const PreSignInNavigation = () => {
   const navigate = useNavigate();
 
   const handleSignIn = () => {
-    console.log('Sign In clicked');
     navigate('/auth');
   };
 
   const handleSignUp = () => {
-    console.log('Sign Up clicked');
     navigate('/auth?mode=signup');
   };
 

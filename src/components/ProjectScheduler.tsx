@@ -247,11 +247,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             const goalDate = new Date(freshData.initial_timeline);
             if (!isNaN(goalDate.getTime())) {
               const formattedDate = format(goalDate, 'yyyy-MM-dd');
-              console.log('✅ ProjectScheduler: Setting target date from database:', {
-                initial_timeline: freshData.initial_timeline,
-                formattedDate,
-                goalDate: goalDate.toISOString()
-              });
               setTargetDate(formattedDate);
             } else {
               console.warn('⚠️ ProjectScheduler: Invalid date in database:', freshData.initial_timeline);
@@ -937,8 +932,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           variant: "destructive",
           duration: 10000
         });
-      } else if (riskAnalysis.totalDelay > 0) {
-              }
+      }
       
       // Prepare scheduling inputs with risk-adjusted date
       const schedulingInputs: SchedulingInputs = {
@@ -999,8 +993,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       }
 
       const persisted = await persistScheduleToProject(result);
-      if (persisted) {
-              } else {
+      if (!persisted) {
         toast({
           title: "Schedule generated but not saved",
           description: "Your schedule is shown below, but saving to the project failed. Use Save & Commit to try again.",
@@ -1218,11 +1211,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         ...projectRun,
         schedule_optimization_method: scheduleOptimizationMethod
       } as any;
-      
-      console.log('💾 ProjectScheduler: Applying optimization method:', {
-        scheduleOptimizationMethod,
-        projectRunId: projectRun.id
-      });
       
       await updateProjectRun(updatedProjectRun);
       

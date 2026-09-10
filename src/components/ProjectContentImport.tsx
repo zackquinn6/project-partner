@@ -96,14 +96,10 @@ IMPORTANT FORMAT NOTES:
     const headerLine = lines[0];
     const expectedColumns = parseCsvLine(headerLine).length;
     
-    console.log('Expected columns:', expectedColumns);
-    console.log('Headers:', parseCsvLine(headerLine));
-    
     const processedLines = lines.map((line, index) => {
       if (index === 0) return line; // Keep header as is
       
       const values = parseCsvLine(line);
-      console.log(`Line ${index + 1} original values (${values.length}):`, values);
       
       // If we have fewer values than expected columns, pad with empty strings
       while (values.length < expectedColumns) {
@@ -125,8 +121,6 @@ IMPORTANT FORMAT NOTES:
             values[i] = firstFieldParts[i].trim();
           }
         }
-        
-        console.log(`Line ${index + 1} after redistribution:`, values.slice(0, expectedColumns));
       }
       
       // Ensure we don't exceed expected columns
@@ -144,7 +138,6 @@ IMPORTANT FORMAT NOTES:
     });
     
     const result = processedLines.join('\n');
-    console.log('Preprocessed CSV sample:', result.split('\n').slice(0, 5).join('\n'));
     return result;
   };
 
@@ -157,10 +150,6 @@ IMPORTANT FORMAT NOTES:
     const headers = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
     const requiredHeaders = ['phase', 'operation', 'step'];
     const errors: string[] = [];
-
-    // Debug: Log header information
-    console.log('CSV Headers found:', headers);
-    console.log('Expected headers:', requiredHeaders);
 
     // Validate headers
     const hasRequiredHeaders = requiredHeaders.every(header => headers.includes(header));
@@ -184,10 +173,6 @@ IMPORTANT FORMAT NOTES:
       try {
         values = parseCsvLine(line);
         
-        // Debug: Log raw parsing results
-        console.log(`Row ${i + 1} raw values:`, values);
-        console.log(`Row ${i + 1} values count:`, values.length, 'vs headers count:', headers.length);
-        
         headers.forEach((header, index) => {
           rowData[header] = (values[index] || '').trim();
         });
@@ -196,18 +181,9 @@ IMPORTANT FORMAT NOTES:
         continue;
       }
 
-      // Debug logging for field validation
-      console.log(`Row ${i + 1} parsed data:`, {
-        phase: rowData.phase,
-        operation: rowData.operation,
-        step: rowData.step,
-        allFields: rowData
-      });
-
       // Skip rows that appear to be empty or contain only commas/asterisks
       if (!rowData.phase || rowData.phase.match(/^[,*\s]*$/) || 
           (!rowData.operation && !rowData.step && Object.values(rowData).every(val => !val || typeof val === 'string' && val.match(/^[,*\s]*$/)))) {
-        console.log(`Row ${i + 1}: Skipping empty or malformed row`);
         continue;
       }
 
@@ -280,8 +256,6 @@ IMPORTANT FORMAT NOTES:
           .map((name: string) => name.trim())
           .filter(Boolean);
         
-        console.log(`Row ${i + 1} - Process variables for step "${rowData.step}":`, processVariableNames);
-        
         // Create StepInput entries for each process variable
         processVariableNames.forEach((varName: string) => {
           if (varName && !step!.inputs?.some(input => input.name === varName)) {
@@ -317,9 +291,6 @@ IMPORTANT FORMAT NOTES:
         const inputNames = inputText.split(/[\*\\]+/).map((name: string) => {
           return name.trim().replace(/^[\*\\]+\s*/, '').replace(/[\*\\]+\s*$/, '');
         }).filter(Boolean);
-        
-        console.log(`Row ${i + 1} - Raw inputs:`, rowData.inputs);
-        console.log(`Row ${i + 1} - Parsed inputs:`, inputNames);
         
         inputNames.forEach((inputName: string) => {
           if (inputName && !step!.inputs?.some(input => input.name === inputName)) {
@@ -401,7 +372,6 @@ IMPORTANT FORMAT NOTES:
             
             // Convert to CSV format for consistent processing
             const csvText = XLSX.utils.sheet_to_csv(worksheet);
-            console.log('Excel converted to CSV (first 500 chars):', csvText.substring(0, 500));
             setCsvData(csvText);
           } catch (error) {
             console.error('Error reading Excel file:', error);
@@ -413,7 +383,6 @@ IMPORTANT FORMAT NOTES:
         const reader = new FileReader();
         reader.onload = (e) => {
           const text = e.target?.result as string;
-          console.log('Raw CSV content (first 500 chars):', text.substring(0, 500));
           setCsvData(text);
         };
         reader.readAsText(file);

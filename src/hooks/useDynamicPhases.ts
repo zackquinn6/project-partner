@@ -31,15 +31,6 @@ export function useDynamicPhases(projectId: string | undefined) {
         p_project_id: projectId
       });
 
-      console.log('🔍 useDynamicPhases RPC call:', {
-        projectId,
-        data,
-        dataType: typeof data,
-        dataIsArray: Array.isArray(data),
-        dataLength: Array.isArray(data) ? data.length : 'N/A',
-        rpcError
-      });
-
       if (rpcError) {
         console.error('🚨 RPC Error:', rpcError);
         throw rpcError;
@@ -57,12 +48,6 @@ export function useDynamicPhases(projectId: string | undefined) {
           console.warn('⚠️ Unexpected data format from RPC:', data);
         }
       }
-      
-      console.log('✅ Parsed phases:', {
-        count: parsedPhases.length,
-        firstPhase: parsedPhases[0]?.name,
-        phases: parsedPhases
-      });
       
       // Only update phases if we got valid data
       // This ensures standard phases remain visible even if the fetch fails

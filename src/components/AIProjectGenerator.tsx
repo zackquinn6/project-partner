@@ -141,7 +141,6 @@ export function AIProjectGenerator({
           });
 
           setProjectTemplates(draftRevisions);
-          console.log('✅ Loaded draft project revisions:', draftRevisions.map(p => `${p.name} (rev ${p.revision_number ?? 0})`));
         } catch (error) {
           console.error('Error fetching project templates:', error);
           toast.error('Failed to load project templates');
@@ -235,11 +234,6 @@ export function AIProjectGenerator({
               mitigation: risk.mitigation_strategy ?? ''
             })) || []
           };
-
-          console.log('📋 Fetched existing project content:', {
-            phases: existingContent.phases.length,
-            risks: existingContent.risks.length
-          });
         } catch (error) {
           console.error('Error fetching existing content:', error);
           // Continue without existing content if fetch fails
@@ -257,14 +251,6 @@ export function AIProjectGenerator({
         existingProjectId: selectedExistingProject || undefined,
         existingContent: existingContent,
       };
-
-      console.log('🚀 Generating project with request:', {
-        projectName: request.projectName,
-        category: request.category,
-        aiInstructions: request.aiInstructions,
-        contentSelection: request.contentSelection,
-        hasExistingContent: !!existingContent
-      });
 
       const result = await generateProjectWithAI(request);
       
@@ -294,15 +280,6 @@ export function AIProjectGenerator({
         
         // Merge existing phases into result - this ensures import function has structure to match against
         result.phases = existingPhases;
-        
-        console.log('📋 Merged existing structure into result (structure deselected):', {
-          phasesCount: result.phases.length,
-          operationsCount: result.phases.reduce((sum, p) => sum + (p.operations?.length || 0), 0),
-          stepsCount: result.phases.reduce((sum, p) => 
-            sum + (p.operations?.reduce((opSum: number, op: any) => opSum + (op.steps?.length || 0), 0) || 0), 0
-          ),
-          structureDeselected: !contentSelection.structure
-        });
       }
       
       clearInterval(progressInterval);
@@ -358,15 +335,6 @@ export function AIProjectGenerator({
         toast.error('Cannot edit Standard Project Foundation. Please select a different project or create a new one.');
         return;
       }
-
-      // Log risks before import for debugging
-      console.log('📋 Importing project with risks:', {
-        hasRisks: !!generatedProject.risks,
-        risksCount: generatedProject.risks?.length || 0,
-        risks: generatedProject.risks,
-        risksSelected: contentSelection.risks,
-        contentSelection
-      });
 
       const result = await importGeneratedProject(
         projectName,

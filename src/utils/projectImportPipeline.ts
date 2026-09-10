@@ -442,13 +442,7 @@ export async function importGeneratedProject(
 
       // If structure is not selected, skip all phase/operation/step deletion
       // Only update content within existing steps
-      if (contentSelection?.structure === false) {
-        console.log('📝 Content-only update mode: Skipping structure changes, only updating step content');
-        // Skip to content update section - don't delete anything
-      } else {
-        // IMPORTANT: Only delete NON-STANDARD phases, operations, and steps
-        // Standard phases (Kickoff, Planning, Ordering, Close Project) must be preserved
-        console.log('🔄 Importing to existing project - preserving standard phases');
+      if (contentSelection?.structure !== false) {
         const { data: existingPhases } = await db
           .from('project_phases')
           .select('id, is_standard')
@@ -458,8 +452,6 @@ export async function importGeneratedProject(
           // Separate standard and custom phases
           const standardPhaseIds = existingPhases.filter(p => p.is_standard).map(p => p.id);
           const customPhaseIds = existingPhases.filter(p => !p.is_standard).map(p => p.id);
-          
-          console.log(`📋 Found ${standardPhaseIds.length} standard phases and ${customPhaseIds.length} custom phases`);
           
           // Only delete custom (non-standard) phases
           if (customPhaseIds.length > 0) {
@@ -503,10 +495,6 @@ export async function importGeneratedProject(
               .from('project_phases')
               .delete()
               .in('id', customPhaseIds);
-            
-            console.log(`✅ Deleted ${customPhaseIds.length} custom phases (preserved ${standardPhaseIds.length} standard phases)`);
-          } else {
-            console.log('ℹ️ No custom phases to delete - only standard phases exist');
           }
         }
       }
@@ -581,7 +569,6 @@ export async function importGeneratedProject(
     // Step 2: Process each phase
     // If structure is not selected, skip phase/operation/step creation and only update content
     if (contentSelection?.structure === false) {
-      console.log('📝 Content-only mode: Updating existing step content without modifying structure');
       
       // Fetch all existing steps for this project
       // FIX: Use correct column names - operation_name not name
@@ -853,7 +840,6 @@ export async function importGeneratedProject(
         }
 
         result.stats.operationsCreated++;
-        console.log(`✅ Created operation "${operation.name}" with ${operation.steps?.length || 0} steps`);
 
           // Step 4: Process steps
         for (let stepIndex = 0; stepIndex < operation.steps.length; stepIndex++) {
@@ -1030,7 +1016,6 @@ export async function importGeneratedProject(
           }
 
           result.stats.stepsCreated++;
-          console.log(`✅ Created step "${step.stepTitle}" (ID: ${createdStep.id})`);
 
           // Step 5: Create step instructions (3 levels) - only if selected
           if (contentSelection?.instructions3Level !== false) {
@@ -1236,7 +1221,6 @@ export async function importGeneratedProject(
             result.errors.push(`Failed to create default step for operation "${operation.name}": ${defaultStepError?.message}`);
           } else {
             result.stats.stepsCreated++;
-            console.log(`✅ Created default step for operation "${operation.name}"`);
           }
         }
       }
@@ -1298,25 +1282,12 @@ export async function importGeneratedProject(
             result.errors.push(`Failed to create default step for phase "${phase.name}": ${defaultStepError?.message}`);
           } else {
             result.stats.stepsCreated++;
-            console.log(`✅ Created default operation and step for phase "${phase.name}"`);
           }
         }
       }
 
       result.stats.phasesCreated++;
     }
-
-    // Step 8: Store project risks - import if risks exist in generated structure
-    // Note: If risks are shown in preview, they should be imported regardless of checkbox
-    // The checkbox controls whether AI generates NEW risks, but existing risks in the structure should be imported
-    console.log('🔍 Risk import check:', {
-      risksSelected: contentSelection?.risks !== false,
-      hasRisks: !!generatedStructure.risks,
-      risksIsArray: Array.isArray(generatedStructure.risks),
-      risksCount: generatedStructure.risks?.length || 0,
-      risks: generatedStructure.risks,
-      contentSelectionRisks: contentSelection?.risks
-    });
 
     // Import risks if they exist in the generated structure
     // Only skip if explicitly disabled AND we're updating existing project (to avoid overwriting)
@@ -1326,7 +1297,6 @@ export async function importGeneratedProject(
                               (contentSelection?.risks !== false || !existingProjectId);
 
     if (shouldImportRisks) {
-      console.log(`📋 Importing ${generatedStructure.risks.length} risks for project ${projectId}`);
       
       // Fetch existing risks from relational table
       const { data: existingRisks, error: fetchError } = await db
@@ -1340,7 +1310,6 @@ export async function importGeneratedProject(
       }
 
       const existingRisksList = existingRisks || [];
-      console.log(`📋 Found ${existingRisksList.length} existing risks`);
       
       // Get current max display_order
       const { data: maxOrderData } = await db
@@ -1374,14 +1343,11 @@ export async function importGeneratedProject(
         });
         
         if (isDuplicate) {
-          console.log(`⚠️ Skipping duplicate risk: "${newRisk.risk}"`);
           result.warnings.push(`Skipping duplicate risk: "${newRisk.risk}"`);
         }
         
         return !isDuplicate;
       });
-
-      console.log(`📋 After deduplication: ${newRisks.length} new risks to insert`);
 
       // Insert new non-duplicate risks into relational table
       if (newRisks.length > 0) {
@@ -1394,8 +1360,6 @@ export async function importGeneratedProject(
           display_order: nextDisplayOrder++,
         }));
 
-        console.log('📋 Inserting risks:', risksToInsert);
-
         const { error: risksError } = await db
           .from('project_risks')
           .insert(risksToInsert);
@@ -1404,24 +1368,10 @@ export async function importGeneratedProject(
           console.error('❌ Error inserting risks:', risksError);
           result.warnings.push(`Failed to insert project risks: ${risksError.message}`);
         } else {
-          console.log(`✅ Successfully inserted ${newRisks.length} new risks (${generatedStructure.risks.length - newRisks.length} duplicates skipped)`);
           result.stats.risksCreated = newRisks.length;
         }
-      } else {
-        console.log('⚠️ No new risks to insert (all were duplicates)');
       }
-    } else {
-      console.log('⚠️ Risks not imported:', {
-        risksSelected: contentSelection?.risks !== false,
-        hasRisks: !!generatedStructure.risks,
-        risksIsArray: Array.isArray(generatedStructure.risks),
-        risksCount: generatedStructure.risks?.length || 0
-      });
     }
-
-    // Step 9: Rebuild phases JSON from relational tables
-    // This ensures the projects.phases JSONB column is in sync with the relational data
-    console.log('🔄 Rebuilding phases JSON for project:', projectId);
     const { error: rebuildError } = await db.rpc(
       'rebuild_phases_json_from_project_phases',
       { p_project_id: projectId }
@@ -1431,7 +1381,6 @@ export async function importGeneratedProject(
       result.warnings.push(`Failed to rebuild phases JSON: ${rebuildError.message}`);
       console.error('❌ Error rebuilding phases JSON:', rebuildError);
     } else {
-      console.log('✅ Phases JSON rebuilt successfully');
       
       // Verify the rebuild worked by fetching the updated project
       const { data: updatedProject, error: fetchError } = await db
@@ -1443,7 +1392,6 @@ export async function importGeneratedProject(
       if (!fetchError && updatedProject) {
         const phasesArray = Array.isArray(updatedProject.phases) ? updatedProject.phases : 
                            (typeof updatedProject.phases === 'string' ? JSON.parse(updatedProject.phases) : []);
-        console.log(`✅ Verified phases JSON: ${phasesArray.length} phases found`);
         
         if (phasesArray.length === 0) {
           result.warnings.push('Warning: Phases JSON rebuild completed but no phases found. This may indicate an issue with the import.');

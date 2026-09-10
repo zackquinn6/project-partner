@@ -123,10 +123,6 @@ export const AppsLibraryDialog = ({
   };
 
   const handleSave = () => {
-    console.log('📱 AppsLibraryDialog: Saving apps', {
-      count: tempSelected.length,
-      apps: tempSelected.map(a => ({ id: a.id, name: a.appName }))
-    });
     onAppsSelected(tempSelected);
     onOpenChange(false);
   };

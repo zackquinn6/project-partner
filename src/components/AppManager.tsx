@@ -185,7 +185,6 @@ export function AppManager({
 
     // Prevent double-saves
     if (saving) {
-      console.log('⏸️ Save already in progress, ignoring duplicate call');
       return;
     }
 
@@ -200,14 +199,6 @@ export function AppManager({
       // Extract actionKey from app.id (format: "app-{actionKey}") or use app.id
       const appId = editingApp.id.startsWith('app-') ? editingApp.id.replace('app-', '') : editingApp.id;
       const actionKey = editingApp.actionKey || appId;
-      console.log('💾 Saving app override:', {
-        appId,
-        actionKey,
-        appName,
-        description: editForm.description,
-        icon: editForm.icon,
-        editingAppId: editingApp.id
-      });
 
       // Upsert app override in database (RPC may update step app payloads in operation_steps)
       const {
@@ -229,7 +220,6 @@ export function AppManager({
         console.error('❌ Upsert error:', upsertError);
         throw upsertError;
       }
-      console.log('✅ App override saved:', upsertData);
 
       // Manually trigger the update function to refresh embedded app metadata in steps
       const {
@@ -242,11 +232,9 @@ export function AppManager({
         p_icon: editForm.icon || editingApp.icon || 'Sparkles'
       });
       if (updateError) {
-        console.error('❌ Error updating templates:', updateError);
+        console.error('Error updating templates:', updateError);
         // Don't throw - the trigger should have handled it, but log the error
         toast.error(`App saved but template update failed: ${updateError.message}`);
-      } else {
-        console.log('✅ Templates updated:', updateData);
       }
 
       // Rebuild phases JSON for all project templates to refresh app names
@@ -255,15 +243,13 @@ export function AppManager({
         error: projectsError
       } = await supabase.from('projects').select('id').eq('is_standard', false);
       if (projectsError) {
-        console.error('❌ Error fetching projects:', projectsError);
+        console.error('Error fetching projects:', projectsError);
       } else if (projectsData && projectsData.length > 0) {
         // Update in background (don't await - let it happen async)
         Promise.all(projectsData.map(project => supabase.rpc('rebuild_phases_json_from_project_phases', {
           p_project_id: project.id
-        }))).then(() => {
-          console.log('✅ All project phases rebuilt');
-        }).catch(err => {
-          console.error('❌ Error rebuilding project phases:', err);
+        }))).catch(err => {
+          console.error('Error rebuilding project phases:', err);
         });
       }
             // Update local state
@@ -302,7 +288,6 @@ export function AppManager({
 
     // Prevent double-saves
     if (saving) {
-      console.log('⏸️ Save already in progress, ignoring duplicate call');
       return;
     }
     setSaving(true);

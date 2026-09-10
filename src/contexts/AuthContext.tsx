@@ -46,7 +46,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -55,7 +54,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -266,9 +264,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await supabase.auth.signOut();
     } catch (error: any) {
       // Gracefully handle session_not_found errors (we're already signed out)
-      if (error?.message?.includes('session_not_found') || error?.code === 'session_not_found') {
-        console.log('Already signed out');
-      } else {
+      if (!(error?.message?.includes('session_not_found') || error?.code === 'session_not_found')) {
         console.error('Sign out error:', error);
         throw error;
       }

@@ -97,7 +97,6 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
   };
 
   const handleOpenProjectRun = useCallback((projectRun: ProjectRun) => {
-    console.log("🎯 Opening project run:", projectRun.name);
 
     if (!projectRun.isManualEntry) {
       if (isRiskFocusRun(projectRun)) {
@@ -139,8 +138,6 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
     // Set project run in context
     setCurrentProjectRun(projectRun);
     onProjectSelect?.('workflow' as any);
-    
-    console.log("🎯 Project run navigation completed:", projectRun.name);
   }, [
     setCurrentProjectRun,
     onProjectSelect,
@@ -426,7 +423,6 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
         }}
         projectRun={editingProjectRun}
         onProjectUpdated={() => {
-          console.log('Manual project updated');
           // Project runs will refresh automatically
         }}
       />

@@ -203,13 +203,6 @@ export function VariationSelector({
   };
 
   const handleSelectVariation = () => {
-    console.log('🔘 Add button clicked in VariationSelector:', {
-      coreItemId,
-      itemType,
-      selectedAttributes,
-      isPrime,
-      matchingVariation: matchingVariation?.name
-    });
     
     const variation: SelectedVariation = {
       variationId: matchingVariation?.id,
@@ -220,8 +213,6 @@ export function VariationSelector({
       isPrime,
       alternateToolId: !isPrime ? selectedAlternateTool : undefined
     };
-    
-    console.log('  📤 Calling onVariationSelect with:', variation);
     onVariationSelect(variation);
   };
 

@@ -201,8 +201,6 @@ export const ProjectCustomizationStep: React.FC<ProjectCustomizationStepProps> =
   const handleSaveCustomization = async () => {
     if (!currentProjectRun) return;
 
-    console.log("ProjectCustomizationStep - Saving customization and calling onComplete");
-
     // Combine kickoff phase with selected phases (use isStandard flag instead of hardcoded name)
     const kickoffPhase = currentProjectRun.phases.find(phase => 
       phase.isStandard === true && 
@@ -216,8 +214,6 @@ export const ProjectCustomizationStep: React.FC<ProjectCustomizationStepProps> =
       phases: updatedPhases,
       updatedAt: new Date()
     });
-    
-    console.log("ProjectCustomizationStep - Project updated, completing step");
     onComplete();
   };
   const hasManualPhases = selectedPhases.some(phase => phase.id.startsWith('manual-'));

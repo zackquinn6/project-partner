@@ -404,7 +404,6 @@ export function MobileOptimizedHome() {
           {projectCatalogEnabled && (
           <Button
             onClick={() => {
-              console.log('📱 Mobile: Navigating to project catalog');
               navigate('/projects');
             }}
             variant="default"

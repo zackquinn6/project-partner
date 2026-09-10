@@ -574,18 +574,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         throw new Error(`Failed to load standard phases: ${standardError.message}`);
       }
       
-      console.log('🔍 StructureManager - Loaded phases:', {
-        customPhasesCount: customPhasesData?.length || 0,
-        standardPhasesCount: standardPhasesData?.length || 0,
-        standardProjectId,
-        standardPhases: standardPhasesData?.map((p: any) => ({
-          name: p.name,
-          is_standard: p.is_standard,
-          position_rule: p.position_rule,
-          position_value: p.position_value
-        }))
-      });
-      
       // Combine both and convert to Phase format
       const allPhasesData = [...(standardPhasesData || []), ...(customPhasesData || [])];
       
@@ -683,8 +671,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         let resolvedIncorporated: ResolvedIncorporatedSourcePhase | null = null;
 
         if (isStandardPhase) {
-          // For standard phases: fetch operations from the standard project's phase
-          console.log(`🔍 Loading operations for standard phase "${phaseData.name}" (phase_id: ${phaseData.id})`);
           const { data: operations, error: operationsError } = await supabase
             .from('phase_operations')
             .select(`
@@ -698,9 +684,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             .order('display_order');
           
           if (operationsError) {
-            console.error(`❌ Error loading operations for standard phase "${phaseData.name}":`, operationsError);
-          } else {
-            console.log(`✅ Loaded ${operations?.length || 0} operations for standard phase "${phaseData.name}"`);
+            console.error(`Error loading operations for standard phase "${phaseData.name}":`, operationsError);
           }
           
           // Get steps for each operation from standard project
@@ -848,8 +832,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             return aOrder - bOrder;
           });
         } else {
-          // For regular phases: get operations from current phase
-          console.log(`🔍 Loading operations for custom phase "${phaseData.name}" (phase_id: ${phaseData.id})`);
           const { data: operations, error: operationsError } = await supabase
             .from('phase_operations')
             .select(`
@@ -863,9 +845,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             .order('display_order');
           
           if (operationsError) {
-            console.error(`❌ Error loading operations for custom phase "${phaseData.name}":`, operationsError);
-          } else {
-            console.log(`✅ Loaded ${operations?.length || 0} operations for custom phase "${phaseData.name}"`);
+            console.error(`Error loading operations for custom phase "${phaseData.name}":`, operationsError);
           }
           
           // Get steps for each operation
@@ -949,16 +929,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           position_value: phaseData.position_value,
           operations: operationsWithSteps
         } as Phase;
-        
-        console.log(`✅ Built phase "${phaseResult.name}":`, {
-          isStandard: phaseResult.isStandard,
-          isLinked: phaseResult.isLinked,
-          phaseOrderNumber: phaseResult.phaseOrderNumber,
-          position_rule: phaseResult.position_rule,
-          position_value: phaseResult.position_value,
-          operationsCount: phaseResult.operations.length,
-          stepsCount: phaseResult.operations.reduce((sum, op) => sum + (op.steps?.length || 0), 0)
-        });
         
         return phaseResult;
       }));
@@ -1101,7 +1071,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
           
           // AUTO-FIX: Renumber all display_orders to be sequential
           try {
-            console.log('🔧 Auto-fixing duplicate display_orders...');
             let fixCount = 0;
             
             for (const phase of loadedPhases) {
@@ -1141,8 +1110,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 }
               }
             }
-            
-            console.log(`✅ Auto-fixed ${fixCount} display_order values`);
                         
             // Reload phases after fixing
             const reloadedPhases = await loadPhases(projectId);
@@ -1324,13 +1291,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       // Always place the new phase immediately after the highest existing nth position.
       positionValue = maxNthValue + 1;
       
-      console.log('📍 Adding new phase at position:', {
-        maxNthValue,
-        positionValue,
-        positionRule,
-        isEditingStandardProject
-      });
-      
       // Insert phase directly into database
       const { data: addedPhase, error: insertError } = await supabase
         .from('project_phases')
@@ -1388,11 +1348,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       if (stepError) {
         throw stepError;
       }
-      
-      // Reload phases with position data from database
-      console.log('🔄 Reloading phases after adding new phase...');
       const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
-      console.log('✅ Successfully reloaded phases:', sortedPhases.length);
       
       // Reset loadedProjectIdRef to allow immediate UI update
       loadedProjectIdRef.current = null;
@@ -2253,7 +2209,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
    * Move a step up (decrease display_order)
    */
   const handleMoveStepUp = useCallback(async (stepId: string, operationId: string, phaseId: string) => {
-    console.log('🚀 handleMoveStepUp START:', { stepId, operationId, phaseId, hasProject: !!currentProject?.id });
     
     if (!currentProject?.id) {
       console.error('❌ handleMoveStepUp: No project ID');
@@ -2274,24 +2229,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     
     const currentIndex = operation.steps.findIndex(s => s.id === stepId);
     if (currentIndex <= 0) {
-      console.log('⚠️ handleMoveStepUp: Step is already at top or not found', { currentIndex, stepId });
       return;
     }
     
     const step = operation.steps[currentIndex];
     const prevStep = operation.steps[currentIndex - 1];
-    
-    console.log('🔄 handleMoveStepUp called:', {
-      stepId,
-      operationId,
-      phaseId,
-      isEditingStandardProject,
-      phaseIsLinked: phase.isLinked,
-      phaseIsStandard: isStandardPhase(phase),
-      currentIndex,
-      stepDisplayOrder: (step as any).displayOrder,
-      prevStepDisplayOrder: (prevStep as any).displayOrder
-    });
     
     // Check permissions
     if (phase.isLinked) {
@@ -2345,7 +2287,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
    * Move a step down (increase display_order)
    */
   const handleMoveStepDown = useCallback(async (stepId: string, operationId: string, phaseId: string) => {
-    console.log('🚀 handleMoveStepDown START:', { stepId, operationId, phaseId, hasProject: !!currentProject?.id });
     
     if (!currentProject?.id) {
       console.error('❌ handleMoveStepDown: No project ID');
@@ -2366,24 +2307,11 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
     
     const currentIndex = operation.steps.findIndex(s => s.id === stepId);
     if (currentIndex < 0 || currentIndex >= operation.steps.length - 1) {
-      console.log('⚠️ handleMoveStepDown: Step is already at bottom or not found', { currentIndex, stepId, stepsLength: operation.steps.length });
       return;
     }
     
     const step = operation.steps[currentIndex];
     const nextStep = operation.steps[currentIndex + 1];
-    
-    console.log('🔄 handleMoveStepDown called:', {
-      stepId,
-      operationId,
-      phaseId,
-      isEditingStandardProject,
-      phaseIsLinked: phase.isLinked,
-      phaseIsStandard: isStandardPhase(phase),
-      currentIndex,
-      stepDisplayOrder: (step as any).displayOrder,
-      nextStepDisplayOrder: (nextStep as any).displayOrder
-    });
     
     // Check permissions
     if (phase.isLinked) {
@@ -2728,8 +2656,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         toast.error(`Failed to add step: ${insertError.message || 'Unknown error'}`);
         throw insertError;
       }
-      
-      console.log('Step created successfully:', newStep);
       
       // Reload phases with position data
       const sortedPhases = await reloadPhasesWithPositions(currentProject.id, false, { dispatchEvent: false });
@@ -4243,20 +4169,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                               const isStepEditing = editingItem?.type === 'step' && editingItem.id === step.id;
                                               const stepIsStandard = step.isStandard === true;
                                               
-                                              // Debug: Log button visibility conditions
-                                              if (isEditingStandardProject && stepIndex === 0) {
-                                                console.log('🔍 Step button visibility check:', {
-                                                  stepId: step.id,
-                                                  stepName: step.step,
-                                                  stepIsStandard,
-                                                  isEditingStandardProject,
-                                                  isReadOnly,
-                                                  phaseIsLinked,
-                                                  phaseIsStandard: phaseIsStandard,
-                                                  shouldShowButtons: !isReadOnly && !phaseIsLinked && (!stepIsStandard || isEditingStandardProject)
-                                                });
-                                              }
-                                              
                                               return (
                                                 <Card key={step.id} className="ml-4">
                                                   <CardContent className="p-2">
@@ -4328,7 +4240,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                                     size="sm"
                                                                     variant="ghost"
                                                                     onClick={() => {
-                                                                      console.log('🔘 Move Step Up button clicked:', { stepId: step.id, operationId: operation.id, phaseId: phase.id, isEditingStandardProject });
                                                                       handleMoveStepUp(step.id, operation.id, phase.id);
                                                                     }}
                                                                     disabled={stepIndex === 0}
@@ -4340,7 +4251,6 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                                                     size="sm"
                                                                     variant="ghost"
                                                                     onClick={() => {
-                                                                      console.log('🔘 Move Step Down button clicked:', { stepId: step.id, operationId: operation.id, phaseId: phase.id, isEditingStandardProject });
                                                                       handleMoveStepDown(step.id, operation.id, phase.id);
                                                                     }}
                                                                     disabled={stepIndex === operation.steps.length - 1}

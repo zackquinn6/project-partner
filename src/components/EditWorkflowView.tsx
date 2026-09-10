@@ -1438,13 +1438,6 @@ export default function EditWorkflowView({
     setCurrentStepIndex(idx >= 0 ? idx : 0);
   }, [visibleStepsKey]);
   
-  // Debug logging for current step (moved here after currentStep is declared)
-  useEffect(() => {
-    if (currentProject && currentStep) {
-      const phase = displayPhases.find(p => p.name === currentStep.phaseName);
-    }
-  }, [currentProject?.id, displayPhases, currentStep]);
-  
   useEffect(() => {
     if (currentStep && (!editingStep || editingStep.id !== currentStep.id)) {
       setEditingStep({
@@ -1818,9 +1811,6 @@ export default function EditWorkflowView({
         }
       }
     }
-
-    if (!stepPersistedToDb && !operationStepsSaveFailed) {
-          }
 
     setEditMode(false);
   };

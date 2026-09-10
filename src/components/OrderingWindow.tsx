@@ -293,7 +293,6 @@ export function OrderingWindow({
 
     // If we have selected materials from MaterialsSelectionWindow, use those instead
     if (selectedMaterials && (selectedMaterials.materials.length > 0 || selectedMaterials.tools.length > 0)) {
-      console.log('🛒 Using selected materials from MaterialsSelectionWindow:', selectedMaterials);
 
       // Convert selected items to the format expected by OrderingWindow
       const materials = selectedMaterials.materials.map((material, index) => ({
