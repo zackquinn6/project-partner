@@ -12,6 +12,8 @@ interface DIYProfileStepProps {
   isCompleted: boolean;
   checkedOutputs?: Set<string>;
   onOutputToggle?: (outputId: string) => void;
+  /** Notify kickoff shell to reload user_profiles for Project Match. */
+  onProfileSaved?: () => void;
 }
 
 /** Project focus labels (matches workshop My Profile). */
@@ -47,7 +49,13 @@ interface ProfileData {
   nickname?: string;
 }
 
-export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCompleted, checkedOutputs = new Set(), onOutputToggle }) => {
+export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
+  onComplete,
+  isCompleted,
+  checkedOutputs = new Set(),
+  onOutputToggle,
+  onProfileSaved,
+}) => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [existingProfile, setExistingProfile] = useState<ProfileData | null>(null);
@@ -133,6 +141,8 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
   const handleSurveyComplete = () => {
     setShowSurveyEditor(false);
     setProfileReloadToken((token) => token + 1);
+    onProfileSaved?.();
+    window.dispatchEvent(new CustomEvent('user-profile-updated'));
   };
 
   const renderProfileView = () => {
@@ -360,7 +370,11 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
         mode="new"
         enableProgressSave
         initialDataLoading={Boolean(user?.id) && isLoading}
-        onProfileSaved={() => setProfileReloadToken((token) => token + 1)}
+        onProfileSaved={() => {
+          setProfileReloadToken((token) => token + 1);
+          onProfileSaved?.();
+          window.dispatchEvent(new CustomEvent('user-profile-updated'));
+        }}
         initialData={{
           skillLevel: existingProfile?.skill_level || "",
           physicalCapability: existingProfile?.physical_capability || "",

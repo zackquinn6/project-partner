@@ -157,7 +157,10 @@ export default function ProfileManager({
         mode="new"
         enableProgressSave
         initialDataLoading={Boolean(user) && isLoading}
-        onProfileSaved={() => void loadExistingProfile(true)}
+        onProfileSaved={() => {
+          void loadExistingProfile(true);
+          window.dispatchEvent(new CustomEvent('user-profile-updated'));
+        }}
         onOpenAchievements={() => setShowAchievements(true)}
         initialData={surveyInitialData}
       />

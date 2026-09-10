@@ -130,6 +130,16 @@ interface ProjectOverviewStepProps {
   onOutputToggle?: (outputId: string) => void;
   /** `kickoff`: recommendation block + nested "Project details" accordion. `workflow`: details fields only (single accordion lives on the workflow overview page). */
   mode?: 'kickoff' | 'workflow';
+  /**
+   * From `user_profiles.skill_level` only (via KickoffWorkflow). Required for Match "Your level"
+   * on skill — never derived from the project run or template.
+   */
+  profileSkillLevel?: string | null;
+  /**
+   * From `user_profiles.physical_capability` only (via KickoffWorkflow). Required for Match
+   * "Your level" on effort — never derived from the project run or template.
+   */
+  profilePhysicalCapability?: string | null;
 }
 export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   onComplete,
@@ -137,6 +147,8 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   checkedOutputs = new Set(),
   onOutputToggle,
   mode = 'kickoff',
+  profileSkillLevel,
+  profilePhysicalCapability,
 }) => {
   const {
     currentProjectRun,
@@ -146,7 +158,8 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     projects
   } = useProject();
   const {
-    user
+    user,
+    loading: authLoading,
   } = useAuth();
   const navigate = useNavigate();
   const { projectCatalogEnabled } = useGlobalPublicSettings();
@@ -161,72 +174,69 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     name: currentProjectRun?.name || '',
     description: resolvedProjectDescription
   });
-  const [userProfile, setUserProfile] = useState<{
-    skill_level?: string;
-    physical_capability?: string;
-  } | null>(null);
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
   const [projectVisualizerOpen, setProjectVisualizerOpen] = useState(false);
+  /** Only used when parent did not pass profile levels (e.g. workflow overview). */
+  const [fetchedProfileSkillLevel, setFetchedProfileSkillLevel] = useState<string | null>(null);
+  const [fetchedProfilePhysicalCapability, setFetchedProfilePhysicalCapability] = useState<string | null>(null);
 
-  // General DIY skill + physical capability from user_profiles.skill_level / physical_capability
-  // (Profile manager, DIY survey, onboarding — same fields the recommendation logic uses).
+  const parentProvidesProfileLevels =
+    profileSkillLevel !== undefined || profilePhysicalCapability !== undefined;
+
+  // Your level: user_profiles only — never project run / template skill or effort.
   useEffect(() => {
+    if (parentProvidesProfileLevels) return;
+    if (authLoading) return;
     if (!user?.id) {
-      setUserProfile(null);
+      setFetchedProfileSkillLevel(null);
+      setFetchedProfilePhysicalCapability(null);
       return;
     }
     let cancelled = false;
     (async () => {
-      try {
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .select('skill_level, physical_capability')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        if (cancelled) return;
-        if (error) {
-          await reportUserFacingError({
-            source: 'kickoff',
-            operation: 'load_match_profile',
-            userId: user.id,
-            projectRunId: currentProjectRun?.id,
-            stepId: 'kickoff-step-1',
-            error,
-            userMessage: 'Failed to load project match profile.',
-            notificationTitle: 'Kickoff match profile load failed',
-          });
-          setUserProfile(null);
-          return;
-        }
-        setUserProfile(
-          data
-            ? {
-                skill_level: data.skill_level ?? undefined,
-                physical_capability: data.physical_capability ?? undefined,
-              }
-            : null
-        );
-      } catch (error) {
-        if (!cancelled) {
-          await reportUserFacingError({
-            source: 'kickoff',
-            operation: 'load_match_profile',
-            userId: user.id,
-            projectRunId: currentProjectRun?.id,
-            stepId: 'kickoff-step-1',
-            error,
-            userMessage: 'Failed to load project match profile.',
-            notificationTitle: 'Kickoff match profile load failed',
-          });
-          setUserProfile(null);
-        }
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('skill_level, physical_capability')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        await reportUserFacingError({
+          source: 'kickoff',
+          operation: 'load_match_profile',
+          userId: user.id,
+          projectRunId: currentProjectRun?.id,
+          stepId: 'kickoff-step-1',
+          error,
+          userMessage: 'Failed to load your profile skill and effort levels.',
+          notificationTitle: 'Profile load failed',
+        });
+        setFetchedProfileSkillLevel(null);
+        setFetchedProfilePhysicalCapability(null);
+        return;
       }
+      setFetchedProfileSkillLevel(
+        typeof data?.skill_level === 'string' && data.skill_level.trim() !== ''
+          ? data.skill_level.trim()
+          : null
+      );
+      setFetchedProfilePhysicalCapability(
+        typeof data?.physical_capability === 'string' && data.physical_capability.trim() !== ''
+          ? data.physical_capability.trim()
+          : null
+      );
     })();
     return () => {
       cancelled = true;
     };
-  }, [user?.id, currentProjectRun?.id]);
- 
+  }, [parentProvidesProfileLevels, authLoading, user?.id, currentProjectRun?.id]);
+
+  const userSkillLevel = parentProvidesProfileLevels
+    ? (profileSkillLevel ?? null)
+    : fetchedProfileSkillLevel;
+  const userPhysicalCapability = parentProvidesProfileLevels
+    ? (profilePhysicalCapability ?? null)
+    : fetchedProfilePhysicalCapability;
   // Fetch from database as backup if templateProject doesn't have the fields
   const [fetchedProjectInfo, setFetchedProjectInfo] = useState<{
     skillLevel?: string | null;
@@ -322,9 +332,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       mode === 'kickoff' && currentProjectRun
         ? computeProjectMatchExplanation({
             projectSkillLevel: displaySkillLevel,
-            userSkillLevel: userProfile?.skill_level,
+            userSkillLevel: userSkillLevel,
             projectEffortLevel: displayEffortLevel,
-            userPhysicalCapability: userProfile?.physical_capability,
+            userPhysicalCapability: userPhysicalCapability,
             projectChallengesText: displayProjectChallenges,
           })
         : null,
@@ -332,9 +342,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       mode,
       currentProjectRun?.id,
       displaySkillLevel,
-      userProfile?.skill_level,
+      userSkillLevel,
       displayEffortLevel,
-      userProfile?.physical_capability,
+      userPhysicalCapability,
       displayProjectChallenges,
     ]
   );
@@ -490,7 +500,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   // Helper function to get skill level comparison
   const getSkillLevelComparison = () => {
     const projectIndex = projectSkillLevelToIndex(displaySkillLevel);
-    const userIndex = userSkillLevelToIndex(userProfile?.skill_level);
+    const userIndex = userSkillLevelToIndex(userSkillLevel);
     if (projectIndex === null || userIndex === null) return null;
     if (userIndex >= projectIndex) {
       return {
@@ -523,7 +533,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
 
     const effortLevels = ['low', 'medium', 'high'];
     const projectIndex = effortLevels.indexOf(projectEffort);
-    const userSeg = physicalCapabilityToEffortSegment(userProfile?.physical_capability);
+    const userSeg = physicalCapabilityToEffortSegment(userPhysicalCapability);
     if (projectIndex === -1 || userSeg === null) return null;
     const userIndex = userSeg;
 
@@ -743,7 +753,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                {renderLevelSlider(displaySkillLevel, ['Beginner', 'Intermediate', 'Advanced'], ['Beginner', 'Intermediate', 'Advanced'], userProfile?.skill_level, skillComparison)}
+                {renderLevelSlider(displaySkillLevel, ['Beginner', 'Intermediate', 'Advanced'], ['Beginner', 'Intermediate', 'Advanced'], userSkillLevel, skillComparison)}
               </div>
 
               {/* Right Column */}
@@ -811,9 +821,9 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                   displayEffortLevel,
                   ['Low', 'Medium', 'High'],
                   ['Low', 'Medium', 'High'],
-                  userProfile?.physical_capability,
+                  userPhysicalCapability,
                   effortComparison,
-                  getPhysicalCapabilitySegmentIndex(userProfile?.physical_capability)
+                  getPhysicalCapabilitySegmentIndex(userPhysicalCapability)
                 )}
               </div>
 

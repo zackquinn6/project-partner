@@ -86,7 +86,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     updateProjectRun,
     deleteProjectRun
   } = useProject();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const isMobile = useIsMobile();
   const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled, wasteRemovalEnabled } = usePartnerAppSettings();
   const [kickoffOrderResolved, setKickoffOrderResolved] = useState(false);
@@ -95,6 +95,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   const [completedKickoffSteps, setCompletedKickoffSteps] = useState<Set<number>>(new Set());
   const [checkedOutputs, setCheckedOutputs] = useState<Record<string, Set<string>>>({});
   const [selectedPlanningTools, setSelectedPlanningTools] = useState<PlanningToolId[]>([]);
+  /** user_profiles.skill_level / physical_capability — sole source for Match "Your level". */
+  const [profileSkillLevel, setProfileSkillLevel] = useState<string | null>(null);
+  const [profilePhysicalCapability, setProfilePhysicalCapability] = useState<string | null>(null);
+  const [profileReloadToken, setProfileReloadToken] = useState(0);
   // CRITICAL FIX: Use ref instead of state to avoid race conditions
   const isCompletingStepRef = useRef(false);
   const kickoffStepNavRef = useRef<HTMLDivElement | null>(null);
@@ -161,6 +165,58 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       cancelled = true;
     };
   }, [currentProjectRun?.id, user?.id]);
+
+  // Load Match "Your level" fields only from user_profiles (no run/template fallbacks).
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user?.id) {
+      setProfileSkillLevel(null);
+      setProfilePhysicalCapability(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('skill_level, physical_capability')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        await reportUserFacingError({
+          source: 'kickoff',
+          operation: 'load_match_user_profile',
+          userId: user.id,
+          projectRunId: currentProjectRun?.id,
+          error,
+          userMessage: 'Failed to load your profile skill and effort levels.',
+          notificationTitle: 'Kickoff profile load failed',
+        });
+        setProfileSkillLevel(null);
+        setProfilePhysicalCapability(null);
+        return;
+      }
+      const skill =
+        typeof data?.skill_level === 'string' && data.skill_level.trim() !== ''
+          ? data.skill_level.trim()
+          : null;
+      const capability =
+        typeof data?.physical_capability === 'string' && data.physical_capability.trim() !== ''
+          ? data.physical_capability.trim()
+          : null;
+      setProfileSkillLevel(skill);
+      setProfilePhysicalCapability(capability);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, user?.id, profileReloadToken, currentProjectRun?.id]);
+
+  useEffect(() => {
+    const onProfileUpdated = () => setProfileReloadToken((t) => t + 1);
+    window.addEventListener('user-profile-updated', onProfileUpdated);
+    return () => window.removeEventListener('user-profile-updated', onProfileUpdated);
+  }, []);
 
   // Initialize completed steps from project run data when project or step order changes
   useEffect(() => {
@@ -454,9 +510,20 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
     switch (kickoffSteps[currentKickoffStep]?.id) {
       case 'kickoff-step-1':
-        return <ProjectOverviewStep {...stepProps} />;
+        return (
+          <ProjectOverviewStep
+            {...stepProps}
+            profileSkillLevel={profileSkillLevel}
+            profilePhysicalCapability={profilePhysicalCapability}
+          />
+        );
       case 'kickoff-step-2':
-        return <DIYProfileStep {...stepProps} />;
+        return (
+          <DIYProfileStep
+            {...stepProps}
+            onProfileSaved={() => setProfileReloadToken((t) => t + 1)}
+          />
+        );
       case 'kickoff-step-3':
         return <ProjectProfileStep {...stepProps} />;
       case 'kickoff-step-4':
