@@ -32,13 +32,32 @@ const handler = async (req: Request): Promise<Response> => {
     await verifyAuth(req);
     const { to_email, certificate_data }: CertificateEmailRequest = await req.json();
 
+    if (
+      typeof to_email !== "string" ||
+      to_email.length > 254 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to_email) ||
+      !certificate_data ||
+      typeof certificate_data.image_data !== "string"
+    ) {
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const projectName = String(certificate_data.project_name ?? "").slice(0, 200);
+    const difficulty = certificate_data.difficulty
+      ? String(certificate_data.difficulty).slice(0, 100)
+      : "";
+    const completedDate = String(certificate_data.completed_date ?? "");
+
     // Convert base64 image to attachment
     const imageData = certificate_data.image_data.split(',')[1];
-    
+
     const emailResponse = await resend.emails.send({
       from: "Project Partner <onboarding@resend.dev>",
       to: [to_email],
-      subject: `🏆 Certificate of Completion: ${certificate_data.project_name}`,
+      subject: `🏆 Certificate of Completion: ${projectName.replace(/[\r\n]/g, " ")}`,
       html: `
         <!DOCTYPE html>
         <html>
