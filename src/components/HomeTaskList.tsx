@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Home as HomeIcon, X, GripVertical, List, ListOrdered, ShoppingCart, Users, Link2, Bell } from "lucide-react";
+import { Plus, Home as HomeIcon, X, GripVertical, List, ListOrdered, ShoppingCart, Users, Link2, Bell, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -73,6 +74,7 @@ export function HomeTaskList({
   const { user } = useAuth();
   const { hasProjectsTier, hasRiskLessTier, loading: membershipLoading } = useMembership();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [tasks, setTasks] = useState<HomeTask[]>([]);
   const [homes, setHomes] = useState<Home[]>([]);
   const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
@@ -444,6 +446,37 @@ export function HomeTaskList({
     startEdit(task);
   };
 
+  const handleDeleteEditingTask = async () => {
+    if (!user || !editingTask) return;
+    if (!window.confirm(`Delete task "${editingTask.title}"? This cannot be undone.`)) return;
+
+    try {
+      await supabase.from('home_task_subtasks').delete().eq('task_id', editingTask.id);
+      const { error: materialsError } = await supabase
+        .from('task_shopping_list')
+        .delete()
+        .eq('task_id', editingTask.id);
+      if (materialsError && materialsError.code !== 'PGRST205') throw materialsError;
+
+      const { error } = await supabase
+        .from('home_tasks')
+        .delete()
+        .eq('id', editingTask.id)
+        .eq('user_id', user.id);
+      if (error) throw error;
+
+      resetForm();
+      await fetchTasks();
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete task',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleLinkProject = (task: HomeTask) => {
     setSelectedTask(task);
     setShowProjectLink(true);
@@ -771,7 +804,7 @@ export function HomeTaskList({
 
   const taskManagerTabs = (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
-              <div className="flex-shrink-0 border-b border-border/60 bg-background/95 px-2 pb-1 pt-0 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:pb-1.5 md:pt-0">
+              <div className="flex-shrink-0 border-b border-border/60 bg-background/95 px-2 pb-1.5 pt-2 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:pb-2 md:pt-2">
                 <div className="overflow-hidden">
                   <TabsList className="w-full inline-flex h-8 md:h-9 p-0.5 gap-0.5 md:gap-1 bg-muted/50 rounded-full">
                     <TabsTrigger value="tasks" className="text-[11px] md:text-xs px-2 md:px-3 py-1.5 rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 min-w-0 truncate">
@@ -1156,14 +1189,28 @@ export function HomeTaskList({
                           </>
                         )}
 
-                        <div className="flex flex-wrap justify-end gap-2">
+                        <div className="flex flex-col gap-2">
                           {editingTask?.project_run_id && (
-                            <div className="w-full flex items-center gap-2">
+                            <div className="flex items-center gap-2">
                               <span className="text-xs text-muted-foreground">
                                 Linked project: <span className="font-medium text-foreground">{editingTask.project_run_id}</span>
                               </span>
                             </div>
                           )}
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                          {editingTask ? (
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="mr-auto h-8 w-8 p-0"
+                              onClick={() => void handleDeleteEditingTask()}
+                              title="Delete task"
+                              aria-label="Delete task"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          ) : null}
                           <Button
                             type="button"
                             variant="outline"
@@ -1226,6 +1273,7 @@ export function HomeTaskList({
                           <Button onClick={() => handleSubmit()} size="sm" className="h-8 text-xs">
                             {editingTask ? "Update" : "Create"}
                           </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>

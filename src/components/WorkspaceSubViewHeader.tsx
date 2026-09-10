@@ -208,8 +208,8 @@ export function WorkspaceSubViewHeader({
       <div
         className={
           compactMobile
-            ? 'flex flex-col gap-1 px-2 py-1 md:gap-2 md:px-6 md:py-3'
-            : 'flex flex-col gap-1.5 px-2 py-1.5 md:gap-2 md:px-6 md:py-3'
+            ? 'flex flex-col gap-1.5 px-2 py-2.5 md:gap-2 md:px-6 md:py-4'
+            : 'flex flex-col gap-1.5 px-3 py-2.5 md:gap-2 md:px-6 md:py-4'
         }
       >
         {/* Mobile: Project & Task Manager — title + notifications + back, then homes + selector */}

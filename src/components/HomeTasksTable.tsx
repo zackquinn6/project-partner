@@ -512,9 +512,9 @@ export function HomeTasksTable({
                 {!isMobile && <TableHead className="w-[150px] text-xs text-right text-white">Actions</TableHead>}
               </TableRow>
             </TableHeader>
-            <TableBody className="max-md:[&_td]:!px-1.5 max-md:[&_td]:!py-3 md:[&_td]:!px-4 md:[&_td]:!py-3">
+            <TableBody className="max-md:[&_td]:!px-1.5 max-md:[&_td]:!py-2 md:[&_td]:!px-3 md:[&_td]:!py-2">
               {filteredAndSortedTasks.length === 0 ? <TableRow>
-                  <TableCell colSpan={isMobile ? 4 : 7} className="text-center py-6 md:py-8 text-sm md:text-[18px] text-muted-foreground">
+                  <TableCell colSpan={isMobile ? 4 : 7} className="text-center py-6 md:py-8 text-sm text-muted-foreground">
                     No tasks found. Add your first task to get started!
                   </TableCell>
                 </TableRow> : filteredAndSortedTasks.map(task => (
@@ -539,7 +539,7 @@ export function HomeTasksTable({
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="h-10 w-10 min-h-10 min-w-10 touch-manipulation p-0 text-base font-medium leading-none rounded-md border-2 hover:bg-primary/10 md:h-12 md:w-12 md:min-h-12 md:min-w-12 md:text-lg"
+                          className="h-9 w-9 min-h-9 min-w-9 touch-manipulation p-0 text-sm font-medium leading-none rounded-md border-2 hover:bg-primary/10 md:h-9 md:w-9 md:min-h-9 md:min-w-9"
                           title={task.status === 'closed' ? 'Mark as not complete' : 'Mark as complete'}
                           aria-label={task.status === 'closed' ? 'Mark task as not complete' : 'Mark task complete'}
                           {...(isMobile
@@ -560,14 +560,14 @@ export function HomeTasksTable({
                       <TableCell className="min-w-0">
                       <div className="flex items-center gap-1 md:gap-2 flex-wrap min-w-0">
                         <span
-                          className={`text-sm md:text-[18px] font-medium leading-tight min-w-0 truncate ${task.status === 'closed' ? 'line-through text-muted-foreground' : ''} ${isMobile ? '' : 'cursor-pointer'}`}
+                          className={`text-xs md:text-sm font-medium leading-tight min-w-0 truncate ${task.status === 'closed' ? 'line-through text-muted-foreground' : ''} ${isMobile ? '' : 'cursor-pointer'}`}
                           onClick={isMobile ? undefined : () => handleToggleTaskComplete(task)}
                         >
                           {task.status === 'closed' && !isMobile ? '✓ ' : ''}
                           {task.title}
                         </span>
                         {isMobile && (
-                          <Badge variant={getDiyLevelColor(task.diy_level)} className="text-xs px-1 py-0 shrink-0">
+                          <Badge variant={getDiyLevelColor(task.diy_level)} className="text-[10px] px-1 py-0 shrink-0">
                             {task.diy_level === 'beginner' ? 'new' : task.diy_level === 'intermediate' ? 'mid' : task.diy_level === 'advanced' ? 'adv' : 'pro'}
                           </Badge>
                         )}
@@ -576,39 +576,39 @@ export function HomeTasksTable({
                             variant="ghost"
                             size="sm"
                             onClick={() => toggleRow(task.id)}
-                            className="h-6 w-6 md:h-7 md:w-7 p-0 shrink-0"
+                            className="h-6 w-6 p-0 shrink-0"
                           >
                             {expandedRows.has(task.id) ? (
-                              <ChevronUp className="h-4 w-4 md:h-[18px] md:w-[18px]" />
+                              <ChevronUp className="h-3.5 w-3.5" />
                             ) : (
-                              <ChevronDown className="h-4 w-4 md:h-[18px] md:w-[18px]" />
+                              <ChevronDown className="h-3.5 w-3.5" />
                             )}
                           </Button>
                         )}
                       </div>
                     </TableCell>
                     {!isMobile && (
-                      <TableCell className="text-[18px] truncate max-w-[180px]" title={task.notes || ''}>
+                      <TableCell className="text-sm truncate max-w-[180px]" title={task.notes || ''}>
                         {task.notes || '-'}
                       </TableCell>
                     )}
                     {!isMobile && (
                       <TableCell>
-                        <Badge variant={getPriorityColor(task.priority)} className="text-[15px] px-1.5 py-0">
+                        <Badge variant={getPriorityColor(task.priority)} className="text-xs px-1.5 py-0">
                           {task.priority === 'medium' ? 'med' : task.priority}
                         </Badge>
                       </TableCell>
                     )}
                     {!isMobile && (
                       <TableCell>
-                        <Badge variant={getDiyLevelColor(task.diy_level)} className="text-[15px] px-1.5 py-0">
+                        <Badge variant={getDiyLevelColor(task.diy_level)} className="text-xs px-1.5 py-0">
                           {task.diy_level === 'beginner' ? 'new' : 
                            task.diy_level === 'intermediate' ? 'mid' : 
                            task.diy_level === 'advanced' ? 'adv' : 'pro'}
                         </Badge>
                       </TableCell>
                     )}
-                    <TableCell className="text-sm md:text-[18px] whitespace-nowrap">
+                    <TableCell className="text-xs md:text-sm whitespace-nowrap">
                       {task.due_date ? new Date(task.due_date).toLocaleDateString(undefined, isMobile ? { month: 'numeric', day: 'numeric', year: '2-digit' } : undefined) : '-'}
                     </TableCell>
                     {isMobile && (
@@ -685,7 +685,7 @@ export function HomeTasksTable({
                             title="Budget"
                             aria-label="Budget"
                           >
-                            <span className="text-[18px]">$</span>
+                            <span className="text-sm">$</span>
                           </Button>
                           <Button
                             variant="ghost"
@@ -707,9 +707,9 @@ export function HomeTasksTable({
                             aria-label={task.project_run_id ? 'Open project' : 'Link to project'}
                           >
                             {task.project_run_id ? (
-                              <ExternalLink className="h-[18px] w-[18px]" />
+                              <ExternalLink className="h-4 w-4" />
                             ) : (
-                              <Link2 className="h-[18px] w-[18px]" />
+                              <Link2 className="h-4 w-4" />
                             )}
                           </Button>
                           <Button
@@ -720,7 +720,7 @@ export function HomeTasksTable({
                             title="Edit"
                             aria-label="Edit"
                           >
-                            <Pencil className="h-[18px] w-[18px]" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
@@ -733,19 +733,19 @@ export function HomeTasksTable({
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-9 text-[18px]"
+                            className="h-9 text-sm"
                             onClick={() => {
                               onRapidCosting(task);
                               setSwipedTaskId(null);
                             }}
                           >
-                            <span className="mr-1 text-[18px] font-medium">$</span>
+                            <span className="mr-1 text-sm font-medium">$</span>
                             Budget
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-9 text-[18px]"
+                            className="h-9 text-sm"
                             onClick={() => {
                               if (task.project_run_id) {
                                 if (onOpenLinkedProjectRun) {
@@ -762,12 +762,12 @@ export function HomeTasksTable({
                           >
                             {task.project_run_id ? (
                               <>
-                                <ExternalLink className="mr-1 h-[18px] w-[18px]" />
+                                <ExternalLink className="mr-1 h-4 w-4" />
                                 Project
                               </>
                             ) : (
                               <>
-                                <Link2 className="mr-1 h-[18px] w-[18px]" />
+                                <Link2 className="mr-1 h-4 w-4" />
                                 Project
                               </>
                             )}
@@ -775,13 +775,13 @@ export function HomeTasksTable({
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-9 text-[18px]"
+                            className="h-9 text-sm"
                             onClick={() => {
                               onEdit(task);
                               setSwipedTaskId(null);
                             }}
                           >
-                            <Pencil className="mr-1 h-[18px] w-[18px]" />
+                            <Pencil className="mr-1 h-4 w-4" />
                             Edit
                           </Button>
                         </div>
@@ -790,11 +790,11 @@ export function HomeTasksTable({
                   )}
                    {expandedRows.has(task.id) && subtasks[task.id]?.length > 0 && (
                     <TableRow key={`${task.id}-subtasks`}>
-                      <TableCell colSpan={isMobile ? 4 : 7} className="bg-muted/30 p-2 md:p-4 border-l-4 border-l-primary/20">
+                      <TableCell colSpan={isMobile ? 4 : 7} className="bg-muted/30 p-2 md:p-3 border-l-4 border-l-primary/20">
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <div className="text-[18px] font-semibold text-primary">Subtasks</div>
-                            <Badge variant="outline" className="text-[18px] bg-background">
+                            <div className="text-sm font-semibold text-primary">Subtasks</div>
+                            <Badge variant="outline" className="text-xs bg-background">
                               Edit task to manage
                             </Badge>
                           </div>
@@ -803,32 +803,32 @@ export function HomeTasksTable({
                             {subtasks[task.id].map((subtask, index) => (
                               <div
                                 key={subtask.id}
-                                className={`flex items-center gap-2 p-2.5 border rounded-lg bg-background shadow-sm ${
+                                className={`flex items-center gap-2 p-2 border rounded-lg bg-background shadow-sm ${
                                   subtask.completed ? 'opacity-60' : ''
                                 }`}
                               >
                                 {task.ordered && (
-                                  <div className="text-[18px] font-semibold text-muted-foreground w-6">
+                                  <div className="text-xs font-semibold text-muted-foreground w-5">
                                     {index + 1}.
                                   </div>
                                 )}
                                 <button
                                   onClick={() => handleToggleSubtaskComplete(subtask.id, subtask.completed)}
-                                  className="h-7 w-7 flex items-center justify-center text-[18px] hover:opacity-70 transition-opacity"
+                                  className="h-6 w-6 flex items-center justify-center text-sm hover:opacity-70 transition-opacity"
                                   title={subtask.completed ? 'Mark as incomplete' : 'Mark as complete'}
                                 >
                                   {subtask.completed ? '✓' : '○'}
                                 </button>
                                 <div 
-                                  className={`text-[18px] flex-1 cursor-pointer leading-tight ${subtask.completed ? 'line-through text-muted-foreground' : ''}`}
+                                  className={`text-sm flex-1 cursor-pointer leading-tight ${subtask.completed ? 'line-through text-muted-foreground' : ''}`}
                                   onClick={() => handleToggleSubtaskComplete(subtask.id, subtask.completed)}
                                 >
                                   {subtask.title}
                                 </div>
-                                <Badge variant="outline" className="text-[15px] px-2 py-0.5">
+                                <Badge variant="outline" className="text-xs px-1.5 py-0">
                                   {subtask.estimated_hours}h
                                 </Badge>
-                                <Badge variant="outline" className="text-[15px] px-2 py-0.5">
+                                <Badge variant="outline" className="text-xs px-1.5 py-0">
                                   {subtask.diy_level === 'beginner' ? 'new' : 
                                    subtask.diy_level === 'intermediate' ? 'mid' : 
                                    subtask.diy_level === 'advanced' ? 'adv' : 'pro'}
