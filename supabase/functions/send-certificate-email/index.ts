@@ -139,7 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
       `,
       attachments: [
         {
-          filename: `${certificate_data.project_name.replace(/[^a-z0-9]/gi, '_')}-certificate.png`,
+          filename: `${(projectName || 'project').replace(/[^a-z0-9]/gi, '_').slice(0, 80)}-certificate.png`,
           content: imageData,
           content_id: 'certificate',
         }
