@@ -1,20 +1,17 @@
 import { useState, useEffect } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMembership } from "@/contexts/MembershipContext";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Home as HomeIcon, X, GripVertical, List, ListOrdered, ShoppingCart, Users, Link2, Bell, Trash2 } from "lucide-react";
+import { Plus, X, GripVertical, List, ListOrdered, Users, Link2, Trash2, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { HomeManager } from "./HomeManager";
 import { HomeTasksTable } from "./HomeTasksTable";
 import { HomeTaskPeople } from "./HomeTaskPeople";
@@ -62,6 +59,12 @@ function decimalHoursToHhMm(value: number | null | undefined): string {
   return `${h}:${m.toString().padStart(2, "0")}`;
 }
 
+/** Normalize DB due_date to YYYY-MM-DD for date inputs (avoids UTC display skew). */
+function toDateInputValue(due: string | null | undefined): string {
+  if (!due) return "";
+  return due.slice(0, 10);
+}
+
 export function HomeTaskList({
   open,
   onOpenChange,
@@ -89,9 +92,8 @@ export function HomeTaskList({
   const [showTeamWindow, setShowTeamWindow] = useState(false);
   const [showAssignWindow, setShowAssignWindow] = useState(false);
   const [showPortfolioReminders, setShowPortfolioReminders] = useState(false);
-  const isMobileTaskForm = useIsMobile();
-  /** Mobile new-task only: name + due on top; other fields in accordion (avoids duplicate drag-drop trees). */
-  const compactNewTaskMobile = isMobileTaskForm && !editingTask;
+  const [quickAddTitle, setQuickAddTitle] = useState("");
+  const [linkedProjectName, setLinkedProjectName] = useState<string | null>(null);
   const [linkedProjectUpgradeOpen, setLinkedProjectUpgradeOpen] = useState(false);
   const [linkedProjectUpgradeFeature, setLinkedProjectUpgradeFeature] = useState('Projects membership');
   const [subtasks, setSubtasks] = useState<Array<{ 
@@ -271,7 +273,7 @@ export function HomeTaskList({
       notes: formData.notes,
       user_id: user.id,
       home_id: selectedHomeId,
-      due_date: formData.due_date || null,
+      due_date: formData.due_date ? toDateInputValue(formData.due_date) : null,
     };
 
     try {
@@ -393,18 +395,20 @@ export function HomeTaskList({
     setSubtasks([]);
     setMaterials([]);
     setEditingTask(null);
+    setLinkedProjectName(null);
     setShowAddTask(false);
   };
 
   const startEdit = async (task: HomeTask) => {
     setEditingTask(task);
+    setLinkedProjectName(null);
     setFormData({
       title: task.title,
       priority: task.priority as 'high' | 'medium' | 'low',
       status: task.status as 'open' | 'in_progress' | 'closed',
       diy_level: task.diy_level as 'beginner' | 'intermediate' | 'advanced' | 'pro',
       notes: task.notes || "",
-      due_date: task.due_date || "",
+      due_date: toDateInputValue(task.due_date),
       estimated_hours: task.estimated_hours == null ? "" : decimalHoursToHhMm(task.estimated_hours),
     });
     
@@ -438,12 +442,60 @@ export function HomeTaskList({
         quantity: m.quantity || 1
       })));
     }
+
+    if (task.project_run_id) {
+      const { data: linkedRun } = await supabase
+        .from('project_runs')
+        .select('name, custom_project_name')
+        .eq('id', task.project_run_id)
+        .maybeSingle();
+      if (linkedRun) {
+        setLinkedProjectName(linkedRun.custom_project_name ?? linkedRun.name);
+      }
+    }
     
     setShowAddTask(true);
   };
 
   const handleEdit = (task: HomeTask) => {
     startEdit(task);
+  };
+
+  const handleQuickAdd = async () => {
+    if (!user) return;
+    const title = quickAddTitle.trim();
+    if (!title) return;
+    if (!selectedHomeId || selectedHomeId === 'all') {
+      toast({
+        title: 'Choose a home',
+        description: 'Select a home before adding a task.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('home_tasks').insert({
+        title,
+        priority: 'medium',
+        status: 'open',
+        diy_level: 'intermediate',
+        notes: '',
+        user_id: user.id,
+        home_id: selectedHomeId,
+        due_date: null,
+      });
+      if (error) throw error;
+      setQuickAddTitle('');
+      await fetchTasks();
+    } catch (error) {
+      console.error('Error quick-adding task:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add task',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleDeleteEditingTask = async () => {
@@ -802,6 +854,132 @@ export function HomeTaskList({
     </>
   );
 
+  const renderTasksInsights = () => {
+    const now = new Date();
+    const openTasks = tasks.filter(t => t.status !== 'closed');
+    const completedTasks = tasks.filter(t => t.status === 'closed');
+    const openByLevel = openTasks.reduce((acc, t) => {
+      acc[t.diy_level] = (acc[t.diy_level] ?? 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const openByPriority = openTasks.reduce((acc, t) => {
+      acc[t.priority] = (acc[t.priority] ?? 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const overdueTasks = openTasks.filter(t => {
+      if (!t.due_date) return false;
+      const ymd = t.due_date.slice(0, 10);
+      const [y, m, d] = ymd.split('-').map(Number);
+      if (!y || !m || !d) return false;
+      const due = new Date(y, m - 1, d);
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return due < today;
+    }).length;
+    const activeProjects = openTasks.filter(t => t.project_run_id != null).length;
+    const completedWithDate = completedTasks
+      .map(t => {
+        const ts = t.updated_at ?? null;
+        if (!ts) return null;
+        const d = new Date(ts);
+        if (Number.isNaN(d.getTime())) return null;
+        return d;
+      })
+      .filter((d): d is Date => d != null);
+    const daysAgo = (n: number) => new Date(now.getTime() - n * 24 * 60 * 60 * 1000);
+    const completedLast7 = completedWithDate.filter(d => d >= daysAgo(7)).length;
+    const completedLast30 = completedWithDate.filter(d => d >= daysAgo(30)).length;
+    let remainingHours = 0;
+    let missingHoursCount = 0;
+    openTasks.forEach(t => {
+      const subtasksForTask = subtasksByTaskId[t.id] || [];
+      if (subtasksForTask.length > 0) {
+        subtasksForTask.forEach(st => {
+          if (st.completed) return;
+          if (st.estimated_hours == null) {
+            missingHoursCount += 1;
+            return;
+          }
+          remainingHours += Number(st.estimated_hours);
+        });
+        return;
+      }
+      if (t.estimated_hours == null) {
+        missingHoursCount += 1;
+        return;
+      }
+      remainingHours += Number(t.estimated_hours);
+    });
+
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 shrink-0 gap-1.5 text-xs"
+            title="Insights"
+            aria-label="Insights"
+          >
+            <BarChart3 className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Insights</span>
+            <span className="tabular-nums text-muted-foreground">{openTasks.length}/{completedTasks.length}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-[min(22rem,calc(100vw-2rem))] space-y-3 p-3 text-xs z-[100]">
+          <div className="flex gap-2">
+            <div className="flex-1 rounded-md border border-border/60 px-2.5 py-2">
+              <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Open</div>
+              <div className="mt-0.5 text-lg font-bold tabular-nums">{openTasks.length}</div>
+            </div>
+            <div className="flex-1 rounded-md border border-border/60 px-2.5 py-2">
+              <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Done</div>
+              <div className="mt-0.5 text-lg font-bold tabular-nums">{completedTasks.length}</div>
+            </div>
+            <div className="flex-1 rounded-md border border-border/60 px-2.5 py-2">
+              <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Overdue</div>
+              <div className="mt-0.5 text-lg font-bold tabular-nums">{overdueTasks}</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-md border border-border/60 p-2">
+              <div className="mb-1 text-[10px] text-muted-foreground">Completed</div>
+              <div className="flex justify-between gap-1 text-center">
+                <div><div className="font-semibold tabular-nums">{completedLast7}</div><div className="text-[10px] text-muted-foreground">7d</div></div>
+                <div><div className="font-semibold tabular-nums">{completedLast30}</div><div className="text-[10px] text-muted-foreground">30d</div></div>
+                <div><div className="font-semibold tabular-nums">{completedTasks.length}</div><div className="text-[10px] text-muted-foreground">All</div></div>
+              </div>
+            </div>
+            <div className="rounded-md border border-border/60 p-2">
+              <div className="mb-1 text-[10px] text-muted-foreground">Open by priority</div>
+              <div className="flex justify-between gap-1 text-center">
+                <div><div className="font-semibold tabular-nums">{openByPriority.high ?? 0}</div><div className="text-[10px] text-muted-foreground">Hi</div></div>
+                <div><div className="font-semibold tabular-nums">{openByPriority.medium ?? 0}</div><div className="text-[10px] text-muted-foreground">Med</div></div>
+                <div><div className="font-semibold tabular-nums">{openByPriority.low ?? 0}</div><div className="text-[10px] text-muted-foreground">Lo</div></div>
+              </div>
+            </div>
+            <div className="rounded-md border border-border/60 p-2">
+              <div className="mb-1 text-[10px] text-muted-foreground">Open by level</div>
+              <div className="grid grid-cols-4 gap-1 text-center">
+                <div><div className="font-semibold tabular-nums">{openByLevel.beginner ?? 0}</div><div className="text-[10px] text-muted-foreground">New</div></div>
+                <div><div className="font-semibold tabular-nums">{openByLevel.intermediate ?? 0}</div><div className="text-[10px] text-muted-foreground">Mid</div></div>
+                <div><div className="font-semibold tabular-nums">{openByLevel.advanced ?? 0}</div><div className="text-[10px] text-muted-foreground">Adv</div></div>
+                <div><div className="font-semibold tabular-nums">{openByLevel.pro ?? 0}</div><div className="text-[10px] text-muted-foreground">Pro</div></div>
+              </div>
+            </div>
+            <div className="rounded-md border border-border/60 p-2 space-y-1">
+              <div className="text-[10px] text-muted-foreground">Active projects: <span className="font-semibold tabular-nums text-foreground">{activeProjects}</span></div>
+              <div className="text-[10px] text-muted-foreground">Est. hours left: <span className="font-semibold tabular-nums text-foreground">{remainingHours.toFixed(1)}h</span></div>
+              {missingHoursCount > 0 ? (
+                <div className="text-[10px] text-muted-foreground">+ {missingHoursCount} without hours</div>
+              ) : null}
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  };
+
   const taskManagerTabs = (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
               <div className="flex-shrink-0 border-b border-border/60 bg-background/95 px-2 pb-1.5 pt-2 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 md:pb-2 md:pt-2">
@@ -823,461 +1001,31 @@ export function HomeTaskList({
               </div>
 
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-background to-muted/30 px-2 pb-2 pt-0 md:px-6 md:pb-4 md:pt-0">
-                <TabsContent value="tasks" className="mt-0 flex h-full min-h-0 flex-1 flex-col gap-0.5 overflow-hidden md:gap-3">
-                  <div className="shrink-0 space-y-0.5 md:space-y-3">
-                  {/* Project Dashboard metrics (Project & Task Manager) */}
-                  {(() => {
-                    const now = new Date();
-                    const openTasks = tasks.filter(t => t.status !== 'closed');
-                    const completedTasks = tasks.filter(t => t.status === 'closed');
-
-                    const openByLevel = openTasks.reduce((acc, t) => {
-                      acc[t.diy_level] = (acc[t.diy_level] ?? 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>);
-                    const openByPriority = openTasks.reduce((acc, t) => {
-                      acc[t.priority] = (acc[t.priority] ?? 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>);
-
-                    const overdueTasks = openTasks.filter(t => {
-                      if (!t.due_date) return false;
-                      const due = new Date(t.due_date);
-                      return !Number.isNaN(due.getTime()) && due < now;
-                    }).length;
-
-                    const activeProjects = openTasks.filter(t => t.project_run_id != null).length;
-
-                    const completedWithDate = completedTasks
-                      .map(t => {
-                        const ts = t.updated_at ?? null;
-                        if (!ts) return null;
-                        const d = new Date(ts);
-                        if (Number.isNaN(d.getTime())) return null;
-                        return d;
-                      })
-                      .filter((d): d is Date => d != null);
-
-                    const daysAgo = (n: number) => new Date(now.getTime() - n * 24 * 60 * 60 * 1000);
-                    const completedLast7 = completedWithDate.filter(d => d >= daysAgo(7)).length;
-                    const completedLast30 = completedWithDate.filter(d => d >= daysAgo(30)).length;
-
-                    // Remaining hours:
-                    // - If a task has subtasks, sum incomplete subtask hours (only where estimated_hours is not null)
-                    // - Else use task.estimated_hours when present
-                    let remainingHours = 0;
-                    let missingHoursCount = 0;
-                    openTasks.forEach(t => {
-                      const subtasksForTask = subtasksByTaskId[t.id] || [];
-                      if (subtasksForTask.length > 0) {
-                        subtasksForTask.forEach(st => {
-                          if (st.completed) return;
-                          if (st.estimated_hours == null) {
-                            missingHoursCount += 1;
-                            return;
-                          }
-                          remainingHours += Number(st.estimated_hours);
-                        });
-                        return;
-                      }
-                      if (t.estimated_hours == null) {
-                        missingHoursCount += 1;
-                        return;
-                      }
-                      remainingHours += Number(t.estimated_hours);
-                    });
-
-                    return (
-                      <div className="space-y-0 md:space-y-3">
-                        {/* Desktop: Open/Done cards + expandable metrics (hidden on mobile) */}
-                        <div className="hidden md:flex md:flex-wrap md:items-start md:gap-2">
-                          <div className="flex shrink-0 gap-2">
-                            <Card className="w-[5.75rem] shrink-0 border-border/60 shadow-sm">
-                              <CardContent className="px-2.5 py-2">
-                                <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground leading-none">
-                                  Open
-                                </div>
-                                <div className="text-lg font-bold tabular-nums leading-none mt-1">{openTasks.length}</div>
-                              </CardContent>
-                            </Card>
-                            <Card className="w-[5.75rem] shrink-0 border-border/60 shadow-sm">
-                              <CardContent className="px-2.5 py-2">
-                                <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground leading-none">
-                                  Done
-                                </div>
-                                <div className="text-lg font-bold tabular-nums leading-none mt-1">{completedTasks.length}</div>
-                              </CardContent>
-                            </Card>
-                          </div>
-                          <div className="min-w-0 flex-1 basis-[min(100%,20rem)]">
-                            <Accordion type="single" collapsible className="w-full">
-                              <AccordionItem
-                                value="other-metrics"
-                                className="rounded-lg border border-border/60 bg-background/80 shadow-sm border-b-0"
-                              >
-                                <AccordionTrigger className="px-3 py-2.5 text-xs hover:no-underline [&[data-state=open]>svg]:rotate-180">
-                                  View metrics
-                                </AccordionTrigger>
-                                <AccordionContent className="px-3 pb-3 pt-0 text-xs">
-                                  <div className="grid grid-cols-1 gap-2 min-[520px]:grid-cols-2 min-w-0">
-                                    <Card className="min-w-0 border-border/60 shadow-sm overflow-hidden">
-                                      <CardContent className="p-3 space-y-2">
-                                        <div className="text-[11px] font-medium text-muted-foreground">Completed tasks</div>
-                                        <div className="grid grid-cols-3 gap-1.5 text-center min-w-0">
-                                          <div className="min-w-0 px-0.5">
-                                            <div className="text-base font-semibold tabular-nums">{completedLast7}</div>
-                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Last 7d</div>
-                                          </div>
-                                          <div className="min-w-0 px-0.5">
-                                            <div className="text-base font-semibold tabular-nums">{completedLast30}</div>
-                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Last 30d</div>
-                                          </div>
-                                          <div className="min-w-0 px-0.5">
-                                            <div className="text-base font-semibold tabular-nums">{completedTasks.length}</div>
-                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">All time</div>
-                                          </div>
-                                        </div>
-                                      </CardContent>
-                                    </Card>
-
-                                    <Card className="min-w-0 border-border/60 shadow-sm overflow-hidden">
-                                      <CardContent className="p-3 space-y-1">
-                                        <div className="text-[11px] font-medium text-muted-foreground">Overdue tasks</div>
-                                        <div className="text-xl font-bold tabular-nums leading-none">{overdueTasks}</div>
-                                      </CardContent>
-                                    </Card>
-
-                                    <Card className="min-w-0 border-border/60 shadow-sm overflow-hidden">
-                                      <CardContent className="p-3 space-y-2">
-                                        <div className="text-[11px] font-medium text-muted-foreground">Open by priority</div>
-                                        <div className="grid grid-cols-3 gap-1.5 text-center min-w-0">
-                                          <div className="min-w-0 px-0.5">
-                                            <div className="text-base font-semibold tabular-nums">{openByPriority.high ?? 0}</div>
-                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">High</div>
-                                          </div>
-                                          <div className="min-w-0 px-0.5">
-                                            <div className="text-base font-semibold tabular-nums">{openByPriority.medium ?? 0}</div>
-                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Med</div>
-                                          </div>
-                                          <div className="min-w-0 px-0.5">
-                                            <div className="text-base font-semibold tabular-nums">{openByPriority.low ?? 0}</div>
-                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Low</div>
-                                          </div>
-                                        </div>
-                                      </CardContent>
-                                    </Card>
-
-                                    <Card className="min-w-0 border-border/60 shadow-sm overflow-hidden">
-                                      <CardContent className="p-3 space-y-2">
-                                        <div className="text-[11px] font-medium text-muted-foreground">Open by level</div>
-                                        <div className="grid grid-cols-2 min-[640px]:grid-cols-4 gap-x-2 gap-y-2 text-center min-w-0">
-                                          <div className="min-w-0 px-0.5">
-                                            <div className="text-base font-semibold tabular-nums">{openByLevel.beginner ?? 0}</div>
-                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Beginner</div>
-                                          </div>
-                                          <div className="min-w-0 px-0.5">
-                                            <div className="text-base font-semibold tabular-nums">{openByLevel.intermediate ?? 0}</div>
-                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Intermediate</div>
-                                          </div>
-                                          <div className="min-w-0 px-0.5">
-                                            <div className="text-base font-semibold tabular-nums">{openByLevel.advanced ?? 0}</div>
-                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Advanced</div>
-                                          </div>
-                                          <div className="min-w-0 px-0.5">
-                                            <div className="text-base font-semibold tabular-nums">{openByLevel.pro ?? 0}</div>
-                                            <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">Pro</div>
-                                          </div>
-                                        </div>
-                                      </CardContent>
-                                    </Card>
-
-                                    <Card className="min-w-0 border-border/60 shadow-sm overflow-hidden">
-                                      <CardContent className="p-3 space-y-1">
-                                        <div className="text-[11px] font-medium text-muted-foreground">Active projects</div>
-                                        <div className="text-xl font-bold tabular-nums leading-none">{activeProjects}</div>
-                                        <div className="text-[10px] text-muted-foreground leading-snug">Tasks linked to a project</div>
-                                      </CardContent>
-                                    </Card>
-
-                                    <Card className="min-w-0 border-border/60 shadow-sm overflow-hidden">
-                                      <CardContent className="p-3 space-y-1">
-                                        <div className="text-[11px] font-medium text-muted-foreground">Est. hours left</div>
-                                        <div className="text-xl font-bold tabular-nums leading-none">{remainingHours.toFixed(1)}h</div>
-                                        {missingHoursCount > 0 && (
-                                          <div className="text-[10px] text-muted-foreground leading-snug">
-                                            + {missingHoursCount} without hours
-                                          </div>
-                                        )}
-                                      </CardContent>
-                                    </Card>
-                                  </div>
-                                </AccordionContent>
-                              </AccordionItem>
-                            </Accordion>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {showAddTask && (
-                    <Card>
-                      <CardContent className="pt-3 pb-3 space-y-3">
-                        {compactNewTaskMobile ? (
-                          <>
-                            <div className="space-y-2">
-                              <div className="space-y-1">
-                                <Label htmlFor="home-new-task-name" className="text-xs font-medium">
-                                  Name
-                                </Label>
-                                <Input
-                                  id="home-new-task-name"
-                                  placeholder="Required"
-                                  value={formData.title}
-                                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                  className="h-9 text-sm"
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <Label htmlFor="home-new-task-due" className="text-xs font-medium">
-                                  Due date
-                                </Label>
-                                <Input
-                                  id="home-new-task-due"
-                                  type="date"
-                                  value={formData.due_date}
-                                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                                  className="h-9 text-sm"
-                                />
-                              </div>
-                            </div>
-                            <Accordion type="single" collapsible className="rounded-md border border-border/80">
-                              <AccordionItem value="more" className="border-0">
-                                <AccordionTrigger className="px-3 py-2.5 text-sm font-medium hover:no-underline">
-                                  More Settings
-                                </AccordionTrigger>
-                                <AccordionContent className="space-y-3 px-3 pb-3 pt-2">
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div className="min-w-0">
-                                      <label className="mb-1 block text-xs font-medium">Priority</label>
-                                      <Select value={formData.priority} onValueChange={(val) => setFormData({ ...formData, priority: val as any })}>
-                                        <SelectTrigger className="h-8 text-xs">
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="high">High</SelectItem>
-                                          <SelectItem value="medium">Medium</SelectItem>
-                                          <SelectItem value="low">Low</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <div className="min-w-0">
-                                      <label className="mb-1 block text-xs font-medium">DIY Level</label>
-                                      <Select value={formData.diy_level} onValueChange={(val) => setFormData({ ...formData, diy_level: val as any })}>
-                                        <SelectTrigger className="h-8 text-xs">
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="beginner">Beginner</SelectItem>
-                                          <SelectItem value="intermediate">Intermediate</SelectItem>
-                                          <SelectItem value="advanced">Advanced</SelectItem>
-                                          <SelectItem value="pro">Professional</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                  </div>
-                                  <div className="min-w-0">
-                                    <label className="mb-1 block text-xs font-medium">Estimated duration</label>
-                                    {subtasks.length > 0 ? (
-                                      <div className="flex h-8 items-center text-xs text-muted-foreground">
-                                        N/A (using sub-task hours)
-                                      </div>
-                                    ) : (
-                                      <Input
-                                        type="text"
-                                        placeholder="0:00"
-                                        value={formData.estimated_hours}
-                                        onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
-                                        className="h-8 text-xs"
-                                        aria-label="Duration in hours and minutes, e.g. 1:30"
-                                      />
-                                    )}
-                                  </div>
-                                  <Textarea
-                                    placeholder="Notes (optional)"
-                                    value={formData.notes}
-                                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                    className="min-h-[60px] text-xs"
-                                  />
-                                  {renderSubtasksAndMaterials()}
-                                </AccordionContent>
-                              </AccordionItem>
-                            </Accordion>
-                          </>
-                        ) : (
-                          <>
-                            <Input
-                              placeholder="Task title *"
-                              value={formData.title}
-                              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                              className="h-8 text-xs"
-                            />
-                            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                              <div className="min-w-0">
-                                <label className="mb-1 block text-xs font-medium">Priority</label>
-                                <Select value={formData.priority} onValueChange={(val) => setFormData({ ...formData, priority: val as any })}>
-                                  <SelectTrigger className="h-8 text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="high">High</SelectItem>
-                                    <SelectItem value="medium">Medium</SelectItem>
-                                    <SelectItem value="low">Low</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="min-w-0">
-                                <label className="mb-1 block text-xs font-medium">DIY Level</label>
-                                <Select value={formData.diy_level} onValueChange={(val) => setFormData({ ...formData, diy_level: val as any })}>
-                                  <SelectTrigger className="h-8 text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="beginner">Beginner</SelectItem>
-                                    <SelectItem value="intermediate">Intermediate</SelectItem>
-                                    <SelectItem value="advanced">Advanced</SelectItem>
-                                    <SelectItem value="pro">Professional</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="min-w-0">
-                                <label className="mb-1 block text-xs font-medium">Due Date</label>
-                                <Input
-                                  type="date"
-                                  value={formData.due_date}
-                                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                                  className="h-8 text-xs"
-                                />
-                              </div>
-                              <div className="min-w-0">
-                                <label className="mb-1 block text-xs font-medium">Estimated duration</label>
-                                {subtasks.length > 0 ? (
-                                  <div className="flex h-8 items-center text-xs text-muted-foreground">
-                                    N/A (using sub-task hours)
-                                  </div>
-                                ) : (
-                                  <Input
-                                    type="text"
-                                    placeholder="0:00"
-                                    value={formData.estimated_hours}
-                                    onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
-                                    className="h-8 text-xs"
-                                    aria-label="Duration in hours and minutes, e.g. 1:30"
-                                  />
-                                )}
-                              </div>
-                            </div>
-
-                            <Textarea
-                              placeholder="Notes (optional)"
-                              value={formData.notes}
-                              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                              className="min-h-[60px] text-xs"
-                            />
-
-                            {renderSubtasksAndMaterials()}
-                          </>
-                        )}
-
-                        <div className="flex flex-col gap-2">
-                          {editingTask?.project_run_id && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">
-                                Linked project: <span className="font-medium text-foreground">{editingTask.project_run_id}</span>
-                              </span>
-                            </div>
-                          )}
-                          <div className="flex flex-wrap items-center justify-end gap-2">
-                          {editingTask ? (
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              className="mr-auto h-8 w-8 p-0"
-                              onClick={() => void handleDeleteEditingTask()}
-                              title="Delete task"
-                              aria-label="Delete task"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          ) : null}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-8 text-xs"
-                            onClick={() => {
-                              if (editingTask) {
-                                handleRapidCosting(editingTask);
-                              } else {
-                                void handleSubmit((task) => {
-                                  setSelectedTask(task);
-                                  setShowRapidCosting(true);
-                                });
-                              }
-                            }}
-                            disabled={!formData.title.trim() || !selectedHomeId || selectedHomeId === 'all'}
-                          >
-                            <span className="mr-1 text-[13px] font-medium">$</span>
-                            Budget
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-8 text-xs"
-                            onClick={() => {
-                              if (editingTask) {
-                                setSelectedTask(editingTask);
-                                setShowProjectLink(true);
-                              } else {
-                                handleSubmit((task) => {
-                                  setSelectedTask(task);
-                                  setShowProjectLink(true);
-                                });
-                              }
-                            }}
-                            disabled={!formData.title.trim() || !selectedHomeId || selectedHomeId === 'all'}
-                          >
-                            <Link2 className="h-3 w-3 mr-1" />
-                            {editingTask?.project_run_id ? 'Edit Link to Project' : 'Link task to project'}
-                          </Button>
-                          {editingTask?.project_run_id && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-8 text-xs"
-                              onClick={() => {
-                                if (editingTask.project_run_id) {
-                                  void tryOpenLinkedProjectRun(editingTask.project_run_id);
-                                }
-                              }}
-                            >
-                              Open Project
-                            </Button>
-                          )}
-                          <Button variant="outline" onClick={resetForm} size="sm" className="h-8 text-xs">
-                            Cancel
-                          </Button>
-                          <Button onClick={() => handleSubmit()} size="sm" className="h-8 text-xs">
-                            {editingTask ? "Update" : "Create"}
-                          </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
+                                <TabsContent value="tasks" className="mt-0 flex h-full min-h-0 flex-1 flex-col gap-2 overflow-hidden md:gap-2.5">
+                  <div className="shrink-0 flex gap-2 pt-2">
+                    <Input
+                      placeholder="Add a task…"
+                      value={quickAddTitle}
+                      onChange={(e) => setQuickAddTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          void handleQuickAdd();
+                        }
+                      }}
+                      className="h-10 flex-1 text-sm"
+                      aria-label="Add a task"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-10 shrink-0 px-3 text-xs"
+                      onClick={() => void handleQuickAdd()}
+                      disabled={!quickAddTitle.trim()}
+                    >
+                      <Plus className="h-4 w-4" aria-hidden />
+                      <span className="hidden sm:inline ml-1">Add</span>
+                    </Button>
                   </div>
 
                   <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -1293,6 +1041,7 @@ export function HomeTaskList({
                       onProjectNavigate={() => onOpenChange(false)}
                       onOpenLinkedProjectRun={(id) => void tryOpenLinkedProjectRun(id)}
                       onTaskUpdate={fetchTasks}
+                      leadingActions={renderTasksInsights()}
                     />
                   </div>
                 </TabsContent>
@@ -1375,6 +1124,177 @@ export function HomeTaskList({
         onHomeSelected={() => fetchHomes()}
         showSelector={false}
       />
+
+      <Dialog
+        open={showAddTask}
+        onOpenChange={(open) => {
+          if (!open) resetForm();
+          else setShowAddTask(true);
+        }}
+      >
+        <DialogContent className="flex max-h-[90dvh] w-[min(32rem,calc(100vw-1.5rem))] flex-col gap-0 overflow-hidden p-0 sm:rounded-lg">
+          <DialogHeader className="shrink-0 border-b px-4 py-3 text-left">
+            <DialogTitle className="text-base">{editingTask ? 'Edit task' : 'New task'}</DialogTitle>
+            <DialogDescription className="text-xs">
+              {editingTask ? 'Update details, subtasks, and materials.' : 'Add details beyond the quick-add title.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
+            <Input
+              placeholder="Task title *"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="h-9 text-sm"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="min-w-0">
+                <label className="mb-1 block text-xs font-medium">Priority</label>
+                <Select value={formData.priority} onValueChange={(val) => setFormData({ ...formData, priority: val as 'high' | 'medium' | 'low' })}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="min-w-0">
+                <label className="mb-1 block text-xs font-medium">DIY Level</label>
+                <Select value={formData.diy_level} onValueChange={(val) => setFormData({ ...formData, diy_level: val as 'beginner' | 'intermediate' | 'advanced' | 'pro' })}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="beginner">Beginner</SelectItem>
+                    <SelectItem value="intermediate">Intermediate</SelectItem>
+                    <SelectItem value="advanced">Advanced</SelectItem>
+                    <SelectItem value="pro">Professional</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="min-w-0">
+                <label className="mb-1 block text-xs font-medium">Due Date</label>
+                <Input
+                  type="date"
+                  value={formData.due_date}
+                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                  className="h-8 text-xs"
+                />
+              </div>
+              <div className="min-w-0">
+                <label className="mb-1 block text-xs font-medium">Estimated duration</label>
+                {subtasks.length > 0 ? (
+                  <div className="flex h-8 items-center text-xs text-muted-foreground">
+                    N/A (using sub-task hours)
+                  </div>
+                ) : (
+                  <Input
+                    type="text"
+                    placeholder="0:00"
+                    value={formData.estimated_hours}
+                    onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
+                    className="h-8 text-xs"
+                    aria-label="Duration in hours and minutes, e.g. 1:30"
+                  />
+                )}
+              </div>
+            </div>
+            <Textarea
+              placeholder="Notes (optional)"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              className="min-h-[60px] text-xs"
+            />
+            {renderSubtasksAndMaterials()}
+            {editingTask?.project_run_id && linkedProjectName ? (
+              <p className="text-xs text-muted-foreground">
+                Linked project: <span className="font-medium text-foreground">{linkedProjectName}</span>
+              </p>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2 border-t px-4 py-3">
+            {editingTask ? (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="mr-auto h-8 w-8 p-0"
+                onClick={() => void handleDeleteEditingTask()}
+                title="Delete task"
+                aria-label="Delete task"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            ) : (
+              <div className="mr-auto" />
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => {
+                if (editingTask) {
+                  handleRapidCosting(editingTask);
+                } else {
+                  void handleSubmit((task) => {
+                    setSelectedTask(task);
+                    setShowRapidCosting(true);
+                  });
+                }
+              }}
+              disabled={!formData.title.trim() || !selectedHomeId || selectedHomeId === 'all'}
+            >
+              <span className="mr-1 text-[13px] font-medium">$</span>
+              Budget
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => {
+                if (editingTask) {
+                  setSelectedTask(editingTask);
+                  setShowProjectLink(true);
+                } else {
+                  void handleSubmit((task) => {
+                    setSelectedTask(task);
+                    setShowProjectLink(true);
+                  });
+                }
+              }}
+              disabled={!formData.title.trim() || !selectedHomeId || selectedHomeId === 'all'}
+            >
+              <Link2 className="h-3 w-3 mr-1" />
+              {editingTask?.project_run_id ? 'Edit link' : 'Link'}
+            </Button>
+            {editingTask?.project_run_id ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => {
+                  if (editingTask.project_run_id) {
+                    void tryOpenLinkedProjectRun(editingTask.project_run_id);
+                  }
+                }}
+              >
+                Open
+              </Button>
+            ) : null}
+            <Button variant="outline" onClick={resetForm} size="sm" className="h-8 text-xs">
+              Cancel
+            </Button>
+            <Button onClick={() => void handleSubmit()} size="sm" className="h-8 text-xs">
+              {editingTask ? 'Update' : 'Create'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <UpgradePrompt
         open={linkedProjectUpgradeOpen}

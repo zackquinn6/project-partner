@@ -1,15 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Pencil, ChevronDown, ChevronUp, Plus, Link2, ExternalLink, MoreVertical } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Link2, ExternalLink, MoreHorizontal, Pencil, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { useIsMobile } from "@/hooks/useResponsive";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEnhancedAchievements } from "@/hooks/useEnhancedAchievements";
 import {
@@ -18,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface HomeTask {
   id: string;
@@ -41,6 +38,7 @@ interface Subtask {
   completed: boolean;
   order_index: number;
 }
+
 interface HomeTasksTableProps {
   tasks: HomeTask[];
   onEdit: (task: HomeTask) => void;
@@ -48,12 +46,31 @@ interface HomeTasksTableProps {
   onRapidCosting: (task: HomeTask) => void;
   onAddTask?: () => void;
   onProjectNavigate?: () => void;
-  /** When set, opening a linked catalog project run uses this (e.g. membership gate) instead of navigating directly. */
   onOpenLinkedProjectRun?: (projectRunId: string) => void;
   onTaskUpdate?: () => void;
+  /** Optional slot for Insights / secondary header actions */
+  leadingActions?: React.ReactNode;
 }
-type SortField = 'title' | 'priority' | 'diy_level' | 'due_date';
-type SortDirection = 'asc' | 'desc';
+
+/** Parse YYYY-MM-DD (or ISO date prefix) as local calendar date — avoids UTC day skew. */
+function parseLocalDueDate(due: string): Date | null {
+  const ymd = due.slice(0, 10);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+  if (!match) return null;
+  const y = Number(match[1]);
+  const m = Number(match[2]);
+  const d = Number(match[3]);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
+function formatTaskDueDate(due: string | null): string {
+  if (!due) return "";
+  const date = parseLocalDueDate(due);
+  if (!date) return "";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 export function HomeTasksTable({
   tasks,
   onEdit,
@@ -62,47 +79,31 @@ export function HomeTasksTable({
   onAddTask,
   onProjectNavigate,
   onOpenLinkedProjectRun,
-  onTaskUpdate
+  onTaskUpdate,
+  leadingActions,
 }: HomeTasksTableProps) {
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const { user } = useAuth();
   const { checkMilestoneUnlocks } = useEnhancedAchievements(user?.id);
-  const [sortField, setSortField] = useState<SortField>('due_date');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterDiyLevel, setFilterDiyLevel] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>({});
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showCompleted, setShowCompleted] = useState(false);
-  const [swipedTaskId, setSwipedTaskId] = useState<string | null>(null);
-  const [touchStartX, setTouchStartX] = useState(0);
-  const [touchEndX, setTouchEndX] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const toggleCompleteInFlight = useRef(false);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchEndX(0);
-    setTouchStartX(e.targetTouches[0].clientX);
-  };
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEndX(e.targetTouches[0].clientX);
-  };
-  const handleTouchEnd = (taskId: string) => {
-    if (!touchStartX || !touchEndX) return;
-    const delta = touchStartX - touchEndX;
-    if (delta > 50) setSwipedTaskId(taskId);
-    else if (delta < -30) setSwipedTaskId(null);
-  };
-
   useEffect(() => {
-    fetchSubtasks();
+    void fetchSubtasks();
   }, [tasks]);
 
   const fetchSubtasks = async () => {
     const taskIds = tasks.map(t => t.id);
-    
-    if (taskIds.length === 0) return;
+    if (taskIds.length === 0) {
+      setSubtasks({});
+      return;
+    }
 
     const { data } = await supabase
       .from("home_task_subtasks")
@@ -112,11 +113,18 @@ export function HomeTasksTable({
 
     if (data) {
       const subtaskMap: Record<string, Subtask[]> = {};
-      data.forEach((st: any) => {
+      data.forEach((st) => {
         if (!subtaskMap[st.task_id]) {
           subtaskMap[st.task_id] = [];
         }
-        subtaskMap[st.task_id].push(st);
+        subtaskMap[st.task_id].push({
+          id: st.id,
+          title: st.title,
+          estimated_hours: st.estimated_hours,
+          diy_level: st.diy_level as Subtask['diy_level'],
+          completed: st.completed,
+          order_index: st.order_index,
+        });
       });
       setSubtasks(subtaskMap);
     }
@@ -139,7 +147,7 @@ export function HomeTasksTable({
       .eq('id', subtaskId);
 
     if (!error) {
-      fetchSubtasks();
+      void fetchSubtasks();
     }
   };
 
@@ -164,33 +172,34 @@ export function HomeTasksTable({
     }
   };
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+  const openLinkedOrLink = (task: HomeTask) => {
+    if (task.project_run_id) {
+      if (onOpenLinkedProjectRun) {
+        onOpenLinkedProjectRun(task.project_run_id);
+      } else {
+        onProjectNavigate?.();
+        navigate('/', { state: { view: 'user', projectRunId: task.project_run_id } });
+      }
     } else {
-      setSortField(field);
-      setSortDirection('asc');
+      onLinkProject(task);
     }
   };
-  const SortIcon = ({
-    field
-  }: {
-    field: SortField;
-  }) => {
-    if (sortField !== field) return <ChevronDown className="h-3 w-3 opacity-30" />;
-    return sortDirection === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />;
-  };
+
   const filteredAndSortedTasks = useMemo(() => {
     let filtered = [...tasks];
 
-    // Hide completed tasks unless showCompleted is true
     if (!showCompleted) {
       filtered = filtered.filter(task => task.status !== 'closed');
     }
 
-    // Apply filters
     if (searchTerm) {
-      filtered = filtered.filter(task => task.title.toLowerCase().includes(searchTerm.toLowerCase()) || task.description?.toLowerCase().includes(searchTerm.toLowerCase()));
+      const q = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        task =>
+          task.title.toLowerCase().includes(q) ||
+          task.description?.toLowerCase().includes(q) ||
+          task.notes?.toLowerCase().includes(q)
+      );
     }
     if (filterPriority !== 'all') {
       filtered = filtered.filter(task => task.priority === filterPriority);
@@ -199,652 +208,249 @@ export function HomeTasksTable({
       filtered = filtered.filter(task => task.diy_level === filterDiyLevel);
     }
 
-    // Apply sorting
     filtered.sort((a, b) => {
-      let aVal: any = a[sortField];
-      let bVal: any = b[sortField];
-      if (sortField === 'priority') {
-        const priorityOrder = {
-          high: 3,
-          medium: 2,
-          low: 1
-        };
-        aVal = priorityOrder[a.priority];
-        bVal = priorityOrder[b.priority];
-      } else if (sortField === 'diy_level') {
-        const diyLevelOrder = {
-          pro: 4,
-          advanced: 3,
-          intermediate: 2,
-          beginner: 1
-        };
-        aVal = diyLevelOrder[a.diy_level];
-        bVal = diyLevelOrder[b.diy_level];
-      } else if (sortField === 'due_date') {
-        aVal = a.due_date ? new Date(a.due_date).getTime() : 0;
-        bVal = b.due_date ? new Date(b.due_date).getTime() : 0;
-      }
-      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
+      const aDue = a.due_date ? parseLocalDueDate(a.due_date)?.getTime() ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+      const bDue = b.due_date ? parseLocalDueDate(b.due_date)?.getTime() ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+      if (aDue !== bDue) return aDue - bDue;
+      return a.title.localeCompare(b.title);
     });
     return filtered;
-  }, [tasks, sortField, sortDirection, filterPriority, filterDiyLevel, searchTerm, showCompleted]);
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'destructive';
-      case 'medium':
-        return 'default';
-      case 'low':
-        return 'secondary';
-      default:
-        return 'default';
-    }
-  };
-  const getDiyLevelColor = (level: string) => {
-    switch (level) {
-      case 'pro':
-        return 'destructive';
-      case 'advanced':
-        return 'destructive';
-      case 'intermediate':
-        return 'default';
-      case 'beginner':
-        return 'secondary';
-      default:
-        return 'default';
-    }
-  };
-  const diyLevels: Array<{ id: string; label: string; labelDesktop?: string }> = [
-    { id: 'all', label: 'All' },
-    { id: 'beginner', label: 'Beg', labelDesktop: 'Beginner' },
-    { id: 'intermediate', label: 'Int', labelDesktop: 'Intermediate' },
-    { id: 'advanced', label: 'Adv', labelDesktop: 'Advanced' },
-    { id: 'pro', label: 'Pro', labelDesktop: 'Professional' },
-  ];
+  }, [tasks, filterPriority, filterDiyLevel, searchTerm, showCompleted]);
 
-  return <div className="flex h-full min-h-0 flex-1 flex-col gap-2 md:gap-3">
-      {/* Full-width desktop (xl+): DIY level pills + inline “Show completed” */}
-      <div className="hidden shrink-0 xl:flex flex-row items-center gap-4 pt-3">
-        {onAddTask && (
-          <Button
-            onClick={onAddTask}
-            size="sm"
-            variant="outline"
-            className="h-8 min-h-8 py-1.5 px-2.5 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-blue-600 md:bg-blue-600 md:text-white md:hover:bg-blue-700 md:hover:border-blue-700 rounded-md flex items-center justify-center gap-1.5"
-            title="Add Task"
-          >
-            <Plus className="h-4 w-4 shrink-0 text-blue-600 md:text-primary" strokeWidth={2.5} aria-hidden />
-            <span className="hidden sm:inline">Add Task</span>
-          </Button>
-        )}
-        <div className="flex flex-wrap gap-2 flex-1 items-center min-w-0">
-          <Input placeholder="Search tasks..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="max-w-xs text-xs h-8" />
-          <Select value={filterPriority} onValueChange={setFilterPriority}>
-            <SelectTrigger className="w-20 sm:w-28 text-xs h-8">
-              <SelectValue>
-                {filterPriority === 'all' ? 'Priority' : filterPriority === 'high' ? 'High' : filterPriority === 'medium' ? 'Med' : 'Low'}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent className="bg-background border shadow-lg z-[100]">
-              <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="flex items-center gap-1 flex-wrap">
-            {diyLevels.map(level => (
-              <button
-                key={level.id}
+  const filtersActive = filterPriority !== 'all' || filterDiyLevel !== 'all';
+
+  return (
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-2 md:gap-2.5">
+      <div className="flex shrink-0 flex-col gap-2 pt-1 md:pt-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {leadingActions}
+          <Input
+            placeholder="Search tasks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="h-9 min-w-0 flex-1 text-sm md:max-w-xs"
+          />
+          <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <PopoverTrigger asChild>
+              <Button
                 type="button"
-                onClick={() => setFilterDiyLevel(level.id)}
-                className={`px-2 h-8 rounded-full text-[11px] border transition-colors ${
-                  filterDiyLevel === level.id
-                    ? 'bg-slate-900 text-slate-50 border-slate-900'
-                    : 'bg-muted text-muted-foreground border-transparent hover:bg-muted/80'
-                }`}
+                variant="outline"
+                size="sm"
+                className={`h-9 shrink-0 gap-1.5 text-xs ${filtersActive ? 'border-primary text-primary' : ''}`}
               >
-                {level.labelDesktop ?? level.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2 ml-auto border border-input rounded-lg px-3 py-1.5 bg-background">
-            <Checkbox 
-              id="show-completed" 
+                <Filter className="h-3.5 w-3.5" />
+                Filters
+                {filtersActive ? (
+                  <span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-medium">On</span>
+                ) : null}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-64 space-y-3 p-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Priority</label>
+                <Select value={filterPriority} onValueChange={setFilterPriority}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    <SelectItem value="all">All priorities</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">DIY level</label>
+                <Select value={filterDiyLevel} onValueChange={setFilterDiyLevel}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    <SelectItem value="all">All levels</SelectItem>
+                    <SelectItem value="beginner">Beginner</SelectItem>
+                    <SelectItem value="intermediate">Intermediate</SelectItem>
+                    <SelectItem value="advanced">Advanced</SelectItem>
+                    <SelectItem value="pro">Professional</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {filtersActive ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-full text-xs"
+                  onClick={() => {
+                    setFilterPriority('all');
+                    setFilterDiyLevel('all');
+                  }}
+                >
+                  Clear filters
+                </Button>
+              ) : null}
+            </PopoverContent>
+          </Popover>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Checkbox
+              id="show-completed-tasks"
               checked={showCompleted}
-              onCheckedChange={(checked) => setShowCompleted(checked as boolean)}
-              className="h-5 w-5 rounded-full border-2"
+              onCheckedChange={(checked) => setShowCompleted(checked === true)}
+              className="h-4 w-4"
             />
-            <label htmlFor="show-completed" className="text-sm cursor-pointer whitespace-nowrap">
-              Show completed
+            <label htmlFor="show-completed-tasks" className="cursor-pointer whitespace-nowrap text-xs text-muted-foreground">
+              Show done
             </label>
           </div>
-        </div>
-      </div>
-
-      {/* Tablet / slim desktop (md–lg): filters as dropdowns + Show Done button (same pattern as mobile) */}
-      <div className="hidden shrink-0 flex-col gap-2 pt-3 md:flex xl:hidden">
-        <Input
-          placeholder="Search tasks..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="text-sm h-8 w-full max-w-xl"
-        />
-        <div className="flex flex-wrap gap-2 items-center">
-          <Select value={filterPriority} onValueChange={setFilterPriority}>
-            <SelectTrigger className="h-8 text-xs min-w-[7.5rem] flex-1 sm:flex-none sm:w-36">
-              <SelectValue>
-                {filterPriority === 'all' ? 'Priority' : filterPriority === 'high' ? 'High' : filterPriority === 'medium' ? 'Med' : 'Low'}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent className="bg-background border shadow-lg z-[100]">
-              <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="high">High Priority</SelectItem>
-              <SelectItem value="medium">Medium Priority</SelectItem>
-              <SelectItem value="low">Low Priority</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={filterDiyLevel} onValueChange={setFilterDiyLevel}>
-            <SelectTrigger className="h-8 text-xs min-w-[7.5rem] flex-1 sm:flex-none sm:w-36">
-              <SelectValue>
-                {filterDiyLevel === 'all' ? 'DIY level' : filterDiyLevel === 'beginner' ? 'Beginner' : filterDiyLevel === 'intermediate' ? 'Intermediate' : filterDiyLevel === 'advanced' ? 'Advanced' : 'Professional'}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent className="bg-background border shadow-lg z-[100]">
-              <SelectItem value="all">All Levels</SelectItem>
-              <SelectItem value="beginner">Beginner</SelectItem>
-              <SelectItem value="intermediate">Intermediate</SelectItem>
-              <SelectItem value="advanced">Advanced</SelectItem>
-              <SelectItem value="pro">Professional</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCompleted(!showCompleted)}
-            className="h-8 text-xs whitespace-nowrap px-3"
-          >
-            {showCompleted ? 'Hide' : 'Show'} Done
-          </Button>
-
-          {onAddTask && (
+          {onAddTask ? (
             <Button
+              type="button"
+              size="sm"
               onClick={onAddTask}
-              size="sm"
-              variant="outline"
-              className="h-8 shrink-0 text-xs border-blue-600 bg-blue-600 text-white hover:bg-blue-700 hover:border-blue-700"
-              title="Add Task"
+              className="h-9 shrink-0 gap-1.5 text-xs"
             >
-              <Plus className="h-4 w-4 mr-1.5" aria-hidden />
-              Add Task
+              <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+              <span className="hidden sm:inline">Add Task</span>
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
 
-      {/* Mobile filters and controls */}
-      <div className="flex shrink-0 flex-col gap-1.5 pt-0.5 md:hidden">
-        <Input
-          placeholder="Search tasks..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="text-sm h-11 min-h-11 w-full"
-        />
-        
-        <div className="flex gap-2">
-          <Select value={filterPriority} onValueChange={setFilterPriority}>
-            <SelectTrigger className="h-11 min-h-11 text-xs flex-1">
-              <SelectValue>
-                {filterPriority === 'all' ? 'Priority' : filterPriority === 'high' ? 'High' : filterPriority === 'medium' ? 'Med' : 'Low'}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent className="bg-background border shadow-lg z-[100]">
-              <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="high">High Priority</SelectItem>
-              <SelectItem value="medium">Medium Priority</SelectItem>
-              <SelectItem value="low">Low Priority</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={filterDiyLevel} onValueChange={setFilterDiyLevel}>
-            <SelectTrigger className="h-11 min-h-11 text-xs flex-1">
-              <SelectValue>
-                {filterDiyLevel === 'all' ? 'DIY' : filterDiyLevel === 'beginner' ? 'Beg' : filterDiyLevel === 'intermediate' ? 'Int' : filterDiyLevel === 'advanced' ? 'Adv' : 'Pro'}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent className="bg-background border shadow-lg z-[100]">
-              <SelectItem value="all">All Levels</SelectItem>
-              <SelectItem value="beginner">Beginner</SelectItem>
-              <SelectItem value="intermediate">Intermediate</SelectItem>
-              <SelectItem value="advanced">Advanced</SelectItem>
-              <SelectItem value="pro">Professional</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCompleted(!showCompleted)}
-            className="h-11 min-h-11 text-[10px] whitespace-nowrap px-2 border"
-          >
-            {showCompleted ? 'Hide' : 'Show'} Done
-          </Button>
-          
-          {onAddTask && (
-            <Button 
-              onClick={onAddTask} 
-              size="sm"
-              className="h-11 w-11 min-h-11 min-w-11 p-0"
-              title="Add Task"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Table: mobile = check + task + due; desktop = full columns.
-          Outer overflow-auto is the scrollport (sticky header). Table wrapper must be overflow-visible. */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-none border border-x-0 border-border md:rounded-lg md:border-x">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/80 bg-background">
         <div className="min-h-0 flex-1 overflow-auto">
-          <Table wrapperClassName="overflow-visible">
-            <TableHeader className="sticky top-0 bg-sky-600/80 text-white z-10 [&_th]:!h-auto [&_th]:!min-h-11 [&_th]:!px-1 [&_th]:!py-2 [&_th]:leading-none md:[&_th]:!min-h-11 md:[&_th]:!px-3 md:[&_th]:!py-2.5">
-              <TableRow className="border-sky-500/50">
-                <TableHead className="w-11 shrink-0 text-center text-xs leading-none text-white md:w-14" aria-label="Complete">
-                  <span className="sr-only">Complete</span>
-                </TableHead>
-                <TableHead className="min-w-0 md:min-w-[281px] md:w-[281px] text-xs text-white">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('title')}
-                    className="h-auto min-h-0 py-1 px-0.5 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-2 md:py-1.5 md:text-xs"
-                  >
-                    Task <SortIcon field="title" />
-                  </Button>
-                </TableHead>
-                {!isMobile && (
-                  <TableHead className="w-[180px] text-xs leading-none text-white">Notes</TableHead>
-                )}
-                {!isMobile && (
-                  <TableHead className="w-24 md:w-20 text-xs text-white">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSort('priority')}
-                      className="h-auto min-h-0 py-1 px-0.5 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-2 md:py-1.5 md:text-xs"
-                    >
-                      Priority <SortIcon field="priority" />
-                    </Button>
-                  </TableHead>
-                )}
-                {!isMobile && (
-                  <TableHead className="w-24 md:w-20 text-xs text-white">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSort('diy_level')}
-                      className="h-auto min-h-0 py-0 px-0.5 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-1.5 md:py-1 md:text-xs"
-                    >
-                      DIY Level <SortIcon field="diy_level" />
-                    </Button>
-                  </TableHead>
-                )}
-                <TableHead className="w-[80px] md:w-24 text-xs text-white whitespace-nowrap">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('due_date')}
-                    className="h-auto min-h-0 py-1 px-0.5 text-[10px] font-medium leading-none text-white hover:bg-white/20 hover:text-white md:px-2 md:py-1.5 md:text-xs"
-                  >
-                    Due <SortIcon field="due_date" />
-                  </Button>
-                </TableHead>
-                {isMobile && (
-                  <TableHead className="w-11 shrink-0 text-xs text-white">
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                )}
-                {!isMobile && <TableHead className="w-[150px] text-xs text-right text-white">Actions</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody className="max-md:[&_td]:!px-1.5 max-md:[&_td]:!py-2 md:[&_td]:!px-3 md:[&_td]:!py-2">
-              {filteredAndSortedTasks.length === 0 ? <TableRow>
-                  <TableCell colSpan={isMobile ? 4 : 7} className="text-center py-6 md:py-8 text-sm text-muted-foreground">
-                    No tasks found. Add your first task to get started!
-                  </TableCell>
-                </TableRow> : filteredAndSortedTasks.map(task => (
-                  <React.Fragment key={task.id}>
-                    <TableRow
-                      key={task.id}
-                      className={`${task.status === 'closed' ? 'opacity-60' : ''}${isMobile ? ' cursor-pointer' : ''}`}
-                      {...(isMobile
-                        ? {
-                            onTouchStart: handleTouchStart,
-                            onTouchMove: handleTouchMove,
-                            onTouchEnd: () => handleTouchEnd(task.id),
-                            onClick: (e: React.MouseEvent) => {
-                              if ((e.target as HTMLElement).closest('button, [role="menu"], [data-radix-collection-item]')) return;
-                              onEdit(task);
-                            },
-                          }
-                        : {})}
-                    >
-                      <TableCell className="w-11 !p-1 align-middle md:w-14 md:!p-1">
+          {filteredAndSortedTasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 px-4 py-12 text-center">
+              <p className="text-sm text-muted-foreground">
+                {showCompleted || searchTerm || filtersActive
+                  ? 'No tasks match these filters.'
+                  : 'No open tasks.'}
+              </p>
+              {onAddTask && !showCompleted && !searchTerm && !filtersActive ? (
+                <Button type="button" size="sm" onClick={onAddTask} className="gap-1.5 text-xs">
+                  <Plus className="h-4 w-4" aria-hidden />
+                  Add a task
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {filteredAndSortedTasks.map((task) => {
+                const dueLabel = formatTaskDueDate(task.due_date);
+                const hasSubtasks = (subtasks[task.id]?.length ?? 0) > 0;
+                const isExpanded = expandedRows.has(task.id);
+
+                return (
+                  <li key={task.id} className={task.status === 'closed' ? 'opacity-60' : undefined}>
+                    <div className="flex items-center gap-2 px-2 py-2 md:gap-3 md:px-3 md:py-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 shrink-0 touch-manipulation p-0 text-sm font-medium leading-none rounded-md border-2 hover:bg-primary/10"
+                        title={task.status === 'closed' ? 'Mark as not complete' : 'Mark as complete'}
+                        aria-label={task.status === 'closed' ? 'Mark task as not complete' : 'Mark task complete'}
+                        onClick={() => void handleToggleTaskComplete(task)}
+                      >
+                        {task.status === 'closed' ? '✓' : '○'}
+                      </Button>
+
+                      <button
+                        type="button"
+                        className={`min-w-0 flex-1 truncate text-left text-sm font-medium leading-snug hover:underline ${
+                          task.status === 'closed' ? 'line-through text-muted-foreground' : 'text-foreground'
+                        }`}
+                        onClick={() => onEdit(task)}
+                      >
+                        {task.title}
+                      </button>
+
+                      {hasSubtasks ? (
                         <Button
                           type="button"
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          className="h-9 w-9 min-h-9 min-w-9 touch-manipulation p-0 text-sm font-medium leading-none rounded-md border-2 hover:bg-primary/10 md:h-9 md:w-9 md:min-h-9 md:min-w-9"
-                          title={task.status === 'closed' ? 'Mark as not complete' : 'Mark as complete'}
-                          aria-label={task.status === 'closed' ? 'Mark task as not complete' : 'Mark task complete'}
-                          {...(isMobile
-                            ? {
-                                onTouchStart: (e: React.TouchEvent) => e.stopPropagation(),
-                                onTouchMove: (e: React.TouchEvent) => e.stopPropagation(),
-                                onTouchEnd: (e: React.TouchEvent) => e.stopPropagation(),
-                              }
-                            : {})}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void handleToggleTaskComplete(task);
-                          }}
+                          className="h-7 w-7 shrink-0 p-0"
+                          onClick={() => toggleRow(task.id)}
+                          aria-label={isExpanded ? 'Hide subtasks' : 'Show subtasks'}
                         >
-                          {task.status === 'closed' ? '✓' : '○'}
+                          {isExpanded ? (
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          )}
                         </Button>
-                      </TableCell>
-                      <TableCell className="min-w-0">
-                      <div className="flex items-center gap-1 md:gap-2 flex-wrap min-w-0">
-                        <span
-                          className={`text-xs md:text-sm font-medium leading-tight min-w-0 truncate ${task.status === 'closed' ? 'line-through text-muted-foreground' : ''} ${isMobile ? '' : 'cursor-pointer'}`}
-                          onClick={isMobile ? undefined : () => handleToggleTaskComplete(task)}
-                        >
-                          {task.status === 'closed' && !isMobile ? '✓ ' : ''}
-                          {task.title}
-                        </span>
-                        {isMobile && (
-                          <Badge variant={getDiyLevelColor(task.diy_level)} className="text-[10px] px-1 py-0 shrink-0">
-                            {task.diy_level === 'beginner' ? 'new' : task.diy_level === 'intermediate' ? 'mid' : task.diy_level === 'advanced' ? 'adv' : 'pro'}
-                          </Badge>
-                        )}
-                        {subtasks[task.id]?.length > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleRow(task.id)}
-                            className="h-6 w-6 p-0 shrink-0"
-                          >
-                            {expandedRows.has(task.id) ? (
-                              <ChevronUp className="h-3.5 w-3.5" />
-                            ) : (
-                              <ChevronDown className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                    {!isMobile && (
-                      <TableCell className="text-sm truncate max-w-[180px]" title={task.notes || ''}>
-                        {task.notes || '-'}
-                      </TableCell>
-                    )}
-                    {!isMobile && (
-                      <TableCell>
-                        <Badge variant={getPriorityColor(task.priority)} className="text-xs px-1.5 py-0">
-                          {task.priority === 'medium' ? 'med' : task.priority}
-                        </Badge>
-                      </TableCell>
-                    )}
-                    {!isMobile && (
-                      <TableCell>
-                        <Badge variant={getDiyLevelColor(task.diy_level)} className="text-xs px-1.5 py-0">
-                          {task.diy_level === 'beginner' ? 'new' : 
-                           task.diy_level === 'intermediate' ? 'mid' : 
-                           task.diy_level === 'advanced' ? 'adv' : 'pro'}
-                        </Badge>
-                      </TableCell>
-                    )}
-                    <TableCell className="text-xs md:text-sm whitespace-nowrap">
-                      {task.due_date ? new Date(task.due_date).toLocaleDateString(undefined, isMobile ? { month: 'numeric', day: 'numeric', year: '2-digit' } : undefined) : '-'}
-                    </TableCell>
-                    {isMobile && (
-                      <TableCell className="w-11 !p-1 align-middle">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-11 w-11 min-h-11 min-w-11 p-0"
-                              aria-label="Task actions"
-                              onClick={(e) => e.stopPropagation()}
-                              onTouchStart={(e) => e.stopPropagation()}
-                              onTouchMove={(e) => e.stopPropagation()}
-                              onTouchEnd={(e) => e.stopPropagation()}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="z-[100]">
-                            <DropdownMenuItem
-                              onClick={() => {
-                                onEdit(task);
-                                setSwipedTaskId(null);
-                              }}
-                            >
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                if (task.project_run_id) {
-                                  if (onOpenLinkedProjectRun) {
-                                    onOpenLinkedProjectRun(task.project_run_id);
-                                  } else {
-                                    onProjectNavigate?.();
-                                    navigate('/', { state: { view: 'user', projectRunId: task.project_run_id } });
-                                  }
-                                } else {
-                                  onLinkProject(task);
-                                }
-                                setSwipedTaskId(null);
-                              }}
-                            >
-                              {task.project_run_id ? (
-                                <ExternalLink className="mr-2 h-4 w-4" />
-                              ) : (
-                                <Link2 className="mr-2 h-4 w-4" />
-                              )}
-                              {task.project_run_id ? 'Open project' : 'Link project'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                onRapidCosting(task);
-                                setSwipedTaskId(null);
-                              }}
-                            >
-                              <span className="mr-2 inline-flex h-4 w-4 items-center justify-center text-sm font-medium">$</span>
-                              Budget
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    )}
-                    {!isMobile && (
-                      <TableCell className="text-right">
-                        <div className="flex gap-1 justify-end">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onRapidCosting(task)}
-                            className="h-8 px-2"
-                            title="Budget"
-                            aria-label="Budget"
-                          >
-                            <span className="text-sm">$</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              if (task.project_run_id) {
-                                if (onOpenLinkedProjectRun) {
-                                  onOpenLinkedProjectRun(task.project_run_id);
-                                } else {
-                                  onProjectNavigate?.();
-                                  navigate('/', { state: { view: 'user', projectRunId: task.project_run_id } });
-                                }
-                              } else {
-                                onLinkProject(task);
-                              }
-                            }}
-                            className="h-8 px-2"
-                            title={task.project_run_id ? 'Open project' : 'Link to project'}
-                            aria-label={task.project_run_id ? 'Open project' : 'Link to project'}
-                          >
-                            {task.project_run_id ? (
-                              <ExternalLink className="h-4 w-4" />
-                            ) : (
-                              <Link2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onEdit(task)}
-                            className="h-8 px-2"
-                            title="Edit"
-                            aria-label="Edit"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                  {isMobile && swipedTaskId === task.id && (
-                    <TableRow key={`${task.id}-swipe-actions`} className="bg-muted/50">
-                      <TableCell colSpan={4} className="py-2">
-                        <div className="flex flex-wrap gap-2 justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-9 text-sm"
-                            onClick={() => {
-                              onRapidCosting(task);
-                              setSwipedTaskId(null);
-                            }}
-                          >
-                            <span className="mr-1 text-sm font-medium">$</span>
-                            Budget
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-9 text-sm"
-                            onClick={() => {
-                              if (task.project_run_id) {
-                                if (onOpenLinkedProjectRun) {
-                                  onOpenLinkedProjectRun(task.project_run_id);
-                                } else {
-                                  onProjectNavigate?.();
-                                  navigate('/', { state: { view: 'user', projectRunId: task.project_run_id } });
-                                }
-                              } else {
-                                onLinkProject(task);
-                              }
-                              setSwipedTaskId(null);
-                            }}
-                          >
-                            {task.project_run_id ? (
-                              <>
-                                <ExternalLink className="mr-1 h-4 w-4" />
-                                Project
-                              </>
-                            ) : (
-                              <>
-                                <Link2 className="mr-1 h-4 w-4" />
-                                Project
-                              </>
-                            )}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-9 text-sm"
-                            onClick={() => {
-                              onEdit(task);
-                              setSwipedTaskId(null);
-                            }}
-                          >
-                            <Pencil className="mr-1 h-4 w-4" />
-                            Edit
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                   {expandedRows.has(task.id) && subtasks[task.id]?.length > 0 && (
-                    <TableRow key={`${task.id}-subtasks`}>
-                      <TableCell colSpan={isMobile ? 4 : 7} className="bg-muted/30 p-2 md:p-3 border-l-4 border-l-primary/20">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="text-sm font-semibold text-primary">Subtasks</div>
-                            <Badge variant="outline" className="text-xs bg-background">
-                              Edit task to manage
-                            </Badge>
-                          </div>
+                      ) : null}
 
-                          <div className="space-y-2">
-                            {subtasks[task.id].map((subtask, index) => (
-                              <div
-                                key={subtask.id}
-                                className={`flex items-center gap-2 p-2 border rounded-lg bg-background shadow-sm ${
-                                  subtask.completed ? 'opacity-60' : ''
-                                }`}
-                              >
-                                {task.ordered && (
-                                  <div className="text-xs font-semibold text-muted-foreground w-5">
-                                    {index + 1}.
-                                  </div>
-                                )}
-                                <button
-                                  onClick={() => handleToggleSubtaskComplete(subtask.id, subtask.completed)}
-                                  className="h-6 w-6 flex items-center justify-center text-sm hover:opacity-70 transition-opacity"
-                                  title={subtask.completed ? 'Mark as incomplete' : 'Mark as complete'}
-                                >
-                                  {subtask.completed ? '✓' : '○'}
-                                </button>
-                                <div 
-                                  className={`text-sm flex-1 cursor-pointer leading-tight ${subtask.completed ? 'line-through text-muted-foreground' : ''}`}
-                                  onClick={() => handleToggleSubtaskComplete(subtask.id, subtask.completed)}
-                                >
-                                  {subtask.title}
-                                </div>
-                                <Badge variant="outline" className="text-xs px-1.5 py-0">
-                                  {subtask.estimated_hours}h
-                                </Badge>
-                                <Badge variant="outline" className="text-xs px-1.5 py-0">
-                                  {subtask.diy_level === 'beginner' ? 'new' : 
-                                   subtask.diy_level === 'intermediate' ? 'mid' : 
-                                   subtask.diy_level === 'advanced' ? 'adv' : 'pro'}
-                                </Badge>
-                              </div>
-                            ))}
+                      {dueLabel ? (
+                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{dueLabel}</span>
+                      ) : null}
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 shrink-0 p-0"
+                            aria-label="Task actions"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="z-[100]">
+                          <DropdownMenuItem onClick={() => onEdit(task)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onRapidCosting(task)}>
+                            <span className="mr-2 inline-flex h-4 w-4 items-center justify-center text-sm font-medium">$</span>
+                            Budget
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openLinkedOrLink(task)}>
+                            {task.project_run_id ? (
+                              <ExternalLink className="mr-2 h-4 w-4" />
+                            ) : (
+                              <Link2 className="mr-2 h-4 w-4" />
+                            )}
+                            {task.project_run_id ? 'Open project' : 'Link project'}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    {isExpanded && hasSubtasks ? (
+                      <div className="space-y-1 border-t border-border/40 bg-muted/20 px-3 py-2 pl-12 md:pl-14">
+                        {subtasks[task.id].map((subtask, index) => (
+                          <div key={subtask.id} className="flex items-center gap-2 py-1">
+                            {task.ordered ? (
+                              <span className="w-4 shrink-0 text-[10px] text-muted-foreground">{index + 1}.</span>
+                            ) : null}
+                            <button
+                              type="button"
+                              className="h-6 w-6 shrink-0 text-sm hover:opacity-70"
+                              onClick={() => void handleToggleSubtaskComplete(subtask.id, subtask.completed)}
+                              title={subtask.completed ? 'Mark incomplete' : 'Mark complete'}
+                            >
+                              {subtask.completed ? '✓' : '○'}
+                            </button>
+                            <span
+                              className={`min-w-0 flex-1 truncate text-xs ${
+                                subtask.completed ? 'line-through text-muted-foreground' : ''
+                              }`}
+                            >
+                              {subtask.title}
+                            </span>
                           </div>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </React.Fragment>
-              ))}
-            </TableBody>
-          </Table>
+                        ))}
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </div>
-    </div>;
+    </div>
+  );
 }
