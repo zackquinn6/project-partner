@@ -99,7 +99,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
     projectRuns,
     fetchProjects
   } = useProject();
-  const { tileFocusMode } = useGlobalPublicSettings();
+  const { tileFocusMode, loading: settingsLoading } = useGlobalPublicSettings();
+  // Avoid painting the catalog list until tile-focus (and related) settings are known —
+  // otherwise projects flash in under the default filter, then vanish once settings load.
+  const catalogFiltersReady = !settingsLoading;
 
   // State for published projects when not authenticated
   const [publicProjects, setPublicProjects] = useState<any[]>([]);
@@ -1113,6 +1116,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
           )}
         </div>
 
+        {!catalogFiltersReady ? (
+          <div className="mb-6 flex justify-center py-8 md:mb-10" role="status" aria-live="polite" aria-busy="true">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
+          </div>
+        ) : (
+          <>
         {/* Popular projects carousel - under search/filters, above Show all Projects; hidden when "Show all projects" is expanded */}
         {!shouldShowGrid && popularProjects.length > 0 && (
           <div className="mb-4 md:mb-8">
@@ -1435,6 +1444,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             })
           )}
           </div>
+        )}
+          </>
         )}
 
         {/* Categories Filter (Future Enhancement) */}
