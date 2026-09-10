@@ -16,11 +16,20 @@ export function useGlobalPublicSettings() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    const SETTINGS_TIMEOUT_MS = 5000;
+    let timedOut = false;
+    const timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      setLoading(false);
+    }, SETTINGS_TIMEOUT_MS);
+
     try {
       const { data, error } = await supabase
         .from('app_settings')
         .select('setting_key, setting_value')
         .in('setting_key', [...KEYS]);
+
+      if (timedOut) return;
 
       if (error) {
         console.error('Error loading global public settings:', error);
@@ -44,8 +53,11 @@ export function useGlobalPublicSettings() {
         }
       }
     } catch (err) {
-      console.error('Unexpected error loading global public settings:', err);
+      if (!timedOut) {
+        console.error('Unexpected error loading global public settings:', err);
+      }
     } finally {
+      window.clearTimeout(timeoutId);
       setLoading(false);
     }
   }, []);

@@ -43,23 +43,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { setGuestMode, transferGuestDataToUser } = useGuest();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
+    let cancelled = false;
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const applySession = (session: Session | null) => {
+      if (cancelled) return;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        applySession(session);
+      }
+    );
+
+    // Preview iframes / tracking prevention can fail token refresh with "Failed to fetch".
+    // Never leave the app stuck waiting on auth initialization.
+    const initTimeout = window.setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 5000);
+
+    void supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        window.clearTimeout(initTimeout);
+        applySession(session);
+      })
+      .catch(async (err) => {
+        window.clearTimeout(initTimeout);
+        console.error('Auth getSession failed:', err);
+        try {
+          await supabase.auth.signOut({ scope: 'local' });
+        } catch {
+          /* ignore local sign-out failures */
+        }
+        applySession(null);
+      });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(initTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {

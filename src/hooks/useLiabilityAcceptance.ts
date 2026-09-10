@@ -14,19 +14,27 @@ export function useLiabilityAcceptance() {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase
-      .from('usage_agreements')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('agreement_type', 'liability')
-      .limit(1);
-    if (error) {
-      console.error('Error checking liability acceptance:', error);
+    const timeoutId = window.setTimeout(() => setLoading(false), 5000);
+    try {
+      const { data, error } = await supabase
+        .from('usage_agreements')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('agreement_type', 'liability')
+        .limit(1);
+      if (error) {
+        console.error('Error checking liability acceptance:', error);
+        setAccepted(false);
+      } else {
+        setAccepted(!!(data && data.length > 0));
+      }
+    } catch (err) {
+      console.error('Error checking liability acceptance:', err);
       setAccepted(false);
-    } else {
-      setAccepted(!!(data && data.length > 0));
+    } finally {
+      window.clearTimeout(timeoutId);
+      setLoading(false);
     }
-    setLoading(false);
   }, [user?.id]);
 
   useEffect(() => {
