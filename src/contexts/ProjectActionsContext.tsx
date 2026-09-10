@@ -1155,6 +1155,11 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     const isInstructionLevelPreferenceUpdate =
       (projectRun as any).instruction_level_preference !==
       (currentProjectRun as any)?.instruction_level_preference;
+    const prevCompleted = currentProjectRun?.completedSteps || [];
+    const nextCompleted = projectRun.completedSteps || [];
+    const isKickoffStepProgressUpdate = (KICKOFF_UI_STEP_IDS as readonly string[]).some(
+      (id) => nextCompleted.includes(id) !== prevCompleted.includes(id)
+    );
     const requiresImmediateSave =
       isBudgetDataUpdate ||
       isIssueReportsUpdate ||
@@ -1163,6 +1168,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       isInitialTimelineUpdate ||
       isInitialSizingUpdate ||
       isKickoffCompletion ||
+      isKickoffStepProgressUpdate ||
       isQualityControlSettingsUpdate ||
       isSelectedPlanningToolsChange ||
       isInstructionLevelPreferenceUpdate;
@@ -1170,9 +1176,27 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     // For immediate saves (budget, issues, time tracking), execute right away
     // For other updates, debounce to avoid excessive database writes
     const saveToDatabase = async () => {
-      // Prevent concurrent updates
+      // Prevent concurrent updates — retry with latest cache merge, not a stale closed-over payload
       if (updateInProgressRef.current) {
-        setTimeout(() => updateProjectRun(projectRun), 100);
+        setTimeout(() => {
+          const latest =
+            projectRuns.find((r) => r.id === projectRun.id) ?? currentProjectRun;
+          if (!latest || latest.id !== projectRun.id) {
+            void updateProjectRun(projectRun);
+            return;
+          }
+          const mergedCompleted = [
+            ...new Set([
+              ...(latest.completedSteps || []),
+              ...(projectRun.completedSteps || []),
+            ]),
+          ];
+          void updateProjectRun({
+            ...latest,
+            ...projectRun,
+            completedSteps: mergedCompleted,
+          });
+        }, 100);
         return;
       }
 
@@ -1189,23 +1213,24 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         let preservedProgressReportingStyle = (projectRun as any).progress_reporting_style;
         let preservedScheduleOptimizationMethod = (projectRun as any).schedule_optimization_method;
         let preservedQualityControlSettings = (projectRun as any).quality_control_settings;
+        let mergedCompletedSteps = Array.isArray(projectRun.completedSteps)
+          ? [...projectRun.completedSteps]
+          : [];
         
-        // If any of these fields are undefined, fetch from database to preserve existing values
-        if (
-          preservedBudget === undefined ||
-          preservedTimeline === undefined ||
-          preservedSizing === undefined ||
-          preservedProgressReportingStyle === undefined ||
-          preservedScheduleOptimizationMethod === undefined ||
-          preservedQualityControlSettings === undefined
-        ) {
+        // Always merge completed_steps from DB so concurrent/debounced writes cannot drop kickoff steps
+        {
           const { data: currentRun, error: fetchError } = await supabase
             .from('project_runs')
-            .select('initial_budget, initial_timeline, initial_sizing, progress_reporting_style, schedule_optimization_method, quality_control_settings')
+            .select(
+              'completed_steps, initial_budget, initial_timeline, initial_sizing, progress_reporting_style, schedule_optimization_method, quality_control_settings'
+            )
             .eq('id', projectRun.id)
             .single();
           
           if (!fetchError && currentRun) {
+            const dbSteps = parseCompletedStepsColumn(currentRun.completed_steps);
+            mergedCompletedSteps = [...new Set([...dbSteps, ...mergedCompletedSteps])];
+
             // Only use database values if the field was undefined (not explicitly set to null)
             if (preservedBudget === undefined) {
               preservedBudget = currentRun.initial_budget;
@@ -1298,7 +1323,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           current_phase_id: projectRun.currentPhaseId,
           current_operation_id: projectRun.currentOperationId,
           current_step_id: projectRun.currentStepId,
-          completed_steps: JSON.stringify(projectRun.completedSteps),
+          completed_steps: JSON.stringify(mergedCompletedSteps),
           progress: safeProgress || 0,
           phases: JSON.stringify(projectRun.phases),
           category: Array.isArray(projectRun.category) ? projectRun.category.join(', ') : projectRun.category,

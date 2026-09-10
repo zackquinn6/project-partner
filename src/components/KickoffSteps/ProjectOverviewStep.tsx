@@ -195,9 +195,17 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             userMessage: 'Failed to load project match profile.',
             notificationTitle: 'Kickoff match profile load failed',
           });
+          setUserProfile(null);
           return;
         }
-        setUserProfile(data || null);
+        setUserProfile(
+          data
+            ? {
+                skill_level: data.skill_level ?? undefined,
+                physical_capability: data.physical_capability ?? undefined,
+              }
+            : null
+        );
       } catch (error) {
         if (!cancelled) {
           await reportUserFacingError({
@@ -210,13 +218,14 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             userMessage: 'Failed to load project match profile.',
             notificationTitle: 'Kickoff match profile load failed',
           });
+          setUserProfile(null);
         }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, currentProjectRun?.id]);
  
   // Fetch from database as backup if templateProject doesn't have the fields
   const [fetchedProjectInfo, setFetchedProjectInfo] = useState<{
@@ -421,22 +430,24 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           ))}
         </div>
         
-        {/* Arrow indicators for project and user levels */}
-        {hasValue && (
+        {/* Arrow indicators for project and user levels (independent — show profile even if project level missing) */}
+        {(hasValue || userLevelIndex >= 0) && (
           <div>
             {/* This project: arrow above label, arrow nearly touching the bar */}
-            <div
-              className="absolute top-7 left-0 flex flex-col items-center justify-center gap-0 transition-all duration-200 z-10 -mt-px pointer-events-none"
-              style={{
-                left: `${getArrowPosition(position)}%`,
-                transform: 'translateX(-50%)'
-              }}
-            >
-              <ArrowUp className="w-3.5 h-3.5 text-foreground drop-shadow-sm shrink-0" />
-              <span className="text-[9px] text-muted-foreground whitespace-nowrap leading-tight">
-                This project
-              </span>
-            </div>
+            {hasValue ? (
+              <div
+                className="absolute top-7 left-0 flex flex-col items-center justify-center gap-0 transition-all duration-200 z-10 -mt-px pointer-events-none"
+                style={{
+                  left: `${getArrowPosition(position)}%`,
+                  transform: 'translateX(-50%)'
+                }}
+              >
+                <ArrowUp className="w-3.5 h-3.5 text-foreground drop-shadow-sm shrink-0" />
+                <span className="text-[9px] text-muted-foreground whitespace-nowrap leading-tight">
+                  This project
+                </span>
+              </div>
+            ) : null}
 
             {/* Your level: label above arrow, arrow tight to bar */}
             {userLevelIndex >= 0 && (
@@ -456,8 +467,11 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           </div>
         )}
         
-        {!hasValue && (
+        {!hasValue && userLevelIndex < 0 && (
           <p className="text-xs text-muted-foreground mt-1 text-center">Not specified</p>
+        )}
+        {!hasValue && userLevelIndex >= 0 && (
+          <p className="text-xs text-muted-foreground mt-1 text-center">Project level not specified</p>
         )}
         {/* Mismatch / caution only (no green "your level matches" row) */}
         {userLevel && comparison && comparison.type !== 'success' && (

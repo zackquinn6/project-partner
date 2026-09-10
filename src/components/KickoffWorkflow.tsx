@@ -98,6 +98,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   // CRITICAL FIX: Use ref instead of state to avoid race conditions
   const isCompletingStepRef = useRef(false);
   const kickoffStepNavRef = useRef<HTMLDivElement | null>(null);
+  /** Tracks which run id we last hydrated completion UI for (avoid wiping checks on remount churn). */
+  const hydratedCompletionRunIdRef = useRef<string | null>(null);
 
   const scrollKickoffStepNav = (direction: 'left' | 'right') => {
     const el = kickoffStepNavRef.current;
@@ -160,33 +162,49 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     };
   }, [currentProjectRun?.id, user?.id]);
 
-  // Initialize completed steps from project run data - ONLY on mount or when project changes
+  // Initialize completed steps from project run data when project or step order changes
   useEffect(() => {
-    if (!kickoffOrderResolved) return;
-    // Don't overwrite state during step completion
-    if (isCompletingStepRef.current) {
-      return;
+    if (!kickoffOrderResolved || !currentProjectRun?.id) return;
+    if (isCompletingStepRef.current) return;
+
+    const runId = currentProjectRun.id;
+    const isNewHydration = hydratedCompletionRunIdRef.current !== runId;
+    if (isNewHydration) {
+      hydratedCompletionRunIdRef.current = runId;
     }
-    if (currentProjectRun?.completedSteps) {
-      const completedIndices = new Set<number>();
-      const stepIdsInDisplayOrder = kickoffSteps.map((s) => s.id);
 
-      stepIdsInDisplayOrder.forEach((stepId, index) => {
-        const isKickoffStepComplete = currentProjectRun.completedSteps.includes(stepId);
-        if (isKickoffStepComplete) {
-          completedIndices.add(index);
-        }
-      });
+    const completedIndices = new Set<number>();
+    const persisted = currentProjectRun.completedSteps || [];
+    kickoffSteps.forEach((step, index) => {
+      if (persisted.includes(step.id)) {
+        completedIndices.add(index);
+      }
+    });
+
+    if (isNewHydration) {
       setCompletedKickoffSteps(completedIndices);
-
       if (completedIndices.size < kickoffSteps.length) {
         const firstIncomplete = kickoffSteps.findIndex((_, index) => !completedIndices.has(index));
         if (firstIncomplete !== -1) {
           setCurrentKickoffStep(firstIncomplete);
         }
       }
+      return;
     }
-  }, [currentProjectRun?.id, kickoffOrderResolved, kickoffSteps, kickoffStepOrder]);
+
+    // Same run: only add completions from persistence — never remove local checkmarks
+    setCompletedKickoffSteps((prev) => {
+      let changed = false;
+      const next = new Set(prev);
+      completedIndices.forEach((idx) => {
+        if (!next.has(idx)) {
+          next.add(idx);
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [currentProjectRun?.id, currentProjectRun?.completedSteps, kickoffOrderResolved, kickoffSteps, kickoffStepOrder]);
 
   const handleStepComplete = async (stepIndex: number, selectedTools?: PlanningToolId[]) => {
     if (!currentProjectRun) {
@@ -198,7 +216,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     isCompletingStepRef.current = true;
     try {
       const stepId = kickoffSteps[stepIndex].id;
-      const newCompletedSteps = [...(currentProjectRun.completedSteps || [])];
 
       // Resolve workflow step by stable kickoff id (display order may swap steps 1 and 2)
       const kickoffPhase = currentProjectRun.phases.find(p => p.name === 'Kickoff');
@@ -211,13 +228,41 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         }
       }
 
-      // Add both the kickoff step ID and the actual workflow step ID
-      if (!newCompletedSteps.includes(stepId)) {
-        newCompletedSteps.push(stepId);
+      // Merge completions from DB + context + local UI so a stale snapshot cannot drop prior steps
+      const { data: freshRun, error: fetchError } = await supabase
+        .from('project_runs')
+        .select('completed_steps, initial_budget, initial_timeline, initial_sizing')
+        .eq('id', currentProjectRun.id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching project run before kickoff step complete:', fetchError);
       }
-      if (actualStepId !== stepId && !newCompletedSteps.includes(actualStepId)) {
-        newCompletedSteps.push(actualStepId);
-      }
+
+      const parseCompleted = (raw: unknown): string[] => {
+        if (Array.isArray(raw)) return raw.filter((id): id is string => typeof id === 'string');
+        if (typeof raw === 'string') {
+          try {
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+          } catch {
+            return [];
+          }
+        }
+        return [];
+      };
+
+      const fromDb = parseCompleted(freshRun?.completed_steps);
+      const fromContext = Array.isArray(currentProjectRun.completedSteps)
+        ? currentProjectRun.completedSteps.filter((id): id is string => typeof id === 'string')
+        : [];
+      const fromLocalUi = [...completedKickoffSteps]
+        .map((idx) => kickoffSteps[idx]?.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+
+      const newCompletedSteps = [
+        ...new Set([...fromDb, ...fromContext, ...fromLocalUi, stepId, actualStepId]),
+      ];
 
       // Derive UI completion from the list we are about to persist — not from React state, which can be stale
       // when users advance quickly and would otherwise leave finishingEntireKickoff false after the last step.
@@ -230,15 +275,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       });
       setCompletedKickoffSteps(newCompletedKickoffSteps);
 
-      // CRITICAL: Fetch initial_budget, initial_timeline, initial_sizing directly from database
-      // This ensures we get the latest values that were just saved by ProjectProfileStep
-      // The context might not be updated yet, so we fetch from the source of truth
-      const { data: freshRun, error: fetchError } = await supabase
-        .from('project_runs')
-        .select('initial_budget, initial_timeline, initial_sizing')
-        .eq('id', currentProjectRun.id)
-        .single();
-      
       const preservedBudget = freshRun?.initial_budget ?? (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
       const preservedTimeline = freshRun?.initial_timeline ?? (currentProjectRun as any)?.initial_timeline ?? (currentProjectRun as any)?.initialTimeline ?? null;
       const preservedSizing = freshRun?.initial_sizing ?? (currentProjectRun as any)?.initial_sizing ?? (currentProjectRun as any)?.initialSizing ?? null;

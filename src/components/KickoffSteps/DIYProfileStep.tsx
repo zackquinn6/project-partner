@@ -92,11 +92,13 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
           return;
         }
 
-        if (!profileData || !profileData.survey_completed_at) {
+        if (!profileData) {
           setExistingProfile(null);
           return;
         }
 
+        // Show any saved profile fields (same as My Profile). Do not require
+        // survey_completed_at — onboarding / partial profiles still have skill data.
         setExistingProfile({
           ...profileData,
           owned_tools: Array.isArray(profileData.owned_tools) ? profileData.owned_tools : [],
@@ -118,11 +120,10 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
     };
   }, [user?.id, profileReloadToken]);
 
-  // Auto-open profile editor for new users when navigating to step 2
+  // Auto-open profile editor only when there is no usable profile yet
   useEffect(() => {
-    if (!isLoading && !existingProfile && user?.id) {
-      setShowSurveyEditor(true);
-    }
+    if (isLoading || !user?.id || existingProfile) return;
+    setShowSurveyEditor(true);
   }, [isLoading, existingProfile, user?.id]);
 
   const handleStartEdit = () => {
@@ -356,7 +357,10 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
             handleSurveyComplete();
           }
         }} 
-        mode="new" 
+        mode="new"
+        enableProgressSave
+        initialDataLoading={Boolean(user?.id) && isLoading}
+        onProfileSaved={() => setProfileReloadToken((token) => token + 1)}
         initialData={{
           skillLevel: existingProfile?.skill_level || "",
           physicalCapability: existingProfile?.physical_capability || "",
