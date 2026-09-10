@@ -39,7 +39,18 @@ interface MembershipContextType {
   trialDaysRemaining: number;
 }
 
-const MembershipContext = createContext<MembershipContextType | undefined>(undefined);
+// Keep one context identity across Vite hot updates. Without this, an updated
+// consumer can briefly read a different context instance than the mounted
+// provider and crash the whole page even though App nests the provider correctly.
+const membershipContextStore = globalThis as typeof globalThis & {
+  __projectPartnerMembershipContext?: React.Context<MembershipContextType | undefined>;
+};
+
+const MembershipContext =
+  membershipContextStore.__projectPartnerMembershipContext ??
+  createContext<MembershipContextType | undefined>(undefined);
+
+membershipContextStore.__projectPartnerMembershipContext = MembershipContext;
 
 function normalizeTier(data: {
   subscribed?: boolean;
