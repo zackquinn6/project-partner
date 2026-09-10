@@ -1,15 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { checkAuthRateLimit, recordAuthAttempt } from '@/utils/securityUtils';
 import { sanitizeInput } from '@/utils/inputSanitization';
 import { logAuthenticationEvent, logSecurityViolation } from '@/utils/enhancedSecurityLogger';
-import { 
-  generateSessionFingerprint, 
-  storeSessionFingerprint, 
-  validateSessionIntegrity,
-  cleanupSessionData
-} from '@/utils/sessionSecurity';
+import { cleanupSessionData } from '@/utils/sessionSecurity';
 import { useGuest } from './GuestContext';
 import { ensureDefaultHomeForUser } from '@/utils/ensureDefaultHome';
 
@@ -43,50 +37,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { setGuestMode, transferGuestDataToUser } = useGuest();
 
   useEffect(() => {
-    let cancelled = false;
-
-    const applySession = (session: Session | null) => {
-      if (cancelled) return;
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    };
-
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        applySession(session);
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
       }
     );
-
-    // Preview iframes / tracking prevention can fail token refresh with "Failed to fetch".
-    // Never leave the app stuck waiting on auth initialization.
-    const initTimeout = window.setTimeout(() => {
-      if (!cancelled) setLoading(false);
-    }, 5000);
 
     void supabase.auth
       .getSession()
       .then(({ data: { session } }) => {
-        window.clearTimeout(initTimeout);
-        applySession(session);
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
       })
-      .catch(async (err) => {
-        window.clearTimeout(initTimeout);
+      .catch((err) => {
+        // Rejected getSession (e.g. token refresh network error) must clear loading;
+        // otherwise /auth stays on the spinner forever.
         console.error('Auth getSession failed:', err);
-        try {
-          await supabase.auth.signOut({ scope: 'local' });
-        } catch {
-          /* ignore local sign-out failures */
-        }
-        applySession(null);
+        setSession(null);
+        setUser(null);
+        setLoading(false);
       });
 
-    return () => {
-      cancelled = true;
-      window.clearTimeout(initTimeout);
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -155,51 +130,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Sanitize inputs
     const sanitizedEmail = sanitizeInput(email.trim().toLowerCase());
 
-    // Check server-side rate limiting — only deny when the function explicitly says so.
-    // A failed invoke (preview network/CORS) must not be treated as "too many attempts".
-    try {
-      const { data: rateLimitResult, error: rateLimitInvokeError } = await supabase.functions.invoke(
-        'auth-rate-limit',
-        {
-          body: {
-            email: sanitizedEmail,
-            action: 'check',
-          },
-        }
-      );
+    const { data: rateLimitResult, error: rateLimitInvokeError } = await supabase.functions.invoke(
+      'auth-rate-limit',
+      {
+        body: {
+          email: sanitizedEmail,
+          action: 'check',
+        },
+      }
+    );
 
-      if (rateLimitInvokeError) {
-        if (!checkAuthRateLimit(sanitizedEmail)) {
-          await logSecurityViolation(
-            'rate_limit_exceeded',
-            `Authentication rate limit exceeded for ${sanitizedEmail} (client-side)`,
-            'medium',
-            { email: sanitizedEmail }
-          );
-          return { error: { message: 'Too many login attempts. Please try again later.' } };
-        }
-        recordAuthAttempt(sanitizedEmail);
-      } else if (rateLimitResult?.allowed === false) {
-        await logSecurityViolation(
-          'rate_limit_exceeded',
-          `Authentication rate limit exceeded for ${sanitizedEmail}`,
-          'medium',
-          { email: sanitizedEmail }
-        );
-        return { error: { message: 'Too many login attempts. Please try again later.' } };
-      }
-    } catch (rateLimitError) {
-      console.warn('Rate limit check failed, falling back to client-side:', rateLimitError);
-      if (!checkAuthRateLimit(sanitizedEmail)) {
-        await logSecurityViolation(
-          'rate_limit_exceeded',
-          `Authentication rate limit exceeded for ${sanitizedEmail} (client-side)`,
-          'medium',
-          { email: sanitizedEmail }
-        );
-        return { error: { message: 'Too many login attempts. Please try again later.' } };
-      }
-      recordAuthAttempt(sanitizedEmail);
+    if (rateLimitInvokeError) {
+      return { error: rateLimitInvokeError };
+    }
+
+    if (rateLimitResult?.allowed === false) {
+      await logSecurityViolation(
+        'rate_limit_exceeded',
+        `Authentication rate limit exceeded for ${sanitizedEmail}`,
+        'medium',
+        { email: sanitizedEmail }
+      );
+      return { error: { message: 'Too many login attempts. Please try again later.' } };
+    }
+
+    if (rateLimitResult?.allowed !== true) {
+      return {
+        error: {
+          message: 'Login rate limit check returned an invalid response.',
+        },
+      };
     }
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -214,26 +174,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Log failed login attempts on server
     if (error) {
-      try {
-        await supabase.functions.invoke('auth-rate-limit', {
-          body: {
-            email: sanitizedEmail,
-            action: 'record_failure',
-            user_agent: navigator.userAgent
-          }
-        });
-      } catch (logError) {
-        console.warn('Failed to log login attempt on server:', logError);
-        // Fallback to client-side logging
-        try {
-          await supabase.rpc('log_failed_login', {
-            user_email: sanitizedEmail,
-            ip_addr: null,
-            user_agent_string: navigator.userAgent
-          });
-        } catch (fallbackError) {
-          console.warn('Failed to log login attempt:', fallbackError);
+      const { error: recordFailureError } = await supabase.functions.invoke('auth-rate-limit', {
+        body: {
+          email: sanitizedEmail,
+          action: 'record_failure',
+          user_agent: navigator.userAgent
         }
+      });
+      if (recordFailureError) {
+        console.error('Failed to record login failure:', recordFailureError);
       }
 
       await logSecurityViolation(
