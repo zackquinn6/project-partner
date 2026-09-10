@@ -319,14 +319,14 @@ Deno.serve(async (req) => {
 
     // Log to security events
     await supabase.rpc('log_comprehensive_security_event', {
-      event_type_param: 'manual_standard_phase_sync',
-      severity_param: 'high',
-      description_param: `Admin manually synced standard phases to ${result.templatesUpdated} templates`,
-      user_id_param: user.id,
-      user_email_param: user.email || null,
-      ip_address_param: null,
-      user_agent_param: req.headers.get('user-agent') || null,
-      additional_data_param: result,
+      p_event_type: 'manual_standard_phase_sync',
+      p_severity: 'high',
+      p_description: `Admin manually synced standard phases to ${result.templatesUpdated} templates`,
+      p_user_id: user.id,
+      p_user_email: user.email,
+      p_ip_address: null,
+      p_user_agent: req.headers.get('user-agent'),
+      p_additional_data: result,
     });
 
     result.details.push(

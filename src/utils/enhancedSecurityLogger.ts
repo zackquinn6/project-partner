@@ -1,8 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
-const db: any = supabase;
 
 /**
- * Enhanced security logger using the new comprehensive security logging system
+ * Enhanced security logger using the comprehensive security logging RPCs.
  */
 
 export interface SecurityEventData {
@@ -13,7 +12,7 @@ export interface SecurityEventData {
   userEmail?: string;
   ipAddress?: string;
   userAgent?: string;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 /**
@@ -21,7 +20,7 @@ export interface SecurityEventData {
  */
 export const logSecurityEvent = async (eventData: SecurityEventData): Promise<void> => {
   try {
-    const { error } = await db.rpc('log_comprehensive_security_event', {
+    const { error } = await supabase.rpc('log_comprehensive_security_event', {
       p_event_type: eventData.eventType,
       p_severity: eventData.severity,
       p_description: eventData.description,
@@ -29,20 +28,14 @@ export const logSecurityEvent = async (eventData: SecurityEventData): Promise<vo
       p_user_email: eventData.userEmail,
       p_ip_address: eventData.ipAddress,
       p_user_agent: eventData.userAgent,
-      p_additional_data: eventData.additionalData || {}
+      p_additional_data: eventData.additionalData,
     });
 
     if (error) {
-      if (error.code !== 'PGRST202') {
-        console.error('Failed to log security event:', error);
-      }
+      console.error('Failed to log security event:', error);
     }
   } catch (error) {
-    // RPC may not exist (PGRST202); avoid noisy console in that case
-    const err = error as { code?: string };
-    if (err?.code !== 'PGRST202') {
-      console.error('Error logging security event:', error);
-    }
+    console.error('Error logging security event:', error);
   }
 };
 
@@ -56,7 +49,7 @@ export const checkEnhancedRateLimit = async (
   windowMinutes: number = 15
 ): Promise<boolean> => {
   try {
-    const { data, error } = await db.rpc('enhanced_rate_limit_check', {
+    const { data, error } = await supabase.rpc('enhanced_rate_limit_check', {
       identifier,
       operation_type: operationType,
       max_attempts: maxAttempts,
@@ -65,6 +58,11 @@ export const checkEnhancedRateLimit = async (
 
     if (error) {
       console.error('Rate limit check failed:', error);
+      return false;
+    }
+
+    if (data === null) {
+      console.error('Rate limit check returned null');
       return false;
     }
 

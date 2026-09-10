@@ -4591,6 +4591,37 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_comprehensive_security_event: {
+        Args: {
+          p_event_type: string
+          p_severity: string
+          p_description: string
+          p_user_id?: string
+          p_user_email?: string
+          p_ip_address?: string
+          p_user_agent?: string
+          p_additional_data?: Json
+        }
+        Returns: undefined
+      }
+      enhanced_rate_limit_check: {
+        Args: {
+          identifier: string
+          operation_type: string
+          max_attempts?: number
+          window_minutes?: number
+        }
+        Returns: boolean
+      }
+      detect_suspicious_activity: {
+        Args: never
+        Returns: {
+          user_id: string
+          user_email: string
+          risk_score: number
+          suspicious_events: Json
+        }[]
+      }
       notifications_notify_project_owners: {
         Args: {
           p_body: string

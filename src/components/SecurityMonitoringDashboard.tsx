@@ -11,11 +11,11 @@ import { useToast } from '@/hooks/use-toast';
 interface SecurityEvent {
   id: string;
   event_type: string;
-  severity: string;
-  description: string;
-  user_email: string;
+  severity: string | null;
+  description: string | null;
+  user_email: string | null;
   created_at: string;
-  additional_data: any;
+  additional_data: Record<string, unknown> | null;
 }
 
 interface SuspiciousActivity {
@@ -33,14 +33,41 @@ export const SecurityMonitoringDashboard: React.FC = () => {
 
   const loadSecurityEvents = async () => {
     try {
-      const { data, error } = await (supabase as any)
-        .from('security_events_log')
+      const { data, error } = await supabase
+        .from('security_events')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
-      setSecurityEvents((data as any) || []);
+      if (data === null) {
+        throw new Error('security_events query returned null');
+      }
+
+      setSecurityEvents(
+        data.map((row) => {
+          const metadata =
+            row.metadata !== null &&
+            typeof row.metadata === 'object' &&
+            !Array.isArray(row.metadata)
+              ? (row.metadata as Record<string, unknown>)
+              : null;
+          const userEmail =
+            metadata !== null && typeof metadata.user_email === 'string'
+              ? metadata.user_email
+              : null;
+
+          return {
+            id: row.id,
+            event_type: row.event_type,
+            severity: row.severity,
+            description: row.description,
+            user_email: userEmail,
+            created_at: row.created_at,
+            additional_data: metadata,
+          };
+        })
+      );
     } catch (error) {
       console.error('Error loading security events:', error);
       toast({
@@ -53,12 +80,14 @@ export const SecurityMonitoringDashboard: React.FC = () => {
 
   const loadSuspiciousActivity = async () => {
     try {
-      const { data, error } = await supabase.rpc('detect_suspicious_activity' as any);
+      const { data, error } = await supabase.rpc('detect_suspicious_activity');
       if (error) throw error;
-      setSuspiciousActivity((data as any) || []);
+      if (data === null) {
+        throw new Error('detect_suspicious_activity returned null');
+      }
+      setSuspiciousActivity(data);
     } catch (error) {
       console.error('Error loading suspicious activity:', error);
-      // Don't show toast for this as it might be a permissions issue
     }
   };
 
@@ -72,7 +101,7 @@ export const SecurityMonitoringDashboard: React.FC = () => {
     refreshData();
   }, []);
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity: string | null) => {
     switch (severity) {
       case 'critical':
         return 'destructive';
@@ -218,7 +247,7 @@ export const SecurityMonitoringDashboard: React.FC = () => {
                     <TableCell className="max-w-md truncate">
                       {event.description}
                     </TableCell>
-                    <TableCell>{event.user_email || 'System'}</TableCell>
+                    <TableCell>{event.user_email}</TableCell>
                     <TableCell>
                       {new Date(event.created_at).toLocaleString()}
                     </TableCell>
