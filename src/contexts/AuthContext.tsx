@@ -37,31 +37,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { setGuestMode, transferGuestDataToUser } = useGuest();
 
   useEffect(() => {
+    let cancelled = false;
+
+    const applySession = (nextSession: Session | null) => {
+      if (cancelled) return;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setLoading(false);
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+      (_event, nextSession) => {
+        applySession(nextSession);
       }
     );
 
+    // Preview iframes / tracking prevention can fail token refresh with "Failed to fetch".
+    // Never leave the app stuck waiting on auth initialization.
+    const initTimeout = window.setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 5000);
+
     void supabase.auth
       .getSession()
-      .then(({ data: { session } }) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+      .then(({ data: { session: nextSession } }) => {
+        window.clearTimeout(initTimeout);
+        applySession(nextSession);
       })
       .catch((err) => {
         // Rejected getSession (e.g. token refresh network error) must clear loading;
         // otherwise /auth stays on the spinner forever.
+        window.clearTimeout(initTimeout);
         console.error('Auth getSession failed:', err);
-        setSession(null);
-        setUser(null);
-        setLoading(false);
+        applySession(null);
       });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(initTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
