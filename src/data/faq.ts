@@ -27,7 +27,7 @@ export const faqItems: FAQItem[] = [
   {
     question: 'How does pricing work?',
     answer:
-      'You can start free with no credit card required. Upgrade, downgrade, or cancel anytime. No contracts.',
+      'We offer three tiers, billed annually because home projects and maintenance run on longer cycles than a monthly subscription. Free covers home maintenance and task management—the cleanest, most focused home-improvement toolkit on the market (no credit card required). Risk-less focuses on mitigating project risk when you get instructions and planning elsewhere—a huge benefit, though it does not include schedule planning. Projects is our Project Partner flagship: full workflow execution so you can plan, schedule, and run the job end to end. Upgrade or cancel anytime.',
   },
   {
     question: 'What happens after the project is done?',
