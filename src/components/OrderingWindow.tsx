@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { extractNeedDatesFromSchedule, detectScheduleChanges, createScheduleSnapshot } from "@/utils/shoppingUtils";
 import { format } from "date-fns";
 import { reportUserFacingError } from "@/utils/errorReporting";
+import { PLANNING_TOOL_PRIMARY_CTA_CLASSNAME } from "@/components/PlanningWizardSteps/planningToolWindowChrome";
 import {
   isToolRequirementOwned,
   loadUserOwnedTools,
@@ -763,7 +764,7 @@ export function OrderingWindow({
                   </Badge>
                 </div>
 
-                {onOrderingComplete && <Button onClick={onOrderingComplete} disabled={shoppedTools.size + shoppedMaterials.size < uniqueTools.length + uniqueMaterials.length} className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 h-auto" size="sm">
+                {onOrderingComplete && <Button onClick={onOrderingComplete} disabled={shoppedTools.size + shoppedMaterials.size < uniqueTools.length + uniqueMaterials.length} className={`${PLANNING_TOOL_PRIMARY_CTA_CLASSNAME} text-xs px-3 py-1.5 h-auto`} size="sm">
                     <Check className="w-3 h-3 mr-1.5" />
                     Complete Shopping
                   </Button>}

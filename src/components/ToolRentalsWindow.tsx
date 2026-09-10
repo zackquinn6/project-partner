@@ -58,24 +58,24 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
           <TabsContent value="toolio" className="mt-6 flex-1 min-h-0 overflow-y-auto">
             <div className="space-y-6">
               {/* Hero Section with Toolio Theme */}
-              <Card className="bg-gradient-to-r from-orange-50 to-red-50 border-orange-200">
+              <Card className="border bg-muted/30">
                 <CardContent className="pt-6">
                   <div className="text-center space-y-4">
-                    <div className="inline-flex items-center gap-2 bg-orange-500 text-white px-3 py-1.5 rounded-full text-sm font-medium">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground">
                       <Wrench className="h-4 w-4" />
                       The Smarter Way To Rent Tools
                     </div>
                     
-                    <h2 className="text-3xl font-bold text-gray-900">
+                    <h2 className="text-2xl font-bold text-foreground md:text-3xl">
                       Seamless Integration
                     </h2>
                     
-                    <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    <p className="text-base text-muted-foreground max-w-2xl mx-auto md:text-lg">
                       Match with projects and tool library to rent the exact right tools and save money through rental.
                     </p>
                     
-                    <div className="bg-white/80 backdrop-blur rounded-lg p-4 inline-block">
-                      <p className="text-sm text-gray-600 font-medium">
+                    <div className="bg-background/80 backdrop-blur rounded-lg border p-4 inline-block">
+                      <p className="text-sm text-muted-foreground font-medium">
                         <MapPin className="inline h-4 w-4 mr-1" />
                         Currently Available in Boston, MA
                       </p>
@@ -88,8 +88,8 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
               <div className="grid md:grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="pt-6 text-center">
-                    <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Calendar className="h-6 w-6 text-orange-600" />
+                    <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Calendar className="h-6 w-6 text-foreground" />
                     </div>
                     <h3 className="font-semibold mb-2">Project-Based Approach</h3>
                     <p className="text-sm text-muted-foreground">
@@ -100,8 +100,8 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
 
                 <Card>
                   <CardContent className="pt-6 text-center">
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <ExternalLink className="h-6 w-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                      <ExternalLink className="h-6 w-6 text-foreground" />
                     </div>
                     <h3 className="font-semibold mb-2">Book Online</h3>
                     <p className="text-sm text-muted-foreground">
@@ -112,8 +112,8 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
 
                 <Card>
                   <CardContent className="pt-6 text-center">
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Wrench className="h-6 w-6 text-green-600" />
+                    <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Wrench className="h-6 w-6 text-foreground" />
                     </div>
                     <h3 className="font-semibold mb-2">Professional Quality</h3>
                     <p className="text-sm text-muted-foreground">

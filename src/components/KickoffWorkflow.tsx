@@ -27,12 +27,20 @@ import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
+import { PlanningJourneyHeader } from '@/components/PlanningJourneyHeader';
 import type { ProjectRun } from '@/interfaces/ProjectRun';
 import { reportUserFacingError } from '@/utils/errorReporting';
 
 /** Passed when finishing kickoff on step 4 so UserView does not use a stale customization_decisions closure. */
 export type KickoffCompletePersist = {
   customization_decisions: ProjectRun['customization_decisions'];
+};
+
+export type KickoffCompleteMode = 'continue-planning' | 'skip-to-workflow';
+
+export type KickoffCompletePayload = {
+  mode: KickoffCompleteMode;
+  persist?: KickoffCompletePersist;
 };
 
 const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string }[] = [
@@ -54,16 +62,17 @@ const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string
   {
     id: 'kickoff-step-4',
     title: 'Workflow Setup',
-    description: 'Choose which planning tools to use',
+    description: 'Choose which planning tools become your planning backlog',
   },
 ];
 
 interface KickoffWorkflowProps {
-  onKickoffComplete: (persist?: KickoffCompletePersist) => void | Promise<void>;
+  onKickoffComplete: (payload: KickoffCompletePayload) => void | Promise<void>;
   onExit?: () => void; // Add optional exit handler
   /**
    * Called synchronously immediately before the final DB save that marks all kickoff steps complete.
    * Use this to open the planning wizard so a render never sees kickoff-complete with the wizard still closed.
+   * Only invoked for continue-planning (not skip).
    */
   onBeforeFinalKickoffPersistence?: () => void;
 }
@@ -302,13 +311,15 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         }
 
         await Promise.resolve(
-          onKickoffComplete(
-            stepId === 'kickoff-step-4'
-              ? {
-                  customization_decisions: customization_decisions as ProjectRun['customization_decisions'],
-                }
-              : undefined
-          )
+          onKickoffComplete({
+            mode: 'continue-planning',
+            persist:
+              stepId === 'kickoff-step-4'
+                ? {
+                    customization_decisions: customization_decisions as ProjectRun['customization_decisions'],
+                  }
+                : undefined,
+          })
         );
         isCompletingStepRef.current = false;
       } else {
@@ -356,7 +367,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       case 'kickoff-step-3':
         return 'Complete initial customization to your unique project';
       case 'kickoff-step-4':
-        return 'Equip your project with the right planning tools';
+        return 'Choose your planning backlog — these tools become the Plan stage next';
       default:
         return '';
     }
@@ -452,6 +463,22 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       <ProjectPlanningCountdownBanner
         minimal
         projectCreatedAt={currentProjectRun.createdAt}
+        phaseHint="Discover → then Plan"
+        className="shrink-0"
+      />
+      <PlanningJourneyHeader
+        activeStage="discover"
+        planToolCount={
+          selectedPlanningTools.length > 0
+            ? selectedPlanningTools.length
+            : (() => {
+                const existing = parseCustomizationDecisions(currentProjectRun.customization_decisions)
+                  .selected_planning_tools;
+                return Array.isArray(existing) && existing.length > 0
+                  ? existing.length
+                  : DEFAULT_PLANNING_TOOLS_SELECTION.length;
+              })()
+        }
         className="shrink-0"
       />
       {/* Step Navigation (no separate project-name header) */}
@@ -705,10 +732,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       ) : (
                         <DropdownMenuItem
                           onSelect={() => {
-                            onKickoffComplete();
+                            onKickoffComplete({ mode: 'skip-to-workflow' });
                           }}
                         >
-                          Skip direct to project workflow
+                          Skip planning — go to project
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
@@ -740,11 +767,11 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       size="lg"
                       className="h-12 min-h-12 w-full border-muted-foreground/40 px-3 text-sm text-muted-foreground hover:bg-muted/40 sm:h-full sm:min-h-[3.25rem] sm:py-3"
                       onClick={() => {
-                        onKickoffComplete();
+                        onKickoffComplete({ mode: 'skip-to-workflow' });
                       }}
                     >
                       <span className="text-left leading-tight sm:line-clamp-2">
-                        Skip direct to project workflow
+                        Skip planning — go to project
                       </span>
                     </Button>
                   )}

@@ -27,6 +27,7 @@ import { CommunicationPlanStep } from './PlanningWizardSteps/CommunicationPlanSt
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
+import { PlanningJourneyHeader } from '@/components/PlanningJourneyHeader';
 import { PlanningConfirmationStep } from '@/components/PlanningWizardSteps/PlanningConfirmationStep';
 import {
   PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
@@ -144,7 +145,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         id: 'no-tools',
         toolId: null as PlanningToolId | null,
         title: 'No tools selected',
-        description: 'Complete Workflow Setup (Kickoff step 4) to choose planning tools for this run.'
+        description: 'Complete Workflow Setup (Kickoff step 4) to choose planning tools for this run.',
+        doneWhen: '',
       }];
     }
     return ordered.map(toolId => {
@@ -154,7 +156,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         id: `planning-${toolId}`,
         toolId,
         title,
-        description: meta?.benefit ?? ''
+        description: meta?.benefit ?? '',
+        doneWhen: meta?.doneWhen ?? '',
       };
     });
   }, [
@@ -438,9 +441,21 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
 
   const renderCurrentStep = () => {
     if (wizardPhase === 'confirm') {
+      const toolStatuses = wizardSteps
+        .filter((s): s is typeof s & { toolId: PlanningToolId } => s.toolId != null)
+        .map((s, index) => {
+          const meta = PLANNING_TOOLS.find((t) => t.id === s.toolId);
+          return {
+            toolId: s.toolId,
+            label: meta?.label ?? s.title,
+            doneWhen: meta?.doneWhen ?? s.doneWhen ?? '',
+            complete: isStepCompleted(index),
+          };
+        });
       return (
         <PlanningConfirmationStep
           selectedTools={effectiveSelectedTools}
+          toolStatuses={toolStatuses}
           phases={phasesForSummary}
           customizationDecisionsRaw={currentProjectRun?.customization_decisions}
           initialBudget={currentProjectRun?.initial_budget}
@@ -459,7 +474,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">
-              Complete Workflow Setup (Kickoff step 4) to choose planning tools for this run. Each tool becomes a step in this wizard and opens its app when you select it.
+              Complete Workflow Setup (Kickoff step 4) to choose planning tools for this run. Each tool becomes a step in Planning Studio and opens its app when you select it.
             </p>
           </CardContent>
         </Card>
@@ -557,10 +572,22 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
 
   const currentStepPurpose =
     wizardPhase === 'confirm'
-      ? 'Review your planning'
+      ? 'Definition of Done — reflect, then start'
       : wizardSteps[currentStep]?.description?.trim() ||
         wizardSteps[currentStep]?.title ||
         '';
+
+  const currentStepDoneWhen =
+    wizardPhase === 'steps' ? wizardSteps[currentStep]?.doneWhen?.trim() || '' : '';
+
+  const planIterationFooter =
+    wizardPhase === 'confirm'
+      ? null
+      : wizardSteps.length === 0
+        ? 'Complete Workflow Setup to choose planning tools'
+        : allWorkflowStepsComplete
+          ? `Plan iteration: ${completedSteps.size} of ${wizardSteps.length} tools · Review ready`
+          : `Plan iteration: ${completedSteps.size} of ${wizardSteps.length} tools · then Review`;
 
   if (layout === 'fullscreen' && !open) {
     return null;
@@ -584,9 +611,16 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         <ProjectPlanningCountdownBanner
           minimal
           projectCreatedAt={currentProjectRun.createdAt}
+          phaseHint="Plan stage — iterate tools, then Review"
           className="shrink-0"
         />
       ) : null}
+
+      <PlanningJourneyHeader
+        activeStage="plan"
+        planToolCount={effectiveSelectedTools.length}
+        className="shrink-0"
+      />
 
       {/* Step navigation — same card padding / layout rhythm as KickoffWorkflow */}
       <Card className="shrink-0">
@@ -686,12 +720,12 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                     className="w-full max-w-full text-[10px] leading-tight sm:w-auto sm:text-xs"
                   >
                     <Settings2 className="mr-1 h-3.5 w-3.5 shrink-0 sm:mr-1.5 sm:h-4 sm:w-4" />
-                    <span className="hidden lg:inline">Change planning tools</span>
-                    <span className="inline lg:hidden">Change tools</span>
+                    <span className="hidden lg:inline">Adjust plan backlog</span>
+                    <span className="inline lg:hidden">Adjust backlog</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Planning tools for this run</DropdownMenuLabel>
+                  <DropdownMenuLabel>Plan backlog for this run</DropdownMenuLabel>
                   {planningToolsForWizard.map(({ id, label }) => {
                     const isScope = id === 'scope';
                     const effectiveSelected = localSelectedTools ?? selectedToolsFromContext;
@@ -755,10 +789,15 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       {/* Step purpose — matches KickoffWorkflow purpose card */}
       {currentStepPurpose ? (
         <Card className="shrink-0">
-          <CardContent className="flex flex-row items-center justify-between gap-2 px-2 py-1.5 sm:px-3 sm:py-2">
-            <h2 className="min-w-0 flex-1 break-words pr-2 text-base font-semibold leading-snug sm:text-lg">
+          <CardContent className="flex flex-col gap-0.5 px-2 py-1.5 sm:px-3 sm:py-2">
+            <h2 className="min-w-0 break-words text-base font-semibold leading-snug sm:text-lg">
               {currentStepPurpose}
             </h2>
+            {currentStepDoneWhen ? (
+              <p className="text-[11px] text-muted-foreground sm:text-xs">
+                Done when: {currentStepDoneWhen}
+              </p>
+            ) : null}
           </CardContent>
         </Card>
       ) : null}
@@ -771,17 +810,20 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
             size="lg"
             className="min-h-[48px] min-w-0 flex-[3]"
             onClick={() => {
+              const firstIncomplete = wizardSteps.findIndex((_, i) => !completedSteps.has(i));
               setWizardPhase('steps');
-              setCurrentStep(0);
+              setCurrentStep(firstIncomplete >= 0 ? firstIncomplete : 0);
             }}
           >
-            Make changes
+            Re-target
           </Button>
           <Button
             type="button"
             size="lg"
-            className="min-h-[48px] min-w-0 flex-[7] bg-green-600 px-3 text-sm hover:bg-green-700"
+            disabled={!allWorkflowStepsComplete && wizardSteps.some((s) => s.toolId != null)}
+            className="min-h-[48px] min-w-0 flex-[7] bg-green-600 px-3 text-sm hover:bg-green-700 disabled:opacity-50"
             onClick={async () => {
+              if (!allWorkflowStepsComplete && wizardSteps.some((s) => s.toolId != null)) return;
               if (onWorkflowFullyComplete) {
                 await onWorkflowFullyComplete(effectiveSelectedTools);
               }
@@ -803,7 +845,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
             <Card>
               <CardContent className="p-2.5 sm:p-4">
                 <div className="p-2 text-center text-sm text-muted-foreground">
-                  Complete all steps to finish planning
+                  {planIterationFooter}
                 </div>
               </CardContent>
             </Card>
@@ -816,7 +858,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   if (layout === 'fullscreen') {
     return (
       <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
-        <span className="sr-only">Project Planning Workflow</span>
+        <span className="sr-only">Planning Studio</span>
         {shell}
       </div>
     );
@@ -825,8 +867,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-[calc(100vw-1rem)] max-w-6xl flex-col gap-0 overflow-hidden border-0 p-0 sm:w-full md:h-[min(100dvh,56rem)] md:max-h-[min(100dvh,56rem)] md:max-w-6xl md:rounded-lg md:border [&>button]:hidden">
-        <DialogTitle className="sr-only">Project Planning Workflow</DialogTitle>
-        <DialogDescription className="sr-only">Plan and customize your project workflow</DialogDescription>
+        <DialogTitle className="sr-only">Planning Studio</DialogTitle>
+        <DialogDescription className="sr-only">Iterate planning tools, review Definition of Done, then start your project</DialogDescription>
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">{shell}</div>
       </DialogContent>
     </Dialog>

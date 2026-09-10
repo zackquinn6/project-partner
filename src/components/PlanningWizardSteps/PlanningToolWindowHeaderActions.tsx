@@ -1,10 +1,10 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { PLANNING_TOOL_PRIMARY_CTA_CLASSNAME } from '@/components/PlanningWizardSteps/planningToolWindowChrome';
 
 /** Dark green primary for planning-tool window chrome (Save and Close). */
-export const PLANNING_TOOL_SAVE_CLOSE_CLASSNAME =
-  'bg-green-800 text-white shadow-sm hover:bg-green-900 focus-visible:ring-green-800';
+export const PLANNING_TOOL_SAVE_CLOSE_CLASSNAME = PLANNING_TOOL_PRIMARY_CTA_CLASSNAME;
 
 export interface PlanningToolWindowHeaderActionsProps {
   onCancel: () => void;

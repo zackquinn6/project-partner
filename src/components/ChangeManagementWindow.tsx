@@ -176,7 +176,7 @@ export function ChangeManagementWindow({
                     <CardContent className="text-sm text-muted-foreground space-y-2">
                       {!projectRun.planningCompletedAt ? (
                         <p>
-                          When you finish the project planning workflow and start the project, schedule,
+                          When you finish Planning Studio and start the project, schedule,
                           budget, and scope builder choices are stored as the baseline to compare later
                           changes against.
                         </p>

@@ -16,6 +16,11 @@ export interface ProjectPlanningCountdownBannerProps {
   className?: string;
   /** Kickoff: smaller, centered, no border/fill (planning wizard keeps default card styling). */
   minimal?: boolean;
+  /**
+   * Optional subline under the title (e.g. "Discover → then Plan") so the timer
+   * is not read as finished after kickoff alone.
+   */
+  phaseHint?: string;
 }
 
 /**
@@ -26,6 +31,7 @@ export function ProjectPlanningCountdownBanner({
   projectCreatedAt,
   className,
   minimal = false,
+  phaseHint,
 }: ProjectPlanningCountdownBannerProps) {
   const createdMs = projectCreatedAt.getTime();
 
@@ -46,6 +52,7 @@ export function ProjectPlanningCountdownBanner({
 
   if (Number.isNaN(createdMs)) return null;
 
+  const title = 'Plan this project in 30 min or less';
   const ariaLabel = `Time remaining to plan within thirty minutes of project start: ${formatMmSs(remainingMs)}`;
 
   if (minimal) {
@@ -61,8 +68,13 @@ export function ProjectPlanningCountdownBanner({
         )}
       >
         <p className="text-[11px] sm:text-xs text-muted-foreground leading-tight">
-          Project planned in 30 min or less
+          {title}
         </p>
+        {phaseHint ? (
+          <p className="text-[10px] text-muted-foreground/80 leading-tight sm:text-[11px]">
+            {phaseHint}
+          </p>
+        ) : null}
         <p
           className={cn(
             'font-mono text-sm font-semibold tabular-nums leading-none',
@@ -87,7 +99,12 @@ export function ProjectPlanningCountdownBanner({
         className
       )}
     >
-      <p className="text-sm font-medium text-foreground">Project planned in 30 min or less</p>
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        {phaseHint ? (
+          <p className="text-xs text-muted-foreground">{phaseHint}</p>
+        ) : null}
+      </div>
       <p
         className={cn(
           'font-mono text-lg font-semibold tabular-nums sm:text-xl',

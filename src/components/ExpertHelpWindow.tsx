@@ -6,7 +6,6 @@ import { Badge } from './ui/badge';
 import { 
   Calendar, 
   ArrowRight,
-  Sparkles
 } from 'lucide-react';
 import toolioLogo from '@/assets/toolio-logo.png';
 import { useMembership } from '@/contexts/MembershipContext';
@@ -51,15 +50,13 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({
         className="relative z-[61] h-[100dvh] max-h-[100dvh] w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:w-[90vw] md:max-w-[min(90vw,calc(100vw-2rem))]"
       >
       <div className="relative space-y-6">
-        <div className="relative z-10 -mx-4 -mt-4 mb-4">
-          <div className="bg-gradient-to-r from-primary/90 to-primary/70 backdrop-blur-sm border-b border-primary/30">
-            <div className="flex items-center justify-center gap-2 py-3 px-4">
-              <Sparkles className="w-4 h-4 text-primary-foreground animate-pulse" />
-              <Badge variant="secondary" className="bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30 text-xs font-semibold">
-                Premium escalate
-              </Badge>
-            </div>
-          </div>
+        <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-center">
+          <Badge variant="secondary" className="text-xs font-semibold">
+            Premium escalate
+          </Badge>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Live pro video when AI help is not enough
+          </p>
         </div>
 
         <div className="relative space-y-6">

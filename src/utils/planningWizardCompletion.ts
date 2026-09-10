@@ -82,7 +82,7 @@ function isPlanningCompletionStep(step: WorkflowStep): boolean {
 
 /**
  * Finds workflow steps in the project run snapshot that correspond to tools
- * the user finished in the Project Planning Wizard, so they can be marked
+ * the user finished in Planning Studio, so they can be marked
  * complete with outputs checked.
  */
 function matchedToResult(matched: Map<string, Set<string>>): {

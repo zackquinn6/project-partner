@@ -1,19 +1,33 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { PLANNING_TOOLS } from '@/components/KickoffSteps/ProjectToolsStep';
+import { CheckCircle, Circle } from 'lucide-react';
 import type { PlanningToolId } from '@/components/KickoffSteps/ProjectToolsStep';
 import type { Phase } from '@/interfaces/Project';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import {
+  PLANNING_TOOL_SUCCESS_SURFACE_CLASSNAME,
+  PLANNING_TOOL_WARNING_SURFACE_CLASSNAME,
+} from '@/components/PlanningWizardSteps/planningToolWindowChrome';
 
 function phaseTitle(phases: Phase[], phaseId: string): string {
   const p = phases.find((ph) => ph.id === phaseId);
   return typeof p?.name === 'string' && p.name.trim() ? p.name.trim() : phaseId;
 }
 
+export interface PlanningConfirmationToolStatus {
+  toolId: PlanningToolId;
+  label: string;
+  doneWhen: string;
+  complete: boolean;
+}
+
 export interface PlanningConfirmationStepProps {
   selectedTools: PlanningToolId[];
+  /** Per-tool Definition of Done checklist for this review. */
+  toolStatuses: PlanningConfirmationToolStatus[];
   phases: Phase[];
   customizationDecisionsRaw: unknown;
   initialBudget?: string;
@@ -22,6 +36,7 @@ export interface PlanningConfirmationStepProps {
 
 export function PlanningConfirmationStep({
   selectedTools,
+  toolStatuses,
   phases,
   customizationDecisionsRaw,
   initialBudget,
@@ -38,34 +53,107 @@ export function PlanningConfirmationStep({
       ? (decisions.ifNecessaryWork as Record<string, string[]>)
       : {};
 
-  const toolLabels = useMemo(() => {
-    const order = new Map(PLANNING_TOOLS.map((t, i) => [t.id, i] as const));
-    return [...selectedTools]
-      .filter((id) => PLANNING_TOOLS.some((t) => t.id === id))
-      .sort((a, b) => (order.get(a) ?? 0) - (order.get(b) ?? 0))
-      .map((id) => PLANNING_TOOLS.find((t) => t.id === id)?.label ?? id);
-  }, [selectedTools]);
-
   const standardRows = Object.entries(standardDecisions).filter(([, vals]) => Array.isArray(vals) && vals.length > 0);
   const necessaryRows = Object.entries(ifNecessaryWork).filter(([, vals]) => Array.isArray(vals) && vals.length > 0);
+
+  const incompleteCount = toolStatuses.filter((t) => !t.complete).length;
+  const allComplete = toolStatuses.length > 0 && incompleteCount === 0;
+  const hasKickoffTargets =
+    (initialBudget !== undefined && initialBudget !== '') ||
+    (initialTimeline !== undefined && initialTimeline !== '');
 
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-lg sm:text-xl">Review planning</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Definition of Done</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Starting the project locks this plan as your baseline. Reflect on kickoff goals, then start — or re-target
+            any incomplete tools.
+          </p>
         </CardHeader>
         <CardContent className="space-y-6 p-4 pt-0 sm:p-6 sm:pt-0">
           <section>
-            <h3 className="mb-2 text-sm font-semibold text-foreground">Planning tools</h3>
-            {toolLabels.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No additional planning tools were selected for this run.</p>
+            <h3 className="mb-2 text-sm font-semibold text-foreground">Planning checklist</h3>
+            {toolStatuses.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No planning tools are selected. Adjust the plan backlog, or start if you intentionally have none.
+              </p>
             ) : (
-              <ul className="list-inside list-disc space-y-1 text-sm text-foreground">
-                {toolLabels.map((label) => (
-                  <li key={label}>{label}</li>
+              <ul className="space-y-2">
+                {toolStatuses.map((tool) => (
+                  <li
+                    key={tool.toolId}
+                    className={cn(
+                      'flex items-start gap-2 rounded-md border px-3 py-2 text-sm',
+                      tool.complete
+                        ? PLANNING_TOOL_SUCCESS_SURFACE_CLASSNAME
+                        : PLANNING_TOOL_WARNING_SURFACE_CLASSNAME
+                    )}
+                  >
+                    {tool.complete ? (
+                      <CheckCircle
+                        className="mt-0.5 h-4 w-4 shrink-0 text-green-600 dark:text-green-400"
+                        aria-hidden
+                      />
+                    ) : (
+                      <Circle
+                        className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
+                        aria-hidden
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground">{tool.label}</p>
+                      <p className="text-xs text-muted-foreground">Done when: {tool.doneWhen}</p>
+                      <p className="mt-0.5 text-xs font-medium">
+                        {tool.complete ? (
+                          <span className="text-green-700 dark:text-green-400">Complete</span>
+                        ) : (
+                          <span className="text-amber-800 dark:text-amber-300">Incomplete — re-target to finish</span>
+                        )}
+                      </p>
+                    </div>
+                  </li>
                 ))}
               </ul>
+            )}
+            {toolStatuses.length > 0 && !allComplete ? (
+              <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">
+                {incompleteCount} tool{incompleteCount === 1 ? '' : 's'} still incomplete. Finish them or remove from
+                the plan backlog before starting.
+              </p>
+            ) : null}
+          </section>
+
+          <Separator />
+
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-foreground">Reflect</h3>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Does this plan still match your kickoff goals? If not, re-target before you start.
+            </p>
+            {hasKickoffTargets ? (
+              <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                {initialBudget !== undefined && initialBudget !== '' ? (
+                  <div className="rounded-md border bg-muted/30 px-3 py-2">
+                    <dt className="text-muted-foreground">Budget goal</dt>
+                    <dd className="font-medium text-foreground">{initialBudget}</dd>
+                  </div>
+                ) : null}
+                {initialTimeline !== undefined && initialTimeline !== '' ? (
+                  <div className="rounded-md border bg-muted/30 px-3 py-2">
+                    <dt className="text-muted-foreground">Target end</dt>
+                    <dd className="font-medium text-foreground">
+                      {(() => {
+                        const d = new Date(initialTimeline);
+                        return Number.isNaN(d.getTime()) ? initialTimeline : format(d, 'MMM d, yyyy');
+                      })()}
+                    </dd>
+                  </div>
+                ) : null}
+              </dl>
+            ) : (
+              <p className="text-sm text-muted-foreground">No kickoff budget or timeline targets were set.</p>
             )}
           </section>
 
@@ -118,33 +206,14 @@ export function PlanningConfirmationStep({
             )}
           </section>
 
-          {(initialBudget !== undefined && initialBudget !== '') || (initialTimeline !== undefined && initialTimeline !== '') ? (
+          {selectedTools.length === 0 ? null : (
             <>
               <Separator />
-              <section>
-                <h3 className="mb-2 text-sm font-semibold text-foreground">Kickoff targets</h3>
-                <dl className="grid gap-2 text-sm sm:grid-cols-2">
-                  {initialBudget !== undefined && initialBudget !== '' ? (
-                    <div>
-                      <dt className="text-muted-foreground">Budget goal</dt>
-                      <dd className="font-medium text-foreground">{initialBudget}</dd>
-                    </div>
-                  ) : null}
-                  {initialTimeline !== undefined && initialTimeline !== '' ? (
-                    <div>
-                      <dt className="text-muted-foreground">Target end</dt>
-                      <dd className="font-medium text-foreground">
-                        {(() => {
-                          const d = new Date(initialTimeline);
-                          return Number.isNaN(d.getTime()) ? initialTimeline : format(d, 'MMM d, yyyy');
-                        })()}
-                      </dd>
-                    </div>
-                  ) : null}
-                </dl>
-              </section>
+              <p className="text-xs text-muted-foreground">
+                Starting locks scope, schedule, and budget as the planning baseline for change tracking.
+              </p>
             </>
-          ) : null}
+          )}
         </CardContent>
       </Card>
     </div>

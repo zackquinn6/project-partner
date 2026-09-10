@@ -34,6 +34,7 @@ import {
   PLANNING_TOOL_WINDOW_HEADER_SURFACE_CLASSNAME,
   PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME,
   PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
+  PLANNING_TOOL_PRIMARY_CTA_CLASSNAME,
 } from '@/components/PlanningWizardSteps/planningToolWindowChrome';
 import { QualityControlPdfPrinter, type QualityControlPdfRow } from '@/components/QualityControlPdfPrinter';
 import { supabase } from '@/integrations/supabase/client';
@@ -581,7 +582,7 @@ export function QualityCheckWindow({
                                 </TableCell>
                                 <TableCell className="align-top">
                                   {row.isComplete ? (
-                                    <Badge className="bg-green-600 text-white text-xs">Complete</Badge>
+                                    <Badge className={`${PLANNING_TOOL_PRIMARY_CTA_CLASSNAME} text-xs`}>Complete</Badge>
                                   ) : (
                                     <Badge variant="secondary" className="text-xs">
                                       Incomplete
@@ -616,7 +617,7 @@ export function QualityCheckWindow({
                                       <Button
                                         type="button"
                                         variant="default"
-                                        className="bg-green-600 hover:bg-green-700 text-white text-xs h-8"
+                                        className={`${PLANNING_TOOL_PRIMARY_CTA_CLASSNAME} text-xs h-8`}
                                         onClick={() => onToggleOutputComplete(row.stepId, row.outputId)}
                                       >
                                         <CheckCircle2 className="w-3.5 h-3.5 mr-1" />

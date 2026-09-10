@@ -24,24 +24,72 @@ export const PLANNING_TOOLS: {
   id: (typeof PLANNING_TOOL_IDS)[number];
   label: string;
   benefit: string;
+  /** One-line Definition of Done for the planning wizard step. */
+  doneWhen: string;
   /** Short label for the project planning wizard step strip (icons); defaults to `label`. */
   trackerLabel?: string;
 }[] = [
-  { id: 'scope', label: 'Customize', benefit: 'Shape the work to fit your situation' },
-  { id: 'schedule', label: 'Schedule', benefit: 'Set a realistic timeline' },
+  {
+    id: 'scope',
+    label: 'Customize',
+    benefit: 'Shape the work to fit your situation',
+    doneWhen: 'Scope choices are saved for this run',
+  },
+  {
+    id: 'schedule',
+    label: 'Schedule',
+    benefit: 'Set a realistic timeline',
+    doneWhen: 'A working schedule is set',
+  },
   {
     id: 'communication_plan',
     label: 'Communication Plan',
     trackerLabel: 'Comms',
     benefit: 'Decide who gets updates and how you will share progress',
+    doneWhen: 'Who gets updates and how is decided',
   },
-  { id: 'risk', label: 'Risk-Less', benefit: 'Proactively avoid issues' },
-  { id: 'budget', label: 'Budget', benefit: 'Spend what you want' },
-  { id: 'shopping_list', label: 'Shopping', benefit: 'Track tool & material shopping' },
-  { id: 'tool_rentals', label: 'Tool Rental', benefit: 'Plan what to borrow or rent with rental options matched to your area' },
-  { id: 'waste_removal', label: 'Waste Removal', benefit: 'Plan disposal and debris handling during the project' },
-  { id: 'quality_control', label: 'Quality', benefit: 'Document results for future inspections' },
-  { id: 'expert_support', label: 'Support', benefit: 'Setup on-call expert support for when you need help' }
+  {
+    id: 'risk',
+    label: 'Risk-Less',
+    benefit: 'Proactively avoid issues',
+    doneWhen: 'Key risks are reviewed and addressed',
+  },
+  {
+    id: 'budget',
+    label: 'Budget',
+    benefit: 'Spend what you want',
+    doneWhen: 'Budget targets are set',
+  },
+  {
+    id: 'shopping_list',
+    label: 'Shopping',
+    benefit: 'Track tool & material shopping',
+    doneWhen: 'Shopping list is ready to use',
+  },
+  {
+    id: 'tool_rentals',
+    label: 'Tool Rental',
+    benefit: 'Plan what to borrow or rent with rental options matched to your area',
+    doneWhen: 'Rental needs are planned',
+  },
+  {
+    id: 'waste_removal',
+    label: 'Waste Removal',
+    benefit: 'Plan disposal and debris handling during the project',
+    doneWhen: 'Disposal plan is in place',
+  },
+  {
+    id: 'quality_control',
+    label: 'Quality',
+    benefit: 'Document results for future inspections',
+    doneWhen: 'Quality checks are configured',
+  },
+  {
+    id: 'expert_support',
+    label: 'Support',
+    benefit: 'Setup on-call expert support for when you need help',
+    doneWhen: 'Support preferences are set',
+  },
 ];
 
 export type PlanningToolId = (typeof PLANNING_TOOL_IDS)[number];

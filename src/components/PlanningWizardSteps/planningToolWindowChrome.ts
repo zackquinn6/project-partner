@@ -1,5 +1,5 @@
 /**
- * Shared visual chrome for windows opened from the project planning workflow
+ * Shared visual chrome for windows opened from Planning Studio
  * (and matching partner-tool dialogs): headers, titles, body padding, shell size.
  */
 
@@ -33,3 +33,18 @@ export const PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME =
  */
 export const PLANNING_TOOL_WINDOW_SECONDARY_STRIP_CLASSNAME =
   'border-b bg-background px-4 py-3 md:px-6 md:py-3';
+
+/**
+ * Shared primary CTA for planning tool windows (Save and Close, Complete, etc.).
+ * Keep in sync with PlanningToolWindowHeaderActions.
+ */
+export const PLANNING_TOOL_PRIMARY_CTA_CLASSNAME =
+  'bg-green-800 text-white shadow-sm hover:bg-green-900 focus-visible:ring-green-800';
+
+/** Soft success surface for completed states inside planning tools. */
+export const PLANNING_TOOL_SUCCESS_SURFACE_CLASSNAME =
+  'border-green-500/30 bg-green-500/5 text-green-800 dark:text-green-300';
+
+/** Soft warning surface for incomplete / attention states. */
+export const PLANNING_TOOL_WARNING_SURFACE_CLASSNAME =
+  'border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-200';

@@ -43,6 +43,7 @@ import { OrderingWindow } from './OrderingWindow';
 import { MaterialsSelectionWindow } from './MaterialsSelectionWindow';
 import { MaterialsSelectionDialog } from './MaterialsSelectionDialog';
 import { KickoffWorkflow } from './KickoffWorkflow';
+import type { KickoffCompletePayload } from './KickoffWorkflow';
 import { ProjectWorkflowOverviewPage } from './ProjectWorkflowOverviewPage';
 import { ProjectVisualizerDialog } from './ProjectVisualizerDialog';
 import { WorkflowVideosDialog } from './WorkflowVideosDialog';
@@ -80,6 +81,7 @@ import {
   KICKOFF_UI_STEP_IDS
 } from '@/utils/projectUtils';
 import { collectPlanningWizardWorkflowCompletion } from '@/utils/planningWizardCompletion';
+import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import type { PlanningToolId } from '@/components/KickoffSteps/ProjectToolsStep';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
@@ -2796,11 +2798,13 @@ export default function UserView({
       <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden md:h-auto md:min-h-0 md:flex-none md:overflow-visible">
       <KickoffWorkflow 
         onBeforeFinalKickoffPersistence={() => {
-          // Fast path: skip opening the full planning wizard before first build step.
-          // Kickoff already persisted selected_planning_tools (defaults: scope + risk).
-          // Full planning remains available from project apps.
+          // Open planning wizard before kickoff persistence so kickoff never reappears
+          // while the wizard is still closed (continue-planning path only).
+          setProjectPlanningWizardOpen(true);
         }}
-        onKickoffComplete={async persist => {
+        onKickoffComplete={async (payload: KickoffCompletePayload) => {
+            const persist = payload.persist;
+            const skipToWorkflow = payload.mode === 'skip-to-workflow';
             if (currentProjectRun && updateProjectRun) {
              // Ensure ALL kickoff steps are marked complete (prevent duplicates)
              const existingSteps = currentProjectRun.completedSteps || [];
@@ -2964,15 +2968,22 @@ export default function UserView({
               }
               setCompletedSteps(new Set(uniqueSteps));
 
-              // Fast path: auto-complete default planning tools so the user reaches build steps
-              // without walking the full planning wizard. Tools remain editable from apps.
-              const toolsFromPersist = (persist?.customization_decisions as { selected_planning_tools?: PlanningToolId[] } | undefined)
-                ?.selected_planning_tools;
-              const fastPathTools: PlanningToolId[] =
-                Array.isArray(toolsFromPersist) && toolsFromPersist.length > 0
-                  ? toolsFromPersist
-                  : (['scope', 'risk'] as PlanningToolId[]);
-              await handlePlanningWizardFullyComplete(fastPathTools);
+              if (skipToWorkflow) {
+                // Escape hatch: mark selected planning tools complete and enter workflow.
+                const toolsFromPersist = (persist?.customization_decisions as { selected_planning_tools?: PlanningToolId[] } | undefined)
+                  ?.selected_planning_tools;
+                const decisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
+                const toolsFromRun = decisions.selected_planning_tools as PlanningToolId[] | undefined;
+                const skipTools: PlanningToolId[] =
+                  Array.isArray(toolsFromPersist) && toolsFromPersist.length > 0
+                    ? toolsFromPersist
+                    : Array.isArray(toolsFromRun) && toolsFromRun.length > 0
+                      ? toolsFromRun
+                      : (['scope', 'risk'] as PlanningToolId[]);
+                await handlePlanningWizardFullyComplete(skipTools);
+              } else {
+                setProjectPlanningWizardOpen(true);
+              }
             } else {
               // Update project run if kickoff phase not found
               const phasesForProgressElse = Array.isArray(currentProjectRun.phases) ? currentProjectRun.phases : [];
@@ -3023,6 +3034,21 @@ export default function UserView({
                 }
               }
               setCompletedSteps(new Set(uniqueSteps));
+              if (skipToWorkflow) {
+                const toolsFromPersist = (persist?.customization_decisions as { selected_planning_tools?: PlanningToolId[] } | undefined)
+                  ?.selected_planning_tools;
+                const decisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
+                const toolsFromRun = decisions.selected_planning_tools as PlanningToolId[] | undefined;
+                const skipTools: PlanningToolId[] =
+                  Array.isArray(toolsFromPersist) && toolsFromPersist.length > 0
+                    ? toolsFromPersist
+                    : Array.isArray(toolsFromRun) && toolsFromRun.length > 0
+                      ? toolsFromRun
+                      : (['scope', 'risk'] as PlanningToolId[]);
+                await handlePlanningWizardFullyComplete(skipTools);
+              } else {
+                setProjectPlanningWizardOpen(true);
+              }
             }
             
             // Show post-kickoff notification if user hasn't disabled it
@@ -3135,7 +3161,7 @@ export default function UserView({
   }
   return (
     <>
-      {/* Planning wizard should render immediately after kickoff on all devices */}
+      {/* Planning Studio should render immediately after kickoff on all devices */}
       {projectPlanningWizardOpen && currentProjectRun ? (
         <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden md:h-auto md:min-h-0 md:flex-none md:overflow-visible">
           <ProjectPlanningWizard
