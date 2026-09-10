@@ -144,54 +144,74 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     // Sanitize inputs
     const sanitizedEmail = sanitizeInput(email.trim().toLowerCase());
+    const LOGIN_TIMEOUT_MS = 8000;
+    const LOGIN_TIMEOUT_MESSAGE = 'Login failed. Try again later.';
 
-    // Primary path: server rate-limit gate. Deny only on an explicit allowed=false response.
-    const { data: rateLimitResult } = await supabase.functions.invoke('auth-rate-limit', {
-      body: {
-        email: sanitizedEmail,
-        action: 'check',
-      },
-    });
-
-    if (rateLimitResult?.allowed === false) {
-      await logSecurityViolation(
-        'rate_limit_exceeded',
-        `Authentication rate limit exceeded for ${sanitizedEmail}`,
-        'medium',
-        { email: sanitizedEmail }
-      );
-      return { error: { message: 'Too many login attempts. Please try again later.' } };
-    }
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email: sanitizedEmail,
-      password,
-    });
-
-    // Log authentication attempt
-    await logAuthenticationEvent(sanitizedEmail, !error, 'email', {
-      timestamp: Date.now()
-    });
-    
-    // Log failed login attempts on server
-    if (error) {
-      await supabase.functions.invoke('auth-rate-limit', {
+    const runSignIn = async (): Promise<{ error: any }> => {
+      // Primary path: server rate-limit gate. Deny only on an explicit allowed=false response.
+      const { data: rateLimitResult } = await supabase.functions.invoke('auth-rate-limit', {
         body: {
           email: sanitizedEmail,
-          action: 'record_failure',
-          user_agent: navigator.userAgent
-        }
+          action: 'check',
+        },
       });
 
-      await logSecurityViolation(
-        'authentication_failed',
-        `Failed login attempt for ${sanitizedEmail}: ${error.message}`,
-        'medium',
-        { email: sanitizedEmail, errorCode: error.message }
-      );
+      if (rateLimitResult?.allowed === false) {
+        await logSecurityViolation(
+          'rate_limit_exceeded',
+          `Authentication rate limit exceeded for ${sanitizedEmail}`,
+          'medium',
+          { email: sanitizedEmail }
+        );
+        return { error: { message: 'Too many login attempts. Please try again later.' } };
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: sanitizedEmail,
+        password,
+      });
+
+      // Log authentication attempt
+      await logAuthenticationEvent(sanitizedEmail, !error, 'email', {
+        timestamp: Date.now()
+      });
+      
+      // Log failed login attempts on server
+      if (error) {
+        await supabase.functions.invoke('auth-rate-limit', {
+          body: {
+            email: sanitizedEmail,
+            action: 'record_failure',
+            user_agent: navigator.userAgent
+          }
+        });
+
+        await logSecurityViolation(
+          'authentication_failed',
+          `Failed login attempt for ${sanitizedEmail}: ${error.message}`,
+          'medium',
+          { email: sanitizedEmail, errorCode: error.message }
+        );
+      }
+      
+      return { error };
+    };
+
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        runSignIn(),
+        new Promise<{ error: { message: string } }>((resolve) => {
+          timeoutId = setTimeout(() => {
+            resolve({ error: { message: LOGIN_TIMEOUT_MESSAGE } });
+          }, LOGIN_TIMEOUT_MS);
+        }),
+      ]);
+    } finally {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
     }
-    
-    return { error };
   };
 
   const signInWithGoogle = async () => {

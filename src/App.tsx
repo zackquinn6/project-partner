@@ -22,6 +22,7 @@ import ApplyProjectOwner from "./pages/ApplyProjectOwner";
 import AcceptProjectOwnerInvite from "./pages/AcceptProjectOwnerInvite";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
+import { OutageBanner } from "@/components/OutageBanner";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App: React.FC = () => {
                         v7_relativeSplatPath: true,
                       }}
                     >
+                      <OutageBanner />
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/auth" element={<Auth />} />

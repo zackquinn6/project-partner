@@ -14,6 +14,7 @@ import { Loader2, ArrowLeft, AlertCircle, User } from 'lucide-react';
 import { useGuest } from '@/contexts/GuestContext';
 import { useMarketingCopy } from '@/hooks/useMarketingCopy';
 import projectPartnerLogo from '@/assets/project-partner-logo.png';
+import { toast } from 'sonner';
 
 const ONBOARDING_STORAGE_KEY = 'project_partner_onboarding';
 
@@ -206,7 +207,9 @@ export default function Auth() {
     
     const { error } = await signIn(validation.sanitizedData.email, password);
     if (error) {
-      setError(error.message);
+      const message = error.message || 'Login failed. Try again later.';
+      setError(message);
+      toast.error(message);
 
       // Log failed login attempt
       try {
