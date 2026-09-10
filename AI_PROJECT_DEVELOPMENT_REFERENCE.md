@@ -271,6 +271,7 @@ Same pattern as tools; repeat tool bootstrap in the same file.
 | ----- | ----- |
 | `name` | Match key |
 | `description`, `category`, `unit`, `unit_size` | Fill constrained columns |
+| `category` | **Check constraint:** `Components` \| `Consumables` \| `PPE` only |
 | `avg_cost_per_unit`, `alternates`, `photo_url` | Optional |
 
 #### `operation_steps.materials` JSON (app shape)
@@ -382,3 +383,4 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 | Date | Change | Why |
 | ---- | ------ | --- |
 | 2026-09-10 | Expanded field catalogs for catalog header, Steps 1–10, schedule prereqs (§E), related projects (§F); added on-demand Cursor rule `.cursor/rules/ai-project-dev-guide.mdc` | Single guide for template content development + continuous improvement |
+| 2026-09-10 | `materials.category` check allows only `Components` / `Consumables` / `PPE` (not free-form labels like Flooring) | Tile Flooring Installation step 6 bootstrap failed `materials_category_chk` until categories matched the constraint |
