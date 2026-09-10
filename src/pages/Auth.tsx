@@ -96,15 +96,15 @@ export default function Auth() {
     setIsSignUp(mode === 'signup');
   }, [location.search]);
 
-  // Load post-auth routing settings only once a session exists (avoids preview CORS/504 on /auth).
+  // Prefer admin landing settings, but never block post-login redirect on a failed/hanging fetch.
   useEffect(() => {
     if (!user) {
       setLandingLoaded(true);
       return;
     }
 
-    setLandingLoaded(false);
-    const SETTINGS_TIMEOUT_MS = 5000;
+    let cancelled = false;
+    const SETTINGS_TIMEOUT_MS = 2000;
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), SETTINGS_TIMEOUT_MS);
 
@@ -116,7 +116,7 @@ export default function Auth() {
           .in('setting_key', ['default_landing_view', 'project_catalog_enabled'])
           .abortSignal(controller.signal);
 
-        if (error || !data) {
+        if (cancelled || error || !data) {
           return;
         }
 
@@ -135,17 +135,21 @@ export default function Auth() {
           }
         }
       } catch {
-        // Network/CORS/timeout: keep existing landing defaults and unblock redirect.
+        // Network/CORS/timeout: keep existing landing defaults.
       } finally {
         window.clearTimeout(timeoutId);
-        setLandingLoaded(true);
+        if (!cancelled) {
+          setLandingLoaded(true);
+        }
       }
     };
 
     void loadLanding();
     return () => {
+      cancelled = true;
       controller.abort();
       window.clearTimeout(timeoutId);
+      setLandingLoaded(true);
     };
   }, [user]);
 

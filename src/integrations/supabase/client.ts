@@ -84,8 +84,9 @@ if (inLovablePreviewFrame) {
 export const supabase = createClient<Database>(resolvedUrl, resolvedKey, {
   auth: {
     storage: inLovablePreviewFrame ? memoryAuthStorage() : brokeredPreviewStorage(),
-    // Preview iframe: no persisted session → no boot-time refresh fetch.
-    persistSession: !inLovablePreviewFrame,
+    // Keep the signed-in session for this page lifetime (memory storage in preview iframes).
+    persistSession: true,
+    // Avoid noisy Failed-to-fetch refresh loops inside the Lovable editor iframe.
     autoRefreshToken: !inLovablePreviewFrame,
     detectSessionInUrl: true,
   },

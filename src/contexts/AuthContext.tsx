@@ -154,17 +154,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     // Sanitize inputs
     const sanitizedEmail = sanitizeInput(email.trim().toLowerCase());
-    
-    // Check server-side rate limiting
+
+    // Check server-side rate limiting — only deny when the function explicitly says so.
+    // A failed invoke (preview network/CORS) must not be treated as "too many attempts".
     try {
-      const { data: rateLimitResult } = await supabase.functions.invoke('auth-rate-limit', {
-        body: {
-          email: sanitizedEmail,
-          action: 'check'
+      const { data: rateLimitResult, error: rateLimitInvokeError } = await supabase.functions.invoke(
+        'auth-rate-limit',
+        {
+          body: {
+            email: sanitizedEmail,
+            action: 'check',
+          },
         }
-      });
-      
-      if (!rateLimitResult?.allowed) {
+      );
+
+      if (rateLimitInvokeError) {
+        if (!checkAuthRateLimit(sanitizedEmail)) {
+          await logSecurityViolation(
+            'rate_limit_exceeded',
+            `Authentication rate limit exceeded for ${sanitizedEmail} (client-side)`,
+            'medium',
+            { email: sanitizedEmail }
+          );
+          return { error: { message: 'Too many login attempts. Please try again later.' } };
+        }
+        recordAuthAttempt(sanitizedEmail);
+      } else if (rateLimitResult?.allowed === false) {
         await logSecurityViolation(
           'rate_limit_exceeded',
           `Authentication rate limit exceeded for ${sanitizedEmail}`,
@@ -175,7 +190,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (rateLimitError) {
       console.warn('Rate limit check failed, falling back to client-side:', rateLimitError);
-      // Fallback to client-side rate limiting
       if (!checkAuthRateLimit(sanitizedEmail)) {
         await logSecurityViolation(
           'rate_limit_exceeded',
