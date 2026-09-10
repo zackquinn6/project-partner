@@ -1,0 +1,13 @@
+---
+description: >-
+  Follow when the user says "follow ai dev guide" (or similar) or asks to
+  develop/complete catalog project template content (Steps 1–10, risks,
+  schedule prereqs, related phases). Read and obey AI_PROJECT_DEVELOPMENT_REFERENCE.md.
+alwaysApply: false
+---
+
+# AI project development guide
+
+1. **Read first:** open and follow repo-root `AI_PROJECT_DEVELOPMENT_REFERENCE.md` end-to-end for the request.
+2. **Field catalogs in §B / §D–§F are required** — use the listed columns/JSON keys; verify names against `src/integrations/supabase/types.ts` and `src/interfaces/Project.ts` before writing SQL or content.
+3. **Continuous improvement:** when a field, constraint, or SQL lesson is proven in-session, append a dated entry under **Revision history** in that file and fold durable rules into the matching section.
