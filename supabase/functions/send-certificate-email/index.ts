@@ -113,9 +113,13 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
 
           <div class="content">
-            <h2>${certificate_data.project_name}</h2>
-            <p><strong>Completed:</strong> ${new Date(certificate_data.completed_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-            ${certificate_data.difficulty ? `<p><strong>Difficulty:</strong> ${certificate_data.difficulty}</p>` : ''}
+            <h2>${escapeHtml(projectName)}</h2>
+            <p><strong>Completed:</strong> ${escapeHtml(
+              isNaN(new Date(completedDate).getTime())
+                ? new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                : new Date(completedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+            )}</p>
+            ${difficulty ? `<p><strong>Difficulty:</strong> ${escapeHtml(difficulty)}</p>` : ''}
           </div>
 
           <img src="cid:certificate" alt="Certificate" class="certificate-image" />
