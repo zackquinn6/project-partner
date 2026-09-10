@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { checkAuthRateLimit, recordAuthAttempt } from '@/utils/securityUtils';
 import { sanitizeInput } from '@/utils/inputSanitization';
 import { logAuthenticationEvent, logSecurityViolation } from '@/utils/enhancedSecurityLogger';
 import { cleanupSessionData } from '@/utils/sessionSecurity';
@@ -146,51 +145,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Sanitize inputs
     const sanitizedEmail = sanitizeInput(email.trim().toLowerCase());
 
-    // Check server-side rate limiting — only deny when the function explicitly says so.
-    // A failed invoke (preview network/CORS) must not block sign-in.
-    try {
-      const { data: rateLimitResult, error: rateLimitInvokeError } = await supabase.functions.invoke(
-        'auth-rate-limit',
-        {
-          body: {
-            email: sanitizedEmail,
-            action: 'check',
-          },
-        }
-      );
+    // Primary path: server rate-limit gate. Deny only on an explicit allowed=false response.
+    const { data: rateLimitResult } = await supabase.functions.invoke('auth-rate-limit', {
+      body: {
+        email: sanitizedEmail,
+        action: 'check',
+      },
+    });
 
-      if (rateLimitInvokeError) {
-        if (!checkAuthRateLimit(sanitizedEmail)) {
-          await logSecurityViolation(
-            'rate_limit_exceeded',
-            `Authentication rate limit exceeded for ${sanitizedEmail} (client-side)`,
-            'medium',
-            { email: sanitizedEmail }
-          );
-          return { error: { message: 'Too many login attempts. Please try again later.' } };
-        }
-        recordAuthAttempt(sanitizedEmail);
-      } else if (rateLimitResult?.allowed === false) {
-        await logSecurityViolation(
-          'rate_limit_exceeded',
-          `Authentication rate limit exceeded for ${sanitizedEmail}`,
-          'medium',
-          { email: sanitizedEmail }
-        );
-        return { error: { message: 'Too many login attempts. Please try again later.' } };
-      }
-    } catch (rateLimitError) {
-      console.warn('Rate limit check failed, falling back to client-side:', rateLimitError);
-      if (!checkAuthRateLimit(sanitizedEmail)) {
-        await logSecurityViolation(
-          'rate_limit_exceeded',
-          `Authentication rate limit exceeded for ${sanitizedEmail} (client-side)`,
-          'medium',
-          { email: sanitizedEmail }
-        );
-        return { error: { message: 'Too many login attempts. Please try again later.' } };
-      }
-      recordAuthAttempt(sanitizedEmail);
+    if (rateLimitResult?.allowed === false) {
+      await logSecurityViolation(
+        'rate_limit_exceeded',
+        `Authentication rate limit exceeded for ${sanitizedEmail}`,
+        'medium',
+        { email: sanitizedEmail }
+      );
+      return { error: { message: 'Too many login attempts. Please try again later.' } };
     }
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -205,17 +175,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Log failed login attempts on server
     if (error) {
-      try {
-        await supabase.functions.invoke('auth-rate-limit', {
-          body: {
-            email: sanitizedEmail,
-            action: 'record_failure',
-            user_agent: navigator.userAgent
-          }
-        });
-      } catch (logError) {
-        console.warn('Failed to record login failure:', logError);
-      }
+      await supabase.functions.invoke('auth-rate-limit', {
+        body: {
+          email: sanitizedEmail,
+          action: 'record_failure',
+          user_agent: navigator.userAgent
+        }
+      });
 
       await logSecurityViolation(
         'authentication_failed',
