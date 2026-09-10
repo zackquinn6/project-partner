@@ -1,33 +1,61 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-export function useBetaMode() {
+const FETCH_TIMEOUT_MS = 5000;
+
+type UseBetaModeOptions = {
+  /** When false, skip network/realtime (e.g. logged-out /auth). Default true. */
+  enabled?: boolean;
+};
+
+export function useBetaMode(options?: UseBetaModeOptions) {
+  const enabled = options?.enabled ?? true;
   const [isBetaMode, setIsBetaMode] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
 
   const fetchBetaMode = async () => {
+    if (!enabled) {
+      setIsBetaMode(false);
+      setLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
     try {
       const { data, error } = await supabase
         .from('app_settings')
         .select('setting_value')
         .eq('setting_key', 'beta_mode')
-        .single();
+        .maybeSingle()
+        .abortSignal(controller.signal);
 
-      if (error) throw error;
-      
-      setIsBetaMode((data?.setting_value as { enabled?: boolean })?.enabled ?? false);
-    } catch (error) {
-      console.error('Error fetching beta mode:', error);
+      if (error) {
+        setIsBetaMode(false);
+        return;
+      }
+
+      const enabledFlag = (data?.setting_value as { enabled?: boolean } | null)?.enabled;
+      setIsBetaMode(enabledFlag === true);
+    } catch {
       setIsBetaMode(false);
     } finally {
+      window.clearTimeout(timeoutId);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBetaMode();
+    if (!enabled) {
+      setIsBetaMode(false);
+      setLoading(false);
+      return;
+    }
 
-    // Listen for changes to beta mode setting
+    setLoading(true);
+    void fetchBetaMode();
+
     const channel = supabase
       .channel('beta-mode-changes')
       .on(
@@ -36,10 +64,10 @@ export function useBetaMode() {
           event: '*',
           schema: 'public',
           table: 'app_settings',
-          filter: 'setting_key=eq.beta_mode'
+          filter: 'setting_key=eq.beta_mode',
         },
         () => {
-          fetchBetaMode();
+          void fetchBetaMode();
         }
       )
       .subscribe();
@@ -47,7 +75,7 @@ export function useBetaMode() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [enabled]);
 
   return { isBetaMode, loading, refetch: fetchBetaMode };
 }

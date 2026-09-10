@@ -52,7 +52,10 @@ function normalizeTier(data: {
 export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isBetaMode } = useBetaMode();
+  // Avoid a failing public settings fetch on the logged-out login screen (preview CORS/504 noise).
+  const betaModeEnabled =
+    !!user || (typeof window !== 'undefined' && window.location.pathname !== '/auth');
+  const { isBetaMode } = useBetaMode({ enabled: betaModeEnabled });
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isProjectOwner, setIsProjectOwner] = useState(false);
