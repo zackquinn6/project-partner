@@ -17,26 +17,21 @@ export function useGlobalPublicSettings() {
 
   const load = useCallback(async () => {
     const SETTINGS_TIMEOUT_MS = 5000;
-    let timedOut = false;
-    const timeoutId = window.setTimeout(() => {
-      timedOut = true;
-      setLoading(false);
-    }, SETTINGS_TIMEOUT_MS);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), SETTINGS_TIMEOUT_MS);
 
     try {
       const { data, error } = await supabase
         .from('app_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', [...KEYS]);
+        .in('setting_key', [...KEYS])
+        .abortSignal(controller.signal);
 
-      if (timedOut) return;
-
-      if (error) {
-        console.error('Error loading global public settings:', error);
+      if (error || !data) {
         return;
       }
 
-      for (const row of data ?? []) {
+      for (const row of data) {
         const enabled = (row.setting_value as { enabled?: boolean } | null)?.enabled;
         if (typeof enabled !== 'boolean') continue;
         if (row.setting_key === 'simplified_public_landing') {
@@ -52,10 +47,8 @@ export function useGlobalPublicSettings() {
           setTileFocusMode(enabled);
         }
       }
-    } catch (err) {
-      if (!timedOut) {
-        console.error('Unexpected error loading global public settings:', err);
-      }
+    } catch {
+      // Preview/network/CORS failures: keep prior defaults; avoid console noise.
     } finally {
       window.clearTimeout(timeoutId);
       setLoading(false);

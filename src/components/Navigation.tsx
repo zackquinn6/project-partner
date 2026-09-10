@@ -10,7 +10,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectOwner } from '@/hooks/useProjectOwner';
 import { useMembership } from '@/contexts/MembershipContext';
-import { useBetaMode } from '@/hooks/useBetaMode';
 import { FeedbackDialog } from './FeedbackDialog';
 import { ContactUsWindow } from './ContactUsWindow';
 import { UpgradePrompt } from './UpgradePrompt';
@@ -80,8 +79,7 @@ export default function Navigation({
   const { isAdmin } = useUserRole();
   const { hasProjectOwnerRole } = useProjectOwner();
   const showAdminPanel = isAdmin || hasProjectOwnerRole;
-  const { hasProjectsTier, hasRiskLessTier, loading: membershipLoading } = useMembership();
-  const { isBetaMode } = useBetaMode();
+  const { hasProjectsTier, hasRiskLessTier, loading: membershipLoading, isBetaMode } = useMembership();
   const navigate = useNavigate();
   const location = useLocation();
 

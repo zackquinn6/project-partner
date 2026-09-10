@@ -20,6 +20,8 @@ interface MembershipContextType {
   trialEndDate: string | null;
   subscriptionEnd: string | null;
   loading: boolean;
+  /** Public beta unlock from app_settings.beta_mode. */
+  isBetaMode: boolean;
   /** Stripe/API tier: none, risk_less ($15/yr), or projects ($59/yr). Trial users are treated as projects on the client. */
   subscriptionTier: SubscriptionTier;
   /** Catalog, start/open catalog-backed project runs, full workflows. */
@@ -268,6 +270,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
         trialEndDate,
         subscriptionEnd,
         loading,
+        isBetaMode,
         subscriptionTier,
         hasProjectsTier,
         hasRiskLessTier,

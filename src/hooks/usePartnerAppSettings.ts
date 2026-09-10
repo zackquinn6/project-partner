@@ -23,8 +23,7 @@ export function usePartnerAppSettings() {
       setExpertSupportEnabled(map.get('expert_support_enabled')?.enabled ?? true);
       setToolRentalsEnabled(map.get('tool_rentals_enabled')?.enabled ?? true);
       setWasteRemovalEnabled(map.get('waste_removal_enabled')?.enabled ?? true);
-    } catch (err) {
-      console.error('Error fetching partner app settings:', err);
+    } catch {
       setPartnerAppsEnabled(true);
       setExpertSupportEnabled(true);
       setToolRentalsEnabled(true);

@@ -23,13 +23,11 @@ export function useLiabilityAcceptance() {
         .eq('agreement_type', 'liability')
         .limit(1);
       if (error) {
-        console.error('Error checking liability acceptance:', error);
         setAccepted(false);
       } else {
         setAccepted(!!(data && data.length > 0));
       }
-    } catch (err) {
-      console.error('Error checking liability acceptance:', err);
+    } catch {
       setAccepted(false);
     } finally {
       window.clearTimeout(timeoutId);

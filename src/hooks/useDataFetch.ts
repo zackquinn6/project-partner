@@ -110,7 +110,6 @@ export function useDataFetch<T = any>({
       const { data: result, error: fetchError } = await query;
 
       if (fetchError) {
-        console.error(`❌ useDataFetch error for table ${table}:`, fetchError);
         throw new Error(fetchError.message);
       }
 
@@ -126,21 +125,22 @@ export function useDataFetch<T = any>({
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
         setError(err);
-        
-        // Only show toast for actual errors, not when data doesn't exist
-        if (!err.message.includes('No rows')) {
+
+        const isNetworkFailure =
+          err.message === 'Failed to fetch' || err.message.includes('Failed to fetch');
+
+        // Skip toast for transient preview/network failures (Tracking Prevention / CORS / 504).
+        if (!err.message.includes('No rows') && !isNetworkFailure) {
           let errorDescription = `Failed to load ${table}`;
-          
-          if (err.message === 'Failed to fetch') {
-            errorDescription = 'Network connection issue. Please check your internet connection and try again.';
-          } else if (err.message.includes('JWT')) {
+
+          if (err.message.includes('JWT')) {
             errorDescription = 'Authentication expired. Please sign in again.';
           } else if (err.message.includes('permission')) {
             errorDescription = 'Access denied. You may not have permission to view this data.';
           } else {
             errorDescription = `${errorDescription}: ${err.message}`;
           }
-          
+
           toast({
             title: "Connection Error",
             description: errorDescription,
