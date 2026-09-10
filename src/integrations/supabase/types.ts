@@ -4374,6 +4374,10 @@ export type Database = {
         Args: { p_invitation_id: string }
         Returns: Json
       }
+      can_caller_edit_project: {
+        Args: { p_project_id: string }
+        Returns: boolean
+      }
       can_manage_tool_variation_catalog: { Args: never; Returns: boolean }
       check_rate_limit: {
         Args: {
@@ -4393,6 +4397,10 @@ export type Database = {
         Returns: Json
       }
       copy_draft_revision_workflow: {
+        Args: { p_source_project_id: string; p_target_project_id: string }
+        Returns: string
+      }
+      copy_draft_revision_workflow_internal: {
         Args: { p_source_project_id: string; p_target_project_id: string }
         Returns: string
       }
@@ -4438,6 +4446,17 @@ export type Database = {
             }
             Returns: string
           }
+      create_project_run_snapshot_internal: {
+        Args: {
+          p_home_id?: string
+          p_plan_end_date?: string
+          p_project_id: string
+          p_run_name: string
+          p_start_date?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       create_project_with_standard_foundation: {
         Args: {
           p_category?: string
@@ -4467,11 +4486,33 @@ export type Database = {
           remaining: number
         }[]
       }
+      get_help_usage_status_internal: {
+        Args: { p_user_id?: string }
+        Returns: {
+          capped: boolean
+          message_cap: number
+          message_count: number
+          period_end: string
+          period_start: string
+          remaining: number
+        }[]
+      }
       get_operation_steps_json: {
         Args: { p_is_reference?: boolean; p_operation_id: string }
         Returns: Json
       }
       get_photos_by_project_type: {
+        Args: never
+        Returns: {
+          personal_count: number
+          photo_count: number
+          project_id: string
+          project_partner_count: number
+          public_count: number
+          template_name: string
+        }[]
+      }
+      get_photos_by_project_type_internal: {
         Args: never
         Returns: {
           personal_count: number
@@ -4541,6 +4582,7 @@ export type Database = {
       is_admin:
         | { Args: never; Returns: boolean }
         | { Args: { check_user_id: string }; Returns: boolean }
+      is_caller_admin: { Args: never; Returns: boolean }
       log_failed_login: {
         Args: {
           ip_addr?: string
@@ -4564,6 +4606,10 @@ export type Database = {
         Returns: string
       }
       rebuild_phases_json_from_project_phases: {
+        Args: { p_project_id: string }
+        Returns: Json
+      }
+      rebuild_phases_json_from_project_phases_internal: {
         Args: { p_project_id: string }
         Returns: Json
       }
