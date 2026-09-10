@@ -204,27 +204,30 @@ export function MobileOptimizedHome() {
     }
   ];
 
-  const utilityApps = [
-    {
-      id: 'tool-library',
-      icon: Wrench,
-      title: 'My Tools',
-      color: 'bg-orange-600', // Tools: Orange
-      action: () => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))
-    },
+  const setupWorkshopApps = [
     {
       id: 'profile',
       icon: User,
       title: 'My Profile',
-      color: 'bg-slate-600', // Profile: Gray
+      description: 'Account details and preferences',
+      color: 'bg-slate-600',
       action: () => window.dispatchEvent(new CustomEvent('open-profile-manager'))
     },
     {
       id: 'my-homes',
       icon: MapPin,
       title: 'My Homes',
-      color: 'bg-green-700', // Home: Green
+      description: 'Properties linked to your workshop',
+      color: 'bg-green-700',
       action: () => window.dispatchEvent(new CustomEvent('show-home-manager'))
+    },
+    {
+      id: 'tool-library',
+      icon: Wrench,
+      title: 'My Tools',
+      description: 'Your tool library',
+      color: 'bg-orange-600',
+      action: () => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))
     }
   ];
 
@@ -435,28 +438,40 @@ export function MobileOptimizedHome() {
           </div>
         </div>
 
-        {/* All Apps */}
+        {/* Setup Workshop — single entry to Profile, Homes, Tools */}
         <div>
-          <h2 className="text-lg font-semibold text-foreground mb-3 md:hidden">Browse Tools</h2>
-          <div className="grid grid-cols-3 gap-2">
-            {utilityApps.map((app) => {
-              const Icon = app.icon;
-              return (
-                <Card 
-                  key={app.id}
-                  className="gradient-card cursor-pointer hover:shadow-md transition-smooth shadow-sm rounded-xl min-h-[100px]"
-                  onClick={app.action}
-                >
-                  <CardContent className="p-3 text-center flex flex-col items-center justify-center h-full">
-                    <div className={`w-10 h-10 ${app.color} rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition-transform`}>
-                      <Icon className="h-5 w-5 text-white" />
-                    </div>
-                    <p className="text-xs font-medium text-card-foreground leading-tight">{app.title}</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="setup-workshop" className="border rounded-xl shadow-sm max-w-md mx-auto">
+              <AccordionTrigger className="px-4 hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-semibold text-foreground">Setup Workshop</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="divide-y divide-border">
+                  {setupWorkshopApps.map((app) => {
+                    const Icon = app.icon;
+                    return (
+                      <div
+                        key={app.id}
+                        className="flex items-center gap-3 p-3 cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={app.action}
+                      >
+                        <div className={`w-10 h-10 ${app.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                          <Icon className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-sm text-card-foreground">{app.title}</h3>
+                          <p className="text-xs text-muted-foreground truncate">{app.description}</p>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
 
         {workshopLabsAccordionEnabled && (

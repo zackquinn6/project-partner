@@ -345,30 +345,61 @@ export default function Home({
             </div>
             </TooltipProvider>
 
-            {/* Browse Tools */}
-            <h3 className="text-sm font-semibold text-foreground mb-3 max-w-xl mx-auto px-2 md:hidden">Browse Tools</h3>
-            <TooltipProvider delayDuration={300}>
-            <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-6 px-2">
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myProfile} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                  <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">My Profile</span>
-              </div>
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-manager'))}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myHomes} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                  <MapPin className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">My Homes</span>
-              </div>
-              <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))}>
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.toolLibrary} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                  <Wrench className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                </div>
-                <span className="text-xs font-medium text-black text-center leading-tight px-1">My Tools</span>
-              </div>
+            {/* Setup Workshop — single entry to Profile, Homes, Tools */}
+            <div className="mb-6">
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="setup-workshop" className="border rounded-xl shadow-sm max-w-md mx-auto">
+                  <AccordionTrigger className="px-4 sm:px-6 hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-foreground text-sm">Setup Workshop</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="divide-y divide-border">
+                      <div
+                        className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}
+                      >
+                        <div className={`w-10 h-10 ${appColors.myProfile} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                          <User className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-xs text-card-foreground">My Profile</h3>
+                          <p className="text-[10px] text-muted-foreground">Account details and preferences</p>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      </div>
+                      <div
+                        className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={() => window.dispatchEvent(new CustomEvent('show-home-manager'))}
+                      >
+                        <div className={`w-10 h-10 ${appColors.myHomes} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                          <MapPin className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-xs text-card-foreground">My Homes</h3>
+                          <p className="text-[10px] text-muted-foreground">Properties linked to your workshop</p>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      </div>
+                      <div
+                        className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={() => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))}
+                      >
+                        <div className={`w-10 h-10 ${appColors.toolLibrary} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                          <Wrench className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-xs text-card-foreground">My Tools</h3>
+                          <p className="text-[10px] text-muted-foreground">Your tool library</p>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
-            </TooltipProvider>
 
             {workshopLabsAccordionEnabled && (
             <div className="mb-6">
