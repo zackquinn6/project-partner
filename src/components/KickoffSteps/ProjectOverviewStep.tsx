@@ -101,7 +101,7 @@ const MATCH_TIER_COPY: Record<
   },
   proceed_mindfully: {
     title: 'Proceed Mindfully',
-    subtitle: 'Mixed signals—move forward with clear eyes on risk and scope.',
+    subtitle: 'Mixed signals: move forward with clear eyes on risk and scope.',
     Icon: AlertTriangle,
     cardClass:
       'border-amber-200 bg-amber-50/60 dark:bg-amber-950/25 dark:border-amber-900/60',
@@ -697,7 +697,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                         </button>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs z-50" side="top">
-                        <p className="text-sm">Known difficulties or risks for this project — for example, access, materials, or skill demands. Use these to plan ahead.</p>
+                        <p className="text-sm">Known difficulties or risks for this project, for example, access, materials, or skill demands. Use these to plan ahead.</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -742,7 +742,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                       </TooltipTrigger>
                       <TooltipContent className="max-w-sm z-50" side="top">
                         <p className="text-sm">
-                          <strong>Skill level</strong> — technical expertise required:
+                          <strong>Skill level</strong> (technical expertise required):
                         </p>
                         <ul className="text-xs mt-1 space-y-0.5 list-disc pl-4">
                           <li><strong>Beginner:</strong> Basic tools, follow-along (e.g. assemble furniture, paint a wall)</li>
@@ -806,7 +806,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                       </TooltipTrigger>
                       <TooltipContent className="max-w-sm z-50" side="top">
                         <p className="text-sm">
-                          <strong>Effort level</strong> — physical intensity and duration:
+                          <strong>Effort level</strong> (physical intensity and duration):
                         </p>
                         <ul className="text-xs mt-1 space-y-0.5 list-disc pl-4">
                           <li><strong>Low:</strong> Light effort (e.g. painting a room for a few hours)</li>

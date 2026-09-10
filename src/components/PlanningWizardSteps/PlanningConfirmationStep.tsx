@@ -68,7 +68,7 @@ export function PlanningConfirmationStep({
         <CardHeader className="p-4 sm:p-6">
           <CardTitle className="text-lg sm:text-xl">Definition of Done</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Starting the project locks this plan as your baseline. Reflect on kickoff goals, then start — or re-target
+            Starting the project locks this plan as your baseline. Reflect on kickoff goals, then start, or re-target
             any incomplete tools.
           </p>
         </CardHeader>
@@ -109,7 +109,7 @@ export function PlanningConfirmationStep({
                         {tool.complete ? (
                           <span className="text-green-700 dark:text-green-400">Complete</span>
                         ) : (
-                          <span className="text-amber-800 dark:text-amber-300">Incomplete — re-target to finish</span>
+                          <span className="text-amber-800 dark:text-amber-300">Incomplete: re-target to finish</span>
                         )}
                       </p>
                     </div>

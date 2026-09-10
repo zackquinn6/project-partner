@@ -572,7 +572,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
 
   const currentStepPurpose =
     wizardPhase === 'confirm'
-      ? 'Definition of Done — reflect, then start'
+      ? 'Definition of Done: reflect, then start'
       : wizardSteps[currentStep]?.description?.trim() ||
         wizardSteps[currentStep]?.title ||
         '';
@@ -611,7 +611,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         <ProjectPlanningCountdownBanner
           minimal
           projectCreatedAt={currentProjectRun.createdAt}
-          phaseHint="Plan stage — iterate tools, then Review"
+          phaseHint="Plan stage: iterate tools, then Review"
           className="shrink-0"
         />
       ) : null}

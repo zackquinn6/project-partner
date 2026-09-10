@@ -459,7 +459,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       case 'kickoff-step-3':
         return 'Complete initial customization to your unique project';
       case 'kickoff-step-4':
-        return 'Choose your planning backlog — these tools become the Plan stage next';
+        return 'Choose your planning backlog: these tools become the Plan stage next';
       default:
         return '';
     }
@@ -786,7 +786,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="left" className="max-w-xs z-[100]" sideOffset={8}>
-                    <p className="text-sm">A good fit means the project matches your goals, timeline, and skill level. Check the overview, estimated time, and challenges—if they align with what you want to take on, it&apos;s a good fit. You can always adjust scope and schedule later.</p>
+                    <p className="text-sm">A good fit means the project matches your goals, timeline, and skill level. Check the overview, estimated time, and challenges. If they align with what you want to take on, it&apos;s a good fit. You can always adjust scope and schedule later.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -830,7 +830,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                           }}
                         >
                           <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
-                          Not a match — back to catalog
+                          Not a match: back to catalog
                         </DropdownMenuItem>
                       ) : (
                         <DropdownMenuItem
@@ -838,7 +838,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                             onKickoffComplete({ mode: 'skip-to-workflow' });
                           }}
                         >
-                          Skip planning — go to project
+                          Skip planning: go to project
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
@@ -860,7 +860,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                     >
                       <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
                       <span className="text-left leading-tight sm:line-clamp-2">
-                        Not a match — back to catalog
+                        Not a match: back to catalog
                       </span>
                     </Button>
                   ) : (
@@ -874,7 +874,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       }}
                     >
                       <span className="text-left leading-tight sm:line-clamp-2">
-                        Skip planning — go to project
+                        Skip planning: go to project
                       </span>
                     </Button>
                   )}

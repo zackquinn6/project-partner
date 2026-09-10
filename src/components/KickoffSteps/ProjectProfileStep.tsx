@@ -849,7 +849,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             <div className="flex items-center gap-1.5 mt-3 mb-1.5">
               <span className="text-[10px] text-muted-foreground shrink-0">2 of 3</span>
               <h3 className="text-xs sm:text-sm font-medium text-foreground">
-                Initial project goals — you can edit these later
+                Initial project goals: you can edit these later
               </h3>
             </div>
 
@@ -891,17 +891,17 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                   <div>
                     <span className="text-muted-foreground">Size: </span>
                     <span className="font-medium">
-                      {projectForm.initialSizing || '—'} {scalingLabel}
+                      {projectForm.initialSizing || '-'} {scalingLabel}
                     </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Target date: </span>
-                    <span className="font-medium">{projectForm.initialTimeline || '—'}</span>
+                    <span className="font-medium">{projectForm.initialTimeline || '-'}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Budget: </span>
                     <span className="font-medium">
-                      {projectForm.initialBudget ? `$${projectForm.initialBudget}` : '—'}
+                      {projectForm.initialBudget ? `$${projectForm.initialBudget}` : '-'}
                     </span>
                   </div>
                 </div>

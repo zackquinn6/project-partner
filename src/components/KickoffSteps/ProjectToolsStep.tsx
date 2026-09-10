@@ -311,7 +311,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
             onClick={handleSelectAll}
           >
             <FolderKanban className={compact ? 'h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400' : 'h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400'} />
-            <span className="text-left leading-tight">Select all – best for optimized project</span>
+            <span className="text-left leading-tight">Select all: best for optimized project</span>
           </Button>
         </div>
       </div>
