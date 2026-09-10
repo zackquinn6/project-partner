@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
 import type { ProjectRun } from '@/interfaces/ProjectRun';
@@ -77,6 +78,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     deleteProjectRun
   } = useProject();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled, wasteRemovalEnabled } = usePartnerAppSettings();
   const [kickoffOrderResolved, setKickoffOrderResolved] = useState(false);
   const [kickoffStepOrder, setKickoffStepOrder] = useState<'profile_first' | 'match_first'>('match_first');
@@ -668,82 +670,86 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         <CardContent className="p-2.5 sm:p-4">
           {!isStepCompleted(currentKickoffStep) ? (
             <div className="flex min-h-[3rem] flex-col gap-2 sm:min-h-[3.25rem] sm:flex-row sm:items-stretch sm:gap-3">
-              {/* Mobile: secondary actions collapsed into More menu */}
-              <div className="sm:hidden">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+              {/*
+                Mount DropdownMenu only on mobile. Keeping it under sm:hidden (display:none)
+                still mounts Radix Popper and can infinite-loop setState, freezing step 2 profile load.
+              */}
+              {isMobile ? (
+                <div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        className="h-11 min-h-11 w-full px-3 text-sm"
+                      >
+                        <MoreHorizontal className="mr-2 h-4 w-4 shrink-0" />
+                        More
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-72">
+                      {currentStepId === 'kickoff-step-1' ? (
+                        <DropdownMenuItem
+                          className="text-red-700 focus:text-red-700"
+                          onSelect={async () => {
+                            if (currentProjectRun) {
+                              await deleteProjectRun(currentProjectRun.id);
+                              if (onExit) onExit();
+                            }
+                          }}
+                        >
+                          <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
+                          Not a match — back to catalog
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            onKickoffComplete();
+                          }}
+                        >
+                          Skip direct to project workflow
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ) : (
+                <div className="flex min-h-12 min-w-0 flex-1 flex-col justify-center sm:min-h-[3.25rem]">
+                  {currentStepId === 'kickoff-step-1' ? (
+                    <Button
+                      onClick={async () => {
+                        if (currentProjectRun) {
+                          await deleteProjectRun(currentProjectRun.id);
+                          if (onExit) onExit();
+                        }
+                      }}
+                      variant="outline"
+                      size="lg"
+                      className="h-12 min-h-12 w-full border-red-300 px-3 text-sm text-red-700 hover:bg-red-50 sm:h-full sm:min-h-[3.25rem] sm:py-3"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
+                      <span className="text-left leading-tight sm:line-clamp-2">
+                        Not a match — back to catalog
+                      </span>
+                    </Button>
+                  ) : (
                     <Button
                       type="button"
                       variant="outline"
                       size="lg"
-                      className="h-11 min-h-11 w-full px-3 text-sm"
+                      className="h-12 min-h-12 w-full border-muted-foreground/40 px-3 text-sm text-muted-foreground hover:bg-muted/40 sm:h-full sm:min-h-[3.25rem] sm:py-3"
+                      onClick={() => {
+                        onKickoffComplete();
+                      }}
                     >
-                      <MoreHorizontal className="mr-2 h-4 w-4 shrink-0" />
-                      More
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-[min(100vw-2rem,20rem)]">
-                    {currentStepId === 'kickoff-step-1' ? (
-                      <DropdownMenuItem
-                        className="text-red-700 focus:text-red-700"
-                        onSelect={async () => {
-                          if (currentProjectRun) {
-                            await deleteProjectRun(currentProjectRun.id);
-                            if (onExit) onExit();
-                          }
-                        }}
-                      >
-                        <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
-                        Not a match — back to catalog
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem
-                        onSelect={() => {
-                          onKickoffComplete();
-                        }}
-                      >
+                      <span className="text-left leading-tight sm:line-clamp-2">
                         Skip direct to project workflow
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* Desktop: secondary CTA side-by-side with Continue */}
-              <div className="hidden min-h-12 min-w-0 flex-1 flex-col justify-center sm:flex sm:min-h-[3.25rem]">
-                {currentStepId === 'kickoff-step-1' ? (
-                  <Button
-                    onClick={async () => {
-                      if (currentProjectRun) {
-                        await deleteProjectRun(currentProjectRun.id);
-                                                if (onExit) onExit();
-                      }
-                    }}
-                    variant="outline"
-                    size="lg"
-                    className="h-12 min-h-12 w-full border-red-300 px-3 text-sm text-red-700 hover:bg-red-50 sm:h-full sm:min-h-[3.25rem] sm:py-3"
-                  >
-                    <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
-                    <span className="text-left leading-tight sm:line-clamp-2">
-                      Not a match — back to catalog
-                    </span>
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="lg"
-                    className="h-12 min-h-12 w-full border-muted-foreground/40 px-3 text-sm text-muted-foreground hover:bg-muted/40 sm:h-full sm:min-h-[3.25rem] sm:py-3"
-                    onClick={() => {
-                      onKickoffComplete();
-                    }}
-                  >
-                    <span className="text-left leading-tight sm:line-clamp-2">
-                      Skip direct to project workflow
-                    </span>
-                  </Button>
-                )}
-              </div>
+                      </span>
+                    </Button>
+                  )}
+                </div>
+              )}
               <div className="flex w-full shrink-0 flex-col sm:w-[17.5rem] sm:min-h-[3.25rem]">
                 <Button
                   onClick={async () => {

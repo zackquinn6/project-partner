@@ -52,66 +52,78 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
   const [isLoading, setIsLoading] = useState(true);
   const [existingProfile, setExistingProfile] = useState<ProfileData | null>(null);
   const [showSurveyEditor, setShowSurveyEditor] = useState(false);
+  const [profileReloadToken, setProfileReloadToken] = useState(0);
 
   useEffect(() => {
-    if (user) {
-      loadExistingProfile();
+    if (!user?.id) {
+      setExistingProfile(null);
+      setIsLoading(false);
+      return;
     }
-  }, [user]);
+
+    let cancelled = false;
+    const loadExistingProfile = async () => {
+      setIsLoading(true);
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from('user_profiles')
+          .select(`
+            skill_level, 
+            avoid_projects, 
+            project_skills,
+            physical_capability, 
+            home_ownership, 
+            home_build_year, 
+            home_state, 
+            project_focus, 
+            owned_tools, 
+            survey_completed_at,
+            full_name,
+            nickname
+          `)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        if (profileError) {
+          console.error('Error loading profile:', profileError);
+          setExistingProfile(null);
+          return;
+        }
+
+        if (!profileData || !profileData.survey_completed_at) {
+          setExistingProfile(null);
+          return;
+        }
+
+        setExistingProfile({
+          ...profileData,
+          owned_tools: Array.isArray(profileData.owned_tools) ? profileData.owned_tools : [],
+        } as ProfileData);
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Error loading profile:', error);
+        setExistingProfile(null);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadExistingProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, profileReloadToken]);
 
   // Auto-open profile editor for new users when navigating to step 2
   useEffect(() => {
-    if (!isLoading && !existingProfile && user) {
+    if (!isLoading && !existingProfile && user?.id) {
       setShowSurveyEditor(true);
     }
-  }, [isLoading, existingProfile, user]);
-
-  const loadExistingProfile = async () => {
-    setIsLoading(true);
-    try {
-      // First fetch profile data
-      const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
-        .select(`
-          skill_level, 
-          avoid_projects, 
-          project_skills,
-          physical_capability, 
-          home_ownership, 
-          home_build_year, 
-          home_state, 
-          project_focus, 
-          owned_tools, 
-          survey_completed_at,
-          full_name,
-          nickname
-        `)
-        .eq('user_id', user?.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('Error loading profile:', profileError);
-        setExistingProfile(null);
-        return;
-      }
-
-      if (!profileData || !profileData.survey_completed_at) {
-        setExistingProfile(null);
-        return;
-      }
-
-      const completeProfile = {
-        ...profileData,
-        owned_tools: Array.isArray(profileData.owned_tools) ? profileData.owned_tools : [],
-      };
-      setExistingProfile(completeProfile as any);
-    } catch (error) {
-      console.error('Error loading profile:', error);
-      setExistingProfile(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [isLoading, existingProfile, user?.id]);
 
   const handleStartEdit = () => {
     setShowSurveyEditor(true);
@@ -119,7 +131,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({ onComplete, isCo
 
   const handleSurveyComplete = () => {
     setShowSurveyEditor(false);
-    loadExistingProfile(); // Reload the profile data
+    setProfileReloadToken((token) => token + 1);
   };
 
   const renderProfileView = () => {
