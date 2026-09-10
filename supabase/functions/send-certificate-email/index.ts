@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { verifyAuth } from "../_shared/auth.ts";
+import { escapeHtml } from "../_shared/validation.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -31,13 +32,32 @@ const handler = async (req: Request): Promise<Response> => {
     await verifyAuth(req);
     const { to_email, certificate_data }: CertificateEmailRequest = await req.json();
 
+    if (
+      typeof to_email !== "string" ||
+      to_email.length > 254 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to_email) ||
+      !certificate_data ||
+      typeof certificate_data.image_data !== "string"
+    ) {
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const projectName = String(certificate_data.project_name ?? "").slice(0, 200);
+    const difficulty = certificate_data.difficulty
+      ? String(certificate_data.difficulty).slice(0, 100)
+      : "";
+    const completedDate = String(certificate_data.completed_date ?? "");
+
     // Convert base64 image to attachment
     const imageData = certificate_data.image_data.split(',')[1];
-    
+
     const emailResponse = await resend.emails.send({
       from: "Project Partner <onboarding@resend.dev>",
       to: [to_email],
-      subject: `🏆 Certificate of Completion: ${certificate_data.project_name}`,
+      subject: `🏆 Certificate of Completion: ${projectName.replace(/[\r\n]/g, " ")}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -93,9 +113,13 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
 
           <div class="content">
-            <h2>${certificate_data.project_name}</h2>
-            <p><strong>Completed:</strong> ${new Date(certificate_data.completed_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-            ${certificate_data.difficulty ? `<p><strong>Difficulty:</strong> ${certificate_data.difficulty}</p>` : ''}
+            <h2>${escapeHtml(projectName)}</h2>
+            <p><strong>Completed:</strong> ${escapeHtml(
+              isNaN(new Date(completedDate).getTime())
+                ? new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                : new Date(completedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+            )}</p>
+            ${difficulty ? `<p><strong>Difficulty:</strong> ${escapeHtml(difficulty)}</p>` : ''}
           </div>
 
           <img src="cid:certificate" alt="Certificate" class="certificate-image" />
@@ -115,7 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
       `,
       attachments: [
         {
-          filename: `${certificate_data.project_name.replace(/[^a-z0-9]/gi, '_')}-certificate.png`,
+          filename: `${(projectName || 'project').replace(/[^a-z0-9]/gi, '_').slice(0, 80)}-certificate.png`,
           content: imageData,
           content_id: 'certificate',
         }
