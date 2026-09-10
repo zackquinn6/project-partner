@@ -96,42 +96,62 @@ export default function Auth() {
     setIsSignUp(mode === 'signup');
   }, [location.search]);
 
-  // Load default landing view and global catalog availability (same source as admin toggles)
+  // Prefer admin landing settings, but never block post-login redirect on a failed/hanging fetch.
   useEffect(() => {
+    if (!user) {
+      setLandingLoaded(true);
+      return;
+    }
+
+    let cancelled = false;
+    const SETTINGS_TIMEOUT_MS = 2000;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), SETTINGS_TIMEOUT_MS);
+
     const loadLanding = async () => {
       try {
         const { data, error } = await supabase
           .from('app_settings')
           .select('setting_key, setting_value')
-          .in('setting_key', ['default_landing_view', 'project_catalog_enabled']);
+          .in('setting_key', ['default_landing_view', 'project_catalog_enabled'])
+          .abortSignal(controller.signal);
 
-        if (error) {
-          console.error('Error loading post-auth routing settings:', error);
-        } else if (data) {
-          for (const row of data) {
-            if (row.setting_key === 'default_landing_view') {
-              const value = (row.setting_value as { mode?: 'projects' | 'workspace' } | null)?.mode;
-              if (value === 'projects' || value === 'workspace') {
-                setDefaultLanding(value);
-              }
+        if (cancelled || error || !data) {
+          return;
+        }
+
+        for (const row of data) {
+          if (row.setting_key === 'default_landing_view') {
+            const value = (row.setting_value as { mode?: 'projects' | 'workspace' } | null)?.mode;
+            if (value === 'projects' || value === 'workspace') {
+              setDefaultLanding(value);
             }
-            if (row.setting_key === 'project_catalog_enabled') {
-              const enabled = (row.setting_value as { enabled?: boolean } | null)?.enabled;
-              if (typeof enabled === 'boolean') {
-                setProjectCatalogEnabled(enabled);
-              }
+          }
+          if (row.setting_key === 'project_catalog_enabled') {
+            const enabled = (row.setting_value as { enabled?: boolean } | null)?.enabled;
+            if (typeof enabled === 'boolean') {
+              setProjectCatalogEnabled(enabled);
             }
           }
         }
-      } catch (err) {
-        console.error('Unexpected error loading post-auth routing settings:', err);
+      } catch {
+        // Network/CORS/timeout: keep existing landing defaults.
       } finally {
-        setLandingLoaded(true);
+        window.clearTimeout(timeoutId);
+        if (!cancelled) {
+          setLandingLoaded(true);
+        }
       }
     };
 
     void loadLanding();
-  }, []);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      window.clearTimeout(timeoutId);
+      setLandingLoaded(true);
+    };
+  }, [user]);
 
   // When user is present, save any pending onboarding then redirect
   useEffect(() => {

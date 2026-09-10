@@ -6,19 +6,13 @@ import React, { useEffect } from 'react';
  * SECURITY ARCHITECTURE NOTES:
  * - Implements Content Security Policy (CSP) to prevent XSS attacks
  * - Sets X-Content-Type-Options to prevent MIME type sniffing
- * - Conditionally applies X-Frame-Options for iframe embedding compatibility
  * - Implements Referrer Policy to control referrer information leakage
  * - Sets Permissions Policy to restrict dangerous browser APIs
+ * - Does not set X-Frame-Options via <meta> (browsers ignore it; use HTTP headers)
  * 
  * LOVABLE COMPATIBILITY:
- * - X-Frame-Options is conditionally disabled to allow Lovable editor iframe embedding
- * - This is intentional for development environment compatibility
- * - In production, consider enabling frame-ancestors CSP directive instead
- * 
- * SECURITY TRADE-OFF:
- * - Lovable editor requires iframe embedding capability
- * - This is acceptable as CSP frame-ancestors provides equivalent protection
- * - Risk is mitigated by other security layers (CSP, authentication, RLS)
+ * - Avoid client-side frame-blocking metas so the Lovable editor iframe can embed the app
+ * - In production, set frame-ancestors / X-Frame-Options via HTTP response headers
  */
 export const SecurityHeadersProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
@@ -34,7 +28,7 @@ export const SecurityHeadersProvider: React.FC<{ children: React.ReactNode }> = 
         "img-src 'self' data: https: blob:",
         "font-src 'self' data: https://fonts.gstatic.com",
         "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://api.open-meteo.com",
-        // frame-ancestors is ignored in <meta> CSP; use HTTP headers in production. X-Frame-Options is set below when applicable.
+        // frame-ancestors is ignored in <meta> CSP; set via HTTP headers in production.
         "base-uri 'self'",
         "form-action 'self'",
         "upgrade-insecure-requests", // Force HTTPS
@@ -46,24 +40,10 @@ export const SecurityHeadersProvider: React.FC<{ children: React.ReactNode }> = 
       const noSniffMeta = document.createElement('meta');
       noSniffMeta.httpEquiv = 'X-Content-Type-Options';
       noSniffMeta.content = 'nosniff';
-      
-      // X-Frame-Options - Conditionally applied for Lovable compatibility
-      // NOTE: This is intentionally permissive to allow Lovable editor embedding
-      // Production apps should enable this or rely on CSP frame-ancestors
-      const isLovableEnvironment = window.location.hostname.includes('lovable') || 
-                                  window.location.hostname === 'localhost' ||
-                                  window.parent !== window; // Detect iframe embedding
-      
-      if (!isLovableEnvironment) {
-        const frameOptionsMeta = document.createElement('meta');
-        frameOptionsMeta.httpEquiv = 'X-Frame-Options';
-        frameOptionsMeta.content = 'DENY';
-        
-        const existingFrameOptions = document.querySelector('meta[http-equiv="X-Frame-Options"]');
-        if (!existingFrameOptions) {
-          document.head.appendChild(frameOptionsMeta);
-        }
-      }
+
+      // Never set X-Frame-Options via <meta> — browsers reject it and warn in the console.
+      // Remove any leftover meta from older builds.
+      document.querySelectorAll('meta[http-equiv="X-Frame-Options"]').forEach((el) => el.remove());
       
       // Referrer Policy - Control information leakage to third parties
       const referrerMeta = document.createElement('meta');
