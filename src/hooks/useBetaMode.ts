@@ -28,8 +28,8 @@ export function useBetaMode(options?: UseBetaModeOptions) {
         .from('app_settings')
         .select('setting_value')
         .eq('setting_key', 'beta_mode')
-        .maybeSingle()
-        .abortSignal(controller.signal);
+        .abortSignal(controller.signal)
+        .maybeSingle();
 
       if (error) {
         setIsBetaMode(false);
