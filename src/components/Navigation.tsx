@@ -28,6 +28,7 @@ import { AchievementNotificationCenter } from './AchievementNotificationCenter';
 import { NotificationDropdown } from './NotificationDropdown';
 import { supabase } from '@/integrations/supabase/client';
 import { ProjectRun } from '@/interfaces/ProjectRun';
+import projectPartnerLogo from '@/assets/project-partner-logo.png';
 import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 interface NavigationProps {
   currentView: 'home' | 'admin' | 'user' | 'editWorkflow';
@@ -366,7 +367,7 @@ export default function Navigation({
           
           <div className="flex items-center space-x-4 flex-1">
             <div className="flex items-center space-x-2">
-              <img src="/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png" alt="Project Partner Logo" className="h-8 w-auto" />
+              <img src={projectPartnerLogo} alt="Project Partner Logo" className="h-8 w-auto" />
             </div>
             
             <div className="flex items-center space-x-1">

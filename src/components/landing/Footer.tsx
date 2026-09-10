@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Instagram, Facebook, Youtube } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import projectPartnerLogo from '@/assets/project-partner-logo.png';
 
 interface FooterProps {
   onPricingClick?: () => void;
@@ -138,7 +139,7 @@ export const Footer = ({ onPricingClick }: FooterProps) => {
         <div className="border-t border-primary-foreground/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-4">
             <img
-              src="/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png"
+              src={projectPartnerLogo}
               alt="Project Partner"
               className="h-8"
             />

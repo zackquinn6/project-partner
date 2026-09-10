@@ -10,18 +10,21 @@ import {
 } from '@/components/ui/carousel';
 import { OnboardingDialog } from './OnboardingDialog';
 import { useMarketingCopy } from '@/hooks/useMarketingCopy';
+import workflowInterfaceHero from '@/assets/workflow-interface-hero.png';
+import heroWorkshop from '@/assets/hero-workshop.png';
+import heroMaintenance from '@/assets/hero-maintenance.png';
 
 const HERO_SCREENSHOTS = [
   {
-    src: '/lovable-uploads/workflow-interface-hero.png',
+    src: workflowInterfaceHero,
     alt: 'Project Partner Workflow Interface',
   },
   {
-    src: '/lovable-uploads/hero-workshop.png',
+    src: heroWorkshop,
     alt: 'My Workshop',
   },
   {
-    src: '/lovable-uploads/hero-maintenance.png',
+    src: heroMaintenance,
     alt: 'Home Maintenance Tracker',
   },
 ] as const;

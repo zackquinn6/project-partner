@@ -18,6 +18,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectOwner } from '@/hooks/useProjectOwner';
+import projectPartnerLogo from '@/assets/project-partner-logo.png';
 import { MembershipWindow } from '@/components/MembershipWindow';
 import { DataPrivacyManager } from '@/components/DataPrivacyManager';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
@@ -269,7 +270,7 @@ export function MobileOptimizedHome() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <img 
-                src="/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png" 
+                src={projectPartnerLogo} 
                 alt="Project Partner Logo" 
                 className="h-8 w-auto"
               />

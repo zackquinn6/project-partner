@@ -27,11 +27,31 @@ function readSupabaseAnonKey(): string {
 const resolvedUrl = readSupabaseUrl();
 const resolvedKey = readSupabaseAnonKey();
 
+/** Lovable editor iframes often block third-party auth refresh (Tracking Prevention → Failed to fetch). */
+function isLovablePreviewFrame(): boolean {
+  if (typeof window === 'undefined') return false;
+  const framed = window.parent !== window;
+  if (!framed) return false;
+  const host = window.location.hostname;
+  return (
+    host === 'lovable.app' ||
+    host.endsWith('.lovable.app') ||
+    host === 'lovableproject.com' ||
+    host.endsWith('.lovableproject.com') ||
+    host.endsWith('.lovableproject-dev.com') ||
+    host.endsWith('.gpt-eng.com') ||
+    host.endsWith('.gptengineer.run')
+  );
+}
+
+const inLovablePreviewFrame = isLovablePreviewFrame();
+
 export const supabase = createClient<Database>(resolvedUrl, resolvedKey, {
   auth: {
     storage: brokeredPreviewStorage(),
     persistSession: true,
-    autoRefreshToken: true,
+    // Avoid noisy Failed-to-fetch refresh loops inside the Lovable editor iframe.
+    autoRefreshToken: !inLovablePreviewFrame,
     detectSessionInUrl: true,
   },
   global: {

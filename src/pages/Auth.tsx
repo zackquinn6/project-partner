@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Loader2, ArrowLeft, AlertCircle, User } from 'lucide-react';
 import { useGuest } from '@/contexts/GuestContext';
 import { useMarketingCopy } from '@/hooks/useMarketingCopy';
+import projectPartnerLogo from '@/assets/project-partner-logo.png';
 
 const ONBOARDING_STORAGE_KEY = 'project_partner_onboarding';
 
@@ -352,7 +353,7 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <img src="/lovable-uploads/1a837ddc-50ca-40f7-b975-0ad92fdf9882.png" alt="Project Partner Logo" className="h-12 w-auto" loading="lazy" />
+            <img src={projectPartnerLogo} alt="Project Partner Logo" className="h-12 w-auto" loading="lazy" />
           </div>
           <CardTitle className="text-2xl font-bold">Welcome</CardTitle>
           <CardDescription>
