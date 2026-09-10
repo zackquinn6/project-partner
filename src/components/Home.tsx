@@ -14,7 +14,7 @@ import { AIRepairWindow } from '@/components/AIRepairWindow';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { ContractorFinderWindow } from '@/components/ContractorFinderWindow';
 import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExplainer';
-import { ArrowRight, Home as HomeIcon, Wrench, BookOpen, Calendar, ShoppingCart, Hammer, MapPin, CheckCircle, Star, Target, Zap, Crosshair, User, Users, Folder, Calculator, HelpCircle, Camera, Building2, ListChecks, Loader2 } from 'lucide-react';
+import { ArrowRight, Home as HomeIcon, Wrench, BookOpen, Calendar, ShoppingCart, Hammer, MapPin, CheckCircle, Star, Target, Zap, Crosshair, User, Users, Calculator, HelpCircle, Camera, Building2, ListChecks, Loader2 } from 'lucide-react';
 import heroDIYPerson from '@/assets/hero-diy-person.png';
 import { HeroSection } from './landing/HeroSection';
 import { ValuePropSection } from './landing/ValuePropSection';
@@ -135,7 +135,6 @@ export default function Home({
   // Semantic color system for app icons
   const appColors = {
     // Projects & Planning (Blue shades)
-    myProjects: 'bg-blue-600',
     rapidPlan: 'bg-blue-500',
     projectCatalog: 'bg-blue-700',
     // Home & Maintenance (Green shades)
@@ -191,11 +190,11 @@ export default function Home({
             </p>
             
             {/* Your work at a glance */}
-            <div className="border-t border-border/60 pt-4 pb-4 mb-5">
+            <div className="rounded-xl border border-border bg-muted/30 px-3 py-4 sm:px-4 mb-5 max-w-3xl mx-auto">
               <h3 className="text-xs tracking-wide font-semibold text-muted-foreground mb-3 text-center uppercase">
                 Your work at a glance
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-3xl mx-auto">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-slate-900/80 via-slate-900 to-slate-900/90 px-2.5 py-1.5 md:px-3 md:py-2 shadow-sm">
                   <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-amber-500/30 to-transparent pointer-events-none" />
                   <div className="relative flex flex-col items-center gap-0.5 text-center">
@@ -288,13 +287,13 @@ export default function Home({
             {/* Start Here */}
             <h3 className="text-sm font-semibold text-foreground mb-3 max-w-xl mx-auto px-2 md:hidden">Start Here</h3>
             <TooltipProvider delayDuration={300}>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-sm sm:max-w-2xl md:max-w-3xl mx-auto mb-6 px-2">
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-sm sm:max-w-xl md:max-w-2xl mx-auto mb-6 px-2">
               {projectCatalogEnabled && (
-              <div className="col-span-2 sm:col-span-4 mb-1">
+              <div className="col-span-3 mb-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button onClick={() => { navigate('/projects'); }} variant="default" className="w-full h-10 text-sm font-medium border border-[#5c0000] bg-[#800000] text-white shadow-card hover:bg-[#6d0000] hover:text-white hover:shadow-elegant">
-                      <BookOpen className="w-4 h-4 mr-2" />
+                    <Button onClick={() => { navigate('/projects'); }} variant="default" className="w-full h-14 sm:h-16 text-base sm:text-lg font-semibold border border-[#5c0000] bg-[#800000] text-white shadow-card hover:bg-[#6d0000] hover:text-white hover:shadow-elegant">
+                      <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 mr-2.5 shrink-0" />
                       Explore New Projects
                     </Button>
                   </TooltipTrigger>
@@ -304,21 +303,6 @@ export default function Home({
                 </Tooltip>
               </div>
               )}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex flex-col items-center group cursor-pointer" onClick={() => { setCurrentProjectRun(null); window.dispatchEvent(new CustomEvent('force-project-dashboard-listing')); navigate('/', { state: { view: 'user' }, replace: true }); onViewChange('user'); }}>
-                    <div className="relative">
-                      <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.myProjects} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                        <Folder className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                      </div>
-                    </div>
-                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Project Dashboard</span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs text-center">
-                  <p>A view of active projects.</p>
-                </TooltipContent>
-              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}>

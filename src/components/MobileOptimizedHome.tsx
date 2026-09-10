@@ -367,7 +367,7 @@ export function MobileOptimizedHome() {
         )}
 
         {/* Your work at a glance (mobile: focus on tasks + maintenance) */}
-        <div>
+        <div className="rounded-xl border border-border bg-muted/30 px-3 py-4">
           <h2 className="text-xs tracking-wide font-semibold text-muted-foreground mb-3 text-center uppercase">
             Your work at a glance
           </h2>
@@ -408,9 +408,9 @@ export function MobileOptimizedHome() {
               navigate('/projects');
             }}
             variant="default"
-            className="mb-3 w-full h-10 text-sm font-medium border border-[#5c0000] bg-[#800000] text-white shadow-card hover:bg-[#6d0000] hover:text-white hover:shadow-elegant"
+            className="mb-3 w-full h-14 text-base font-semibold border border-[#5c0000] bg-[#800000] text-white shadow-card hover:bg-[#6d0000] hover:text-white hover:shadow-elegant"
           >
-            <BookOpen className="w-4 h-4 mr-2" />
+            <BookOpen className="w-5 h-5 mr-2.5" />
             Explore New Projects
           </Button>
           )}
