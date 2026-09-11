@@ -59,14 +59,14 @@ interface ShoppingSite {
   color: string;
 }
 const MATERIAL_RISK_LEVELS = [
-  { value: 'basics-only', label: 'Basics only', description: 'Buy only the basics.' },
-  { value: 'balanced', label: 'Balanced', description: 'Carry a practical amount of extra material.' },
-  { value: 'contingency-on-everything', label: 'Contingency on everything', description: 'Buy contingency on everything.' },
+  { value: 'basics-only', label: 'Just essentials', description: 'Buy only the basics.' },
+  { value: 'balanced', label: 'Practical buffer', description: 'Carry a practical amount of extra material.' },
+  { value: 'contingency-on-everything', label: 'Full contingency', description: 'Buy contingency on everything.' },
 ] as const;
 const QUALITY_TIER_OPTIONS = [
-  { value: 'economy', label: 'Economy' },
-  { value: 'mid', label: 'Mid' },
-  { value: 'premium', label: 'Premium' },
+  { value: 'economy', label: 'Budget grade' },
+  { value: 'mid', label: 'Solid midrange' },
+  { value: 'premium', label: 'Top quality' },
 ] as const;
 type MaterialRiskLevel = typeof MATERIAL_RISK_LEVELS[number]['value'];
 type QualityTierPreference = typeof QUALITY_TIER_OPTIONS[number]['value'];
@@ -629,6 +629,11 @@ export function OrderingWindow({
                     saveShoppingData(shoppedTools, shoppedMaterials, { materialRiskLevel: nextLevel.value });
                   }}
                 />
+                <div className="grid grid-cols-3 gap-1 text-[11px] leading-tight text-muted-foreground">
+                  <span className="text-left">{MATERIAL_RISK_LEVELS[0].label}</span>
+                  <span className="text-center">{MATERIAL_RISK_LEVELS[1].label}</span>
+                  <span className="text-right">{MATERIAL_RISK_LEVELS[2].label}</span>
+                </div>
                 <p className="text-xs text-muted-foreground">{selectedMaterialRisk.description}</p>
               </div>
 
@@ -656,6 +661,11 @@ export function OrderingWindow({
                     saveShoppingData(shoppedTools, shoppedMaterials, { qualityTierPreference: nextTier.value });
                   }}
                 />
+                <div className="grid grid-cols-3 gap-1 text-[11px] leading-tight text-muted-foreground">
+                  <span className="text-left">{QUALITY_TIER_OPTIONS[0].label}</span>
+                  <span className="text-center">{QUALITY_TIER_OPTIONS[1].label}</span>
+                  <span className="text-right">{QUALITY_TIER_OPTIONS[2].label}</span>
+                </div>
               </div>
 
               <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
