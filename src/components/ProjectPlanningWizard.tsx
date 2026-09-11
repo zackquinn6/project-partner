@@ -103,6 +103,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const [wizardPhase, setWizardPhase] = useState<'steps' | 'confirm'>('steps');
   const stepNavRef = useRef<HTMLDivElement | null>(null);
   const autoOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Ensures Discover → Plan only auto-opens step 1's tool once per studio open. */
+  const didAutoOpenFirstToolRef = useRef(false);
   /** Local copy of selected tools so dropdown changes apply immediately without waiting for context */
   const [localSelectedTools, setLocalSelectedTools] = useState<PlanningToolId[] | null>(null);
 
@@ -177,11 +179,17 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       setCurrentStep(0);
       setCompletedSteps(new Set());
       setWizardPhase('steps');
+      didAutoOpenFirstToolRef.current = false;
       // Do not clear localSelectedTools here: a stale full array from a prior open would paint
       // every step for one frame, then this effect nulls local state and empty context would
       // collapse the wizard. Local overrides are cleared when the dialog closes instead.
     } else {
       setLocalSelectedTools(null);
+      didAutoOpenFirstToolRef.current = false;
+      if (autoOpenTimerRef.current) {
+        clearTimeout(autoOpenTimerRef.current);
+        autoOpenTimerRef.current = null;
+      }
     }
   }, [open]);
 
@@ -302,6 +310,44 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     planningWizardFirstPassCompleted,
     openPlanningTool,
     markPlanningWizardFirstPassComplete,
+  ]);
+
+  // Discover → Plan: auto-open step 1's tool shortly after Planning Studio mounts.
+  // Matches the first-pass chain that auto-opens tools after each completed step.
+  useEffect(() => {
+    if (!open) return;
+    if (planningWizardFirstPassCompleted) return;
+    if (didAutoOpenFirstToolRef.current) return;
+    if (wizardPhase !== 'steps' || currentStep !== 0) return;
+
+    const firstToolId = wizardSteps[0]?.toolId ?? null;
+    if (!firstToolId) return;
+
+    didAutoOpenFirstToolRef.current = true;
+    if (autoOpenTimerRef.current) {
+      clearTimeout(autoOpenTimerRef.current);
+    }
+    autoOpenTimerRef.current = setTimeout(() => {
+      autoOpenTimerRef.current = null;
+      openPlanningTool(firstToolId, () => handleStepComplete(0));
+    }, 1000);
+
+    return () => {
+      if (autoOpenTimerRef.current) {
+        clearTimeout(autoOpenTimerRef.current);
+        autoOpenTimerRef.current = null;
+        // Allow retry if deps change before the timer fires (e.g. tools hydrate late).
+        didAutoOpenFirstToolRef.current = false;
+      }
+    };
+  }, [
+    open,
+    wizardPhase,
+    currentStep,
+    wizardSteps,
+    planningWizardFirstPassCompleted,
+    openPlanningTool,
+    handleStepComplete,
   ]);
 
   const scrollStepNav = (direction: 'left' | 'right') => {
