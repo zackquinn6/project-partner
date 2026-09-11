@@ -362,12 +362,16 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       }
 
       // Update project run with completed step - WAIT for completion
+      const totalStepsForProgress = getTotalStepsCount();
       const updatedProjectRun = {
         ...currentProjectRun,
         // Resuming after "Not a fit" returns the run to an active kickoff status
         status: currentProjectRun.status === 'not-a-fit' ? 'not-started' : currentProjectRun.status,
         completedSteps: newCompletedSteps,
-        progress: Math.round(newCompletedSteps.length / getTotalStepsCount() * 100),
+        progress:
+          totalStepsForProgress > 0
+            ? Math.round((newCompletedSteps.length / totalStepsForProgress) * 100)
+            : currentProjectRun.progress,
         // CRITICAL: Always include initial_budget, initial_timeline, initial_sizing (even if null)
         initial_budget: preservedBudget,
         initial_timeline: preservedTimeline,
@@ -506,9 +510,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
   const getTotalStepsCount = () => {
     if (!currentProjectRun) return kickoffSteps.length;
-    return currentProjectRun.phases.reduce((total, phase) => {
-      return total + phase.operations.reduce((opTotal, operation) => {
-        return opTotal + operation.steps.length;
+    const phases = Array.isArray(currentProjectRun.phases) ? currentProjectRun.phases : [];
+    return phases.reduce((total, phase) => {
+      return total + (phase.operations ?? []).reduce((opTotal, operation) => {
+        return opTotal + (operation.steps ?? []).length;
       }, 0);
     }, 0);
   };

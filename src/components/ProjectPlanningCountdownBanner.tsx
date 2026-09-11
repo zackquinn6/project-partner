@@ -33,7 +33,12 @@ export function ProjectPlanningCountdownBanner({
   minimal = false,
   phaseHint,
 }: ProjectPlanningCountdownBannerProps) {
-  const createdMs = projectCreatedAt.getTime();
+  const createdMs =
+    projectCreatedAt instanceof Date
+      ? projectCreatedAt.getTime()
+      : projectCreatedAt
+        ? new Date(projectCreatedAt as unknown as string | number).getTime()
+        : Number.NaN;
 
   const [remainingMs, setRemainingMs] = useState(() => {
     if (Number.isNaN(createdMs)) return 0;

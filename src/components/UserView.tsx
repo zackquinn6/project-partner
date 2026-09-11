@@ -125,6 +125,21 @@ import {
 import { projectRunFromSupabaseRow } from '@/utils/projectRunFromSupabaseRow';
 import { instructionLevelFromProfileSkill } from '@/utils/instructionLevelFromProfile';
 import { reportUserFacingError } from '@/utils/errorReporting';
+
+/**
+ * Survives UserView remounts during kickoff→Planning Studio handoff.
+ * Ephemeral React state alone can reset to closed if the tree remounts mid-save.
+ */
+const pendingPlanningStudioByRunId = new Set<string>();
+
+function markPlanningStudioPending(runId: string | undefined | null) {
+  if (runId) pendingPlanningStudioByRunId.add(runId);
+}
+
+function clearPlanningStudioPending(runId: string | undefined | null) {
+  if (runId) pendingPlanningStudioByRunId.delete(runId);
+}
+
 interface UserViewProps {
   resetToListing?: boolean;
   forceListingMode?: boolean;
@@ -329,6 +344,25 @@ export default function UserView({
   const isKickoffComplete = currentProjectRun
     ? isKickoffPhaseComplete(currentProjectRun.completedSteps ?? [])
     : true;
+
+  // Restore Planning Studio if kickoff completion marked it pending and this tree remounted.
+  useEffect(() => {
+    const runId = currentProjectRun?.id;
+    if (!runId || forceShowKickoff || projectPlanningWizardOpen) return;
+    if (!isKickoffComplete) return;
+    if (!pendingPlanningStudioByRunId.has(runId)) return;
+    if (currentProjectRun.planningCompletedAt) {
+      clearPlanningStudioPending(runId);
+      return;
+    }
+    setProjectPlanningWizardOpen(true);
+  }, [
+    currentProjectRun?.id,
+    currentProjectRun?.planningCompletedAt,
+    isKickoffComplete,
+    forceShowKickoff,
+    projectPlanningWizardOpen,
+  ]);
 
   // When entering a workflow, default to the overview page (per project run).
   useEffect(() => {
@@ -1494,9 +1528,13 @@ export default function UserView({
           .single();
         
         if (!error && updatedRun) {
-          setCurrentProjectRun(updatedRun as any);
-          // Refresh estimated finish date with new schedule
-          refreshEstimatedFinishDate(true);
+          const transformed = projectRunFromSupabaseRow(
+            updatedRun as unknown as Record<string, unknown>
+          );
+          if (transformed) {
+            setCurrentProjectRun(transformed);
+            refreshEstimatedFinishDate(true);
+          }
         }
       }
     }
@@ -2068,8 +2106,13 @@ export default function UserView({
                     .single()
                     .then(({ data: updatedRun, error }) => {
                       if (!error && updatedRun) {
-                        setCurrentProjectRun(updatedRun as any);
-                        refreshEstimatedFinishDate(true);
+                        const transformed = projectRunFromSupabaseRow(
+                          updatedRun as unknown as Record<string, unknown>
+                        );
+                        if (transformed) {
+                          setCurrentProjectRun(transformed);
+                          refreshEstimatedFinishDate(true);
+                        }
                       }
                     });
                 }
@@ -2240,6 +2283,7 @@ export default function UserView({
         break;
       case 'project-planning-wizard':
         setForceShowKickoff(false);
+        markPlanningStudioPending(currentProjectRun?.id);
         setProjectPlanningWizardOpen(true);
         break;
       case 'project-customizer':
@@ -2812,7 +2856,10 @@ export default function UserView({
         }
       });
 
-      // Update project run with all steps complete — do not force Planning Studio (fast path)
+      // Backfill earlier kickoff steps, then open Planning Studio (same as normal step-4 complete).
+      markPlanningStudioPending(currentProjectRun.id);
+      setForceShowKickoff(false);
+      setProjectPlanningWizardOpen(true);
       updateProjectRun({
         ...currentProjectRun,
         completedSteps: updatedSteps,
@@ -2821,7 +2868,7 @@ export default function UserView({
       }).then(() => {
       });
       
-      // Since all steps are now complete, return empty to force re-render
+      // Kickoff block requires !projectPlanningWizardOpen — next render shows Planning Studio.
       return null;
     }
     
@@ -2831,12 +2878,14 @@ export default function UserView({
         onBeforeFinalKickoffPersistence={() => {
           // Open Planning Studio before kickoff persistence so kickoff never reappears
           // while the wizard is still closed (continue-planning path only).
+          markPlanningStudioPending(currentProjectRun?.id);
           setForceShowKickoff(false);
           setProjectPlanningWizardOpen(true);
         }}
         onReturnToPlanningStudio={
           forceShowKickoff
             ? () => {
+                markPlanningStudioPending(currentProjectRun?.id);
                 setForceShowKickoff(false);
                 setProjectPlanningWizardOpen(true);
               }
@@ -3010,6 +3059,7 @@ export default function UserView({
 
               if (skipToWorkflow) {
                 // Escape hatch: mark selected planning tools complete and enter workflow.
+                clearPlanningStudioPending(currentProjectRun.id);
                 const toolsFromPersist = (persist?.customization_decisions as { selected_planning_tools?: PlanningToolId[] } | undefined)
                   ?.selected_planning_tools;
                 const decisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
@@ -3022,6 +3072,7 @@ export default function UserView({
                       : (['scope', 'risk'] as PlanningToolId[]);
                 await handlePlanningWizardFullyComplete(skipTools);
               } else {
+                markPlanningStudioPending(currentProjectRun.id);
                 setProjectPlanningWizardOpen(true);
               }
             } else {
@@ -3075,6 +3126,7 @@ export default function UserView({
               }
               setCompletedSteps(new Set(uniqueSteps));
               if (skipToWorkflow) {
+                clearPlanningStudioPending(currentProjectRun.id);
                 const toolsFromPersist = (persist?.customization_decisions as { selected_planning_tools?: PlanningToolId[] } | undefined)
                   ?.selected_planning_tools;
                 const decisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
@@ -3087,6 +3139,7 @@ export default function UserView({
                       : (['scope', 'risk'] as PlanningToolId[]);
                 await handlePlanningWizardFullyComplete(skipTools);
               } else {
+                markPlanningStudioPending(currentProjectRun.id);
                 setProjectPlanningWizardOpen(true);
               }
             }
@@ -3172,7 +3225,13 @@ export default function UserView({
   // If there are no phases in the project run snapshot, show "under construction"
   // BUT: Don't show it if we're still loading the project run or processing phases
   // Also don't show it if we have phases data that just needs to be parsed
-  const shouldShowUnderConstruction = !hasPhases && !isStillLoading && !isProcessingPhases && !hasPhasesData;
+  // Never block Planning Studio — kickoff completion opens it before workflow phases matter.
+  const shouldShowUnderConstruction =
+    !projectPlanningWizardOpen &&
+    !hasPhases &&
+    !isStillLoading &&
+    !isProcessingPhases &&
+    !hasPhasesData;
   
   if (shouldShowUnderConstruction) {
     return <div className="container mx-auto px-6 py-8">
@@ -3193,12 +3252,20 @@ export default function UserView({
           <ProjectPlanningWizard
             open={projectPlanningWizardOpen}
             layout={isMobile ? 'dialog' : 'fullscreen'}
-            onOpenChange={setProjectPlanningWizardOpen}
-            onWorkflowFullyComplete={handlePlanningWizardFullyComplete}
+            onOpenChange={(open) => {
+              if (!open) clearPlanningStudioPending(currentProjectRun.id);
+              setProjectPlanningWizardOpen(open);
+            }}
+            onWorkflowFullyComplete={async (tools) => {
+              clearPlanningStudioPending(currentProjectRun.id);
+              await handlePlanningWizardFullyComplete(tools);
+            }}
             onGoToWorkflow={() => {
+              clearPlanningStudioPending(currentProjectRun.id);
               setProjectPlanningWizardOpen(false);
             }}
             onReturnToKickoff={() => {
+              clearPlanningStudioPending(currentProjectRun.id);
               setProjectPlanningWizardOpen(false);
               setForceShowKickoff(true);
             }}
