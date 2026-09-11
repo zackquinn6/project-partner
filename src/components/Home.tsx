@@ -194,8 +194,8 @@ export default function Home({
               <h3 className="text-xs tracking-wide font-semibold text-muted-foreground mb-3 text-center uppercase">
                 Your work at a glance
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.85fr)_minmax(0,1.35fr)_minmax(0,1.15fr)] gap-3 md:gap-3">
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-slate-900/80 via-slate-900 to-slate-900/90 px-2.5 py-1.5 md:px-3 md:py-2 shadow-sm">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-slate-900/80 via-slate-900 to-slate-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm">
                   <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-amber-500/30 to-transparent pointer-events-none" />
                   <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
                     <TooltipProvider delayDuration={200}>
@@ -219,7 +219,7 @@ export default function Home({
                   </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-emerald-900/80 via-emerald-900 to-emerald-900/90 px-2.5 py-1.5 md:px-3 md:py-2 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-emerald-900/80 via-emerald-900 to-emerald-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm">
                   <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-emerald-500/30 to-transparent pointer-events-none" />
                   <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
                     <TooltipProvider delayDuration={200}>
@@ -240,7 +240,7 @@ export default function Home({
                   </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-sky-900/80 via-sky-900 to-sky-900/90 px-2.5 py-1.5 md:px-3 md:py-2 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-sky-900/80 via-sky-900 to-sky-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm">
                   <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-sky-500/30 to-transparent pointer-events-none" />
                   <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
                     <TooltipProvider delayDuration={200}>
@@ -261,7 +261,7 @@ export default function Home({
                   </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-violet-900/80 via-violet-900 to-violet-900/90 px-2.5 py-1.5 md:px-3 md:py-2 shadow-sm">
+                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-violet-900/80 via-violet-900 to-violet-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm">
                   <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-violet-500/30 to-transparent pointer-events-none" />
                   <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
                     <TooltipProvider delayDuration={200}>
