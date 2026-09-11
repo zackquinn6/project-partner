@@ -23,6 +23,7 @@ import { calculateProjectProgress } from '@/utils/progressCalculation';
 import {
   dashboardStatusBadgeClassName,
   dashboardStatusBadgeLabel,
+  dashboardStatusForProjectRun,
   dashboardStatusFromProgressPercent,
 } from '@/utils/projectDashboardStatus';
 import { PhotoGallery } from '@/components/PhotoGallery';
@@ -38,7 +39,7 @@ interface ProjectListingProps {
 }
 
 export default function ProjectListing({ onProjectSelect }: ProjectListingProps) {
-  const { projectRuns, currentProjectRun, setCurrentProjectRun, deleteProjectRun, fetchProjectRuns } = useProject();
+  const { projectRuns, currentProjectRun, setCurrentProjectRun, deleteProjectRun, fetchProjectRuns, updateProjectRun } = useProject();
   const { trackClick } = useButtonTracker();
   const { projectCatalogEnabled } = useGlobalPublicSettings();
   const { hasProjectsTier, hasRiskRadarTier, loading: membershipLoading } = useMembership();
@@ -124,22 +125,32 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
     // CRITICAL FIX: Clear reset flags immediately BEFORE setting project run
     // This prevents UserView useEffect from forcing listing mode
     window.dispatchEvent(new CustomEvent('clear-reset-flags'));
+
+    // Restarting a Not a fit run returns it to kickoff step 1 as not-started
+    const runToOpen: ProjectRun =
+      projectRun.status === 'not-a-fit'
+        ? { ...projectRun, status: 'not-started', updatedAt: new Date() }
+        : projectRun;
+    if (projectRun.status === 'not-a-fit') {
+      void updateProjectRun(runToOpen);
+    }
     
     // CRITICAL: Navigate with projectRunId in state so UserView can properly load it
     // This ensures UserView's useEffect that watches projectRunId will trigger
     navigate('/', {
       state: {
         view: 'user',
-        projectRunId: projectRun.id
+        projectRunId: runToOpen.id
       },
       replace: true
     });
     
     // Set project run in context
-    setCurrentProjectRun(projectRun);
+    setCurrentProjectRun(runToOpen);
     onProjectSelect?.('workflow' as any);
   }, [
     setCurrentProjectRun,
+    updateProjectRun,
     onProjectSelect,
     navigate,
     hasProjectsTier,
@@ -258,7 +269,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                   .filter(run => run.status !== 'cancelled')
                   .map((projectRun) => {
                   const progress = calculateProgress(projectRun);
-                  const dashStatus = dashboardStatusFromProgressPercent(progress);
+                  const dashStatus = dashboardStatusForProjectRun(projectRun, progress);
                   const aarVisible = shouldShowAarEntry(projectRun, progress);
 
                   return (
@@ -341,7 +352,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                               className="transition-fast"
                             >
                               <Play className="w-4 h-4 mr-2" />
-                              Continue
+                              {dashStatus === 'not-a-fit' ? 'Restart' : 'Continue'}
                             </Button>
                           )}
 

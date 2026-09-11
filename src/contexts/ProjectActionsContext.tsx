@@ -1074,6 +1074,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
     const updateKeyParts = [
       projectRun.id,
+      projectRun.status,
       projectRun.progress,
       JSON.stringify(projectRun.completedSteps),
       budgetDataKey,
@@ -1160,6 +1161,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     const isKickoffStepProgressUpdate = (KICKOFF_UI_STEP_IDS as readonly string[]).some(
       (id) => nextCompleted.includes(id) !== prevCompleted.includes(id)
     );
+    const isStatusChange = projectRun.status !== currentProjectRun?.status;
     const requiresImmediateSave =
       isBudgetDataUpdate ||
       isIssueReportsUpdate ||
@@ -1171,7 +1173,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       isKickoffStepProgressUpdate ||
       isQualityControlSettingsUpdate ||
       isSelectedPlanningToolsChange ||
-      isInstructionLevelPreferenceUpdate;
+      isInstructionLevelPreferenceUpdate ||
+      isStatusChange;
     
     // For immediate saves (budget, issues, time tracking), execute right away
     // For other updates, debounce to avoid excessive database writes
@@ -1550,7 +1553,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           name: freshRun.name,
           description: freshRun.description || '',
           home_id: freshRun.home_id || undefined,
-          status: freshRun.status as 'not-started' | 'in-progress' | 'complete' | 'cancelled',
+          status: freshRun.status as ProjectRun['status'],
           createdAt: new Date(freshRun.created_at),
           updatedAt: new Date(freshRun.updated_at),
           startDate: new Date(freshRun.start_date),

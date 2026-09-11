@@ -84,7 +84,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   const {
     currentProjectRun,
     updateProjectRun,
-    deleteProjectRun
   } = useProject();
   const { user, loading: authLoading } = useAuth();
   const isMobile = useIsMobile();
@@ -362,6 +361,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       // Update project run with completed step - WAIT for completion
       const updatedProjectRun = {
         ...currentProjectRun,
+        // Resuming after "Not a fit" returns the run to an active kickoff status
+        status: currentProjectRun.status === 'not-a-fit' ? 'not-started' : currentProjectRun.status,
         completedSteps: newCompletedSteps,
         progress: Math.round(newCompletedSteps.length / getTotalStepsCount() * 100),
         // CRITICAL: Always include initial_budget, initial_timeline, initial_sizing (even if null)
@@ -446,6 +447,65 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         return opTotal + operation.steps.length;
       }, 0);
     }, 0);
+  };
+
+  /** Mark run Not a fit, clear kickoff progress, leave kickoff for catalog/dashboard. */
+  const handleNotAMatch = async () => {
+    if (!currentProjectRun) return;
+    if (!user?.id) {
+      await reportUserFacingError({
+        source: 'kickoff',
+        operation: 'mark_not_a_fit',
+        projectRunId: currentProjectRun.id,
+        stepId: 'kickoff-step-1',
+        error: new Error('Not signed in'),
+        userMessage: 'You must be signed in to leave this project.',
+        notificationTitle: 'Not a fit failed',
+      });
+      return;
+    }
+
+    try {
+      const strippedSteps = (currentProjectRun.completedSteps || []).filter(
+        (id) => !String(id).startsWith('kickoff-')
+      );
+
+      // Persist first so completed_steps replace is not re-merged from stale kickoff ids
+      const { error } = await supabase
+        .from('project_runs')
+        .update({
+          status: 'not-a-fit',
+          completed_steps: strippedSteps,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentProjectRun.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      try {
+        await updateProjectRun({
+          ...currentProjectRun,
+          status: 'not-a-fit',
+          completedSteps: strippedSteps,
+          updatedAt: new Date(),
+        });
+      } finally {
+        // Always leave kickoff after DB write; listing effect also clears not-a-fit.
+        onExit?.();
+      }
+    } catch (error) {
+      await reportUserFacingError({
+        source: 'kickoff',
+        operation: 'mark_not_a_fit',
+        userId: user.id,
+        projectRunId: currentProjectRun.id,
+        stepId: 'kickoff-step-1',
+        error,
+        userMessage: 'Failed to mark project as Not a fit.',
+        notificationTitle: 'Not a fit failed',
+      });
+    }
   };
 
   const currentStepId = kickoffSteps[currentKickoffStep]?.id;
@@ -811,11 +871,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       {currentStepId === 'kickoff-step-1' ? (
                         <DropdownMenuItem
                           className="text-red-700 focus:text-red-700"
-                          onSelect={async () => {
-                            if (currentProjectRun) {
-                              await deleteProjectRun(currentProjectRun.id);
-                              if (onExit) onExit();
-                            }
+                          onSelect={() => {
+                            void handleNotAMatch();
                           }}
                         >
                           <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
@@ -837,11 +894,9 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                 <div className="flex min-h-12 min-w-0 flex-1 flex-col justify-center sm:min-h-[3.25rem]">
                   {currentStepId === 'kickoff-step-1' ? (
                     <Button
-                      onClick={async () => {
-                        if (currentProjectRun) {
-                          await deleteProjectRun(currentProjectRun.id);
-                          if (onExit) onExit();
-                        }
+                      type="button"
+                      onClick={() => {
+                        void handleNotAMatch();
                       }}
                       variant="outline"
                       size="lg"

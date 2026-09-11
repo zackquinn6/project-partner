@@ -1070,8 +1070,8 @@ export default function UserView({
       // re-renders context (e.g. after create_project_run_snapshot), so the new id can be
       // missing briefly even though it exists. Always load via DB when absent from the list.
       if (projectRun) {
-        // Don't open cancelled projects
-        if (projectRun.status === 'cancelled') {
+        // Don't auto-open cancelled or Not a fit runs from a stale projectRunId
+        if (projectRun.status === 'cancelled' || projectRun.status === 'not-a-fit') {
           return;
         }
         setCurrentProjectRun(projectRun);
@@ -1171,7 +1171,7 @@ export default function UserView({
               startDate: new Date(freshRun.start_date),
               planEndDate: new Date(freshRun.plan_end_date),
               endDate: freshRun.end_date ? new Date(freshRun.end_date) : undefined,
-              status: freshRun.status as 'not-started' | 'in-progress' | 'complete' | 'cancelled',
+              status: freshRun.status as ProjectRun['status'],
               projectLeader: freshRun.project_leader,
               accountabilityPartner: freshRun.accountability_partner,
               customProjectName: freshRun.custom_project_name,
@@ -1206,7 +1206,7 @@ export default function UserView({
                   : undefined
             };
             
-            if (transformedRun.status === 'cancelled') {
+            if (transformedRun.status === 'cancelled' || transformedRun.status === 'not-a-fit') {
               return;
             }
             
@@ -1252,8 +1252,12 @@ export default function UserView({
   // SIMPLIFIED VIEW MODE LOGIC - Single effect to prevent race conditions
   useEffect(() => {
     // View mode logic
-    // CRITICAL FIX: Don't open cancelled projects - clear them completely
-    if (currentProjectRun && currentProjectRun.status === 'cancelled') {
+    // CRITICAL FIX: Don't open cancelled / Not a fit projects - clear them completely
+    // (Not a fit is reopened explicitly from the Project Dashboard via Restart.)
+    if (
+      currentProjectRun &&
+      (currentProjectRun.status === 'cancelled' || currentProjectRun.status === 'not-a-fit')
+    ) {
       setCurrentProjectRun(null);
       setViewMode('listing');
       return;
@@ -3058,32 +3062,19 @@ export default function UserView({
           }
         }}
         onExit={async () => {
-          // Delete the project run since user said "not a fit"
-          if (currentProjectRun) {
-            try {
-              await deleteProjectRun(currentProjectRun.id);
-            } catch (error) {
-              console.error('⚠️ Error deleting project run:', error);
-            }
-          }
-          
-          // Clear current project run to prevent UserView from trying to load deleted project
+          // Leave kickoff after Not a fit — keep the run on the dashboard for restart.
           setCurrentProjectRun(null);
-          // Clear view mode to show listing
           setViewMode('listing');
-          
+
           if (projectCatalogEnabled) {
-            navigate('/projects', { replace: true });
+            navigate('/projects', { replace: true, state: {} });
             window.history.replaceState({}, document.title, '/projects');
           } else {
             navigate('/', { replace: true, state: { view: 'user' } });
             window.history.replaceState({ view: 'user' }, document.title, '/');
           }
-          
-          // Notify parent component to return to listing
+
           (onProjectSelected as any)?.('listing');
-          
-          // Clear reset flags
           window.dispatchEvent(new CustomEvent('clear-reset-flags'));
         }}
       />

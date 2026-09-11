@@ -92,7 +92,7 @@ const Index = () => {
   const { isAdmin } = useUserRole();
   const { hasProjectOwnerRole } = useProjectOwner();
   const showAdminPanel = isAdmin || hasProjectOwnerRole;
-  const { setCurrentProject, setCurrentProjectRun, currentProject, currentProjectRun, projects, projectRuns } = useProject();
+  const { setCurrentProject, setCurrentProjectRun, currentProject, currentProjectRun, projects, projectRuns, updateProjectRun } = useProject();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -148,7 +148,14 @@ const Index = () => {
           setRiskFocusRegisterRunId(run.id);
           return;
         }
-        setCurrentProjectRun(project);
+        const runToOpen: ProjectRun =
+          run.status === 'not-a-fit'
+            ? { ...run, status: 'not-started', updatedAt: new Date() }
+            : run;
+        if (run.status === 'not-a-fit') {
+          void updateProjectRun(runToOpen);
+        }
+        setCurrentProjectRun(runToOpen);
         setMobileView('workflow');
         setCurrentView('user');
         setResetUserView(false);
@@ -167,6 +174,7 @@ const Index = () => {
     [
       setCurrentProjectRun,
       setCurrentProject,
+      updateProjectRun,
       hasProjectsTier,
       hasRiskRadarTier,
       membershipLoading,

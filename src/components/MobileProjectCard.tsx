@@ -21,7 +21,7 @@ import { getRiskFocusAwareDisplayName, isRiskFocusRun } from '@/utils/projectRun
 import {
   dashboardStatusBadgeClassName,
   dashboardStatusBadgeLabel,
-  dashboardStatusFromProgressPercent,
+  dashboardStatusForProjectRun,
   type DashboardRunStatus,
 } from '@/utils/projectDashboardStatus';
 
@@ -62,7 +62,7 @@ export function MobileProjectCard({
     }
   })();
   const status: DashboardRunStatus | 'template' = isProjectRun
-    ? dashboardStatusFromProgressPercent(progress)
+    ? dashboardStatusForProjectRun(projectRunData!, progress)
     : 'template';
 
   const displayTitle =
@@ -309,7 +309,12 @@ function StatusBadge({
     );
   }
 
-  const Icon = status === 'not-started' ? Play : status === 'in-progress' ? Clock : CheckCircle;
+  const Icon =
+    status === 'not-started' || status === 'not-a-fit'
+      ? Play
+      : status === 'in-progress'
+        ? Clock
+        : CheckCircle;
 
   return (
     <Badge
@@ -362,6 +367,14 @@ function ActionButton({
     return (
       <Button variant="default" size="sm" className={btnClass} onClick={handleClick} disabled={isLoading}>
         {isLoading ? '...' : 'Continue'}
+      </Button>
+    );
+  }
+
+  if (status === 'not-a-fit') {
+    return (
+      <Button variant="default" size="sm" className={btnClass} onClick={handleClick} disabled={isLoading}>
+        {isLoading ? '...' : 'Restart'}
       </Button>
     );
   }

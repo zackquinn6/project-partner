@@ -31,7 +31,7 @@ export interface ProjectRun {
   startDate: Date;
   planEndDate: Date;
   endDate?: Date;
-  status: 'not-started' | 'in-progress' | 'complete' | 'cancelled';
+  status: 'not-started' | 'in-progress' | 'complete' | 'cancelled' | 'not-a-fit';
   
   // User customization data
   projectLeader?: string;

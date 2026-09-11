@@ -218,7 +218,7 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
         startDate: new Date(run.start_date),
         planEndDate: new Date(run.plan_end_date),
         endDate: run.end_date ? new Date(run.end_date) : undefined,
-        status: run.status as 'not-started' | 'in-progress' | 'complete',
+        status: run.status as ProjectRun['status'],
         projectLeader: run.project_leader,
         accountabilityPartner: run.accountability_partner,
         customProjectName: run.custom_project_name,
