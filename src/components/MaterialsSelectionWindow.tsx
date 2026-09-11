@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ShoppingCart, Package, Wrench, AlertCircle, CheckCircle } from 'lucide-react';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
+import { PlanningToolContextBanner } from '@/components/PlanningWizardSteps/PlanningToolContextBanner';
 import {
   PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME,
   PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
@@ -279,6 +280,7 @@ export function MaterialsSelectionWindow({
               onSaveAndClose={() => onOpenChange(false)}
             />
           </DialogHeader>
+          <PlanningToolContextBanner projectRun={projectRun} />
           <div
             className={cn(
               'flex flex-col items-center justify-center text-center',
@@ -324,6 +326,8 @@ export function MaterialsSelectionWindow({
             saveDisabled={selectedMaterials.size === 0 && selectedTools.size === 0}
           />
         </DialogHeader>
+
+        <PlanningToolContextBanner projectRun={projectRun} />
 
         <div
           className={cn(

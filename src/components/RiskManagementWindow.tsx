@@ -58,6 +58,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
+import { PlanningToolContextBanner } from '@/components/PlanningWizardSteps/PlanningToolContextBanner';
 import {
   PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
   PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME,
@@ -507,7 +508,7 @@ export function RiskManagementWindow({
 }: RiskManagementWindowProps) {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
-  const { projectRuns, updateProjectRun } = useProject();
+  const { projectRuns, updateProjectRun, currentProjectRun } = useProject();
   const riskFocusRunForProgress = useMemo(
     () => (projectRunId ? projectRuns.find((r) => r.id === projectRunId) : undefined),
     [projectRuns, projectRunId]
@@ -1233,6 +1234,14 @@ export function RiskManagementWindow({
             />
           </div>
         </DialogHeader>
+
+        {mode === 'run' ? (
+          <PlanningToolContextBanner
+            projectRun={riskFocusRunForProgress ?? currentProjectRun}
+            className="px-4 pt-3 md:px-6"
+            flush
+          />
+        ) : null}
 
         {variant === 'risk-focus' && mode === 'run' ? (
           <RiskFocusDashboard

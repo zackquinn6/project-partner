@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { TrendingUp, Plus, Trash2, Upload, DollarSign, Edit, Save } from 'lucide-react';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
+import { PlanningToolContextBanner } from '@/components/PlanningWizardSteps/PlanningToolContextBanner';
 import {
   PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME,
   PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
@@ -641,56 +642,60 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
           />
         </DialogHeader>
         <div className={cn('flex-1 overflow-y-auto', PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME)}>
-          {/* Budget Goal Header */}
-          <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xs text-muted-foreground mb-1">Project Budget Goal</div>
-                <div className="text-xl font-bold text-primary">
-                  {(() => {
-                    // Use budgetGoal state first, then fall back to currentProjectRun
-                    const budgetValue = budgetGoal ?? (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
-                    
-                    if (budgetValue === null || budgetValue === undefined || budgetValue === '') {
-                      return 'Not set';
-                    }
-                    
-                    // Handle both string and number types
-                    const budgetStr = typeof budgetValue === 'string' ? budgetValue.trim() : String(budgetValue).trim();
-                    const budgetNum = budgetStr ? parseFloat(budgetStr) : NaN;
-                    
-                    if (budgetStr && !isNaN(budgetNum) && budgetNum > 0) {
-                      return `$${budgetNum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                    }
-                    return 'Not set';
-                  })()}
-                </div>
-              </div>
-              {(() => {
-                // Use budgetGoal state first, then fall back to currentProjectRun
-                const budgetValue = budgetGoal ?? (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
-                
-                if (budgetValue === null || budgetValue === undefined || budgetValue === '') {
-                  return null;
-                }
-                
-                const budgetStr = typeof budgetValue === 'string' ? budgetValue.trim() : String(budgetValue).trim();
-                const budgetNum = budgetStr ? parseFloat(budgetStr) : NaN;
-                
-                if (budgetStr && !isNaN(budgetNum) && budgetNum > 0 && totalBudgeted > 0) {
-                  return (
-                    <div className="text-right">
-                      <div className="text-xs text-muted-foreground mb-1">Budgeted vs Goal</div>
-                      <div className={`text-lg font-semibold ${totalBudgeted > budgetNum ? 'text-red-600' : 'text-green-600'}`}>
-                        ${totalBudgeted.toFixed(2)} / ${budgetNum.toFixed(2)}
-                      </div>
-                    </div>
-                  );
-                }
+          <PlanningToolContextBanner
+            projectRun={currentProjectRun}
+            label="Budget goal"
+            detail={(() => {
+              const budgetValue =
+                budgetGoal ??
+                (currentProjectRun as any)?.initial_budget ??
+                (currentProjectRun as any)?.initialBudget ??
+                null;
+              if (budgetValue === null || budgetValue === undefined || budgetValue === '') {
                 return null;
-              })()}
-            </div>
-          </div>
+              }
+              const budgetStr =
+                typeof budgetValue === 'string' ? budgetValue.trim() : String(budgetValue).trim();
+              const budgetNum = budgetStr ? parseFloat(budgetStr) : NaN;
+              if (budgetStr && !isNaN(budgetNum) && budgetNum > 0) {
+                return `$${budgetNum.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`;
+              }
+              return null;
+            })()}
+            flush
+            className="mb-4"
+            trailing={(() => {
+              const budgetValue =
+                budgetGoal ??
+                (currentProjectRun as any)?.initial_budget ??
+                (currentProjectRun as any)?.initialBudget ??
+                null;
+              if (budgetValue === null || budgetValue === undefined || budgetValue === '') {
+                return null;
+              }
+              const budgetStr =
+                typeof budgetValue === 'string' ? budgetValue.trim() : String(budgetValue).trim();
+              const budgetNum = budgetStr ? parseFloat(budgetStr) : NaN;
+              if (budgetStr && !isNaN(budgetNum) && budgetNum > 0 && totalBudgeted > 0) {
+                return (
+                  <>
+                    <div className="mb-1 text-xs text-muted-foreground">Budgeted vs Goal</div>
+                    <div
+                      className={`text-lg font-semibold ${
+                        totalBudgeted > budgetNum ? 'text-red-600' : 'text-green-600'
+                      }`}
+                    >
+                      ${totalBudgeted.toFixed(2)} / ${budgetNum.toFixed(2)}
+                    </div>
+                  </>
+                );
+              }
+              return null;
+            })()}
+          />
 
           {/* Summary Section - Stacked on mobile, side-by-side on desktop */}
           <div className="mb-4 space-y-3 md:space-y-0">

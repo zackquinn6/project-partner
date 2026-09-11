@@ -23,6 +23,7 @@ import { extractNeedDatesFromSchedule, detectScheduleChanges, createScheduleSnap
 import { format } from "date-fns";
 import { reportUserFacingError } from "@/utils/errorReporting";
 import { PLANNING_TOOL_PRIMARY_CTA_CLASSNAME } from "@/components/PlanningWizardSteps/planningToolWindowChrome";
+import { PlanningToolContextBanner } from "@/components/PlanningWizardSteps/PlanningToolContextBanner";
 import {
   isToolRequirementOwned,
   loadUserOwnedTools,
@@ -103,7 +104,8 @@ export function OrderingWindow({
   collapseAllAccordionSectionsOnOpen = false
 }: OrderingWindowProps) {
   const {
-    updateProjectRun
+    updateProjectRun,
+    currentProjectRun,
   } = useProject();
   const { user } = useAuth();
   const [resolvedOwnedTools, setResolvedOwnedTools] = useState<OwnedToolRecord[]>([]);
@@ -572,6 +574,7 @@ export function OrderingWindow({
       planningToolHeader
     >
       <div className="flex flex-col h-full space-y-2">
+        <PlanningToolContextBanner projectRun={currentProjectRun} flush className="mb-1" />
         <Accordion
           type="multiple"
           value={accordionOpenValues}

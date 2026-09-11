@@ -26,6 +26,8 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import type { GeneralProjectDecision } from '../../interfaces/Project';
 import { filterGeneralDecisionsForPhases, parseGeneralProjectDecisionsFromPrerequisites } from '../../utils/generalProjectDecisions';
 import { PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME } from '../PlanningWizardSteps/planningToolWindowChrome';
+import { PlanningToolContextBanner } from '../PlanningWizardSteps/PlanningToolContextBanner';
+import { formatProjectSizeDetail } from '@/utils/projectRunDisplayName';
 import { cn } from '@/lib/utils';
 
 interface ProjectCustomizerProps {
@@ -160,24 +162,6 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       fetchItemType();
     }
   }, [open, templateProject?.id]);
-
-  // Helper function to format scaling unit for display
-  const getScalingUnitDisplay = () => {
-    // Standard scaling units (handle both old singular and new plural forms for backward compatibility)
-    if (scalingUnit === 'per square feet' || scalingUnit === 'per square foot') return 'sq ft';
-    if (scalingUnit === 'per 10x10 room') return 'rooms';
-    if (scalingUnit === 'per linear feet' || scalingUnit === 'per linear foot') return 'linear ft';
-    if (scalingUnit === 'per cubic yard') return 'cu yd';
-    
-    // For "per item", check if there's a custom item_type
-    if (scalingUnit === 'per item') {
-      if (itemType) return itemType.toLowerCase();
-      return 'items';
-    }
-    
-    // If scalingUnit is a custom value (not one of the standard ones), use it directly
-    return scalingUnit;
-  };
 
   // Helper function to create default "Room 1" placeholder
   const createDefaultSpace = (): ProjectSpace => ({
@@ -634,21 +618,11 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         planningToolSaveLabel="Save & Apply"
       >
         <div className="flex flex-col h-full">
-          {/* Project Sizing Estimate Header */}
-          {currentProjectRun?.initial_sizing && (
-            <div className={cn('pb-2 pt-4 md:pt-5', PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME)}>
-              <div className="rounded-lg border border-primary/20 bg-primary/10 p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-1">Project Size Estimate</div>
-                    <div className="text-xl font-bold text-primary">
-                      {currentProjectRun.initial_sizing} {getScalingUnitDisplay()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          <PlanningToolContextBanner
+            projectRun={currentProjectRun}
+            label="Size estimate"
+            detail={formatProjectSizeDetail(currentProjectRun, itemType)}
+          />
 
           <ScrollArea className={cn('flex-1 min-h-0', PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME)}>
             <Accordion

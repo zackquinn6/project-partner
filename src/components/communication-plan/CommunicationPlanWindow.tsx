@@ -57,6 +57,7 @@ import {
   templateKeyForTrigger,
 } from './buildUpdateDraft';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
+import { PlanningToolContextBanner } from '@/components/PlanningWizardSteps/PlanningToolContextBanner';
 import {
   PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME,
   PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
@@ -686,6 +687,8 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
               onSaveAndClose={() => onOpenChange(false)}
             />
           </DialogHeader>
+
+          <PlanningToolContextBanner projectRun={currentProjectRun} />
 
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {loading ? (

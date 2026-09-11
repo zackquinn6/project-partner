@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink, MapPin, Calendar, Wrench } from 'lucide-react';
 import { ToolRentalFinder } from './ToolRentalFinder';
+import { PlanningToolContextBanner } from '@/components/PlanningWizardSteps/PlanningToolContextBanner';
+import { useProject } from '@/contexts/ProjectContext';
 
 interface ToolRentalsWindowProps {
   isOpen: boolean;
@@ -12,6 +14,7 @@ interface ToolRentalsWindowProps {
 }
 
 export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) => {
+  const { currentProjectRun } = useProject();
   const handleVisitToolio = () => {
     window.open('https://toolio.us', '_blank');
   };
@@ -32,6 +35,7 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
         planningToolHeader
         className="relative z-[61] h-[100dvh] max-h-[100dvh] w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:w-[90vw] md:max-w-[min(90vw,calc(100vw-2rem))]"
       >
+      <PlanningToolContextBanner projectRun={currentProjectRun} flush className="mb-4" />
       <div className="flex items-center justify-between mb-6">
         <Button 
           variant="outline" 

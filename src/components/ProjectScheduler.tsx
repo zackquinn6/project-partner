@@ -42,6 +42,7 @@ import { ScheduleSensitivity } from './Scheduler/ScheduleSensitivity';
 import { ScheduleViewDialog } from '@/components/ScheduleViewDialog';
 import { autoRegenerateSchedule } from '@/utils/autoScheduleRegeneration';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
+import { PlanningToolContextBanner } from '@/components/PlanningWizardSteps/PlanningToolContextBanner';
 import {
   PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME,
   PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
@@ -1470,19 +1471,15 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           </div>
         ) : null}
 
-        {/* Project Goal Completion Date Header */}
-        {projectRun?.initial_timeline && (
-          <div className="px-4 pb-2 pt-4 md:px-6">
-            <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
-              <div>
-                <div className="text-xs text-muted-foreground mb-1">Project Goal Completion Date</div>
-                <div className="text-lg font-bold text-primary">
-                  {format(new Date(projectRun.initial_timeline), 'MMMM dd, yyyy')}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <PlanningToolContextBanner
+          projectRun={projectRun}
+          label="Timeline"
+          detail={
+            projectRun?.initial_timeline
+              ? format(new Date(projectRun.initial_timeline), 'MMMM dd, yyyy')
+              : null
+          }
+        />
 
         <ScrollArea className={cn('min-h-0 flex-1', PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME)}>
           <div className="space-y-6">
