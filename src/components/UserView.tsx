@@ -726,11 +726,11 @@ export default function UserView({
   // Process Map operates on templates, not project runs
   // Project runs are immutable snapshots - they should NEVER dynamically load phases from database
   // All phases (standard and custom) are copied into the snapshot at creation time, not linked
-  let rawWorkflowPhases: Phase[] = [];
-  if (currentProjectRun) {
-    // Project runs: use ONLY the immutable snapshot from project_runs.phases
-    // This is a complete copy of the template at the time the run was created
-    // All phases (standard and custom) are copied, not linked
+  // Project runs: use ONLY the immutable snapshot from project_runs.phases.
+  // Memoize ordering so callers (e.g. micro-decisions) do not see a new array every render.
+  const workflowPhases = React.useMemo(() => {
+    if (!currentProjectRun) return [];
+
     let parsedPhases: Phase[] = [];
     try {
       if (Array.isArray(currentProjectRun.phases)) {
@@ -744,9 +744,9 @@ export default function UserView({
       console.error('❌ Error parsing project run phases:', e, currentProjectRun.phases);
       parsedPhases = [];
     }
-    rawWorkflowPhases = Array.isArray(parsedPhases) ? parsedPhases : [];
-    
-    if (rawWorkflowPhases.length === 0) {
+
+    const raw = Array.isArray(parsedPhases) ? parsedPhases : [];
+    if (raw.length === 0) {
       console.error('❌ CRITICAL ERROR: Project run has no phases!', {
         runId: currentProjectRun.id,
         runName: currentProjectRun.name,
@@ -754,15 +754,9 @@ export default function UserView({
       });
       toast.error('Project run is missing phases. Please contact support or try creating a new project run.');
     }
-  } else {
-    // No project run - UserView should not display templates
-    // Templates are edited in Process Map, not viewed in UserView workflow
-    rawWorkflowPhases = [];
-  }
 
-  // Apply standard phase ordering to match Process Map
-  // This ensures workflow navigation follows the same order as Process Map
-  const workflowPhases = enforceStandardPhaseOrdering(rawWorkflowPhases);
+    return enforceStandardPhaseOrdering(raw);
+  }, [currentProjectRun?.id, currentProjectRun?.phases, currentProjectRun?.name, currentProjectRun?.projectId]);
 
   const microRuntime = useWorkflowMicroDecisions(
     currentProjectRun?.id,

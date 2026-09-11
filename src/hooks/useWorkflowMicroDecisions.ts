@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { GeneralProjectDecision, Phase } from '@/interfaces/Project';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import {
@@ -9,11 +9,6 @@ import {
 import {
   parseInstructionSectionsFromContentJson,
   type InstructionSectionLike,
-  stepHasVisibleInstructionContent,
-  getVisibleInstructionSectionIds,
-  filterToolsByVisibleSections,
-  filterMaterialsByVisibleSections,
-  getInstructionSectionsForStep,
 } from '@/utils/microDecisionVisibility';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -31,13 +26,15 @@ export interface WorkflowMicroDecisionsState {
   shouldApply: boolean;
 }
 
-const emptyState: WorkflowMicroDecisionsState = {
-  loading: false,
-  catalog: [],
-  choices: {},
-  instructionSectionsByStepId: new Map(),
-  shouldApply: false,
-};
+function customizationDecisionsKey(raw: unknown): string {
+  if (raw === undefined || raw === null) return '';
+  if (typeof raw === 'string') return raw;
+  try {
+    return JSON.stringify(raw);
+  } catch {
+    return '';
+  }
+}
 
 export function useWorkflowMicroDecisions(
   projectRunId: string | undefined,
@@ -46,19 +43,27 @@ export function useWorkflowMicroDecisions(
   phases: Phase[] | undefined,
   customizationDecisionsRaw: unknown
 ): WorkflowMicroDecisionsState {
-  const [state, setState] = useState<WorkflowMicroDecisionsState>({
-    ...emptyState,
-    loading: Boolean(projectRunId && templateProjectId),
-  });
+  const [loading, setLoading] = useState(Boolean(projectRunId && templateProjectId));
+  const [allDecisions, setAllDecisions] = useState<GeneralProjectDecision[]>([]);
+  const [choices, setChoices] = useState<GeneralProjectChoicesMap>({});
+  const [instructionSectionsByStepId, setInstructionSectionsByStepId] = useState(
+    () => new Map<string, InstructionSectionLike[]>()
+  );
+
+  // Object identity of customization_decisions / phases must not retrigger fetches.
+  const decisionsKey = customizationDecisionsKey(customizationDecisionsRaw);
 
   useEffect(() => {
     if (!projectRunId || !templateProjectId) {
-      setState(emptyState);
+      setLoading(false);
+      setAllDecisions([]);
+      setChoices({});
+      setInstructionSectionsByStepId(new Map());
       return;
     }
 
     let cancelled = false;
-    setState((s) => ({ ...s, loading: true }));
+    setLoading(true);
 
     void (async () => {
       try {
@@ -77,43 +82,39 @@ export function useWorkflowMicroDecisions(
 
         if (cancelled) return;
 
-        const allDecisions = parseGeneralProjectDecisionsFromPrerequisites(
+        const decisions = parseGeneralProjectDecisionsFromPrerequisites(
           projRes.data?.scheduling_prerequisites
         );
-        const catalog = filterGeneralDecisionsForPhases(allDecisions, phases);
 
         const parsed = parseCustomizationDecisions(customizationDecisionsRaw);
         const rawChoices = parsed[CHOICES_KEY];
-        const choices: GeneralProjectChoicesMap =
+        const nextChoices: GeneralProjectChoicesMap =
           rawChoices && typeof rawChoices === 'object' && !Array.isArray(rawChoices)
-            ? Object.fromEntries(
+            ? (Object.fromEntries(
                 Object.entries(rawChoices as Record<string, unknown>).filter(
                   ([k, v]) => typeof k === 'string' && k.length > 0 && typeof v === 'string' && v.length > 0
                 )
-              ) as GeneralProjectChoicesMap
+              ) as GeneralProjectChoicesMap)
             : {};
 
-        const instructionSectionsByStepId = new Map<string, InstructionSectionLike[]>();
+        const sectionsByStepId = new Map<string, InstructionSectionLike[]>();
         for (const row of instrRes.data || []) {
           const sid = row.template_step_id as string;
           if (!sid) continue;
-          const sections = parseInstructionSectionsFromContentJson(row.content);
-          instructionSectionsByStepId.set(sid, sections);
+          sectionsByStepId.set(sid, parseInstructionSectionsFromContentJson(row.content));
         }
 
-        const shouldApply = catalog.length > 0 && Object.keys(choices).length > 0;
-
-        setState({
-          loading: false,
-          catalog,
-          choices,
-          instructionSectionsByStepId,
-          shouldApply,
-        });
+        setAllDecisions(decisions);
+        setChoices(nextChoices);
+        setInstructionSectionsByStepId(sectionsByStepId);
+        setLoading(false);
       } catch (e) {
         console.error('useWorkflowMicroDecisions', e);
         if (!cancelled) {
-          setState({ ...emptyState, loading: false });
+          setAllDecisions([]);
+          setChoices({});
+          setInstructionSectionsByStepId(new Map());
+          setLoading(false);
         }
       }
     })();
@@ -121,7 +122,22 @@ export function useWorkflowMicroDecisions(
     return () => {
       cancelled = true;
     };
-  }, [projectRunId, templateProjectId, instructionLevel, customizationDecisionsRaw, phases]);
+    // customizationDecisionsRaw is read inside; decisionsKey is the stable dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- decisionsKey stands in for customizationDecisionsRaw
+  }, [projectRunId, templateProjectId, instructionLevel, decisionsKey]);
 
-  return state;
+  const catalog = useMemo(
+    () => filterGeneralDecisionsForPhases(allDecisions, phases),
+    [allDecisions, phases]
+  );
+
+  const shouldApply = catalog.length > 0 && Object.keys(choices).length > 0;
+
+  return {
+    loading,
+    catalog,
+    choices,
+    instructionSectionsByStepId,
+    shouldApply,
+  };
 }
