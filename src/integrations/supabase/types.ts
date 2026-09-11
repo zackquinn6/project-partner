@@ -1757,6 +1757,8 @@ export type Database = {
           email_address: string | null
           email_enabled: boolean | null
           id: string
+          last_reminder_sent_at: string | null
+          max_reminder_frequency: string
           notify_due_date: boolean | null
           notify_monthly: boolean | null
           notify_weekly: boolean | null
@@ -1770,6 +1772,8 @@ export type Database = {
           email_address?: string | null
           email_enabled?: boolean | null
           id?: string
+          last_reminder_sent_at?: string | null
+          max_reminder_frequency?: string
           notify_due_date?: boolean | null
           notify_monthly?: boolean | null
           notify_weekly?: boolean | null
@@ -1783,6 +1787,8 @@ export type Database = {
           email_address?: string | null
           email_enabled?: boolean | null
           id?: string
+          last_reminder_sent_at?: string | null
+          max_reminder_frequency?: string
           notify_due_date?: boolean | null
           notify_monthly?: boolean | null
           notify_weekly?: boolean | null

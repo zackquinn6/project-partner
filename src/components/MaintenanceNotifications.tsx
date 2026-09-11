@@ -6,10 +6,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Mail, MessageSquare, Bell, AlertCircle, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+
+export type MaxReminderFrequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
+
+const MAX_REMINDER_FREQUENCY_OPTIONS: { value: MaxReminderFrequency; label: string }[] = [
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Bi-weekly (every 2 weeks)' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
+];
+
+function isMaxReminderFrequency(value: unknown): value is MaxReminderFrequency {
+  return value === 'weekly' || value === 'biweekly' || value === 'monthly' || value === 'quarterly';
+}
+
 interface MaintenanceNotificationsProps {
   selectedHomeId: string;
   onSaved?: () => void;
@@ -35,6 +50,7 @@ export function MaintenanceNotifications({
   const [notifyMonthly, setNotifyMonthly] = useState(true);
   const [notifyWeekly, setNotifyWeekly] = useState(true);
   const [notifyDueDate, setNotifyDueDate] = useState(true);
+  const [maxReminderFrequency, setMaxReminderFrequency] = useState<MaxReminderFrequency>('biweekly');
 
   // Sync email from auth when user loads (e.g. dialog opened before auth ready)
   useEffect(() => {
@@ -54,7 +70,7 @@ export function MaintenanceNotifications({
       try {
         const { data, error } = await supabase
           .from('maintenance_notification_settings')
-          .select('email_enabled, email_address, sms_enabled, phone_number, notify_monthly, notify_weekly, notify_due_date')
+          .select('email_enabled, email_address, sms_enabled, phone_number, notify_monthly, notify_weekly, notify_due_date, max_reminder_frequency')
           .eq('user_id', user.id)
           .maybeSingle();
         if (error) throw error;
@@ -66,6 +82,9 @@ export function MaintenanceNotifications({
           setNotifyMonthly(data.notify_monthly ?? true);
           setNotifyWeekly(data.notify_weekly ?? true);
           setNotifyDueDate(data.notify_due_date ?? true);
+          if (isMaxReminderFrequency(data.max_reminder_frequency)) {
+            setMaxReminderFrequency(data.max_reminder_frequency);
+          }
         }
       } catch (e) {
         if (!cancelled) console.error('Error loading notification settings:', e);
@@ -88,6 +107,7 @@ export function MaintenanceNotifications({
         notify_monthly: notifyMonthly,
         notify_weekly: notifyWeekly,
         notify_due_date: notifyDueDate,
+        max_reminder_frequency: maxReminderFrequency,
         updated_at: new Date().toISOString(),
       };
       const { data: existing } = await supabase
@@ -360,6 +380,33 @@ export function MaintenanceNotifications({
                 Tasks due today
               </Label>
             </div>
+          </div>
+
+          <div className="max-w-sm space-y-1.5 pt-1">
+            <Label htmlFor="max-reminder-frequency" className="text-xs md:text-sm">
+              Max reminder frequency
+            </Label>
+            <Select
+              value={maxReminderFrequency}
+              onValueChange={(value) => {
+                if (isMaxReminderFrequency(value)) setMaxReminderFrequency(value);
+              }}
+              disabled={loadingSettings}
+            >
+              <SelectTrigger id="max-reminder-frequency" className="h-8 md:h-9 text-xs md:text-sm">
+                <SelectValue placeholder="Select frequency" />
+              </SelectTrigger>
+              <SelectContent>
+                {MAX_REMINDER_FREQUENCY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value} className="text-xs md:text-sm">
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] md:text-xs text-muted-foreground">
+              Limits how often reminder emails can be sent, even if matching tasks stay on your list.
+            </p>
           </div>
         </div>
 

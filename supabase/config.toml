@@ -365,6 +365,10 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 [functions.daily-workflow-task-digest]
 verify_jwt = false
 
+# Cron: same CRON_SECRET header (daily or every ~10 minutes). Also piggybacked from daily-workflow-task-digest.
+[functions.daily-maintenance-reminders]
+verify_jwt = false
+
 [functions.send-communication-plan-email]
 verify_jwt = true
 

@@ -11,6 +11,7 @@ import {
   ianaFromStateAbbrev,
   isWithinDailyWindow,
 } from "../_shared/workflowDigest.ts";
+import { processMaintenanceReminders } from "../_shared/maintenanceDigest.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -223,8 +224,16 @@ serve(async (req) => {
       sentCount += 1;
     }
 
+    // Same cron also drives home-maintenance Setup Alerts (max_reminder_frequency gated).
+    const maintenance = await processMaintenanceReminders(supabase, resend, now);
+
     return new Response(
-      JSON.stringify({ ok: true, processed, sent: sentCount }),
+      JSON.stringify({
+        ok: true,
+        processed,
+        sent: sentCount,
+        maintenance,
+      }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
