@@ -32,7 +32,26 @@ export interface PlanningConfirmationStepProps {
   customizationDecisionsRaw: unknown;
   initialBudget?: string;
   initialTimeline?: string;
+  /** Latest end date from schedule_events after scheduling. */
+  scheduledTimelineEnd?: Date | null;
+  /** Sum of budget_data.lineItems budgeted amounts. */
+  calculatedBudgetTotal?: number | null;
   onOpenTool?: (toolId: PlanningToolId) => void;
+}
+
+function formatMoney(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function formatTimelineDate(value: string | Date | null | undefined): string | null {
+  if (value === undefined || value === null || value === '') return null;
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return typeof value === 'string' ? value : null;
+  return format(d, 'MMM d, yyyy');
 }
 
 export function PlanningConfirmationStep({
@@ -42,6 +61,8 @@ export function PlanningConfirmationStep({
   customizationDecisionsRaw,
   initialBudget,
   initialTimeline,
+  scheduledTimelineEnd = null,
+  calculatedBudgetTotal = null,
   onOpenTool,
 }: PlanningConfirmationStepProps) {
   const decisions = useMemo(() => parseCustomizationDecisions(customizationDecisionsRaw), [customizationDecisionsRaw]);
@@ -60,9 +81,19 @@ export function PlanningConfirmationStep({
 
   const incompleteCount = toolStatuses.filter((t) => !t.complete).length;
   const allComplete = toolStatuses.length > 0 && incompleteCount === 0;
-  const hasKickoffTargets =
-    (initialBudget !== undefined && initialBudget !== '') ||
-    (initialTimeline !== undefined && initialTimeline !== '');
+  const originalTimelineLabel = formatTimelineDate(initialTimeline);
+  const scheduledTimelineLabel = formatTimelineDate(scheduledTimelineEnd);
+  const originalBudgetLabel =
+    initialBudget !== undefined && initialBudget !== '' ? initialBudget.trim() : null;
+  const calculatedBudgetLabel =
+    calculatedBudgetTotal !== null && !Number.isNaN(calculatedBudgetTotal)
+      ? formatMoney(calculatedBudgetTotal)
+      : null;
+  const hasReflectComparison =
+    originalTimelineLabel !== null ||
+    scheduledTimelineLabel !== null ||
+    originalBudgetLabel !== null ||
+    calculatedBudgetLabel !== null;
 
   return (
     <div className="space-y-4">
@@ -129,30 +160,52 @@ export function PlanningConfirmationStep({
           <section>
             <h3 className="mb-2 text-sm font-semibold text-foreground">Reflect</h3>
             <p className="mb-3 text-sm text-muted-foreground">
-              Does this plan still match your kickoff goals? If not, edit the plan before you start.
+              Compare your original ambitions with what planning produced. If the gap is too large, edit the plan
+              before you start.
             </p>
-            {hasKickoffTargets ? (
-              <dl className="grid gap-2 text-sm sm:grid-cols-2">
-                {initialBudget !== undefined && initialBudget !== '' ? (
+            {hasReflectComparison ? (
+              <div className="space-y-3">
+                <div className="grid gap-2 text-sm sm:grid-cols-2">
                   <div className="rounded-md border bg-muted/30 px-3 py-2">
-                    <dt className="text-muted-foreground">Budget goal</dt>
-                    <dd className="font-medium text-foreground">{initialBudget}</dd>
+                    <p className="text-muted-foreground">Original timeline</p>
+                    <p className="font-medium text-foreground">
+                      {originalTimelineLabel ?? (
+                        <span className="font-normal text-muted-foreground">Not set at kickoff</span>
+                      )}
+                    </p>
                   </div>
-                ) : null}
-                {initialTimeline !== undefined && initialTimeline !== '' ? (
                   <div className="rounded-md border bg-muted/30 px-3 py-2">
-                    <dt className="text-muted-foreground">Target end</dt>
-                    <dd className="font-medium text-foreground">
-                      {(() => {
-                        const d = new Date(initialTimeline);
-                        return Number.isNaN(d.getTime()) ? initialTimeline : format(d, 'MMM d, yyyy');
-                      })()}
-                    </dd>
+                    <p className="text-muted-foreground">Scheduled timeline</p>
+                    <p className="font-medium text-foreground">
+                      {scheduledTimelineLabel ?? (
+                        <span className="font-normal text-muted-foreground">Not scheduled yet</span>
+                      )}
+                    </p>
                   </div>
-                ) : null}
-              </dl>
+                </div>
+                <div className="grid gap-2 text-sm sm:grid-cols-2">
+                  <div className="rounded-md border bg-muted/30 px-3 py-2">
+                    <p className="text-muted-foreground">Original budget</p>
+                    <p className="font-medium text-foreground">
+                      {originalBudgetLabel ?? (
+                        <span className="font-normal text-muted-foreground">Not set at kickoff</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 px-3 py-2">
+                    <p className="text-muted-foreground">Calculated Budget</p>
+                    <p className="font-medium text-foreground">
+                      {calculatedBudgetLabel ?? (
+                        <span className="font-normal text-muted-foreground">No budget line items yet</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No kickoff budget or timeline targets were set.</p>
+              <p className="text-sm text-muted-foreground">
+                No kickoff targets or planned timeline/budget values are available to compare yet.
+              </p>
             )}
           </section>
 

@@ -428,6 +428,47 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     [currentProjectRun?.phases]
   );
 
+  const scheduledTimelineEnd = useMemo(() => {
+    const events = currentProjectRun?.schedule_events?.events;
+    if (!Array.isArray(events) || events.length === 0) return null;
+
+    const endDates = events
+      .map((event: { date?: string; duration?: number; endTime?: string }) => {
+        if (event.date) {
+          const d = new Date(event.date);
+          if (typeof event.duration === 'number' && !Number.isNaN(event.duration)) {
+            d.setMinutes(d.getMinutes() + event.duration);
+          }
+          return d;
+        }
+        if (event.endTime) return new Date(event.endTime);
+        return null;
+      })
+      .filter((d): d is Date => d !== null && !Number.isNaN(d.getTime()));
+
+    if (endDates.length === 0) return null;
+    return endDates.reduce((latest, d) => (d > latest ? d : latest));
+  }, [currentProjectRun?.schedule_events]);
+
+  const calculatedBudgetTotal = useMemo(() => {
+    const items = currentProjectRun?.budget_data?.lineItems;
+    if (!Array.isArray(items) || items.length === 0) return null;
+
+    let sum = 0;
+    let hasAmount = false;
+    for (const item of items) {
+      if (!item) continue;
+      const amount =
+        typeof item.budgetedAmount === 'number'
+          ? item.budgetedAmount
+          : Number.parseFloat(String(item.budgetedAmount ?? ''));
+      if (Number.isNaN(amount)) continue;
+      sum += amount;
+      hasAmount = true;
+    }
+    return hasAmount ? sum : null;
+  }, [currentProjectRun?.budget_data]);
+
   const effectiveSelectedTools = localSelectedTools ?? selectedToolsFromContext;
 
   const planningToolsForWizard = useMemo(() => {
@@ -510,6 +551,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
           customizationDecisionsRaw={currentProjectRun?.customization_decisions}
           initialBudget={currentProjectRun?.initial_budget}
           initialTimeline={currentProjectRun?.initial_timeline}
+          scheduledTimelineEnd={scheduledTimelineEnd}
+          calculatedBudgetTotal={calculatedBudgetTotal}
           onOpenTool={(toolId) => openPlanningTool(toolId)}
         />
       );
