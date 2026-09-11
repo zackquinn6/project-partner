@@ -520,10 +520,6 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       if (defaultHome?.name) setHomeName(defaultHome.name);
       await fetchHomes();
       setActiveStep('step-2');
-      toast({
-        title: 'Default home selected',
-        description: 'This project now uses your default home.',
-      });
     } catch (error) {
       console.error('Error selecting default home:', error);
       toast({
@@ -631,10 +627,6 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
       handleSpacesChange([roomSpace]);
       setActiveStep('step-3');
-      toast({
-        title: 'Default room applied',
-        description: 'This project now uses one default room (Room 1).',
-      });
     } catch (error) {
       console.error('Error applying default room:', error);
       toast({
