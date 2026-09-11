@@ -111,7 +111,11 @@ export const marketingCopyByMode: Record<MarketingMode, MarketingCopy> = {
       ctaSecondary: 'Learn More',
     },
     simplifiedHero: {
-      headlineLines: ['Project Management,', 'Pre-Built for', 'Home\u00a0Improvement.'],
+      headlineLines: [
+        'Project Execution,',
+        'Engineered for Smarter Planning',
+        'and Reliable Outcomes.',
+      ],
       subhead: 'Helping you run one great project.',
       projectsTierBlurb: 'A complete suite of apps and tools to run one great project.',
     },
@@ -215,7 +219,11 @@ export const marketingCopyByMode: Record<MarketingMode, MarketingCopy> = {
       ctaSecondary: 'Learn More',
     },
     simplifiedHero: {
-      headlineLines: ['Project Management,', 'Pre-Built for', 'Tile\u00a0Projects.'],
+      headlineLines: [
+        'Tile Project Execution,',
+        'Engineered for Smarter Planning',
+        'and Reliable Outcomes.',
+      ],
       subhead: 'Helping you run one great tile project.',
       projectsTierBlurb: 'A complete suite of apps and tools to run one great tile project.',
     },
