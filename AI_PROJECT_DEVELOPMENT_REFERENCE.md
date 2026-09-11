@@ -93,7 +93,7 @@ Author when creating/revising a template or in Step 10 (description/challenges).
 | `id` | uuid | Stable; resolve root via `parent_project_id IS NULL` for workflow attach |
 | `name` | string | Catalog title; match carefully (see §A name matching) |
 | `description` | string \| null | Step 10; ≤200 chars; structured product blurb |
-| `project_challenges` | string \| null | Step 10; ≤200 chars; hardest aspects narrative |
+| `project_challenges` | string \| null | Step 10; ≤200 chars; 1–2 sentences on the **hardest parts** only (see Step 10) |
 | `category` | string[] \| null | Catalog tags |
 | `cover_image`, `images`, `icon` | media URLs | Catalog visuals; do not invent URLs |
 | `effort_level` | string \| null | e.g. Low / Medium / High (app: `Project.effortLevel`) |
@@ -323,7 +323,14 @@ Related tables (when filling full PFMEA): `pfmea_potential_causes`, `pfmea_poten
 
 ### Step 10 — `projects.description` + `projects.project_challenges`
 
-≤200 chars each; structured description; narrative challenges. Touches only those `projects` columns (plus cache rebuild only if somehow structure changed—normally not).
+≤200 chars each. Touches only those `projects` columns (plus cache rebuild only if somehow structure changed—normally not).
+
+| Field | Authoring rule |
+| ----- | -------------- |
+| `description` | Structured product blurb: what the work is and what it achieves |
+| `project_challenges` | **Informational decision tool**—short 1–2 sentences on the hardest parts so the user can judge fit before proceeding. Neutral tone: do **not** sell the project or scare them away; no major sway for or against. Focus on difficulty (physical demand, precision, prep, mess, failure modes that are hard to recover from)—not a full risk register (that is Step 4 / Risk Radar) |
+
+If the user is uncomfortable with the listed challenges, they may choose not to move forward; that is intentional. Write so a quick read surfaces the real hard parts without hype or hedging.
 
 ---
 
@@ -382,5 +389,6 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-11 | Step 10 `project_challenges`: clarify purpose as neutral hardest-parts decision tool (1–2 sentences, ≤200 chars; not sales or scare) | Recreated tile flooring / backsplash / shower-bath challenges; authors need tone+scope rules |
 | 2026-09-10 | Expanded field catalogs for catalog header, Steps 1–10, schedule prereqs (§E), related projects (§F); added on-demand Cursor rule `.cursor/rules/ai-project-dev-guide.mdc` | Single guide for template content development + continuous improvement |
 | 2026-09-10 | `materials.category` check allows only `Components` / `Consumables` / `PPE` (not free-form labels like Flooring) | Tile Flooring Installation step 6 bootstrap failed `materials_category_chk` until categories matched the constraint |
