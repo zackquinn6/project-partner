@@ -15,19 +15,54 @@ interface ProjectSpace {
   scaleUnit?: string;
 }
 
+type SpaceDecisionMap = Record<string, {
+  standardDecisions: Record<string, string[]>;
+  ifNecessaryWork: Record<string, string[]>;
+}>;
+
 interface SpaceDecisionFlowProps {
   spaces: ProjectSpace[];
   projectRun: ProjectRun;
-  spaceDecisions: Record<string, {
-    standardDecisions: Record<string, string[]>;
-    ifNecessaryWork: Record<string, string[]>;
-  }>;
+  spaceDecisions: SpaceDecisionMap;
   onSpaceDecision: (
     spaceId: string,
     phaseId: string,
     type: 'standard' | 'ifNecessary',
     decisions: string[]
   ) => void;
+}
+
+/** True when every required alternate decision for the space has been answered. */
+export function areSpaceRequiredDecisionsComplete(
+  projectRun: ProjectRun,
+  spaceId: string,
+  spaceDecisions: SpaceDecisionMap
+): boolean {
+  const spaceState = spaceDecisions[spaceId];
+  if (!spaceState) return false;
+
+  let requiredCount = 0;
+  let madeCount = 0;
+
+  projectRun.phases?.forEach((phase) => {
+    const seenGroups = new Set<string>();
+    phase.operations.forEach((operation) => {
+      const flowType = (operation as any).flowType || 'prime';
+      if (flowType === 'alternate') {
+        const groupKey = (operation as any).alternateGroup || 'choice-group';
+        if (!seenGroups.has(groupKey)) {
+          seenGroups.add(groupKey);
+          requiredCount++;
+          const decisions = spaceState.standardDecisions[phase.id] || [];
+          if (decisions.some((d) => d.startsWith(groupKey + ':'))) {
+            madeCount++;
+          }
+        }
+      }
+    });
+  });
+
+  return requiredCount === 0 || madeCount === requiredCount;
 }
 
 export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
@@ -112,36 +147,8 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
     };
   };
 
-  const isSpaceComplete = (spaceId: string) => {
-    // Check if all required decisions are made for this space
-    const spaceState = spaceDecisions[spaceId];
-    if (!spaceState) return false;
-
-    // Count required decisions
-    let requiredCount = 0;
-    let madeCount = 0;
-
-    projectRun.phases?.forEach(phase => {
-      const alternateGroups = new Map<string, any>();
-      phase.operations.forEach(operation => {
-        const flowType = (operation as any).flowType || 'prime';
-        if (flowType === 'alternate') {
-          const groupKey = (operation as any).alternateGroup || 'choice-group';
-          if (!alternateGroups.has(groupKey)) {
-            alternateGroups.set(groupKey, true);
-            requiredCount++;
-            
-            const decisions = spaceState.standardDecisions[phase.id] || [];
-            if (decisions.some(d => d.startsWith(groupKey + ':'))) {
-              madeCount++;
-            }
-          }
-        }
-      });
-    });
-
-    return requiredCount === 0 || madeCount === requiredCount;
-  };
+  const isSpaceComplete = (spaceId: string) =>
+    areSpaceRequiredDecisionsComplete(projectRun, spaceId, spaceDecisions);
 
   // Note: This component should always receive at least one space (default "Space 1")
   // The check below is kept as a safety fallback but should rarely be needed

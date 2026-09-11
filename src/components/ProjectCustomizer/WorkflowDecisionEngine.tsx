@@ -96,11 +96,8 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
   return (
     <ScrollArea className="h-full">
       <div className={`space-y-6 ${isMobile ? 'px-1' : 'p-6'}`}>
-        <div className="text-center mb-6">
+        <div className="mb-6 text-center">
           <h3 className="mb-2 text-base font-semibold">Workflow Decision Points</h3>
-          <p className="text-sm text-muted-foreground">
-            Required choices first. Optional work only if you need it.
-          </p>
         </div>
 
         {phasesWithDecisions?.map(({ phase, alternateGroups, ifNecessaryOps }) => (
@@ -111,16 +108,35 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Alternate Choices */}
-              {alternateGroups.map(([groupKey, group]) => (
-                <div key={groupKey} className={`border rounded-lg ${isMobile ? 'p-3' : 'p-4'}`}>
-                  <div className={`flex items-start gap-3 mb-3 ${isMobile ? 'flex-col sm:flex-row' : ''}`}>
+              {alternateGroups.map(([groupKey, group]) => {
+                const isAnswered = Boolean(getSelectedAlternative(phase.id, groupKey));
+                return (
+                <div
+                  key={groupKey}
+                  className={`rounded-lg border ${isMobile ? 'p-3' : 'p-4'} ${
+                    isAnswered ? 'border-green-300 bg-green-50/40' : ''
+                  }`}
+                >
+                  <div className={`mb-3 flex items-start gap-3 ${isMobile ? 'flex-col sm:flex-row' : ''}`}>
                     <div className={`${isMobile ? 'self-start' : 'mt-0.5'}`}>
-                      <AlertCircle className="w-5 h-5 text-orange-500" />
+                      {isAnswered ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-600" aria-hidden />
+                      ) : (
+                        <AlertCircle className="h-5 w-5 text-orange-500" aria-hidden />
+                      )}
                     </div>
                     <div className="flex-1">
                       <h4 className="flex flex-col gap-2 text-sm font-medium sm:flex-row sm:items-center">
                         <span className="flex-1">{group.prompt}</span>
-                        <Badge variant="destructive" className="text-xs">Required</Badge>
+                        {isAnswered ? (
+                          <Badge variant="secondary" className="bg-green-100 text-xs text-green-800">
+                            Done
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive" className="text-xs">
+                            Required
+                          </Badge>
+                        )}
                       </h4>
                     </div>
                   </div>
@@ -131,7 +147,7 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
                     className={`space-y-3 ${isMobile ? 'ml-0 pl-0' : 'ml-8'}`}
                   >
                     {group.operations.map((operation) => (
-                      <div key={operation.id} className={`flex items-start space-x-3 ${isMobile ? 'p-3 bg-muted/30 rounded-lg' : ''}`}>
+                      <div key={operation.id} className={`flex items-start space-x-3 ${isMobile ? 'rounded-lg bg-muted/30 p-3' : ''}`}>
                         <RadioGroupItem 
                           value={operation.id} 
                           id={operation.id}
@@ -139,12 +155,12 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
                         />
                         <Label 
                           htmlFor={operation.id}
-                          className={`font-normal cursor-pointer flex-1 ${isMobile ? 'text-sm leading-relaxed' : 'text-sm'}`}
+                          className={`flex-1 cursor-pointer font-normal ${isMobile ? 'text-sm leading-relaxed' : 'text-sm'}`}
                         >
                           <div>
                             <p className="font-medium">{operation.name}</p>
                             {operation.description && (
-                              <p className="text-muted-foreground mt-1">{operation.description}</p>
+                              <p className="mt-1 text-muted-foreground">{operation.description}</p>
                             )}
                           </div>
                         </Label>
@@ -152,7 +168,8 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
                     ))}
                   </RadioGroup>
                 </div>
-              ))}
+                );
+              })}
 
               {/* If Necessary Options */}
               {ifNecessaryOps.map((operation) => (

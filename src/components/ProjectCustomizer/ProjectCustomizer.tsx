@@ -8,11 +8,11 @@ import { ScrollArea } from '../ui/scroll-area';
 import { SimplifiedCustomWorkManager } from './SimplifiedCustomWorkManager';
 import { PhaseBrowser } from './PhaseBrowser';
 import { SpaceSelector } from './SpaceSelector';
-import { SpaceDecisionFlow } from './SpaceDecisionFlow';
+import { SpaceDecisionFlow, areSpaceRequiredDecisionsComplete } from './SpaceDecisionFlow';
 import { ProjectRun } from '../../interfaces/ProjectRun';
 import { Phase } from '../../interfaces/Project';
 import { useProject } from '../../contexts/ProjectContext';
-import { Settings, GitBranch, Home, Edit2 } from 'lucide-react';
+import { Settings, GitBranch, Home, Edit2, Check, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useIsMobile } from '../../hooks/use-mobile';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -721,9 +721,36 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     return null;
   }
 
-  const StepCircle = ({ step }: { step: number }) => (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground">
-      {step}
+  const step1Complete = Boolean(selectedHomeId || currentProjectRun.home_id);
+  const step2Complete = customizationState.spaces.length > 0;
+  const step3Complete =
+    filteredGeneralProjectDecisions.every(
+      (decision) => Boolean(customizationState.generalProjectChoices[decision.id])
+    ) &&
+    customizationState.spaces.length > 0 &&
+    customizationState.spaces.every((space) =>
+      areSpaceRequiredDecisionsComplete(
+        currentProjectRun,
+        space.id,
+        customizationState.spaceDecisions
+      )
+    );
+  const step4Complete =
+    customizationState.customPlannedWork.length > 0 ||
+    customizationState.customUnplannedWork.length > 0 ||
+    (step3Complete && Boolean(currentProjectRun.customization_decisions));
+
+  const StepCircle = ({ step, complete }: { step: number; complete?: boolean }) => (
+    <div
+      className={cn(
+        'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base font-bold',
+        complete
+          ? 'bg-green-600 text-white'
+          : 'bg-primary text-primary-foreground'
+      )}
+      aria-label={complete ? `Step ${step} complete` : `Step ${step}`}
+    >
+      {complete ? <Check className="h-5 w-5" strokeWidth={3} aria-hidden /> : step}
     </div>
   );
 
@@ -731,13 +758,15 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     step,
     title,
     description,
+    complete,
   }: {
     step: number;
     title: string;
     description: string;
+    complete?: boolean;
   }) => (
     <div className="flex items-start gap-3 text-left">
-      <StepCircle step={step} />
+      <StepCircle step={step} complete={complete} />
       <div className="min-w-0">
         <div className="text-base font-semibold text-foreground md:text-lg">{title}</div>
         <div className="mt-1 text-xs leading-relaxed text-muted-foreground md:text-sm">{description}</div>
@@ -785,6 +814,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     step={1}
                     title="Select / Edit Project Home"
                     description="Choose the home this project belongs to"
+                    complete={step1Complete}
                   />
                 </AccordionTrigger>
                 <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
@@ -848,6 +878,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     step={2}
                     title="Select / Edit Project Spaces"
                     description="Pick which rooms are in play"
+                    complete={step2Complete}
                   />
                 </AccordionTrigger>
                 <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
@@ -891,6 +922,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     step={3}
                     title="Make Project Choices for each Space"
                     description="Answer the calls that change how you build"
+                    complete={step3Complete}
                   />
                 </AccordionTrigger>
                 <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
@@ -903,12 +935,36 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-5">
-                        {filteredGeneralProjectDecisions.map((decision) => (
+                        {filteredGeneralProjectDecisions.map((decision) => {
+                          const isAnswered = Boolean(
+                            customizationState.generalProjectChoices[decision.id]
+                          );
+                          return (
                           <div
                             key={decision.id}
-                            className="space-y-2 border-b border-border/60 pb-4 last:border-0 last:pb-0"
+                            className={`space-y-2 border-b border-border/60 pb-4 last:border-0 last:pb-0 ${
+                              isAnswered ? 'rounded-lg border border-green-300 bg-green-50/40 px-3 pt-3' : ''
+                            }`}
                           >
-                            <Label className="text-sm font-medium">{decision.label}</Label>
+                            <div className="flex items-start gap-2">
+                              {isAnswered ? (
+                                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" aria-hidden />
+                              ) : (
+                                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-orange-500" aria-hidden />
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <div className="mb-2 flex flex-wrap items-center gap-2">
+                                  <Label className="text-sm font-medium">{decision.label}</Label>
+                                  {isAnswered ? (
+                                    <Badge variant="secondary" className="bg-green-100 text-xs text-green-800">
+                                      Done
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="destructive" className="text-xs">
+                                      Required
+                                    </Badge>
+                                  )}
+                                </div>
                             <RadioGroup
                               value={customizationState.generalProjectChoices[decision.id] ?? ''}
                               onValueChange={(v) =>
@@ -933,8 +989,11 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                                 </div>
                               ))}
                             </RadioGroup>
+                              </div>
+                            </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </CardContent>
                     </Card>
                   ) : null}
@@ -953,6 +1012,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     step={4}
                     title="Add Custom Work"
                     description="Add extra work only if you need it"
+                    complete={step4Complete}
                   />
                 </AccordionTrigger>
                 <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
