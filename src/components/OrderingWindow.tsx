@@ -659,7 +659,7 @@ export function OrderingWindow({
                 <div>
                   <h4 className="font-medium text-sm">Material lead times</h4>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Review every project material and set lead time in days. Default is 0 days.
+                    Most materials can be bought same-day. Adjust any that have wait times.
                   </p>
                 </div>
                 {uniqueMaterials.length === 0 ? (
