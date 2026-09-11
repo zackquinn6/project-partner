@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SchedulerWizard } from './Scheduler/SchedulerWizard';
-import { ScheduleOutputView } from './Scheduler/ScheduleOutputView';
 import { SchedulePreset } from './Scheduler/QuickSchedulePresets';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
