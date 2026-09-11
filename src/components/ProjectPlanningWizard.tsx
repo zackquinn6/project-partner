@@ -621,7 +621,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
 
   const currentStepPurpose =
     wizardPhase === 'confirm'
-      ? 'Definition of Done: reflect, then start'
+      ? 'Review your project plan'
       : wizardSteps[currentStep]?.description?.trim() ||
         wizardSteps[currentStep]?.title ||
         '';
@@ -745,6 +745,55 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                     </div>
                   </React.Fragment>
                 ))}
+                {wizardSteps.length > 0 ? (
+                  <>
+                    <div
+                      className="mt-[13px] h-0.5 w-2 shrink-0 self-start bg-muted-foreground/25 sm:mt-[15px] sm:min-w-2 sm:flex-1 sm:w-auto"
+                      aria-hidden
+                    />
+                    <div className="flex w-11 shrink-0 flex-col items-center px-0.5 sm:w-14 md:w-[4.25rem]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!allWorkflowStepsComplete) return;
+                          if (autoOpenTimerRef.current) {
+                            clearTimeout(autoOpenTimerRef.current);
+                            autoOpenTimerRef.current = null;
+                          }
+                          setWizardPhase('confirm');
+                        }}
+                        disabled={!allWorkflowStepsComplete && wizardPhase !== 'confirm'}
+                        aria-label="Go to Planning Summary"
+                        aria-current={wizardPhase === 'confirm' ? 'step' : undefined}
+                        className={`
+                          flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-7 sm:w-7 md:h-8 md:w-8
+                          ${
+                            wizardPhase === 'confirm'
+                              ? 'cursor-pointer border-primary bg-primary text-primary-foreground'
+                              : allWorkflowStepsComplete
+                                ? 'cursor-pointer border-muted-foreground bg-background'
+                                : 'cursor-not-allowed border-muted-foreground/40 bg-background text-muted-foreground/50'
+                          }
+                        `}
+                      >
+                        <span className="text-[11px] font-medium sm:text-xs md:text-sm">
+                          {wizardSteps.length + 1}
+                        </span>
+                      </button>
+                      <p
+                        className={`mt-1 w-full text-center text-[9px] font-medium leading-[1.15] sm:text-[10px] md:text-xs line-clamp-3 break-words hyphens-auto ${
+                          wizardPhase === 'confirm'
+                            ? 'text-primary'
+                            : allWorkflowStepsComplete
+                              ? 'text-muted-foreground'
+                              : 'text-muted-foreground/60'
+                        }`}
+                      >
+                        Planning Summary
+                      </p>
+                    </div>
+                  </>
+                ) : null}
               </div>
               <Button
                 type="button"
@@ -807,11 +856,11 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                 </Button>
                 <div className="min-w-[70px] px-1 text-center leading-tight">
                   <div className="text-[10px] font-medium text-foreground sm:text-xs">
-                    {wizardPhase === 'confirm' ? 'Review' : 'Step'}
+                    {wizardPhase === 'confirm' ? 'Planning' : 'Step'}
                   </div>
                   <div className="text-[10px] text-muted-foreground sm:text-xs">
                     {wizardPhase === 'confirm'
-                      ? 'Confirmation'
+                      ? 'Summary'
                       : `${currentStep + 1} of ${wizardSteps.length}`}
                   </div>
                   <Progress value={progress} className="mx-auto mt-1 h-1.5 w-16 sm:h-2 sm:w-20" />
@@ -863,7 +912,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
               setCurrentStep(firstIncomplete >= 0 ? firstIncomplete : 0);
             }}
           >
-            Re-target
+            Edit Plan
           </Button>
           <Button
             type="button"
@@ -916,7 +965,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-[calc(100vw-1rem)] max-w-6xl flex-col gap-0 overflow-hidden border-0 p-0 sm:w-full md:h-[min(100dvh,56rem)] md:max-h-[min(100dvh,56rem)] md:max-w-6xl md:rounded-lg md:border [&>button]:hidden">
         <DialogTitle className="sr-only">Planning Studio</DialogTitle>
-        <DialogDescription className="sr-only">Iterate planning tools, review Definition of Done, then start your project</DialogDescription>
+        <DialogDescription className="sr-only">Iterate planning tools, review your Planning Summary, then start your project</DialogDescription>
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">{shell}</div>
       </DialogContent>
     </Dialog>

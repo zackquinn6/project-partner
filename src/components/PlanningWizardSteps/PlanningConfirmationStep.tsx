@@ -26,7 +26,7 @@ export interface PlanningConfirmationToolStatus {
 
 export interface PlanningConfirmationStepProps {
   selectedTools: PlanningToolId[];
-  /** Per-tool Definition of Done checklist for this review. */
+  /** Per-tool Planning Summary checklist for this review. */
   toolStatuses: PlanningConfirmationToolStatus[];
   phases: Phase[];
   customizationDecisionsRaw: unknown;
@@ -66,10 +66,10 @@ export function PlanningConfirmationStep({
     <div className="space-y-4">
       <Card>
         <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-lg sm:text-xl">Definition of Done</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Planning Summary</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Starting the project locks this plan as your baseline. Reflect on kickoff goals, then start, or re-target
-            any incomplete tools.
+            Starting the project locks this plan as your baseline. Reflect on kickoff goals, then start, or edit the plan
+            for any incomplete tools.
           </p>
         </CardHeader>
         <CardContent className="space-y-6 p-4 pt-0 sm:p-6 sm:pt-0">
@@ -109,7 +109,7 @@ export function PlanningConfirmationStep({
                         {tool.complete ? (
                           <span className="text-green-700 dark:text-green-400">Complete</span>
                         ) : (
-                          <span className="text-amber-800 dark:text-amber-300">Incomplete: re-target to finish</span>
+                          <span className="text-amber-800 dark:text-amber-300">Incomplete: edit plan to finish</span>
                         )}
                       </p>
                     </div>
@@ -130,7 +130,7 @@ export function PlanningConfirmationStep({
           <section>
             <h3 className="mb-2 text-sm font-semibold text-foreground">Reflect</h3>
             <p className="mb-3 text-sm text-muted-foreground">
-              Does this plan still match your kickoff goals? If not, re-target before you start.
+              Does this plan still match your kickoff goals? If not, edit the plan before you start.
             </p>
             {hasKickoffTargets ? (
               <dl className="grid gap-2 text-sm sm:grid-cols-2">
