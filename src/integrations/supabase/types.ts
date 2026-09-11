@@ -4481,6 +4481,24 @@ export type Database = {
         }
         Returns: string
       }
+      detect_suspicious_activity: {
+        Args: never
+        Returns: {
+          risk_score: number
+          suspicious_events: Json
+          user_email: string
+          user_id: string
+        }[]
+      }
+      enhanced_rate_limit_check: {
+        Args: {
+          identifier: string
+          max_attempts?: number
+          operation_type: string
+          window_minutes?: number
+        }
+        Returns: boolean
+      }
       get_help_usage_status: {
         Args: { p_user_id?: string }
         Returns: {
@@ -4589,6 +4607,19 @@ export type Database = {
         | { Args: never; Returns: boolean }
         | { Args: { check_user_id: string }; Returns: boolean }
       is_caller_admin: { Args: never; Returns: boolean }
+      log_comprehensive_security_event: {
+        Args: {
+          p_additional_data?: Json
+          p_description: string
+          p_event_type: string
+          p_ip_address?: string
+          p_severity: string
+          p_user_agent?: string
+          p_user_email?: string
+          p_user_id?: string
+        }
+        Returns: undefined
+      }
       log_failed_login: {
         Args: {
           ip_addr?: string
@@ -4596,37 +4627,6 @@ export type Database = {
           user_email: string
         }
         Returns: undefined
-      }
-      log_comprehensive_security_event: {
-        Args: {
-          p_event_type: string
-          p_severity: string
-          p_description: string
-          p_user_id?: string
-          p_user_email?: string
-          p_ip_address?: string
-          p_user_agent?: string
-          p_additional_data?: Json
-        }
-        Returns: undefined
-      }
-      enhanced_rate_limit_check: {
-        Args: {
-          identifier: string
-          operation_type: string
-          max_attempts?: number
-          window_minutes?: number
-        }
-        Returns: boolean
-      }
-      detect_suspicious_activity: {
-        Args: never
-        Returns: {
-          user_id: string
-          user_email: string
-          risk_score: number
-          suspicious_events: Json
-        }[]
       }
       notifications_notify_project_owners: {
         Args: {
