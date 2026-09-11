@@ -117,8 +117,9 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
         <Button
           id={buttonId}
           variant="outline"
+          size="sm"
           onClick={generatePDF}
-          className="flex shrink-0 items-center gap-2 text-xs h-8 px-3 py-2"
+          className="flex shrink-0 items-center gap-2 text-xs font-semibold h-8 px-3 py-2"
           title="Save to PDF"
         >
           <Download className="h-4 w-4 text-primary" />

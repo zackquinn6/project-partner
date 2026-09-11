@@ -502,6 +502,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   };
   const getProgressBarColor = (progress: number) =>
     progress >= 100 ? 'bg-destructive' : progress >= 91 ? 'bg-amber-500' : 'bg-emerald-600';
+  /** Positive = days overdue, negative = days until due, 0 = due today. */
+  const getDaysRelativeToDue = (task: MaintenanceTask): number => {
+    const dueDate = startOfDay(new Date(task.next_due));
+    const now = startOfDay(new Date());
+    return -differenceInDays(dueDate, now);
+  };
+  const formatDaysRelative = (days: number): string =>
+    days > 0 ? `+${days} days` : `${days} days`;
   const getTaskStatus = (task: MaintenanceTask) => {
     const dueDate = startOfDay(new Date(task.next_due));
     const now = startOfDay(new Date());
@@ -761,10 +769,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 size="sm"
                 onClick={() => setShowMaintenancePhotos(true)}
                 title="View photos from task completions"
-                className="shrink-0 p-0 h-8 w-8 md:h-8 md:w-auto md:px-3 md:py-2"
+                className="shrink-0 p-0 h-8 w-8 md:h-8 md:w-auto md:px-3 md:py-2 text-xs font-semibold"
               >
                 <ImageIcon className="h-4 w-4 text-primary" />
-                <span className="hidden md:inline ml-1.5 text-xs">View Photos</span>
+                <span className="hidden md:inline ml-1.5">View Photos</span>
               </Button>
               {selectedHomeId && tasks.length > 0 && (
                 <MaintenancePdfPrinter
@@ -778,11 +786,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 size="sm"
                 disabled={!selectedHomeId}
                 onClick={() => setShowAlerts(true)}
-                className="shrink-0 p-0 h-8 w-8 md:h-8 md:w-auto md:px-3 md:py-2"
+                className="shrink-0 p-0 h-8 w-8 md:h-8 md:w-auto md:px-3 md:py-2 text-xs font-semibold"
                 title="Setup Alerts"
               >
                 <Bell className="h-4 w-4 text-amber-500" />
-                <span className="hidden md:inline ml-1.5 text-xs md:text-sm">Setup Alerts</span>
+                <span className="hidden md:inline ml-1.5">Setup Alerts</span>
               </Button>
             </div>
             {/* PDF trigger for mobile (hidden; triggered from hamburger menu) */}
@@ -847,7 +855,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             onClick={() => setShowAddTask(true)}
                             disabled={!selectedHomeId}
                             variant="outline"
-                            className="h-8 min-h-8 py-1.5 px-2.5 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-blue-600 md:bg-blue-600 md:text-white md:hover:bg-blue-700 md:hover:border-blue-700 rounded-md flex items-center justify-center gap-1.5"
+                            size="sm"
+                            className="h-8 min-h-8 py-1.5 px-2.5 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs font-semibold border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-blue-600 md:bg-blue-600 md:text-white md:hover:bg-blue-700 md:hover:border-blue-700 rounded-md flex items-center justify-center gap-1.5"
                             title="Add Task"
                           >
                             <Plus className="h-4 w-4 shrink-0 text-blue-600 md:text-primary" strokeWidth={2.5} aria-hidden />
@@ -861,7 +870,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             onClick={() => setShowMaintenancePlanComingSoon(true)}
                             disabled={!selectedHomeId}
                             title="Guided workflow to create your maintenance plan"
-                            className="hidden md:inline-flex h-8 min-h-8 px-3 py-2 shrink-0 text-xs rounded-md gap-1.5"
+                            className="hidden md:inline-flex h-8 min-h-8 px-3 py-2 shrink-0 text-xs font-semibold rounded-md gap-1.5"
                           >
                             <ClipboardList className="h-4 w-4 text-primary shrink-0" />
                             <span>Generate Plan</span>
@@ -872,7 +881,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             onClick={() => setShowMaintenanceCalendar(true)}
                             disabled={!selectedHomeId}
                             title="Plan and level-load maintenance across the year"
-                            className="hidden md:inline-flex h-8 min-h-8 px-3 py-2 shrink-0 text-xs rounded-md gap-1.5"
+                            className="hidden md:inline-flex h-8 min-h-8 px-3 py-2 shrink-0 text-xs font-semibold rounded-md gap-1.5"
                           >
                             <Calendar className="h-4 w-4 text-primary shrink-0" />
                             <span>Calendar</span>
@@ -883,7 +892,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 min-h-8 py-1.5 px-2.5 gap-1 shrink-0 text-xs md:hidden rounded-md border border-input min-w-[8rem]"
+                                className="h-8 min-h-8 py-1.5 px-2.5 gap-1 shrink-0 text-xs font-semibold md:hidden rounded-md border border-input min-w-[8rem]"
                               >
                                 {systemFilter === 'all' ? 'All' : SYSTEM_CONFIG[systemFilter as SystemKey]?.label ?? systemFilter}
                                 <ChevronDown className="h-3.5 w-3.5 shrink-0" />
@@ -911,7 +920,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   key="all"
                                   variant={systemFilter === 'all' ? 'default' : 'outline'}
                                   size="sm"
-                                  className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:ml-8 shrink-0 text-xs p-0 hidden md:flex"
+                                  className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:ml-8 shrink-0 text-xs font-semibold p-0 hidden md:flex"
                                   onClick={() => setSystemFilter('all')}
                                   title="All"
                                 >
@@ -927,7 +936,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                 key={sys}
                                 variant={systemFilter === sys ? 'default' : 'outline'}
                                 size="sm"
-                                className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:gap-1.5 shrink-0 text-xs p-0 hidden md:flex"
+                                className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:gap-1.5 shrink-0 text-xs font-semibold p-0 hidden md:flex"
                                 onClick={() => setSystemFilter(sys)}
                                 title={`${SYSTEM_CONFIG[sys].label}${count > 0 ? ` (${count})` : ''}`}
                               >
@@ -980,6 +989,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             <div className="md:hidden space-y-1.5">
                               {tasksNotCompletedToday.map(task => {
                                 const progress = getTaskProgress(task);
+                                const daysRelative = getDaysRelativeToDue(task);
                                 const summary = task.description ?? 'No description yet.';
                                 return (
                                   <Card
@@ -998,11 +1008,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                         <div className="min-w-0 flex-1">
                                           <h4 className="font-medium text-sm leading-snug">{task.title}</h4>
                                           <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                                            Due {format(new Date(task.next_due), 'MMM dd, yyyy')} · Every {task.frequency_days} days
+                                            Every {task.frequency_days} days
+                                          </p>
+                                          <p className="text-xs text-muted-foreground leading-snug">
+                                            Next due: {format(new Date(task.next_due), 'MM/dd/yyyy')}
                                           </p>
                                           <div className="flex items-center gap-1 mt-0.5 md:mt-2 md:gap-1.5 text-xs text-muted-foreground">
                                             <span className="shrink-0">Progress</span>
-                                            <span className="shrink-0 tabular-nums">{Math.round(progress)}%</span>
+                                            <span className="shrink-0 tabular-nums">{formatDaysRelative(daysRelative)}</span>
                                             <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[52%] md:max-w-none border-0 shadow-none py-0" />
                                             <Button
                                               variant="ghost"
@@ -1061,6 +1074,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   </p>
                                   {tasksCompletedToday.map(task => {
                                     const progress = getTaskProgress(task);
+                                    const daysRelative = getDaysRelativeToDue(task);
                                     const summary = task.description ?? 'No description yet.';
                                     return (
                                       <Card
@@ -1079,11 +1093,14 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                             <div className="min-w-0 flex-1">
                                               <h4 className="font-medium text-sm leading-snug">{task.title}</h4>
                                               <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                                                Due {format(new Date(task.next_due), 'MMM dd, yyyy')} · Every {task.frequency_days} days
+                                                Every {task.frequency_days} days
+                                              </p>
+                                              <p className="text-xs text-muted-foreground leading-snug">
+                                                Next due: {format(new Date(task.next_due), 'MM/dd/yyyy')}
                                               </p>
                                               <div className="flex items-center gap-1 mt-0.5 md:mt-2 md:gap-1.5 text-xs text-muted-foreground">
                                                 <span className="shrink-0">Progress</span>
-                                                <span className="shrink-0 tabular-nums">{Math.round(progress)}%</span>
+                                                <span className="shrink-0 tabular-nums">{formatDaysRelative(daysRelative)}</span>
                                                 <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[52%] md:max-w-none border-0 shadow-none py-0" />
                                                 <Button
                                                   variant="ghost"
@@ -1150,6 +1167,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                 <tbody>
                                   {tasksNotCompletedToday.map(task => {
                                     const progress = getTaskProgress(task);
+                                    const daysRelative = getDaysRelativeToDue(task);
                                     return (
                                       <tr
                                         key={task.id}
@@ -1168,16 +1186,18 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                           <div className="flex items-center gap-2">
                                             <span className="font-medium truncate">{task.title}</span>
                                           </div>
-                                          <div className="mt-1 text-[10px] text-muted-foreground">
-                                            Due {format(new Date(task.next_due), 'MMM dd, yyyy')}
-                                          </div>
                                           <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
                                             <span>Progress</span>
-                                            <span>{Math.round(progress)}%</span>
+                                            <span className="tabular-nums">{formatDaysRelative(daysRelative)}</span>
                                             <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1" />
                                           </div>
                                         </td>
-                                        <td className="px-2 py-2 align-middle">Every {task.frequency_days} days</td>
+                                        <td className="px-2 py-2 align-middle">
+                                          <div>Every {task.frequency_days} days</div>
+                                          <div className="mt-1 text-[10px] text-muted-foreground">
+                                            Next due: {format(new Date(task.next_due), 'MM/dd/yyyy')}
+                                          </div>
+                                        </td>
                                         <td className="px-2 py-2 align-middle">
                                           <div className="flex items-center justify-end gap-2">
                                             <Button
@@ -1221,6 +1241,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                     </tr>
                                     {tasksCompletedToday.map(task => {
                                       const progress = getTaskProgress(task);
+                                      const daysRelative = getDaysRelativeToDue(task);
                                       return (
                                         <tr
                                           key={task.id}
@@ -1239,16 +1260,18 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                             <div className="flex items-center gap-2">
                                               <span className="font-medium truncate">{task.title}</span>
                                             </div>
-                                            <div className="mt-1 text-[10px] text-muted-foreground">
-                                              Due {format(new Date(task.next_due), 'MMM dd, yyyy')}
-                                            </div>
                                             <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
                                               <span>Progress</span>
-                                              <span>{Math.round(progress)}%</span>
+                                              <span className="tabular-nums">{formatDaysRelative(daysRelative)}</span>
                                               <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1" />
                                             </div>
                                           </td>
-                                          <td className="px-2 py-2 align-middle">Every {task.frequency_days} days</td>
+                                          <td className="px-2 py-2 align-middle">
+                                            <div>Every {task.frequency_days} days</div>
+                                            <div className="mt-1 text-[10px] text-muted-foreground">
+                                              Next due: {format(new Date(task.next_due), 'MM/dd/yyyy')}
+                                            </div>
+                                          </td>
                                         <td className="px-2 py-2 align-middle">
                                             <div className="flex items-center justify-end gap-2">
                                               <Button
