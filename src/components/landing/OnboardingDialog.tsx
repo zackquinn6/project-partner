@@ -4,6 +4,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -178,7 +179,6 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
             e.preventDefault();
           }
         }}
-        aria-describedby={step === 1 ? 'name-description' : step === 2 ? 'diy-description' : undefined}
       >
         {/* Step progress */}
         <div className="flex gap-1.5 mb-1" aria-hidden="true">
@@ -200,19 +200,19 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
             {step === 3 && "What is most important to you?"}
           </DialogTitle>
           {step === 1 && (
-            <p id="name-description" className="text-sm text-muted-foreground font-normal">
+            <DialogDescription className="text-sm text-muted-foreground font-normal">
               First name or nickname is fine. We use this to personalize your experience.
-            </p>
+            </DialogDescription>
           )}
           {step === 2 && (
-            <p id="diy-description" className="text-sm text-muted-foreground font-normal">
+            <DialogDescription className="text-sm text-muted-foreground font-normal">
               We'll tailor project suggestions and tips to your level. You can change this later.
-            </p>
+            </DialogDescription>
           )}
           {step === 3 && (
-            <p className="text-sm text-muted-foreground font-normal">
+            <DialogDescription className="text-sm text-muted-foreground font-normal">
               Pick Your Project Strategy
-            </p>
+            </DialogDescription>
           )}
         </DialogHeader>
 

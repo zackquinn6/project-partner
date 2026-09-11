@@ -1198,7 +1198,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                               alt={project.name}
                               loading={isPriority ? 'eager' : 'lazy'}
                               decoding="async"
-                              fetchPriority={isPriority ? 'high' : 'auto'}
                               className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                           ) : (
@@ -1342,7 +1341,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                             alt=""
                             loading={eagerMobile ? 'eager' : 'lazy'}
                             decoding="async"
-                            fetchPriority={eagerMobile ? 'high' : 'auto'}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -1428,7 +1426,6 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                           alt={project.name}
                           loading={eagerDesktop ? 'eager' : 'lazy'}
                           decoding="async"
-                          fetchPriority={eagerDesktop ? 'high' : 'auto'}
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                           style={{ 
                             zIndex: 2,
@@ -1597,6 +1594,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle className="text-xl font-semibold tracking-tight">Coming Soon</DialogTitle>
+                <DialogDescription>
+                  {comingSoonProject.name}
+                  {comingSoonProject.description ? ` — ${comingSoonProject.description}` : ''}
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 pt-2">
                 <div>

@@ -1280,8 +1280,8 @@ export default function DIYSurveyPopup({
       <Dialog open={open} onOpenChange={handleDialogOpenChange}>
         <DialogPortal>
           <DialogOverlay className="z-[100]" />
-          <DialogContent className="w-full h-screen max-w-full max-h-full md:w-[92vw] md:max-w-5xl md:h-[85vh] md:rounded-lg flex flex-col z-[101]" aria-describedby="diy-survey-description">
-            <DialogDescription id="diy-survey-description" className="sr-only">
+          <DialogContent className="w-full h-screen max-w-full max-h-full md:w-[92vw] md:max-w-5xl md:h-[85vh] md:rounded-lg flex flex-col z-[101]">
+            <DialogDescription className="sr-only">
               {mode === 'verify' ? "Update your DIY profile and preferences" : (mode === 'personality' ? 'DIY builder personality quiz' : "Set up your profile for project recommendations")}
             </DialogDescription>
             <DialogHeader className="relative text-center space-y-2 md:space-y-4 flex-shrink-0 px-4 pt-4">
