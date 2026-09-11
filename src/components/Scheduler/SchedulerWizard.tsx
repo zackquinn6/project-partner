@@ -354,16 +354,16 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 variant={scheduleTempo === 'fast_track' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setScheduleTempo('fast_track')}
-                className="h-auto min-w-0 w-full flex flex-col items-stretch justify-start gap-1 overflow-hidden p-2 sm:p-3 text-left"
+                className="h-auto min-h-[5.5rem] min-w-0 w-full flex flex-col items-stretch justify-start gap-1.5 overflow-hidden p-2.5 sm:min-h-[6.25rem] sm:gap-2 sm:p-3.5 text-left"
               >
-                <div className="flex min-w-0 items-center gap-1.5">
-                  <Zap className={`h-3.5 w-3.5 shrink-0 ${scheduleTempo === 'fast_track' ? 'text-white' : ''}`} />
-                  <span className={`min-w-0 truncate text-xs font-medium ${scheduleTempo === 'fast_track' ? 'text-white' : ''}`}>
+                <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+                  <Zap className={`h-4 w-4 shrink-0 sm:h-[1.125rem] sm:w-[1.125rem] ${scheduleTempo === 'fast_track' ? 'text-white' : ''}`} />
+                  <span className={`min-w-0 text-sm font-semibold leading-tight sm:text-base ${scheduleTempo === 'fast_track' ? 'text-white' : ''}`}>
                     Fast-track
                   </span>
                 </div>
                 <span
-                  className={`min-w-0 break-words text-[10px] leading-tight text-pretty ${scheduleTempo === 'fast_track' ? 'text-white/90' : 'text-muted-foreground'}`}
+                  className={`min-w-0 break-words text-xs leading-snug text-pretty sm:text-[13px] sm:leading-snug ${scheduleTempo === 'fast_track' ? 'text-white/90' : 'text-muted-foreground'}`}
                 >
                   Top 10% speed; best for skilled teams.
                 </span>
@@ -372,16 +372,16 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 variant={scheduleTempo === 'steady' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setScheduleTempo('steady')}
-                className="h-auto min-w-0 w-full flex flex-col items-stretch justify-start gap-1 overflow-hidden p-2 sm:p-3 text-left"
+                className="h-auto min-h-[5.5rem] min-w-0 w-full flex flex-col items-stretch justify-start gap-1.5 overflow-hidden p-2.5 sm:min-h-[6.25rem] sm:gap-2 sm:p-3.5 text-left"
               >
-                <div className="flex min-w-0 items-center gap-1.5">
-                  <Clock className={`h-3.5 w-3.5 shrink-0 ${scheduleTempo === 'steady' ? 'text-white' : ''}`} />
-                  <span className={`min-w-0 truncate text-xs font-medium ${scheduleTempo === 'steady' ? 'text-white' : ''}`}>
+                <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+                  <Clock className={`h-4 w-4 shrink-0 sm:h-[1.125rem] sm:w-[1.125rem] ${scheduleTempo === 'steady' ? 'text-white' : ''}`} />
+                  <span className={`min-w-0 text-sm font-semibold leading-tight sm:text-base ${scheduleTempo === 'steady' ? 'text-white' : ''}`}>
                     Steady
                   </span>
                 </div>
                 <span
-                  className={`min-w-0 break-words text-[10px] leading-tight text-pretty ${scheduleTempo === 'steady' ? 'text-white/90' : 'text-muted-foreground'}`}
+                  className={`min-w-0 break-words text-xs leading-snug text-pretty sm:text-[13px] sm:leading-snug ${scheduleTempo === 'steady' ? 'text-white/90' : 'text-muted-foreground'}`}
                 >
                   Standard pace; balanced, not rushed.
                 </span>
@@ -390,20 +390,20 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 variant={scheduleTempo === 'extended' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setScheduleTempo('extended')}
-                className="h-auto min-w-0 w-full flex flex-col items-stretch justify-start gap-1 overflow-hidden p-2 sm:p-3 text-left"
+                className="h-auto min-h-[5.5rem] min-w-0 w-full flex flex-col items-stretch justify-start gap-1.5 overflow-hidden p-2.5 sm:min-h-[6.25rem] sm:gap-2 sm:p-3.5 text-left"
               >
-                <div className="flex min-w-0 items-center gap-1.5">
-                  <Settings className={`h-3.5 w-3.5 shrink-0 ${scheduleTempo === 'extended' ? 'text-white' : ''}`} />
-                  <span className={`min-w-0 truncate text-xs font-medium ${scheduleTempo === 'extended' ? 'text-white' : ''}`}>
+                <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+                  <Settings className={`h-4 w-4 shrink-0 sm:h-[1.125rem] sm:w-[1.125rem] ${scheduleTempo === 'extended' ? 'text-white' : ''}`} />
+                  <span className={`min-w-0 text-sm font-semibold leading-tight sm:text-base ${scheduleTempo === 'extended' ? 'text-white' : ''}`}>
                     Extended
                   </span>
                 </div>
                 <span
-                  className={`min-w-0 break-words text-[10px] leading-tight text-pretty ${scheduleTempo === 'extended' ? 'text-white/90' : 'text-muted-foreground'}`}
+                  className={`min-w-0 break-words text-xs leading-snug text-pretty sm:text-[13px] sm:leading-snug ${scheduleTempo === 'extended' ? 'text-white/90' : 'text-muted-foreground'}`}
                 >
-                  <span className="block">Longest timelines</span>
+                  <span className="block sm:inline">Longest timelines</span>
                   <span className="max-[420px]:hidden">
-                    ; ideal for beginners or low‑urgency projects.
+                    ; ideal for beginners or low-urgency projects.
                   </span>
                 </span>
               </Button>
