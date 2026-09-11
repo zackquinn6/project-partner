@@ -1,5 +1,5 @@
 /**
- * Shared layout for project planning wizard tool steps:
+ * Shared layout for Planning Studio tool steps:
  * equal card height, header/content padding, description text, and primary actions.
  */
 

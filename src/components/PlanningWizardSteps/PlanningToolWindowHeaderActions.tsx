@@ -19,7 +19,7 @@ export interface PlanningToolWindowHeaderActionsProps {
 }
 
 /**
- * Upper-right actions for planning workflow tool windows: Cancel + primary save action.
+ * Upper-right actions for Planning Studio tool windows: Cancel + primary save action.
  */
 export function PlanningToolWindowHeaderActions({
   onCancel,

@@ -86,7 +86,7 @@ interface QualityCheckWindowProps {
   onToggleOutputComplete: (stepId: string, outputId: string) => void;
   onRefresh?: () => void;
   userDisplayName: string;
-  /** When true for an open cycle, the settings accordion starts expanded (e.g. opened from planning wizard). */
+  /** When true for an open cycle, the settings accordion starts expanded (e.g. opened from Planning Studio). */
   expandSettingsAccordionWhenOpen?: boolean;
 }
 

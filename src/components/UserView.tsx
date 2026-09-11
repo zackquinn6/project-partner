@@ -519,7 +519,7 @@ export default function UserView({
       const fromPlanningWizard = event?.detail?.fromPlanningWizard || false;
       const onComplete = event?.detail?.onComplete;
       
-      // Store the onComplete callback if opened from planning wizard
+      // Store the onComplete callback if opened from Planning Studio
       if (fromPlanningWizard && onComplete) {
         registerPlanningWizardToolCloseCallback('customizer', onComplete);
       }
@@ -956,7 +956,7 @@ export default function UserView({
     return [...arr].sort().join(',');
   }, [currentProjectRun?.completedSteps]);
 
-  /** When steps are marked complete in the DB (kickoff, planning wizard, etc.), mirror required outputs as checked in the main workflow UI. */
+  /** When steps are marked complete in the DB (kickoff, Planning Studio, etc.), mirror required outputs as checked in the main workflow UI. */
   useEffect(() => {
     if (!currentProjectRun?.id || allSteps.length === 0) return;
     const completedArr = currentProjectRun.completedSteps;
@@ -2783,7 +2783,7 @@ export default function UserView({
   
   // FOURTH: If project run exists and kickoff is not complete, show kickoff workflow
   // CRITICAL FIX: Don't show kickoff for cancelled projects
-  // CRITICAL: Don't show kickoff if planning wizard is open (prevents kickoff from reappearing)
+  // CRITICAL: Don't show kickoff if Planning Studio is open (prevents kickoff from reappearing)
   if (currentProjectRun && currentProjectRun.status !== 'cancelled' && !isKickoffComplete && viewMode === 'workflow' && !projectPlanningWizardOpen) {
     // Fix missing kickoff steps if user has progressed past them
     const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
@@ -2800,7 +2800,7 @@ export default function UserView({
         }
       });
 
-      // Update project run with all steps complete — do not force planning wizard (fast path)
+      // Update project run with all steps complete — do not force Planning Studio (fast path)
       updateProjectRun({
         ...currentProjectRun,
         completedSteps: updatedSteps,
@@ -2817,7 +2817,7 @@ export default function UserView({
       <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden md:h-auto md:min-h-0 md:flex-none md:overflow-visible">
       <KickoffWorkflow 
         onBeforeFinalKickoffPersistence={() => {
-          // Open planning wizard before kickoff persistence so kickoff never reappears
+          // Open Planning Studio before kickoff persistence so kickoff never reappears
           // while the wizard is still closed (continue-planning path only).
           setProjectPlanningWizardOpen(true);
         }}
@@ -4063,7 +4063,7 @@ export default function UserView({
           onOpenChange={(open) => {
             setProjectCustomizerOpen(open);
             
-            // If customizer was opened from planning wizard and is now closing, mark step as complete
+            // If customizer was opened from Planning Studio and is now closing, mark step as complete
             if (!open) {
               completePlanningWizardToolCloseCallback('customizer');
             }

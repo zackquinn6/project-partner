@@ -74,7 +74,7 @@ export const GoogleCalendarIntegration: React.FC<CalendarIntegrationProps> = ({
         {
           id: '1',
           summary: `${projectRun.name} - Planning Phase`,
-          description: 'Project planning and preparation',
+          description: 'Planning Studio and preparation',
           start: {
             dateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
             timeZone: 'America/New_York'

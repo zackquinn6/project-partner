@@ -12,7 +12,7 @@ const PLANNING_COMPLETION_STEP_LABELS = new Set([
   'finalize project plan',
 ]);
 
-/** Native app action keys used to match workflow steps to planning wizard tools. */
+/** Native app action keys used to match workflow steps to Planning Studio tools. */
 const TOOL_TO_BUTTON_ACTIONS: Record<PlanningToolId, readonly string[]> = {
   scope: ['project-customizer'],
   schedule: ['project-scheduler'],

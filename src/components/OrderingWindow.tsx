@@ -48,7 +48,7 @@ interface OrderingWindowProps {
   };
   onOrderingComplete?: () => void;
   expandSettingsAccordionWhenOpen?: boolean;
-  /** When true (e.g. opened from project planning wizard), all accordion sections start collapsed. */
+  /** When true (e.g. opened from Planning Studio), all accordion sections start collapsed. */
   collapseAllAccordionSectionsOnOpen?: boolean;
 }
 

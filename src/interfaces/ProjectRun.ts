@@ -263,7 +263,7 @@ export interface ProjectRun {
     customPlannedWork: any[];
     customUnplannedWork: any[];
     workflowOrder: string[];
-    /** Kickoff step 4 + planning wizard: which planning tools are active for this run. */
+    /** Kickoff step 4 + Planning Studio: which planning tools are active for this run. */
     selected_planning_tools?: string[];
     /** When true, this run was started from Risk Radar (kickoff UI skipped; risks-only session). */
     risk_focus?: boolean;

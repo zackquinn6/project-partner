@@ -71,7 +71,7 @@ interface KickoffWorkflowProps {
   onExit?: () => void; // Add optional exit handler
   /**
    * Called synchronously immediately before the final DB save that marks all kickoff steps complete.
-   * Use this to open the planning wizard so a render never sees kickoff-complete with the wizard still closed.
+   * Use this to open Planning Studio so a render never sees kickoff-complete with the studio still closed.
    * Only invoked for continue-planning (not skip).
    */
   onBeforeFinalKickoffPersistence?: () => void;
@@ -967,7 +967,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       </>
                     ) : currentStepId === 'kickoff-step-4' ? (
                       <>
-                        <span className="hidden sm:inline">Complete & Start Planning</span>
+                        <span className="hidden sm:inline">Complete & Open Planning Studio</span>
                         <span className="sm:hidden">Complete</span>
                       </>
                     ) : (

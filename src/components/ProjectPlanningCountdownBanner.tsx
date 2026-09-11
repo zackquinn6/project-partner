@@ -14,7 +14,7 @@ export interface ProjectPlanningCountdownBannerProps {
   /** When the project run was first created (`project_runs.created_at`). */
   projectCreatedAt: Date;
   className?: string;
-  /** Kickoff: smaller, centered, no border/fill (planning wizard keeps default card styling). */
+  /** Kickoff: smaller, centered, no border/fill (Planning Studio keeps default card styling). */
   minimal?: boolean;
   /**
    * Optional subline under the title (e.g. "Discover → then Plan") so the timer
@@ -25,7 +25,7 @@ export interface ProjectPlanningCountdownBannerProps {
 
 /**
  * Live countdown from project creation to creation + 30 minutes.
- * Shown during kickoff and project planning workflow.
+ * Shown during kickoff and Planning Studio.
  */
 export function ProjectPlanningCountdownBanner({
   projectCreatedAt,

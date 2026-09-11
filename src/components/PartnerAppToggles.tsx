@@ -63,7 +63,7 @@ export const PartnerAppToggles: React.FC = () => {
       <CardHeader>
         <CardTitle>Partner apps</CardTitle>
         <CardDescription>
-          Turn on or off partner apps and Expert Support. When Support is off, it is removed from project planning and kickoff tool options.
+          Turn on or off partner apps and Expert Support. When Support is off, it is removed from Planning Studio and kickoff tool options.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -107,7 +107,7 @@ export const PartnerAppToggles: React.FC = () => {
           <Label htmlFor="expert-support" className="flex-1">
             <div className="font-medium">Support</div>
             <div className="text-sm text-muted-foreground">
-              When enabled, Expert Support appears in project planning and Workflow Setup
+              When enabled, Expert Support appears in Planning Studio and Workflow Setup
             </div>
           </Label>
           <Switch

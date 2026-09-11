@@ -64,7 +64,7 @@ interface ProjectPlanningWizardProps {
   onOpenBudgeting?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
   /** When provided, opens Risk Management at the host level (avoids nested dialog) */
   onOpenRiskManagement?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
-  /** Opens Quality Control with settings expanded (planning wizard quality tab). */
+  /** Opens Quality Control with settings expanded (Planning Studio quality tab). */
   onOpenQualityControl?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
   /** Opens Tool Access / rentals at host level (e.g. UserView). */
   onOpenToolRentals?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;

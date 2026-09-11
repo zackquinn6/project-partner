@@ -24,9 +24,9 @@ export const PLANNING_TOOLS: {
   id: (typeof PLANNING_TOOL_IDS)[number];
   label: string;
   benefit: string;
-  /** One-line Definition of Done for the planning wizard step. */
+  /** One-line Definition of Done for the Planning Studio step. */
   doneWhen: string;
-  /** Short label for the project planning wizard step strip (icons); defaults to `label`. */
+  /** Short label for the Planning Studio step strip (icons); defaults to `label`. */
   trackerLabel?: string;
 }[] = [
   {
@@ -211,7 +211,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     setSelected(new Set(next));
     // Keep KickoffWorkflow.selectedPlanningTools aligned with what the user sees (defaults
     // included). Otherwise step 4 complete can save selected_planning_tools: [] and the
-    // planning wizard shows "no tools selected".
+    // Planning Studio shows "no tools selected".
     onSelectionChange?.(next);
   }, [
     initialSelected.join(','),

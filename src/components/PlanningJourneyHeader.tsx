@@ -26,7 +26,7 @@ export function PlanningJourneyHeader({
         className
       )}
       role="navigation"
-      aria-label="Planning journey"
+      aria-label="Planning Studio journey"
     >
       <JourneyStagePill
         label="Discover"

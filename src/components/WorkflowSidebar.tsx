@@ -52,7 +52,7 @@ interface WorkflowSidebarProps {
   onToolRentalsClick?: () => void;
   onProjectNameClick?: () => void;
   onProjectVisualizerClick?: () => void;
-  /** When true, project planning dialog is open — workflow tutorial must not auto-open. */
+  /** When true, Planning Studio is open — workflow tutorial must not auto-open. */
   projectPlanningWizardOpen?: boolean;
 }
 export function WorkflowSidebar({
@@ -133,7 +133,7 @@ export function WorkflowSidebar({
   const [showTutorial, setShowTutorial] = useState(false);
   const [showProgressReportingDialog, setShowProgressReportingDialog] = useState(false);
 
-  // Auto-open tutorial when viewing the main workflow (not during project planning wizard).
+  // Auto-open tutorial when viewing the main workflow (not during Planning Studio).
   // Runs once per dependency change; cleanup clears the timer to avoid repeated popups.
   useEffect(() => {
     let cancelled = false;

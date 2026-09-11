@@ -37,7 +37,7 @@ export function generateDemoData(): AnalyticsData {
       { days: 31, projects: 2 }
     ],
     stepTimeData: [
-      { step: 'Project Planning', avgHours: 2.8, completions: 1247 },
+      { step: 'Planning Studio', avgHours: 2.8, completions: 1247 },
       { step: 'Material Acquisition', avgHours: 1.5, completions: 1205 },
       { step: 'Site Preparation', avgHours: 3.2, completions: 1189 },
       { step: 'Primary Construction', avgHours: 12.6, completions: 1156 },

@@ -487,7 +487,7 @@ interface RiskManagementWindowProps {
   /** Display name for Risk Radar dashboard when editing a template from the workflow editor */
   templateProjectDisplayName?: string;
   /**
-   * When true with variant risk-focus + run mode: centered ~90% viewport + blurred backdrop (planning wizard).
+   * When true with variant risk-focus + run mode: centered ~90% viewport + blurred backdrop (Planning Studio).
    * When false (default): full-bleed Risk Radar (e.g. My Workshop / workflow app).
    */
   planningWizardToolPresentation?: boolean;
