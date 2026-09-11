@@ -922,9 +922,6 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           </div>
 
           <section className="space-y-2 sm:space-y-3" aria-label="Project fit recommendation">
-            <h2 className="text-center text-lg font-bold tracking-tight text-foreground sm:text-xl">
-              Recommendation
-            </h2>
             <div className="flex w-full justify-center">
               <div
                 className={`flex w-full max-w-md flex-col items-center gap-2 rounded-lg border-2 px-3 py-3 text-center shadow-sm sm:gap-2.5 sm:rounded-xl sm:px-4 sm:py-4 ${tierVisual.cardClass}`}
