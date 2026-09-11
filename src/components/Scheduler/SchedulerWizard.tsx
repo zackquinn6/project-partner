@@ -84,7 +84,7 @@ interface SchedulerWizardProps {
   openCalendar: (memberId: string) => void;
   onGenerateSchedule: () => void;
   isComputing: boolean;
-  onApplyOptimization?: () => void;
+  onApplyOptimization?: (method: 'single-piece-flow' | 'batch-flow') => void;
   onAssignWork?: () => void;
   onOpenRiskManager?: () => void;
   onOpenSensitivity?: () => void;
@@ -605,14 +605,21 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                     Schedule Optimization Method
                   </Label>
                   <div className="space-y-2">
-                    <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50 cursor-pointer" onClick={() => setScheduleOptimizationMethod('single-piece-flow')}>
+                    <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50">
                       <input
                         type="radio"
                         id="priority-single-piece-flow"
                         name="schedule-optimization-method"
                         value="single-piece-flow"
                         checked={scheduleOptimizationMethod === 'single-piece-flow'}
-                        onChange={(e) => setScheduleOptimizationMethod(e.target.value as 'single-piece-flow' | 'batch-flow')}
+                        onChange={() => {
+                          if (scheduleOptimizationMethod === 'single-piece-flow') return;
+                          if (onApplyOptimization) {
+                            onApplyOptimization('single-piece-flow');
+                          } else {
+                            setScheduleOptimizationMethod('single-piece-flow');
+                          }
+                        }}
                         className="h-4 w-4 mt-0.5"
                       />
                       <Label htmlFor="priority-single-piece-flow" className="text-xs font-normal cursor-pointer flex-1">
@@ -621,14 +628,21 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                         <p className="text-[9px] text-muted-foreground mt-1 font-medium">Delivers first finished room 60–80% faster</p>
                       </Label>
                     </div>
-                    <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50 cursor-pointer" onClick={() => setScheduleOptimizationMethod('batch-flow')}>
+                    <div className="flex items-start space-x-2 p-2 rounded-lg border hover:bg-accent/50">
                       <input
                         type="radio"
                         id="priority-batch-flow"
                         name="schedule-optimization-method"
                         value="batch-flow"
                         checked={scheduleOptimizationMethod === 'batch-flow'}
-                        onChange={(e) => setScheduleOptimizationMethod(e.target.value as 'single-piece-flow' | 'batch-flow')}
+                        onChange={() => {
+                          if (scheduleOptimizationMethod === 'batch-flow') return;
+                          if (onApplyOptimization) {
+                            onApplyOptimization('batch-flow');
+                          } else {
+                            setScheduleOptimizationMethod('batch-flow');
+                          }
+                        }}
                         className="h-4 w-4 mt-0.5"
                       />
                       <Label htmlFor="priority-batch-flow" className="text-xs font-normal cursor-pointer flex-1">
@@ -641,16 +655,6 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                   <p className="text-[9px] text-muted-foreground mt-2 italic">
                     The trade-off is between visible progress early (single-piece) and overall efficiency (batch).
                   </p>
-                  {onApplyOptimization && (
-                    <Button
-                      onClick={onApplyOptimization}
-                      size="sm"
-                      className="w-full mt-3 h-8 text-xs"
-                      variant="outline"
-                    >
-                      Apply schedule optimization method
-                    </Button>
-                  )}
                 </div>
                 
                 {/* Quiet Hours Setting */}

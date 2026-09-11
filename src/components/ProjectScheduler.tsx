@@ -1204,20 +1204,24 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   };
 
   // Apply optimization method (updates workflow navigation without generating schedule)
-  const handleApplyOptimization = async () => {
+  const handleApplyOptimization = async (
+    method: 'single-piece-flow' | 'batch-flow'
+  ) => {
     if (!projectRun) return;
-    
+    if (method === scheduleOptimizationMethod &&
+        projectRun.schedule_optimization_method === method) {
+      return;
+    }
+
+    setScheduleOptimizationMethod(method);
+
     try {
       const updatedProjectRun = {
         ...projectRun,
-        schedule_optimization_method: scheduleOptimizationMethod
+        schedule_optimization_method: method
       } as any;
       
       await updateProjectRun(updatedProjectRun);
-      
-      // CRITICAL: Update local state to reflect the saved value
-      // This ensures the selection persists after applying
-      setScheduleOptimizationMethod(scheduleOptimizationMethod);
 
       // Design intent: schedule optimization method change must rebuild the project plan
       // (schedule events/dependencies) without losing user progress (completed steps).
@@ -1671,7 +1675,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                               name="schedule-optimization-method"
                               value="single-piece-flow"
                               checked={scheduleOptimizationMethod === 'single-piece-flow'}
-                              onChange={(e) => setScheduleOptimizationMethod(e.target.value as 'single-piece-flow' | 'batch-flow')}
+                              onChange={() => {
+                                void handleApplyOptimization('single-piece-flow');
+                              }}
                               className="h-4 w-4 mt-0.5"
                             />
                             <Label htmlFor="priority-single-piece-flow" className="text-sm font-normal cursor-pointer">
@@ -1687,7 +1693,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                               name="schedule-optimization-method"
                               value="batch-flow"
                               checked={scheduleOptimizationMethod === 'batch-flow'}
-                              onChange={(e) => setScheduleOptimizationMethod(e.target.value as 'single-piece-flow' | 'batch-flow')}
+                              onChange={() => {
+                                void handleApplyOptimization('batch-flow');
+                              }}
                               className="h-4 w-4 mt-0.5"
                             />
                             <Label htmlFor="priority-batch-flow" className="text-sm font-normal cursor-pointer">
