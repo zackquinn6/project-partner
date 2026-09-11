@@ -74,13 +74,13 @@ export function LinearProgressGraph({ className }: GraphProps) {
   );
 }
 
-/** S-curve: early work reports lower %; effort ramps toward completion */
+/** S-curve: slow start, steep rise, then flattens near completion */
 export function ExponentialProgressGraph({ className }: GraphProps) {
   return (
     <ChartFrame xLabel="Work done" yLabel="% complete" className={className}>
-      {/* Classic project S-curve: slow start, steep middle, harder finish */}
+      {/* Strong S-curve: flat start → steep mid → asymptote at end */}
       <path
-        d="M 28 72 C 52 72, 55 55, 78 42 C 100 30, 105 12, 128 12"
+        d="M 28 72 C 50 72, 58 70, 68 48 C 78 26, 88 14, 104 12 C 114 11, 120 12, 128 12"
         fill="none"
         stroke={CURVE}
         strokeWidth="2.5"
