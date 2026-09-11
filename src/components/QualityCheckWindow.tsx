@@ -384,7 +384,11 @@ export function QualityCheckWindow({
                           <Info className="h-4 w-4" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent className="max-w-xs text-xs">
+                      <TooltipContent
+                        side="bottom"
+                        sideOffset={8}
+                        className="z-[100] max-w-xs text-xs"
+                      >
                         Upload reference documents for this run, such as manufacturer manuals, permits,
                         inspection records, or design documents.
                       </TooltipContent>
@@ -392,7 +396,7 @@ export function QualityCheckWindow({
                   </TooltipProvider>
                 </div>
                 <DialogDescription className={PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME}>
-                  Track outputs for this project. Settings apply only to this project run.
+                  Quality control is all about proving you did each critical step - perfect for future reference
                 </DialogDescription>
                 {projectRun ? (
                   <div className="flex flex-wrap items-center gap-3 pt-0.5">
@@ -450,7 +454,11 @@ export function QualityCheckWindow({
                           <RefreshCw className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent className="max-w-xs text-xs">
+                      <TooltipContent
+                        side="bottom"
+                        sideOffset={8}
+                        className="z-[100] max-w-xs text-xs"
+                      >
                         Recompute outputs from the current project run.
                       </TooltipContent>
                     </Tooltip>
