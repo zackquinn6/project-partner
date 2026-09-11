@@ -99,9 +99,7 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
         <div className="text-center mb-6">
           <h3 className="mb-2 text-sm font-semibold">Workflow Decision Points</h3>
           <p className="text-sm text-muted-foreground">
-            Make choices about how you want to execute each phase of your project.
-            <strong className="text-primary"> Required decisions</strong> must be made, 
-            <em className="text-muted-foreground"> optional work</em> can be added if needed.
+            Required choices first. Optional work only if you need it.
           </p>
         </div>
 

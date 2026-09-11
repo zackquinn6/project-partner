@@ -709,11 +709,11 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
   const getModeDescription = () => {
     switch (mode) {
-      case 'initial-plan': return 'Define project size and customize for unique rooms and spaces.';
-      case 'final-plan': return 'Review and finalize all project decisions before starting execution.';
-      case 'unplanned-work': return 'Add new work that wasn\'t in the original plan.';
-      case 'replan': return 'Modify your project plan and add or remove work as needed.';
-      default: return 'Define project size and customize for unique rooms and spaces.';
+      case 'initial-plan': return 'Shape the job around your home and rooms.';
+      case 'final-plan': return 'Lock in your choices before you start.';
+      case 'unplanned-work': return "Add work that wasn't in the original plan.";
+      case 'replan': return 'Every project has its own decisions to make';
+      default: return 'Shape the job around your home and rooms.';
     }
   };
 
@@ -784,7 +784,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                   <StepHeading
                     step={1}
                     title="Select / Edit Project Home"
-                    description="Choose the home this project belongs to before customizing spaces and work."
+                    description="Choose the home this project belongs to"
                   />
                 </AccordionTrigger>
                 <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
@@ -847,7 +847,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                   <StepHeading
                     step={2}
                     title="Select / Edit Project Spaces"
-                    description="Define the spaces that are part of this project so the workflow can be customized correctly."
+                    description="Pick which rooms are in play"
                   />
                 </AccordionTrigger>
                 <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
@@ -857,7 +857,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                         <div className="flex-1">
                           <h4 className="font-semibold text-sm mb-1">Project Spaces</h4>
                           <p className="text-xs text-muted-foreground mb-3">
-                            Use this when the project will have unique spaces or rooms.
+                            Open this when rooms need their own setup.
                           </p>
                           <div className="flex flex-wrap items-center gap-2">
                             <Button
@@ -890,7 +890,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                   <StepHeading
                     step={3}
                     title="Make Project Choices for each Space"
-                    description="Review each selected space and choose the workflow options that apply to it."
+                    description="Answer the calls that change how you build"
                   />
                 </AccordionTrigger>
                 <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
@@ -899,8 +899,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                       <CardHeader className={isMobile ? 'pb-3' : ''}>
                         <CardTitle className="text-sm font-semibold">Project choices</CardTitle>
                         <CardDescription className="text-xs">
-                          General options for this project. They work together with phase and alternate
-                          decisions below.
+                          Project-wide choices that pair with the space decisions below.
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-5">
@@ -953,7 +952,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                   <StepHeading
                     step={4}
                     title="Add Custom Work"
-                    description="Append related workflow steps or fully custom work after the main project decisions are set."
+                    description="Add extra work only if you need it"
                   />
                 </AccordionTrigger>
                 <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
@@ -977,7 +976,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                       </CardHeader>
                       <CardContent>
                         <p className="text-sm text-muted-foreground mb-4">
-                          Browse phases from related projects and add them to your workflow.
+                          Pull in related phases when this job needs more than the base plan.
                         </p>
                         <Button
                           onClick={() => setShowPhaseBrowser(true)}
