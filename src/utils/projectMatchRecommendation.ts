@@ -67,9 +67,27 @@ export function physicalCapabilityToEffortSegment(
   return seg === undefined ? null : seg;
 }
 
+const MAX_EFFORT_SEGMENT = EFFORT_ORDER.length - 1;
+
+/**
+ * Top of the DIY survey / profile skill scale (hero) and legacy synonyms.
+ * Max skill can confidently take on any project difficulty, including Professional.
+ */
+export function isMaxUserSkillLevel(raw: string | null | undefined): boolean {
+  const k = (raw || '').toLowerCase().trim();
+  return k === 'hero' || k === 'advanced' || k === 'professional';
+}
+
+/** Top of the physical-capability scale (heavy / high / very high). */
+export function isMaxUserEffortCapability(raw: string | null | undefined): boolean {
+  const seg = physicalCapabilityToEffortSegment(raw);
+  return seg === MAX_EFFORT_SEGMENT;
+}
+
 /**
  * Compare project-required skill vs user's saved skill level.
  * Returns null when either side is missing or not a known label.
+ * Mid-level equality stays neutral (caution); max user skill is always positive.
  */
 export function getSkillMatchAxis(
   projectSkillLevel: string | null | undefined,
@@ -78,6 +96,8 @@ export function getSkillMatchAxis(
   const pi = projectSkillLevelToIndex(projectSkillLevel);
   const ui = userSkillLevelToIndex(userSkillLevel);
   if (pi === null || ui === null) return null;
+  // Max skill → full confidence on technique for any project difficulty.
+  if (isMaxUserSkillLevel(userSkillLevel)) return 'positive';
   if (ui < pi) return 'negative';
   if (ui === pi) return 'neutral';
   return 'positive';
@@ -86,6 +106,7 @@ export function getSkillMatchAxis(
 /**
  * Compare project effort vs user's saved physical capability (proxy for effort capacity).
  * Returns null when either side is missing or not mappable.
+ * Mid-level equality stays neutral (caution); max capability is always positive.
  */
 export function getEffortMatchAxis(
   projectEffortLevel: string | null | undefined,
@@ -97,6 +118,8 @@ export function getEffortMatchAxis(
   if (pi < 0) return null;
   const ui = physicalCapabilityToEffortSegment(userPhysicalCapability);
   if (ui === null) return null;
+  // Max effort capability → full confidence physically for any project effort.
+  if (ui === MAX_EFFORT_SEGMENT) return 'positive';
   if (ui < pi) return 'negative';
   if (ui === pi) return 'neutral';
   return 'positive';
