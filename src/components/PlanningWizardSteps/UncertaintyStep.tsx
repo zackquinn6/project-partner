@@ -47,7 +47,7 @@ export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
         <CardHeader className={PLANNING_WIZARD_STEP_HEADER_CLASSNAME}>
           <CardTitle className={PLANNING_WIZARD_STEP_TITLE_CLASSNAME}>
             <AlertTriangle className="h-5 w-5" aria-hidden />
-            Risk-Less
+            Risk Radar
             {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
         </CardHeader>
@@ -66,13 +66,13 @@ export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
                   className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
                 >
                   <AlertTriangle className="shrink-0" aria-hidden />
-                  Open Risk-Less
+                  Open Risk Radar
                 </Button>
               </div>
             </div>
 
             <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
-              {isCompleted ? '✓ Risk-Less step completed' : '\u00a0'}
+              {isCompleted ? '✓ Risk Radar step completed' : '\u00a0'}
             </p>
           </div>
         </CardContent>

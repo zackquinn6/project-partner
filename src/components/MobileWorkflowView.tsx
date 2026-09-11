@@ -652,7 +652,7 @@ export function MobileWorkflowView({
                     </Button>
                     <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={() => launchActionKey('risk-management')}>
                       <Crosshair className="mr-2 h-4 w-4" />
-                      Risk-Less
+                      Risk Radar
                     </Button>
                     <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={() => launchActionKey('quality-check')}>
                       <ClipboardCheck className="mr-2 h-4 w-4" />

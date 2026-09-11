@@ -2275,7 +2275,7 @@ export default function EditWorkflowView({
                         }}
                       >
                         <Crosshair className="w-4 h-4 mr-2" />
-                        Risk-Less
+                        Risk Radar
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onSelect={(e) => {
@@ -3137,14 +3137,14 @@ export default function EditWorkflowView({
       {/* Tools & Materials Library */}
       <ToolsMaterialsWindow open={toolsMaterialsOpen} onOpenChange={setToolsMaterialsOpen} />
       
-      {/* Risk-Less (template risks for the project being edited) */}
+      {/* Risk Radar (template risks for the project being edited) */}
       {currentProject && (
         <RiskManagementWindow
           open={riskManagementOpen}
           onOpenChange={setRiskManagementOpen}
           projectId={currentProject.id}
           mode="template"
-          workflowEditorRiskLess
+          workflowEditorRiskRadar
           templateProjectDisplayName={currentProject.name}
         />
       )}

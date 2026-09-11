@@ -191,7 +191,7 @@ function mitigationEffortSortRank(level: MitigationEffortLevel | null | undefine
   return 4;
 }
 
-type RiskLessRegisterPrimarySort = 'easiest-mitigation' | 'most-important-risk';
+type RiskRadarRegisterPrimarySort = 'easiest-mitigation' | 'most-important-risk';
 
 function riskFocusSeverityCounts(risks: Risk[]) {
   let high = 0;
@@ -324,7 +324,7 @@ function RiskFocusDashboard({
   );
 }
 
-function RiskLessListSortMenu({
+function RiskRadarListSortMenu({
   riskListSort,
   onSortChange,
   align = 'end',
@@ -371,15 +371,15 @@ function RiskLessListSortMenu({
   );
 }
 
-/** Run-mode Risk-Less (workshop / home): primary register order — easiest mitigation vs most important risk. */
-function RiskLessRegisterPrimarySortMenu({
+/** Run-mode Risk Radar (workshop / home): primary register order — easiest mitigation vs most important risk. */
+function RiskRadarRegisterPrimarySortMenu({
   value,
   onValueChange,
   align = 'end',
   triggerClassName,
 }: {
-  value: RiskLessRegisterPrimarySort;
-  onValueChange: (v: RiskLessRegisterPrimarySort) => void;
+  value: RiskRadarRegisterPrimarySort;
+  onValueChange: (v: RiskRadarRegisterPrimarySort) => void;
   align?: 'end' | 'center' | 'start';
   triggerClassName?: string;
 }) {
@@ -411,7 +411,7 @@ function RiskLessRegisterPrimarySortMenu({
         <DropdownMenuSeparator />
         <DropdownMenuRadioGroup
           value={value}
-          onValueChange={(v) => onValueChange(v as RiskLessRegisterPrimarySort)}
+          onValueChange={(v) => onValueChange(v as RiskRadarRegisterPrimarySort)}
         >
           <DropdownMenuRadioItem value="easiest-mitigation" className="text-sm">
             Easiest mitigation first
@@ -425,7 +425,7 @@ function RiskLessRegisterPrimarySortMenu({
   );
 }
 
-function RiskLessEditVisibilityMenu({
+function RiskRadarEditVisibilityMenu({
   showHiddenToggle,
   isRiskFocusRun,
   showHiddenRisks,
@@ -482,13 +482,13 @@ interface RiskManagementWindowProps {
   mode?: 'template' | 'run'; // 'template' for admin editing templates, 'run' for user editing runs
   readOnly?: boolean; // If true, disable all editing functionality
   variant?: 'default' | 'risk-focus';
-  /** Workflow editor: use Risk-Less chrome, optional advanced register mode, open on the template being edited */
-  workflowEditorRiskLess?: boolean;
-  /** Display name for Risk-Less dashboard when editing a template from the workflow editor */
+  /** Workflow editor: use Risk Radar chrome, optional advanced register mode, open on the template being edited */
+  workflowEditorRiskRadar?: boolean;
+  /** Display name for Risk Radar dashboard when editing a template from the workflow editor */
   templateProjectDisplayName?: string;
   /**
    * When true with variant risk-focus + run mode: centered ~90% viewport + blurred backdrop (planning wizard).
-   * When false (default): full-bleed Risk-Less (e.g. My Workshop / workflow app).
+   * When false (default): full-bleed Risk Radar (e.g. My Workshop / workflow app).
    */
   planningWizardToolPresentation?: boolean;
 }
@@ -501,7 +501,7 @@ export function RiskManagementWindow({
   mode = 'run',
   readOnly = false,
   variant = 'default',
-  workflowEditorRiskLess = false,
+  workflowEditorRiskRadar = false,
   templateProjectDisplayName,
   planningWizardToolPresentation = false,
 }: RiskManagementWindowProps) {
@@ -519,9 +519,9 @@ export function RiskManagementWindow({
   const showRiskFocusProgressRow =
     variant === 'risk-focus' && mode === 'run' && Boolean(projectRunId && riskFocusRunForProgress);
   const riskFocusRun = variant === 'risk-focus' && mode === 'run';
-  const useRiskLessChrome = variant === 'risk-focus' || workflowEditorRiskLess;
-  const workflowTemplateRiskLess = Boolean(workflowEditorRiskLess && mode === 'template' && projectId);
-  const showAdvancedToggle = workflowTemplateRiskLess && !readOnly;
+  const useRiskRadarChrome = variant === 'risk-focus' || workflowEditorRiskRadar;
+  const workflowTemplateRiskRadar = Boolean(workflowEditorRiskRadar && mode === 'template' && projectId);
+  const showAdvancedToggle = workflowTemplateRiskRadar && !readOnly;
   const showAddRiskRow =
     !readOnly && (mode === 'template' || (mode === 'run' && projectRunId));
   const [risks, setRisks] = useState<Risk[]>([]);
@@ -532,24 +532,24 @@ export function RiskManagementWindow({
   const [detailsRisk, setDetailsRisk] = useState<Risk | null>(null);
   const [advancedMode, setAdvancedMode] = useState(false);
   const [showHiddenRisks, setShowHiddenRisks] = useState(false);
-  /** Risk-Less: when true, hide rows originating from Standard Project Foundation. Default off (show all). */
+  /** Risk Radar: when true, hide rows originating from Standard Project Foundation. Default off (show all). */
   const [hideStandardRisks, setHideStandardRisks] = useState(false);
   const [riskListSort, setRiskListSort] = useState<'alpha' | 'severity-desc'>('alpha');
-  const [riskLessRegisterPrimarySort, setRiskLessRegisterPrimarySort] =
-    useState<RiskLessRegisterPrimarySort>('easiest-mitigation');
+  const [riskRadarRegisterPrimarySort, setRiskRadarRegisterPrimarySort] =
+    useState<RiskRadarRegisterPrimarySort>('easiest-mitigation');
   const showRiskFocusHiddenToggle = riskFocusRun && risks.length > 0;
-  const wfTableAdvanced = workflowTemplateRiskLess && advancedMode;
-  const wfTableFriendly = workflowTemplateRiskLess && !advancedMode;
-  /** User workshop / home Risk-Less run (not workflow editor template). */
-  const friendlyRiskLessRegisterUi = riskFocusRun && !workflowEditorRiskLess;
-  /** Risk-Less run without advanced register columns: combine risk + likelihood in one column. */
+  const wfTableAdvanced = workflowTemplateRiskRadar && advancedMode;
+  const wfTableFriendly = workflowTemplateRiskRadar && !advancedMode;
+  /** User workshop / home Risk Radar run (not workflow editor template). */
+  const friendlyRiskRadarRegisterUi = riskFocusRun && !workflowEditorRiskRadar;
+  /** Risk Radar run without advanced register columns: combine risk + likelihood in one column. */
   const riskFocusEasyMode = riskFocusRun && !advancedMode;
 
   const usePlanningToolShell = Boolean(
     planningWizardToolPresentation && variant === 'risk-focus' && mode === 'run'
   );
 
-  /** Keep scroll position in Risk-Less: avoid full fetchRisks() after small mitigation edits. */
+  /** Keep scroll position in Risk Radar: avoid full fetchRisks() after small mitigation edits. */
   const patchRunRiskMitigationActions = useCallback(
     (riskId: string, mitigation_actions: NonNullable<Risk['mitigation_actions']> | null) => {
       setRisks((prev) =>
@@ -595,7 +595,7 @@ export function RiskManagementWindow({
     const sorted = [...list];
     if (variant === 'risk-focus' && mode === 'run') {
       sorted.sort((a, b) => {
-        if (riskLessRegisterPrimarySort === 'easiest-mitigation') {
+        if (riskRadarRegisterPrimarySort === 'easiest-mitigation') {
           const pe =
             mitigationEffortSortRank(a.mitigation_effort_level ?? null) -
             mitigationEffortSortRank(b.mitigation_effort_level ?? null);
@@ -606,7 +606,7 @@ export function RiskManagementWindow({
         }
         return (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' });
       });
-    } else if (workflowTemplateRiskLess) {
+    } else if (workflowTemplateRiskRadar) {
       if (riskListSort === 'alpha') {
         sorted.sort((a, b) => (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' }));
       } else {
@@ -625,8 +625,8 @@ export function RiskManagementWindow({
     showHiddenRisks,
     hideStandardRisks,
     riskListSort,
-    workflowTemplateRiskLess,
-    riskLessRegisterPrimarySort,
+    workflowTemplateRiskRadar,
+    riskRadarRegisterPrimarySort,
   ]);
 
   useEffect(() => {
@@ -1182,12 +1182,12 @@ export function RiskManagementWindow({
                 'flex flex-wrap items-center gap-2'
               )}
             >
-              {useRiskLessChrome ? (
+              {useRiskRadarChrome ? (
                 <Crosshair className="h-5 w-5 shrink-0" />
               ) : (
                 <Shield className="h-5 w-5 shrink-0" />
               )}
-              {useRiskLessChrome ? 'Risk-Less' : 'Risk Management'}
+              {useRiskRadarChrome ? 'Risk Radar' : 'Risk Management'}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1200,7 +1200,7 @@ export function RiskManagementWindow({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" sideOffset={8} className="max-w-sm text-xs">
-                    {workflowTemplateRiskLess
+                    {workflowTemplateRiskRadar
                       ? 'Edit project risks for this template. Foundation risks may be included depending on the project.'
                       : variant === 'risk-focus'
                         ? 'This session is dedicated to risks for your template: foundation and project risks are on the run, and you can add run-specific risks anytime.'
@@ -1209,11 +1209,11 @@ export function RiskManagementWindow({
                 </Tooltip>
               </TooltipProvider>
             </DialogTitle>
-            {useRiskLessChrome ? (
+            {useRiskRadarChrome ? (
               <p
                 className={cn(PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME, 'max-w-3xl')}
               >
-                {workflowTemplateRiskLess
+                {workflowTemplateRiskRadar
                   ? 'Review and edit risks for the project template you are working on'
                   : `Spot what could go wrong, and plan how you'll handle it`}
               </p>
@@ -1245,7 +1245,7 @@ export function RiskManagementWindow({
                 : null
             }
           />
-        ) : workflowTemplateRiskLess ? (
+        ) : workflowTemplateRiskRadar ? (
           <RiskFocusDashboard
             risks={displayRisks}
             projectDisplayName={templateProjectDisplayName?.trim() || null}
@@ -1255,7 +1255,7 @@ export function RiskManagementWindow({
         <div
           className={cn(
             'flex min-h-0 flex-1 flex-col px-2 md:px-4',
-            useRiskLessChrome
+            useRiskRadarChrome
               ? 'gap-2 pb-2 pt-1 md:gap-2 md:pb-3 md:pt-1.5'
               : 'gap-3 py-2 md:py-3'
           )}
@@ -1272,7 +1272,7 @@ export function RiskManagementWindow({
                 showRiskFocusHiddenToggle ||
                 risks.length > 0) ? (
                 <>
-                  {/* Risk-Less mobile: compact stacked controls */}
+                  {/* Risk Radar mobile: compact stacked controls */}
                   <div className="flex w-full shrink-0 flex-col gap-2 md:hidden">
                     {showRiskFocusProgressRow && riskFocusRunForProgress ? (
                       <div className="flex w-full flex-col gap-1">
@@ -1333,14 +1333,14 @@ export function RiskManagementWindow({
                     ) : null}
                     <div className="flex w-full flex-wrap items-center gap-2">
                       {risks.length > 0 && riskFocusRun ? (
-                        <RiskLessRegisterPrimarySortMenu
-                          value={riskLessRegisterPrimarySort}
-                          onValueChange={setRiskLessRegisterPrimarySort}
+                        <RiskRadarRegisterPrimarySortMenu
+                          value={riskRadarRegisterPrimarySort}
+                          onValueChange={setRiskRadarRegisterPrimarySort}
                           align="start"
                           triggerClassName="h-8"
                         />
                       ) : null}
-                      <RiskLessEditVisibilityMenu
+                      <RiskRadarEditVisibilityMenu
                         showHiddenToggle={showRiskFocusHiddenToggle}
                         isRiskFocusRun={riskFocusRun}
                         showHiddenRisks={showHiddenRisks}
@@ -1379,7 +1379,7 @@ export function RiskManagementWindow({
                     </div>
                   </div>
 
-                  {/* Risk-Less desktop toolbar */}
+                  {/* Risk Radar desktop toolbar */}
                   <div className="hidden w-full shrink-0 flex-col gap-2 md:flex sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
                     {showRiskFocusProgressRow && riskFocusRunForProgress ? (
                       <div className="flex min-w-0 max-w-md flex-col gap-1">
@@ -1440,13 +1440,13 @@ export function RiskManagementWindow({
                     ) : null}
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:ml-auto">
                       {risks.length > 0 && riskFocusRun ? (
-                        <RiskLessRegisterPrimarySortMenu
-                          value={riskLessRegisterPrimarySort}
-                          onValueChange={setRiskLessRegisterPrimarySort}
+                        <RiskRadarRegisterPrimarySortMenu
+                          value={riskRadarRegisterPrimarySort}
+                          onValueChange={setRiskRadarRegisterPrimarySort}
                           triggerClassName="h-7"
                         />
                       ) : null}
-                      <RiskLessEditVisibilityMenu
+                      <RiskRadarEditVisibilityMenu
                         showHiddenToggle={showRiskFocusHiddenToggle}
                         isRiskFocusRun={riskFocusRun}
                         showHiddenRisks={showHiddenRisks}
@@ -1488,7 +1488,7 @@ export function RiskManagementWindow({
                 <div
                   className={cn(
                     'flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between',
-                    useRiskLessChrome ? 'gap-1.5 sm:gap-2' : 'gap-2'
+                    useRiskRadarChrome ? 'gap-1.5 sm:gap-2' : 'gap-2'
                   )}
                 >
                   {showRiskFocusProgressRow && riskFocusRunForProgress ? (
@@ -1549,21 +1549,21 @@ export function RiskManagementWindow({
                     </div>
                   ) : null}
                   <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">
-                    {workflowTemplateRiskLess && displayRisks.length > 0 ? (
-                      <RiskLessListSortMenu
+                    {workflowTemplateRiskRadar && displayRisks.length > 0 ? (
+                      <RiskRadarListSortMenu
                         riskListSort={riskListSort}
                         onSortChange={setRiskListSort}
                         triggerClassName="h-7"
                       />
                     ) : null}
                     {riskFocusRun && risks.length > 0 ? (
-                      <RiskLessRegisterPrimarySortMenu
-                        value={riskLessRegisterPrimarySort}
-                        onValueChange={setRiskLessRegisterPrimarySort}
+                      <RiskRadarRegisterPrimarySortMenu
+                        value={riskRadarRegisterPrimarySort}
+                        onValueChange={setRiskRadarRegisterPrimarySort}
                         triggerClassName="h-7"
                       />
                     ) : null}
-                    <RiskLessEditVisibilityMenu
+                    <RiskRadarEditVisibilityMenu
                       showHiddenToggle={showRiskFocusHiddenToggle}
                       isRiskFocusRun={riskFocusRun}
                       showHiddenRisks={showHiddenRisks}
@@ -1719,7 +1719,7 @@ export function RiskManagementWindow({
                                   {!riskFocusEasyMode ? (
                                     <div>
                                       <div className="text-xs text-muted-foreground mb-1">
-                                        {friendlyRiskLessRegisterUi ? 'How likely is it?' : 'Likelihood'}
+                                        {friendlyRiskRadarRegisterUi ? 'How likely is it?' : 'Likelihood'}
                                       </div>
                                       <Badge
                                         className={getRiskLevelColor(
@@ -1760,7 +1760,7 @@ export function RiskManagementWindow({
                                   ) : null}
                                   <div>
                                     <div className="text-xs text-muted-foreground mb-1">
-                                      {friendlyRiskLessRegisterUi
+                                      {friendlyRiskRadarRegisterUi
                                         ? 'If it happens, then what?'
                                         : 'Impact'}
                                     </div>
@@ -1867,7 +1867,7 @@ export function RiskManagementWindow({
                                   onKeyDown={(e) => e.stopPropagation()}
                                 >
                                   <div className="text-xs text-muted-foreground mb-1">
-                                    {friendlyRiskLessRegisterUi
+                                    {friendlyRiskRadarRegisterUi
                                       ? 'What can we do to prevent it?'
                                       : 'Mitigation'}
                                   </div>
@@ -2053,7 +2053,7 @@ export function RiskManagementWindow({
                             <>
                               {!riskFocusEasyMode ? (
                                 <TableHead className="w-[100px] bg-background align-bottom font-semibold text-foreground">
-                                  {friendlyRiskLessRegisterUi ? 'How likely is it?' : 'Likelihood'}
+                                  {friendlyRiskRadarRegisterUi ? 'How likely is it?' : 'Likelihood'}
                                 </TableHead>
                               ) : null}
                               {advancedMode ? (
@@ -2100,7 +2100,7 @@ export function RiskManagementWindow({
                                 : 'min-w-[140px] max-w-[200px]'
                             )}
                           >
-                            {wfTableFriendly || friendlyRiskLessRegisterUi
+                            {wfTableFriendly || friendlyRiskRadarRegisterUi
                               ? 'If it happens, then what?'
                               : 'Impact'}
                           </TableHead>
@@ -2110,7 +2110,7 @@ export function RiskManagementWindow({
                               riskFocusRun ? 'min-w-[16rem] w-[36%]' : 'min-w-[200px]'
                             )}
                           >
-                            {wfTableFriendly || friendlyRiskLessRegisterUi
+                            {wfTableFriendly || friendlyRiskRadarRegisterUi
                               ? 'What can we do to prevent it?'
                               : 'Mitigation'}
                           </TableHead>
@@ -2497,7 +2497,7 @@ export function RiskManagementWindow({
         <DialogContent
           className={cn(
             'flex flex-col overflow-hidden p-0 [&>button]:hidden',
-            useRiskLessChrome
+            useRiskRadarChrome
               ? cn(
                   'gap-0 !inset-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-none !translate-x-0 !translate-y-0 flex-col overflow-hidden rounded-none border-0 p-0 shadow-none sm:max-w-none md:!max-w-none md:rounded-none md:p-0 [&>button]:hidden'
                 )
@@ -2657,11 +2657,11 @@ export function RiskManagementWindow({
               </div>
 
               <div className="space-y-3">
-                {workflowTemplateRiskLess ? (
+                {workflowTemplateRiskRadar ? (
                   <div className="space-y-2">
                     <Label htmlFor="mitigation_effort_level">Mitigation effort level</Label>
                     <p className="text-xs text-muted-foreground">
-                      How much work the mitigation typically takes. Risk-Less uses this for &ldquo;easiest mitigation
+                      How much work the mitigation typically takes. Risk Radar uses this for &ldquo;easiest mitigation
                       first&rdquo; ordering.
                     </p>
                     <Select

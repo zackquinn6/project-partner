@@ -265,7 +265,7 @@ export interface ProjectRun {
     workflowOrder: string[];
     /** Kickoff step 4 + planning wizard: which planning tools are active for this run. */
     selected_planning_tools?: string[];
-    /** When true, this run was started from Risk-Less (kickoff UI skipped; risks-only session). */
+    /** When true, this run was started from Risk Radar (kickoff UI skipped; risks-only session). */
     risk_focus?: boolean;
   };
 

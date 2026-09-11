@@ -12,7 +12,7 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-/** Aligns with landing tiers: Risk-less ($15) vs Projects ($59). Comma-separated Stripe price IDs in env. */
+/** Aligns with landing tiers: Risk Radar UI ($15, wire: risk_less) vs Projects ($59). Comma-separated Stripe price IDs in env. */
 type SubscriptionTier = "none" | "risk_less" | "projects";
 
 function subscriptionTierFromPriceId(priceId: string | undefined): SubscriptionTier {

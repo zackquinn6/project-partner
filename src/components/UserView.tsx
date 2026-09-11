@@ -143,7 +143,7 @@ export default function UserView({
   const { projectCatalogEnabled } = useGlobalPublicSettings();
   const { isMobile } = useResponsive();
   const { isAdmin } = useUserRole();
-  const { canAccessApp, hasProjectsTier, hasRiskLessTier, loading: membershipLoading } = useMembership();
+  const { canAccessApp, hasProjectsTier, hasRiskRadarTier, loading: membershipLoading } = useMembership();
   const { user } = useAuth();
   const qualityControlPdfUserLabel = useMemo(() => {
     if (!user) return '';
@@ -2196,7 +2196,7 @@ export default function UserView({
     // Native apps: require subscription unless app is free (Home maintenance, Task manager, My tools library)
     if (app.actionKey && !canAccessApp(app.actionKey)) {
       if (app.actionKey === 'risk-management' || app.actionKey === 'risk-focus') {
-        setUpgradePromptFeature('Risk-Less');
+        setUpgradePromptFeature('Risk Radar');
       } else if (app.actionKey === 'project-catalog') {
         setUpgradePromptFeature('Projects membership');
       } else {
@@ -2325,9 +2325,9 @@ export default function UserView({
     if (currentProjectRun.status === 'cancelled') return;
     if (currentProjectRun.isManualEntry) return;
     const risk = isRiskFocusRun(currentProjectRun);
-    const denied = (risk && !hasRiskLessTier) || (!risk && !hasProjectsTier);
+    const denied = (risk && !hasRiskRadarTier) || (!risk && !hasProjectsTier);
     if (!denied) return;
-    setUpgradePromptFeature(risk ? 'Risk-Less' : 'Projects membership');
+    setUpgradePromptFeature(risk ? 'Risk Radar' : 'Projects membership');
     setShowUpgradePrompt(true);
     setCurrentProjectRun(null);
     setViewMode('listing');
@@ -2337,7 +2337,7 @@ export default function UserView({
     membershipLoading,
     currentProjectRun,
     hasProjectsTier,
-    hasRiskLessTier,
+    hasRiskRadarTier,
     setCurrentProjectRun,
     navigate,
     onProjectSelected,

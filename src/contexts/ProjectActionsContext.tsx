@@ -211,7 +211,7 @@ async function resolveTemplateRootIdForRisks(projectId: string): Promise<string>
 
 /**
  * Merge Standard Project Foundation `project_risks` + template `project_risks` onto `project_run_risks`.
- * Same rules as Risk-Less / createProjectRun — must run for catalog starts (`addProjectRun`) too.
+ * Same rules as Risk Radar / createProjectRun — must run for catalog starts (`addProjectRun`) too.
  */
 async function syncFoundationAndTemplateRisksToProjectRun(
   projectRunId: string,
@@ -364,7 +364,7 @@ async function applyRiskFocusSessionToRun(runId: string): Promise<void> {
     .single();
 
   if (error) throw error;
-  if (!row) throw new Error('Project run not found for Risk-Less finalize');
+  if (!row) throw new Error('Project run not found for Risk Radar finalize');
 
   const existingSteps = parseCompletedStepsColumn(row.completed_steps);
   const mergedSteps = [...new Set([...existingSteps, ...KICKOFF_UI_STEP_IDS])];
@@ -766,7 +766,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         try {
           await applyRiskFocusSessionToRun(data);
         } catch (riskFocusFinalizeError) {
-          console.error('❌ Risk-Less finalize failed; deleting created run:', riskFocusFinalizeError);
+          console.error('❌ Risk Radar finalize failed; deleting created run:', riskFocusFinalizeError);
           await supabase.from('project_runs').delete().eq('id', data);
           throw riskFocusFinalizeError;
         }
@@ -821,7 +821,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
       if (error) throw error;
 
-      // Same foundation + template risk merge as createProjectRun / Risk-Less (catalog uses addProjectRun only).
+      // Same foundation + template risk merge as createProjectRun / Risk Radar (catalog uses addProjectRun only).
       if (newProjectRunId) {
         try {
           const templateRootIdForRisks = await resolveTemplateRootIdForRisks(projectRunData.projectId);

@@ -29,7 +29,7 @@ type ProjectRiskRow = {
   severity: string | null;
 };
 
-type RiskLessSummary = {
+type RiskRadarSummary = {
   totalMerged: number;
   severityHigh: number;
   severityMedium: number;
@@ -88,7 +88,7 @@ function formatCurrency(n: number): string {
   return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
 }
 
-function summarizeRiskLessRows(merged: ProjectRiskRow[]): RiskLessSummary {
+function summarizeRiskRadarRows(merged: ProjectRiskRow[]): RiskRadarSummary {
   let severityHigh = 0;
   let severityMedium = 0;
   let severityLow = 0;
@@ -162,11 +162,11 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
   const [failureModes, setFailureModes] = useState<PfmeaFailureModeLike[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [riskLessSummary, setRiskLessSummary] = useState<
-    (RiskLessSummary & { generalCount: number; projectSpecificCount: number }) | null
+  const [riskRadarSummary, setRiskRadarSummary] = useState<
+    (RiskRadarSummary & { generalCount: number; projectSpecificCount: number }) | null
   >(null);
-  const [riskLessLoading, setRiskLessLoading] = useState(true);
-  const [riskLessError, setRiskLessError] = useState<string | null>(null);
+  const [riskRadarLoading, setRiskRadarLoading] = useState(true);
+  const [riskRadarError, setRiskRadarError] = useState<string | null>(null);
   const [fitAllInView, setFitAllInView] = useState(false);
   const [fitPack, setFitPack] = useState<{ scale: number; w: number; h: number } | null>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -204,9 +204,9 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
     }
   }, [projectId]);
 
-  const loadRiskLessSummary = useCallback(async () => {
-    setRiskLessLoading(true);
-    setRiskLessError(null);
+  const loadRiskRadarSummary = useCallback(async () => {
+    setRiskRadarLoading(true);
+    setRiskRadarError(null);
     try {
       const riskSelect =
         'schedule_impact_low_days, schedule_impact_high_days, budget_impact_low, budget_impact_high, severity';
@@ -258,18 +258,18 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
       }
 
       const merged = [...foundationRows, ...templateRows];
-      const base = summarizeRiskLessRows(merged);
-      setRiskLessSummary({
+      const base = summarizeRiskRadarRows(merged);
+      setRiskRadarSummary({
         ...base,
         generalCount: foundationRows.length,
         projectSpecificCount: templateRows.length,
       });
     } catch (e) {
       console.error(e);
-      setRiskLessError('Failed to load Risk-Less register');
-      setRiskLessSummary(null);
+      setRiskRadarError('Failed to load Risk Radar register');
+      setRiskRadarSummary(null);
     } finally {
-      setRiskLessLoading(false);
+      setRiskRadarLoading(false);
     }
   }, [projectId]);
 
@@ -278,8 +278,8 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
   }, [loadFailureModes]);
 
   useEffect(() => {
-    void loadRiskLessSummary();
-  }, [loadRiskLessSummary]);
+    void loadRiskRadarSummary();
+  }, [loadRiskRadarSummary]);
 
   const failureModesByStep = useMemo(() => {
     const byStep = new Map<string, PfmeaFailureModeLike[]>();
@@ -607,40 +607,40 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
 
           <div className="rounded border border-border/50 bg-muted/20 px-1.5 py-1">
             <div className="flex items-center justify-between gap-1">
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Risk-Less</div>
-              {riskLessLoading ? <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" aria-label="Loading" /> : null}
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Risk Radar</div>
+              {riskRadarLoading ? <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" aria-label="Loading" /> : null}
             </div>
-            {riskLessError ? (
-              <p className="mt-0.5 text-[11px] text-destructive">{riskLessError}</p>
-            ) : riskLessSummary ? (
+            {riskRadarError ? (
+              <p className="mt-0.5 text-[11px] text-destructive">{riskRadarError}</p>
+            ) : riskRadarSummary ? (
               <div className="mt-0.5 space-y-0.5 text-[10px] leading-tight">
                 <div className="font-mono tabular-nums">
-                  <span className="font-semibold text-foreground">{riskLessSummary.totalMerged}</span>
+                  <span className="font-semibold text-foreground">{riskRadarSummary.totalMerged}</span>
                   <span className="text-muted-foreground"> reg · </span>
                   <span>
-                    G{riskLessSummary.generalCount}+P{riskLessSummary.projectSpecificCount}
+                    G{riskRadarSummary.generalCount}+P{riskRadarSummary.projectSpecificCount}
                   </span>
                 </div>
                 <div className="tabular-nums">
-                  <span className="font-semibold text-red-700 dark:text-red-400">H{riskLessSummary.severityHigh}</span>
+                  <span className="font-semibold text-red-700 dark:text-red-400">H{riskRadarSummary.severityHigh}</span>
                   <span className="text-muted-foreground"> </span>
-                  <span className="font-semibold text-orange-700 dark:text-orange-400">M{riskLessSummary.severityMedium}</span>
+                  <span className="font-semibold text-orange-700 dark:text-orange-400">M{riskRadarSummary.severityMedium}</span>
                   <span className="text-muted-foreground"> </span>
-                  <span className="font-semibold text-emerald-700 dark:text-emerald-600">L{riskLessSummary.severityLow}</span>
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-600">L{riskRadarSummary.severityLow}</span>
                   <span className="text-muted-foreground"> </span>
-                  <span className="font-semibold text-muted-foreground">∅{riskLessSummary.severityUnset}</span>
+                  <span className="font-semibold text-muted-foreground">∅{riskRadarSummary.severityUnset}</span>
                 </div>
                 <div className="font-mono text-[10px] text-muted-foreground">
-                  {riskLessSummary.risksWithSchedule > 0
-                    ? `Δ ${riskLessSummary.scheduleDaysLowSum}–${riskLessSummary.scheduleDaysHighSum}d · ${riskLessSummary.risksWithSchedule} w/sched`
+                  {riskRadarSummary.risksWithSchedule > 0
+                    ? `Δ ${riskRadarSummary.scheduleDaysLowSum}–${riskRadarSummary.scheduleDaysHighSum}d · ${riskRadarSummary.risksWithSchedule} w/sched`
                     : 'Δ —'}
                   <span className="text-muted-foreground/50"> · </span>
-                  {riskLessSummary.risksWithBudget > 0
-                    ? `${formatCurrency(riskLessSummary.budgetLowSum)}–${formatCurrency(riskLessSummary.budgetHighSum)} · ${riskLessSummary.risksWithBudget} w/$`
+                  {riskRadarSummary.risksWithBudget > 0
+                    ? `${formatCurrency(riskRadarSummary.budgetLowSum)}–${formatCurrency(riskRadarSummary.budgetHighSum)} · ${riskRadarSummary.risksWithBudget} w/$`
                     : '$ —'}
                 </div>
               </div>
-            ) : !riskLessLoading ? (
+            ) : !riskRadarLoading ? (
               <p className="mt-0.5 text-[11px] text-muted-foreground">No risk data</p>
             ) : null}
           </div>

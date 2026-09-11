@@ -86,7 +86,7 @@ let indexWorkshopReloadResetApplied = false;
 const Index = () => {
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL RETURNS
   const { user } = useAuth();
-  const { hasProjectsTier, hasRiskLessTier, loading: membershipLoading } = useMembership();
+  const { hasProjectsTier, hasRiskRadarTier, loading: membershipLoading } = useMembership();
   const { projectCatalogEnabled } = useGlobalPublicSettings();
   const { accepted: liabilityAccepted, loading: liabilityLoading, refetch: refetchLiability } = useLiabilityAcceptance();
   const { isAdmin } = useUserRole();
@@ -121,7 +121,7 @@ const Index = () => {
   const [isToolsLibraryGridOpen, setIsToolsLibraryGridOpen] = useState(false);
   const [isHomeTaskListOpen, setIsHomeTaskListOpen] = useState(false);
   const [isRiskFocusLauncherOpen, setIsRiskFocusLauncherOpen] = useState(false);
-  /** Risk-Less: full-screen register only (no workflow); set after Start from launcher. */
+  /** Risk Radar: full-screen register only (no workflow); set after Start from launcher. */
   const [riskFocusRegisterRunId, setRiskFocusRegisterRunId] = useState<string | null>(null);
   const [portfolioRemindersOpen, setPortfolioRemindersOpen] = useState(false);
 
@@ -133,8 +133,8 @@ const Index = () => {
         const run = project as ProjectRun;
         if (!run.isManualEntry) {
           if (isRiskFocusRun(run)) {
-            if (!membershipLoading && !hasRiskLessTier) {
-              setMobileUpgradeFeature('Risk-Less');
+            if (!membershipLoading && !hasRiskRadarTier) {
+              setMobileUpgradeFeature('Risk Radar');
               setMobileUpgradeOpen(true);
               return;
             }
@@ -168,7 +168,7 @@ const Index = () => {
       setCurrentProjectRun,
       setCurrentProject,
       hasProjectsTier,
-      hasRiskLessTier,
+      hasRiskRadarTier,
       membershipLoading,
     ]
   );

@@ -41,7 +41,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
   const { projectRuns, currentProjectRun, setCurrentProjectRun, deleteProjectRun, fetchProjectRuns } = useProject();
   const { trackClick } = useButtonTracker();
   const { projectCatalogEnabled } = useGlobalPublicSettings();
-  const { hasProjectsTier, hasRiskLessTier, loading: membershipLoading } = useMembership();
+  const { hasProjectsTier, hasRiskRadarTier, loading: membershipLoading } = useMembership();
   const navigate = useNavigate();
   const [showProfileManager, setShowProfileManager] = useState(false);
   const [showToolsLibrary, setShowToolsLibrary] = useState(false);
@@ -100,8 +100,8 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
 
     if (!projectRun.isManualEntry) {
       if (isRiskFocusRun(projectRun)) {
-        if (!membershipLoading && !hasRiskLessTier) {
-          setUpgradeFeature('Risk-Less');
+        if (!membershipLoading && !hasRiskRadarTier) {
+          setUpgradeFeature('Risk Radar');
           setShowUpgradePrompt(true);
           return;
         }
@@ -143,7 +143,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
     onProjectSelect,
     navigate,
     hasProjectsTier,
-    hasRiskLessTier,
+    hasRiskRadarTier,
     membershipLoading,
   ]);
 
@@ -267,7 +267,7 @@ export default function ProjectListing({ onProjectSelect }: ProjectListingProps)
                         <div className="flex flex-col gap-1">
                           {isRiskFocusRun(projectRun) && (
                             <Badge variant="outline" className="text-xs w-fit">
-                              Risk-Less
+                              Risk Radar
                             </Badge>
                           )}
                           <div className="flex items-center gap-2">

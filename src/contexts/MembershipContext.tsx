@@ -4,13 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useBetaMode } from '@/hooks/useBetaMode';
 
+/** Wire value from check-subscription / Stripe price map. UI label is Risk Radar. */
 export type SubscriptionTier = 'none' | 'risk_less' | 'projects';
 
 /** Native app keys that require the $59/yr Projects tier (catalog + guided project runs). */
 export const PROJECTS_TIER_APP_ACTION_KEYS = ['project-catalog'] as const;
 
-/** Native app keys that require Risk-less ($15/yr) or Projects tier. */
-export const RISK_LESS_APP_ACTION_KEYS = ['risk-management', 'risk-focus'] as const;
+/** Native app keys that require Risk Radar ($15/yr) or Projects tier. */
+export const RISK_RADAR_APP_ACTION_KEYS = ['risk-management', 'risk-focus'] as const;
 
 interface MembershipContextType {
   isSubscribed: boolean;
@@ -22,19 +23,19 @@ interface MembershipContextType {
   loading: boolean;
   /** Public beta unlock from app_settings.beta_mode. */
   isBetaMode: boolean;
-  /** Stripe/API tier: none, risk_less ($15/yr), or projects ($59/yr). Trial users are treated as projects on the client. */
+  /** Stripe/API tier: none, risk_less ($15/yr Risk Radar), or projects ($59/yr). Trial users are treated as projects on the client. */
   subscriptionTier: SubscriptionTier;
   /** Catalog, start/open catalog-backed project runs, full workflows. */
   hasProjectsTier: boolean;
-  /** Risk-less apps; includes everyone who has Projects tier. */
-  hasRiskLessTier: boolean;
+  /** Risk Radar apps; includes everyone who has Projects tier. */
+  hasRiskRadarTier: boolean;
   checkSubscription: () => Promise<void>;
   createCheckout: () => Promise<void>;
   openCustomerPortal: () => Promise<void>;
   redeemCoupon: (code: string) => Promise<void>;
-  /** Any paid or trial access (legacy); prefer hasProjectsTier / hasRiskLessTier for gating. */
+  /** Any paid or trial access (legacy); prefer hasProjectsTier / hasRiskRadarTier for gating. */
   canAccessPaidFeatures: boolean;
-  /** Per-app gate: catalog = projects tier; risk apps = risk_less+; all other registered apps = free. */
+  /** Per-app gate: catalog = projects tier; risk apps = risk_less+ (Risk Radar); all other registered apps = free. */
   canAccessApp: (actionKey: string) => boolean;
   trialDaysRemaining: number;
 }
@@ -246,7 +247,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
     [isBetaMode, isAdmin, isProjectOwner, inTrial, subscriptionTier]
   );
 
-  const hasRiskLessTier = useMemo(
+  const hasRiskRadarTier = useMemo(
     () => hasProjectsTier || subscriptionTier === 'risk_less',
     [hasProjectsTier, subscriptionTier]
   );
@@ -259,12 +260,12 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
       if ((PROJECTS_TIER_APP_ACTION_KEYS as readonly string[]).includes(actionKey)) {
         return hasProjectsTier;
       }
-      if ((RISK_LESS_APP_ACTION_KEYS as readonly string[]).includes(actionKey)) {
-        return hasRiskLessTier;
+      if ((RISK_RADAR_APP_ACTION_KEYS as readonly string[]).includes(actionKey)) {
+        return hasRiskRadarTier;
       }
       return true;
     },
-    [hasProjectsTier, hasRiskLessTier, user, loading]
+    [hasProjectsTier, hasRiskRadarTier, user, loading]
   );
 
   const trialDaysRemaining = trialEndDate
@@ -284,7 +285,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
         isBetaMode,
         subscriptionTier,
         hasProjectsTier,
-        hasRiskLessTier,
+        hasRiskRadarTier,
         checkSubscription,
         createCheckout,
         openCustomerPortal,

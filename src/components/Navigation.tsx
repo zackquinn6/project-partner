@@ -79,12 +79,12 @@ export default function Navigation({
   const { isAdmin } = useUserRole();
   const { hasProjectOwnerRole } = useProjectOwner();
   const showAdminPanel = isAdmin || hasProjectOwnerRole;
-  const { hasProjectsTier, hasRiskLessTier, loading: membershipLoading, isBetaMode } = useMembership();
+  const { hasProjectsTier, hasRiskRadarTier, loading: membershipLoading, isBetaMode } = useMembership();
   const navigate = useNavigate();
   const location = useLocation();
 
-  /** Risk-Less runs: open full-screen register only — same as Project Dashboard listing (must not set location projectRunId / workflow). */
-  const openRiskLessRegisterForRun = (runId: string) => {
+  /** Risk Radar runs: open full-screen register only — same as Project Dashboard listing (must not set location projectRunId / workflow). */
+  const openRiskRadarRegisterForRun = (runId: string) => {
     const prev = (location.state ?? {}) as Record<string, unknown>;
     const next = { ...prev };
     delete next.projectRunId;
@@ -179,8 +179,8 @@ export default function Navigation({
       if (selectedRun) {
         if (!selectedRun.isManualEntry) {
           if (isRiskFocusRun(selectedRun)) {
-            if (!membershipLoading && !hasRiskLessTier) {
-              setUpgradePromptFeature('Risk-Less');
+            if (!membershipLoading && !hasRiskRadarTier) {
+              setUpgradePromptFeature('Risk Radar');
               setShowUpgradePrompt(true);
               return;
             }
@@ -191,7 +191,7 @@ export default function Navigation({
           }
         }
         if (isRiskFocusRun(selectedRun)) {
-          openRiskLessRegisterForRun(selectedRun.id);
+          openRiskRadarRegisterForRun(selectedRun.id);
           return;
         }
         setCurrentProjectRun(selectedRun);
@@ -292,8 +292,8 @@ export default function Navigation({
 
     if (!projectRun.isManualEntry) {
       if (isRiskFocusRun(projectRun)) {
-        if (!membershipLoading && !hasRiskLessTier) {
-          setUpgradePromptFeature('Risk-Less');
+        if (!membershipLoading && !hasRiskRadarTier) {
+          setUpgradePromptFeature('Risk Radar');
           setShowUpgradePrompt(true);
           return;
         }
@@ -305,7 +305,7 @@ export default function Navigation({
     }
 
     if (isRiskFocusRun(projectRun)) {
-      openRiskLessRegisterForRun(projectRun.id);
+      openRiskRadarRegisterForRun(projectRun.id);
       return;
     }
     

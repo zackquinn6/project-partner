@@ -80,10 +80,10 @@ export const PricingSection: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* $15 / yr — Risk-less */}
+          {/* $15 / yr — Risk Radar */}
           <Card className="flex flex-col border-2 border-amber-500/40 shadow-sm transition-shadow hover:shadow-md">
             <CardHeader className="space-y-1 pb-2 pt-6 text-center">
-              <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Risk-less</p>
+              <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Risk Radar</p>
               <div className="pt-1">
                 <span className="text-4xl font-bold">$15</span>
                 <span className="text-muted-foreground">/yr</span>
@@ -93,7 +93,7 @@ export const PricingSection: React.FC = () => {
               <div className="flex justify-center">
                 <AppIconTile
                   icon={Shield}
-                  label="Risk-less"
+                  label="Risk Radar"
                   tileClassName="bg-gradient-to-br from-amber-500 to-orange-700"
                 />
               </div>
@@ -101,7 +101,7 @@ export const PricingSection: React.FC = () => {
                 Managing risk is the key to a successful project - get the core app for just $15.
               </p>
               <Button variant="outline" className="w-full border-amber-500/50 hover:bg-amber-500/10" onClick={() => navigate('/auth?mode=signup')}>
-                Choose Risk-less
+                Choose Risk Radar
               </Button>
             </CardContent>
           </Card>

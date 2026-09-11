@@ -19,7 +19,7 @@ function RiskFocusStartControls({
   onSessionStarted,
   className,
 }: {
-  /** Called with the new project run id after a Risk-Less run is created (stay on current page; open register in parent). */
+  /** Called with the new project run id after a Risk Radar run is created (stay on current page; open register in parent). */
   onSessionStarted?: (projectRunId: string) => void;
   className?: string;
 }) {
@@ -61,7 +61,7 @@ function RiskFocusStartControls({
       return;
     }
     if (!canAccessApp('risk-focus')) {
-      toast.error('Risk-Less requires a Risk-less or Projects membership (or an active trial).');
+      toast.error('Risk Radar requires a Risk Radar or Projects membership (or an active trial).');
       return;
     }
     const project = projects.find((p) => p.id === selectedId);
@@ -168,7 +168,7 @@ function RiskFocusStartControls({
                   </span>
                 </p>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  This project isn&apos;t available to start yet. You can browse it in the project catalog; Risk-Less
+                  This project isn&apos;t available to start yet. You can browse it in the project catalog; Risk Radar
                   opens only published or beta projects.
                 </p>
               </>
@@ -220,7 +220,7 @@ export function RiskFocusLauncherDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Crosshair className="h-5 w-5" />
-            Risk-Less
+            Risk Radar
           </DialogTitle>
           <p className="text-sm font-normal leading-snug text-muted-foreground">
             {`Spot what could go wrong, and plan how you'll handle it`}

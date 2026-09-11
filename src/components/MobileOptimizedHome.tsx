@@ -179,7 +179,7 @@ export function MobileOptimizedHome() {
     fetchNickname();
   }, [user]);
 
-  // Semantic color system for apps (mobile Start Here: tasks, maintenance, Risk-Less)
+  // Semantic color system for apps (mobile Start Here: tasks, maintenance, Risk Radar)
   const quickActions = [
     {
       id: 'home-task-list',
@@ -198,7 +198,7 @@ export function MobileOptimizedHome() {
     {
       id: 'risk-focus',
       icon: Crosshair,
-      title: 'Risk-Less',
+      title: 'Risk Radar',
       color: 'bg-teal-600',
       action: () => window.dispatchEvent(new CustomEvent('open-risk-focus-launcher'))
     }
@@ -402,7 +402,7 @@ export function MobileOptimizedHome() {
         </div>
 
 
-        {/* Start Here: catalog + Project & Task Manager + Home Maintenance + Risk-Less */}
+        {/* Start Here: catalog + Project & Task Manager + Home Maintenance + Risk Radar */}
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-3 md:hidden">Start Here</h2>
           {projectCatalogEnabled && (

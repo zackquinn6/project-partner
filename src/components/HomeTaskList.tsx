@@ -75,7 +75,7 @@ export function HomeTaskList({
   embedded?: boolean;
 }) {
   const { user } = useAuth();
-  const { hasProjectsTier, hasRiskLessTier, loading: membershipLoading } = useMembership();
+  const { hasProjectsTier, hasRiskRadarTier, loading: membershipLoading } = useMembership();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [tasks, setTasks] = useState<HomeTask[]>([]);
@@ -539,7 +539,7 @@ export function HomeTaskList({
     setShowRapidCosting(true);
   };
 
-  /** Open a linked project run in the workspace; respects Risk-less vs Projects membership (manual entries always allowed). */
+  /** Open a linked project run in the workspace; respects Risk Radar vs Projects membership (manual entries always allowed). */
   const tryOpenLinkedProjectRun = async (projectRunId: string) => {
     if (membershipLoading) return;
 
@@ -567,8 +567,8 @@ export function HomeTaskList({
     }
 
     if (isRiskFocusRun(stub)) {
-      if (!hasRiskLessTier) {
-        setLinkedProjectUpgradeFeature('Risk-Less');
+      if (!hasRiskRadarTier) {
+        setLinkedProjectUpgradeFeature('Risk Radar');
         setLinkedProjectUpgradeOpen(true);
         return;
       }

@@ -50,7 +50,7 @@ export const PLANNING_TOOLS: {
   },
   {
     id: 'risk',
-    label: 'Risk-Less',
+    label: 'Risk Radar',
     benefit: 'Proactively avoid issues',
     doneWhen: 'Key risks are reviewed and addressed',
   },

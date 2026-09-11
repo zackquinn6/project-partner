@@ -577,7 +577,7 @@ export function WorkflowSidebar({
                       ) : null}
                     </div>
 
-                        {/* Partner Tools + Progress first (A–Z); project apps below (A–Z): Budget, Quality Control, Risk-Less, Scheduler, Shopping */}
+                        {/* Partner Tools + Progress first (A–Z); project apps below (A–Z): Budget, Quality Control, Risk Radar, Scheduler, Shopping */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -674,7 +674,7 @@ export function WorkflowSidebar({
                           onClick={() => openAppByActionKey('risk-management')}
                         >
                           <Crosshair className="h-3.5 w-3.5 shrink-0" />
-                          Risk-Less
+                          Risk Radar
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"
