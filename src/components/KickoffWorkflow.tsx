@@ -443,6 +443,67 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       isCompletingStepRef.current = false;
     }
   };
+  const persistSelectedPlanningTools = async (): Promise<PlanningToolId[]> => {
+    if (!currentProjectRun) {
+      return selectedPlanningTools;
+    }
+
+    const existingDecisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
+    const persisted = existingDecisions.selected_planning_tools;
+    const sourceTools: PlanningToolId[] =
+      selectedPlanningTools.length > 0
+        ? selectedPlanningTools
+        : Array.isArray(persisted) && persisted.length > 0
+          ? (persisted as PlanningToolId[])
+          : [...DEFAULT_PLANNING_TOOLS_SELECTION];
+
+    const normalized = filterByPartnerAvailability(
+      sourceTools,
+      partnerAppsEnabled,
+      expertSupportEnabled,
+      toolRentalsEnabled,
+      wasteRemovalEnabled
+    );
+
+    const customization_decisions = {
+      ...existingDecisions,
+      selected_planning_tools: normalized,
+    } as typeof currentProjectRun.customization_decisions;
+
+    // Skip write when nothing changed — still return the effective list for callers.
+    const prev = Array.isArray(persisted) ? [...(persisted as string[])].sort().join(',') : '';
+    const next = [...normalized].sort().join(',');
+    if (prev !== next) {
+      await updateProjectRun({
+        ...currentProjectRun,
+        customization_decisions,
+        updatedAt: new Date(),
+      });
+    }
+
+    setSelectedPlanningTools(normalized);
+    return normalized;
+  };
+
+  const handleReturnToPlanningStudio = async () => {
+    if (!onReturnToPlanningStudio) return;
+    try {
+      await persistSelectedPlanningTools();
+      onReturnToPlanningStudio();
+    } catch (error) {
+      await reportUserFacingError({
+        source: 'kickoff',
+        operation: 'persist_planning_tools_before_studio',
+        userId: user?.id,
+        projectRunId: currentProjectRun?.id,
+        stepId: 'kickoff-step-4',
+        error,
+        userMessage: 'Failed to save Planning Studio tools.',
+        notificationTitle: 'Planning tools save failed',
+      });
+    }
+  };
+
   const getTotalStepsCount = () => {
     if (!currentProjectRun) return kickoffSteps.length;
     return currentProjectRun.phases.reduce((total, phase) => {
@@ -635,7 +696,13 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       <PlanningJourneyHeader
         activeStage="discover"
         className="shrink-0"
-        onPlanClick={onReturnToPlanningStudio}
+        onPlanClick={
+          onReturnToPlanningStudio
+            ? () => {
+                void handleReturnToPlanningStudio();
+              }
+            : undefined
+        }
       />
       {/* Step Navigation (no separate project-name header) */}
       <Card className="shrink-0">
@@ -983,6 +1050,23 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                   </span>
                 </Button>
               </div>
+            </div>
+          ) : currentStepId === 'kickoff-step-4' && onReturnToPlanningStudio ? (
+            <div className="flex min-h-[3rem] flex-col gap-2 sm:min-h-[3.25rem] sm:flex-row sm:items-stretch">
+              <Button
+                type="button"
+                size="lg"
+                className="h-12 min-h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:h-full sm:min-h-[3.25rem] sm:py-3"
+                onClick={() => {
+                  void handleReturnToPlanningStudio();
+                }}
+              >
+                <CheckCircle className="mr-2 h-4 w-4 shrink-0" />
+                <span className="text-left leading-tight sm:line-clamp-2">
+                  <span className="hidden sm:inline">Save tools & Open Planning Studio</span>
+                  <span className="sm:hidden">Save & Open Studio</span>
+                </span>
+              </Button>
             </div>
           ) : (
             <div className="flex min-h-[3rem] items-center justify-center rounded-lg border border-green-200 bg-green-50 p-2 sm:min-h-[3.25rem] sm:p-3">
