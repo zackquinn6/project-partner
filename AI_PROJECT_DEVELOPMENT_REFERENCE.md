@@ -227,6 +227,8 @@ Per step: outputs with `name` (≤50 chars, prefer under 30), `description`, `ty
 
 **Scope:** timeline and budget only—not quality (that is PFMEA, Step 9). Attach to **root** template id (see §F).
 
+**Mitigation completeness:** Every identified risk must include `mitigation_actions` that, taken together, can bring residual severity to **medium or low** (ideally **low**). Do not leave a risk whose full mitigation set still leaves residual **high**. Prefer concrete, checkable actions; set `mitigation_effort_level` honestly so Risk Radar can sort easiest-first.
+
 | Field | Type / enums | Authoring rule |
 | ----- | ------------ | -------------- |
 | `project_id` | uuid | Root template |
@@ -237,7 +239,7 @@ Per step: outputs with `name` (≤50 chars, prefer under 30), `description`, `ty
 | `schedule_impact_low_days`, `schedule_impact_high_days` | number \| null | Calendar-day impact range |
 | `budget_impact_low`, `budget_impact_high` | number \| null | Dollar impact range |
 | `mitigation_strategy` | string \| null | Overall mitigation approach |
-| `mitigation_actions` | Json \| null | `[{ action, benefit?, completed? }]` |
+| `mitigation_actions` | Json \| null | `[{ action, benefit?, completed? }]` — cumulative actions must reduce residual to medium or low (ideally low) |
 | `mitigation_cost` | number \| null | Cost to mitigate |
 | `mitigation_effort_level` | string \| null | `low` / `medium` / `high` |
 | `recommendation` | string \| null | What to do |
@@ -390,6 +392,7 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
-| 2026-09-11 | Step 10 `project_challenges`: clarify purpose as neutral hardest-parts decision tool (1–2 sentences, ≤200 chars; not sales or scare); Non-negotiables: no em-dashes in authored user-facing prose (hyphens OK) | Recreated tile flooring / backsplash challenges; authors need tone+scope+punctuation rules |
+| 2026-09-11 | Step 4: every risk's `mitigation_actions` must cumulatively reduce residual severity to medium or low (ideally low) | Risk Radar check-offs drive "Whats the new status?"; authored mitigations must be able to get there |
+| 2026-09-11 | Step 10 `project_challenges`: clarify purpose as neutral hardest-parts decision tool (1-2 sentences, ≤200 chars; not sales or scare); Non-negotiables: no em-dashes in authored user-facing prose (hyphens OK) | Recreated tile flooring / backsplash challenges; authors need tone+scope+punctuation rules |
 | 2026-09-10 | Expanded field catalogs for catalog header, Steps 1–10, schedule prereqs (§E), related projects (§F); added on-demand Cursor rule `.cursor/rules/ai-project-dev-guide.mdc` | Single guide for template content development + continuous improvement |
 | 2026-09-10 | `materials.category` check allows only `Components` / `Consumables` / `PPE` (not free-form labels like Flooring) | Tile Flooring Installation step 6 bootstrap failed `materials_category_chk` until categories matched the constraint |

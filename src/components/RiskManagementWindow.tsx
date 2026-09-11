@@ -215,6 +215,38 @@ function riskFocusLevelValue(risk: Risk): 'low' | 'medium' | 'high' {
   return 'medium';
 }
 
+/** Inherent starting level before mitigation (uses likelihood when available). */
+function riskBaselineSeverity(risk: Risk): 'low' | 'medium' | 'high' {
+  const l = (risk.likelihood || '').toLowerCase();
+  if (l === 'high' || l === 'medium' || l === 'low') return l;
+  return riskFocusLevelValue(risk);
+}
+
+/**
+ * Residual severity from mitigation check-offs.
+ * Partial progress moves risk down; completing all actions targets low.
+ */
+function severityFromMitigationProgress(
+  baseline: 'low' | 'medium' | 'high',
+  actions: { action?: string | null; completed?: boolean }[]
+): 'low' | 'medium' | 'high' {
+  const actionable = actions.filter((a) => String(a.action ?? '').trim().length > 0);
+  if (actionable.length === 0) return baseline;
+  const completedCount = actionable.filter((a) => a.completed).length;
+  if (completedCount === 0) return baseline;
+  if (completedCount >= actionable.length) return 'low';
+  if (baseline === 'high') return 'medium';
+  if (baseline === 'medium') {
+    return completedCount / actionable.length >= 0.5 ? 'low' : 'medium';
+  }
+  return 'low';
+}
+
+/** User-added run risks (not template / foundation copies). */
+function isUserAddedRisk(risk: Risk): boolean {
+  return !risk.from_standard_foundation && !risk.template_risk_id && !risk.is_template_risk;
+}
+
 function currentRiskLevelBadgeClass(level: 'low' | 'medium' | 'high') {
   switch (level) {
     case 'high':
@@ -262,7 +294,7 @@ function RiskFocusDashboard({
     <div className="shrink-0 border-b bg-muted/30 px-3 py-2 md:px-4">
       <div className="mb-3 rounded-xl border border-slate-700/80 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 px-4 py-3 text-center shadow-sm">
         <div className="text-base font-bold leading-tight text-blue-50 md:text-lg">
-          Do What You Can - Every Step Reduces Risk
+          Go as far as you can - Every step makes the finish line more likely
         </div>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
@@ -274,9 +306,12 @@ function RiskFocusDashboard({
           ) : null}
         </div>
         <div className="flex min-w-0 flex-1 flex-col items-center sm:max-w-[58%]">
-          <div className="mb-2 w-full text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="mb-1 w-full text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Current Risk Summary
           </div>
+          <p className="mb-2 w-full text-center text-[11px] leading-snug text-muted-foreground">
+            Your Goal is 0 Highs and few Lows
+          </p>
           <div className="flex w-full justify-center">
             <Card className="min-w-0 w-full max-w-md overflow-hidden">
               <CardContent className="flex flex-row flex-wrap items-center justify-center gap-y-1 px-1.5 py-1 sm:px-2 sm:py-1">
@@ -552,7 +587,11 @@ export function RiskManagementWindow({
 
   /** Keep scroll position in Risk Radar: avoid full fetchRisks() after small mitigation edits. */
   const patchRunRiskMitigationActions = useCallback(
-    (riskId: string, mitigation_actions: NonNullable<Risk['mitigation_actions']> | null) => {
+    (
+      riskId: string,
+      mitigation_actions: NonNullable<Risk['mitigation_actions']> | null,
+      severity?: 'low' | 'medium' | 'high'
+    ) => {
       setRisks((prev) =>
         prev.map((r) =>
           r.id === riskId
@@ -562,6 +601,7 @@ export function RiskManagementWindow({
                   mitigation_actions && mitigation_actions.length > 0
                     ? mitigation_actions.map((a) => ({ ...a }))
                     : null,
+                ...(severity ? { severity } : {}),
               }
             : r
         )
@@ -1063,13 +1103,26 @@ export function RiskManagementWindow({
     const next = actions.map((a, i) =>
       i === actionIndex ? { ...a, completed: !a.completed } : a
     );
+    const nextSeverity = severityFromMitigationProgress(riskBaselineSeverity(risk), next);
     try {
       const { error } = await supabase
         .from('project_run_risks')
-        .update({ mitigation_actions: next.length > 0 ? next : null })
+        .update({
+          mitigation_actions: next.length > 0 ? next : null,
+          severity: nextSeverity,
+        })
         .eq('id', risk.id);
       if (error) throw error;
-      patchRunRiskMitigationActions(risk.id, next);
+      patchRunRiskMitigationActions(risk.id, next, nextSeverity);
+      setDetailsRisk((prev) =>
+        prev?.id === risk.id
+          ? {
+              ...prev,
+              mitigation_actions: next.length > 0 ? next.map((a) => ({ ...a })) : null,
+              severity: nextSeverity,
+            }
+          : prev
+      );
       window.dispatchEvent(new CustomEvent('risks-updated'));
     } catch (error) {
       console.error('Error updating mitigation action:', error);
@@ -1288,6 +1341,9 @@ export function RiskManagementWindow({
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                           Project progress
                         </span>
+                        <p className="text-[11px] leading-snug text-muted-foreground">
+                          The chance of issues goes down as projects progress
+                        </p>
                         {progressEditable ? (
                           <>
                             <Select
@@ -1395,6 +1451,9 @@ export function RiskManagementWindow({
                         <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                           Project progress
                         </span>
+                        <p className="text-[11px] leading-snug text-muted-foreground">
+                          The chance of issues goes down as projects progress
+                        </p>
                         {progressEditable ? (
                           <>
                             <Select
@@ -1505,6 +1564,9 @@ export function RiskManagementWindow({
                       <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                         Project progress
                       </span>
+                      <p className="text-[11px] leading-snug text-muted-foreground">
+                        The chance of issues goes down as projects progress
+                      </p>
                       {progressEditable ? (
                         <>
                           <Select
@@ -1666,12 +1728,12 @@ export function RiskManagementWindow({
                           <div className={cn('space-y-3', riskFocusRun && 'space-y-2')}>
                             <div className="flex items-start gap-2">
                               <div className="min-w-0 flex-1">
-                                <div className="text-xs text-muted-foreground mb-1">Risk</div>
+                                <div className="text-xs text-muted-foreground mb-1">Potential Issue</div>
                                 <div className="flex flex-wrap items-center gap-2">
                                   <h3 className="font-semibold text-sm leading-snug">{risk.risk}</h3>
-                                  {riskFocusRun && risk.from_standard_foundation ? (
-                                    <Badge variant="outline" className="text-[10px] border-muted-foreground/40">
-                                      Standard
+                                  {riskFocusRun && isUserAddedRisk(risk) ? (
+                                    <Badge variant="secondary" className="text-[10px]">
+                                      User-Added
                                     </Badge>
                                   ) : null}
                                   {riskFocusRun && risk.hidden_from_register ? (
@@ -2051,12 +2113,12 @@ export function RiskManagementWindow({
                               'bg-background align-bottom font-semibold text-foreground',
                               riskFocusRun
                                 ? riskFocusEasyMode
-                                  ? 'min-w-[180px] max-w-[min(28rem,40vw)]'
-                                  : 'min-w-[135px] max-w-[180px]'
+                                  ? 'w-[16%] min-w-[7.5rem] max-w-[11rem]'
+                                  : 'w-[14%] min-w-[7rem] max-w-[10rem]'
                                 : 'min-w-[180px] max-w-[240px]'
                             )}
                           >
-                            Risk
+                            {riskFocusRun ? 'Potential Issue' : 'Risk'}
                           </TableHead>
                           {riskFocusRun ? (
                             <>
@@ -2105,7 +2167,7 @@ export function RiskManagementWindow({
                             className={cn(
                               'bg-background align-bottom font-semibold text-foreground',
                               riskFocusRun
-                                ? 'w-[17.5%] min-w-[8.75rem] max-w-[12.5rem]'
+                                ? 'w-[28%] min-w-[12rem] max-w-[22rem]'
                                 : 'min-w-[140px] max-w-[200px]'
                             )}
                           >
@@ -2165,9 +2227,9 @@ export function RiskManagementWindow({
                               <div className="space-y-1.5">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <span>{risk.risk}</span>
-                                  {riskFocusRun && risk.from_standard_foundation ? (
-                                    <Badge variant="outline" className="text-[10px] border-muted-foreground/40">
-                                      Standard
+                                  {riskFocusRun && isUserAddedRisk(risk) ? (
+                                    <Badge variant="secondary" className="text-[10px]">
+                                      User-Added
                                     </Badge>
                                   ) : null}
                                   {riskFocusRun && risk.hidden_from_register ? (
@@ -2875,9 +2937,9 @@ export function RiskManagementWindow({
                 </h4>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   <p className="text-sm leading-relaxed">{detailsRisk.risk}</p>
-                  {riskFocusRun && detailsRisk.from_standard_foundation ? (
-                    <Badge variant="outline" className="text-[10px] border-muted-foreground/40">
-                      Standard
+                  {riskFocusRun && isUserAddedRisk(detailsRisk) ? (
+                    <Badge variant="secondary" className="text-[10px]">
+                      User-Added
                     </Badge>
                   ) : null}
                 </div>
