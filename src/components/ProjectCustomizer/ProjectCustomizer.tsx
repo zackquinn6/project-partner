@@ -25,6 +25,13 @@ import { Label } from '../ui/label';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import type { GeneralProjectDecision } from '../../interfaces/Project';
 import { filterGeneralDecisionsForPhases, parseGeneralProjectDecisionsFromPrerequisites } from '../../utils/generalProjectDecisions';
+import {
+  applyWorkflowDecisionDetailsToPhases,
+  mergeWorkflowDecisionFieldsByOpId,
+  workflowDecisionFieldsByOpIdFromPhases,
+  workflowDecisionFieldsByOpIdFromPrerequisites,
+  type WorkflowDecisionDetailFields,
+} from '../../utils/workflowDecisionDetails';
 import { PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME } from '../PlanningWizardSteps/planningToolWindowChrome';
 import { PlanningToolContextBanner } from '../PlanningWizardSteps/PlanningToolContextBanner';
 import { formatProjectSizeDetail } from '@/utils/projectRunDisplayName';
@@ -103,6 +110,9 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
   const [itemType, setItemType] = useState<string | null>(null);
   const [templateGeneralDecisions, setTemplateGeneralDecisions] = useState<GeneralProjectDecision[]>([]);
+  const [templateWorkflowDecisionFieldsByOpId, setTemplateWorkflowDecisionFieldsByOpId] = useState<
+    Record<string, WorkflowDecisionDetailFields>
+  >({});
 
   useEffect(() => {
     if (open) {
@@ -115,6 +125,21 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     ? projects.find(p => p.id === currentProjectRun.projectId)
     : null;
   const scalingUnit = templateProject?.scalingUnit || currentProjectRun?.scalingUnit || 'per item';
+
+  const projectRunForDecisions = useMemo(() => {
+    if (!currentProjectRun) return currentProjectRun;
+    const fromRun = workflowDecisionFieldsByOpIdFromPhases(currentProjectRun.phases);
+    const fromTemplateCache = workflowDecisionFieldsByOpIdFromPhases(templateProject?.phases);
+    const fieldsByOpId = mergeWorkflowDecisionFieldsByOpId(
+      templateWorkflowDecisionFieldsByOpId,
+      mergeWorkflowDecisionFieldsByOpId(fromTemplateCache, fromRun)
+    );
+    if (Object.keys(fieldsByOpId).length === 0) return currentProjectRun;
+    return {
+      ...currentProjectRun,
+      phases: applyWorkflowDecisionDetailsToPhases(currentProjectRun.phases || [], fieldsByOpId),
+    };
+  }, [currentProjectRun, templateProject?.phases, templateWorkflowDecisionFieldsByOpId]);
 
   const filteredGeneralProjectDecisions = useMemo(
     () =>
@@ -238,7 +263,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   };
 
   const step3Complete = useMemo(() => {
-    if (!currentProjectRun) return false;
+    if (!projectRunForDecisions) return false;
     return (
       filteredGeneralProjectDecisions.every((decision) =>
         Boolean(customizationState.generalProjectChoices[decision.id])
@@ -246,14 +271,14 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       customizationState.spaces.length > 0 &&
       customizationState.spaces.every((space) =>
         areSpaceRequiredDecisionsComplete(
-          currentProjectRun,
+          projectRunForDecisions,
           space.id,
           customizationState.spaceDecisions
         )
       )
     );
   }, [
-    currentProjectRun,
+    projectRunForDecisions,
     filteredGeneralProjectDecisions,
     customizationState.generalProjectChoices,
     customizationState.spaces,
@@ -291,26 +316,37 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   }, [open, activeStep, step3Complete]);
 
   useEffect(() => {
-    if (!open || !templateProject?.id) {
+    const templateId = templateProject?.id || currentProjectRun?.projectId;
+    if (!open || !templateId) {
       setTemplateGeneralDecisions([]);
+      setTemplateWorkflowDecisionFieldsByOpId({});
       return;
     }
     let cancelled = false;
     void supabase
       .from('projects')
-      .select('scheduling_prerequisites')
-      .eq('id', templateProject.id)
+      .select('scheduling_prerequisites, phases')
+      .eq('id', templateId)
       .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return;
         setTemplateGeneralDecisions(
           parseGeneralProjectDecisionsFromPrerequisites(data?.scheduling_prerequisites)
         );
+        const fromPrereqs = workflowDecisionFieldsByOpIdFromPrerequisites(
+          data?.scheduling_prerequisites
+        );
+        const fromPhases = workflowDecisionFieldsByOpIdFromPhases(
+          Array.isArray(data?.phases) ? (data.phases as unknown as Phase[]) : undefined
+        );
+        setTemplateWorkflowDecisionFieldsByOpId(
+          mergeWorkflowDecisionFieldsByOpId(fromPrereqs, fromPhases)
+        );
       });
     return () => {
       cancelled = true;
     };
-  }, [open, templateProject?.id]);
+  }, [open, templateProject?.id, currentProjectRun?.projectId]);
 
   // Fetch item_type directly from database since it's not in the transformed Project interface
   useEffect(() => {
@@ -1154,7 +1190,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                   ) : null}
                   <SpaceDecisionFlow
                     spaces={customizationState.spaces}
-                    projectRun={currentProjectRun}
+                    projectRun={projectRunForDecisions || currentProjectRun}
                     spaceDecisions={customizationState.spaceDecisions}
                     onSpaceDecision={handleSpaceDecision}
                     onEditSpace={(spaceId) => openSpacesEditor(spaceId)}

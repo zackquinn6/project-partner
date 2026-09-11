@@ -99,3 +99,66 @@ export function workflowDecisionFieldsByOpIdFromConfigBlob(
   }
   return out;
 }
+
+/** Collect decision-detail fields already present on phase operations (e.g. template phases cache). */
+export function workflowDecisionFieldsByOpIdFromPhases(
+  phases: Phase[] | undefined
+): Record<string, WorkflowDecisionDetailFields> {
+  const out: Record<string, WorkflowDecisionDetailFields> = {};
+  if (!phases) return out;
+  for (const phase of phases) {
+    for (const op of phase.operations || []) {
+      const prompt = trimOrUndefined(op.userPrompt);
+      const detailedSummary = trimOrUndefined(op.decisionDetailedSummary);
+      const imageUrl = trimOrUndefined(op.optionImageUrl);
+      const optionDetail = trimOrUndefined(op.optionDetailedDescription);
+      if (
+        prompt === undefined &&
+        detailedSummary === undefined &&
+        imageUrl === undefined &&
+        optionDetail === undefined
+      ) {
+        continue;
+      }
+      out[op.id] = {
+        decisionPrompt: prompt ?? null,
+        decisionDetailedSummary: detailedSummary ?? null,
+        optionImageUrl: imageUrl ?? null,
+        optionDetailedDescription: optionDetail ?? null,
+      };
+    }
+  }
+  return out;
+}
+
+/** Prefer non-empty values from `primary`, fill gaps from `fallback`. */
+export function mergeWorkflowDecisionFieldsByOpId(
+  primary: Record<string, WorkflowDecisionDetailFields>,
+  fallback: Record<string, WorkflowDecisionDetailFields>
+): Record<string, WorkflowDecisionDetailFields> {
+  const out: Record<string, WorkflowDecisionDetailFields> = { ...fallback };
+  for (const [id, fields] of Object.entries(primary)) {
+    const prev = out[id] || {};
+    out[id] = {
+      decisionPrompt: trimOrUndefined(fields.decisionPrompt) ?? prev.decisionPrompt ?? null,
+      decisionDetailedSummary:
+        trimOrUndefined(fields.decisionDetailedSummary) ?? prev.decisionDetailedSummary ?? null,
+      optionImageUrl: trimOrUndefined(fields.optionImageUrl) ?? prev.optionImageUrl ?? null,
+      optionDetailedDescription:
+        trimOrUndefined(fields.optionDetailedDescription) ??
+        prev.optionDetailedDescription ??
+        null,
+    };
+  }
+  return out;
+}
+
+/** Extract decision-detail fields from `projects.scheduling_prerequisites`. */
+export function workflowDecisionFieldsByOpIdFromPrerequisites(
+  schedulingPrerequisites: unknown
+): Record<string, WorkflowDecisionDetailFields> {
+  if (!isRecord(schedulingPrerequisites)) return {};
+  return workflowDecisionFieldsByOpIdFromConfigBlob(
+    schedulingPrerequisites[DECISION_TREE_CONFIG_KEY]
+  );
+}
