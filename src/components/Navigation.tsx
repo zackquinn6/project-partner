@@ -196,6 +196,13 @@ export default function Navigation({
         }
         setCurrentProjectRun(selectedRun);
         onViewChange('user');
+        navigate('/', {
+          state: {
+            view: 'user',
+            projectRunId: selectedRun.id
+          },
+          replace: true
+        });
         onProjectSelected?.();
       }
       return;
@@ -320,21 +327,16 @@ export default function Navigation({
     // CRITICAL: Change view FIRST to ensure UserView is rendered
     onViewChange('user');
     
-    // CRITICAL: Update URL state with projectRunId so UserView can properly load it
-    // This ensures UserView's useEffect that watches projectRunId will trigger
-    // Use a small delay to ensure state updates are processed
-    setTimeout(() => {
-      navigate('/', {
-        state: {
-          view: 'user',
-          projectRunId: projectRun.id
-        },
-        replace: true
-      });
-    }, 0);
-    
-    // Update projectRuns cache to include this project run if it's not already there
-    const existingRun = projectRuns.find(run => run.id === projectRun.id);
+    // Update URL state with projectRunId in the same turn (no setTimeout).
+    // Delaying navigate left a frame where UserView had a run but no projectRunId,
+    // and the old load effect cleared the run → open thrash / max update depth.
+    navigate('/', {
+      state: {
+        view: 'user',
+        projectRunId: projectRun.id
+      },
+      replace: true
+    });
     
     // Call onProjectSelected to clear forceListingMode in Index.tsx
     onProjectSelected?.();

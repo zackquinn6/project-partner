@@ -36,6 +36,10 @@ function customizationDecisionsKey(raw: unknown): string {
   }
 }
 
+function choicesAreEmpty(choices: GeneralProjectChoicesMap): boolean {
+  return Object.keys(choices).length === 0;
+}
+
 export function useWorkflowMicroDecisions(
   projectRunId: string | undefined,
   templateProjectId: string | undefined,
@@ -43,7 +47,8 @@ export function useWorkflowMicroDecisions(
   phases: Phase[] | undefined,
   customizationDecisionsRaw: unknown
 ): WorkflowMicroDecisionsState {
-  const [loading, setLoading] = useState(Boolean(projectRunId && templateProjectId));
+  const hasIds = Boolean(projectRunId && templateProjectId);
+  const [loading, setLoading] = useState(hasIds);
   const [allDecisions, setAllDecisions] = useState<GeneralProjectDecision[]>([]);
   const [choices, setChoices] = useState<GeneralProjectChoicesMap>({});
   const [instructionSectionsByStepId, setInstructionSectionsByStepId] = useState(
@@ -55,15 +60,18 @@ export function useWorkflowMicroDecisions(
 
   useEffect(() => {
     if (!projectRunId || !templateProjectId) {
-      setLoading(false);
-      setAllDecisions([]);
-      setChoices({});
-      setInstructionSectionsByStepId(new Map());
+      // Only reset when something is actually populated — new [] / {} / Map() every
+      // time would schedule a re-render and can amplify parent open/close races into
+      // "Maximum update depth exceeded".
+      setLoading((prev) => (prev ? false : prev));
+      setAllDecisions((prev) => (prev.length === 0 ? prev : []));
+      setChoices((prev) => (choicesAreEmpty(prev) ? prev : {}));
+      setInstructionSectionsByStepId((prev) => (prev.size === 0 ? prev : new Map()));
       return;
     }
 
     let cancelled = false;
-    setLoading(true);
+    setLoading((prev) => (prev ? prev : true));
 
     void (async () => {
       try {
@@ -111,9 +119,9 @@ export function useWorkflowMicroDecisions(
       } catch (e) {
         console.error('useWorkflowMicroDecisions', e);
         if (!cancelled) {
-          setAllDecisions([]);
-          setChoices({});
-          setInstructionSectionsByStepId(new Map());
+          setAllDecisions((prev) => (prev.length === 0 ? prev : []));
+          setChoices((prev) => (choicesAreEmpty(prev) ? prev : {}));
+          setInstructionSectionsByStepId((prev) => (prev.size === 0 ? prev : new Map()));
           setLoading(false);
         }
       }

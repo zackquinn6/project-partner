@@ -1046,18 +1046,20 @@ export default function UserView({
 
   // Load project run if projectRunId is provided
   useEffect(() => {
-    // If projectRunId is cleared/null, ensure we're in listing mode (e.g. after delete on Project Dashboard)
+    // If location has no projectRunId yet, do NOT clear currentProjectRun.
+    // Navigation sets the run in context first, then updates location.state — clearing
+    // here races that order and thrash-opens kickoff (max update depth via micro-decisions).
+    // Dashboard / delete flows clear the run explicitly via setCurrentProjectRun(null).
     if (!projectRunId) {
-      if (currentProjectRun) {
-        setCurrentProjectRun(null);
+      if (!currentProjectRun) {
+        setViewMode((prev) => (prev === 'listing' ? prev : 'listing'));
       }
-      setViewMode('listing');
-      if (!currentProjectRun) return;
+      return;
     }
 
     // CRITICAL: If projectRunId is provided, we MUST load it regardless of current viewMode
     // This ensures new projects from ProjectCatalog open to kickoff even if we're in listing mode
-    if (projectRunId) {
+    {
       const projectRun = safeProjectRuns.find(run => run.id === projectRunId);
 
       // Never treat "not in projectRuns yet" as deleted: refetch resolves before React
@@ -1068,8 +1070,11 @@ export default function UserView({
         if (projectRun.status === 'cancelled' || projectRun.status === 'not-a-fit') {
           return;
         }
-        setCurrentProjectRun(projectRun);
-        setViewMode('workflow');
+        // Avoid rewriting context with a new object identity on every projectRuns refresh
+        if (currentProjectRun?.id !== projectRun.id) {
+          setCurrentProjectRun(projectRun);
+        }
+        setViewMode((prev) => (prev === 'workflow' ? prev : 'workflow'));
       } else {
         // Project run not in array yet - fetch directly from database
         const fetchProjectRun = async () => {
@@ -1203,9 +1208,11 @@ export default function UserView({
             if (transformedRun.status === 'cancelled' || transformedRun.status === 'not-a-fit') {
               return;
             }
-            
-            setCurrentProjectRun(transformedRun);
-            setViewMode('workflow');
+
+            if (currentProjectRunForInstructionRef.current?.id !== transformedRun.id) {
+              setCurrentProjectRun(transformedRun);
+            }
+            setViewMode((prev) => (prev === 'workflow' ? prev : 'workflow'));
           } catch (error) {
             await reportUserFacingError({
               source: 'project_workflow',
@@ -1222,25 +1229,27 @@ export default function UserView({
         fetchProjectRun();
       }
       
-      if (projectRunId && currentProjectRun && currentProjectRun.id === projectRunId) {
+      if (currentProjectRun && currentProjectRun.id === projectRunId) {
         // Project run is already loaded - ensure viewMode is 'workflow'
         // This handles the case where project run was loaded but viewMode wasn't set correctly
-        if (viewMode === 'listing') {
-          setViewMode('workflow');
-          onProjectSelected?.();
-        }
+        setViewMode((prev) => {
+          if (prev === 'listing') {
+            onProjectSelected?.();
+            return 'workflow';
+          }
+          return prev;
+        });
       }
     }
   }, [
     projectRunId,
     projectRuns,
     setCurrentProjectRun,
-    viewMode,
     onProjectSelected,
-    currentProjectRun,
-    isKickoffComplete,
+    currentProjectRun?.id,
     navigate,
     isMobile,
+    user?.id,
   ]);
 
   // SIMPLIFIED VIEW MODE LOGIC - Single effect to prevent race conditions
