@@ -2179,7 +2179,7 @@ export function RiskManagementWindow({
                           <TableHead
                             className={cn(
                               'bg-background align-bottom font-semibold text-foreground',
-                              riskFocusRun ? 'min-w-[16rem] w-[36%]' : 'min-w-[200px]'
+                              riskFocusRun ? 'min-w-[18rem] w-[44%]' : 'min-w-[200px]'
                             )}
                           >
                             {wfTableFriendly || friendlyRiskRadarRegisterUi
@@ -2187,7 +2187,7 @@ export function RiskManagementWindow({
                               : 'Mitigation'}
                           </TableHead>
                           {mode === 'run' && variant === 'risk-focus' ? (
-                            <TableHead className="min-w-[100px] max-w-[140px] bg-background align-bottom font-semibold leading-tight text-foreground">
+                            <TableHead className="w-[5.75rem] max-w-[5.75rem] bg-background align-bottom font-semibold leading-tight text-foreground">
                               Whats the new status?
                             </TableHead>
                           ) : null}
@@ -2345,7 +2345,7 @@ export function RiskManagementWindow({
                             <TableCell
                               className={cn(
                                 'text-sm text-muted-foreground align-top',
-                                riskFocusRun && 'min-w-[14rem]'
+                                riskFocusRun && 'min-w-[16rem]'
                               )}
                               onClick={riskFocusRun ? (e) => e.stopPropagation() : undefined}
                             >
@@ -2422,7 +2422,7 @@ export function RiskManagementWindow({
                             </TableCell>
                             {mode === 'run' && variant === 'risk-focus' && (
                               <TableCell
-                                className="align-top"
+                                className="w-[5.75rem] max-w-[5.75rem] align-top"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {readOnly ? (
@@ -2442,7 +2442,7 @@ export function RiskManagementWindow({
                                   >
                                     <SelectTrigger
                                       className={cn(
-                                        'h-8 text-xs',
+                                        'h-8 w-full text-xs',
                                         riskFocusSeveritySelectTriggerClass(riskFocusLevelValue(risk))
                                       )}
                                     >
