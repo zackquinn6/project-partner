@@ -721,7 +721,7 @@ export function WorkflowSidebar({
                           return (
                             <AccordionItem key={topLevelKey} value={topLevelKey} className="border-none">
                               <AccordionTrigger 
-                                className="py-2 px-0 hover:no-underline text-sm font-semibold text-primary"
+                                className="py-2 px-0 hover:no-underline text-sm font-semibold text-black"
                               >
                                 <span>{topLevelKey}</span>
                               </AccordionTrigger>
@@ -768,10 +768,10 @@ export function WorkflowSidebar({
                                         <AccordionTrigger 
                                           className={`py-2 px-0 hover:no-underline text-xs font-semibold ${
                                             isPhaseCompleted
-                                              ? 'text-green-700 bg-green-50 border-green-200 rounded px-2'
+                                              ? 'text-black bg-green-50 border-green-200 rounded px-2'
                                               : isPhaseInProgress
-                                              ? 'text-yellow-700 bg-yellow-50 border-yellow-200 rounded px-2'
-                                              : 'text-primary'
+                                              ? 'text-black bg-yellow-50 border-yellow-200 rounded px-2'
+                                              : 'text-black'
                                           }`}
                                         >
                                           <span className="inline-flex items-center gap-1">
@@ -822,10 +822,10 @@ export function WorkflowSidebar({
                                                   <AccordionTrigger 
                                                     className={`py-1 px-0 hover:no-underline text-xs font-medium ${
                                                       isOperationCompleted
-                                                        ? 'text-green-700 bg-green-50 border-green-200 rounded px-2'
+                                                        ? 'text-black bg-green-50 border-green-200 rounded px-2'
                                                         : isOperationInProgress
-                                                        ? 'text-yellow-700 bg-yellow-50 border-yellow-200 rounded px-2'
-                                                        : 'text-muted-foreground'
+                                                        ? 'text-black bg-yellow-50 border-yellow-200 rounded px-2'
+                                                        : 'text-black'
                                                     }`}
                                                   >
                                                     <span className="inline-flex items-center gap-1">
@@ -847,12 +847,12 @@ export function WorkflowSidebar({
                                                             key={step.id} 
                                                             className={`p-2 rounded text-xs cursor-pointer transition-fast border ${
                                                               step.id === currentStep?.id 
-                                                                ? 'bg-primary/10 text-primary border-primary/20' 
+                                                                ? 'bg-primary/10 text-black border-primary/20' 
                                                                 : isStepCompleted
-                                                                ? 'bg-green-50 text-green-700 border-green-200' 
+                                                                ? 'bg-green-50 text-black border-green-200' 
                                                                 : isStepInProgress
-                                                                ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                                                                : 'hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
+                                                                ? 'bg-yellow-50 text-black border-yellow-200'
+                                                                : 'text-black hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
                                                             }`} 
                                                             onClick={() => {
                                                               if (stepIndex >= 0 && isKickoffComplete) {
@@ -900,10 +900,10 @@ export function WorkflowSidebar({
                               <AccordionTrigger 
                                 className={`py-2 px-0 hover:no-underline text-sm font-semibold ${
                                   isPhaseCompleted
-                                    ? 'text-green-700 bg-green-50 border-green-200 rounded px-2'
+                                    ? 'text-black bg-green-50 border-green-200 rounded px-2'
                                     : isPhaseInProgress
-                                    ? 'text-yellow-700 bg-yellow-50 border-yellow-200 rounded px-2'
-                                    : 'text-primary'
+                                    ? 'text-black bg-yellow-50 border-yellow-200 rounded px-2'
+                                    : 'text-black'
                                 }`}
                               >
                                 <span className="inline-flex items-center gap-1">
@@ -954,10 +954,10 @@ export function WorkflowSidebar({
                                         <AccordionTrigger 
                                           className={`py-1 px-0 hover:no-underline text-xs font-medium ${
                                             isOperationCompleted
-                                              ? 'text-green-700 bg-green-50 border-green-200 rounded px-2'
+                                              ? 'text-black bg-green-50 border-green-200 rounded px-2'
                                               : isOperationInProgress
-                                              ? 'text-yellow-700 bg-yellow-50 border-yellow-200 rounded px-2'
-                                              : 'text-muted-foreground'
+                                              ? 'text-black bg-yellow-50 border-yellow-200 rounded px-2'
+                                              : 'text-black'
                                           }`}
                                         >
                                           <span className="inline-flex items-center gap-1">
@@ -979,12 +979,12 @@ export function WorkflowSidebar({
                                                   key={step.id} 
                                                   className={`p-2 rounded text-xs cursor-pointer transition-fast border ${
                                                     step.id === currentStep?.id 
-                                                      ? 'bg-primary/10 text-primary border-primary/20' 
+                                                      ? 'bg-primary/10 text-black border-primary/20' 
                                                       : isStepCompleted
-                                                      ? 'bg-green-50 text-green-700 border-green-200' 
+                                                      ? 'bg-green-50 text-black border-green-200' 
                                                       : isStepInProgress
-                                                      ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                                                      : 'hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
+                                                      ? 'bg-yellow-50 text-black border-yellow-200'
+                                                      : 'text-black hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
                                                   }`} 
                                                   onClick={() => {
                                                     if (stepIndex >= 0 && isKickoffComplete) {
