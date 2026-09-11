@@ -3100,8 +3100,8 @@ export default function UserView({
   // Only show "under construction" if there are literally no phases at all
   // Check multiple sources to ensure we catch all cases:
   // 1. activeProject.phases (direct from project/project run)
-  // 2. rawWorkflowPhases (before ordering - most reliable)
-  // 3. workflowPhases (after ordering)
+  // 2. workflowPhases (parsed + ordered snapshot from the project run)
+  // 3. template project phases (fallback while snapshot is still hydrating)
   // Count phases for debugging
   let activeProjectPhasesCount = 0;
   if (activeProject?.phases) {
@@ -3128,8 +3128,7 @@ export default function UserView({
   
   // UserView ONLY displays project runs (immutable snapshots)
   // Check if the project run has phases in its snapshot
-  const hasPhases = activeProjectPhasesCount > 0 || 
-                   rawWorkflowPhases.length > 0 || 
+  const hasPhases = activeProjectPhasesCount > 0 ||
                    workflowPhases.length > 0 ||
                    templatePhasesCount > 0;
   
@@ -3147,7 +3146,7 @@ export default function UserView({
   
   // Also check if we're waiting for phases to be processed
   // Only consider it processing if we have phases data but they haven't been parsed yet
-  const isProcessingPhases = currentProjectRun && hasPhasesData && rawWorkflowPhases.length === 0 && workflowPhases.length === 0;
+  const isProcessingPhases = Boolean(currentProjectRun && hasPhasesData && workflowPhases.length === 0);
   
   // If there are no phases in the project run snapshot, show "under construction"
   // BUT: Don't show it if we're still loading the project run or processing phases
