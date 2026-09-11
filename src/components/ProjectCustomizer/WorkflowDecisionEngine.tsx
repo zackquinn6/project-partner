@@ -106,12 +106,7 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
         {phasesWithDecisions?.map(({ phase, alternateGroups, ifNecessaryOps }) => (
           <Card key={phase.id} className="w-full">
             <CardHeader className={isMobile ? 'pb-3' : ''}>
-              <CardTitle className="flex flex-col gap-2 text-sm font-semibold sm:flex-row sm:items-center">
-                <span className="flex-1">{phase.name}</span>
-                <Badge variant="outline" className="self-start text-xs sm:self-center">
-                  {phase.operations?.length || 0} operations
-                </Badge>
-              </CardTitle>
+              <CardTitle className="text-sm font-semibold">{phase.name}</CardTitle>
               {phase.description && <p className="text-sm text-muted-foreground">{phase.description}</p>}
             </CardHeader>
             <CardContent className="space-y-6">
