@@ -28,8 +28,9 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Plus, Copy, Trash2, Edit, Check, X, FileOutput, Wrench, Package, 
   Clipboard, ClipboardCheck, Save, ChevronDown, ChevronRight, Link, 
-  ExternalLink, ArrowLeft, ArrowRight, GitBranch, MoreVertical, Loader2, ChevronUp 
+  ExternalLink, ArrowLeft, ArrowRight, GitBranch, MoreVertical, Loader2, ChevronUp, Eye, EyeOff 
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { FlowTypeSelector, getFlowTypeBadge } from './FlowTypeSelector';
 import { StepTypeSelector, getStepTypeIcon } from './StepTypeSelector';
 import { Label } from '@/components/ui/label';
@@ -933,7 +934,23 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
         return phaseResult;
       }));
       
-      return phases;
+      const { data: hiddenRows, error: hiddenError } = await supabase
+        .from('project_hidden_operations')
+        .select('source_operation_id')
+        .eq('project_id', projectId);
+
+      if (hiddenError) {
+        throw new Error(`Failed to load hidden operations: ${hiddenError.message}`);
+      }
+
+      const hiddenSet = new Set((hiddenRows ?? []).map((r) => r.source_operation_id));
+      return phases.map((phase) => ({
+        ...phase,
+        operations: phase.operations.map((op) => ({
+          ...op,
+          isHiddenOnThisProject: hiddenSet.has(op.id),
+        })),
+      }));
     }
   }, [isEditingStandardProject]);
   
@@ -1570,6 +1587,41 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
       }
       return newSet;
     });
+  };
+
+  const handleToggleOperationHidden = async (
+    operationId: string,
+    currentlyHidden: boolean
+  ) => {
+    if (!currentProject?.id) {
+      toast.error('No project selected');
+      return;
+    }
+    try {
+      const { error } = await supabase.rpc('set_project_operation_hidden', {
+        p_project_id: currentProject.id,
+        p_source_operation_id: operationId,
+        p_hidden: !currentlyHidden,
+      });
+      if (error) {
+        throw error;
+      }
+      setPhases((prev) =>
+        prev.map((phase) => ({
+          ...phase,
+          operations: phase.operations.map((op) =>
+            op.id === operationId
+              ? { ...op, isHiddenOnThisProject: !currentlyHidden }
+              : op
+          ),
+        }))
+      );
+      toast.success(
+        currentlyHidden ? 'Operation shown on this project' : 'Operation hidden on this project'
+      );
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update operation visibility');
+    }
   };
   
   /**
@@ -3770,7 +3822,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                               {phaseIsLinked && !phaseIsStandard && (
                                 <Badge variant="outline" className="text-xs flex items-center gap-1">
                                   <Link className="w-3 h-3" />
-                                  <span>Linked from: {phase.sourceProjectName}</span>
+                                  <span>From: {phase.sourceProjectName || 'linked project'}</span>
                                 </Badge>
                               )}
                             </CardTitle>
@@ -3981,7 +4033,10 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                               const isReadOnly = (!isEditingStandardProject && phaseIsStandard) || phaseIsLinked;
                               
                               return (
-                                <Card key={operation.id} className="ml-4">
+                                <Card
+                                  key={operation.id}
+                                  className={`ml-4 ${operation.isHiddenOnThisProject ? 'opacity-60 border-dashed' : ''}`}
+                                >
                                   <CardHeader className="py-2 px-4">
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -4018,13 +4073,16 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                           </div>
                                         ) : (
                                           <div className="flex-1">
-                                            <p className="text-sm font-medium flex items-center gap-2">
+                                            <p className="text-sm font-medium flex items-center gap-2 flex-wrap">
                                               {operation.name}
                                               {operationIsStandard && !isEditingStandardProject && !phaseIsLinked && (
                                                 <Badge variant="secondary" className="text-xs">Standard 🔒</Badge>
                                               )}
                                               {phaseIsLinked && (
                                                 <Badge variant="secondary" className="text-xs">Read-only</Badge>
+                                              )}
+                                              {phaseIsLinked && operation.isHiddenOnThisProject && (
+                                                <Badge variant="outline" className="text-xs">Hidden</Badge>
                                               )}
                                             </p>
                                             {operation.description && (
@@ -4035,6 +4093,24 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                                       </div>
                                       
                                       <div className="flex items-center gap-2 flex-shrink-0">
+                                        {phaseIsLinked && (
+                                          <div className="flex items-center gap-2 mr-1" title="Show or hide this inherited operation on this project">
+                                            {operation.isHiddenOnThisProject ? (
+                                              <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />
+                                            ) : (
+                                              <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                                            )}
+                                            <Switch
+                                              checked={!operation.isHiddenOnThisProject}
+                                              onCheckedChange={() =>
+                                                void handleToggleOperationHidden(
+                                                  operation.id,
+                                                  Boolean(operation.isHiddenOnThisProject)
+                                                )
+                                              }
+                                            />
+                                          </div>
+                                        )}
                                         <Badge variant="outline" className="text-xs">
                                           {operation.steps.length} steps
                                         </Badge>

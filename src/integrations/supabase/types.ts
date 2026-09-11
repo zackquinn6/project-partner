@@ -3225,11 +3225,13 @@ export type Database = {
           images: string[] | null
           instructions_data_sources: string | null
           is_current_version: boolean | null
+          is_foundational: boolean
           is_popular: boolean
           is_standard: boolean | null
           item_type: string | null
           name: string
           parent_project_id: string | null
+          foundation_project_id: string | null
           phases: Json | null
           project_challenges: string | null
           project_type: string | null
@@ -3262,11 +3264,13 @@ export type Database = {
           images?: string[] | null
           instructions_data_sources?: string | null
           is_current_version?: boolean | null
+          is_foundational?: boolean
           is_popular?: boolean
           is_standard?: boolean | null
           item_type?: string | null
           name: string
           parent_project_id?: string | null
+          foundation_project_id?: string | null
           phases?: Json | null
           project_challenges?: string | null
           project_type?: string | null
@@ -3299,11 +3303,13 @@ export type Database = {
           images?: string[] | null
           instructions_data_sources?: string | null
           is_current_version?: boolean | null
+          is_foundational?: boolean
           is_popular?: boolean
           is_standard?: boolean | null
           item_type?: string | null
           name?: string
           parent_project_id?: string | null
+          foundation_project_id?: string | null
           phases?: Json | null
           project_challenges?: string | null
           project_type?: string | null
@@ -3326,6 +3332,46 @@ export type Database = {
             columns: ["parent_project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_foundation_project_id_fkey"
+            columns: ["foundation_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_hidden_operations: {
+        Row: {
+          created_at: string
+          project_id: string
+          source_operation_id: string
+        }
+        Insert: {
+          created_at?: string
+          project_id: string
+          source_operation_id: string
+        }
+        Update: {
+          created_at?: string
+          project_id?: string
+          source_operation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_hidden_operations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_hidden_operations_source_operation_id_fkey"
+            columns: ["source_operation_id"]
+            isOneToOne: false
+            referencedRelation: "phase_operations"
             referencedColumns: ["id"]
           },
         ]
@@ -4380,6 +4426,10 @@ export type Database = {
         Args: { p_invitation_id: string }
         Returns: Json
       }
+      attach_foundational_project: {
+        Args: { p_child_project_id: string; p_foundation_project_id: string }
+        Returns: Json
+      }
       can_caller_edit_project: {
         Args: { p_project_id: string }
         Returns: boolean
@@ -4558,6 +4608,14 @@ export type Database = {
           status: string
         }[]
       }
+      detach_foundational_project: {
+        Args: { p_child_project_id: string }
+        Returns: Json
+      }
+      filter_hidden_operations_from_workflow: {
+        Args: { p_project_id: string; p_workflow: Json }
+        Returns: Json
+      }
       get_project_workflow_with_standards: {
         Args: { p_project_id: string }
         Returns: Json
@@ -4654,6 +4712,14 @@ export type Database = {
       reset_project_revisions_preserve_latest: {
         Args: { p_project_id: string }
         Returns: string
+      }
+      set_project_operation_hidden: {
+        Args: {
+          p_hidden: boolean
+          p_project_id: string
+          p_source_operation_id: string
+        }
+        Returns: undefined
       }
       set_user_role_for_management: {
         Args: { p_new_role: string; p_user_id: string }

@@ -159,6 +159,9 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
           revisionNumber: project.revision_number ?? undefined,
           parentProjectId: project.parent_project_id ?? undefined,
           isPopular: project.is_popular === true,
+          isStandardTemplate: project.is_standard === true,
+          isFoundational: project.is_foundational === true,
+          foundationProjectId: project.foundation_project_id ?? null,
         };
       } catch (e) {
         console.error('❌ transformProjects: Error transforming project:', project?.name, project?.id, e);

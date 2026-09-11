@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { GitBranch, Plus, Edit, Archive, Eye, CheckCircle, Clock, ArrowRight, AlertTriangle, Settings, Save, X, RefreshCw, Lock, Trash2, ChevronDown, Sparkles, Shield, Info, BookOpen, BarChart3, Network, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -67,6 +68,9 @@ interface Project {
   images?: string[]; // Array of image URLs
   cover_image?: string | null; // URL of cover image
   is_popular?: boolean;
+  is_standard?: boolean | null;
+  is_foundational?: boolean;
+  foundation_project_id?: string | null;
   visibility_status?: 'default' | 'coming-soon' | 'hidden';
   release_date?: string | null;
 }
@@ -258,7 +262,10 @@ export function UnifiedProjectManagement({
       const mappedData = (data || []).map((project: any) => ({
         ...project,
         project_challenges: project.project_challenges ?? project.diy_length_challenges ?? null,
-        project_type: project.project_type || 'primary'
+        project_type: project.project_type || 'primary',
+        is_foundational: project.is_foundational === true,
+        foundation_project_id: project.foundation_project_id ?? null,
+        is_standard: project.is_standard ?? null,
       })) as unknown as Project[];
 
       let nextList: Project[];
@@ -360,6 +367,8 @@ export function UnifiedProjectManagement({
         budget_per_unit: (selectedProject as any).budget_per_unit || null,
         budget_per_typical_size: (selectedProject as any).budget_per_typical_size || null,
         is_popular: (selectedProject as any).is_popular ?? false,
+        is_foundational: selectedProject.is_foundational === true,
+        foundation_project_id: selectedProject.foundation_project_id ?? null,
       });
       setEditingProject(true);
     }
@@ -394,6 +403,56 @@ export function UnifiedProjectManagement({
 
       if ((editedProject as any).is_popular !== undefined) {
         updateData.is_popular = Boolean((editedProject as any).is_popular);
+      }
+
+      const nextIsFoundational =
+        editedProject.is_foundational !== undefined
+          ? Boolean(editedProject.is_foundational)
+          : Boolean(selectedProject.is_foundational);
+      const nextFoundationId =
+        editedProject.foundation_project_id !== undefined
+          ? editedProject.foundation_project_id
+          : selectedProject.foundation_project_id ?? null;
+
+      if (!selectedProject.is_standard) {
+        updateData.is_foundational = nextIsFoundational;
+      }
+
+      const prevFoundationId = selectedProject.foundation_project_id ?? null;
+      const effectiveFoundationId = nextIsFoundational ? null : (nextFoundationId ?? null);
+
+      // Detach while the prior foundation_project_id is still on the row.
+      if (!selectedProject.is_standard && prevFoundationId && !effectiveFoundationId) {
+        const { error: detachError } = await supabase.rpc('detach_foundational_project', {
+          p_child_project_id: selectedProject.id,
+        });
+        if (detachError) {
+          throw detachError;
+        }
+      }
+
+      // Apply is_foundational before attach so the child is eligible to link.
+      if (
+        !selectedProject.is_standard &&
+        Boolean(selectedProject.is_foundational) !== nextIsFoundational
+      ) {
+        const { error: foundationalFlagError } = await supabase
+          .from('projects')
+          .update({ is_foundational: nextIsFoundational })
+          .eq('id', selectedProject.id);
+        if (foundationalFlagError) {
+          throw foundationalFlagError;
+        }
+      }
+
+      if (!selectedProject.is_standard && effectiveFoundationId && prevFoundationId !== effectiveFoundationId) {
+        const { error: attachError } = await supabase.rpc('attach_foundational_project', {
+          p_child_project_id: selectedProject.id,
+          p_foundation_project_id: effectiveFoundationId,
+        });
+        if (attachError) {
+          throw attachError;
+        }
       }
 
       // Include visibility_status when edited; otherwise preserve existing or let default stand
@@ -1855,6 +1914,105 @@ export function UnifiedProjectManagement({
                               </div>
                             )}
                           </div>
+
+                          {!selectedProject.is_standard && (
+                            <>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-sm">Foundational project</Label>
+                                  <TooltipProvider delayDuration={100}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span tabIndex={0} className="inline-flex items-center justify-center rounded-full p-1 cursor-help text-muted-foreground hover:text-foreground">
+                                          <Info className="w-4 h-4" />
+                                        </span>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-xs text-xs">
+                                        <p className="font-semibold mb-1">Trade foundation</p>
+                                        <p>
+                                          Foundational templates (e.g. Tile Flooring Installation) own shared phases and operations.
+                                          Other catalog projects can build on them and show/hide inherited operations.
+                                        </p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                                {editingProject ? (
+                                  <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+                                    <span className="text-sm text-muted-foreground">
+                                      {(editedProject.is_foundational ?? selectedProject.is_foundational)
+                                        ? 'This project is a trade foundation'
+                                        : 'Mark as trade foundation'}
+                                    </span>
+                                    <Switch
+                                      checked={Boolean(editedProject.is_foundational ?? selectedProject.is_foundational)}
+                                      onCheckedChange={(checked) =>
+                                        setEditedProject((prev) => ({
+                                          ...prev,
+                                          is_foundational: checked,
+                                          foundation_project_id: checked ? null : prev.foundation_project_id,
+                                        }))
+                                      }
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="p-2 bg-muted rounded text-sm">
+                                    {selectedProject.is_foundational ? 'Yes' : 'No'}
+                                  </div>
+                                )}
+                              </div>
+
+                              {!(editedProject.is_foundational ?? selectedProject.is_foundational) && (
+                                <div className="space-y-1">
+                                  <Label className="text-sm">Built on foundational project</Label>
+                                  {editingProject ? (
+                                    <Select
+                                      value={
+                                        (editedProject.foundation_project_id ??
+                                          selectedProject.foundation_project_id ??
+                                          '__none__') as string
+                                      }
+                                      onValueChange={(value) =>
+                                        setEditedProject((prev) => ({
+                                          ...prev,
+                                          foundation_project_id: value === '__none__' ? null : value,
+                                        }))
+                                      }
+                                    >
+                                      <SelectTrigger className="text-sm">
+                                        <SelectValue placeholder="None" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="__none__">None</SelectItem>
+                                        {projects
+                                          .filter(
+                                            (p) =>
+                                              p.is_foundational &&
+                                              !p.is_standard &&
+                                              p.id !== selectedProject.id &&
+                                              p.id !== selectedProject.parent_project_id
+                                          )
+                                          .map((p) => (
+                                            <SelectItem key={p.id} value={p.id}>
+                                              {p.name}
+                                            </SelectItem>
+                                          ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <div className="p-2 bg-muted rounded text-sm">
+                                      {(() => {
+                                        const fid = selectedProject.foundation_project_id;
+                                        if (!fid) return 'None';
+                                        const named = projects.find((p) => p.id === fid);
+                                        return named?.name || fid;
+                                      })()}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </>
+                          )}
 
                           <div className="space-y-1">
                             <Label className="text-sm">Effort Level</Label>

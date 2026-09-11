@@ -241,6 +241,8 @@ export interface Operation {
   // Standard content flag - marks operations from Standard Project Foundation
   isStandard?: boolean;
   flowType?: 'prime' | 'alternate' | 'if-necessary';
+  /** Admin-only: operation is hidden on this child template (still shown in StructureManager). */
+  isHiddenOnThisProject?: boolean;
 }
 
 export interface Phase {
@@ -298,6 +300,10 @@ export interface Project {
   createdFromRevision?: number;
   // Standard Project Foundation marker
   isStandardTemplate?: boolean;
+  // Trade-level foundational catalog project (e.g. Tile Flooring Installation)
+  isFoundational?: boolean;
+  /** Child template built on a foundational catalog project (not revision parent). */
+  foundationProjectId?: string | null;
   // Popular project: shown in catalog carousel
   isPopular?: boolean;
 }
