@@ -1,4 +1,4 @@
--- Step 10: refresh project_challenges for tile flooring, backsplash, and shower/bath.
+-- Step 10: refresh project_challenges for tile flooring and backsplash.
 --
 -- Purpose: short, neutral hardest-parts summary (decision-making info, not a sales
 -- pitch or scare tactic). ≤200 chars; 1–2 sentences. No em-dashes in user-facing copy.
@@ -6,7 +6,6 @@
 -- Scope: match template (and revision/draft) rows by name for:
 --   - Tile Flooring Installation (and name variants)
 --   - Tile Backsplash Installation (and name variants)
---   - Tile Shower / Bath Installation (and name variants)
 --
 -- Apply in Supabase SQL Editor (or via migration runner). Idempotent UPDATEs.
 
@@ -61,27 +60,5 @@ BEGIN
     RAISE EXCEPTION 'No Tile Backsplash projects matched for project_challenges update. Check: SELECT id, name, parent_project_id FROM public.projects WHERE lower(btrim(name)) LIKE ''tile%%backsplash%%'';';
   END IF;
   RAISE NOTICE 'project_challenges: Tile Backsplash rows updated: %', v_n;
-
-  -- Tile Shower / Bath Installation
-  v_text := 'Layout is critical in enclosed spaces, and lippage on large tiles needs close attention. Waterproofing errors can cause major downstream problems.';
-  IF char_length(v_text) > 200 THEN
-    RAISE EXCEPTION 'Tile Shower/Bath project_challenges exceeds 200 chars (%)', char_length(v_text);
-  END IF;
-  UPDATE public.projects p
-  SET
-    project_challenges = v_text,
-    updated_at = now()
-  WHERE p.id <> ALL (v_excl)
-    AND (p.is_standard IS DISTINCT FROM true)
-    AND (
-      lower(btrim(p.name)) LIKE 'tile%shower%'
-      OR lower(btrim(p.name)) LIKE 'tile%bath%'
-      OR lower(btrim(p.name)) LIKE 'tile shower/bath%'
-    );
-  GET DIAGNOSTICS v_n = ROW_COUNT;
-  IF v_n = 0 THEN
-    RAISE EXCEPTION 'No Tile Shower/Bath projects matched for project_challenges update. Check: SELECT id, name, parent_project_id FROM public.projects WHERE lower(btrim(name)) LIKE ''tile%%shower%%'' OR lower(btrim(name)) LIKE ''tile%%bath%%'';';
-  END IF;
-  RAISE NOTICE 'project_challenges: Tile Shower/Bath rows updated: %', v_n;
 END;
 $$;

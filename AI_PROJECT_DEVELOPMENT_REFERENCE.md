@@ -390,6 +390,6 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
-| 2026-09-11 | Step 10 `project_challenges`: clarify purpose as neutral hardest-parts decision tool (1–2 sentences, ≤200 chars; not sales or scare); Non-negotiables: no em-dashes in authored user-facing prose (hyphens OK) | Recreated tile flooring / backsplash / shower-bath challenges; authors need tone+scope+punctuation rules |
+| 2026-09-11 | Step 10 `project_challenges`: clarify purpose as neutral hardest-parts decision tool (1–2 sentences, ≤200 chars; not sales or scare); Non-negotiables: no em-dashes in authored user-facing prose (hyphens OK) | Recreated tile flooring / backsplash challenges; authors need tone+scope+punctuation rules |
 | 2026-09-10 | Expanded field catalogs for catalog header, Steps 1–10, schedule prereqs (§E), related projects (§F); added on-demand Cursor rule `.cursor/rules/ai-project-dev-guide.mdc` | Single guide for template content development + continuous improvement |
 | 2026-09-10 | `materials.category` check allows only `Components` / `Consumables` / `PPE` (not free-form labels like Flooring) | Tile Flooring Installation step 6 bootstrap failed `materials_category_chk` until categories matched the constraint |

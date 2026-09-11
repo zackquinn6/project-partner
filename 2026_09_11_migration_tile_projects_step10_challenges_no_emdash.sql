@@ -1,5 +1,6 @@
 -- Re-apply tile project_challenges without em-dashes (fixes flooring copy if the
 -- earlier 2026_09_11 step10 challenges migration was already run with an em-dash).
+-- Scope: tile flooring and backsplash only (shower/bath template not in catalog yet).
 -- Idempotent; same match rules as 2026_09_11_migration_tile_projects_step10_challenges.sql.
 
 DO $$
@@ -48,23 +49,5 @@ BEGIN
     RAISE EXCEPTION 'No Tile Backsplash projects matched for project_challenges update.';
   END IF;
   RAISE NOTICE 'project_challenges (no em-dash): Tile Backsplash rows updated: %', v_n;
-
-  v_text := 'Layout is critical in enclosed spaces, and lippage on large tiles needs close attention. Waterproofing errors can cause major downstream problems.';
-  UPDATE public.projects p
-  SET
-    project_challenges = v_text,
-    updated_at = now()
-  WHERE p.id <> ALL (v_excl)
-    AND (p.is_standard IS DISTINCT FROM true)
-    AND (
-      lower(btrim(p.name)) LIKE 'tile%shower%'
-      OR lower(btrim(p.name)) LIKE 'tile%bath%'
-      OR lower(btrim(p.name)) LIKE 'tile shower/bath%'
-    );
-  GET DIAGNOSTICS v_n = ROW_COUNT;
-  IF v_n = 0 THEN
-    RAISE EXCEPTION 'No Tile Shower/Bath projects matched for project_challenges update.';
-  END IF;
-  RAISE NOTICE 'project_challenges (no em-dash): Tile Shower/Bath rows updated: %', v_n;
 END;
 $$;
