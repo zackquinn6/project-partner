@@ -1568,22 +1568,23 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                 </Alert>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <Button variant="outline" onClick={printToPDF} className="h-11 md:h-10 text-xs md:text-sm">
+                  <Button
+                    variant="outline"
+                    onClick={printToPDF}
+                    className="h-11 border-blue-200 bg-blue-50 text-xs text-blue-900 hover:bg-blue-100 hover:text-blue-950 md:h-10 md:text-sm"
+                  >
                     <Printer className="w-4 h-4 mr-1 md:mr-2" />
-                    <span className="truncate">Print PDF</span>
+                    <span className="truncate">Print PDF Schedule</span>
                   </Button>
-                  <Button variant="outline" onClick={emailSchedule} className="h-11 md:h-10 text-xs md:text-sm">
+                  <Button
+                    variant="outline"
+                    onClick={emailSchedule}
+                    className="h-11 border-emerald-200 bg-emerald-50 text-xs text-emerald-900 hover:bg-emerald-100 hover:text-emerald-950 md:h-10 md:text-sm"
+                  >
                     <Mail className="w-4 h-4 mr-1 md:mr-2" />
-                    <span className="truncate">Email Me</span>
+                    <span className="truncate">Email Schedule</span>
                   </Button>
                 </div>
-
-                <ScheduleOutputView
-                  schedulingResult={schedulingResult}
-                  planningMode={planningMode}
-                  schedulingTasks={schedulingTasks}
-                  teamMembers={teamMembers}
-                />
               </div>
             )}
 
