@@ -60,6 +60,8 @@ interface ProjectPlanningWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onGoToWorkflow?: () => void;
+  /** Return from Plan stage to Kickoff (Discover). */
+  onReturnToKickoff?: () => void;
   /** When provided, opens Project Budgeting from the Budget step without relying on window event */
   onOpenBudgeting?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
   /** When provided, opens Risk Management at the host level (avoids nested dialog) */
@@ -82,6 +84,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   open,
   onOpenChange,
   onGoToWorkflow,
+  onReturnToKickoff,
   onOpenBudgeting,
   onOpenRiskManagement,
   onOpenQualityControl,
@@ -611,7 +614,6 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         <ProjectPlanningCountdownBanner
           minimal
           projectCreatedAt={currentProjectRun.createdAt}
-          phaseHint="Plan stage: iterate tools, then Review"
           className="shrink-0"
         />
       ) : null}
@@ -619,6 +621,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       <PlanningJourneyHeader
         activeStage="plan"
         className="shrink-0"
+        onDiscoverClick={onReturnToKickoff}
       />
 
       {/* Step navigation — same card padding / layout rhythm as KickoffWorkflow */}
@@ -719,12 +722,12 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                     className="w-full max-w-full text-[10px] leading-tight sm:w-auto sm:text-xs"
                   >
                     <Settings2 className="mr-1 h-3.5 w-3.5 shrink-0 sm:mr-1.5 sm:h-4 sm:w-4" />
-                    <span className="hidden lg:inline">Adjust plan backlog</span>
-                    <span className="inline lg:hidden">Adjust backlog</span>
+                    <span className="hidden lg:inline">Select Planning Studio Tools</span>
+                    <span className="inline lg:hidden">Select tools</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Plan backlog for this run</DropdownMenuLabel>
+                  <DropdownMenuLabel>Planning Studio tools for this run</DropdownMenuLabel>
                   {planningToolsForWizard.map(({ id, label }) => {
                     const isScope = id === 'scope';
                     const effectiveSelected = localSelectedTools ?? selectedToolsFromContext;

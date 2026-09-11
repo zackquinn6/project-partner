@@ -77,7 +77,7 @@ export function PlanningConfirmationStep({
             <h3 className="mb-2 text-sm font-semibold text-foreground">Planning checklist</h3>
             {toolStatuses.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No planning tools are selected. Adjust the plan backlog, or start if you intentionally have none.
+                No planning tools are selected. Select Planning Studio Tools, or start if you intentionally have none.
               </p>
             ) : (
               <ul className="space-y-2">
@@ -119,8 +119,8 @@ export function PlanningConfirmationStep({
             )}
             {toolStatuses.length > 0 && !allComplete ? (
               <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">
-                {incompleteCount} tool{incompleteCount === 1 ? '' : 's'} still incomplete. Finish them or remove from
-                the plan backlog before starting.
+                {incompleteCount} tool{incompleteCount === 1 ? '' : 's'} still incomplete. Finish them or remove them from
+                Planning Studio tools before starting.
               </p>
             ) : null}
           </section>

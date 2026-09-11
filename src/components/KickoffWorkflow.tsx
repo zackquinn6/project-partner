@@ -75,11 +75,14 @@ interface KickoffWorkflowProps {
    * Only invoked for continue-planning (not skip).
    */
   onBeforeFinalKickoffPersistence?: () => void;
+  /** Return from Discover to Planning Studio (Plan) when kickoff was already finished. */
+  onReturnToPlanningStudio?: () => void;
 }
 export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   onKickoffComplete,
   onExit,
   onBeforeFinalKickoffPersistence,
+  onReturnToPlanningStudio,
 }) => {
   const {
     currentProjectRun,
@@ -632,6 +635,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       <PlanningJourneyHeader
         activeStage="discover"
         className="shrink-0"
+        onPlanClick={onReturnToPlanningStudio}
       />
       {/* Step Navigation (no separate project-name header) */}
       <Card className="shrink-0">

@@ -265,6 +265,8 @@ export default function UserView({
   const [projectSchedulerOpen, setProjectSchedulerOpen] = useState(false);
   const [changeManagementOpen, setChangeManagementOpen] = useState(false);
   const [projectPlanningWizardOpen, setProjectPlanningWizardOpen] = useState(false);
+  /** Re-open Kickoff from Planning Studio even after kickoff steps are already complete. */
+  const [forceShowKickoff, setForceShowKickoff] = useState(false);
   const [materialsSelectionOpen, setMaterialsSelectionOpen] = useState(false);
   const [shoppingChecklistExpandSettingsAccordion, setShoppingChecklistExpandSettingsAccordion] = useState(false);
   const [shoppingChecklistCollapseAllOnOpen, setShoppingChecklistCollapseAllOnOpen] = useState(false);
@@ -335,11 +337,13 @@ export default function UserView({
       if (lastWorkflowProjectRunIdRef.current !== projectRunId) {
         setWorkflowMainView('overview');
         lastWorkflowProjectRunIdRef.current = projectRunId;
+        setForceShowKickoff(false);
       }
     }
 
     if (viewMode !== 'workflow') {
       lastWorkflowProjectRunIdRef.current = null;
+      setForceShowKickoff(false);
     }
   }, [viewMode, isKickoffComplete, currentProjectRun?.id]);
 
@@ -2235,6 +2239,7 @@ export default function UserView({
       case 'project-kickoff':
         break;
       case 'project-planning-wizard':
+        setForceShowKickoff(false);
         setProjectPlanningWizardOpen(true);
         break;
       case 'project-customizer':
@@ -2784,7 +2789,14 @@ export default function UserView({
   // FOURTH: If project run exists and kickoff is not complete, show kickoff workflow
   // CRITICAL FIX: Don't show kickoff for cancelled projects
   // CRITICAL: Don't show kickoff if Planning Studio is open (prevents kickoff from reappearing)
-  if (currentProjectRun && currentProjectRun.status !== 'cancelled' && !isKickoffComplete && viewMode === 'workflow' && !projectPlanningWizardOpen) {
+  // forceShowKickoff: Discover from Planning Studio reopens kickoff after steps are already complete
+  if (
+    currentProjectRun &&
+    currentProjectRun.status !== 'cancelled' &&
+    (!isKickoffComplete || forceShowKickoff) &&
+    viewMode === 'workflow' &&
+    !projectPlanningWizardOpen
+  ) {
     // Fix missing kickoff steps if user has progressed past them
     const kickoffStepIds = ['kickoff-step-1', 'kickoff-step-2', 'kickoff-step-3', 'kickoff-step-4'];
     const currentCompletedSteps = currentProjectRun.completedSteps || [];
@@ -2819,8 +2831,17 @@ export default function UserView({
         onBeforeFinalKickoffPersistence={() => {
           // Open Planning Studio before kickoff persistence so kickoff never reappears
           // while the wizard is still closed (continue-planning path only).
+          setForceShowKickoff(false);
           setProjectPlanningWizardOpen(true);
         }}
+        onReturnToPlanningStudio={
+          forceShowKickoff
+            ? () => {
+                setForceShowKickoff(false);
+                setProjectPlanningWizardOpen(true);
+              }
+            : undefined
+        }
         onKickoffComplete={async (payload: KickoffCompletePayload) => {
             const persist = payload.persist;
             const skipToWorkflow = payload.mode === 'skip-to-workflow';
@@ -3176,6 +3197,10 @@ export default function UserView({
             onWorkflowFullyComplete={handlePlanningWizardFullyComplete}
             onGoToWorkflow={() => {
               setProjectPlanningWizardOpen(false);
+            }}
+            onReturnToKickoff={() => {
+              setProjectPlanningWizardOpen(false);
+              setForceShowKickoff(true);
             }}
             onOpenBudgeting={(options) => {
               if (options?.fromPlanningWizard) {
