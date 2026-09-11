@@ -28,6 +28,7 @@ import { filterGeneralDecisionsForPhases, parseGeneralProjectDecisionsFromPrereq
 import { PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME } from '../PlanningWizardSteps/planningToolWindowChrome';
 import { PlanningToolContextBanner } from '../PlanningWizardSteps/PlanningToolContextBanner';
 import { formatProjectSizeDetail } from '@/utils/projectRunDisplayName';
+import { getDefaultHomeIdForUser } from '@/utils/ensureDefaultHome';
 import { cn } from '@/lib/utils';
 
 interface ProjectCustomizerProps {
@@ -331,6 +332,144 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     }
   };
 
+  const handleUseDefaultHome = async () => {
+    if (!user?.id || !currentProjectRun) return;
+    try {
+      const defaultHomeId = await getDefaultHomeIdForUser(user.id);
+      const { data: defaultHome, error: homeLookupError } = await supabase
+        .from('homes')
+        .select('id, name')
+        .eq('id', defaultHomeId)
+        .maybeSingle();
+      if (homeLookupError) throw homeLookupError;
+
+      await handleHomeChange(defaultHomeId);
+      if (defaultHome?.name) setHomeName(defaultHome.name);
+      await fetchHomes();
+      toast({
+        title: 'Default home selected',
+        description: 'This project now uses your default home.',
+      });
+    } catch (error) {
+      console.error('Error selecting default home:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to select default home',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleUseOneDefaultRoom = async () => {
+    if (!currentProjectRun?.id) return;
+
+    try {
+      const { data: existingSpaces, error: spacesError } = await supabase
+        .from('project_run_spaces')
+        .select('*')
+        .eq('project_run_id', currentProjectRun.id)
+        .order('priority', { ascending: true, nullsFirst: false } as any);
+
+      if (spacesError) throw spacesError;
+
+      let room1 = (existingSpaces || []).find((space) => space.space_name === 'Room 1');
+
+      if (!room1) {
+        const parsedSizing =
+          typeof currentProjectRun.initial_sizing === 'string'
+            ? Number.parseFloat(currentProjectRun.initial_sizing)
+            : Number.NaN;
+        const hasSizing = !Number.isNaN(parsedSizing) && parsedSizing > 0;
+        const sizingByUnit =
+          hasSizing && scalingUnit ? { [scalingUnit]: parsedSizing } : null;
+
+        const { data: created, error: createError } = await supabase
+          .from('project_run_spaces')
+          .insert({
+            project_run_id: currentProjectRun.id,
+            space_name: 'Room 1',
+            space_type: 'general',
+            is_from_home: false,
+            priority: 1,
+            ...(hasSizing
+              ? {
+                  scale_value: parsedSizing,
+                  scale_unit: scalingUnit,
+                  ...(sizingByUnit ? { sizing_by_unit: sizingByUnit } : {}),
+                }
+              : {}),
+          })
+          .select('*')
+          .single();
+
+        if (createError) throw createError;
+        room1 = created;
+      } else if (
+        (room1.scale_value === null || room1.scale_value === undefined) &&
+        typeof currentProjectRun.initial_sizing === 'string' &&
+        currentProjectRun.initial_sizing.trim()
+      ) {
+        const parsedSizing = Number.parseFloat(currentProjectRun.initial_sizing);
+        if (!Number.isNaN(parsedSizing) && parsedSizing > 0) {
+          const currentSizing =
+            room1.sizing_by_unit && typeof room1.sizing_by_unit === 'object'
+              ? (room1.sizing_by_unit as Record<string, number>)
+              : {};
+          const sizingByUnit = { ...currentSizing, [scalingUnit]: parsedSizing };
+          const { data: updated, error: updateError } = await supabase
+            .from('project_run_spaces')
+            .update({
+              scale_value: parsedSizing,
+              scale_unit: scalingUnit,
+              sizing_by_unit: sizingByUnit,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', room1.id)
+            .select('*')
+            .single();
+          if (updateError) throw updateError;
+          room1 = updated;
+        }
+      }
+
+      const extras = (existingSpaces || []).filter((space) => space.id !== room1!.id);
+      if (extras.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('project_run_spaces')
+          .delete()
+          .in(
+            'id',
+            extras.map((space) => space.id)
+          );
+        if (deleteError) throw deleteError;
+      }
+
+      const roomSpace: ProjectSpace = {
+        id: room1.id,
+        space_name: room1.space_name,
+        spaceType: room1.space_type || 'general',
+        homeSpaceId: room1.home_space_id || undefined,
+        scaleValue: room1.scale_value || undefined,
+        scaleUnit: room1.scale_unit || undefined,
+        isFromHome: room1.is_from_home || false,
+        priority: room1.priority || 1,
+      };
+
+      handleSpacesChange([roomSpace]);
+      toast({
+        title: 'Default room applied',
+        description: 'This project now uses one default room (Room 1).',
+      });
+    } catch (error) {
+      console.error('Error applying default room:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to apply default room',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Initialize workflow order from current project run
   useEffect(() => {
     if (currentProjectRun?.phases && open) {
@@ -621,7 +760,13 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
           <PlanningToolContextBanner
             projectRun={currentProjectRun}
             label="Size estimate"
-            detail={formatProjectSizeDetail(currentProjectRun, itemType)}
+            detail={formatProjectSizeDetail(
+              {
+                initial_sizing: currentProjectRun?.initial_sizing,
+                scalingUnit,
+              },
+              itemType
+            )}
           />
 
           <ScrollArea className={cn('flex-1 min-h-0', PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME)}>
@@ -642,21 +787,31 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 </AccordionTrigger>
                 <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <Home className="w-4 h-4 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">Project Home</span>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowHomeManager(true)}
-                        className="h-7 px-2 text-xs"
-                        title="Manage homes"
-                      >
-                        <Edit2 className="w-3 h-3 mr-1" />
-                        Manage
-                      </Button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => void handleUseDefaultHome()}
+                          className="h-7 bg-green-600 px-2 text-xs text-white hover:bg-green-700"
+                        >
+                          Use Default Home
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowHomeManager(true)}
+                          className="h-7 px-2 text-xs"
+                          title="Manage homes"
+                        >
+                          <Edit2 className="w-3 h-3 mr-1" />
+                          Manage
+                        </Button>
+                      </div>
                     </div>
                     {currentProjectRun?.home_id && homes.length > 0 ? (
                       <Select
@@ -698,15 +853,25 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                           <p className="text-xs text-muted-foreground mb-3">
                             Use this when the project will have unique spaces or rooms.
                           </p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowSpacesWindow(true)}
-                            className="text-xs"
-                          >
-                            <Settings className="w-3 h-3 mr-2" />
-                            Manage Project Spaces
-                          </Button>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowSpacesWindow(true)}
+                              className="text-xs"
+                            >
+                              <Settings className="w-3 h-3 mr-2" />
+                              Manage Project Spaces
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => void handleUseOneDefaultRoom()}
+                              className="bg-green-600 text-xs text-white hover:bg-green-700"
+                            >
+                              Use 1 default room
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
