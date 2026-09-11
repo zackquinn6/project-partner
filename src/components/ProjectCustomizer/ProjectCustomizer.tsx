@@ -12,7 +12,7 @@ import { SpaceDecisionFlow, areSpaceRequiredDecisionsComplete } from './SpaceDec
 import { ProjectRun } from '../../interfaces/ProjectRun';
 import { Phase } from '../../interfaces/Project';
 import { useProject } from '../../contexts/ProjectContext';
-import { Settings, GitBranch, Home, Edit2, Check, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Settings, Home, Edit2, Check, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useIsMobile } from '../../hooks/use-mobile';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -1182,7 +1182,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                           Work already included from the plan and your step 3 choices. Add custom steps below only if you need more.
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-5">
+                      <CardContent className="space-y-4">
                         {builtInWorkBySpace.length === 0 ? (
                           <p className="text-sm text-muted-foreground">
                             Add spaces in step 2 to see the project work list.
@@ -1229,38 +1229,25 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                             </div>
                           ))
                         )}
-                      </CardContent>
-                    </Card>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => void handleSaveCustomization()}
-                        className="bg-green-600 text-xs text-white hover:bg-green-700"
-                      >
-                        Continue with No Custom Work
-                      </Button>
-                    </div>
-                    <Card>
-                      <CardHeader className={isMobile ? 'pb-3' : ''}>
-                        <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                          <GitBranch className="h-4 w-4" />
-                          Add Workflow Steps
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Pull in related phases when this job needs more than the base plan.
-                        </p>
-                        <Button
-                          onClick={() => setShowPhaseBrowser(true)}
-                          variant="outline"
-                          size={isMobile ? "default" : "sm"}
-                          className="w-full sm:w-auto"
-                        >
-                          Browse Related Project Phases
-                        </Button>
+                        <div className="flex flex-row items-center gap-2 pt-1">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => void handleSaveCustomization()}
+                            className="flex-1 bg-green-600 text-xs text-white hover:bg-green-700 sm:flex-none"
+                          >
+                            Continue with no Custom Work
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowCustomWorkManager(true)}
+                            className="flex-1 text-xs sm:flex-none"
+                          >
+                            Add Custom Work
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
 
