@@ -1641,6 +1641,14 @@ export default function UserView({
     },
     [allSteps]
   );
+
+  const firstIncompleteWorkflowStep = React.useMemo(() => {
+    return (
+      allSteps.find(
+        (step) => !isStepCompleted(completedSteps, step.id, (step as any).spaceId)
+      ) ?? null
+    );
+  }, [allSteps, completedSteps]);
   
   // Check and regenerate schedule on project open
   useEffect(() => {
@@ -3464,6 +3472,10 @@ export default function UserView({
               {workflowMainView === 'overview' ? (
                 <ProjectWorkflowOverviewPage
                   isKickoffStep1Completed={completedSteps.has('kickoff-step-1')}
+                  currentIncompleteStepName={firstIncompleteWorkflowStep?.step ?? null}
+                  onOpenCurrentStep={() =>
+                    openWorkflowAtFirstIncompleteStep(Array.from(completedSteps))
+                  }
                 />
               ) : (
                 <div className="space-y-6">

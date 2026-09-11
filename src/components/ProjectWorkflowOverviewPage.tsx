@@ -1,15 +1,21 @@
 import React from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProject } from '@/contexts/ProjectContext';
 import { ProjectOverviewStep } from './KickoffSteps/ProjectOverviewStep';
 
 interface ProjectWorkflowOverviewPageProps {
   isKickoffStep1Completed: boolean;
+  /** Display name of the earliest incomplete workflow step */
+  currentIncompleteStepName?: string | null;
+  onOpenCurrentStep?: () => void;
 }
 
 export function ProjectWorkflowOverviewPage({
-  isKickoffStep1Completed
+  isKickoffStep1Completed,
+  currentIncompleteStepName,
+  onOpenCurrentStep,
 }: ProjectWorkflowOverviewPageProps) {
   const { currentProject, currentProjectRun, projects } = useProject();
 
@@ -33,6 +39,9 @@ export function ProjectWorkflowOverviewPage({
     runDescription && runDescription.length > 0 ? runDescription : templateDescription;
 
   const coverImageUrl = currentProject?.cover_image ?? templateProject?.cover_image;
+
+  const showOpenCurrentStep =
+    Boolean(currentIncompleteStepName) && typeof onOpenCurrentStep === 'function';
 
   return (
     <div className="space-y-6">
@@ -76,7 +85,17 @@ export function ProjectWorkflowOverviewPage({
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {showOpenCurrentStep ? (
+        <Button
+          type="button"
+          size="lg"
+          className="w-full bg-green-600 text-white hover:bg-green-700 hover:text-white"
+          onClick={onOpenCurrentStep}
+        >
+          {`Open current step: ${currentIncompleteStepName}`}
+        </Button>
+      ) : null}
     </div>
   );
 }
-
