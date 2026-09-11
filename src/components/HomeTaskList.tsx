@@ -2,16 +2,17 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMembership } from "@/contexts/MembershipContext";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, X, GripVertical, List, ListOrdered, Users, Link2, Trash2, BarChart3 } from "lucide-react";
+import { Plus, X, GripVertical, List, ListOrdered, Users, Link2, Trash2, BarChart3, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { HomeManager } from "./HomeManager";
 import { HomeTasksTable } from "./HomeTasksTable";
 import { HomeTaskPeople } from "./HomeTaskPeople";
@@ -24,7 +25,6 @@ import { ShoppingListManager } from "./ShoppingListManager";
 import { ProjectPortfolioRemindersDialog } from "@/components/ProjectPortfolioRemindersDialog";
 import { useNavigate } from "react-router-dom";
 import { WorkspaceSubViewHeader } from "@/components/WorkspaceSubViewHeader";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import type { ProjectRun } from "@/interfaces/ProjectRun";
 import { isRiskFocusRun } from "@/utils/projectRunRiskFocus";
@@ -94,6 +94,8 @@ export function HomeTaskList({
   const [showPortfolioReminders, setShowPortfolioReminders] = useState(false);
   const [quickAddTitle, setQuickAddTitle] = useState("");
   const [linkedProjectName, setLinkedProjectName] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeletingTask, setIsDeletingTask] = useState(false);
   const [linkedProjectUpgradeOpen, setLinkedProjectUpgradeOpen] = useState(false);
   const [linkedProjectUpgradeFeature, setLinkedProjectUpgradeFeature] = useState('Projects membership');
   const [subtasks, setSubtasks] = useState<Array<{ 
@@ -396,6 +398,7 @@ export function HomeTaskList({
     setMaterials([]);
     setEditingTask(null);
     setLinkedProjectName(null);
+    setShowDeleteConfirm(false);
     setShowAddTask(false);
   };
 
@@ -500,8 +503,8 @@ export function HomeTaskList({
 
   const handleDeleteEditingTask = async () => {
     if (!user || !editingTask) return;
-    if (!window.confirm(`Delete task "${editingTask.title}"? This cannot be undone.`)) return;
 
+    setIsDeletingTask(true);
     try {
       await supabase.from('home_task_subtasks').delete().eq('task_id', editingTask.id);
       const { error: materialsError } = await supabase
@@ -517,6 +520,7 @@ export function HomeTaskList({
         .eq('user_id', user.id);
       if (error) throw error;
 
+      setShowDeleteConfirm(false);
       resetForm();
       await fetchTasks();
     } catch (error) {
@@ -526,6 +530,8 @@ export function HomeTaskList({
         description: 'Failed to delete task',
         variant: 'destructive',
       });
+    } finally {
+      setIsDeletingTask(false);
     }
   };
 
@@ -1221,7 +1227,7 @@ export function HomeTaskList({
                 variant="destructive"
                 size="sm"
                 className="mr-auto h-8 w-8 p-0"
-                onClick={() => void handleDeleteEditingTask()}
+                onClick={() => setShowDeleteConfirm(true)}
                 title="Delete task"
                 aria-label="Delete task"
               >
@@ -1293,6 +1299,54 @@ export function HomeTaskList({
               {editingTask ? 'Update' : 'Create'}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={showDeleteConfirm}
+        onOpenChange={(open) => {
+          if (isDeletingTask) return;
+          setShowDeleteConfirm(open);
+        }}
+      >
+        <DialogContent
+          className="z-[110] max-w-md"
+          overlayClassName="z-[110]"
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete task
+            </DialogTitle>
+            <DialogDescription>
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Are you sure you want to delete{' '}
+              <strong>{editingTask?.title}</strong>? Subtasks and shopping list items for this task will be removed too.
+            </AlertDescription>
+          </Alert>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(false)}
+              disabled={isDeletingTask}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void handleDeleteEditingTask()}
+              disabled={isDeletingTask}
+            >
+              {isDeletingTask ? 'Deleting…' : 'Delete task'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
