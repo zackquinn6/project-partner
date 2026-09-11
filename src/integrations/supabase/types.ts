@@ -2514,6 +2514,39 @@ export type Database = {
           },
         ]
       }
+      project_hidden_operations: {
+        Row: {
+          created_at: string
+          project_id: string
+          source_operation_id: string
+        }
+        Insert: {
+          created_at?: string
+          project_id: string
+          source_operation_id: string
+        }
+        Update: {
+          created_at?: string
+          project_id?: string
+          source_operation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_hidden_operations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_hidden_operations_source_operation_id_fkey"
+            columns: ["source_operation_id"]
+            isOneToOne: false
+            referencedRelation: "phase_operations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_owners: {
         Row: {
           created_at: string
@@ -3220,6 +3253,7 @@ export type Database = {
           estimated_cost: string | null
           estimated_time: string | null
           estimated_total_time: string | null
+          foundation_project_id: string | null
           icon: string | null
           id: string
           images: string[] | null
@@ -3231,7 +3265,6 @@ export type Database = {
           item_type: string | null
           name: string
           parent_project_id: string | null
-          foundation_project_id: string | null
           phases: Json | null
           project_challenges: string | null
           project_type: string | null
@@ -3259,6 +3292,7 @@ export type Database = {
           estimated_cost?: string | null
           estimated_time?: string | null
           estimated_total_time?: string | null
+          foundation_project_id?: string | null
           icon?: string | null
           id?: string
           images?: string[] | null
@@ -3270,7 +3304,6 @@ export type Database = {
           item_type?: string | null
           name: string
           parent_project_id?: string | null
-          foundation_project_id?: string | null
           phases?: Json | null
           project_challenges?: string | null
           project_type?: string | null
@@ -3298,6 +3331,7 @@ export type Database = {
           estimated_cost?: string | null
           estimated_time?: string | null
           estimated_total_time?: string | null
+          foundation_project_id?: string | null
           icon?: string | null
           id?: string
           images?: string[] | null
@@ -3309,7 +3343,6 @@ export type Database = {
           item_type?: string | null
           name?: string
           parent_project_id?: string | null
-          foundation_project_id?: string | null
           phases?: Json | null
           project_challenges?: string | null
           project_type?: string | null
@@ -3328,50 +3361,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "projects_parent_project_id_fkey"
-            columns: ["parent_project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "projects_foundation_project_id_fkey"
             columns: ["foundation_project_id"]
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      project_hidden_operations: {
-        Row: {
-          created_at: string
-          project_id: string
-          source_operation_id: string
-        }
-        Insert: {
-          created_at?: string
-          project_id: string
-          source_operation_id: string
-        }
-        Update: {
-          created_at?: string
-          project_id?: string
-          source_operation_id?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: "project_hidden_operations_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "projects_parent_project_id_fkey"
+            columns: ["parent_project_id"]
             isOneToOne: false
             referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_hidden_operations_source_operation_id_fkey"
-            columns: ["source_operation_id"]
-            isOneToOne: false
-            referencedRelation: "phase_operations"
             referencedColumns: ["id"]
           },
         ]
@@ -4531,6 +4531,10 @@ export type Database = {
         }
         Returns: string
       }
+      detach_foundational_project: {
+        Args: { p_child_project_id: string }
+        Returns: Json
+      }
       detect_suspicious_activity: {
         Args: never
         Returns: {
@@ -4548,6 +4552,10 @@ export type Database = {
           window_minutes?: number
         }
         Returns: boolean
+      }
+      filter_hidden_operations_from_workflow: {
+        Args: { p_project_id: string; p_workflow: Json }
+        Returns: Json
       }
       get_help_usage_status: {
         Args: { p_user_id?: string }
@@ -4608,14 +4616,6 @@ export type Database = {
           status: string
         }[]
       }
-      detach_foundational_project: {
-        Args: { p_child_project_id: string }
-        Returns: Json
-      }
-      filter_hidden_operations_from_workflow: {
-        Args: { p_project_id: string; p_workflow: Json }
-        Returns: Json
-      }
       get_project_workflow_with_standards: {
         Args: { p_project_id: string }
         Returns: Json
@@ -4665,6 +4665,10 @@ export type Database = {
         | { Args: never; Returns: boolean }
         | { Args: { check_user_id: string }; Returns: boolean }
       is_caller_admin: { Args: never; Returns: boolean }
+      latest_published_in_family: {
+        Args: { p_any_project_id: string }
+        Returns: string
+      }
       log_comprehensive_security_event: {
         Args: {
           p_additional_data?: Json
@@ -4698,6 +4702,10 @@ export type Database = {
       }
       notifications_resolve_parent_project_id: {
         Args: { p_template_id: string }
+        Returns: string
+      }
+      project_family_root_id: {
+        Args: { p_project_id: string }
         Returns: string
       }
       rebuild_phases_json_from_project_phases: {
