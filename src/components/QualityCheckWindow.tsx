@@ -134,6 +134,15 @@ export function QualityCheckWindow({
     }
   }, [open, expandSettingsAccordionWhenOpen]);
 
+  const advanceToChecklistAfterSettings = useCallback(() => {
+    window.setTimeout(() => {
+      setAccordionOpenValues((prev) => {
+        if (!prev.includes('qc-settings')) return prev;
+        return ['qc-table'];
+      });
+    }, 280);
+  }, []);
+
   const persistSettings = useCallback(
     async (next: QualityControlSettings) => {
       if (!projectRun) {
@@ -146,6 +155,7 @@ export function QualityCheckWindow({
           ...projectRun,
           quality_control_settings: next
         });
+        advanceToChecklistAfterSettings();
               } catch (e) {
         console.error(e);
         toast.error('Failed to save settings');
@@ -153,7 +163,7 @@ export function QualityCheckWindow({
         setSavingSettings(false);
       }
     },
-    [projectRun, updateProjectRun]
+    [projectRun, updateProjectRun, advanceToChecklistAfterSettings]
   );
 
   const onRequirePhotosChange = (checked: boolean) => {

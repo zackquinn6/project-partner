@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
@@ -14,6 +14,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { QuickSchedulePresets, SchedulePreset } from './QuickSchedulePresets';
+import { useSteppedAutoAdvance } from '@/hooks/useSteppedAutoAdvance';
 import { 
   Target, 
   AlertTriangle, 
@@ -141,10 +142,16 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   const [openSection, setOpenSection] = useState<SchedulerAccordionKey | null>('dates');
   const [noWorkOnHolidays, setNoWorkOnHolidays] = useState(false);
   const [schedulingAlgorithmHelpOpen, setSchedulingAlgorithmHelpOpen] = useState(false);
+  /** User confirmed tempo on this visit (defaults alone do not count as completing the step). */
+  const [tempoConfirmed, setTempoConfirmed] = useState(false);
 
   useEffect(() => {
     if (collapseAccordionSignal <= 0) return;
     setOpenSection(null);
+  }, [collapseAccordionSignal]);
+
+  useEffect(() => {
+    setTempoConfirmed(false);
   }, [collapseAccordionSignal]);
   
   // Check if availability has been selected (either quick preset or individual)
@@ -153,6 +160,20 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
     member.weekendsOnly || 
     member.weekdaysAfterFivePm
   );
+
+  const setOpenSectionStable = useCallback((next: string) => {
+    setOpenSection(next as SchedulerAccordionKey);
+  }, []);
+
+  useSteppedAutoAdvance({
+    activeStep: openSection,
+    setActiveStep: setOpenSectionStable,
+    steps: [
+      { key: 'dates', isComplete: Boolean(targetDate), next: 'availability' },
+      { key: 'availability', isComplete: hasAvailabilitySelected, next: 'tempo' },
+      { key: 'tempo', isComplete: tempoConfirmed, next: 'advanced' },
+    ],
+  });
   
   const handleCustomizeAvailability = () => {
     setOpenSection('advanced');
@@ -162,6 +183,11 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   };
 
   const focusSection = (key: SchedulerAccordionKey) => () => setOpenSection(key);
+
+  const selectTempo = (tempo: ScheduleTempo) => {
+    setScheduleTempo(tempo);
+    setTempoConfirmed(true);
+  };
 
   return (
     <div className="space-y-4">
@@ -353,7 +379,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
               <Button
                 variant={scheduleTempo === 'fast_track' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setScheduleTempo('fast_track')}
+                onClick={() => selectTempo('fast_track')}
                 className="h-auto min-h-[5.5rem] min-w-0 w-full flex flex-col items-stretch justify-start gap-1.5 overflow-hidden p-2.5 sm:min-h-[6.25rem] sm:gap-2 sm:p-3.5 text-left"
               >
                 <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
@@ -371,7 +397,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
               <Button
                 variant={scheduleTempo === 'steady' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setScheduleTempo('steady')}
+                onClick={() => selectTempo('steady')}
                 className="h-auto min-h-[5.5rem] min-w-0 w-full flex flex-col items-stretch justify-start gap-1.5 overflow-hidden p-2.5 sm:min-h-[6.25rem] sm:gap-2 sm:p-3.5 text-left"
               >
                 <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
@@ -389,7 +415,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
               <Button
                 variant={scheduleTempo === 'extended' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setScheduleTempo('extended')}
+                onClick={() => selectTempo('extended')}
                 className="h-auto min-h-[5.5rem] min-w-0 w-full flex flex-col items-stretch justify-start gap-1.5 overflow-hidden p-2.5 sm:min-h-[6.25rem] sm:gap-2 sm:p-3.5 text-left"
               >
                 <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">

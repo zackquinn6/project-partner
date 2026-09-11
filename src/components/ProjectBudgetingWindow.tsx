@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useProject } from '@/contexts/ProjectContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useSteppedAutoAdvance } from '@/hooks/useSteppedAutoAdvance';
 
 interface BudgetLineItem {
   id: string;
@@ -248,6 +249,30 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
     }
   }, [editingItem]);
 
+  const projectBudgetGoalComplete =
+    budgetGoal !== null &&
+    budgetGoal !== undefined &&
+    String(budgetGoal).trim() !== '' &&
+    !isNaN(parseFloat(String(budgetGoal))) &&
+    parseFloat(String(budgetGoal)) > 0;
+
+  const setBudgetingAccordionValueStable = useCallback((next: string) => {
+    setBudgetingAccordionValue(next);
+  }, []);
+
+  useSteppedAutoAdvance({
+    enabled: open,
+    activeStep: budgetingAccordionValue || null,
+    setActiveStep: setBudgetingAccordionValueStable,
+    steps: [
+      {
+        key: 'set-project-budget',
+        isComplete: projectBudgetGoalComplete,
+        next: 'advanced-budget',
+      },
+    ],
+  });
+
   const applyProjectBudgetGoal = async () => {
     if (!currentProjectRun) {
       toast({ title: 'No project selected', variant: 'destructive' });
@@ -278,6 +303,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
         initial_budget: asString,
       });
       setBudgetGoal(asString);
+      setBudgetingAccordionValue('advanced-budget');
           } catch (error) {
       console.error('Error updating project budget:', error);
       toast({

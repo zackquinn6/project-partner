@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { ResponsiveDialog } from '../ResponsiveDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -37,6 +37,7 @@ import { PlanningToolContextBanner } from '../PlanningWizardSteps/PlanningToolCo
 import { formatProjectSizeDetail } from '@/utils/projectRunDisplayName';
 import { getDefaultHomeIdForUser } from '@/utils/ensureDefaultHome';
 import { cn } from '@/lib/utils';
+import { useSteppedAutoAdvance } from '@/hooks/useSteppedAutoAdvance';
 
 interface ProjectCustomizerProps {
   open: boolean;
@@ -83,10 +84,6 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   const [activeStep, setActiveStep] = useState(mode === 'unplanned-work' ? 'step-4' : 'step-1');
   const activeStepRef = useRef(activeStep);
   activeStepRef.current = activeStep;
-  const step3AutoAdvanceRef = useRef<{ step: string; complete: boolean }>({
-    step: activeStep,
-    complete: false,
-  });
   const [customizationState, setCustomizationState] = useState<CustomizationState>({
     spaces: [],
     spaceDecisions: {},
@@ -285,35 +282,22 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     customizationState.spaceDecisions,
   ]);
 
+  const setActiveStepStable = useCallback((next: string) => {
+    setActiveStep(next);
+  }, []);
+
   // Auto-advance step 3 → 4 when required decisions become complete (or step 3 has nothing left to answer).
-  useEffect(() => {
-    if (!open) {
-      step3AutoAdvanceRef.current = { step: activeStep, complete: false };
-      return;
-    }
-
-    const prev = step3AutoAdvanceRef.current;
-    const shouldAdvanceFromCompletion =
-      activeStep === 'step-3' &&
-      step3Complete &&
-      prev.step === 'step-3' &&
-      !prev.complete;
-    const shouldSkipEmptyStep3 =
-      activeStep === 'step-3' &&
-      step3Complete &&
-      prev.step === 'step-2';
-
-    step3AutoAdvanceRef.current = { step: activeStep, complete: step3Complete };
-
-    if (!shouldAdvanceFromCompletion && !shouldSkipEmptyStep3) return;
-
-    const timer = window.setTimeout(() => {
-      if (activeStepRef.current === 'step-3') {
-        setActiveStep('step-4');
-      }
-    }, 280);
-    return () => window.clearTimeout(timer);
-  }, [open, activeStep, step3Complete]);
+  // Steps 1–2 stay incomplete here so the hook can detect arrival from step-2 without skipping past them on open.
+  useSteppedAutoAdvance({
+    enabled: open && mode !== 'unplanned-work',
+    activeStep,
+    setActiveStep: setActiveStepStable,
+    steps: [
+      { key: 'step-1', isComplete: false, next: 'step-2' },
+      { key: 'step-2', isComplete: false, next: 'step-3' },
+      { key: 'step-3', isComplete: step3Complete, next: 'step-4' },
+    ],
+  });
 
   useEffect(() => {
     const templateId = templateProject?.id || currentProjectRun?.projectId;

@@ -45,6 +45,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSteppedAutoAdvance } from '@/hooks/useSteppedAutoAdvance';
 import {
   TEMPLATE_KEYS,
   TEMPLATE_LABELS,
@@ -517,6 +518,7 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
       const { error: insErr } = await supabase.from('communication_schedule_items').insert(rows);
       if (insErr) throw insErr;
       await loadAll();
+      setOpenSection('schedule');
     } catch (e) {
       console.error(e);
       toast.error('Could not generate schedule.');
@@ -602,6 +604,7 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
       return;
     }
         await loadAll();
+    setOpenSection('sent');
   };
 
   const draftForTrigger = (tt: TriggerType) => {
@@ -624,6 +627,25 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
   };
 
   const focusSection = (section: CommunicationPlanSectionKey) => () => setOpenSection(section);
+
+  const setOpenSectionStable = useCallback((next: string) => {
+    setOpenSection(next as CommunicationPlanSectionKey);
+  }, []);
+
+  const anyTriggerEnabled = triggers.some((t) => t.enabled);
+
+  useSteppedAutoAdvance({
+    enabled: open && !loading,
+    activeStep: openSection,
+    setActiveStep: setOpenSectionStable,
+    steps: [
+      { key: 'overview', isComplete: Boolean(plan?.enabled), next: 'people' },
+      { key: 'people', isComplete: stakeholders.length > 0, next: 'compose' },
+      // Compose stays open for drafting; send/download handlers move forward explicitly.
+      { key: 'schedule', isComplete: scheduleItems.length > 0, next: 'triggers' },
+      { key: 'triggers', isComplete: anyTriggerEnabled, next: 'sent' },
+    ],
+  });
 
   if (!currentProjectRun) {
     return (
