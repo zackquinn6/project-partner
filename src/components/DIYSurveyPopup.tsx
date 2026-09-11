@@ -1155,7 +1155,7 @@ export default function DIYSurveyPopup({
               <p className="text-muted-foreground">Pick Your Project Strategy</p>
             </div>
             <div className="grid grid-cols-1 gap-3 py-2" role="group" aria-label="Project management focus">
-              {PM_FOCUS_OPTIONS.map(({ value, title, description, icon: Icon, colorClasses }) => (
+              {PM_FOCUS_OPTIONS.map(({ value, title, description, icon: Icon, colorClasses, iconWrapClasses }) => (
                 <button
                   key={value}
                   type="button"
@@ -1166,19 +1166,19 @@ export default function DIYSurveyPopup({
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
                     ${colorClasses}
                     ${answers.projectFocus === value
-                      ? 'ring-2 ring-primary/70 text-foreground shadow-sm'
-                      : 'text-foreground/95'
+                      ? 'ring-2 ring-primary/70 border-primary text-foreground shadow-sm'
+                      : 'text-foreground'
                     }
                   `}
                   aria-pressed={answers.projectFocus === value}
                   aria-label={`${title}: ${description}`}
                 >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black/35">
-                    <Icon className="h-5 w-5 text-foreground/90" aria-hidden />
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${iconWrapClasses}`}>
+                    <Icon className="h-5 w-5" aria-hidden />
                   </span>
                   <span className="flex flex-col gap-0.5">
                     <span className="font-medium text-foreground">{title}</span>
-                    <span className="text-sm text-foreground/75">{description}</span>
+                    <span className="text-sm text-muted-foreground">{description}</span>
                   </span>
                 </button>
               ))}

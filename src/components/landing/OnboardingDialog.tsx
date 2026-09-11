@@ -22,7 +22,7 @@ export interface OnboardingData {
 }
 
 const DIY_LEVELS: { value: DIYLevel; label: string; short: string; icon: typeof Sparkles }[] = [
-  { value: 'Beginner', label: 'Beginner', short: 'New to DIY — we\'ll keep it simple', icon: Sparkles },
+  { value: 'Beginner', label: 'Beginner', short: 'New to DIY, we\'ll keep it simple', icon: Sparkles },
   { value: 'Intermediate', label: 'Intermediate', short: 'Comfortable with light projects', icon: Wrench },
   { value: 'Advanced', label: 'Advanced', short: 'Experienced with tools and trades', icon: Hammer },
 ];
@@ -33,34 +33,39 @@ export const PM_FOCUS_OPTIONS: {
   description: string;
   icon: typeof Calendar;
   colorClasses: string;
+  iconWrapClasses: string;
 }[] = [
   {
     value: 'schedule',
     title: 'Go Fast',
     description: 'Hitting the schedule I told myself and others',
     icon: Calendar,
-    colorClasses: 'border-slate-700 bg-slate-950/90 hover:border-slate-500',
+    colorClasses: 'border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100',
+    iconWrapClasses: 'bg-slate-200/80 text-slate-700',
   },
   {
     value: 'quality',
     title: 'Highest quality work',
     description: 'Focusing on precision of work',
     icon: Award,
-    colorClasses: 'border-emerald-700 bg-emerald-950/70 hover:border-emerald-500',
+    colorClasses: 'border-emerald-300 bg-emerald-50 hover:border-emerald-400 hover:bg-emerald-100/80',
+    iconWrapClasses: 'bg-emerald-200/70 text-emerald-800',
   },
   {
     value: 'savings',
     title: 'Maximize savings',
     description: 'Avoiding overspending / maximize savings',
     icon: PiggyBank,
-    colorClasses: 'border-violet-700 bg-violet-950/70 hover:border-violet-500',
+    colorClasses: 'border-violet-300 bg-violet-50 hover:border-violet-400 hover:bg-violet-100/80',
+    iconWrapClasses: 'bg-violet-200/70 text-violet-800',
   },
   {
     value: 'all_three',
     title: 'Balanced',
     description: 'Balance cost, quality, and schedule together',
     icon: Target,
-    colorClasses: 'border-blue-700 bg-blue-950/70 hover:border-blue-500',
+    colorClasses: 'border-sky-300 bg-sky-50 hover:border-sky-400 hover:bg-sky-100/80',
+    iconWrapClasses: 'bg-sky-200/70 text-sky-800',
   },
 ];
 
@@ -196,7 +201,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
           </DialogTitle>
           {step === 1 && (
             <p id="name-description" className="text-sm text-muted-foreground font-normal">
-              First name or nickname is fine — we use this to personalize your experience.
+              First name or nickname is fine. We use this to personalize your experience.
             </p>
           )}
           {step === 2 && (
@@ -276,7 +281,7 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
 
         {step === 3 && (
           <div className="grid grid-cols-1 gap-3 py-2" role="group" aria-label="Project management focus">
-            {PM_FOCUS_OPTIONS.map(({ value, title, description, icon: Icon, colorClasses }) => (
+            {PM_FOCUS_OPTIONS.map(({ value, title, description, icon: Icon, colorClasses, iconWrapClasses }) => (
               <button
                 key={value}
                 type="button"
@@ -287,19 +292,19 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
                   ${colorClasses}
                   ${pmFocus === value
-                    ? 'ring-2 ring-primary/70 text-foreground shadow-sm'
-                    : 'text-foreground/95'
+                    ? 'ring-2 ring-primary/70 border-primary text-foreground shadow-sm'
+                    : 'text-foreground'
                   }
                 `}
                 aria-pressed={pmFocus === value}
                 aria-label={`${title}: ${description}`}
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black/35">
-                  <Icon className="h-5 w-5 text-foreground/90" aria-hidden />
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${iconWrapClasses}`}>
+                  <Icon className="h-5 w-5" aria-hidden />
                 </span>
                 <span className="flex flex-col gap-0.5">
                   <span className="font-medium text-foreground">{title}</span>
-                  <span className="text-sm text-foreground/75">{description}</span>
+                  <span className="text-sm text-muted-foreground">{description}</span>
                 </span>
               </button>
             ))}
