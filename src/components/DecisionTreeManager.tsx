@@ -39,6 +39,10 @@ import {
   parseGeneralProjectDecisionsFromPrerequisites,
 } from '@/utils/generalProjectDecisions';
 import { sanitizeMicroDecisionOrphansForProject } from '@/utils/sanitizeMicroDecisionOrphansForProject';
+import {
+  applyWorkflowDecisionDetailsToPhases,
+  workflowDecisionFieldsByOpIdFromConfigBlob,
+} from '@/utils/workflowDecisionDetails';
 import { 
   ReactFlow,
   Node, 
@@ -67,6 +71,12 @@ interface DecisionTreeManagerProps {
 interface FlowTypeConfig {
   type: 'if-necessary' | 'alternate' | 'dependent' | 'blocked' | null;
   decisionPrompt?: string;
+  /** Longer decision explanation for Project Customizer step 3 detail window. */
+  decisionDetailedSummary?: string;
+  /** Image shown on this option in Project Customizer step 3. */
+  optionImageUrl?: string;
+  /** Longer per-option explanation for the customizer detail window. */
+  optionDetailedDescription?: string;
   alternateIds?: string[]; // IDs of alternate operations/steps
   predecessorIds?: string[]; // IDs of prerequisite operations
   dependentOn?: string; // ID of the if-necessary operation this depends on
@@ -75,15 +85,24 @@ interface FlowTypeConfig {
 interface StoredDecisionTreeEntity {
   type: 'if-necessary' | 'alternate' | 'dependent' | 'blocked' | null;
   decisionPrompt?: string | null;
+  decisionDetailedSummary?: string | null;
+  optionImageUrl?: string | null;
+  optionDetailedDescription?: string | null;
   alternateIds?: string[];
   dependentOn?: string | null;
 }
 
 function serializeDecisionTreeEntity(config: FlowTypeConfig): StoredDecisionTreeEntity | null {
   const prompt = config.decisionPrompt?.trim();
+  const detailedSummary = config.decisionDetailedSummary?.trim();
+  const optionImageUrl = config.optionImageUrl?.trim();
+  const optionDetailedDescription = config.optionDetailedDescription?.trim();
   const hasContent =
     !!config.type ||
     !!prompt ||
+    !!detailedSummary ||
+    !!optionImageUrl ||
+    !!optionDetailedDescription ||
     (config.alternateIds && config.alternateIds.length > 0) ||
     !!config.dependentOn;
   if (!hasContent) {
@@ -92,6 +111,9 @@ function serializeDecisionTreeEntity(config: FlowTypeConfig): StoredDecisionTree
   return {
     type: config.type ?? null,
     decisionPrompt: prompt ? prompt : null,
+    decisionDetailedSummary: detailedSummary ? detailedSummary : null,
+    optionImageUrl: optionImageUrl ? optionImageUrl : null,
+    optionDetailedDescription: optionDetailedDescription ? optionDetailedDescription : null,
     alternateIds:
       config.alternateIds && config.alternateIds.length > 0 ? config.alternateIds : undefined,
     dependentOn: config.dependentOn ?? null,
@@ -263,6 +285,18 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 d.decisionPrompt !== undefined && d.decisionPrompt !== null
                   ? d.decisionPrompt || undefined
                   : prev.decisionPrompt,
+              decisionDetailedSummary:
+                d.decisionDetailedSummary !== undefined && d.decisionDetailedSummary !== null
+                  ? d.decisionDetailedSummary || undefined
+                  : prev.decisionDetailedSummary,
+              optionImageUrl:
+                d.optionImageUrl !== undefined && d.optionImageUrl !== null
+                  ? d.optionImageUrl || undefined
+                  : prev.optionImageUrl,
+              optionDetailedDescription:
+                d.optionDetailedDescription !== undefined && d.optionDetailedDescription !== null
+                  ? d.optionDetailedDescription || undefined
+                  : prev.optionDetailedDescription,
               alternateIds: d.alternateIds ?? prev.alternateIds,
               dependentOn: d.dependentOn ?? prev.dependentOn,
               predecessorIds: prev.predecessorIds ?? [],
@@ -280,6 +314,9 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           configs[entityId] = {
             type: existing?.type ?? null,
             decisionPrompt: existing?.decisionPrompt,
+            decisionDetailedSummary: existing?.decisionDetailedSummary,
+            optionImageUrl: existing?.optionImageUrl,
+            optionDetailedDescription: existing?.optionDetailedDescription,
             alternateIds: existing?.alternateIds,
             dependentOn: existing?.dependentOn,
             predecessorIds: ids,
@@ -456,6 +493,9 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 updateFlowConfig(itemId, {
                   type: null,
                   decisionPrompt: undefined,
+                  decisionDetailedSummary: undefined,
+                  optionImageUrl: undefined,
+                  optionDetailedDescription: undefined,
                   alternateIds: [],
                   dependentOn: undefined,
                 });
@@ -463,6 +503,9 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 updateFlowConfig(itemId, {
                   type: 'blocked',
                   decisionPrompt: undefined,
+                  decisionDetailedSummary: undefined,
+                  optionImageUrl: undefined,
+                  optionDetailedDescription: undefined,
                   alternateIds: [],
                   dependentOn: undefined,
                 });
@@ -531,14 +574,51 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
         )}
 
         {config.type && config.type !== 'blocked' && (
-          <div>
-            <Label className="text-sm font-semibold">Decision Prompt</Label>
-            <Textarea
-              placeholder="Enter question or description for this decision point"
-              value={config.decisionPrompt || ''}
-              onChange={(e) => updateFlowConfig(itemId, { decisionPrompt: e.target.value })}
-              className="min-h-[80px] mt-1 text-sm"
-            />
+          <div className="space-y-2">
+            <div>
+              <Label className="text-sm font-semibold">Decision Prompt</Label>
+              <Textarea
+                placeholder="Enter question or description for this decision point"
+                value={config.decisionPrompt || ''}
+                onChange={(e) => updateFlowConfig(itemId, { decisionPrompt: e.target.value })}
+                className="min-h-[80px] mt-1 text-sm"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-semibold">Decision detailed summary</Label>
+              <Textarea
+                placeholder="Longer explanation shown when the homeowner opens decision details"
+                value={config.decisionDetailedSummary || ''}
+                onChange={(e) =>
+                  updateFlowConfig(itemId, { decisionDetailedSummary: e.target.value })
+                }
+                className="min-h-[80px] mt-1 text-sm"
+              />
+            </div>
+            {(config.type === 'alternate' || config.type === 'if-necessary') && (
+              <>
+                <div>
+                  <Label className="text-sm font-semibold">Option image URL</Label>
+                  <Input
+                    placeholder="/project-catalog/decision-options/example.jpg"
+                    value={config.optionImageUrl || ''}
+                    onChange={(e) => updateFlowConfig(itemId, { optionImageUrl: e.target.value })}
+                    className="mt-1 h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold">Option detailed description</Label>
+                  <Textarea
+                    placeholder="Longer per-option explanation for the detail window"
+                    value={config.optionDetailedDescription || ''}
+                    onChange={(e) =>
+                      updateFlowConfig(itemId, { optionDetailedDescription: e.target.value })
+                    }
+                    className="min-h-[80px] mt-1 text-sm"
+                  />
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -881,6 +961,34 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
         });
         if (rebuild2) {
           console.warn('DecisionTreeManager: rebuild after micro-decision sanitize failed', rebuild2);
+        }
+      }
+
+      // Rebuild may omit decision-detail fields; merge from decision-tree config onto projects.phases.
+      const fieldsByOpId = workflowDecisionFieldsByOpIdFromConfigBlob(mergedDecisionBlob);
+      if (Object.keys(fieldsByOpId).length > 0) {
+        const { data: phasesRow, error: phasesFetchErr } = await supabase
+          .from('projects')
+          .select('phases')
+          .eq('id', currentProject.id)
+          .maybeSingle();
+        if (phasesFetchErr) {
+          console.warn('DecisionTreeManager: failed to load phases for decision-detail patch', phasesFetchErr);
+        } else if (Array.isArray(phasesRow?.phases)) {
+          const patched = applyWorkflowDecisionDetailsToPhases(
+            phasesRow.phases as unknown as Phase[],
+            fieldsByOpId
+          );
+          const { error: phasesPatchErr } = await supabase
+            .from('projects')
+            .update({
+              phases: patched as unknown as Json,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', currentProject.id);
+          if (phasesPatchErr) {
+            console.warn('DecisionTreeManager: failed to patch decision details onto phases', phasesPatchErr);
+          }
         }
       }
 

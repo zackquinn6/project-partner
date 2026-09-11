@@ -229,21 +229,28 @@ Per step: outputs with `name` (≤50 chars, prefer under 30), `description`, `ty
 
 **Mitigation completeness:** Every identified risk must include `mitigation_actions` that, taken together, can bring residual severity to **medium or low** (ideally **low**). Do not leave a risk whose full mitigation set still leaves residual **high**. Prefer concrete, checkable actions; set `mitigation_effort_level` honestly so Risk Radar can sort easiest-first.
 
+**Risk Radar copy rules (strategy, actions, recommendation, benefit, descriptions):**
+
+1. **Do not use the word "proper"** (or "properly"). Define the standard instead - what measurement, product limit, coverage %, cure hours, or visible pass/fail looks like.
+2. **Do not say "slow down" or "speed up" without a quantification method.** If the intent is more detailed focus, give a timed rate (e.g. "Use a timer, and aim for about 3 sq ft every 15 min - that is cautious enough for detailed focus."). Same for pace-up: state the target rate or batch size.
+3. **Quantify recommendations.** Vague buffers become numbers: e.g. not "keep a small contingency budget" but "Keep a 10% contingency budget or a minimum of $500 for most DIY projects." Apply the same to overage %, tolerances (inch per 10 ft), cure windows (hours/days), and $ / day impact ranges already on the risk row.
+4. **Be specific, not polite-vague.** Replace soft phrases with actionable defaults people can put on a calendar - e.g. not "work within reasonable hours" but "Most people are okay with an 8:00-9:00a start and up to 7:00-8:00p. No power tools before or after." Name the tool types, gates, and thresholds.
+
 | Field | Type / enums | Authoring rule |
 | ----- | ------------ | -------------- |
 | `project_id` | uuid | Root template |
 | `risk_title` | string | Required |
-| `risk_description` | string \| null | Optional; narrative often in `benefit` |
+| `risk_description` | string \| null | Optional; narrative often in `benefit`; follow copy rules above |
 | `likelihood` | string \| null | `low` / `medium` / `high` |
 | `severity` / `impact` | string \| null | `low` / `medium` / `high` (UI uses severity) |
 | `schedule_impact_low_days`, `schedule_impact_high_days` | number \| null | Calendar-day impact range |
 | `budget_impact_low`, `budget_impact_high` | number \| null | Dollar impact range |
-| `mitigation_strategy` | string \| null | Overall mitigation approach |
-| `mitigation_actions` | Json \| null | `[{ action, benefit?, completed? }]` — cumulative actions must reduce residual to medium or low (ideally low) |
+| `mitigation_strategy` | string \| null | Overall mitigation approach; quantified and specific (copy rules) |
+| `mitigation_actions` | Json \| null | `[{ action, benefit?, completed? }]` — cumulative actions must reduce residual to medium or low (ideally low); each `action` checkable with numbers where applicable |
 | `mitigation_cost` | number \| null | Cost to mitigate |
 | `mitigation_effort_level` | string \| null | `low` / `medium` / `high` |
-| `recommendation` | string \| null | What to do |
-| `benefit` | string \| null | What if it happens / notes |
+| `recommendation` | string \| null | What to do; quantified gate or default, not vague advice |
+| `benefit` | string \| null | What if it happens / notes; include $ and/or day ranges when known |
 | `display_order` | number \| null | Register order |
 
 ### Step 5 — Tools
@@ -344,7 +351,7 @@ Template schedule content lives on **`projects.scheduling_prerequisites`** (Json
 | Piece | Location | Authoring rule |
 | ----- | -------- | -------------- |
 | Prerequisite map | string keys → string[] of entity ids | EntityId (phase/operation/step) → prerequisite entity IDs; parsed by scheduling deps helpers |
-| `__decision_tree_config__` | reserved key (`DECISION_TREE_CONFIG_KEY`) | Decision-tree / flow config blob; phase entries may use `type: 'blocked'` (hidden from pickers) |
+| `__decision_tree_config__` | reserved key (`DECISION_TREE_CONFIG_KEY`) | Decision-tree / flow config blob; phase entries may use `type: 'blocked'` (hidden from pickers). Per alternate/if-necessary operation may also store Project Customizer step 3 detail fields: `decisionDetailedSummary`, `optionImageUrl`, `optionDetailedDescription` (plus existing `decisionPrompt` / `alternateIds`). These are merged onto `projects.phases` operation objects as `decisionDetailedSummary`, `optionImageUrl`, `optionDetailedDescription`, `userPrompt` after rebuild. |
 | `__general_project_decisions__` | reserved key (`GENERAL_PROJECT_DECISIONS_KEY`) | Array of `{ id, label, choices: [{ id, label }] }` (`GeneralProjectDecision`) |
 
 **General project decisions** drive `ContentSection.decisionApplicability` (Step 2). Do not invent decision ids that sections do not reference (or leave sections without applicability when decisions are unused).
@@ -392,6 +399,8 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-11 | `__decision_tree_config__` / phases ops: `decisionDetailedSummary`, `optionImageUrl`, `optionDetailedDescription` for Project Customizer step 3 workflow decisions (summary = name/description/prompt; detail window via Info) | Tile flooring underlayment decision needed images + deeper copy without replacing short summaries |
+| 2026-09-11 | Step 4 Risk Radar copy rules: no "proper" (define the standard); no slow/speed without a timed rate; quantify contingencies/tolerances/$/days; replace vague hours with concrete windows (e.g. 8-9a to 7-8p, no power tools outside) | Tile Flooring Risk Radar review; DIY guidance must be checkable |
 | 2026-09-11 | Step 4: every risk's `mitigation_actions` must cumulatively reduce residual severity to medium or low (ideally low) | Risk Radar check-offs drive "Whats the new status?"; authored mitigations must be able to get there |
 | 2026-09-11 | Step 10 `project_challenges`: clarify purpose as neutral hardest-parts decision tool (1-2 sentences, ≤200 chars; not sales or scare); Non-negotiables: no em-dashes in authored user-facing prose (hyphens OK) | Recreated tile flooring / backsplash challenges; authors need tone+scope+punctuation rules |
 | 2026-09-10 | Expanded field catalogs for catalog header, Steps 1–10, schedule prereqs (§E), related projects (§F); added on-demand Cursor rule `.cursor/rules/ai-project-dev-guide.mdc` | Single guide for template content development + continuous improvement |

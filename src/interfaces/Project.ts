@@ -241,6 +241,16 @@ export interface Operation {
   // Standard content flag - marks operations from Standard Project Foundation
   isStandard?: boolean;
   flowType?: 'prime' | 'alternate' | 'if-necessary';
+  /** Alternate-group key used by Project Customizer step 3 workflow decisions. */
+  alternateGroup?: string;
+  /** Decision prompt shown for alternate / if-necessary choices (from decision-tree config). */
+  userPrompt?: string;
+  /** Longer decision explanation shown in the customizer detail window. */
+  decisionDetailedSummary?: string;
+  /** Image URL for this option in Project Customizer step 3. */
+  optionImageUrl?: string;
+  /** Longer per-option explanation shown in the customizer detail window. */
+  optionDetailedDescription?: string;
   /** Admin-only: operation is hidden on this child template (still shown in StructureManager). */
   isHiddenOnThisProject?: boolean;
 }
