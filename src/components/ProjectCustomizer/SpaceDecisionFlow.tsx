@@ -162,7 +162,7 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
       {spaces.map((space) => (
         <Card key={space.id} className="border-2">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between text-sm font-semibold">
+            <CardTitle className="flex items-center justify-between text-base font-semibold">
               <div className="flex items-center gap-3">
                 <span>{space.space_name}</span>
               </div>

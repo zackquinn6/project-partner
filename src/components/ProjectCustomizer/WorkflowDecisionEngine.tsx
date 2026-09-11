@@ -97,7 +97,7 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
     <ScrollArea className="h-full">
       <div className={`space-y-6 ${isMobile ? 'px-1' : 'p-6'}`}>
         <div className="text-center mb-6">
-          <h3 className="mb-2 text-sm font-semibold">Workflow Decision Points</h3>
+          <h3 className="mb-2 text-base font-semibold">Workflow Decision Points</h3>
           <p className="text-sm text-muted-foreground">
             Required choices first. Optional work only if you need it.
           </p>
@@ -208,7 +208,7 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
           <Card>
             <CardContent className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
               <CheckCircle2 className={`text-green-500 mx-auto mb-4 ${isMobile ? 'w-10 h-10' : 'w-12 h-12'}`} />
-              <h3 className="mb-2 text-sm font-semibold">No Decisions Required</h3>
+              <h3 className="mb-2 text-base font-semibold">No Decisions Required</h3>
               <p className="text-muted-foreground text-sm">
                 This project workflow has been pre-configured with optimal settings. 
                 You can add custom work in the other tabs if needed.

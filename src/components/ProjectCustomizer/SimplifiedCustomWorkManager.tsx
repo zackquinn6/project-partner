@@ -167,7 +167,7 @@ export const SimplifiedCustomWorkManager: React.FC<SimplifiedCustomWorkManagerPr
         <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+              <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
                 <Plus className="w-5 h-5 text-primary" />
                 Add Workflow Step
               </DialogTitle>

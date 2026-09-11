@@ -739,7 +739,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     <div className="flex items-start gap-3 text-left">
       <StepCircle step={step} />
       <div className="min-w-0">
-        <div className="text-sm font-semibold text-foreground md:text-base">{title}</div>
+        <div className="text-base font-semibold text-foreground md:text-lg">{title}</div>
         <div className="mt-1 text-xs leading-relaxed text-muted-foreground md:text-sm">{description}</div>
       </div>
     </div>
@@ -897,7 +897,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                   {filteredGeneralProjectDecisions.length > 0 ? (
                     <Card className="mb-6 border-primary/20">
                       <CardHeader className={isMobile ? 'pb-3' : ''}>
-                        <CardTitle className="text-sm font-semibold">Project choices</CardTitle>
+                        <CardTitle className="text-base font-semibold">Project choices</CardTitle>
                         <CardDescription className="text-xs">
                           Project-wide choices that pair with the space decisions below.
                         </CardDescription>
@@ -969,7 +969,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     </div>
                     <Card>
                       <CardHeader className={isMobile ? 'pb-3' : ''}>
-                        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                        <CardTitle className="flex items-center gap-2 text-base font-semibold">
                           <GitBranch className="h-4 w-4" />
                           Add Workflow Steps
                         </CardTitle>
@@ -992,7 +992,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     {customizationState.customPlannedWork.length > 0 && (
                       <Card>
                         <CardHeader className={isMobile ? 'pb-3' : ''}>
-                          <CardTitle className="text-sm font-semibold">Added Planned Work</CardTitle>
+                          <CardTitle className="text-base font-semibold">Added Planned Work</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                           {customizationState.customPlannedWork.map((phase, index) => (
@@ -1011,7 +1011,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     {customizationState.customUnplannedWork.length > 0 && (
                       <Card>
                         <CardHeader className={isMobile ? 'pb-3' : ''}>
-                          <CardTitle className="text-sm font-semibold">Added Custom Work</CardTitle>
+                          <CardTitle className="text-base font-semibold">Added Custom Work</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                           {customizationState.customUnplannedWork.map((phase, index) => (
@@ -1059,7 +1059,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
           <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex items-center justify-between gap-2">
-              <DialogTitle className="text-base font-semibold">Project Spaces</DialogTitle>
+              <DialogTitle className="text-lg font-semibold">Project Spaces</DialogTitle>
               <Button 
                 variant="ghost" 
                 size="sm" 

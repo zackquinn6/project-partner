@@ -226,7 +226,7 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
           <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+                <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
                   <Package className="h-4 w-4" />
                   Browse Available Projects
                 </DialogTitle>
@@ -333,7 +333,7 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
               {filteredProjects.length === 0 ? (
                 <div className="text-center py-8">
                   <Package className="text-muted-foreground mx-auto mb-4 w-12 h-12" />
-                  <h3 className="mb-2 text-sm font-semibold">No Projects Found</h3>
+                  <h3 className="mb-2 text-base font-semibold">No Projects Found</h3>
                   <p className="text-muted-foreground text-sm">
                     {searchTerm || selectedCategories.length > 0
                       ? 'Try adjusting your search or filter criteria.'
@@ -391,7 +391,7 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
           <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+                <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
                   <Package className="h-4 w-4" />
                   Select Phases
                 </DialogTitle>
@@ -413,7 +413,7 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
                   <Card>
                     <CardContent className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
                       <Package className={`text-muted-foreground mx-auto mb-4 ${isMobile ? 'w-10 h-10' : 'w-12 h-12'}`} />
-                      <h3 className="mb-2 text-sm font-semibold">No Phases Available</h3>
+                      <h3 className="mb-2 text-base font-semibold">No Phases Available</h3>
                       <p className="text-muted-foreground text-sm">
                         This project has no phases available to add.
                       </p>
@@ -432,7 +432,7 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
                         <CardHeader className={isMobile ? 'pb-2' : 'pb-2'}>
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
-                              <CardTitle className="flex items-center gap-3 text-sm font-semibold">
+                              <CardTitle className="flex items-center gap-3 text-base font-semibold">
                                 <Checkbox
                                   checked={isPhaseSelected(phase)}
                                   onCheckedChange={(checked) => handlePhaseToggle(phase, checked as boolean)}

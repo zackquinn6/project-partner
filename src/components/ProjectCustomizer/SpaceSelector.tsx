@@ -499,7 +499,7 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="mb-2 text-sm font-semibold">Define Project Spaces</h3>
+        <h3 className="mb-2 text-base font-semibold">Define Project Spaces</h3>
         <p className="text-sm text-muted-foreground mb-4">
           Select spaces from your home or add custom spaces for this project. 
           Each space will have its own customization decisions.
@@ -510,7 +510,7 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
       {selectedSpaces.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-semibold">Selected Spaces ({selectedSpaces.length})</CardTitle>
+            <CardTitle className="text-base font-semibold">Selected Spaces ({selectedSpaces.length})</CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
               Set priority order: higher priority spaces (lower numbers) are completed first. Use arrows to reorder.
             </p>
@@ -640,7 +640,7 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
       {projectRunHomeId && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
               <Home className="w-4 h-4" />
               Import from Home Spaces
             </CardTitle>
@@ -685,7 +685,7 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
       {/* Add Custom Space */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold">
             <Plus className="w-4 h-4" />
             Add Custom Space
           </CardTitle>
