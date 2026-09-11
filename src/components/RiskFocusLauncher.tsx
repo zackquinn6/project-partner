@@ -225,7 +225,7 @@ export function RiskFocusLauncherDialog({
           <p className="text-sm font-normal leading-snug text-muted-foreground">
             {`Spot what could go wrong, and plan how you'll handle it`}
           </p>
-          <DialogDescription>Choose a project to get started (same visibility as the project catalog).</DialogDescription>
+          <DialogDescription>Choose a project to get started.</DialogDescription>
         </DialogHeader>
         <RiskFocusStartControls
           onSessionStarted={(runId) => {
