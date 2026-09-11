@@ -35,6 +35,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { isKickoffPhaseComplete } from '@/utils/projectUtils';
 import { filterProjectsForCatalog } from '@/utils/catalogProjectFilters';
+import {
+  CATALOG_FIRST_ROW_DESKTOP,
+  CATALOG_FIRST_ROW_MOBILE,
+  getProjectCoverUrl,
+  prefetchCatalogCovers,
+  resolveCatalogCoverUrl,
+} from '@/utils/catalogCoverImage';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { reportUserFacingError } from '@/utils/errorReporting';
 import { toast } from 'sonner';
@@ -133,7 +140,16 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const [selectedEffortLevels, setSelectedEffortLevels] = useState<string[]>([]);
   const [projectTypeFilter, setProjectTypeFilter] = useState<'all' | 'primary' | 'secondary'>('all');
   const [showAllProjects, setShowAllProjects] = useState(false);
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
   const projectTypeLabel = projectTypeFilter === 'all' ? '' : projectTypeFilter === 'primary' ? 'Primary' : 'Secondary';
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 1024px)');
+    const sync = () => setIsLargeScreen(mediaQuery.matches);
+    sync();
+    mediaQuery.addEventListener('change', sync);
+    return () => mediaQuery.removeEventListener('change', sync);
+  }, []);
 
   const ProjectTypeTooltip = () => (
     <TooltipProvider delayDuration={100}>
@@ -329,6 +345,25 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
   // Determine if grid should be shown
   const shouldShowGrid = hasActiveFilters || showAllProjects;
+
+  const prefetchFirstRowCovers = useCallback(() => {
+    const firstRow = filteredProjects.slice(0, Math.max(CATALOG_FIRST_ROW_DESKTOP, CATALOG_FIRST_ROW_MOBILE));
+    const coverUrls = firstRow.map((project) => getProjectCoverUrl(project as any));
+    if (isLargeScreen) {
+      prefetchCatalogCovers(coverUrls.slice(0, CATALOG_FIRST_ROW_DESKTOP), 'grid');
+    } else {
+      prefetchCatalogCovers(coverUrls.slice(0, CATALOG_FIRST_ROW_MOBILE), 'thumb');
+    }
+  }, [filteredProjects, isLargeScreen]);
+
+  // Warm first-row covers while the popular carousel is visible (before "Show all Projects")
+  useEffect(() => {
+    if (!catalogFiltersReady || shouldShowGrid || filteredProjects.length === 0) {
+      return;
+    }
+    prefetchFirstRowCovers();
+  }, [catalogFiltersReady, shouldShowGrid, filteredProjects.length, prefetchFirstRowCovers]);
+
   const getDifficultyColor = useCallback((difficulty: string) => {
     switch (difficulty) {
       case 'Beginner':
@@ -1131,10 +1166,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               className="w-full px-11 sm:px-12 md:px-14"
             >
               <CarouselContent className="-ml-2 md:-ml-3">
-                {popularProjects.map((project) => {
+                {popularProjects.map((project, index) => {
                   const projectCategories = Array.isArray(project.category) ? project.category : (project.category ? [project.category] : []);
                   const IconComponent = getIconForCategory(projectCategories[0] || '');
-                  const imageUrl = (project as any).cover_image || project.image || (project as any).images?.[0];
+                  const imageUrl = getProjectCoverUrl(project as any);
+                  const displayUrl = imageUrl ? resolveCatalogCoverUrl(imageUrl, 'carousel') : undefined;
+                  const isPriority = index < CATALOG_FIRST_ROW_DESKTOP;
                   return (
                     <CarouselItem key={project.id} className="pl-2 md:pl-3 basis-[140px] sm:basis-[160px] md:basis-[180px]">
                       <div
@@ -1155,10 +1192,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                         style={{ aspectRatio: '4/3' }}
                       >
                         <div className="relative w-full h-full min-h-0">
-                          {imageUrl ? (
+                          {displayUrl ? (
                             <img
-                              src={imageUrl}
+                              src={displayUrl}
                               alt={project.name}
+                              loading={isPriority ? 'eager' : 'lazy'}
+                              decoding="async"
+                              fetchPriority={isPriority ? 'high' : 'auto'}
                               className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                           ) : (
@@ -1196,6 +1236,8 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               variant="outline" 
               size="sm"
               onClick={() => setShowAllProjects(true)}
+              onMouseEnter={prefetchFirstRowCovers}
+              onFocus={prefetchFirstRowCovers}
               className="text-xs"
             >
               Show all Projects
@@ -1263,10 +1305,16 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               )}
             </div>
           ) : (
-            filteredProjects.map(project => {
+            filteredProjects.map((project, index) => {
               const projectCategories = Array.isArray(project.category) ? project.category : (project.category ? [project.category] : []);
               const IconComponent = getIconForCategory(projectCategories[0] || '');
-              const imageUrl = (project as any).cover_image || project.image || (project as any).images?.[0];
+              const imageUrl = getProjectCoverUrl(project as any);
+              const thumbUrl = imageUrl ? resolveCatalogCoverUrl(imageUrl, 'thumb') : undefined;
+              const gridUrl = imageUrl ? resolveCatalogCoverUrl(imageUrl, 'grid') : undefined;
+              const isFirstRowDesktop = index < CATALOG_FIRST_ROW_DESKTOP;
+              const isFirstRowMobile = index < CATALOG_FIRST_ROW_MOBILE;
+              const eagerMobile = !isLargeScreen && isFirstRowMobile;
+              const eagerDesktop = isLargeScreen && isFirstRowDesktop;
               
               return (
                 <div
@@ -1288,10 +1336,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                   >
                     <div className="flex items-stretch h-full min-h-0">
                       <div className="flex-shrink-0 w-14 h-16 self-stretch overflow-hidden bg-muted">
-                        {((project as any).cover_image || project.image || (project as any).images?.[0]) ? (
+                        {thumbUrl ? (
                           <img 
-                            src={(project as any).cover_image || project.image || (project as any).images?.[0]} 
+                            src={thumbUrl} 
                             alt=""
+                            loading={eagerMobile ? 'eager' : 'lazy'}
+                            decoding="async"
+                            fetchPriority={eagerMobile ? 'high' : 'auto'}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -1359,7 +1410,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       <div 
                         className="gradient-background absolute inset-0 bg-gradient-to-br from-primary to-orange-500"
                         style={{
-                          opacity: imageUrl ? 0 : 1,
+                          opacity: gridUrl ? 0 : 1,
                           transition: 'opacity 0.3s ease',
                           zIndex: 1
                         }}
@@ -1371,10 +1422,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       </div>
                       
                       {/* Image - if available */}
-                      {imageUrl && (
+                      {gridUrl && (
                         <img 
-                          src={imageUrl} 
+                          src={gridUrl} 
                           alt={project.name}
+                          loading={eagerDesktop ? 'eager' : 'lazy'}
+                          decoding="async"
+                          fetchPriority={eagerDesktop ? 'high' : 'auto'}
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                           style={{ 
                             zIndex: 2,
@@ -1403,7 +1457,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       )}
                       
                       {/* Overlay gradient for text readability - only if image exists */}
-                      {imageUrl && (
+                      {gridUrl && (
                         <div 
                           className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" 
                           style={{ zIndex: 3 }} 
