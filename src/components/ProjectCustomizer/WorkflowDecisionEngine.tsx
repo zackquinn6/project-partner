@@ -97,8 +97,8 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
     <ScrollArea className="h-full">
       <div className={`space-y-6 ${isMobile ? 'px-1' : 'p-6'}`}>
         <div className="text-center mb-6">
-          <h3 className={`font-semibold mb-2 ${isMobile ? 'text-base' : 'text-lg'}`}>Workflow Decision Points</h3>
-          <p className={`text-muted-foreground ${isMobile ? 'text-sm' : 'text-sm'}`}>
+          <h3 className="mb-2 text-sm font-semibold">Workflow Decision Points</h3>
+          <p className="text-sm text-muted-foreground">
             Make choices about how you want to execute each phase of your project.
             <strong className="text-primary"> Required decisions</strong> must be made, 
             <em className="text-muted-foreground"> optional work</em> can be added if needed.
@@ -108,9 +108,9 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
         {phasesWithDecisions?.map(({ phase, alternateGroups, ifNecessaryOps }) => (
           <Card key={phase.id} className="w-full">
             <CardHeader className={isMobile ? 'pb-3' : ''}>
-              <CardTitle className={`flex flex-col sm:flex-row sm:items-center gap-2 ${isMobile ? 'text-base' : ''}`}>
+              <CardTitle className="flex flex-col gap-2 text-sm font-semibold sm:flex-row sm:items-center">
                 <span className="flex-1">{phase.name}</span>
-                <Badge variant="outline" className="self-start sm:self-center text-xs">
+                <Badge variant="outline" className="self-start text-xs sm:self-center">
                   {phase.operations?.length || 0} operations
                 </Badge>
               </CardTitle>
@@ -125,7 +125,7 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
                       <AlertCircle className="w-5 h-5 text-orange-500" />
                     </div>
                     <div className="flex-1">
-                      <h4 className={`font-medium flex flex-col sm:flex-row sm:items-center gap-2 ${isMobile ? 'text-sm' : ''}`}>
+                      <h4 className="flex flex-col gap-2 text-sm font-medium sm:flex-row sm:items-center">
                         <span className="flex-1">{group.prompt}</span>
                         <Badge variant="destructive" className="text-xs">Required</Badge>
                       </h4>
@@ -210,7 +210,7 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
           <Card>
             <CardContent className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
               <CheckCircle2 className={`text-green-500 mx-auto mb-4 ${isMobile ? 'w-10 h-10' : 'w-12 h-12'}`} />
-              <h3 className={`font-semibold mb-2 ${isMobile ? 'text-base' : 'text-lg'}`}>No Decisions Required</h3>
+              <h3 className="mb-2 text-sm font-semibold">No Decisions Required</h3>
               <p className="text-muted-foreground text-sm">
                 This project workflow has been pre-configured with optimal settings. 
                 You can add custom work in the other tabs if needed.

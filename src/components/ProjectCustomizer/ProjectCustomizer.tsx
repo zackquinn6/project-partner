@@ -897,7 +897,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                   {filteredGeneralProjectDecisions.length > 0 ? (
                     <Card className="mb-6 border-primary/20">
                       <CardHeader className={isMobile ? 'pb-3' : ''}>
-                        <CardTitle className={isMobile ? 'text-base' : ''}>Project choices</CardTitle>
+                        <CardTitle className="text-sm font-semibold">Project choices</CardTitle>
                         <CardDescription className="text-xs">
                           General options for this project. They work together with phase and alternate
                           decisions below.
@@ -970,8 +970,8 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     </div>
                     <Card>
                       <CardHeader className={isMobile ? 'pb-3' : ''}>
-                        <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : ''}`}>
-                          <GitBranch className="w-5 h-5" />
+                        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                          <GitBranch className="h-4 w-4" />
                           Add Workflow Steps
                         </CardTitle>
                       </CardHeader>
@@ -993,7 +993,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     {customizationState.customPlannedWork.length > 0 && (
                       <Card>
                         <CardHeader className={isMobile ? 'pb-3' : ''}>
-                          <CardTitle className={isMobile ? 'text-base' : ''}>Added Planned Work</CardTitle>
+                          <CardTitle className="text-sm font-semibold">Added Planned Work</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                           {customizationState.customPlannedWork.map((phase, index) => (
@@ -1012,7 +1012,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     {customizationState.customUnplannedWork.length > 0 && (
                       <Card>
                         <CardHeader className={isMobile ? 'pb-3' : ''}>
-                          <CardTitle className={isMobile ? 'text-base' : ''}>Added Custom Work</CardTitle>
+                          <CardTitle className="text-sm font-semibold">Added Custom Work</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                           {customizationState.customUnplannedWork.map((phase, index) => (
@@ -1060,7 +1060,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
           <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex items-center justify-between gap-2">
-              <DialogTitle className="text-lg md:text-xl font-bold">Project Spaces</DialogTitle>
+              <DialogTitle className="text-base font-semibold">Project Spaces</DialogTitle>
               <Button 
                 variant="ghost" 
                 size="sm" 
