@@ -920,26 +920,26 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         </Card>
       )}
 
-      {/* Primary actions: fixed slot below purpose so Continue / Not a match stay in the same place every step */}
+      {/* Primary actions: fixed 30/70 slot so Continue / Not a match stay aligned every step */}
       <Card className="shrink-0">
         <CardContent className="p-2.5 sm:p-4">
           {!isStepCompleted(currentKickoffStep) ? (
-            <div className="flex min-h-[3rem] flex-col gap-2 sm:min-h-[3.25rem] sm:flex-row sm:items-stretch sm:gap-3">
+            <div className="flex min-h-12 w-full flex-row items-stretch gap-2 sm:min-h-[3.25rem] sm:gap-3">
               {/*
                 Mount DropdownMenu only on mobile. Keeping it under sm:hidden (display:none)
                 still mounts Radix Popper and can infinite-loop setState, freezing step 2 profile load.
               */}
-              {isMobile ? (
-                <div>
+              <div className="flex min-h-12 min-w-0 flex-[3] basis-0 flex-col justify-center sm:min-h-[3.25rem]">
+                {isMobile ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         type="button"
                         variant="outline"
                         size="lg"
-                        className="h-11 min-h-11 w-full px-3 text-sm"
+                        className="h-12 min-h-12 w-full px-2 text-sm sm:h-full sm:min-h-[3.25rem] sm:px-3 sm:py-3"
                       >
-                        <MoreHorizontal className="mr-2 h-4 w-4 shrink-0" />
+                        <MoreHorizontal className="mr-1.5 h-4 w-4 shrink-0 sm:mr-2" />
                         More
                       </Button>
                     </DropdownMenuTrigger>
@@ -965,42 +965,38 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                </div>
-              ) : (
-                <div className="flex min-h-12 min-w-0 flex-1 flex-col justify-center sm:min-h-[3.25rem]">
-                  {currentStepId === 'kickoff-step-1' ? (
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        void handleNotAMatch();
-                      }}
-                      variant="outline"
-                      size="lg"
-                      className="h-12 min-h-12 w-full border-red-300 px-3 text-sm text-red-700 hover:bg-red-50 sm:h-full sm:min-h-[3.25rem] sm:py-3"
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
-                      <span className="text-left leading-tight sm:line-clamp-2">
-                        Not a match: back to catalog
-                      </span>
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="lg"
-                      className="h-12 min-h-12 w-full border-muted-foreground/40 px-3 text-sm text-muted-foreground hover:bg-muted/40 sm:h-full sm:min-h-[3.25rem] sm:py-3"
-                      onClick={() => {
-                        onKickoffComplete({ mode: 'skip-to-workflow' });
-                      }}
-                    >
-                      <span className="text-left leading-tight sm:line-clamp-2">
-                        Skip planning: go to project
-                      </span>
-                    </Button>
-                  )}
-                </div>
-              )}
-              <div className="flex w-full shrink-0 flex-col sm:w-[17.5rem] sm:min-h-[3.25rem]">
+                ) : currentStepId === 'kickoff-step-1' ? (
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      void handleNotAMatch();
+                    }}
+                    variant="outline"
+                    size="lg"
+                    className="h-12 min-h-12 w-full border-red-300 px-3 text-sm text-red-700 hover:bg-red-50 sm:h-full sm:min-h-[3.25rem] sm:py-3"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
+                    <span className="text-left leading-tight sm:line-clamp-2">
+                      Not a match: back to catalog
+                    </span>
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    className="h-12 min-h-12 w-full border-muted-foreground/40 px-3 text-sm text-muted-foreground hover:bg-muted/40 sm:h-full sm:min-h-[3.25rem] sm:py-3"
+                    onClick={() => {
+                      onKickoffComplete({ mode: 'skip-to-workflow' });
+                    }}
+                  >
+                    <span className="text-left leading-tight sm:line-clamp-2">
+                      Skip planning: go to project
+                    </span>
+                  </Button>
+                )}
+              </div>
+              <div className="flex min-h-12 min-w-0 flex-[7] basis-0 flex-col sm:min-h-[3.25rem]">
                 <Button
                   onClick={async () => {
                     if (currentStepId === 'kickoff-step-3' && (window as any).__projectProfileStepSave) {
@@ -1057,24 +1053,27 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
               </div>
             </div>
           ) : currentStepId === 'kickoff-step-4' && onReturnToPlanningStudio ? (
-            <div className="flex min-h-[3rem] flex-col gap-2 sm:min-h-[3.25rem] sm:flex-row sm:items-stretch">
-              <Button
-                type="button"
-                size="lg"
-                className="h-12 min-h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:h-full sm:min-h-[3.25rem] sm:py-3"
-                onClick={() => {
-                  void handleReturnToPlanningStudio();
-                }}
-              >
-                <CheckCircle className="mr-2 h-4 w-4 shrink-0" />
-                <span className="text-left leading-tight sm:line-clamp-2">
-                  <span className="hidden sm:inline">Save tools & Open Planning Studio</span>
-                  <span className="sm:hidden">Save & Open Studio</span>
-                </span>
-              </Button>
+            <div className="flex min-h-12 w-full flex-row items-stretch gap-2 sm:min-h-[3.25rem] sm:gap-3">
+              <div className="min-w-0 flex-[3] basis-0" aria-hidden />
+              <div className="flex min-h-12 min-w-0 flex-[7] basis-0 flex-col sm:min-h-[3.25rem]">
+                <Button
+                  type="button"
+                  size="lg"
+                  className="h-12 min-h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:h-full sm:min-h-[3.25rem] sm:py-3"
+                  onClick={() => {
+                    void handleReturnToPlanningStudio();
+                  }}
+                >
+                  <CheckCircle className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="text-left leading-tight sm:line-clamp-2">
+                    <span className="hidden sm:inline">Save tools & Open Planning Studio</span>
+                    <span className="sm:hidden">Save & Open Studio</span>
+                  </span>
+                </Button>
+              </div>
             </div>
           ) : (
-            <div className="flex min-h-[3rem] items-center justify-center rounded-lg border border-green-200 bg-green-50 p-2 sm:min-h-[3.25rem] sm:p-3">
+            <div className="flex min-h-12 items-center justify-center rounded-lg border border-green-200 bg-green-50 p-2 sm:min-h-[3.25rem] sm:p-3">
               <p className="text-sm text-green-800">Step Completed ✓</p>
             </div>
           )}
