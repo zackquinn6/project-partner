@@ -29,6 +29,8 @@ export interface SpaceSelectorProps {
   currentProjectName?: string;
   phases?: any[]; // Phases from project run to extract incorporated phases
   initialSizing?: string; // Initial sizing from project kickoff
+  /** When set, scroll to and highlight this space in the selected list. */
+  focusSpaceId?: string | null;
 }
 
 export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
@@ -39,7 +41,8 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
   projectScaleUnit = 'item',
   currentProjectName = 'Current Project',
   phases = [],
-  initialSizing
+  initialSizing,
+  focusSpaceId = null,
 }) => {
   const [homeSpaces, setHomeSpaces] = useState<any[]>([]);
   const [showCustomSpaceForm, setShowCustomSpaceForm] = useState(false);
@@ -47,6 +50,17 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
   const [customSpaceType, setCustomSpaceType] = useState('');
   const [customScaleValue, setCustomScaleValue] = useState<number | undefined>();
   const [spaceSizingData, setSpaceSizingData] = useState<Map<string, Record<string, number>>>(new Map());
+  const spaceRowRefs = React.useRef<Map<string, HTMLDivElement>>(new Map());
+
+  useEffect(() => {
+    if (!focusSpaceId) return;
+    const timer = window.setTimeout(() => {
+      const el = spaceRowRefs.current.get(focusSpaceId);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [focusSpaceId, selectedSpaces]);
 
   // Extract unique incorporated phases with their scaling units
   const incorporatedPhases = React.useMemo(() => {
@@ -528,7 +542,18 @@ export const SpaceSelector: React.FC<SpaceSelectorProps> = ({
                 const priorityNumber = space.priority || index + 1;
                 
                 return (
-                  <div key={space.id} className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <div
+                    key={space.id}
+                    ref={(node) => {
+                      if (node) spaceRowRefs.current.set(space.id, node);
+                      else spaceRowRefs.current.delete(space.id);
+                    }}
+                    className={`flex items-center gap-2 rounded-lg p-3 ${
+                      focusSpaceId === space.id
+                        ? 'bg-primary/10 ring-2 ring-primary'
+                        : 'bg-muted'
+                    }`}
+                  >
                     {/* Priority Controls */}
                     <div className="flex flex-col gap-1">
                       <Button

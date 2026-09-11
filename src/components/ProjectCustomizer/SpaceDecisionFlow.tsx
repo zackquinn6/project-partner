@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { WorkflowDecisionEngine } from './WorkflowDecisionEngine';
 import { ProjectRun } from '../../interfaces/ProjectRun';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Edit2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProject } from '@/contexts/ProjectContext';
+import { Button } from '../ui/button';
 
 interface ProjectSpace {
   id: string;
@@ -30,6 +31,7 @@ interface SpaceDecisionFlowProps {
     type: 'standard' | 'ifNecessary',
     decisions: string[]
   ) => void;
+  onEditSpace?: (spaceId: string) => void;
 }
 
 /** True when every required alternate decision for the space has been answered. */
@@ -69,7 +71,8 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
   spaces,
   projectRun,
   spaceDecisions,
-  onSpaceDecision
+  onSpaceDecision,
+  onEditSpace
 }) => {
   const { projects } = useProject();
   const [spaceSizingData, setSpaceSizingData] = useState<Map<string, Record<string, number>>>(new Map());
@@ -170,8 +173,21 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
         <Card key={space.id} className="border-2">
           <CardHeader>
             <CardTitle className="flex items-center justify-between text-base font-semibold">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <span>{space.space_name}</span>
+                {onEditSpace && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                    onClick={() => onEditSpace(space.id)}
+                    title={`Edit ${space.space_name}`}
+                    aria-label={`Edit ${space.space_name}`}
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
               </div>
               {isSpaceComplete(space.id) && (
                 <Badge variant="default" className="bg-green-500 text-xs">

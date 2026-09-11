@@ -89,6 +89,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   const [showPhaseBrowser, setShowPhaseBrowser] = useState(false);
   const [showCustomWorkManager, setShowCustomWorkManager] = useState(false);
   const [showSpacesWindow, setShowSpacesWindow] = useState(false);
+  const [focusSpaceId, setFocusSpaceId] = useState<string | null>(null);
   const [homeName, setHomeName] = useState<string>('');
   const [showKickoffEdit, setShowKickoffEdit] = useState(false);
   const [showHomeManager, setShowHomeManager] = useState(false);
@@ -117,6 +118,116 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       ),
     [templateGeneralDecisions, currentProjectRun?.phases]
   );
+
+  const builtInWorkBySpace = useMemo(() => {
+    const phases = currentProjectRun?.phases || [];
+    return customizationState.spaces.map((space) => {
+      const spaceState = customizationState.spaceDecisions[space.id];
+      const phaseRows = phases
+        .map((phase) => {
+          const standardChoices = spaceState?.standardDecisions[phase.id] || [];
+          const ifNecessaryChoices = spaceState?.ifNecessaryWork[phase.id] || [];
+          const selectedOpIds = new Set(
+            standardChoices.map((choice) => {
+              const parts = choice.split(':');
+              return parts.length > 1 ? parts[1] : choice;
+            })
+          );
+
+          const operations: Array<{
+            id: string;
+            name: string;
+            description?: string;
+            kind: 'included' | 'choice' | 'optional' | 'pending';
+            pendingPrompt?: string;
+          }> = [];
+
+          const pendingGroups = new Map<string, string>();
+
+          phase.operations.forEach((op) => {
+            const flowType = (op as any).flowType || 'prime';
+            if (flowType === 'prime') {
+              operations.push({
+                id: op.id,
+                name: op.name,
+                description: op.description || undefined,
+                kind: 'included',
+              });
+              return;
+            }
+            if (flowType === 'alternate') {
+              const groupKey = (op as any).alternateGroup || 'choice-group';
+              if (selectedOpIds.has(op.id)) {
+                operations.push({
+                  id: op.id,
+                  name: op.name,
+                  description: op.description || undefined,
+                  kind: 'choice',
+                });
+              } else if (!standardChoices.some((d) => d.startsWith(groupKey + ':'))) {
+                if (!pendingGroups.has(groupKey)) {
+                  pendingGroups.set(
+                    groupKey,
+                    (op as any).userPrompt || 'Choice still needed'
+                  );
+                }
+              }
+              return;
+            }
+            if (flowType === 'if-necessary' && ifNecessaryChoices.includes(op.id)) {
+              operations.push({
+                id: op.id,
+                name: op.name,
+                description: op.description || undefined,
+                kind: 'optional',
+              });
+            }
+          });
+
+          pendingGroups.forEach((prompt, groupKey) => {
+            operations.push({
+              id: `pending-${phase.id}-${groupKey}`,
+              name: prompt,
+              kind: 'pending',
+              pendingPrompt: prompt,
+            });
+          });
+
+          if (operations.length === 0) return null;
+          return {
+            phaseId: phase.id,
+            phaseName: phase.name,
+            operations,
+          };
+        })
+        .filter(Boolean) as Array<{
+        phaseId: string;
+        phaseName: string;
+        operations: Array<{
+          id: string;
+          name: string;
+          description?: string;
+          kind: 'included' | 'choice' | 'optional' | 'pending';
+          pendingPrompt?: string;
+        }>;
+      }>;
+
+      return {
+        spaceId: space.id,
+        spaceName: space.space_name,
+        phases: phaseRows,
+      };
+    });
+  }, [
+    currentProjectRun?.phases,
+    customizationState.spaces,
+    customizationState.spaceDecisions,
+  ]);
+
+  const openSpacesEditor = (spaceId?: string) => {
+    setFocusSpaceId(spaceId ?? null);
+    setShowSpacesWindow(true);
+  };
 
   useEffect(() => {
     if (!open || !templateProject?.id) {
@@ -894,7 +1005,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setShowSpacesWindow(true)}
+                              onClick={() => openSpacesEditor()}
                               className="text-xs"
                             >
                               <Settings className="w-3 h-3 mr-2" />
@@ -1002,6 +1113,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                     projectRun={currentProjectRun}
                     spaceDecisions={customizationState.spaceDecisions}
                     onSpaceDecision={handleSpaceDecision}
+                    onEditSpace={(spaceId) => openSpacesEditor(spaceId)}
                   />
                 </AccordionContent>
               </AccordionItem>
@@ -1017,6 +1129,87 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 </AccordionTrigger>
                 <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
                   <div className="space-y-4">
+                    <Card>
+                      <CardHeader className={isMobile ? 'pb-3' : ''}>
+                        <CardTitle className="text-base font-semibold">
+                          Built into this project
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                          Work already included from the plan and your step 3 choices. Add custom steps below only if you need more.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-5">
+                        {builtInWorkBySpace.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            Add spaces in step 2 to see the project work list.
+                          </p>
+                        ) : (
+                          builtInWorkBySpace.map((spaceRow) => (
+                            <div key={spaceRow.spaceId} className="space-y-3">
+                              <h4 className="text-sm font-semibold text-foreground">
+                                {spaceRow.spaceName}
+                              </h4>
+                              {spaceRow.phases.length === 0 ? (
+                                <p className="text-xs text-muted-foreground">
+                                  No operations listed for this space yet.
+                                </p>
+                              ) : (
+                                spaceRow.phases.map((phaseRow) => (
+                                  <div
+                                    key={`${spaceRow.spaceId}-${phaseRow.phaseId}`}
+                                    className="rounded-lg border bg-background/80 p-3"
+                                  >
+                                    <div className="mb-2 text-sm font-medium">
+                                      {phaseRow.phaseName}
+                                    </div>
+                                    <ul className="space-y-2">
+                                      {phaseRow.operations.map((op) => (
+                                        <li
+                                          key={op.id}
+                                          className="flex items-start justify-between gap-3 text-sm"
+                                        >
+                                          <div className="min-w-0">
+                                            <div className="font-medium leading-snug">
+                                              {op.name}
+                                            </div>
+                                            {op.description && op.kind !== 'pending' ? (
+                                              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+                                                {op.description}
+                                              </p>
+                                            ) : null}
+                                          </div>
+                                          <Badge
+                                            variant="secondary"
+                                            className={
+                                              op.kind === 'choice'
+                                                ? 'shrink-0 bg-green-100 text-green-800'
+                                                : op.kind === 'optional'
+                                                  ? 'shrink-0 bg-blue-100 text-blue-800'
+                                                  : op.kind === 'pending'
+                                                    ? 'shrink-0 bg-orange-100 text-orange-800'
+                                                    : 'shrink-0'
+                                            }
+                                          >
+                                            {op.kind === 'choice'
+                                              ? 'Your choice'
+                                              : op.kind === 'optional'
+                                                ? 'Optional'
+                                                : op.kind === 'pending'
+                                                  ? 'Needs choice'
+                                                  : 'Included'}
+                                          </Badge>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </CardContent>
+                    </Card>
+
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
                         type="button"
@@ -1115,7 +1308,13 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       />
 
       {/* Project Spaces Window */}
-      <Dialog open={showSpacesWindow} onOpenChange={setShowSpacesWindow}>
+      <Dialog
+        open={showSpacesWindow}
+        onOpenChange={(nextOpen) => {
+          setShowSpacesWindow(nextOpen);
+          if (!nextOpen) setFocusSpaceId(null);
+        }}
+      >
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
           <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex items-center justify-between gap-2">
@@ -1123,7 +1322,10 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => setShowSpacesWindow(false)} 
+                onClick={() => {
+                  setShowSpacesWindow(false);
+                  setFocusSpaceId(null);
+                }} 
                 className="h-7 px-2 text-[9px] md:text-xs"
               >
                 Close
@@ -1140,6 +1342,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
               currentProjectName={templateProject?.name || currentProjectRun.name || 'Current Project'}
               phases={currentProjectRun.phases || []}
               initialSizing={currentProjectRun.initial_sizing}
+              focusSpaceId={focusSpaceId}
             />
           </div>
         </DialogContent>
