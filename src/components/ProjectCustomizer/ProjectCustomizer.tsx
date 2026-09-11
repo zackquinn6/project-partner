@@ -126,7 +126,9 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   );
 
   const builtInWorkBySpace = useMemo(() => {
-    const phases = currentProjectRun?.phases || [];
+    const phases = (currentProjectRun?.phases || []).filter(
+      (phase) => phase.isStandard !== true
+    );
     return customizationState.spaces.map((space) => {
       const spaceState = customizationState.spaceDecisions[space.id];
       const phaseRows = phases
@@ -1199,50 +1201,28 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                                 spaceRow.phases.map((phaseRow) => (
                                   <div
                                     key={`${spaceRow.spaceId}-${phaseRow.phaseId}`}
-                                    className="rounded-lg border bg-background/80 p-3"
+                                    className="overflow-hidden rounded-md border bg-background/80"
                                   >
-                                    <div className="mb-2 text-sm font-medium">
+                                    <div className="border-b bg-muted/40 px-2.5 py-1.5 text-xs font-medium">
                                       {phaseRow.phaseName}
                                     </div>
-                                    <ul className="space-y-2">
+                                    <div className="divide-y">
                                       {phaseRow.operations.map((op) => (
-                                        <li
+                                        <div
                                           key={op.id}
-                                          className="flex items-start justify-between gap-3 text-sm"
+                                          className="grid grid-cols-[minmax(0,11rem)_minmax(0,1fr)] gap-x-3 px-2.5 py-1.5 text-xs sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]"
                                         >
-                                          <div className="min-w-0">
-                                            <div className="font-medium leading-snug">
-                                              {op.name}
-                                            </div>
-                                            {op.description && op.kind !== 'pending' ? (
-                                              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-                                                {op.description}
-                                              </p>
-                                            ) : null}
+                                          <div className="truncate font-medium leading-5">
+                                            {op.name}
                                           </div>
-                                          <Badge
-                                            variant="secondary"
-                                            className={
-                                              op.kind === 'choice'
-                                                ? 'shrink-0 bg-green-100 text-green-800'
-                                                : op.kind === 'optional'
-                                                  ? 'shrink-0 bg-blue-100 text-blue-800'
-                                                  : op.kind === 'pending'
-                                                    ? 'shrink-0 bg-orange-100 text-orange-800'
-                                                    : 'shrink-0'
-                                            }
-                                          >
-                                            {op.kind === 'choice'
-                                              ? 'Your choice'
-                                              : op.kind === 'optional'
-                                                ? 'Optional'
-                                                : op.kind === 'pending'
-                                                  ? 'Needs choice'
-                                                  : 'Included'}
-                                          </Badge>
-                                        </li>
+                                          <div className="truncate text-muted-foreground leading-5">
+                                            {op.kind === 'pending'
+                                              ? 'Needs choice in step 3'
+                                              : op.description || '—'}
+                                          </div>
+                                        </div>
                                       ))}
-                                    </ul>
+                                    </div>
                                   </div>
                                 ))
                               )}
