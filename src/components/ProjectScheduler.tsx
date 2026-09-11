@@ -1459,17 +1459,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           </div>
         </DialogHeader>
         
-        {/* Last Scheduled Status */}
-        <div className="px-4 pb-1 pt-3 md:px-6">
-          <div className="flex items-center gap-2">
-            <Badge variant={lastScheduledDate ? "default" : "secondary"} className="text-xs">
-              {lastScheduledDate 
-                ? `Last scheduled: ${format(new Date(lastScheduledDate), 'MMM dd, yyyy')}`
-                : 'Unscheduled'
-              }
-            </Badge>
+        {/* Last scheduled — only when a schedule exists (avoid negative "Unscheduled" on first open) */}
+        {lastScheduledDate ? (
+          <div className="px-4 pb-1 pt-3 md:px-6">
+            <div className="flex items-center gap-2">
+              <Badge variant="default" className="text-xs">
+                {`Last scheduled: ${format(new Date(lastScheduledDate), 'MMM dd, yyyy')}`}
+              </Badge>
+            </div>
           </div>
-        </div>
+        ) : null}
 
         {/* Project Goal Completion Date Header */}
         {projectRun?.initial_timeline && (
