@@ -346,6 +346,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       await handleHomeChange(defaultHomeId);
       if (defaultHome?.name) setHomeName(defaultHome.name);
       await fetchHomes();
+      setActiveStep('step-2');
       toast({
         title: 'Default home selected',
         description: 'This project now uses your default home.',
@@ -456,6 +457,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       };
 
       handleSpacesChange([roomSpace]);
+      setActiveStep('step-3');
       toast({
         title: 'Default room applied',
         description: 'This project now uses one default room (Room 1).',
@@ -786,52 +788,56 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                   />
                 </AccordionTrigger>
                 <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
-                  <div className="space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <Home className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Project Home</span>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Home className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Project Home</span>
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <div className="min-w-0 flex-1">
+                        {currentProjectRun?.home_id && homes.length > 0 ? (
+                          <Select
+                            value={selectedHomeId || currentProjectRun.home_id}
+                            onValueChange={handleHomeChange}
+                          >
+                            <SelectTrigger className="h-9 text-sm">
+                              <SelectValue placeholder="Select a home" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {homes.map((home) => (
+                                <SelectItem key={home.id} value={home.id}>
+                                  {home.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            {homeName || 'Unknown Home'}
+                          </Badge>
+                        )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex shrink-0 flex-wrap items-center gap-2">
                         <Button
                           type="button"
                           size="sm"
                           onClick={() => void handleUseDefaultHome()}
-                          className="h-7 bg-green-600 px-2 text-xs text-white hover:bg-green-700"
+                          className="h-9 bg-green-600 px-3 text-xs text-white hover:bg-green-700"
                         >
-                          Use Default Home
+                          Use Default Home and Continue
                         </Button>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => setShowHomeManager(true)}
-                          className="h-7 px-2 text-xs"
+                          className="h-9 px-3 text-xs"
                           title="Manage homes"
                         >
-                          <Edit2 className="w-3 h-3 mr-1" />
-                          Manage
+                          <Edit2 className="mr-1 h-3 w-3" />
+                          Manage Homes
                         </Button>
                       </div>
                     </div>
-                    {currentProjectRun?.home_id && homes.length > 0 ? (
-                      <Select
-                        value={selectedHomeId || currentProjectRun.home_id}
-                        onValueChange={handleHomeChange}
-                      >
-                        <SelectTrigger className="h-9 text-sm">
-                          <SelectValue placeholder="Select a home" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {homes.map((home) => (
-                            <SelectItem key={home.id} value={home.id}>
-                              {home.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Badge variant="outline" className="text-xs">{homeName || 'Unknown Home'}</Badge>
-                    )}
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -869,7 +875,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                               onClick={() => void handleUseOneDefaultRoom()}
                               className="bg-green-600 text-xs text-white hover:bg-green-700"
                             >
-                              Use 1 default room
+                              Use (1) Default Room and Continue
                             </Button>
                           </div>
                         </div>
