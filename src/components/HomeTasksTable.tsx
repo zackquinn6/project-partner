@@ -89,6 +89,7 @@ export function HomeTasksTable({
   const [filterDiyLevel, setFilterDiyLevel] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>({});
+  const [assigneesByTaskId, setAssigneesByTaskId] = useState<Record<string, string[]>>({});
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showCompleted, setShowCompleted] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -96,6 +97,7 @@ export function HomeTasksTable({
 
   useEffect(() => {
     void fetchSubtasks();
+    void fetchAssignees();
   }, [tasks]);
 
   const fetchSubtasks = async () => {
@@ -128,6 +130,61 @@ export function HomeTasksTable({
       });
       setSubtasks(subtaskMap);
     }
+  };
+
+  const fetchAssignees = async () => {
+    const taskIds = tasks.map(t => t.id);
+    if (taskIds.length === 0) {
+      setAssigneesByTaskId({});
+      return;
+    }
+
+    const [{ data: assignmentRows }, { data: subtaskRows }] = await Promise.all([
+      supabase
+        .from('home_task_assignments')
+        .select('task_id, person_id')
+        .in('task_id', taskIds),
+      supabase
+        .from('home_task_subtasks')
+        .select('task_id, assigned_person_id')
+        .in('task_id', taskIds),
+    ]);
+
+    const personIds = new Set<string>();
+    (assignmentRows ?? []).forEach((row) => {
+      if (row.person_id) personIds.add(row.person_id);
+    });
+    (subtaskRows ?? []).forEach((row) => {
+      if (row.assigned_person_id) personIds.add(row.assigned_person_id);
+    });
+
+    if (personIds.size === 0) {
+      setAssigneesByTaskId({});
+      return;
+    }
+
+    const { data: peopleRows } = await supabase
+      .from('home_task_people')
+      .select('id, name')
+      .in('id', [...personIds]);
+
+    const nameById = new Map<string, string>();
+    (peopleRows ?? []).forEach((person) => {
+      nameById.set(person.id, person.name);
+    });
+
+    const map: Record<string, string[]> = {};
+    const addName = (taskId: string, personId: string | null) => {
+      if (!personId) return;
+      const name = nameById.get(personId);
+      if (!name) return;
+      if (!map[taskId]) map[taskId] = [];
+      if (!map[taskId].includes(name)) map[taskId].push(name);
+    };
+
+    (assignmentRows ?? []).forEach((row) => addName(row.task_id, row.person_id));
+    (subtaskRows ?? []).forEach((row) => addName(row.task_id, row.assigned_person_id));
+    setAssigneesByTaskId(map);
   };
 
   const toggleRow = (taskId: string) => {
@@ -338,6 +395,13 @@ export function HomeTasksTable({
                 const dueLabel = formatTaskDueDate(task.due_date);
                 const hasSubtasks = (subtasks[task.id]?.length ?? 0) > 0;
                 const isExpanded = expandedRows.has(task.id);
+                const assigneeNames = assigneesByTaskId[task.id] ?? [];
+                const assigneeLabel =
+                  assigneeNames.length === 0
+                    ? '—'
+                    : assigneeNames.length <= 2
+                      ? assigneeNames.join(', ')
+                      : `${assigneeNames[0]} +${assigneeNames.length - 1}`;
 
                 return (
                   <li key={task.id} className={task.status === 'closed' ? 'opacity-60' : undefined}>
@@ -381,6 +445,18 @@ export function HomeTasksTable({
                         </Button>
                       ) : null}
 
+                      <div
+                        className="hidden min-w-0 max-w-[9.5rem] shrink-0 flex-col leading-tight sm:flex"
+                        title={
+                          assigneeNames.length > 0
+                            ? `Assigned to: ${assigneeNames.join(', ')}`
+                            : 'Assigned to: none'
+                        }
+                      >
+                        <span className="text-[10px] text-muted-foreground">Assigned to</span>
+                        <span className="truncate text-xs text-foreground">{assigneeLabel}</span>
+                      </div>
+
                       {dueLabel ? (
                         <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{dueLabel}</span>
                       ) : null}
@@ -418,6 +494,10 @@ export function HomeTasksTable({
                       </DropdownMenu>
                     </div>
 
+                    <div className="flex items-center gap-2 px-2 pb-2 pl-12 sm:hidden">
+                      <span className="text-[10px] text-muted-foreground">Assigned to</span>
+                      <span className="min-w-0 truncate text-xs text-foreground">{assigneeLabel}</span>
+                    </div>
                     {isExpanded && hasSubtasks ? (
                       <div className="space-y-1 border-t border-border/40 bg-muted/20 px-3 py-2 pl-12 md:pl-14">
                         {subtasks[task.id].map((subtask, index) => (
