@@ -5,7 +5,12 @@ import { projectRunDisplayName } from '@/utils/projectRunDisplayName';
 import { PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME } from '@/components/PlanningWizardSteps/planningToolWindowChrome';
 
 export interface PlanningToolContextBannerProps {
-  projectRun: ProjectRun | null | undefined;
+  projectRun?: ProjectRun | null;
+  /**
+   * Explicit display name when a full project run is not available
+   * (e.g. template Risk Radar). Prefer `projectRun` when both are set.
+   */
+  projectName?: string | null;
   /**
    * Step-specific label shown above the primary line
    * (e.g. "Size estimate", "Timeline", "Budget goal").
@@ -33,13 +38,17 @@ export interface PlanningToolContextBannerProps {
  */
 export function PlanningToolContextBanner({
   projectRun,
+  projectName: projectNameProp,
   label,
   detail,
   trailing,
   flush = false,
   className,
 }: PlanningToolContextBannerProps) {
-  const projectName = projectRunDisplayName(projectRun);
+  const projectName =
+    projectRunDisplayName(projectRun) ||
+    (typeof projectNameProp === 'string' ? projectNameProp.trim() : '') ||
+    null;
   if (!projectName) return null;
 
   const detailText = typeof detail === 'string' ? detail.trim() : '';

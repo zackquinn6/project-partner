@@ -297,13 +297,13 @@ function RiskFocusDashboard({
           Go as far as you can - Every step makes the finish line more likely
         </div>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-        <div className="min-w-0 sm:max-w-[38%] sm:flex-1 sm:pt-1">
-          {name ? (
-            <h2 className="text-center text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-left sm:text-2xl md:text-3xl">
-              {name}
-            </h2>
-          ) : null}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="min-w-0 sm:max-w-[38%] sm:flex-1">
+          <PlanningToolContextBanner
+            projectName={name}
+            flush
+            className="pb-0"
+          />
         </div>
         <div className="flex min-w-0 flex-1 flex-col items-center sm:max-w-[58%]">
           <div className="mb-1 w-full text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1288,7 +1288,8 @@ export function RiskManagementWindow({
           </div>
         </DialogHeader>
 
-        {mode === 'run' ? (
+        {/* Name banner lives inside RiskFocusDashboard (under the hero). Avoid duplicating it here. */}
+        {mode === 'run' && variant !== 'risk-focus' && !workflowTemplateRiskRadar ? (
           <PlanningToolContextBanner
             projectRun={riskFocusRunForProgress ?? currentProjectRun}
             className="px-4 pt-3 md:px-6"
