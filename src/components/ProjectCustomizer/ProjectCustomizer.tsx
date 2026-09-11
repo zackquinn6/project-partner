@@ -958,6 +958,16 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 </AccordionTrigger>
                 <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
                   <div className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => void handleSaveCustomization()}
+                        className="bg-green-600 text-xs text-white hover:bg-green-700"
+                      >
+                        Continue with No Custom Work
+                      </Button>
+                    </div>
                     <Card>
                       <CardHeader className={isMobile ? 'pb-3' : ''}>
                         <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : ''}`}>
