@@ -28,7 +28,7 @@ export const logSecurityEvent = async (eventData: SecurityEventData): Promise<vo
       p_user_email: eventData.userEmail,
       p_ip_address: eventData.ipAddress,
       p_user_agent: eventData.userAgent,
-      p_additional_data: eventData.additionalData,
+      p_additional_data: (eventData.additionalData ?? null) as never,
     });
 
     if (error) {
