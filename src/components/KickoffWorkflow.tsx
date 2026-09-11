@@ -571,17 +571,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       />
       <PlanningJourneyHeader
         activeStage="discover"
-        planToolCount={
-          selectedPlanningTools.length > 0
-            ? selectedPlanningTools.length
-            : (() => {
-                const existing = parseCustomizationDecisions(currentProjectRun.customization_decisions)
-                  .selected_planning_tools;
-                return Array.isArray(existing) && existing.length > 0
-                  ? existing.length
-                  : DEFAULT_PLANNING_TOOLS_SELECTION.length;
-              })()
-        }
         className="shrink-0"
       />
       {/* Step Navigation (no separate project-name header) */}

@@ -6,8 +6,6 @@ export type PlanningJourneyStage = 'discover' | 'plan';
 export interface PlanningJourneyHeaderProps {
   /** Which stage of the planning journey is active. */
   activeStage: PlanningJourneyStage;
-  /** When on Discover, show how many tools will enter Plan (optional). */
-  planToolCount?: number;
   className?: string;
 }
 
@@ -16,18 +14,10 @@ export interface PlanningJourneyHeaderProps {
  */
 export function PlanningJourneyHeader({
   activeStage,
-  planToolCount,
   className,
 }: PlanningJourneyHeaderProps) {
   const discoverDone = activeStage === 'plan';
   const planActive = activeStage === 'plan';
-
-  const planHint =
-    activeStage === 'discover' && typeof planToolCount === 'number' && planToolCount > 0
-      ? `Next: Plan with ${planToolCount} tool${planToolCount === 1 ? '' : 's'}`
-      : activeStage === 'discover'
-        ? 'Next: Plan'
-        : null;
 
   return (
     <div
@@ -54,11 +44,6 @@ export function PlanningJourneyHeader({
         complete={false}
         stepNumber={2}
       />
-      {planHint ? (
-        <p className="ml-1 hidden text-[10px] text-muted-foreground sm:ml-2 sm:block sm:text-xs">
-          {planHint}
-        </p>
-      ) : null}
     </div>
   );
 }

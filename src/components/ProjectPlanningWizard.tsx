@@ -618,7 +618,6 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
 
       <PlanningJourneyHeader
         activeStage="plan"
-        planToolCount={effectiveSelectedTools.length}
         className="shrink-0"
       />
 
