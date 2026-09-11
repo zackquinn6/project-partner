@@ -7,6 +7,11 @@ import { Button } from '@/components/ui/button';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useProject } from '@/contexts/ProjectContext';
 import { toast } from 'sonner';
+import {
+  LinearProgressGraph,
+  ExponentialProgressGraph,
+  TimeBasedProgressGraph,
+} from './ProgressReportingStyleGraphs';
 
 interface ProgressReportingStyleDialogProps {
   open: boolean;
@@ -103,41 +108,44 @@ export const ProgressReportingStyleDialog = ({
               >
                 <Label 
                   htmlFor="linear" 
-                  className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
                 >
-                  <RadioGroupItem value="linear" id="linear" className="mt-1" />
-                  <div className="flex-1">
+                  <RadioGroupItem value="linear" id="linear" className="mt-1 shrink-0" />
+                  <div className="flex-1 min-w-0">
                     <div className="font-medium">Linear</div>
                     <div className="text-sm text-muted-foreground mt-1">
                       Simple step count-based progress. Step 7 of 14 complete = 50%
                     </div>
                   </div>
+                  <LinearProgressGraph className="w-[7.5rem] h-[5.25rem] shrink-0" />
                 </Label>
                 
                 <Label 
                   htmlFor="exponential" 
-                  className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
                 >
-                  <RadioGroupItem value="exponential" id="exponential" className="mt-1" />
-                  <div className="flex-1">
+                  <RadioGroupItem value="exponential" id="exponential" className="mt-1 shrink-0" />
+                  <div className="flex-1 min-w-0">
                     <div className="font-medium">Exponential</div>
                     <div className="text-sm text-muted-foreground mt-1">
                       Weighted toward completion. Work that shows 90% on linear measurement shows ~60% here, reflecting heavier effort to complete the final work.
                     </div>
                   </div>
+                  <ExponentialProgressGraph className="w-[7.5rem] h-[5.25rem] shrink-0" />
                 </Label>
                 
                 <Label 
                   htmlFor="time-based" 
-                  className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
                 >
-                  <RadioGroupItem value="time-based" id="time-based" className="mt-1" />
-                  <div className="flex-1">
+                  <RadioGroupItem value="time-based" id="time-based" className="mt-1 shrink-0" />
+                  <div className="flex-1 min-w-0">
                     <div className="font-medium">Time-Based</div>
                     <div className="text-sm text-muted-foreground mt-1">
                       Uses the estimated time for each step (adjusted to your speed) to calculate progress. For example, if a step takes 60 minutes out of an 8‑hour project, completing it adds 12.5% to your progress.
                     </div>
                   </div>
+                  <TimeBasedProgressGraph className="w-[7.5rem] h-[5.25rem] shrink-0" />
                 </Label>
               </RadioGroup>
             </CardContent>
