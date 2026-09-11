@@ -491,8 +491,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const renderCurrentStep = () => {
     if (wizardPhase === 'confirm') {
       const toolStatuses = wizardSteps
-        .filter((s): s is typeof s & { toolId: PlanningToolId } => s.toolId != null)
         .map((s, index) => {
+          if (s.toolId == null) return null;
           const meta = PLANNING_TOOLS.find((t) => t.id === s.toolId);
           return {
             toolId: s.toolId,
@@ -500,7 +500,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
             doneWhen: meta?.doneWhen ?? s.doneWhen ?? '',
             complete: isStepCompleted(index),
           };
-        });
+        })
+        .filter((row): row is NonNullable<typeof row> => row != null);
       return (
         <PlanningConfirmationStep
           selectedTools={effectiveSelectedTools}
@@ -509,6 +510,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
           customizationDecisionsRaw={currentProjectRun?.customization_decisions}
           initialBudget={currentProjectRun?.initial_budget}
           initialTimeline={currentProjectRun?.initial_timeline}
+          onOpenTool={(toolId) => openPlanningTool(toolId)}
         />
       );
     }
@@ -905,7 +907,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
             type="button"
             variant="outline"
             size="lg"
-            className="min-h-[48px] min-w-0 flex-[3]"
+            className="min-h-[48px] min-w-0 flex-[3] border-slate-400 bg-slate-200 text-slate-900 hover:bg-slate-300 hover:text-slate-950"
             onClick={() => {
               const firstIncomplete = wizardSteps.findIndex((_, i) => !completedSteps.has(i));
               setWizardPhase('steps');

@@ -32,6 +32,7 @@ export interface PlanningConfirmationStepProps {
   customizationDecisionsRaw: unknown;
   initialBudget?: string;
   initialTimeline?: string;
+  onOpenTool?: (toolId: PlanningToolId) => void;
 }
 
 export function PlanningConfirmationStep({
@@ -41,6 +42,7 @@ export function PlanningConfirmationStep({
   customizationDecisionsRaw,
   initialBudget,
   initialTimeline,
+  onOpenTool,
 }: PlanningConfirmationStepProps) {
   const decisions = useMemo(() => parseCustomizationDecisions(customizationDecisionsRaw), [customizationDecisionsRaw]);
 
@@ -80,39 +82,36 @@ export function PlanningConfirmationStep({
                 No planning tools are selected. Select Planning Studio Tools, or start if you intentionally have none.
               </p>
             ) : (
-              <ul className="space-y-2">
+              <ul className="space-y-1.5">
                 {toolStatuses.map((tool) => (
-                  <li
-                    key={tool.toolId}
-                    className={cn(
-                      'flex items-start gap-2 rounded-md border px-3 py-2 text-sm',
-                      tool.complete
-                        ? PLANNING_TOOL_SUCCESS_SURFACE_CLASSNAME
-                        : PLANNING_TOOL_WARNING_SURFACE_CLASSNAME
-                    )}
-                  >
-                    {tool.complete ? (
-                      <CheckCircle
-                        className="mt-0.5 h-4 w-4 shrink-0 text-green-600 dark:text-green-400"
-                        aria-hidden
-                      />
-                    ) : (
-                      <Circle
-                        className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
-                        aria-hidden
-                      />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground">{tool.label}</p>
-                      <p className="text-xs text-muted-foreground">Done when: {tool.doneWhen}</p>
-                      <p className="mt-0.5 text-xs font-medium">
-                        {tool.complete ? (
-                          <span className="text-green-700 dark:text-green-400">Complete</span>
-                        ) : (
-                          <span className="text-amber-800 dark:text-amber-300">Incomplete: edit plan to finish</span>
-                        )}
-                      </p>
-                    </div>
+                  <li key={tool.toolId}>
+                    <button
+                      type="button"
+                      onClick={() => onOpenTool?.(tool.toolId)}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors',
+                        'hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                        tool.complete
+                          ? PLANNING_TOOL_SUCCESS_SURFACE_CLASSNAME
+                          : PLANNING_TOOL_WARNING_SURFACE_CLASSNAME
+                      )}
+                      aria-label={`Open ${tool.label}`}
+                    >
+                      {tool.complete ? (
+                        <CheckCircle
+                          className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400"
+                          aria-hidden
+                        />
+                      ) : (
+                        <Circle
+                          className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
+                          aria-hidden
+                        />
+                      )}
+                      <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+                        {tool.label}
+                      </span>
+                    </button>
                   </li>
                 ))}
               </ul>
