@@ -9,6 +9,7 @@
 - No silent defaults, fallback logic, or COALESCE-with-fake-defaults; NULL → handle explicitly or fail.
 - No hardcoded strings for state; no hardcoded business logic—use DB fields and relationships.
 - Fix root causes; if the app needs a workaround to run, let it fail—do not force it.
+- **No em-dashes** (—) in authored catalog / user-facing prose (`description`, `project_challenges`, step instructions, risk copy, etc.). Standard dashes/hyphens (-) are okay.
 
 ---
 
@@ -323,12 +324,12 @@ Related tables (when filling full PFMEA): `pfmea_potential_causes`, `pfmea_poten
 
 ### Step 10 — `projects.description` + `projects.project_challenges`
 
-≤200 chars each. Touches only those `projects` columns (plus cache rebuild only if somehow structure changed—normally not).
+≤200 chars each. Touches only those `projects` columns (plus cache rebuild only if somehow structure changed; normally not). No em-dashes in either field (see Non-negotiables).
 
 | Field | Authoring rule |
 | ----- | -------------- |
 | `description` | Structured product blurb: what the work is and what it achieves |
-| `project_challenges` | **Informational decision tool**—short 1–2 sentences on the hardest parts so the user can judge fit before proceeding. Neutral tone: do **not** sell the project or scare them away; no major sway for or against. Focus on difficulty (physical demand, precision, prep, mess, failure modes that are hard to recover from)—not a full risk register (that is Step 4 / Risk Radar) |
+| `project_challenges` | **Informational decision tool:** short 1–2 sentences on the hardest parts so the user can judge fit before proceeding. Neutral tone: do **not** sell the project or scare them away; no major sway for or against. Focus on difficulty (physical demand, precision, prep, mess, failure modes that are hard to recover from), not a full risk register (that is Step 4 / Risk Radar) |
 
 If the user is uncomfortable with the listed challenges, they may choose not to move forward; that is intentional. Write so a quick read surfaces the real hard parts without hype or hedging.
 
@@ -389,6 +390,6 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
-| 2026-09-11 | Step 10 `project_challenges`: clarify purpose as neutral hardest-parts decision tool (1–2 sentences, ≤200 chars; not sales or scare) | Recreated tile flooring / backsplash / shower-bath challenges; authors need tone+scope rules |
+| 2026-09-11 | Step 10 `project_challenges`: clarify purpose as neutral hardest-parts decision tool (1–2 sentences, ≤200 chars; not sales or scare); Non-negotiables: no em-dashes in authored user-facing prose (hyphens OK) | Recreated tile flooring / backsplash / shower-bath challenges; authors need tone+scope+punctuation rules |
 | 2026-09-10 | Expanded field catalogs for catalog header, Steps 1–10, schedule prereqs (§E), related projects (§F); added on-demand Cursor rule `.cursor/rules/ai-project-dev-guide.mdc` | Single guide for template content development + continuous improvement |
 | 2026-09-10 | `materials.category` check allows only `Components` / `Consumables` / `PPE` (not free-form labels like Flooring) | Tile Flooring Installation step 6 bootstrap failed `materials_category_chk` until categories matched the constraint |

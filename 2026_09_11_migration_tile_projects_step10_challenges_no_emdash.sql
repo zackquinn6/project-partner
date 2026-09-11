@@ -1,14 +1,6 @@
--- Step 10: refresh project_challenges for tile flooring, backsplash, and shower/bath.
---
--- Purpose: short, neutral hardest-parts summary (decision-making info, not a sales
--- pitch or scare tactic). ≤200 chars; 1–2 sentences. No em-dashes in user-facing copy.
---
--- Scope: match template (and revision/draft) rows by name for:
---   - Tile Flooring Installation (and name variants)
---   - Tile Backsplash Installation (and name variants)
---   - Tile Shower / Bath Installation (and name variants)
---
--- Apply in Supabase SQL Editor (or via migration runner). Idempotent UPDATEs.
+-- Re-apply tile project_challenges without em-dashes (fixes flooring copy if the
+-- earlier 2026_09_11 step10 challenges migration was already run with an em-dash).
+-- Idempotent; same match rules as 2026_09_11_migration_tile_projects_step10_challenges.sql.
 
 DO $$
 DECLARE
@@ -20,7 +12,6 @@ DECLARE
   v_n integer;
   v_text text;
 BEGIN
-  -- Tile Flooring Installation
   v_text := 'Heavy lifting and long periods on knees or back, plus multi-step surface prep, especially if subfloor replacement is needed. Messy work; lippage is the key challenge.';
   IF char_length(v_text) > 200 THEN
     RAISE EXCEPTION 'Tile Flooring project_challenges exceeds 200 chars (%)', char_length(v_text);
@@ -42,13 +33,9 @@ BEGIN
   IF v_n = 0 THEN
     RAISE EXCEPTION 'No Tile Flooring projects matched for project_challenges update. Check: SELECT id, name, parent_project_id FROM public.projects WHERE lower(btrim(name)) LIKE ''tile%%floor%%'';';
   END IF;
-  RAISE NOTICE 'project_challenges: Tile Flooring rows updated: %', v_n;
+  RAISE NOTICE 'project_challenges (no em-dash): Tile Flooring rows updated: %', v_n;
 
-  -- Tile Backsplash Installation
   v_text := 'The hardest part is tight attention to detail: every grout line stays visible when you cook or use the bathroom.';
-  IF char_length(v_text) > 200 THEN
-    RAISE EXCEPTION 'Tile Backsplash project_challenges exceeds 200 chars (%)', char_length(v_text);
-  END IF;
   UPDATE public.projects p
   SET
     project_challenges = v_text,
@@ -58,15 +45,11 @@ BEGIN
     AND lower(btrim(p.name)) LIKE 'tile%backsplash%';
   GET DIAGNOSTICS v_n = ROW_COUNT;
   IF v_n = 0 THEN
-    RAISE EXCEPTION 'No Tile Backsplash projects matched for project_challenges update. Check: SELECT id, name, parent_project_id FROM public.projects WHERE lower(btrim(name)) LIKE ''tile%%backsplash%%'';';
+    RAISE EXCEPTION 'No Tile Backsplash projects matched for project_challenges update.';
   END IF;
-  RAISE NOTICE 'project_challenges: Tile Backsplash rows updated: %', v_n;
+  RAISE NOTICE 'project_challenges (no em-dash): Tile Backsplash rows updated: %', v_n;
 
-  -- Tile Shower / Bath Installation
   v_text := 'Layout is critical in enclosed spaces, and lippage on large tiles needs close attention. Waterproofing errors can cause major downstream problems.';
-  IF char_length(v_text) > 200 THEN
-    RAISE EXCEPTION 'Tile Shower/Bath project_challenges exceeds 200 chars (%)', char_length(v_text);
-  END IF;
   UPDATE public.projects p
   SET
     project_challenges = v_text,
@@ -80,8 +63,8 @@ BEGIN
     );
   GET DIAGNOSTICS v_n = ROW_COUNT;
   IF v_n = 0 THEN
-    RAISE EXCEPTION 'No Tile Shower/Bath projects matched for project_challenges update. Check: SELECT id, name, parent_project_id FROM public.projects WHERE lower(btrim(name)) LIKE ''tile%%shower%%'' OR lower(btrim(name)) LIKE ''tile%%bath%%'';';
+    RAISE EXCEPTION 'No Tile Shower/Bath projects matched for project_challenges update.';
   END IF;
-  RAISE NOTICE 'project_challenges: Tile Shower/Bath rows updated: %', v_n;
+  RAISE NOTICE 'project_challenges (no em-dash): Tile Shower/Bath rows updated: %', v_n;
 END;
 $$;
