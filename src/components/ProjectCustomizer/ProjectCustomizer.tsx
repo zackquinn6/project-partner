@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ResponsiveDialog } from '../ResponsiveDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -74,6 +74,12 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   const { projects, updateProjectRun } = useProject();
   const { user } = useAuth();
   const [activeStep, setActiveStep] = useState(mode === 'unplanned-work' ? 'step-4' : 'step-1');
+  const activeStepRef = useRef(activeStep);
+  activeStepRef.current = activeStep;
+  const step3AutoAdvanceRef = useRef<{ step: string; complete: boolean }>({
+    step: activeStep,
+    complete: false,
+  });
   const [customizationState, setCustomizationState] = useState<CustomizationState>({
     spaces: [],
     spaceDecisions: {},
@@ -228,6 +234,59 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     setFocusSpaceId(spaceId ?? null);
     setShowSpacesWindow(true);
   };
+
+  const step3Complete = useMemo(() => {
+    if (!currentProjectRun) return false;
+    return (
+      filteredGeneralProjectDecisions.every((decision) =>
+        Boolean(customizationState.generalProjectChoices[decision.id])
+      ) &&
+      customizationState.spaces.length > 0 &&
+      customizationState.spaces.every((space) =>
+        areSpaceRequiredDecisionsComplete(
+          currentProjectRun,
+          space.id,
+          customizationState.spaceDecisions
+        )
+      )
+    );
+  }, [
+    currentProjectRun,
+    filteredGeneralProjectDecisions,
+    customizationState.generalProjectChoices,
+    customizationState.spaces,
+    customizationState.spaceDecisions,
+  ]);
+
+  // Auto-advance step 3 → 4 when required decisions become complete (or step 3 has nothing left to answer).
+  useEffect(() => {
+    if (!open) {
+      step3AutoAdvanceRef.current = { step: activeStep, complete: false };
+      return;
+    }
+
+    const prev = step3AutoAdvanceRef.current;
+    const shouldAdvanceFromCompletion =
+      activeStep === 'step-3' &&
+      step3Complete &&
+      prev.step === 'step-3' &&
+      !prev.complete;
+    const shouldSkipEmptyStep3 =
+      activeStep === 'step-3' &&
+      step3Complete &&
+      prev.step === 'step-2';
+
+    step3AutoAdvanceRef.current = { step: activeStep, complete: step3Complete };
+
+    if (!shouldAdvanceFromCompletion && !shouldSkipEmptyStep3) return;
+
+    const timer = window.setTimeout(() => {
+      if (activeStepRef.current === 'step-3') {
+        setActiveStep('step-4');
+      }
+    }, 280);
+    return () => window.clearTimeout(timer);
+  }, [open, activeStep, step3Complete]);
 
   useEffect(() => {
     if (!open || !templateProject?.id) {
@@ -433,7 +492,10 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       const selectedHome = homes.find(h => h.id === homeId);
       setHomeName(selectedHome?.name || 'Unknown Home');
 
-          } catch (error) {
+      if (activeStepRef.current === 'step-1') {
+        setActiveStep('step-2');
+      }
+    } catch (error) {
       console.error('Error updating home:', error);
       toast({
         title: "Error",
@@ -834,18 +896,6 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
   const step1Complete = Boolean(selectedHomeId || currentProjectRun.home_id);
   const step2Complete = customizationState.spaces.length > 0;
-  const step3Complete =
-    filteredGeneralProjectDecisions.every(
-      (decision) => Boolean(customizationState.generalProjectChoices[decision.id])
-    ) &&
-    customizationState.spaces.length > 0 &&
-    customizationState.spaces.every((space) =>
-      areSpaceRequiredDecisionsComplete(
-        currentProjectRun,
-        space.id,
-        customizationState.spaceDecisions
-      )
-    );
   const step4Complete =
     customizationState.customPlannedWork.length > 0 ||
     customizationState.customUnplannedWork.length > 0 ||
@@ -1312,7 +1362,15 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         open={showSpacesWindow}
         onOpenChange={(nextOpen) => {
           setShowSpacesWindow(nextOpen);
-          if (!nextOpen) setFocusSpaceId(null);
+          if (!nextOpen) {
+            setFocusSpaceId(null);
+            if (
+              activeStepRef.current === 'step-2' &&
+              customizationState.spaces.length > 0
+            ) {
+              setActiveStep('step-3');
+            }
+          }
         }}
       >
         <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
@@ -1325,6 +1383,12 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 onClick={() => {
                   setShowSpacesWindow(false);
                   setFocusSpaceId(null);
+                  if (
+                    activeStepRef.current === 'step-2' &&
+                    customizationState.spaces.length > 0
+                  ) {
+                    setActiveStep('step-3');
+                  }
                 }} 
                 className="h-7 px-2 text-[9px] md:text-xs"
               >
