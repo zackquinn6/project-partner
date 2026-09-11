@@ -115,7 +115,7 @@ export function OrderingWindow({
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [itemDetailsOpen, setItemDetailsOpen] = useState(false);
   const [accordionOpenValues, setAccordionOpenValues] = useState<string[]>([]);
-  const [materialRiskLevel, setMaterialRiskLevel] = useState<MaterialRiskLevel>('basics-only');
+  const [materialRiskLevel, setMaterialRiskLevel] = useState<MaterialRiskLevel>('balanced');
   const [qualityTierPreference, setQualityTierPreference] = useState<QualityTierPreference>('mid');
 
   useEffect(() => {
@@ -148,6 +148,8 @@ export function OrderingWindow({
     if (!open) return;
     if (!projectRun?.shopping_checklist_data) {
       setMaterialLeadTimes({});
+      setMaterialRiskLevel('balanced');
+      setQualityTierPreference('mid');
       return;
     }
     const savedData = projectRun.shopping_checklist_data;
@@ -155,12 +157,16 @@ export function OrderingWindow({
       setMaterialLeadTimes(savedData.materialLeadTimes);
     }
     setMaterialRiskLevel(
-      savedData.materialRiskLevel === 'balanced' || savedData.materialRiskLevel === 'contingency-on-everything'
+      savedData.materialRiskLevel === 'basics-only' ||
+      savedData.materialRiskLevel === 'balanced' ||
+      savedData.materialRiskLevel === 'contingency-on-everything'
         ? savedData.materialRiskLevel
-        : 'basics-only'
+        : 'balanced'
     );
     setQualityTierPreference(
-      savedData.qualityTierPreference === 'economy' || savedData.qualityTierPreference === 'premium'
+      savedData.qualityTierPreference === 'economy' ||
+      savedData.qualityTierPreference === 'mid' ||
+      savedData.qualityTierPreference === 'premium'
         ? savedData.qualityTierPreference
         : 'mid'
     );
