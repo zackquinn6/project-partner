@@ -1238,9 +1238,9 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
         {/* Full list: compact rows below lg; photo cards in grid from lg up */}
         {shouldShowGrid && (
-          <div className="space-y-2 lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 lg:gap-4 lg:space-y-0">
+          <div className="space-y-2 lg:flex lg:flex-wrap lg:justify-center lg:gap-4 lg:space-y-0">
           {filteredProjects.length === 0 ? (
-            <div className="lg:col-span-full text-center py-12">
+            <div className="lg:w-full text-center py-12">
               <p className="text-muted-foreground mb-4">
                 {publishedProjects.length === 0 
                   ? (isAdminMode ? "No template projects exist yet. Create your first template project to get started." : "No published projects available yet. Check back soon!")
@@ -1269,7 +1269,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
               const imageUrl = (project as any).cover_image || project.image || (project as any).images?.[0];
               
               return (
-                <div key={project.id}>
+                <div
+                  key={project.id}
+                  className="lg:w-[calc((100%-4rem)/5)] lg:max-w-[calc((100%-4rem)/5)] lg:shrink-0"
+                >
                   {/* Compact row: phones & tablets below lg (no tall photo cards) */}
                   <div 
                     className="lg:hidden group hover:bg-muted/40 transition-colors cursor-pointer border rounded-lg bg-card overflow-hidden h-16" 
