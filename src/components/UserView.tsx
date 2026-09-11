@@ -1541,8 +1541,8 @@ export default function UserView({
   }, [currentProjectRun, currentProject, workflowPhases, isKickoffComplete, setCurrentProjectRun, refreshEstimatedFinishDate]);
 
   const handlePlanningWizardFullyComplete = React.useCallback(
-    async (tools: PlanningToolId[]) => {
-      if (!currentProjectRun) return;
+    async (tools: PlanningToolId[]): Promise<string[]> => {
+      if (!currentProjectRun) return [];
       const phases = Array.isArray(currentProjectRun.phases) ? (currentProjectRun.phases as Phase[]) : [];
       const { stepIds, outputEntries } = collectPlanningWizardWorkflowCompletion(phases, tools);
       const planningCompletedAt = new Date();
@@ -1563,6 +1563,7 @@ export default function UserView({
       const updatedPhaseRatings = planningRating
         ? [...(currentProjectRun.phase_ratings || []), planningRating]
         : currentProjectRun.phase_ratings;
+      const existingCompleted = [...(currentProjectRun.completedSteps || [])];
 
       if (stepIds.length === 0) {
         await updateProjectRun({
@@ -1573,11 +1574,10 @@ export default function UserView({
           planningCompletedAt,
           updatedAt: new Date(),
         });
-        return;
+        return existingCompleted;
       }
 
-      const base = [...(currentProjectRun.completedSteps || [])];
-      const uniqueCompleted = [...new Set([...base, ...stepIds])];
+      const uniqueCompleted = [...new Set([...existingCompleted, ...stepIds])];
 
       setCheckedOutputs((prev) => {
         const next = { ...prev };
@@ -1603,7 +1603,7 @@ export default function UserView({
           userMessage: 'Project progress settings are missing for this run.',
           notificationTitle: 'Planning completion progress calculation failed',
         });
-        return;
+        return uniqueCompleted;
       }
       const newStatus = calculatedProgress >= 100 ? 'complete' : currentProjectRun.status;
       if (planningPhase) {
@@ -1622,8 +1622,24 @@ export default function UserView({
         planningCompletedAt,
         updatedAt: new Date(),
       });
+      return uniqueCompleted;
     },
-    [currentProjectRun, updateProjectRun]
+    [currentProjectRun, updateProjectRun, user?.id]
+  );
+
+  const openWorkflowAtFirstIncompleteStep = React.useCallback(
+    (completedList: string[]) => {
+      const completedSet = new Set(completedList);
+      const firstIncompleteIndex = allSteps.findIndex(
+        (step) => !isStepCompleted(completedSet, step.id, (step as any).spaceId)
+      );
+      setWorkflowMainView('steps');
+      if (firstIncompleteIndex >= 0) {
+        setCurrentStepIndex(firstIncompleteIndex);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    [allSteps]
   );
   
   // Check and regenerate schedule on project open
@@ -3070,7 +3086,8 @@ export default function UserView({
                     : Array.isArray(toolsFromRun) && toolsFromRun.length > 0
                       ? toolsFromRun
                       : (['scope', 'risk'] as PlanningToolId[]);
-                await handlePlanningWizardFullyComplete(skipTools);
+                const completed = await handlePlanningWizardFullyComplete(skipTools);
+                openWorkflowAtFirstIncompleteStep(completed);
               } else {
                 markPlanningStudioPending(currentProjectRun.id);
                 setProjectPlanningWizardOpen(true);
@@ -3137,7 +3154,8 @@ export default function UserView({
                     : Array.isArray(toolsFromRun) && toolsFromRun.length > 0
                       ? toolsFromRun
                       : (['scope', 'risk'] as PlanningToolId[]);
-                await handlePlanningWizardFullyComplete(skipTools);
+                const completed = await handlePlanningWizardFullyComplete(skipTools);
+                openWorkflowAtFirstIncompleteStep(completed);
               } else {
                 markPlanningStudioPending(currentProjectRun.id);
                 setProjectPlanningWizardOpen(true);
@@ -3258,7 +3276,8 @@ export default function UserView({
             }}
             onWorkflowFullyComplete={async (tools) => {
               clearPlanningStudioPending(currentProjectRun.id);
-              await handlePlanningWizardFullyComplete(tools);
+              const completed = await handlePlanningWizardFullyComplete(tools);
+              openWorkflowAtFirstIncompleteStep(completed);
             }}
             onGoToWorkflow={() => {
               clearPlanningStudioPending(currentProjectRun.id);
