@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -68,6 +68,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useProject } from '@/contexts/ProjectContext';
 import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
+import { RiskRegisterList } from '@/components/RiskRegisterList';
+import { useSteppedAutoAdvance } from '@/hooks/useSteppedAutoAdvance';
 
 const RISK_FOCUS_PROGRESS_STOPS = [0, 25, 50, 75, 100] as const;
 
@@ -221,6 +223,37 @@ function riskBaselineSeverity(risk: Risk): 'low' | 'medium' | 'high' {
   if (l === 'high' || l === 'medium' || l === 'low') return l;
   return riskFocusLevelValue(risk);
 }
+
+/** Current register level: stored severity, else starting/baseline (likelihood). */
+function currentRiskRegisterLevel(risk: Risk): 'low' | 'medium' | 'high' {
+  const sev = (risk.severity || '').toLowerCase();
+  if (sev === 'high' || sev === 'medium' || sev === 'low') return sev;
+  return riskBaselineSeverity(risk);
+}
+
+type PlanningRiskStepKey = 'high' | 'medium' | 'low';
+
+const PLANNING_RISK_STEPS: {
+  key: PlanningRiskStepKey;
+  title: string;
+  empty: string;
+}[] = [
+  {
+    key: 'high',
+    title: 'Close out the high risks',
+    empty: 'No high risks right now — move on to medium risks.',
+  },
+  {
+    key: 'medium',
+    title: 'Med risks',
+    empty: 'No medium risks right now — keep reducing remaining risk.',
+  },
+  {
+    key: 'low',
+    title: 'Keep reducing risk',
+    empty: 'No low risks in the register for this filter.',
+  },
+];
 
 /**
  * Residual severity from mitigation check-offs.
@@ -585,6 +618,14 @@ export function RiskManagementWindow({
     planningWizardToolPresentation && variant === 'risk-focus' && mode === 'run'
   );
 
+  const [planningRiskStep, setPlanningRiskStep] = useState<PlanningRiskStepKey>('high');
+
+  useEffect(() => {
+    if (open && usePlanningToolShell) {
+      setPlanningRiskStep('high');
+    }
+  }, [open, usePlanningToolShell]);
+
   /** Keep scroll position in Risk Radar: avoid full fetchRisks() after small mitigation edits. */
   const patchRunRiskMitigationActions = useCallback(
     (
@@ -669,6 +710,35 @@ export function RiskManagementWindow({
     workflowTemplateRiskRadar,
     riskRadarRegisterPrimarySort,
   ]);
+
+  const planningRiskCounts = useMemo(() => {
+    const counts = { high: 0, medium: 0, low: 0 };
+    for (const risk of displayRisks) {
+      counts[currentRiskRegisterLevel(risk)] += 1;
+    }
+    return counts;
+  }, [displayRisks]);
+
+  const listRisks = useMemo(() => {
+    if (!usePlanningToolShell) return displayRisks;
+    return displayRisks.filter((r) => currentRiskRegisterLevel(r) === planningRiskStep);
+  }, [usePlanningToolShell, displayRisks, planningRiskStep]);
+
+  const setPlanningRiskStepStable = useCallback((next: string) => {
+    if (next === 'high' || next === 'medium' || next === 'low') {
+      setPlanningRiskStep(next);
+    }
+  }, []);
+
+  useSteppedAutoAdvance({
+    enabled: open && usePlanningToolShell,
+    activeStep: planningRiskStep,
+    setActiveStep: setPlanningRiskStepStable,
+    steps: [
+      { key: 'high', isComplete: planningRiskCounts.high === 0, next: 'medium' },
+      { key: 'medium', isComplete: planningRiskCounts.medium === 0, next: 'low' },
+    ],
+  });
 
   useEffect(() => {
     if (!showAdvancedToggle) {
@@ -1683,857 +1753,100 @@ export function RiskManagementWindow({
                       : 'Add risks specific to this project'}
                   </p>
                 </div>
-              ) : (
-                <>
-                  {displayRisks.length === 0 ? (
-                    <div className="flex flex-1 flex-col items-center justify-center gap-3 py-12 text-center">
-                      <p className="text-muted-foreground text-sm">
-                        {risks.length === 0
-                          ? 'No risks loaded for this run.'
-                          : hideStandardRisks
-                            ? 'No risks match the current filters. Turn off Hide standard risks or Show hidden risks to see more.'
-                            : 'All predefined risks are hidden. Turn on Show hidden risks in Edit Visibility to see them.'}
-                      </p>
-                    </div>
-                  ) : null}
-                  {/* Mobile: Card Layout */}
-                  <div
-                    className={cn(
-                      'min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain md:hidden',
-                      displayRisks.length === 0 ? 'hidden' : ''
-                    )}
-                  >
-                    {displayRisks.map((risk) => {
-                      return (
-                        <Card
-                          key={risk.id}
-                          className={cn(
-                            'p-4',
-                            riskFocusRun && 'pb-2',
-                            riskFocusRun &&
-                              'cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                          )}
-                          tabIndex={riskFocusRun ? 0 : undefined}
-                          onClick={riskFocusRun ? () => setDetailsRisk(risk) : undefined}
-                          onKeyDown={
-                            riskFocusRun
-                              ? (e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    setDetailsRisk(risk);
-                                  }
-                                }
-                              : undefined
-                          }
-                        >
-                          <div className={cn('space-y-3', riskFocusRun && 'space-y-2')}>
-                            <div className="flex items-start gap-2">
-                              <div className="min-w-0 flex-1">
-                                <div className="text-xs text-muted-foreground mb-1">Potential Issue</div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <h3 className="font-semibold text-sm leading-snug">{risk.risk}</h3>
-                                  {riskFocusRun && isUserAddedRisk(risk) ? (
-                                    <Badge variant="secondary" className="text-[10px]">
-                                      User-Added
-                                    </Badge>
-                                  ) : null}
-                                  {riskFocusRun && risk.hidden_from_register ? (
-                                    <Badge variant="secondary" className="text-[10px]">
-                                      Hidden
-                                    </Badge>
-                                  ) : null}
-                                </div>
-                                {riskFocusEasyMode ? (
-                                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">Likelihood:</span>
-                                    <Badge
-                                      className={getRiskLevelColor(
-                                        risk.likelihood,
-                                        risk.schedule_impact_days,
-                                        risk.budget_impact_dollars
-                                      )}
-                                    >
-                                      {risk.likelihood}
-                                    </Badge>
-                                  </div>
-                                ) : null}
-                              </div>
-                              {!readOnly && !riskFocusRun ? (
-                                <div
-                                  className="flex shrink-0 gap-1"
-                                  onClick={(e) => e.stopPropagation()}
-                                  onKeyDown={(e) => e.stopPropagation()}
-                                >
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditRisk(risk)}
-                                    className="h-11 w-11 p-0"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  {!(mode === 'run' && risk.is_template_risk) ? (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDeleteRisk(risk)}
-                                      className="h-11 w-11 p-0 text-destructive hover:text-destructive"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  ) : null}
-                                </div>
-                              ) : null}
-                            </div>
-                            <div className={cn('space-y-3', riskFocusRun && 'space-y-2')}>
-                              {riskFocusRun ? (
-                                <>
-                                  {!riskFocusEasyMode ? (
-                                    <div>
-                                      <div className="text-xs text-muted-foreground mb-1">
-                                        {friendlyRiskRadarRegisterUi ? 'How likely is it?' : 'Likelihood'}
-                                      </div>
-                                      <Badge
-                                        className={getRiskLevelColor(
-                                          risk.likelihood,
-                                          risk.schedule_impact_days,
-                                          risk.budget_impact_dollars
-                                        )}
-                                      >
-                                        {risk.likelihood}
-                                      </Badge>
-                                    </div>
-                                  ) : null}
-                                  {advancedMode ? (
-                                    <div className="grid grid-cols-3 gap-3">
-                                      <div>
-                                        <div className="text-xs text-muted-foreground mb-1">Overall Severity</div>
-                                        {risk.severity ? (
-                                          <Badge variant="outline">{risk.severity}</Badge>
-                                        ) : (
-                                          <span className="text-muted-foreground">—</span>
-                                        )}
-                                      </div>
-                                      <div>
-                                        <div className="text-xs text-muted-foreground mb-1">Budget Risk</div>
-                                        <div className="text-sm tabular-nums">
-                                          {risk.budget_impact_dollars != null
-                                            ? `$${Number(risk.budget_impact_dollars).toLocaleString()}`
-                                            : '—'}
-                                        </div>
-                                      </div>
-                                      <div>
-                                        <div className="text-xs text-muted-foreground mb-1">Timeline Risk</div>
-                                        <div className="text-sm tabular-nums">
-                                          {risk.schedule_impact_days != null ? `${Number(risk.schedule_impact_days)} days` : '—'}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ) : null}
-                                  <div>
-                                    <div className="text-xs text-muted-foreground mb-1">
-                                      {friendlyRiskRadarRegisterUi
-                                        ? 'If it happens, then what?'
-                                        : 'Impact'}
-                                    </div>
-                                    <ImpactIfItDoesContent risk={risk} />
-                                  </div>
-                                </>
-                              ) : wfTableAdvanced ? (
-                                <>
-                                  <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                      <div className="text-xs text-muted-foreground mb-1">Severity</div>
-                                      {risk.severity ? (
-                                        <Badge variant="outline">{risk.severity}</Badge>
-                                      ) : (
-                                        <span className="text-muted-foreground">—</span>
-                                      )}
-                                    </div>
-                                    <div>
-                                      <div className="text-xs text-muted-foreground mb-1">Risk level</div>
-                                      <Badge
-                                        className={getRiskLevelColor(
-                                          risk.likelihood,
-                                          risk.schedule_impact_days,
-                                          risk.budget_impact_dollars
-                                        )}
-                                      >
-                                        {risk.likelihood}
-                                      </Badge>
-                                    </div>
-                                    <div>
-                                      <div className="text-xs text-muted-foreground mb-1">Timeline impact</div>
-                                      <div className="text-sm tabular-nums">
-                                        {risk.schedule_impact_days != null ? `${Number(risk.schedule_impact_days)} days` : '—'}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <div className="text-xs text-muted-foreground mb-1">Budget impact</div>
-                                      <div className="text-sm tabular-nums">
-                                        {risk.budget_impact_dollars != null
-                                          ? `$${Number(risk.budget_impact_dollars).toLocaleString()}`
-                                          : '—'}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <div className="text-xs text-muted-foreground mb-1">Impact</div>
-                                    <ImpactIfItDoesContent risk={risk} />
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div>
-                                    <div className="text-xs text-muted-foreground mb-1">
-                                      {wfTableFriendly ? 'How likely is it?' : 'Likelihood'}
-                                    </div>
-                                    <Badge
-                                      className={getRiskLevelColor(
-                                        risk.likelihood,
-                                        risk.schedule_impact_days,
-                                        risk.budget_impact_dollars
-                                      )}
-                                    >
-                                      {risk.likelihood}
-                                    </Badge>
-                                  </div>
-                                  <div>
-                                    <div className="text-xs text-muted-foreground mb-1">
-                                      {wfTableFriendly ? 'If it happens, then what?' : 'Impact'}
-                                    </div>
-                                    <ImpactIfItDoesContent risk={risk} />
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                            {mode === 'run' && variant !== 'risk-focus' && (
-                              <div>
-                                <div className="text-xs text-muted-foreground mb-1">Status</div>
-                                {readOnly ? (
-                                  <Badge className={getStatusColor(risk.status || 'open')}>
-                                    {risk.status || 'open'}
-                                  </Badge>
-                                ) : (
-                                  <Select
-                                    value={risk.status || 'open'}
-                                    onValueChange={(value) => handleUpdateStatus(risk, value as any)}
-                                  >
-                                    <SelectTrigger className="h-11 text-sm">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="open">Open</SelectItem>
-                                      <SelectItem value="mitigated">Mitigated</SelectItem>
-                                      <SelectItem value="monitoring">Monitoring</SelectItem>
-                                      <SelectItem value="closed">Closed</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              </div>
-                            )}
-                            {riskFocusRun ? (
-                              <>
-                                <div
-                                  onClick={(e) => e.stopPropagation()}
-                                  onKeyDown={(e) => e.stopPropagation()}
-                                >
-                                  <div className="text-xs text-muted-foreground mb-1">
-                                    {friendlyRiskRadarRegisterUi
-                                      ? 'What can we do to prevent it?'
-                                      : 'Mitigation'}
-                                  </div>
-                                  {(risk.mitigation_actions?.length ?? 0) > 0 ? (
-                                    <ul className="space-y-2 text-sm">
-                                      {risk.mitigation_actions!.map((ma, idx) => (
-                                        <li key={idx} className="flex items-start gap-2">
-                                          {!readOnly && String(ma.action).trim() ? (
-                                            <Checkbox
-                                              className="mt-0.5 h-3 w-3 shrink-0 rounded-sm border-[1.5px] [&_svg]:h-2.5 [&_svg]:w-2.5"
-                                              checked={Boolean(ma.completed)}
-                                              onCheckedChange={() => void handleMitigationActionCompletedToggle(risk, idx)}
-                                              aria-label={`Done: ${ma.action}`}
-                                            />
-                                          ) : null}
-                                          <div className="min-w-0 flex-1">
-                                            {!readOnly && !String(ma.action).trim() ? (
-                                              <Input
-                                                className="h-9 text-sm"
-                                                placeholder="Describe this mitigation"
-                                                defaultValue=""
-                                                onBlur={(e) => void handleMitigationActionTextBlur(risk, idx, e.target.value)}
-                                                onClick={(e) => e.stopPropagation()}
-                                                onKeyDown={(e) => e.stopPropagation()}
-                                              />
-                                            ) : (
-                                              <span>
-                                                <span className="font-medium">{ma.action}</span>
-                                                {ma.benefit ? (
-                                                  <span className="text-muted-foreground"> – {ma.benefit}</span>
-                                                ) : null}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  ) : risk.mitigation ? (
-                                    <p className="text-sm">{risk.mitigation}</p>
-                                  ) : (
-                                    <p className="text-sm text-muted-foreground">No mitigation steps yet.</p>
-                                  )}
-                                  {!readOnly ? (
-                                    <div className="mt-2 flex justify-center">
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-                                        aria-label="Add mitigation"
-                                        onClick={() => void handleAppendMitigationAction(risk)}
-                                      >
-                                        <Plus className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  ) : null}
-                                </div>
-                                <div
-                                  onClick={(e) => e.stopPropagation()}
-                                  onKeyDown={(e) => e.stopPropagation()}
-                                >
-                                  <div className="text-xs text-muted-foreground mb-1">Whats the new status?</div>
-                                  {readOnly ? (
-                                    <Badge className={currentRiskLevelBadgeClass(riskFocusLevelValue(risk))}>
-                                      {riskFocusLevelValue(risk) === 'high'
-                                        ? 'High'
-                                        : riskFocusLevelValue(risk) === 'low'
-                                          ? 'Low'
-                                          : 'Med'}
-                                    </Badge>
-                                  ) : (
-                                    <Select
-                                      value={riskFocusLevelValue(risk)}
-                                      onValueChange={(value) =>
-                                        handleUpdateCurrentRiskLevel(risk, value as 'low' | 'medium' | 'high')
-                                      }
-                                    >
-                                      <SelectTrigger
-                                        className={cn(
-                                          'h-11 text-sm',
-                                          riskFocusSeveritySelectTriggerClass(riskFocusLevelValue(risk))
-                                        )}
-                                      >
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="high" className={riskFocusSeveritySelectItemClass('high')}>
-                                          High
-                                        </SelectItem>
-                                        <SelectItem value="medium" className={riskFocusSeveritySelectItemClass('medium')}>
-                                          Med
-                                        </SelectItem>
-                                        <SelectItem value="low" className={riskFocusSeveritySelectItemClass('low')}>
-                                          Low
-                                        </SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  )}
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                {(risk.mitigation_actions && risk.mitigation_actions.length > 0) && (
-                                  <div
-                                    onClick={(e) => e.stopPropagation()}
-                                    onKeyDown={(e) => e.stopPropagation()}
-                                  >
-                                    <div className="text-xs text-muted-foreground mb-1">
-                                      What can we do to prevent it?
-                                    </div>
-                                    <ul className="space-y-2 text-sm">
-                                      {risk.mitigation_actions.map((ma, idx) => (
-                                        <li key={idx} className="flex items-start gap-2">
-                                          <span>
-                                            <span className="font-medium">{ma.action}</span>
-                                            {ma.benefit ? (
-                                              <span className="text-muted-foreground"> – {ma.benefit}</span>
-                                            ) : null}
-                                          </span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                                {!risk.mitigation_actions?.length && risk.mitigation && (
-                                  <div>
-                                    <div className="text-xs text-muted-foreground mb-1">
-                                      What can we do to prevent it?
-                                    </div>
-                                    <p className="text-sm">{risk.mitigation}</p>
-                                  </div>
-                                )}
-                              </>
-                            )}
-                            {!(mode === 'run' && variant === 'risk-focus') ? (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="w-full"
-                                onClick={() => setDetailsRisk(risk)}
-                              >
-                                <Info className="w-4 h-4 mr-2" />
-                                More details
-                              </Button>
-                            ) : null}
+              ) : usePlanningToolShell ? (
+                <Accordion
+                  type="single"
+                  value={planningRiskStep}
+                  onValueChange={(value) => {
+                    if (value === 'high' || value === 'medium' || value === 'low') {
+                      setPlanningRiskStep(value);
+                    }
+                  }}
+                  className="flex min-h-0 w-full flex-1 flex-col gap-3"
+                >
+                  {PLANNING_RISK_STEPS.map((step, index) => (
+                    <AccordionItem
+                      key={step.key}
+                      value={step.key}
+                      className="rounded-lg border bg-card px-4 data-[state=open]:flex data-[state=open]:min-h-0 data-[state=open]:flex-1 data-[state=open]:flex-col"
+                    >
+                      <AccordionTrigger className="py-4 hover:no-underline">
+                        <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                            {index + 1}
                           </div>
-                        </Card>
-                    );
-                    })}
-                  </div>
-
-                  {/* Desktop: Table Layout — fills remaining height */}
-                  <div
-                    className={cn(
-                      'hidden min-h-0 flex-1 flex-col overflow-hidden md:flex',
-                      displayRisks.length === 0 ? 'md:hidden' : ''
-                    )}
-                  >
-                    <div className="min-h-0 flex-1 overflow-auto rounded-md border border-border/60">
-                      <Table
-                        wrapperClassName="overflow-visible"
-                        className={cn(
-                          riskFocusRun &&
-                            '[&_td]:!px-3 [&_td]:!py-1.5 [&_td]:!pb-1 [&_th]:!px-3 [&_th]:align-bottom [&_th]:pb-2 [&_th]:pt-2.5'
-                        )}
-                      >
-                      <TableHeader className="sticky top-0 z-20 border-b bg-background shadow-sm [&_tr]:border-b-0">
-                        <TableRow className="border-b-0 bg-background hover:bg-background">
-                          <TableHead
-                            className={cn(
-                              'bg-background align-bottom font-semibold text-foreground',
-                              riskFocusRun
-                                ? riskFocusEasyMode
-                                  ? 'w-[16%] min-w-[7.5rem] max-w-[11rem]'
-                                  : 'w-[14%] min-w-[7rem] max-w-[10rem]'
-                                : 'min-w-[180px] max-w-[240px]'
-                            )}
-                          >
-                            {riskFocusRun ? 'Potential Issue' : 'Risk'}
-                          </TableHead>
-                          {riskFocusRun ? (
-                            <>
-                              {!riskFocusEasyMode ? (
-                                <TableHead className="w-[100px] bg-background align-bottom font-semibold text-foreground">
-                                  {friendlyRiskRadarRegisterUi ? 'How likely is it?' : 'Likelihood'}
-                                </TableHead>
-                              ) : null}
-                              {advancedMode ? (
-                                <TableHead className="w-[120px] bg-background align-bottom font-semibold text-foreground">
-                                  Overall Severity
-                                </TableHead>
-                              ) : null}
-                              {advancedMode ? (
-                                <TableHead className="w-[120px] bg-background align-bottom font-semibold text-foreground">
-                                  Budget Risk
-                                </TableHead>
-                              ) : null}
-                              {advancedMode ? (
-                                <TableHead className="w-[120px] bg-background align-bottom font-semibold text-foreground">
-                                  Timeline Risk
-                                </TableHead>
-                              ) : null}
-                            </>
-                          ) : wfTableAdvanced ? (
-                            <>
-                              <TableHead className="w-[100px] bg-background align-bottom font-semibold text-foreground">
-                                Severity
-                              </TableHead>
-                              <TableHead className="w-[120px] bg-background align-bottom font-semibold text-foreground">
-                                Timeline impact
-                              </TableHead>
-                              <TableHead className="w-[120px] bg-background align-bottom font-semibold text-foreground">
-                                Budget impact
-                              </TableHead>
-                              <TableHead className="w-[120px] bg-background align-bottom font-semibold text-foreground">
-                                Risk level
-                              </TableHead>
-                            </>
-                          ) : (
-                            <TableHead className="w-[100px] bg-background align-bottom font-semibold text-foreground">
-                              {wfTableFriendly ? 'How likely is it?' : 'Likelihood'}
-                            </TableHead>
-                          )}
-                          <TableHead
-                            className={cn(
-                              'bg-background align-bottom font-semibold text-foreground',
-                              riskFocusRun
-                                ? 'w-[28%] min-w-[12rem] max-w-[22rem]'
-                                : 'min-w-[140px] max-w-[200px]'
-                            )}
-                          >
-                            {wfTableFriendly || friendlyRiskRadarRegisterUi
-                              ? 'If it happens, then what?'
-                              : 'Impact'}
-                          </TableHead>
-                          <TableHead
-                            className={cn(
-                              'bg-background align-bottom font-semibold text-foreground',
-                              riskFocusRun ? 'min-w-[18rem] w-[44%]' : 'min-w-[200px]'
-                            )}
-                          >
-                            {wfTableFriendly || friendlyRiskRadarRegisterUi
-                              ? 'What can we do to prevent it?'
-                              : 'Mitigation'}
-                          </TableHead>
-                          {mode === 'run' && variant === 'risk-focus' ? (
-                            <TableHead className="w-[5.75rem] max-w-[5.75rem] bg-background align-bottom font-semibold leading-tight text-foreground">
-                              Whats the new status?
-                            </TableHead>
-                          ) : null}
-                          {mode === 'run' && variant !== 'risk-focus' ? (
-                            <TableHead className="w-[120px] bg-background align-bottom font-semibold text-foreground">
-                              Status
-                            </TableHead>
-                          ) : null}
-                          {!riskFocusRun ? (
-                            <TableHead className="w-[120px] bg-background align-bottom font-semibold text-foreground">
-                              Actions
-                            </TableHead>
-                          ) : null}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {displayRisks.map((risk) => (
-                          <TableRow
-                            key={risk.id}
-                            className={cn(
-                              riskFocusRun &&
-                                'cursor-pointer hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-                            )}
-                            tabIndex={riskFocusRun ? 0 : undefined}
-                            onClick={riskFocusRun ? () => setDetailsRisk(risk) : undefined}
-                            onKeyDown={
-                              riskFocusRun
-                                ? (e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      setDetailsRisk(risk);
-                                    }
-                                  }
-                                : undefined
-                            }
-                          >
-                            <TableCell className="font-medium">
-                              <div className="space-y-1.5">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span>{risk.risk}</span>
-                                  {riskFocusRun && isUserAddedRisk(risk) ? (
-                                    <Badge variant="secondary" className="text-[10px]">
-                                      User-Added
-                                    </Badge>
-                                  ) : null}
-                                  {riskFocusRun && risk.hidden_from_register ? (
-                                    <Badge variant="secondary" className="text-[10px]">
-                                      Hidden
-                                    </Badge>
-                                  ) : null}
-                                </div>
-                                {riskFocusEasyMode ? (
-                                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                                    <span className="text-muted-foreground">Likelihood:</span>
-                                    <Badge
-                                      className={getRiskLevelColor(
-                                        risk.likelihood,
-                                        risk.schedule_impact_days,
-                                        risk.budget_impact_dollars
-                                      )}
-                                    >
-                                      {risk.likelihood}
-                                    </Badge>
-                                  </div>
-                                ) : null}
-                              </div>
-                            </TableCell>
-                            {riskFocusRun ? (
-                              <>
-                                {!riskFocusEasyMode ? (
-                                  <TableCell>
-                                    <Badge
-                                      className={getRiskLevelColor(
-                                        risk.likelihood,
-                                        risk.schedule_impact_days,
-                                        risk.budget_impact_dollars
-                                      )}
-                                    >
-                                      {risk.likelihood}
-                                    </Badge>
-                                  </TableCell>
-                                ) : null}
-                                {advancedMode ? (
-                                  <TableCell>
-                                    {risk.severity ? (
-                                      <Badge variant="outline">{risk.severity}</Badge>
-                                    ) : (
-                                      <span className="text-muted-foreground">—</span>
-                                    )}
-                                  </TableCell>
-                                ) : null}
-                                {advancedMode ? (
-                                  <TableCell className="tabular-nums">
-                                    {risk.budget_impact_dollars != null ? (
-                                      `$${Number(risk.budget_impact_dollars).toLocaleString()}`
-                                    ) : (
-                                      <span className="text-muted-foreground">—</span>
-                                    )}
-                                  </TableCell>
-                                ) : null}
-                                {advancedMode ? (
-                                  <TableCell className="tabular-nums">
-                                    {risk.schedule_impact_days != null ? (
-                                      `${Number(risk.schedule_impact_days)}`
-                                    ) : (
-                                      <span className="text-muted-foreground">—</span>
-                                    )}
-                                  </TableCell>
-                                ) : null}
-                              </>
-                            ) : wfTableAdvanced ? (
-                              <>
-                                <TableCell>
-                                  {risk.severity ? (
-                                    <Badge variant="outline">{risk.severity}</Badge>
-                                  ) : (
-                                    <span className="text-muted-foreground">—</span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="tabular-nums">
-                                  {risk.schedule_impact_days != null ? (
-                                    `${Number(risk.schedule_impact_days)}`
-                                  ) : (
-                                    <span className="text-muted-foreground">—</span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="tabular-nums">
-                                  {risk.budget_impact_dollars != null ? (
-                                    `$${Number(risk.budget_impact_dollars).toLocaleString()}`
-                                  ) : (
-                                    <span className="text-muted-foreground">—</span>
-                                  )}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge className={getRiskLevelColor(risk.likelihood, risk.schedule_impact_days, risk.budget_impact_dollars)}>
-                                    {risk.likelihood}
-                                  </Badge>
-                                </TableCell>
-                              </>
-                            ) : (
-                              <TableCell>
-                                <Badge className={getRiskLevelColor(risk.likelihood, risk.schedule_impact_days, risk.budget_impact_dollars)}>
-                                  {risk.likelihood}
-                                </Badge>
-                              </TableCell>
-                            )}
-                            <TableCell
-                              className={cn(
-                                'text-sm align-top',
-                                riskFocusRun && 'max-w-[12.5rem]'
-                              )}
-                            >
-                              <ImpactIfItDoesContent risk={risk} />
-                            </TableCell>
-                            <TableCell
-                              className={cn(
-                                'text-sm text-muted-foreground align-top',
-                                riskFocusRun && 'min-w-[16rem]'
-                              )}
-                              onClick={riskFocusRun ? (e) => e.stopPropagation() : undefined}
-                            >
-                              {riskFocusRun ? (
-                                <div className="space-y-2">
-                                  {(risk.mitigation_actions?.length ?? 0) > 0 ? (
-                                    risk.mitigation_actions!.map((ma, idx) => (
-                                      <div key={idx} className="flex items-start gap-2">
-                                        {!readOnly && String(ma.action).trim() ? (
-                                          <Checkbox
-                                            className="mt-0.5"
-                                            checked={Boolean(ma.completed)}
-                                            onCheckedChange={() => void handleMitigationActionCompletedToggle(risk, idx)}
-                                            aria-label={`Done: ${ma.action}`}
-                                          />
-                                        ) : null}
-                                        <div className="flex min-w-0 flex-1 flex-col">
-                                          {!readOnly && !String(ma.action).trim() ? (
-                                            <Input
-                                              className="h-8 text-xs"
-                                              placeholder="Describe this mitigation"
-                                              defaultValue=""
-                                              onBlur={(e) => void handleMitigationActionTextBlur(risk, idx, e.target.value)}
-                                              onClick={(e) => e.stopPropagation()}
-                                              onKeyDown={(e) => e.stopPropagation()}
-                                            />
-                                          ) : (
-                                            <>
-                                              <span className="font-medium">{ma.action}</span>
-                                              {ma.benefit ? (
-                                                <span className="text-xs text-muted-foreground">{ma.benefit}</span>
-                                              ) : null}
-                                            </>
-                                          )}
-                                        </div>
-                                      </div>
-                                    ))
-                                  ) : risk.mitigation ? (
-                                    <p className="text-sm">{risk.mitigation}</p>
-                                  ) : (
-                                    <span className="text-muted-foreground">—</span>
-                                  )}
-                                  {!readOnly ? (
-                                    <div className="flex justify-center pt-0.5">
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
-                                        aria-label="Add mitigation"
-                                        onClick={() => void handleAppendMitigationAction(risk)}
-                                      >
-                                        <Plus className="h-3.5 w-3.5" />
-                                      </Button>
-                                    </div>
-                                  ) : null}
-                                </div>
-                              ) : risk.mitigation_actions && risk.mitigation_actions.length > 0 ? (
-                                <div className="space-y-2">
-                                  {risk.mitigation_actions.map((ma, idx) => (
-                                    <div key={idx} className="flex items-start gap-2">
-                                      <div className="flex min-w-0 flex-col">
-                                        <span className="font-medium">{ma.action}</span>
-                                        {ma.benefit ? (
-                                          <span className="text-xs text-muted-foreground">{ma.benefit}</span>
-                                        ) : null}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                risk.mitigation || '-'
-                              )}
-                            </TableCell>
-                            {mode === 'run' && variant === 'risk-focus' && (
-                              <TableCell
-                                className="w-[5.75rem] max-w-[5.75rem] align-top"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {readOnly ? (
-                                  <Badge className={currentRiskLevelBadgeClass(riskFocusLevelValue(risk))}>
-                                    {riskFocusLevelValue(risk) === 'high'
-                                      ? 'High'
-                                      : riskFocusLevelValue(risk) === 'low'
-                                        ? 'Low'
-                                        : 'Med'}
-                                  </Badge>
-                                ) : (
-                                  <Select
-                                    value={riskFocusLevelValue(risk)}
-                                    onValueChange={(value) =>
-                                      handleUpdateCurrentRiskLevel(risk, value as 'low' | 'medium' | 'high')
-                                    }
-                                  >
-                                    <SelectTrigger
-                                      className={cn(
-                                        'h-8 w-full text-xs',
-                                        riskFocusSeveritySelectTriggerClass(riskFocusLevelValue(risk))
-                                      )}
-                                    >
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="high" className={riskFocusSeveritySelectItemClass('high')}>
-                                        High
-                                      </SelectItem>
-                                      <SelectItem value="medium" className={riskFocusSeveritySelectItemClass('medium')}>
-                                        Med
-                                      </SelectItem>
-                                      <SelectItem value="low" className={riskFocusSeveritySelectItemClass('low')}>
-                                        Low
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              </TableCell>
-                            )}
-                            {mode === 'run' && variant !== 'risk-focus' && (
-                              <TableCell>
-                                {readOnly ? (
-                                  <Badge className={getStatusColor(risk.status || 'open')}>
-                                    {risk.status || 'open'}
-                                  </Badge>
-                                ) : (
-                                  <Select
-                                    value={risk.status || 'open'}
-                                    onValueChange={(value) => handleUpdateStatus(risk, value as any)}
-                                  >
-                                    <SelectTrigger className="h-8 text-xs">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="open">Open</SelectItem>
-                                      <SelectItem value="mitigated">Mitigated</SelectItem>
-                                      <SelectItem value="monitoring">Monitoring</SelectItem>
-                                      <SelectItem value="closed">Closed</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              </TableCell>
-                            )}
-                            {!riskFocusRun ? (
-                              <TableCell
-                                className="align-top"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <div className="flex flex-wrap gap-1">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setDetailsRisk(risk)}
-                                    className="h-7 px-2 text-[10px]"
-                                  >
-                                    Details
-                                  </Button>
-                                  {!readOnly && (
-                                    <>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleEditRisk(risk)}
-                                        className="h-7 w-7 p-0"
-                                      >
-                                        <Edit className="w-3.5 h-3.5" />
-                                      </Button>
-                                      {!(mode === 'run' && risk.is_template_risk) ? (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleDeleteRisk(risk)}
-                                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </Button>
-                                      ) : null}
-                                    </>
-                                  )}
-                                </div>
-                              </TableCell>
-                            ) : null}
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    </div>
-                  </div>
-                </>
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold sm:text-base">{step.title}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {planningRiskCounts[step.key]} risk
+                              {planningRiskCounts[step.key] === 1 ? '' : 's'}
+                            </div>
+                          </div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-4">
+                        {planningRiskStep === step.key ? (
+                          <RiskRegisterList
+                            risksToShow={listRisks}
+                            risksTotalCount={risks.length}
+                            hideStandardRisks={hideStandardRisks}
+                            usePlanningToolShell={usePlanningToolShell}
+                            planningStepEmptyMessage={step.empty}
+                            riskFocusRun={riskFocusRun}
+                            riskFocusEasyMode={riskFocusEasyMode}
+                            readOnly={readOnly}
+                            mode={mode}
+                            variant={variant}
+                            friendlyRiskRadarRegisterUi={friendlyRiskRadarRegisterUi}
+                            advancedMode={advancedMode}
+                            wfTableAdvanced={wfTableAdvanced}
+                            wfTableFriendly={wfTableFriendly}
+                            getRiskLevelColor={getRiskLevelColor}
+                            getStatusColor={getStatusColor}
+                            onOpenDetails={setDetailsRisk}
+                            onEditRisk={handleEditRisk}
+                            onDeleteRisk={handleDeleteRisk}
+                            onUpdateStatus={handleUpdateStatus}
+                            onMitigationActionCompletedToggle={handleMitigationActionCompletedToggle}
+                            onMitigationActionTextBlur={handleMitigationActionTextBlur}
+                            onAppendMitigationAction={handleAppendMitigationAction}
+                            onUpdateCurrentRiskLevel={handleUpdateCurrentRiskLevel}
+                          />
+                        ) : null}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              ) : (
+                <RiskRegisterList
+                  risksToShow={displayRisks}
+                  risksTotalCount={risks.length}
+                  hideStandardRisks={hideStandardRisks}
+                  usePlanningToolShell={usePlanningToolShell}
+                  planningStepEmptyMessage={
+                    PLANNING_RISK_STEPS.find((s) => s.key === planningRiskStep)?.empty ??
+                    'No risks in this step.'
+                  }
+                  riskFocusRun={riskFocusRun}
+                  riskFocusEasyMode={riskFocusEasyMode}
+                  readOnly={readOnly}
+                  mode={mode}
+                  variant={variant}
+                  friendlyRiskRadarRegisterUi={friendlyRiskRadarRegisterUi}
+                  advancedMode={advancedMode}
+                  wfTableAdvanced={wfTableAdvanced}
+                  wfTableFriendly={wfTableFriendly}
+                  getRiskLevelColor={getRiskLevelColor}
+                  getStatusColor={getStatusColor}
+                  onOpenDetails={setDetailsRisk}
+                  onEditRisk={handleEditRisk}
+                  onDeleteRisk={handleDeleteRisk}
+                  onUpdateStatus={handleUpdateStatus}
+                  onMitigationActionCompletedToggle={handleMitigationActionCompletedToggle}
+                  onMitigationActionTextBlur={handleMitigationActionTextBlur}
+                  onAppendMitigationAction={handleAppendMitigationAction}
+                  onUpdateCurrentRiskLevel={handleUpdateCurrentRiskLevel}
+                />
               )}
             </div>
           )}
