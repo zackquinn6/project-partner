@@ -1213,6 +1213,20 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       return;
     }
 
+    const methodLabel =
+      method === 'single-piece-flow' ? 'Single-piece flow' : 'Batch flow';
+    const methodImpact =
+      method === 'single-piece-flow'
+        ? 'Spaces will finish one after another, so you see a completed room sooner.'
+        : 'Each phase runs across all spaces first, which is usually more efficient overall but delays the first finished room.';
+
+    toast({
+      title: 'Schedule architecture is changing',
+      description:
+        `Switching to ${methodLabel} redefines how your project schedule is built - the sequence of spaces and phases is restructured. ${methodImpact} Completed step progress is kept, but remaining dates and task order may shift.`,
+      duration: 8000,
+    });
+
     setScheduleOptimizationMethod(method);
 
     try {
