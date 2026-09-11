@@ -283,11 +283,12 @@ const Index = () => {
 
   // When project runs arrive after navigation (or refetch), sync current run from history without re-driving view from stale state.
   useEffect(() => {
+    if (forceListingMode) return;
     const st = location.state as IndexLocationState | undefined;
     if (st?.view !== 'user' || typeof st.projectRunId !== 'string' || st.projectRunId.length === 0) return;
     const run = projectRuns.find((r) => r.id === st.projectRunId);
     if (run) setCurrentProjectRun(run);
-  }, [location.state, projectRuns, setCurrentProjectRun]);
+  }, [forceListingMode, location.state, projectRuns, setCurrentProjectRun]);
 
   // Prevent constant re-renders by memoizing navigation handlers
   const [hasHandledInitialState, setHasHandledInitialState] = useState(false);
@@ -540,6 +541,8 @@ const Index = () => {
 
   // Define functions BEFORE they are used in useEffect
   const handleProjectsView = () => {
+    setCurrentProjectRun(null);
+    setCurrentProject(null);
     setResetUserView(true);
     setForceListingMode(true);
     setCurrentView('user');
@@ -549,8 +552,8 @@ const Index = () => {
       setMobileView('projects');
     }
     
-    // Clear projectRunId by replacing location state
-    navigate('/', { replace: true, state: {} });
+    // Clear projectRunId so UserView cannot restore the last open project
+    navigate('/', { replace: true, state: { view: 'user' } });
   };
 
   const handleAdminAccess = () => {

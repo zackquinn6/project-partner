@@ -1046,6 +1046,16 @@ export default function UserView({
 
   // Load project run if projectRunId is provided
   useEffect(() => {
+    // Project Dashboard / force-listing: never restore a project from a stale
+    // location.state.projectRunId that has not cleared yet after navigate().
+    if (forceListingMode) {
+      if (currentProjectRun) {
+        setCurrentProjectRun(null);
+      }
+      setViewMode((prev) => (prev === 'listing' ? prev : 'listing'));
+      return;
+    }
+
     // If location has no projectRunId yet, do NOT clear currentProjectRun.
     // Navigation sets the run in context first, then updates location.state — clearing
     // here races that order and thrash-opens kickoff (max update depth via micro-decisions).
@@ -1242,6 +1252,7 @@ export default function UserView({
       }
     }
   }, [
+    forceListingMode,
     projectRunId,
     projectRuns,
     setCurrentProjectRun,
@@ -1266,10 +1277,10 @@ export default function UserView({
       return;
     }
 
-    // CRITICAL FIX: ALWAYS respect forceListingMode - Project Dashboard must show listing
-    // BUT: Don't force listing if we have a projectRunId (project selected from dropdown or catalog)
-    // When projectRunId is provided, we should directly open the project, not go to listing
-    if (forceListingMode && !projectRunId) {
+    // CRITICAL FIX: ALWAYS respect forceListingMode - Project Dashboard must show listing.
+    // Do not require !projectRunId: navigate() clears it on the next render, and a stale
+    // id would otherwise reopen the last project and clear forceListingMode via onProjectSelected.
+    if (forceListingMode) {
       if (viewMode !== 'listing') {
         setViewMode('listing');
       }
@@ -1309,7 +1320,7 @@ export default function UserView({
     // This ensures direct project opening, not going to listing mode
     if (projectRunId && currentProjectRun) {
       newViewMode = 'workflow';
-    } else if (showProfile || (forceListingMode && !projectRunId)) {
+    } else if (showProfile || forceListingMode) {
       newViewMode = 'listing';
     } else if (resetToListing && !currentProjectRun) {
       newViewMode = 'listing';
@@ -2742,9 +2753,10 @@ export default function UserView({
   // THIRD: If no projects at all or explicitly in listing mode, show project listing
   // Include forceListingMode: after clearing currentProjectRun, viewMode can still be 'workflow' for a frame;
   // without this, users with projectRuns.length > 0 skip listing and see a blank workflow shell.
+  // forceListingMode alone is enough — stale projectRunId must not block the dashboard.
   if (
     viewMode === 'listing' ||
-    (forceListingMode && !projectRunId) ||
+    forceListingMode ||
     (!currentProject && !currentProjectRun && !projectRunId && safeProjectRuns.length === 0)
   ) {
     

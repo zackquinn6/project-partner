@@ -383,8 +383,11 @@ export default function Navigation({
                   size="sm"
                   className="text-xs rounded-r-none border-r-0 pr-2"
                   onClick={() => {
+                    // Clear context + force listing via event so UserView does not
+                    // re-open the last project from a stale location.state.projectRunId.
                     setCurrentProjectRun(null);
                     setCurrentProject(null);
+                    window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'));
                     onViewChange('user');
                     onProjectsView?.();
                   }}
@@ -408,6 +411,7 @@ export default function Navigation({
                   <DropdownMenuItem onClick={() => {
                   setCurrentProjectRun(null);
                   setCurrentProject(null);
+                  window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'));
                   onViewChange('user');
                   onProjectsView?.();
                 }} className="font-semibold text-primary hover:text-primary hover:bg-primary/10 py-3">
