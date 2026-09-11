@@ -380,6 +380,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const [homes, setHomes] = useState<Home[]>([]);
   const [tasks, setTasks] = useState<MaintenanceTask[]>([]);
   const [loading, setLoading] = useState(true);
+  /** Home id whose tasks+completions are currently in state; null until first successful load. */
+  const [loadedHomeId, setLoadedHomeId] = useState<string | null>(null);
   const [selectedHomeId, setSelectedHomeId] = useState<string>('');
   const [showAddTask, setShowAddTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState<MaintenanceTask | null>(null);
@@ -401,6 +403,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const {
     isMobile
   } = useResponsive();
+  const homeContentReady = Boolean(selectedHomeId && selectedHomeId === loadedHomeId);
   useEffect(() => {
     if (open && user) {
       fetchHomes();
@@ -418,10 +421,72 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     }
   }, [open]);
   useEffect(() => {
-    if (selectedHomeId && user) {
-      fetchTasks();
-      fetchCompletions();
-    }
+    if (!selectedHomeId || !user) return;
+    let cancelled = false;
+    const homeId = selectedHomeId;
+    setLoading(true);
+
+    const loadHomeContent = async () => {
+      try {
+        const [tasksResult, completionsResult] = await Promise.all([
+          supabase
+            .from('user_maintenance_tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('home_id', homeId)
+            .eq('is_active', true)
+            .order('next_due', { ascending: true }),
+          supabase
+            .from('maintenance_completions')
+            .select(`
+              id,
+              task_id,
+              completed_at,
+              scheduled_due_date,
+              notes,
+              photo_url,
+              user_maintenance_tasks!inner (
+                title,
+                category,
+                home_id
+              )
+            `)
+            .eq('user_id', user.id)
+            .eq('user_maintenance_tasks.home_id', homeId)
+            .order('completed_at', { ascending: false }),
+        ]);
+        if (cancelled) return;
+        if (tasksResult.error) throw tasksResult.error;
+        if (completionsResult.error) throw completionsResult.error;
+
+        const transformedCompletions =
+          completionsResult.data?.map(completion => ({
+            id: completion.id,
+            task_id: completion.task_id,
+            completed_at: completion.completed_at,
+            scheduled_due_date: completion.scheduled_due_date ?? undefined,
+            notes: completion.notes,
+            photo_url: completion.photo_url,
+            task: {
+              title: completion.user_maintenance_tasks.title,
+              category: completion.user_maintenance_tasks.category,
+            },
+          })) || [];
+
+        setTasks(tasksResult.data || []);
+        setCompletions(transformedCompletions);
+        setLoadedHomeId(homeId);
+      } catch (error) {
+        console.error('Error loading home maintenance content:', error);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadHomeContent();
+    return () => {
+      cancelled = true;
+    };
   }, [selectedHomeId, user]);
   const fetchHomes = async () => {
     if (!user) return;
@@ -443,7 +508,6 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   };
   const fetchTasks = async () => {
     if (!user || !selectedHomeId) return;
-    setLoading(true);
     try {
       const {
         data,
@@ -453,10 +517,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       });
       if (error) throw error;
       setTasks(data || []);
+      setLoadedHomeId(selectedHomeId);
     } catch (error) {
       console.error('Error fetching tasks:', error);
-    } finally {
-      setLoading(false);
     }
   };
   const fetchCompletions = async () => {
@@ -807,8 +870,8 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
           </div>
         </div>
 
-            {/* Summary dashboard */}
-            {selectedHomeId && tasks.length >= 0 && (
+            {/* Summary dashboard — only after this home's tasks+completions are loaded (no empty flash) */}
+            {homeContentReady && (
               <MaintenanceDashboard
                 tasks={tasks.map(t => ({
                   id: t.id,
@@ -951,7 +1014,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
 
                       {/* Task list – fills remaining height so table area uses full window on desktop */}
                       <div className="flex-1 min-h-0 basis-0 overflow-y-auto px-2 pt-2 pb-0 md:px-6 md:py-3 md:pb-3">
-                        {loading ? (
+                        {!homeContentReady || loading ? (
                           <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>
                         ) : filteredTasks.length === 0 ? (
                           <Card className="mx-1 border-primary/20 bg-primary/5">
