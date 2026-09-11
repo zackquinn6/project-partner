@@ -1,6 +1,7 @@
 -- Tile Flooring Installation: crisp Prepare-subfloor underlayment decision copy.
 -- Updates phase_operations descriptions/names, decision-tree prompts, rebuilds
--- projects.phases, and patches in-flight project_runs.phases snapshots.
+-- projects.phases via rebuild_phases_json_from_project_phases_internal, and patches
+-- in-flight project_runs.phases snapshots.
 
 DO $$
 DECLARE
@@ -156,7 +157,7 @@ BEGIN
   WHERE id = v_project_id;
 
   UPDATE public.projects
-  SET phases = public.rebuild_phases_json_from_project_phases(v_project_id)
+  SET phases = public.rebuild_phases_json_from_project_phases_internal(v_project_id)
   WHERE id = v_project_id;
 
   -- Ensure template phases JSON carries userPrompt (rebuild may omit it).
