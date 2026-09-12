@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
 import { Project } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
-import { parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
+import { projectRunFromSupabaseRow } from '@/utils/projectRunFromSupabaseRow';
 import { useDataFetch } from '@/hooks/useDataFetch';
 import { useAuth } from './AuthContext';
 import { useGuest } from './GuestContext';
@@ -171,89 +171,11 @@ export const ProjectDataProvider: React.FC<ProjectDataProviderProps> = ({ childr
     }).filter((p): p is Project => p !== null); // Filter out nulls from errors
   }, []);
 
-  // Memoized transform function for project runs
+  // Memoized transform function for project runs (includes phase_ratings / photos for analytics)
   const transformProjectRuns = React.useMemo(() => (data: any[]): ProjectRun[] => {
-    return data.map(run => {
-      let phases = [];
-      if (run.phases) {
-        try {
-          phases = typeof run.phases === 'string' 
-            ? JSON.parse(run.phases) 
-            : run.phases;
-        } catch (e) {
-          console.error('Failed to parse project run phases JSON:', e);
-          phases = [];
-        }
-      }
-
-      let completedSteps = [];
-      if (run.completed_steps) {
-        try {
-          completedSteps = typeof run.completed_steps === 'string'
-            ? JSON.parse(run.completed_steps)
-            : run.completed_steps;
-        } catch (e) {
-          console.error('Failed to parse completed_steps JSON:', e);
-          completedSteps = [];
-        }
-      }
-
-      let customizationDecisions = undefined;
-      if (run.customization_decisions) {
-        try {
-          customizationDecisions = typeof run.customization_decisions === 'string'
-            ? JSON.parse(run.customization_decisions)
-            : run.customization_decisions;
-        } catch (e) {
-          console.error('Failed to parse customization_decisions JSON:', e);
-        }
-      }
-
-      return {
-        id: run.id,
-        projectId: run.project_id,
-        name: run.name,
-        description: run.description || '',
-        projectChallenges: run.project_challenges,
-        isManualEntry: run.is_manual_entry || false,
-        createdAt: new Date(run.created_at),
-        updatedAt: new Date(run.updated_at),
-        startDate: new Date(run.start_date),
-        planEndDate: new Date(run.plan_end_date),
-        endDate: run.end_date ? new Date(run.end_date) : undefined,
-        status: run.status as ProjectRun['status'],
-        projectLeader: run.project_leader,
-        accountabilityPartner: run.accountability_partner,
-        customProjectName: run.custom_project_name,
-        home_id: run.home_id,
-        currentPhaseId: run.current_phase_id,
-        currentOperationId: run.current_operation_id,
-        currentStepId: run.current_step_id,
-        completedSteps: Array.isArray(completedSteps) ? completedSteps : [],
-        progress: run.progress,
-        phases: Array.isArray(phases) ? phases : [],
-        category: run.category,
-        effortLevel: run.effort_level as Project['effortLevel'],
-        skillLevel: run.skill_level as Project['skillLevel'],
-        estimatedTime: run.estimated_time,
-        scalingUnit: run.scaling_unit as Project['scalingUnit'],
-        customization_decisions: customizationDecisions,
-        instruction_level_preference: run.instruction_level_preference as 'beginner' | 'intermediate' | 'advanced' | undefined,
-        // Initial project goals from kickoff step 3
-        initial_budget: run.initial_budget,
-        initial_timeline: run.initial_timeline,
-        initial_sizing: run.initial_sizing,
-        progress_reporting_style: run.progress_reporting_style
-          ? (run.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
-          : undefined,
-        quality_control_settings: parseQualityControlSettingsColumn(run.quality_control_settings),
-        planningCompletedAt: run.planning_completed_at ? new Date(run.planning_completed_at) : undefined,
-        planningScopeBaseline:
-          run.planning_scope_baseline != null && typeof run.planning_scope_baseline === 'object'
-            ? (run.planning_scope_baseline as Record<string, unknown>)
-            : undefined
-      } as ProjectRun;
-    });
+    return data
+      .map((run) => projectRunFromSupabaseRow(run as Record<string, unknown>))
+      .filter((run): run is ProjectRun => run !== null);
   }, []);
 
   // Fetch projects data

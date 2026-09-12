@@ -8,6 +8,7 @@ import { useProject } from '@/contexts/ProjectContext';
 import { AnalyticsFilters } from './AnalyticsFilters';
 import { generateDemoData, calculateRealAnalytics, exportAnalyticsData, AnalyticsData } from '@/utils/analyticsData';
 import { AdminPhotoAggregation } from './AdminPhotoAggregation';
+import { BetaScorecard } from './BetaScorecard';
 import { DateRange } from 'react-day-picker';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectOwner } from '@/hooks/useProjectOwner';
@@ -122,16 +123,37 @@ const ProjectAnalytics: React.FC = () => {
     <div className="space-y-6">
       {(isAdmin || hasProjectOwnerRole) && (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <TabsTrigger value="analytics" className="gap-2">
               <BarChart3 className="w-4 h-4" />
               Analytics
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="beta" className="gap-2">
+                <TrendingUp className="w-4 h-4" />
+                Beta scorecard
+              </TabsTrigger>
+            )}
             <TabsTrigger value="photos" className="gap-2">
               <Camera className="w-4 h-4" />
               Photos
             </TabsTrigger>
           </TabsList>
+
+          {isAdmin && (
+            <TabsContent value="beta" className="mt-6 space-y-6">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setDemoMode(!demoMode)}
+                  className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+                >
+                  {demoMode ? 'Using demo data — switch to live' : 'Preview with demo data'}
+                </button>
+              </div>
+              <BetaScorecard demoMode={demoMode} />
+            </TabsContent>
+          )}
 
           <TabsContent value="analytics" className="mt-6 space-y-6">
             {/* Analytics Filters */}

@@ -4594,6 +4594,13 @@ export type Database = {
           template_name: string
         }[]
       }
+      get_beta_tile_analytics_payload: {
+        Args: {
+          p_signup_from: string
+          p_signup_to: string
+        }
+        Returns: Json
+      }
       get_photos_by_project_type_internal: {
         Args: never
         Returns: {
