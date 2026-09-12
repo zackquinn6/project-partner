@@ -681,11 +681,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const projectDetailsFields = (
     <>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-            <div className="flex-1 min-w-0">
-              <Label className="text-xs">Description</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">{resolvedProjectDescription || 'No description provided'}</p>
-            </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 sm:col-span-2">
               <div className="flex items-center justify-between gap-2 mb-0.5">
                 <div className="flex items-center gap-1">
                   <Label className="text-xs">Project Challenges</Label>
@@ -915,8 +911,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         </CardHeader>
         <CardContent className="space-y-2 p-2 sm:space-y-3 sm:p-3">
           <div className="space-y-0.5">
-            <Label className="text-[10px] sm:text-xs">Description</Label>
-            <p className="text-xs text-muted-foreground leading-snug whitespace-pre-line sm:text-sm">
+            <p className="text-xs text-muted-foreground leading-snug line-clamp-3 whitespace-pre-line sm:text-sm">
               {resolvedProjectDescription || 'No description provided'}
             </p>
           </div>
@@ -944,16 +939,15 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </div>
 
             <div className="space-y-2 rounded-lg border bg-muted/20 px-2.5 py-2 text-left sm:space-y-2.5 sm:px-3 sm:py-3">
-              <h3 className="text-xs font-semibold text-foreground sm:text-sm">Summary</h3>
-              <p className="text-xs leading-snug text-foreground sm:text-sm sm:leading-relaxed">{matchExplanation.summary}</p>
-              <div className="space-y-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs">
-                  Project challenges
-                </p>
-                <p className="text-xs leading-snug text-muted-foreground whitespace-pre-line sm:text-sm sm:leading-relaxed">
+              <p className="text-xs leading-snug text-foreground sm:text-sm sm:leading-relaxed">
+                {matchExplanation.summary}
+              </p>
+              {matchExplanation.challengesParagraph?.trim() ? (
+                <p className="text-xs leading-snug text-muted-foreground line-clamp-2 sm:text-sm">
+                  <span className="font-medium text-foreground/80">Challenges: </span>
                   {matchExplanation.challengesParagraph}
                 </p>
-              </div>
+              ) : null}
               <div className="space-y-1.5">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs">
                   Why this recommendation
@@ -966,10 +960,10 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </div>
           </section>
 
-          <Accordion type="single" collapsible className="w-full rounded-lg border bg-muted/20 px-1.5 sm:px-2">
+          <Accordion type="single" collapsible defaultValue={undefined} className="w-full rounded-lg border bg-muted/20 px-1.5 sm:px-2">
             <AccordionItem value="project-details" className="border-none">
               <AccordionTrigger className="py-2 text-xs font-semibold hover:no-underline sm:py-2.5 sm:text-sm">
-                More Project Details
+                More project details
               </AccordionTrigger>
               <AccordionContent className="pb-2 pt-0 sm:pb-3">
                 {projectVisualizerUnderAccordionHeader}

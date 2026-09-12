@@ -21,12 +21,6 @@ import { toast } from 'sonner';
 import { HomeManager } from '../HomeManager';
 import { useProjectData } from '@/contexts/ProjectDataContext';
 import { reportUserFacingError } from '@/utils/errorReporting';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 
 interface ProjectProfileStepProps {
   onComplete: () => void;
@@ -145,7 +139,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   const [templateBudgetPerUnit, setTemplateBudgetPerUnit] = useState<string | null>(null);
   const [templateBudgetPerTypicalSize, setTemplateBudgetPerTypicalSize] = useState<string | null>(null);
   const [templateEconomicsLoaded, setTemplateEconomicsLoaded] = useState(false);
-  const [mobileGoalsMode, setMobileGoalsMode] = useState<'typical' | 'custom'>('typical');
+  const [goalsMode, setGoalsMode] = useState<'typical' | 'custom'>('typical');
 
   useEffect(() => {
     const fetchScalingUnitAndItemType = async () => {
@@ -238,7 +232,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     const hasStoredGoals =
       Boolean(String((currentProjectRun as any).initial_sizing ?? '').trim()) ||
       Boolean(String((currentProjectRun as any).initial_budget ?? '').trim());
-    setMobileGoalsMode(hasStoredGoals ? 'custom' : 'typical');
+    setGoalsMode(hasStoredGoals ? 'custom' : 'typical');
   }, [currentProjectRun?.id]);
 
   useEffect(() => {
@@ -309,7 +303,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       initialSizing: sizing,
       initialBudget: budget,
     }));
-    setMobileGoalsMode('typical');
+    setGoalsMode('typical');
   }, [
     templateTypicalProjectSize,
     templateBudgetPerTypicalSize,
@@ -823,18 +817,15 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                 {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">
-                Set your initial project goals
+                Set rough size, timing, and budget
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-2 p-2 sm:space-y-3 sm:p-3">
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div>
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-[10px] text-muted-foreground">1 of 3</span>
-                <label className="text-xs font-medium">Name your project</label>
-              </div>
+              <label className="mb-1 block text-xs font-medium">Name</label>
               <Input
                 value={projectForm.customProjectName}
                 onChange={(e) => setProjectForm(prev => ({
@@ -846,73 +837,109 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
               />
             </div>
 
-            <div className="flex items-center gap-1.5 mt-3 mb-1.5">
-              <span className="text-[10px] text-muted-foreground shrink-0">2 of 3</span>
-              <h3 className="text-xs sm:text-sm font-medium text-foreground">
-                Initial project goals: you can edit these later
-              </h3>
-            </div>
-
-            <div className="md:hidden space-y-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+            {homes.length > 1 ? (
+              <div>
+                <label className="mb-1 block text-xs font-medium">Home</label>
+                <div className="flex gap-2">
+                  <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue placeholder="Select a home" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {homes.map((home) => (
+                        <SelectItem key={home.id} value={home.id} className="text-xs">
+                          {home.name}
+                          {home.is_primary ? ' (primary)' : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full h-9 text-xs font-normal justify-between gap-2"
+                    size="sm"
+                    className="h-9 shrink-0 px-2"
+                    onClick={() => setShowHomeManager(true)}
                   >
-                    <span className="truncate text-left">
-                      {mobileGoalsMode === 'typical'
-                        ? 'Typical project (template defaults)'
-                        : 'Custom project goals'}
-                    </span>
-                    <ChevronDown className="h-4 w-4 shrink-0 opacity-70" />
+                    <Plus className="h-4 w-4" />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[12rem]">
-                  <DropdownMenuItem
-                    className="text-xs"
-                    onClick={() => {
-                      applyTypicalProjectGoals();
-                    }}
-                  >
-                    Use typical project (template size and budget, 30-day target)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-xs"
-                    onClick={() => setMobileGoalsMode('custom')}
-                  >
-                    Edit values manually
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              {mobileGoalsMode === 'typical' ? (
-                <div className="rounded-md border border-border bg-muted/30 px-3 py-2 space-y-1.5 text-xs text-left">
-                  <div>
-                    <span className="text-muted-foreground">Size: </span>
-                    <span className="font-medium">
-                      {projectForm.initialSizing || '-'} {scalingLabel}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Target date: </span>
-                    <span className="font-medium">{projectForm.initialTimeline || '-'}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Budget: </span>
-                    <span className="font-medium">
-                      {projectForm.initialBudget ? `$${projectForm.initialBudget}` : '-'}
-                    </span>
-                  </div>
                 </div>
-              ) : (
-                renderGoalFieldsGrid()
-              )}
+              </div>
+            ) : null}
+
+            <div>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <h3 className="text-xs font-medium text-foreground sm:text-sm">Targets</h3>
+                <p className="text-[10px] text-muted-foreground">You can edit these later</p>
+              </div>
+
+              <div className="space-y-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 w-full justify-between gap-2 text-xs font-normal"
+                    >
+                      <span className="truncate text-left">
+                        {goalsMode === 'typical'
+                          ? 'Typical project (template defaults)'
+                          : 'Custom project goals'}
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0 opacity-70" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[12rem]"
+                  >
+                    <DropdownMenuItem
+                      className="text-xs"
+                      onClick={() => {
+                        applyTypicalProjectGoals();
+                      }}
+                    >
+                      Use typical project (template size and budget, 30-day target)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-xs" onClick={() => setGoalsMode('custom')}>
+                      Adjust size, timing, and budget
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {goalsMode === 'typical' ? (
+                  <div className="space-y-1.5 rounded-md border border-border bg-muted/30 px-3 py-2 text-left text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Size: </span>
+                      <span className="font-medium">
+                        {projectForm.initialSizing || '-'} {scalingLabel}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Target date: </span>
+                      <span className="font-medium">{projectForm.initialTimeline || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Budget: </span>
+                      <span className="font-medium">
+                        {projectForm.initialBudget ? `$${projectForm.initialBudget}` : '-'}
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="h-auto px-0 text-[11px]"
+                      onClick={() => setGoalsMode('custom')}
+                    >
+                      Adjust
+                    </Button>
+                  </div>
+                ) : (
+                  renderGoalFieldsGrid()
+                )}
+              </div>
             </div>
-
-            <div className="hidden md:block">{renderGoalFieldsGrid()}</div>
           </div>
-
         </CardContent>
       </Card>
 

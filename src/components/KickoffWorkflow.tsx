@@ -15,7 +15,6 @@ import { ProjectOverviewStep } from './KickoffSteps/ProjectOverviewStep';
 import { ProjectProfileStep } from './KickoffSteps/ProjectProfileStep';
 import {
   ProjectToolsStep,
-  PLANNING_TOOLS,
   type PlanningToolId,
   filterByPartnerAvailability,
   DEFAULT_PLANNING_TOOLS_SELECTION,
@@ -47,22 +46,22 @@ const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string
   {
     id: 'kickoff-step-1',
     title: 'Project Match',
-    description: 'Review and customize your project details',
+    description: 'Is this project a good fit for you?',
   },
   {
     id: 'kickoff-step-2',
     title: 'Personalize',
-    description: 'Complete your DIY profile for personalized guidance',
+    description: 'Confirm your DIY skill, effort, and focus',
   },
   {
     id: 'kickoff-step-3',
     title: 'Goals',
-    description: 'Set your project name, home, and initial goals',
+    description: 'Set rough size, timing, and budget',
   },
   {
     id: 'kickoff-step-4',
-    title: 'Workflow Setup',
-    description: 'Choose which planning tools become your planning backlog',
+    title: 'Plan tools',
+    description: 'Choose what to plan next in Planning Studio',
   },
 ];
 
@@ -578,26 +577,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   };
 
   const currentStepId = kickoffSteps[currentKickoffStep]?.id;
+  const currentStepDescription = kickoffSteps[currentKickoffStep]?.description ?? '';
 
-  const currentStepPurpose = (() => {
-    switch (currentStepId) {
-      case 'kickoff-step-1':
-        return "Let's make sure this project is a great fit";
-      case 'kickoff-step-2':
-        return 'Personalize the project to your unique DIY experience level and preferences';
-      case 'kickoff-step-3':
-        return 'Complete initial customization to your unique project';
-      case 'kickoff-step-4':
-        return 'Choose your planning backlog: these tools become the Plan stage next';
-      default:
-        return '';
-    }
-  })();
-  const handleNext = () => {
-    if (currentKickoffStep < kickoffSteps.length - 1) {
-      setCurrentKickoffStep(currentKickoffStep + 1);
-    }
-  };
   const handlePrevious = () => {
     if (currentKickoffStep > 0) {
       setCurrentKickoffStep(currentKickoffStep - 1);
@@ -606,10 +587,25 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   const isStepCompleted = (stepIndex: number) => completedKickoffSteps.has(stepIndex);
   const allKickoffStepsComplete = completedKickoffSteps.size === kickoffSteps.length;
 
+  /** Linear walk-through: visit completed steps or the current step only (no jump ahead). */
+  const canVisitKickoffStep = (index: number) => {
+    if (index < 0 || index >= kickoffSteps.length) return false;
+    if (index === currentKickoffStep) return true;
+    return completedKickoffSteps.has(index);
+  };
+
   const goToKickoffStep = (index: number) => {
-    if (index < 0 || index >= kickoffSteps.length) return;
+    if (!canVisitKickoffStep(index)) {
+      toast.message('Finish the current step to continue');
+      return;
+    }
     setCurrentKickoffStep(index);
   };
+
+  const personalizeBlocked =
+    currentStepId === 'kickoff-step-2' &&
+    kickoffStepOrder === 'profile_first' &&
+    !profileSkillLevel;
   const handleOutputToggle = (stepId: string, outputId: string) => {
     setCheckedOutputs(prev => {
       const stepOutputs = new Set(prev[stepId] || []);
@@ -690,29 +686,225 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     );
   }
 
+  const handlePrimaryContinue = async () => {
+    if (personalizeBlocked) {
+      toast.message('Complete your DIY profile to continue');
+      return;
+    }
+
+    if (currentStepId === 'kickoff-step-3' && (window as any).__projectProfileStepSave) {
+      try {
+        await (window as any).__projectProfileStepSave();
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        await handleStepComplete(currentKickoffStep);
+        return;
+      } catch (error) {
+        await reportUserFacingError({
+          source: 'kickoff',
+          operation: 'save_project_profile_step',
+          userId: user?.id,
+          projectRunId: currentProjectRun?.id,
+          stepId: currentStepId,
+          error,
+          userMessage: 'Failed to save project profile.',
+          notificationTitle: 'Kickoff project profile save failed',
+        });
+        return;
+      }
+    }
+
+    if (currentStepId === 'kickoff-step-4') {
+      await handleStepComplete(currentKickoffStep, selectedPlanningTools);
+      return;
+    }
+
+    await handleStepComplete(currentKickoffStep);
+  };
+
+  const renderSecondaryEscape = () => {
+    if (currentStepId === 'kickoff-step-1') {
+      if (isMobile) {
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="h-12 min-h-12 w-full px-2 text-sm sm:h-full sm:min-h-[3.25rem] sm:px-3 sm:py-3"
+              >
+                <MoreHorizontal className="mr-1.5 h-4 w-4 shrink-0 sm:mr-2" />
+                More
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-72">
+              <DropdownMenuItem
+                className="text-red-700 focus:text-red-700"
+                onSelect={() => {
+                  void handleNotAMatch();
+                }}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
+                Not a match: back to catalog
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      }
+      return (
+        <Button
+          type="button"
+          onClick={() => {
+            void handleNotAMatch();
+          }}
+          variant="outline"
+          size="lg"
+          className="h-12 min-h-12 w-full border-red-300 px-3 text-sm text-red-700 hover:bg-red-50 sm:h-full sm:min-h-[3.25rem] sm:py-3"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
+          <span className="text-left leading-tight sm:line-clamp-2">Not a match: back to catalog</span>
+        </Button>
+      );
+    }
+
+    if (currentStepId === 'kickoff-step-4') {
+      if (isMobile) {
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="h-12 min-h-12 w-full px-2 text-sm sm:h-full sm:min-h-[3.25rem] sm:px-3 sm:py-3"
+              >
+                <MoreHorizontal className="mr-1.5 h-4 w-4 shrink-0 sm:mr-2" />
+                More
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-72">
+              <DropdownMenuItem
+                onSelect={() => {
+                  onKickoffComplete({ mode: 'skip-to-workflow' });
+                }}
+              >
+                Skip planning: go to project
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      }
+      return (
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          className="h-12 min-h-12 w-full border-muted-foreground/40 px-3 text-sm text-muted-foreground hover:bg-muted/40 sm:h-full sm:min-h-[3.25rem] sm:py-3"
+          onClick={() => {
+            onKickoffComplete({ mode: 'skip-to-workflow' });
+          }}
+        >
+          <span className="text-left leading-tight sm:line-clamp-2">Skip planning: go to project</span>
+        </Button>
+      );
+    }
+
+    return <div className="min-h-12 min-w-0 flex-[3] basis-0" aria-hidden />;
+  };
+
+  const renderPrimaryActions = () => {
+    if (!isStepCompleted(currentKickoffStep)) {
+      const showSecondary =
+        currentStepId === 'kickoff-step-1' || currentStepId === 'kickoff-step-4';
+      return (
+        <div className="flex min-h-12 w-full flex-row items-stretch gap-2 sm:min-h-[3.25rem] sm:gap-3">
+          {showSecondary ? (
+            <div className="flex min-h-12 min-w-0 flex-[3] basis-0 flex-col justify-center sm:min-h-[3.25rem]">
+              {renderSecondaryEscape()}
+            </div>
+          ) : (
+            <div className="min-w-0 flex-[3] basis-0" aria-hidden />
+          )}
+          <div className="flex min-h-12 min-w-0 flex-[7] basis-0 flex-col sm:min-h-[3.25rem]">
+            <Button
+              onClick={() => {
+                void handlePrimaryContinue();
+              }}
+              size="lg"
+              disabled={personalizeBlocked}
+              className="h-12 min-h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:h-full sm:min-h-[3.25rem] sm:py-3"
+            >
+              <CheckCircle className="mr-2 h-4 w-4 shrink-0" />
+              <span className="text-left leading-tight sm:line-clamp-2">
+                {currentStepId === 'kickoff-step-4' ? (
+                  <>
+                    <span className="hidden sm:inline">Open Planning Studio</span>
+                    <span className="sm:hidden">Open Studio</span>
+                  </>
+                ) : (
+                  'Continue'
+                )}
+              </span>
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    if (currentStepId === 'kickoff-step-4' && onReturnToPlanningStudio) {
+      return (
+        <div className="flex min-h-12 w-full flex-row items-stretch gap-2 sm:min-h-[3.25rem] sm:gap-3">
+          <div className="min-w-0 flex-[3] basis-0" aria-hidden />
+          <div className="flex min-h-12 min-w-0 flex-[7] basis-0 flex-col sm:min-h-[3.25rem]">
+            <Button
+              type="button"
+              size="lg"
+              className="h-12 min-h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:h-full sm:min-h-[3.25rem] sm:py-3"
+              onClick={() => {
+                void handleReturnToPlanningStudio();
+              }}
+            >
+              <CheckCircle className="mr-2 h-4 w-4 shrink-0" />
+              <span className="text-left leading-tight sm:line-clamp-2">
+                <span className="hidden sm:inline">Save tools & Open Planning Studio</span>
+                <span className="sm:hidden">Save & Open Studio</span>
+              </span>
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex min-h-12 items-center justify-center rounded-lg border border-green-200 bg-green-50 p-2 sm:min-h-[3.25rem] sm:p-3">
+        <p className="text-sm text-green-800">Step Completed ✓</p>
+      </div>
+    );
+  };
+
   return (
     <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-auto md:overflow-visible">
-      <ProjectPlanningCountdownBanner
-        minimal
-        projectCreatedAt={currentProjectRun.createdAt}
-        phaseHint="Discover → then Plan"
-        className="shrink-0"
-      />
-      <PlanningJourneyHeader
-        activeStage="discover"
-        className="shrink-0"
-        onPlanClick={
-          onReturnToPlanningStudio
-            ? () => {
-                void handleReturnToPlanningStudio();
-              }
-            : undefined
-        }
-      />
-      {/* Step Navigation (no separate project-name header) */}
+      <div className="flex shrink-0 items-center justify-between gap-2">
+        <PlanningJourneyHeader
+          activeStage="discover"
+          className="min-w-0 flex-1"
+          onPlanClick={
+            onReturnToPlanningStudio
+              ? () => {
+                  void handleReturnToPlanningStudio();
+                }
+              : undefined
+          }
+        />
+        <ProjectPlanningCountdownBanner
+          minimal
+          projectCreatedAt={currentProjectRun.createdAt}
+          className="shrink-0"
+        />
+      </div>
+
       <Card className="shrink-0">
-        <CardContent className="p-2 sm:p-2.5 md:p-3">
-          {/* Mobile: one row — prev arrow | compact steps | next arrow | step x/y */}
+        <CardContent className="space-y-1.5 p-2 sm:p-2.5 md:p-3">
           <div className="flex items-center gap-1 sm:hidden">
             <Button
               type="button"
@@ -726,47 +918,41 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="scrollbar-hide flex min-w-0 flex-1 items-center justify-center gap-0 overflow-x-auto py-0.5">
-              {kickoffSteps.map((step, index) => (
-                <React.Fragment key={step.id}>
-                  {index > 0 ? (
-                    <div className="h-px w-1 shrink-0 bg-muted-foreground/30" aria-hidden />
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => goToKickoffStep(index)}
-                    aria-label={`${step.title}, step ${index + 1}`}
-                    aria-current={index === currentKickoffStep ? 'step' : undefined}
-                    className={`
-                      flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
-                      ${
-                        index === currentKickoffStep
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : isStepCompleted(index)
-                            ? 'border-green-500 bg-green-500 text-white'
-                            : 'border-muted-foreground bg-background'
-                      }
-                    `}
-                  >
-                    {isStepCompleted(index) ? (
-                      <CheckCircle className="h-3 w-3" aria-hidden />
-                    ) : (
-                      <span className="text-[10px] font-semibold">{index + 1}</span>
-                    )}
-                  </button>
-                </React.Fragment>
-              ))}
+              {kickoffSteps.map((step, index) => {
+                const visitable = canVisitKickoffStep(index);
+                return (
+                  <React.Fragment key={step.id}>
+                    {index > 0 ? (
+                      <div className="h-px w-1 shrink-0 bg-muted-foreground/30" aria-hidden />
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => goToKickoffStep(index)}
+                      aria-label={`${step.title}, step ${index + 1}`}
+                      aria-current={index === currentKickoffStep ? 'step' : undefined}
+                      aria-disabled={!visitable}
+                      className={`
+                        flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
+                        ${visitable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
+                        ${
+                          index === currentKickoffStep
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : isStepCompleted(index)
+                              ? 'border-green-500 bg-green-500 text-white'
+                              : 'border-muted-foreground bg-background'
+                        }
+                      `}
+                    >
+                      {isStepCompleted(index) ? (
+                        <CheckCircle className="h-3 w-3" aria-hidden />
+                      ) : (
+                        <span className="text-[10px] font-semibold">{index + 1}</span>
+                      )}
+                    </button>
+                  </React.Fragment>
+                );
+              })}
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={handleNext}
-              disabled={currentKickoffStep === kickoffSteps.length - 1}
-              aria-label="Next step"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
             <div className="shrink-0 text-center leading-none tabular-nums">
               <div className="text-[10px] font-medium text-muted-foreground">
                 {currentKickoffStep + 1}/{kickoffSteps.length}
@@ -777,7 +963,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
             </div>
           </div>
 
-          {/* sm+: original layout with step titles + scroll affordance */}
           <div className="hidden flex-col gap-1.5 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-2">
             <div className="flex min-w-0 flex-1 items-start gap-1">
               <Button
@@ -794,51 +979,56 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                 ref={kickoffStepNavRef}
                 className="scrollbar-hide flex min-w-0 flex-1 items-start overflow-x-auto px-0.5 pb-1 md:overflow-visible md:px-1 md:pb-0"
               >
-                {kickoffSteps.map((step, index) => (
-                  <React.Fragment key={step.id}>
-                    {index > 0 ? (
-                      <div
-                        className="mt-[13px] h-0.5 w-1 shrink-0 self-start bg-muted-foreground/25 md:mt-[15px] md:w-1.5"
-                        aria-hidden
-                      />
-                    ) : null}
-                    <div className="flex min-w-[4.25rem] flex-1 basis-0 flex-col items-center px-0.5 md:min-w-[5rem]">
-                      <button
-                        type="button"
-                        onClick={() => goToKickoffStep(index)}
-                        aria-label={`Go to ${step.title}, step ${index + 1}`}
-                        aria-current={index === currentKickoffStep ? 'step' : undefined}
-                        className={`
-                          flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:h-8 md:w-8
-                          ${
+                {kickoffSteps.map((step, index) => {
+                  const visitable = canVisitKickoffStep(index);
+                  return (
+                    <React.Fragment key={step.id}>
+                      {index > 0 ? (
+                        <div
+                          className="mt-[13px] h-0.5 w-1 shrink-0 self-start bg-muted-foreground/25 md:mt-[15px] md:w-1.5"
+                          aria-hidden
+                        />
+                      ) : null}
+                      <div className="flex min-w-[4.25rem] flex-1 basis-0 flex-col items-center px-0.5 md:min-w-[5rem]">
+                        <button
+                          type="button"
+                          onClick={() => goToKickoffStep(index)}
+                          aria-label={`Go to ${step.title}, step ${index + 1}`}
+                          aria-current={index === currentKickoffStep ? 'step' : undefined}
+                          aria-disabled={!visitable}
+                          className={`
+                            flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:h-8 md:w-8
+                            ${visitable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
+                            ${
+                              index === currentKickoffStep
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : isStepCompleted(index)
+                                  ? 'border-green-500 bg-green-500 text-white'
+                                  : 'border-muted-foreground bg-background'
+                            }
+                          `}
+                        >
+                          {isStepCompleted(index) ? (
+                            <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
+                          ) : (
+                            <span className="text-[11px] font-medium md:text-sm">{index + 1}</span>
+                          )}
+                        </button>
+                        <p
+                          className={`mt-1 w-full text-center text-[9px] font-medium leading-tight md:text-xs break-normal [overflow-wrap:normal] [word-break:normal] ${
                             index === currentKickoffStep
-                              ? 'border-primary bg-primary text-primary-foreground'
+                              ? 'text-primary'
                               : isStepCompleted(index)
-                                ? 'border-green-500 bg-green-500 text-white'
-                                : 'border-muted-foreground bg-background'
-                          }
-                        `}
-                      >
-                        {isStepCompleted(index) ? (
-                          <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
-                        ) : (
-                          <span className="text-[11px] font-medium md:text-sm">{index + 1}</span>
-                        )}
-                      </button>
-                      <p
-                        className={`mt-1 w-full text-center text-[9px] font-medium leading-tight md:text-xs break-normal [overflow-wrap:normal] [word-break:normal] ${
-                          index === currentKickoffStep
-                            ? 'text-primary'
-                            : isStepCompleted(index)
-                              ? 'text-green-700 dark:text-green-400'
-                              : 'text-muted-foreground'
-                        }`}
-                      >
-                        {step.title}
-                      </p>
-                    </div>
-                  </React.Fragment>
-                ))}
+                                ? 'text-green-700 dark:text-green-400'
+                                : 'text-muted-foreground'
+                          }`}
+                        >
+                          {step.title}
+                        </p>
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
               </div>
               <Button
                 type="button"
@@ -852,240 +1042,69 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
               </Button>
             </div>
 
-            <div className="flex w-full flex-col gap-2 md:w-auto">
-              <div className="flex w-full items-center justify-center gap-1.5 md:w-auto">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePrevious}
-                  disabled={currentKickoffStep === 0}
-                  className="h-9 w-9 shrink-0 p-0 md:h-9 md:w-auto md:px-3"
-                  aria-label="Previous step"
-                >
-                  <ChevronLeft className="h-4 w-4 md:mr-1" />
-                  <span className="hidden md:inline">Previous</span>
-                </Button>
-                <div className="min-w-[70px] px-1 text-center leading-tight">
-                  <div className="text-[10px] font-medium text-foreground md:text-xs">Step</div>
-                  <div className="text-[10px] text-muted-foreground md:text-xs">
-                    {currentKickoffStep + 1} of {kickoffSteps.length}
-                  </div>
-                  {allKickoffStepsComplete && (
-                    <CheckCircle className="mx-auto mt-0.5 h-3.5 w-3.5 text-green-500" aria-label="Kickoff complete" />
-                  )}
+            <div className="flex w-full items-center justify-center gap-1.5 md:w-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevious}
+                disabled={currentKickoffStep === 0}
+                className="h-9 w-9 shrink-0 p-0 md:h-9 md:w-auto md:px-3"
+                aria-label="Previous step"
+              >
+                <ChevronLeft className="h-4 w-4 md:mr-1" />
+                <span className="hidden md:inline">Previous</span>
+              </Button>
+              <div className="min-w-[70px] px-1 text-center leading-tight">
+                <div className="text-[10px] font-medium text-foreground md:text-xs">Step</div>
+                <div className="text-[10px] text-muted-foreground md:text-xs">
+                  {currentKickoffStep + 1} of {kickoffSteps.length}
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNext}
-                  disabled={currentKickoffStep === kickoffSteps.length - 1}
-                  className="h-9 w-9 shrink-0 p-0 md:h-9 md:w-auto md:px-3"
-                  aria-label="Next step"
-                >
-                  <span className="hidden md:inline md:mr-1">Next</span>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                {allKickoffStepsComplete && (
+                  <CheckCircle className="mx-auto mt-0.5 h-3.5 w-3.5 text-green-500" aria-label="Kickoff complete" />
+                )}
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Step Purpose Sub-header - white box like project kickoff header */}
-      {currentStepPurpose && (
-        <Card className="shrink-0">
-          <CardContent className="flex flex-row items-center justify-between gap-2 px-2 py-1.5 sm:px-3 sm:py-2">
-            <h2 className="min-w-0 flex-1 break-words pr-2 text-base font-semibold leading-snug sm:text-lg">
-              {currentStepPurpose}
-            </h2>
-            {currentStepId === 'kickoff-step-1' && (
-              <TooltipProvider delayDuration={200}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      className="text-xs font-medium text-primary underline decoration-dotted hover:opacity-80 inline-flex items-center gap-1 shrink-0 cursor-help"
-                      aria-label="What is a good fit?"
-                    >
-                      What is a good fit?
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="left" className="max-w-xs z-[100]" sideOffset={8}>
-                    <p className="text-sm">A good fit means the project matches your goals, timeline, and skill level. Check the overview, estimated time, and challenges. If they align with what you want to take on, it&apos;s a good fit. You can always adjust scope and schedule later.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Primary actions: fixed 30/70 slot so Continue / Not a match stay aligned every step */}
-      <Card className="shrink-0">
-        <CardContent className="p-2.5 sm:p-4">
-          {!isStepCompleted(currentKickoffStep) ? (
-            <div className="flex min-h-12 w-full flex-row items-stretch gap-2 sm:min-h-[3.25rem] sm:gap-3">
-              {/*
-                Mount DropdownMenu only on mobile. Keeping it under sm:hidden (display:none)
-                still mounts Radix Popper and can infinite-loop setState, freezing step 2 profile load.
-              */}
-              <div className="flex min-h-12 min-w-0 flex-[3] basis-0 flex-col justify-center sm:min-h-[3.25rem]">
-                {isMobile ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
+          {currentStepDescription ? (
+            <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-1.5">
+              <p className="min-w-0 flex-1 text-xs text-muted-foreground sm:text-sm">{currentStepDescription}</p>
+              {currentStepId === 'kickoff-step-1' && (
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
                         type="button"
-                        variant="outline"
-                        size="lg"
-                        className="h-12 min-h-12 w-full px-2 text-sm sm:h-full sm:min-h-[3.25rem] sm:px-3 sm:py-3"
+                        className="inline-flex shrink-0 cursor-help items-center gap-1 text-[11px] font-medium text-primary underline decoration-dotted hover:opacity-80 sm:text-xs"
+                        aria-label="What is a good fit?"
                       >
-                        <MoreHorizontal className="mr-1.5 h-4 w-4 shrink-0 sm:mr-2" />
-                        More
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-72">
-                      {currentStepId === 'kickoff-step-1' ? (
-                        <DropdownMenuItem
-                          className="text-red-700 focus:text-red-700"
-                          onSelect={() => {
-                            void handleNotAMatch();
-                          }}
-                        >
-                          <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
-                          Not a match: back to catalog
-                        </DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem
-                          onSelect={() => {
-                            onKickoffComplete({ mode: 'skip-to-workflow' });
-                          }}
-                        >
-                          Skip planning: go to project
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : currentStepId === 'kickoff-step-1' ? (
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      void handleNotAMatch();
-                    }}
-                    variant="outline"
-                    size="lg"
-                    className="h-12 min-h-12 w-full border-red-300 px-3 text-sm text-red-700 hover:bg-red-50 sm:h-full sm:min-h-[3.25rem] sm:py-3"
-                  >
-                    <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
-                    <span className="text-left leading-tight sm:line-clamp-2">
-                      Not a match: back to catalog
-                    </span>
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="lg"
-                    className="h-12 min-h-12 w-full border-muted-foreground/40 px-3 text-sm text-muted-foreground hover:bg-muted/40 sm:h-full sm:min-h-[3.25rem] sm:py-3"
-                    onClick={() => {
-                      onKickoffComplete({ mode: 'skip-to-workflow' });
-                    }}
-                  >
-                    <span className="text-left leading-tight sm:line-clamp-2">
-                      Skip planning: go to project
-                    </span>
-                  </Button>
-                )}
-              </div>
-              <div className="flex min-h-12 min-w-0 flex-[7] basis-0 flex-col sm:min-h-[3.25rem]">
-                <Button
-                  onClick={async () => {
-                    if (currentStepId === 'kickoff-step-3' && (window as any).__projectProfileStepSave) {
-                      try {
-                        await (window as any).__projectProfileStepSave();
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        await handleStepComplete(currentKickoffStep);
-                        return;
-                      } catch (error) {
-                        await reportUserFacingError({
-                          source: 'kickoff',
-                          operation: 'save_project_profile_step',
-                          userId: user?.id,
-                          projectRunId: currentProjectRun?.id,
-                          stepId: currentStepId,
-                          error,
-                          userMessage: 'Failed to save project profile.',
-                          notificationTitle: 'Kickoff project profile save failed',
-                        });
-                        return;
-                      }
-                    }
-
-                    if (currentStepId === 'kickoff-step-4') {
-                      await handleStepComplete(currentKickoffStep, selectedPlanningTools);
-                      return;
-                    }
-
-                    handleStepComplete(currentKickoffStep);
-                  }}
-                  size="lg"
-                  className="h-12 min-h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:h-full sm:min-h-[3.25rem] sm:py-3"
-                >
-                  <CheckCircle className="mr-2 h-4 w-4 shrink-0" />
-                  <span className="text-left leading-tight sm:line-clamp-2">
-                    {currentStepId === 'kickoff-step-3' ? (
-                      <>
-                        <span className="hidden sm:inline">Continue to Workflow Setup</span>
-                        <span className="sm:hidden">Continue</span>
-                      </>
-                    ) : currentStepId === 'kickoff-step-4' ? (
-                      <>
-                        <span className="hidden sm:inline">Complete & Open Planning Studio</span>
-                        <span className="sm:hidden">Complete</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="hidden sm:inline">Complete & Continue</span>
-                        <span className="sm:hidden">Continue</span>
-                      </>
-                    )}
-                  </span>
-                </Button>
-              </div>
+                        What is a good fit?
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="z-[100] max-w-xs" sideOffset={8}>
+                      <p className="text-sm">
+                        A good fit means the project matches your goals, timeline, and skill level. Check
+                        the overview, estimated time, and challenges. If they align with what you want to
+                        take on, it&apos;s a good fit. You can always adjust scope and schedule later.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
-          ) : currentStepId === 'kickoff-step-4' && onReturnToPlanningStudio ? (
-            <div className="flex min-h-12 w-full flex-row items-stretch gap-2 sm:min-h-[3.25rem] sm:gap-3">
-              <div className="min-w-0 flex-[3] basis-0" aria-hidden />
-              <div className="flex min-h-12 min-w-0 flex-[7] basis-0 flex-col sm:min-h-[3.25rem]">
-                <Button
-                  type="button"
-                  size="lg"
-                  className="h-12 min-h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:h-full sm:min-h-[3.25rem] sm:py-3"
-                  onClick={() => {
-                    void handleReturnToPlanningStudio();
-                  }}
-                >
-                  <CheckCircle className="mr-2 h-4 w-4 shrink-0" />
-                  <span className="text-left leading-tight sm:line-clamp-2">
-                    <span className="hidden sm:inline">Save tools & Open Planning Studio</span>
-                    <span className="sm:hidden">Save & Open Studio</span>
-                  </span>
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex min-h-12 items-center justify-center rounded-lg border border-green-200 bg-green-50 p-2 sm:min-h-[3.25rem] sm:p-3">
-              <p className="text-sm text-green-800">Step Completed ✓</p>
-            </div>
-          )}
+          ) : null}
         </CardContent>
       </Card>
 
-      {/* Step body: scrollable content only; actions stay above */}
       <div className="flex min-h-0 flex-1 flex-col md:min-h-[min(560px,70vh)]">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] -mx-2 px-2 pb-2 sm:mx-0 sm:px-0 sm:pb-4 md:flex-none md:overflow-visible md:pb-0">
           {renderCurrentStep()}
         </div>
       </div>
+
+      <Card className="sticky bottom-0 z-10 shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:static md:border md:bg-card md:backdrop-blur-none">
+        <CardContent className="p-2.5 sm:p-4">{renderPrimaryActions()}</CardContent>
+      </Card>
     </div>
   );
 };

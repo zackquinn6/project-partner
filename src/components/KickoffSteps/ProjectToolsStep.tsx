@@ -57,7 +57,7 @@ export const PLANNING_TOOLS: {
   {
     id: 'budget',
     label: 'Budget',
-    benefit: 'Spend what you want',
+    benefit: 'Set a spending target you can track',
     doneWhen: 'Budget targets are set',
   },
   {
@@ -284,39 +284,81 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     notifySelection(next);
   };
 
+  const recommendedIds = React.useMemo(() => {
+    if (projectFocus === 'savings' || projectFocus === 'quality' || projectFocus === 'schedule') {
+      return filterByPartnerAvailability(
+        FOCUS_PRESETS[projectFocus],
+        partnerAppsEnabled,
+        expertSupportEnabled,
+        toolRentalsEnabled,
+        wasteRemovalEnabled
+      );
+    }
+    return filterByPartnerAvailability(
+      [...DEFAULT_PLANNING_TOOLS_SELECTION],
+      partnerAppsEnabled,
+      expertSupportEnabled,
+      toolRentalsEnabled,
+      wasteRemovalEnabled
+    );
+  }, [
+    projectFocus,
+    partnerAppsEnabled,
+    expertSupportEnabled,
+    toolRentalsEnabled,
+    wasteRemovalEnabled,
+  ]);
+
+  const recommendedLabel =
+    projectFocus === 'savings'
+      ? 'Recommended for cost focus'
+      : projectFocus === 'quality'
+        ? 'Recommended for quality focus'
+        : projectFocus === 'schedule'
+          ? 'Recommended for schedule focus'
+          : 'Recommended starter set';
+
+  const recommendedToolNames = recommendedIds
+    .map((id) => PLANNING_TOOLS.find((t) => t.id === id)?.label)
+    .filter((name): name is string => Boolean(name));
+
+  const handleUseRecommended = () => {
+    const next = new Set(recommendedIds as PlanningToolId[]);
+    setSelected(next);
+    notifySelection(next);
+  };
+
   const isAlignedToPreference = (buttonKey: 'all_three' | 'savings' | 'quality' | 'schedule') => {
     if (projectFocus == null) return false;
     return projectFocus === buttonKey;
   };
 
+  const [showCustomize, setShowCustomize] = useState(false);
+
   const inner = (
     <>
-      {/* Select all - best for optimized project */}
-      <div className="space-y-1">
-        {isAlignedToPreference('all_three') && (
-          <p className="text-xs font-medium text-muted-foreground">
-            Aligned to your preference
-          </p>
-        )}
-        <div className={isAlignedToPreference('all_three') ? 'rounded-lg border-2 border-dashed border-primary p-0.5' : undefined}>
+      <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0 space-y-1">
+            <p className="text-sm font-medium text-foreground">{recommendedLabel}</p>
+            <p className="text-xs text-muted-foreground">
+              {recommendedToolNames.join(' · ')}
+            </p>
+          </div>
           <Button
             type="button"
-            variant="outline"
-            size={compact ? 'default' : 'lg'}
-            className={
-              compact
-                ? 'h-10 min-h-10 w-full justify-center gap-2 border-blue-600 px-3 text-sm text-blue-700 bg-blue-50/60 hover:bg-blue-100/80 hover:text-blue-800 dark:border-blue-500 dark:text-blue-300 dark:bg-blue-950/35 dark:hover:bg-blue-950/55 dark:hover:text-blue-200'
-                : 'w-full h-12 justify-center text-center gap-2 border-blue-600 text-blue-700 bg-blue-50/60 hover:bg-blue-100/80 hover:text-blue-800 dark:border-blue-500 dark:text-blue-300 dark:bg-blue-950/35 dark:hover:bg-blue-950/55 dark:hover:text-blue-200'
-            }
-            onClick={handleSelectAll}
+            size="sm"
+            className="h-9 shrink-0"
+            onClick={handleUseRecommended}
           >
-            <FolderKanban className={compact ? 'h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400' : 'h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400'} />
-            <span className="text-left leading-tight">Select all: best for optimized project</span>
+            Use recommended
           </Button>
         </div>
+        <p className="text-[11px] text-muted-foreground">
+          {selected.size} tool{selected.size !== 1 ? 's' : ''} selected — these open next in Plan.
+        </p>
       </div>
 
-      {/* Best for cost / quality / schedule focus */}
       <div className={compact ? 'flex flex-col gap-2 sm:flex-row' : 'flex flex-col sm:flex-row gap-2'}>
         {[
           { key: 'savings' as const, label: 'Best for cost-focus', icon: PiggyBank },
@@ -332,15 +374,11 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
                   ? compact
                     ? 'flex-1 space-y-1 rounded-md border-2 border-dashed border-primary p-0.5'
                     : 'rounded-lg border-2 border-dashed border-primary p-1 flex-1 space-y-1'
-                  : compact
-                    ? 'flex-1 space-y-1'
-                    : 'flex-1 space-y-1'
+                  : 'flex-1 space-y-1'
               }
             >
               {aligned && (
-                <p className="text-xs font-medium text-muted-foreground">
-                  Aligned to your preference
-                </p>
+                <p className="text-xs font-medium text-muted-foreground">Aligned to your preference</p>
               )}
               <Button
                 type="button"
@@ -361,48 +399,95 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
         })}
       </div>
 
-      <div className={compact ? 'grid gap-2 sm:grid-cols-1 md:grid-cols-2' : 'grid gap-3 sm:grid-cols-1 md:grid-cols-2'}>
-        {toolsToShow.map(({ id, label, benefit }) => {
-          const isScope = id === 'scope';
-          const isChecked = selected.has(id);
-          return (
-            <Card
-              key={id}
-              className={
-                isScope
-                  ? 'border-primary bg-primary/5 cursor-default'
-                  : `cursor-pointer transition-colors hover:bg-muted/50 ${isChecked ? 'border-primary bg-primary/5' : ''}`
-              }
-              onClick={isScope ? undefined : () => handleToggle(id)}
-            >
-              <CardHeader className={compact ? 'p-2 sm:p-3' : 'p-4 pb-2'}>
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <Checkbox
-                    id={id}
-                    checked={isChecked}
-                    onCheckedChange={isScope ? undefined : () => handleToggle(id)}
-                    onClick={e => e.stopPropagation()}
-                    className="mt-0.5"
-                    disabled={isScope}
-                  />
-                  <div className="min-w-0 space-y-0">
-                    <CardTitle className={compact ? 'text-sm font-medium whitespace-normal sm:text-base' : 'text-base font-medium whitespace-normal'}>
-                      {label}
-                    </CardTitle>
-                    <p className={compact ? 'text-xs leading-snug text-muted-foreground sm:text-sm' : 'text-sm text-muted-foreground'}>{benefit}</p>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-          );
-        })}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2 text-xs"
+          onClick={() => setShowCustomize((v) => !v)}
+        >
+          {showCustomize ? 'Hide full list' : 'Customize selection'}
+        </Button>
+        {selected.size > 1 ? (
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={handleClearAll}>
+            Clear to Customize only
+          </Button>
+        ) : null}
       </div>
 
-      {selected.size > 1 && (
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <Button variant="ghost" size="sm" className="h-9 text-sm" onClick={handleClearAll}>
-            Clear
+      {showCustomize ? (
+        <div className="space-y-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 w-full justify-center gap-2 text-xs text-muted-foreground"
+            onClick={handleSelectAll}
+          >
+            <FolderKanban className="h-3.5 w-3.5 shrink-0" />
+            Select all tools
           </Button>
+
+          <div
+            className={
+              compact ? 'grid gap-2 sm:grid-cols-1 md:grid-cols-2' : 'grid gap-3 sm:grid-cols-1 md:grid-cols-2'
+            }
+          >
+            {toolsToShow.map(({ id, label, benefit }) => {
+              const isScope = id === 'scope';
+              const isChecked = selected.has(id);
+              return (
+                <Card
+                  key={id}
+                  className={
+                    isScope
+                      ? 'cursor-default border-primary bg-primary/5'
+                      : `cursor-pointer transition-colors hover:bg-muted/50 ${isChecked ? 'border-primary bg-primary/5' : ''}`
+                  }
+                  onClick={isScope ? undefined : () => handleToggle(id)}
+                >
+                  <CardHeader className={compact ? 'p-2 sm:p-3' : 'p-4 pb-2'}>
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <Checkbox
+                        id={id}
+                        checked={isChecked}
+                        onCheckedChange={isScope ? undefined : () => handleToggle(id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-0.5"
+                        disabled={isScope}
+                      />
+                      <div className="min-w-0 space-y-0">
+                        <CardTitle
+                          className={
+                            compact
+                              ? 'whitespace-normal text-sm font-medium sm:text-base'
+                              : 'whitespace-normal text-base font-medium'
+                          }
+                        >
+                          {label}
+                        </CardTitle>
+                        <p
+                          className={
+                            compact
+                              ? 'text-xs leading-snug text-muted-foreground sm:text-sm'
+                              : 'text-sm text-muted-foreground'
+                          }
+                        >
+                          {benefit}
+                        </p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+          Using {selected.size} tool{selected.size !== 1 ? 's' : ''}. Open Customize selection to add or remove
+          tools.
         </div>
       )}
     </>
@@ -412,9 +497,9 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     return (
       <Card>
         <CardHeader className="p-2 sm:p-3">
-          <CardTitle className="text-sm sm:text-base">Workflow Setup</CardTitle>
+          <CardTitle className="text-sm sm:text-base">Plan tools</CardTitle>
           <CardDescription className="text-xs mt-0.5">
-            Choose which planning tools to use for this project
+            Choose what to plan next — these tools become your Plan backlog
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 p-2 sm:space-y-3 sm:p-3">{inner}</CardContent>

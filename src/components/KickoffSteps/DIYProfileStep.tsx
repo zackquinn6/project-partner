@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Edit3, CheckCircle, Target, Wrench } from 'lucide-react';
+import { User, Edit3, Wrench } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import DIYSurveyPopup from '../DIYSurveyPopup';
@@ -23,16 +23,6 @@ const PROJECT_FOCUS_LABELS: Record<string, string> = {
   savings: 'Maximize savings',
   all_three: 'Balanced',
 };
-
-function toolDisplayName(tool: Record<string, unknown> | null | undefined): string | undefined {
-  if (!tool || typeof tool !== 'object') return undefined;
-  const candidates = ['name', 'tool_name', 'title', 'label', 'appName', 'toolName'] as const;
-  for (const key of candidates) {
-    const v = tool[key];
-    if (typeof v === 'string' && v.trim() !== '') return v.trim();
-  }
-  return undefined;
-}
 
 interface ProfileData {
   skill_level?: string;
@@ -163,145 +153,74 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
       );
     }
 
+    const focusLabel = existingProfile.project_focus
+      ? (PROJECT_FOCUS_LABELS[existingProfile.project_focus] ?? existingProfile.project_focus)
+      : null;
+    const toolCount = existingProfile.owned_tools?.length ?? 0;
+
     return (
-      <div className="space-y-1.5">
-        {/* Two-card layout: Personal info ~28.75% (+15% vs 1/4) + Owned Tools */}
-        <div className="grid grid-cols-1 md:grid-cols-[23fr_57fr] gap-3">
-          <Card className="min-w-0">
-            <CardContent className="p-3 space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <h4 className="font-semibold text-xs sm:text-sm truncate">Personal Info</h4>
-                </div>
-                <Button
-                  onClick={handleStartEdit}
-                  variant="outline"
-                  size="sm"
-                  className="h-6 min-h-6 px-1.5 gap-0.5 text-[10px] font-normal leading-none"
-                >
-                  <Edit3 className="w-2.5 h-2.5 shrink-0" />
-                  <span className="hidden sm:inline">Edit Profile</span>
-                  <span className="sm:hidden">Edit</span>
-                </Button>
+      <div className="space-y-3">
+        <div className="rounded-lg border bg-muted/20 px-3 py-3 space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <div className="min-w-0">
+                <h4 className="font-semibold text-xs sm:text-sm truncate">
+                  {existingProfile.nickname || existingProfile.full_name || 'Your DIY profile'}
+                </h4>
+                {existingProfile.full_name && existingProfile.nickname ? (
+                  <p className="text-[11px] text-muted-foreground truncate">{existingProfile.full_name}</p>
+                ) : null}
               </div>
+            </div>
+            <Button
+              onClick={handleStartEdit}
+              variant="outline"
+              size="sm"
+              className="h-7 min-h-7 px-2 gap-1 text-[11px] font-normal leading-none"
+            >
+              <Edit3 className="w-3 h-3 shrink-0" />
+              Edit
+            </Button>
+          </div>
 
-              <div className="space-y-2">
-                <div>
-                  <h4 className="font-semibold text-xs">Full Name</h4>
-                  <p className="text-xs text-muted-foreground break-words mt-0.5">
-                    {existingProfile.full_name || "Not specified"}
-                  </p>
-                </div>
+          <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div>
+              <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Skill</dt>
+              <dd className="text-xs capitalize text-foreground mt-0.5">
+                {existingProfile.skill_level || 'Not specified'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Effort</dt>
+              <dd className="text-xs capitalize text-foreground mt-0.5">
+                {existingProfile.physical_capability || 'Not specified'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Focus</dt>
+              <dd className="text-xs text-foreground mt-0.5">{focusLabel || 'Not specified'}</dd>
+            </div>
+          </dl>
+        </div>
 
-                <div>
-                  <h4 className="font-semibold text-xs">Nickname</h4>
-                  <p className="text-xs text-muted-foreground break-words mt-0.5">
-                    {existingProfile.nickname || "Not specified"}
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-xs">Skill Level</h4>
-                  <p className="text-xs text-muted-foreground capitalize mt-0.5">
-                    {existingProfile.skill_level || "Not specified"}
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-xs">Physical Capability</h4>
-                  <p className="text-xs text-muted-foreground capitalize mt-0.5">
-                    {existingProfile.physical_capability || "Not specified"}
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-xs">Project Focus</h4>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {existingProfile.project_focus
-                      ? (PROJECT_FOCUS_LABELS[existingProfile.project_focus] ?? existingProfile.project_focus)
-                      : "Not specified"}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="min-w-0">
-            <CardContent className="p-3 space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Wrench className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <h4 className="font-semibold text-xs sm:text-sm truncate">Owned Tools</h4>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-6 min-h-6 px-1.5 gap-0.5 text-[10px] font-normal leading-none"
-                  onClick={() => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))}
-                >
-                  <Edit3 className="w-2.5 h-2.5 shrink-0" />
-                  <span className="hidden sm:inline">Edit Tool Library</span>
-                  <span className="sm:hidden">Tools</span>
-                </Button>
-              </div>
-
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  {existingProfile.owned_tools?.length
-                    ? `${existingProfile.owned_tools.length} tool${existingProfile.owned_tools.length !== 1 ? 's' : ''} in library`
-                    : "No tools specified"}
-                </p>
-                <div className="mt-2">
-                  <div className="flex flex-wrap gap-x-1 gap-y-2">
-                    {(existingProfile.owned_tools || []).slice(0, 12).map((tool: any, index: number) => {
-                      const toolId = tool?.id;
-                      const toolName = toolDisplayName(tool as Record<string, unknown>);
-                      const photoUrl =
-                        typeof tool?.user_photo_url === 'string' && tool.user_photo_url.trim() !== ''
-                          ? tool.user_photo_url
-                          : (typeof tool?.photo_url === 'string' && tool.photo_url.trim() !== ''
-                              ? tool.photo_url
-                              : undefined);
-                      const quantity = typeof tool?.quantity === 'number' ? tool.quantity : undefined;
-                      const label = toolName ?? 'Tool';
-
-                      return (
-                        <div
-                          key={toolId ?? toolName ?? String(index)}
-                          className="flex w-[4rem] sm:w-[4.25rem] flex-col items-center gap-0.5 flex-shrink-0"
-                        >
-                          <div className="relative h-9 w-9 shrink-0" title={label}>
-                            <div className="h-full w-full overflow-hidden rounded-md border bg-background flex items-center justify-center">
-                              {photoUrl ? (
-                                <img src={photoUrl} alt={label} className="h-full w-full object-cover" />
-                              ) : (
-                                <Wrench className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </div>
-                            {typeof quantity === 'number' && quantity > 1 && (
-                              <div className="pointer-events-none absolute -right-1 -top-1 z-10 min-w-[1.125rem] rounded-full border border-primary/30 bg-primary px-1 py-0 text-center text-[10px] font-medium leading-none text-primary-foreground">
-                                {quantity}
-                              </div>
-                            )}
-                          </div>
-                          <span className="line-clamp-2 w-full px-0.5 text-center text-[9px] leading-tight text-muted-foreground sm:text-[10px]">
-                            {label}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {existingProfile.owned_tools && existingProfile.owned_tools.length > 12 && (
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">
-                      +{existingProfile.owned_tools.length - 12} more
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed px-3 py-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Wrench className="h-3.5 w-3.5 shrink-0" />
+            <span>
+              {toolCount > 0
+                ? `${toolCount} tool${toolCount !== 1 ? 's' : ''} in your library`
+                : 'No tools in your library yet'}
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-[11px]"
+            onClick={() => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))}
+          >
+            Manage tools
+          </Button>
         </div>
       </div>
     );
@@ -317,7 +236,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
             {isCompleted && <Badge variant="secondary" className="text-xs">Complete</Badge>}
           </CardTitle>
           <CardDescription className="text-xs mt-0.5">
-            Your profile helps us customize your project to fit your tools, skillset, and build style.
+            Confirm your DIY skill, effort, and focus for this project.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-2 sm:p-3">
@@ -341,7 +260,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
                 {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">
-                Your profile helps us customize your project to fit your tools, skillset, and build style.
+                Confirm your DIY skill, effort, and focus for this project.
               </CardDescription>
             </div>
           </div>

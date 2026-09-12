@@ -5,7 +5,7 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     appName: 'Project Kickoff',
     appType: 'native',
     icon: 'Rocket',
-    description: 'Quick 3-step setup to get your project started',
+    description: 'Discover fit, goals, and planning tools to start your project',
     actionKey: 'project-kickoff',
     displayOrder: 0
   },
