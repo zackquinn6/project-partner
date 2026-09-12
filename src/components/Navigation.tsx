@@ -352,7 +352,7 @@ export default function Navigation({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="inline-flex cursor-help items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-r from-amber-500/90 to-orange-500/90 px-3 py-1.5 text-xs font-semibold text-white shadow-md ring-1 ring-white/20 pointer-events-auto">
-                      Welcome to the Beta
+                      Beta Release
                     </span>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs text-xs text-left">
