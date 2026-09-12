@@ -29,7 +29,7 @@ export const PreSignInNavigation = () => {
           <Button
             variant="ghost"
             size="sm"
-            className="text-foreground hover:bg-muted"
+            className="text-foreground hover:bg-muted hover:text-foreground"
             onClick={handleSignIn}
           >
             <LogIn className="mr-2 h-4 w-4" />
