@@ -2060,7 +2060,7 @@ export default function EditWorkflowView({
   );
   
   if (!currentProject) {
-    return <div className="fixed inset-0 bg-background overflow-auto z-50 flex items-center justify-center">
+    return <div className="fixed inset-0 md:top-16 md:h-[calc(100dvh-4rem)] bg-background overflow-auto z-50 flex items-center justify-center">
         <Card>
           <CardContent className="text-center py-8">
             <p className="text-muted-foreground">No project selected</p>
@@ -2071,7 +2071,7 @@ export default function EditWorkflowView({
   
   // Show loading screen while phases are being loaded
   if (loadingPhases) {
-    return <div className="fixed inset-0 bg-background overflow-auto z-50 flex items-center justify-center">
+    return <div className="fixed inset-0 md:top-16 md:h-[calc(100dvh-4rem)] bg-background overflow-auto z-50 flex items-center justify-center">
         <Card>
           <CardContent className="text-center py-8 space-y-4">
             <div className="flex items-center justify-center">
@@ -2083,7 +2083,7 @@ export default function EditWorkflowView({
       </div>;
   }
   if (viewMode === 'structure') {
-    return <div className="fixed inset-0 bg-background overflow-auto z-50">
+    return <div className="fixed inset-0 md:top-16 md:h-[calc(100dvh-4rem)] bg-background overflow-auto z-50">
         {/* Header with Back Button and View Toggle */}
         <div className="w-full px-3 py-6 sm:px-6">
           <div className="flex items-center justify-between mb-6">
@@ -2155,7 +2155,7 @@ export default function EditWorkflowView({
         </div>
       </div>;
   }
-  return <div className="fixed inset-0 bg-background overflow-auto z-50">
+  return <div className="fixed inset-0 md:top-16 md:h-[calc(100dvh-4rem)] bg-background overflow-auto z-50">
       {/* Header with Project Name and Controls */}
       <div className="sticky top-0 z-10 border-b bg-background">
         <div className="w-full px-3 py-3 sm:px-6 sm:py-4">
@@ -3159,7 +3159,7 @@ export default function EditWorkflowView({
 
       {/* PFMEA */}
       <Dialog open={pfmeaOpen} onOpenChange={setPfmeaOpen}>
-        <DialogContent className="relative fixed inset-0 z-50 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 shadow-none overflow-hidden md:max-w-none md:max-h-none md:rounded-none [&>button]:hidden">
+        <DialogContent className="relative fixed inset-0 z-50 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 shadow-none overflow-hidden md:top-16 md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)] md:max-w-none md:rounded-none [&>button]:hidden">
           <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background">
             <div className="flex items-center justify-between gap-2">
               <DialogTitle className="text-lg md:text-xl font-bold">Process FMEA</DialogTitle>

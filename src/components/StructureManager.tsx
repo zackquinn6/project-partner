@@ -3636,7 +3636,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
   
   // Render main UI
   return (
-    <div className="fixed inset-0 bg-background overflow-hidden">
+    <div className="fixed inset-0 md:top-16 md:h-[calc(100dvh-4rem)] bg-background overflow-hidden">
       <div className="h-full overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-background border-b">

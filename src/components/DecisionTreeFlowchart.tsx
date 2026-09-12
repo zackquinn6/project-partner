@@ -303,7 +303,7 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-background flex flex-col">
+    <div className="fixed inset-0 md:top-16 md:h-[calc(100dvh-4rem)] bg-background flex flex-col">
       {/* Header */}
       <div className="border-b bg-background p-4">
         <div className="flex items-center justify-between">

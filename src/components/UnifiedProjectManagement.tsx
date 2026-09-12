@@ -3182,7 +3182,7 @@ export function UnifiedProjectManagement({
       >
         <DialogContent
           className={cn(
-            'relative fixed inset-0 z-50 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 shadow-none overflow-hidden',
+            'relative fixed inset-0 z-50 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 shadow-none overflow-hidden md:top-16 md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)]',
             'md:max-w-none md:max-h-none md:rounded-none',
             '[&>button]:hidden',
           )}
@@ -3228,7 +3228,7 @@ export function UnifiedProjectManagement({
       >
         <DialogContent
           className={cn(
-            'relative fixed inset-0 z-50 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 shadow-none overflow-hidden',
+            'relative fixed inset-0 z-50 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 shadow-none overflow-hidden md:top-16 md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)]',
             'md:max-w-none md:max-h-none md:rounded-none',
             '[&>button]:hidden',
           )}

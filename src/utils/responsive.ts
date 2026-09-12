@@ -5,6 +5,23 @@
 // Standard breakpoint (aligned with Tailwind md: and useIsMobile hook)
 export const MOBILE_BREAKPOINT = 768;
 
+/** Matches Navigation `h-16` — desktop app chrome stays visible above fullscreen shells. */
+export const APP_HEADER_HEIGHT = "4rem";
+
+/**
+ * Fixed full-bleed shell that clears the desktop app header.
+ * Mobile stays edge-to-edge (Navigation is not mounted there).
+ */
+export const belowAppHeaderFixedClasses =
+  "fixed inset-0 md:top-16 md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)]";
+
+/**
+ * DialogContent full-bleed override that clears the desktop app header.
+ * Use when replacing centered dialog positioning with true fullscreen.
+ */
+export const belowAppHeaderDialogClasses =
+  "!inset-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-none !translate-x-0 !translate-y-0 md:!top-16 md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)]";
+
 // Responsive class generators
 export const responsiveDialogClasses = {
   // Small modal - confirmations, simple forms
@@ -19,8 +36,8 @@ export const responsiveDialogClasses = {
   // Large content - main feature windows (90% screen utilization)
   contentLarge: "w-full h-full max-w-[100vw] max-h-[100vh] md:w-[90vw] md:h-[90vh] md:max-w-[90vw] md:max-h-[90vh]",
   
-  // Full experience - immersive full-screen
-  contentFull: "w-full h-full max-w-[100vw] max-h-[100vh]",
+  // Full experience - immersive full-screen (clears desktop app header)
+  contentFull: "w-full h-full max-w-[100vw] max-h-[100vh] md:max-h-[calc(100dvh-4rem)]",
   
   // Legacy sizes for compatibility
   content: "max-w-[95vw] max-h-[95vh] md:max-w-lg md:max-h-[85vh]",

@@ -164,7 +164,7 @@ export const EnhancedProjectPlanning: React.FC<EnhancedProjectPlanningProps> = (
 
       {/* Decision Tree Modal */}
       {showDecisionTreeView && currentProject && currentProjectRun && (
-        <div className="fixed inset-0 z-50 bg-background">
+        <div className="fixed inset-0 md:top-16 md:h-[calc(100dvh-4rem)] z-50 bg-background">
           <DecisionTreeFlowchart
             phases={currentProjectRun.phases}
             onBack={() => setShowDecisionTreeView(false)}

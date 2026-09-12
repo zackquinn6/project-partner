@@ -342,7 +342,8 @@ export default function Navigation({
     onProjectSelected?.();
   };
   return <>
-      <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {/* Fixed above app overlays (dialogs use z-50–z-[220]) so chrome stays visible on every screen */}
+      <nav className="fixed top-0 left-0 right-0 z-[250] w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-16 items-center px-4 relative">
           {/* Beta release label - centered, visually appealing */}
           {isBetaMode && (
@@ -534,6 +535,8 @@ export default function Navigation({
           </div>
         </div>
       </nav>
+      {/* Reserve flow space — nav is fixed so it no longer takes layout height */}
+      <div className="h-16 shrink-0" aria-hidden="true" />
 
       {/* Desktop-only modals */}
       <FeedbackDialog open={showFeedback} onOpenChange={setShowFeedback} />

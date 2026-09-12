@@ -1437,7 +1437,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         overlayClassName="z-[100]"
-        className="!fixed !inset-0 !left-0 !top-0 z-[101] !flex h-[100dvh] max-h-[100dvh] w-full max-w-[100vw] !max-w-[100vw] translate-x-0 translate-y-0 !flex-col gap-0 overflow-hidden rounded-none border-0 p-0 shadow-none md:h-[100dvh] md:max-h-[100dvh] md:!max-w-none md:!translate-x-0 md:!translate-y-0"
+        className="!fixed !inset-0 !left-0 !top-0 z-[101] !flex h-[100dvh] max-h-[100dvh] w-full max-w-[100vw] !max-w-[100vw] translate-x-0 translate-y-0 !flex-col gap-0 overflow-hidden rounded-none border-0 p-0 shadow-none md:!top-16 md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)] md:!max-w-none md:!translate-x-0 md:!translate-y-0"
       >
         <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
           <div className="flex items-center justify-between gap-3">

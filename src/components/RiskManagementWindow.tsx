@@ -1884,7 +1884,7 @@ export function RiskManagementWindow({
             'flex flex-col overflow-hidden p-0 [&>button]:hidden',
             useRiskRadarChrome
               ? cn(
-                  'gap-0 !inset-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-none !translate-x-0 !translate-y-0 flex-col overflow-hidden rounded-none border-0 p-0 shadow-none sm:max-w-none md:!max-w-none md:rounded-none md:p-0 [&>button]:hidden'
+                  'gap-0 !inset-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-none !translate-x-0 !translate-y-0 flex-col overflow-hidden rounded-none border-0 p-0 shadow-none sm:max-w-none md:!top-16 md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)] md:!max-w-none md:rounded-none md:p-0 [&>button]:hidden'
                 )
               : 'h-screen max-h-full w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg'
           )}

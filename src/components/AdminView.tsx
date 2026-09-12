@@ -397,7 +397,7 @@ export const AdminView: React.FC = () => {
         )}
 
         <Dialog open={enhancedProjectManagementOpen} onOpenChange={setEnhancedProjectManagementOpen}>
-          <DialogContent className="fixed inset-0 w-full h-[100dvh] max-w-none max-h-none md:max-w-none md:max-h-none translate-x-0 translate-y-0 rounded-none md:rounded-none border-0 p-0 overflow-hidden flex flex-col shadow-none [&>button]:hidden">
+          <DialogContent className="fixed inset-0 w-full h-[100dvh] max-w-none max-h-none md:top-16 md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)] md:max-w-none translate-x-0 translate-y-0 rounded-none md:rounded-none border-0 p-0 overflow-hidden flex flex-col shadow-none [&>button]:hidden">
             <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               <div className="flex items-center justify-between gap-2">
                 <DialogTitle className="text-lg md:text-xl font-bold">Project Management</DialogTitle>
@@ -489,7 +489,7 @@ export const AdminView: React.FC = () => {
         </Dialog>
 
         <Dialog open={editWorkflowOpen} onOpenChange={setEditWorkflowOpen}>
-          <DialogContent className="relative fixed inset-0 z-50 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 shadow-none overflow-hidden md:max-w-none md:max-h-none md:rounded-none [&>button]:hidden">
+          <DialogContent className="relative fixed inset-0 z-50 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 bg-background p-0 shadow-none overflow-hidden md:top-16 md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)] md:max-w-none md:rounded-none [&>button]:hidden">
             <EditWorkflowView onBackToAdmin={() => setEditWorkflowOpen(false)} />
           </DialogContent>
         </Dialog>
