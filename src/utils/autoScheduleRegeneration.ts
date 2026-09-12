@@ -5,6 +5,13 @@ import { SchedulingEngine } from './schedulingEngine';
 import { SchedulingInputs } from '@/interfaces/Scheduling';
 import { format, addDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  applySchedulingPrerequisiteDependencies,
+  filterPrerequisitesForDeclinedIfNecessary,
+  parsePrerequisites,
+  type SchedulingTask,
+} from '@/utils/schedulingPrerequisiteDeps';
+import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 
 /**
  * Checks if a schedule needs to be regenerated (older than 1 day)
@@ -33,8 +40,8 @@ export function shouldRegenerateSchedule(projectRun: ProjectRun): boolean {
 }
 
 /**
- * Automatically regenerates the project schedule
- * This replicates the logic from ProjectScheduler's computeAdvancedSchedule
+ * Automatically regenerates the project schedule.
+ * Mirrors ProjectScheduler task deps: within-op space-flow edges + scheduling_prerequisites.
  */
 export async function autoRegenerateSchedule(
   projectRun: ProjectRun,
@@ -55,6 +62,23 @@ export async function autoRegenerateSchedule(
     // Get target date from project run or default
     const targetDate = projectRun.planEndDate ? new Date(projectRun.planEndDate) : addDays(new Date(), 30);
     const dropDeadDate = addDays(targetDate, 7); // Default buffer
+
+    const templateProjectId = projectRun.projectId || project.id;
+    const { data: prereqRow, error: prereqError } = await supabase
+      .from('projects')
+      .select('scheduling_prerequisites')
+      .eq('id', templateProjectId)
+      .maybeSingle();
+    if (prereqError) {
+      console.warn('autoRegenerateSchedule: scheduling_prerequisites load failed', prereqError);
+    }
+    const schedulingPrerequisites = parsePrerequisites(prereqRow?.scheduling_prerequisites);
+    const customization = parseCustomizationDecisions(projectRun.customization_decisions);
+    const effectivePrerequisites = filterPrerequisitesForDeclinedIfNecessary(
+      schedulingPrerequisites,
+      { ...project, phases: workflowPhases },
+      customization
+    );
     
     // Load spaces with priority and sizing_by_unit
     const { data: spacesData, error: spacesError } = await supabase
@@ -79,91 +103,142 @@ export async function autoRegenerateSchedule(
       };
     });
     
-    // Build tasks from remaining steps (similar to ProjectScheduler logic)
-    const tasks: any[] = [];
+    // Build tasks from remaining steps (parity with ProjectScheduler)
+    const tasks: SchedulingTask[] = [];
     const spacesByPriority = [...spaces].sort((a, b) => (a.priority || 999) - (b.priority || 999));
-    
+    const multiSpace = spacesByPriority.length > 1;
+
     workflowPhases.forEach(phase => {
-      // Skip standard phases (Kickoff, Planning, Ordering, Close Project)
-      if (phase.isStandard) return;
-      
       phase.operations.forEach(operation => {
-        operation.steps.forEach((step, stepIndex) => {
-          // Skip completed steps
+        const steps = operation.steps || [];
+        steps.forEach((step, stepIndex) => {
           if (completedSteps.has(step.id)) return;
-          
-          // Apply to each space
-          spacesByPriority.forEach((space, spaceIndex) => {
-            const spacePriority = space.priority || spaceIndex + 1;
-            
-            // Get time estimates
-            const timeEstimation = step.timeEstimation;
-            const baseLow = timeEstimation?.variableTime?.low || 1;
-            const baseMed = timeEstimation?.variableTime?.medium || 2;
-            const baseHigh = timeEstimation?.variableTime?.high || 3;
-            
-            // Apply scaling from space sizing
-            let adjustedLow = baseLow;
-            let adjustedMed = baseMed;
-            let adjustedHigh = baseHigh;
-            
-            if (step.scalingUnit && space.sizingValues) {
-              const sizeValue = space.sizingValues[step.scalingUnit];
-              if (sizeValue) {
-                adjustedLow = baseLow * sizeValue;
-                adjustedMed = baseMed * sizeValue;
-                adjustedHigh = baseHigh * sizeValue;
+
+          const timeEstimation = step.timeEstimation;
+          const baseLow = timeEstimation?.variableTime?.low || 1;
+          const baseMed = timeEstimation?.variableTime?.medium || 2;
+          const baseHigh = timeEstimation?.variableTime?.high || 3;
+
+          if (multiSpace) {
+            spacesByPriority.forEach((space, spaceIndex) => {
+              const spacePriority = space.priority || spaceIndex + 1;
+
+              let adjustedLow = baseLow;
+              let adjustedMed = baseMed;
+              let adjustedHigh = baseHigh;
+
+              if (step.scalingUnit && space.sizingValues) {
+                const sizeValue = space.sizingValues[step.scalingUnit];
+                if (sizeValue) {
+                  adjustedLow = baseLow * sizeValue;
+                  adjustedMed = baseMed * sizeValue;
+                  adjustedHigh = baseHigh * sizeValue;
+                }
               }
-            }
-            
-            // Select time estimate based on schedule tempo
-            const selectedTimeEstimate = scheduleTempo === 'fast_track' ? adjustedLow :
-                                        scheduleTempo === 'extended' ? adjustedHigh :
-                                        adjustedMed;
-            
-            // Build dependencies
-            const dependencies: string[] = [];
-            if (scheduleOptimizationMethod === 'single-piece-flow') {
-              // Single-piece flow: Step N depends on Step N-1 in same space
-              if (stepIndex > 0) {
-                dependencies.push(`${operation.id}-step-${stepIndex - 1}-space-${space.id}`);
-              }
-            } else {
-              // Batch flow: Step N of space M depends on Step N of space M-1
-              if (spaceIndex > 0) {
+
+              const selectedTimeEstimate = scheduleTempo === 'fast_track' ? adjustedLow :
+                                          scheduleTempo === 'extended' ? adjustedHigh :
+                                          adjustedMed;
+
+              const dependencies: string[] = [];
+              if (scheduleOptimizationMethod === 'single-piece-flow') {
+                if (stepIndex > 0) {
+                  dependencies.push(`${operation.id}-step-${stepIndex - 1}-space-${space.id}`);
+                } else if (stepIndex === 0 && spaceIndex > 0) {
+                  const prevSpace = spacesByPriority[spaceIndex - 1];
+                  if (steps.length > 0) {
+                    dependencies.push(
+                      `${operation.id}-step-${steps.length - 1}-space-${prevSpace.id}`
+                    );
+                  }
+                }
+              } else if (spaceIndex > 0) {
                 const prevSpace = spacesByPriority[spaceIndex - 1];
                 dependencies.push(`${operation.id}-step-${stepIndex}-space-${prevSpace.id}`);
+              } else if (spaceIndex === 0 && stepIndex > 0) {
+                const lastSpace = spacesByPriority[spacesByPriority.length - 1];
+                dependencies.push(
+                  `${operation.id}-step-${stepIndex - 1}-space-${lastSpace.id}`
+                );
               }
-            }
-            
-            tasks.push({
-              id: `${operation.id}-step-${stepIndex}-space-${space.id}`,
-              title: `${step.step} - ${space.space_name}`,
-              estimatedHours: selectedTimeEstimate,
-              minContiguousHours: Math.min(adjustedMed, 2),
-              dependencies,
-              tags: [`space:${space.id}`, `priority:${spacePriority}`, `phase:${phase.id}`, `workers:${step.workersNeeded || 1}`],
-              confidence: 0.7,
-              phaseId: phase.id,
-              operationId: operation.id,
-              stepId: step.id,
-              metadata: {
-                spaceId: space.id,
-                spacePriority,
-                workersNeeded: step.workersNeeded || 1
-              }
+
+              tasks.push({
+                id: `${operation.id}-step-${stepIndex}-space-${space.id}`,
+                title: `${step.step} - ${space.space_name}`,
+                estimatedHours: selectedTimeEstimate,
+                minContiguousHours: Math.min(adjustedMed, 2),
+                dependencies,
+                tags: [`space:${space.id}`, `priority:${spacePriority}`, `phase:${phase.id}`, `workers:${step.workersNeeded || 1}`],
+                confidence: 0.7,
+                phaseId: phase.id,
+                operationId: operation.id,
+                stepId: step.id,
+                metadata: {
+                  spaceId: space.id,
+                  spacePriority,
+                  workersNeeded: step.workersNeeded || 1
+                }
+              } as SchedulingTask);
             });
-          });
+            return;
+          }
+
+          // Single space or no spaces — same task ids as ProjectScheduler
+          const space = spacesByPriority[0];
+          let adjustedLow = baseLow;
+          let adjustedMed = baseMed;
+          let adjustedHigh = baseHigh;
+
+          if (step.scalingUnit && space?.sizingValues) {
+            const sizeValue = space.sizingValues[step.scalingUnit];
+            if (sizeValue) {
+              adjustedLow = baseLow * sizeValue;
+              adjustedMed = baseMed * sizeValue;
+              adjustedHigh = baseHigh * sizeValue;
+            }
+          }
+
+          const selectedTimeEstimate = scheduleTempo === 'fast_track' ? adjustedLow :
+                                      scheduleTempo === 'extended' ? adjustedHigh :
+                                      adjustedMed;
+
+          const dependencies: string[] = [];
+          if (stepIndex > 0) {
+            dependencies.push(`${operation.id}-step-${stepIndex - 1}`);
+          }
+
+          tasks.push({
+            id: `${operation.id}-step-${stepIndex}`,
+            title: step.step,
+            estimatedHours: selectedTimeEstimate,
+            minContiguousHours: Math.min(adjustedMed, 2),
+            dependencies,
+            tags: [`phase:${phase.id}`, `workers:${step.workersNeeded || 1}`],
+            confidence: 0.7,
+            phaseId: phase.id,
+            operationId: operation.id,
+            stepId: step.id,
+            metadata: {
+              workersNeeded: step.workersNeeded || 1,
+              ...(space ? { spaceId: space.id, spacePriority: space.priority || 1 } : {})
+            }
+          } as SchedulingTask);
         });
       });
     });
+
+    const tasksWithPrereqs = applySchedulingPrerequisiteDependencies(
+      tasks,
+      effectivePrerequisites,
+      { ...project, phases: workflowPhases }
+    );
     
     // Sort tasks by space priority
-    const sortedTasks = tasks.sort((a, b) => {
-      const aMetadata = a.metadata;
-      const bMetadata = b.metadata;
+    const sortedTasks = [...tasksWithPrereqs].sort((a, b) => {
+      const aMetadata = a.metadata as { spacePriority?: number } | undefined;
+      const bMetadata = b.metadata as { spacePriority?: number } | undefined;
       if (aMetadata && bMetadata) {
-        return aMetadata.spacePriority - bMetadata.spacePriority;
+        return (aMetadata.spacePriority || 999) - (bMetadata.spacePriority || 999);
       }
       if (aMetadata) return -1;
       if (bMetadata) return 1;
@@ -303,4 +378,3 @@ export async function autoRegenerateSchedule(
     return false;
   }
 }
-
