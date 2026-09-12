@@ -11,9 +11,10 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import { ChevronLeft, ChevronRight, CheckCircle, Settings2, Trash2 } from 'lucide-react';
+import { ChevronLeft, CheckCircle, Settings2, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useProject } from '@/contexts/ProjectContext';
-import { PLANNING_TOOLS } from './KickoffSteps/ProjectToolsStep';
+import { PLANNING_TOOLS, PLANNING_TOOLS_DISPLAY_ORDER } from './KickoffSteps/ProjectToolsStep';
 import type { PlanningToolId } from './KickoffSteps/ProjectToolsStep';
 import { CustomizationStep } from './PlanningWizardSteps/CustomizationStep';
 import { ScheduleStep } from './PlanningWizardSteps/ScheduleStep';
@@ -28,7 +29,7 @@ import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
 import { PlanningJourneyHeader } from '@/components/PlanningJourneyHeader';
-import { PlanningConfirmationStep } from '@/components/PlanningWizardSteps/PlanningConfirmationStep';
+import { PlanningConfirmationStep } from './PlanningWizardSteps/PlanningConfirmationStep';
 import {
   PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
   PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME,
@@ -42,19 +43,6 @@ import {
   PLANNING_WIZARD_STEP_TITLE_CLASSNAME,
 } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 import type { Phase } from '@/interfaces/Project';
-
-const WIZARD_TOOL_ORDER: PlanningToolId[] = [
-  'scope',
-  'schedule',
-  'communication_plan',
-  'risk',
-  'shopping_list',
-  'quality_control',
-  'budget',
-  'tool_rentals',
-  'waste_removal',
-  'expert_support',
-];
 
 interface ProjectPlanningWizardProps {
   open: boolean;
@@ -74,6 +62,8 @@ interface ProjectPlanningWizardProps {
   onOpenExpertSupport?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
   /** Opens Communication Plan at host level (e.g. UserView). */
   onOpenCommunicationPlan?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
+  /** Opens Waste Removal placeholder at host level (e.g. UserView). */
+  onOpenWasteRemoval?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
   /** Persist workflow step completion + outputs when the user finishes every wizard step */
   onWorkflowFullyComplete?: (selectedTools: PlanningToolId[]) => void | Promise<void>;
   /** `fullscreen` = same shell as project kickoff (desktop). `dialog` = modal (e.g. mobile). */
@@ -91,6 +81,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   onOpenToolRentals,
   onOpenExpertSupport,
   onOpenCommunicationPlan,
+  onOpenWasteRemoval,
   onWorkflowFullyComplete,
   layout = 'dialog',
 }) => {
@@ -103,8 +94,10 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const [wizardPhase, setWizardPhase] = useState<'steps' | 'confirm'>('steps');
   const stepNavRef = useRef<HTMLDivElement | null>(null);
   const autoOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** Ensures Discover → Plan only auto-opens step 1's tool once per studio open. */
-  const didAutoOpenFirstToolRef = useRef(false);
+  /** Step index last auto-opened this studio session (first-pass only). */
+  const lastAutoOpenedStepRef = useRef<number | null>(null);
+  /** Tracks which run id we hydrated completion for on this open. */
+  const hydratedCompletionRunIdRef = useRef<string | null>(null);
   /** Local copy of selected tools so dropdown changes apply immediately without waiting for context */
   const [localSelectedTools, setLocalSelectedTools] = useState<PlanningToolId[] | null>(null);
 
@@ -137,7 +130,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const wizardSteps = useMemo(() => {
     const selected = localSelectedTools ?? selectedToolsFromContext;
     const selectedSet = new Set(selected);
-    const orderFiltered = WIZARD_TOOL_ORDER.filter(id => {
+    const orderFiltered = PLANNING_TOOLS_DISPLAY_ORDER.filter(id => {
       if (!partnerAppsEnabled && (id === 'expert_support' || id === 'tool_rentals' || id === 'waste_removal')) return false;
       if (id === 'expert_support' && !expertSupportEnabled) return false;
       if (id === 'tool_rentals' && !toolRentalsEnabled) return false;
@@ -150,7 +143,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         id: 'no-tools',
         toolId: null as PlanningToolId | null,
         title: 'No tools selected',
-        description: 'Complete Workflow Setup (Kickoff step 4) to choose planning tools for this run.',
+        description: 'Choose planning tools in Discover (Plan tools) for this run.',
         doneWhen: '',
       }];
     }
@@ -174,24 +167,86 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     wasteRemovalEnabled,
   ]);
 
+  const persistCompletedToolIds = useCallback(
+    (nextCompleted: Set<number>, markFirstPass?: boolean) => {
+      if (!currentProjectRun) return;
+      const decisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
+      const toolIds = wizardSteps
+        .map((s, idx) => (nextCompleted.has(idx) ? s.toolId : null))
+        .filter((id): id is PlanningToolId => typeof id === 'string');
+      const nextDecisions = {
+        ...decisions,
+        planning_wizard_completed_tools: toolIds,
+        ...(markFirstPass ? { planning_wizard_first_pass_completed: true } : {}),
+      };
+      void updateProjectRun({
+        ...currentProjectRun,
+        customization_decisions: nextDecisions as any,
+        updatedAt: new Date(),
+      });
+    },
+    [currentProjectRun, updateProjectRun, wizardSteps]
+  );
+
   useEffect(() => {
-    if (open) {
-      setCurrentStep(0);
-      setCompletedSteps(new Set());
-      setWizardPhase('steps');
-      didAutoOpenFirstToolRef.current = false;
-      // Do not clear localSelectedTools here: a stale full array from a prior open would paint
-      // every step for one frame, then this effect nulls local state and empty context would
-      // collapse the wizard. Local overrides are cleared when the dialog closes instead.
-    } else {
+    if (!open) {
       setLocalSelectedTools(null);
-      didAutoOpenFirstToolRef.current = false;
+      setCompletedSteps(new Set());
+      setCurrentStep(0);
+      setWizardPhase('steps');
+      lastAutoOpenedStepRef.current = null;
+      hydratedCompletionRunIdRef.current = null;
       if (autoOpenTimerRef.current) {
         clearTimeout(autoOpenTimerRef.current);
         autoOpenTimerRef.current = null;
       }
+      return;
     }
-  }, [open]);
+
+    const runId = currentProjectRun?.id ?? null;
+    if (!runId) return;
+
+    const decisions = parseCustomizationDecisions(currentProjectRun?.customization_decisions);
+    const persistedTools = Array.isArray(decisions.planning_wizard_completed_tools)
+      ? (decisions.planning_wizard_completed_tools as string[])
+      : [];
+    const completed = new Set<number>();
+    wizardSteps.forEach((step, index) => {
+      if (step.toolId && persistedTools.includes(step.toolId)) {
+        completed.add(index);
+      }
+    });
+
+    const isNewHydration = hydratedCompletionRunIdRef.current !== runId;
+    if (isNewHydration) {
+      hydratedCompletionRunIdRef.current = runId;
+      setCompletedSteps(completed);
+      setWizardPhase('steps');
+      lastAutoOpenedStepRef.current = null;
+      const firstIncomplete = wizardSteps.findIndex((_, index) => !completed.has(index));
+      setCurrentStep(firstIncomplete >= 0 ? firstIncomplete : 0);
+      return;
+    }
+
+    setCompletedSteps((prev) => {
+      const prevToolIds = new Set(
+        Array.from(prev)
+          .map((idx) => wizardSteps[idx]?.toolId)
+          .filter((id): id is PlanningToolId => typeof id === 'string')
+      );
+      persistedTools.forEach((id) => {
+        if (typeof id === 'string') prevToolIds.add(id);
+      });
+      const next = new Set<number>();
+      wizardSteps.forEach((step, index) => {
+        if (step.toolId && prevToolIds.has(step.toolId)) next.add(index);
+      });
+      if (next.size === prev.size && Array.from(next).every((idx) => prev.has(idx))) {
+        return prev;
+      }
+      return next;
+    });
+  }, [open, currentProjectRun?.id, currentProjectRun?.customization_decisions, wizardSteps]);
 
   useEffect(() => {
     return () => {
@@ -259,7 +314,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
           else window.dispatchEvent(new CustomEvent('show-expert-help'));
           return;
         case 'waste_removal':
-          window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey: 'waste-removal' } }));
+          if (onOpenWasteRemoval) onOpenWasteRemoval(detail);
+          else window.dispatchEvent(new CustomEvent('open-app', { detail: { actionKey: 'waste-removal', ...detail } }));
           return;
         default:
           return;
@@ -272,6 +328,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       onOpenQualityControl,
       onOpenRiskManagement,
       onOpenToolRentals,
+      onOpenWasteRemoval,
     ]
   );
 
@@ -281,63 +338,46 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       autoOpenTimerRef.current = null;
     }
 
-    setCompletedSteps(prev => {
+    setCompletedSteps((prev) => {
       const nextCompleted = new Set(prev);
       nextCompleted.add(stepIndex);
+      // Persist after computing the next set (avoid side effects reading stale state).
+      queueMicrotask(() => persistCompletedToolIds(nextCompleted));
       return nextCompleted;
     });
+    // Stay on completed step — sticky Continue advances (no auto-open chain).
+  }, [persistCompletedToolIds]);
 
-    if (stepIndex < wizardSteps.length - 1) {
-      const nextStepIndex = stepIndex + 1;
-      setCurrentStep(nextStepIndex);
+  const isStepCompleted = (stepIndex: number) => completedSteps.has(stepIndex);
 
-      if (!planningWizardFirstPassCompleted) {
-        const nextToolId = wizardSteps[nextStepIndex]?.toolId ?? null;
-        if (nextToolId) {
-          autoOpenTimerRef.current = setTimeout(() => {
-            autoOpenTimerRef.current = null;
-            openPlanningTool(nextToolId, () => handleStepComplete(nextStepIndex));
-          }, 1000);
-        }
-      }
-      return;
-    }
+  const allWorkflowStepsComplete =
+    wizardSteps.length > 0 &&
+    wizardSteps.every((_, i) => completedSteps.has(i));
 
-    markPlanningWizardFirstPassComplete();
-    setWizardPhase('confirm');
-  }, [
-    wizardSteps,
-    planningWizardFirstPassCompleted,
-    openPlanningTool,
-    markPlanningWizardFirstPassComplete,
-  ]);
-
-  // Discover → Plan: auto-open step 1's tool shortly after Planning Studio mounts.
-  // Matches the first-pass chain that auto-opens tools after each completed step.
+  // First-pass: auto-open current incomplete tool once when landed on (no post-close chain).
   useEffect(() => {
     if (!open) return;
     if (planningWizardFirstPassCompleted) return;
-    if (didAutoOpenFirstToolRef.current) return;
-    if (wizardPhase !== 'steps' || currentStep !== 0) return;
+    if (wizardPhase !== 'steps') return;
+    if (isStepCompleted(currentStep)) return;
 
-    const firstToolId = wizardSteps[0]?.toolId ?? null;
-    if (!firstToolId) return;
+    const toolId = wizardSteps[currentStep]?.toolId ?? null;
+    if (!toolId) return;
+    if (lastAutoOpenedStepRef.current === currentStep) return;
 
-    didAutoOpenFirstToolRef.current = true;
+    lastAutoOpenedStepRef.current = currentStep;
     if (autoOpenTimerRef.current) {
       clearTimeout(autoOpenTimerRef.current);
     }
     autoOpenTimerRef.current = setTimeout(() => {
       autoOpenTimerRef.current = null;
-      openPlanningTool(firstToolId, () => handleStepComplete(0));
-    }, 1000);
+      openPlanningTool(toolId, () => handleStepComplete(currentStep));
+    }, 0);
 
     return () => {
       if (autoOpenTimerRef.current) {
         clearTimeout(autoOpenTimerRef.current);
         autoOpenTimerRef.current = null;
-        // Allow retry if deps change before the timer fires (e.g. tools hydrate late).
-        didAutoOpenFirstToolRef.current = false;
       }
     };
   }, [
@@ -348,47 +388,27 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     planningWizardFirstPassCompleted,
     openPlanningTool,
     handleStepComplete,
+    completedSteps,
   ]);
 
-  const scrollStepNav = (direction: 'left' | 'right') => {
-    const el = stepNavRef.current;
-    if (!el) return;
-    const amount = Math.max(160, Math.floor(el.clientWidth * 0.9));
-    el.scrollBy({
-      left: direction === 'left' ? -amount : amount,
-      behavior: 'smooth'
-    });
+  const canVisitPlanningStep = (index: number) => {
+    if (index < 0 || index >= wizardSteps.length) return false;
+    if (planningWizardFirstPassCompleted) return true;
+    if (index === currentStep) return true;
+    return completedSteps.has(index);
   };
 
   const goToPlanningStep = (index: number) => {
-    if (index < 0 || index >= wizardSteps.length) return;
+    if (!canVisitPlanningStep(index)) {
+      toast.message('Finish the current tool to continue');
+      return;
+    }
     if (autoOpenTimerRef.current) {
       clearTimeout(autoOpenTimerRef.current);
       autoOpenTimerRef.current = null;
     }
     setWizardPhase('steps');
     setCurrentStep(index);
-  };
-
-  const allWorkflowStepsComplete =
-    wizardSteps.length > 0 && completedSteps.size === wizardSteps.length;
-
-  const handleNext = () => {
-    if (autoOpenTimerRef.current) {
-      clearTimeout(autoOpenTimerRef.current);
-      autoOpenTimerRef.current = null;
-    }
-    if (wizardPhase === 'confirm') return;
-    const lastIndex = wizardSteps.length - 1;
-    if (currentStep === lastIndex) {
-      if (allWorkflowStepsComplete) {
-        setWizardPhase('confirm');
-      }
-      return;
-    }
-    if (currentStep < lastIndex) {
-      setCurrentStep(currentStep + 1);
-    }
   };
 
   const handlePrevious = () => {
@@ -406,22 +426,37 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     }
   };
 
-  const isStepCompleted = (stepIndex: number) => completedSteps.has(stepIndex);
+  const handleContinueFromSticky = () => {
+    if (autoOpenTimerRef.current) {
+      clearTimeout(autoOpenTimerRef.current);
+      autoOpenTimerRef.current = null;
+    }
+    if (wizardPhase === 'confirm') return;
+
+    if (!isStepCompleted(currentStep)) {
+      openPlanningTool(wizardSteps[currentStep]?.toolId ?? null, () => handleStepComplete(currentStep));
+      return;
+    }
+
+    if (currentStep < wizardSteps.length - 1) {
+      setCurrentStep(currentStep + 1);
+      return;
+    }
+
+    if (allWorkflowStepsComplete) {
+      markPlanningWizardFirstPassComplete();
+      setWizardPhase('confirm');
+    }
+  };
+
   const progress = wizardSteps.length > 0 ? completedSteps.size / wizardSteps.length * 100 : 0;
-
-  const nextButtonIsReview =
-    wizardPhase === 'steps' &&
-    wizardSteps.length > 0 &&
-    currentStep === wizardSteps.length - 1 &&
-    allWorkflowStepsComplete;
-
-  const nextButtonDisabled =
-    wizardPhase === 'confirm' ||
-    (wizardPhase === 'steps' &&
-      wizardSteps.length > 0 &&
-      currentStep === wizardSteps.length - 1 &&
-      !allWorkflowStepsComplete);
   const currentToolId = wizardSteps[currentStep]?.toolId ?? null;
+  const currentToolMeta = currentToolId
+    ? PLANNING_TOOLS.find((t) => t.id === currentToolId)
+    : undefined;
+  const openAppLabel = currentToolMeta?.label
+    ? `Open ${currentToolMeta.label}`
+    : 'Open app';
 
   const phasesForSummary = useMemo(
     () => (Array.isArray(currentProjectRun?.phases) ? (currentProjectRun!.phases as Phase[]) : []),
@@ -472,9 +507,9 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const effectiveSelectedTools = localSelectedTools ?? selectedToolsFromContext;
 
   const planningToolsForWizard = useMemo(() => {
-    const orderIdx = (id: PlanningToolId) => WIZARD_TOOL_ORDER.indexOf(id);
+    const orderIdx = (id: PlanningToolId) => PLANNING_TOOLS_DISPLAY_ORDER.indexOf(id);
     return PLANNING_TOOLS.filter(t => {
-      if (!WIZARD_TOOL_ORDER.includes(t.id)) return false;
+      if (!PLANNING_TOOLS_DISPLAY_ORDER.includes(t.id)) return false;
       if (!partnerAppsEnabled && (t.id === 'expert_support' || t.id === 'tool_rentals' || t.id === 'waste_removal')) return false;
       if (t.id === 'expert_support' && !expertSupportEnabled) return false;
       if (t.id === 'tool_rentals' && !toolRentalsEnabled) return false;
@@ -568,7 +603,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">
-              Complete Workflow Setup (Kickoff step 4) to choose planning tools for this run. Each tool becomes a step in Planning Studio and opens its app when you select it.
+              Choose planning tools in Discover (Plan tools) for this run. Each tool becomes a step in Planning Studio and opens its app when you select it.
             </p>
           </CardContent>
         </Card>
@@ -674,122 +709,271 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const currentStepDoneWhen =
     wizardPhase === 'steps' ? wizardSteps[currentStep]?.doneWhen?.trim() || '' : '';
 
-  const planIterationFooter =
-    wizardPhase === 'confirm'
-      ? null
-      : wizardSteps.length === 0
-        ? 'Complete Workflow Setup to choose planning tools'
-        : allWorkflowStepsComplete
-          ? `Plan iteration: ${completedSteps.size} of ${wizardSteps.length} tools · Review ready`
-          : `Plan iteration: ${completedSteps.size} of ${wizardSteps.length} tools · then Review`;
-
   if (layout === 'fullscreen' && !open) {
     return null;
   }
 
+  const renderStickyActions = () => {
+    if (wizardPhase === 'confirm') {
+      return (
+        <div className="flex min-h-12 w-full flex-row items-stretch gap-2 sm:min-h-[3.25rem] sm:gap-3">
+          <div className="flex min-h-12 min-w-0 flex-[3] basis-0 flex-col sm:min-h-[3.25rem]">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="h-12 min-h-12 w-full border-slate-400 bg-slate-200 px-3 text-sm text-slate-900 hover:bg-slate-300 hover:text-slate-950 sm:h-full sm:min-h-[3.25rem]"
+              onClick={() => {
+                const firstIncomplete = wizardSteps.findIndex((_, i) => !completedSteps.has(i));
+                setWizardPhase('steps');
+                setCurrentStep(firstIncomplete >= 0 ? firstIncomplete : 0);
+              }}
+            >
+              Edit Plan
+            </Button>
+          </div>
+          <div className="flex min-h-12 min-w-0 flex-[7] basis-0 flex-col sm:min-h-[3.25rem]">
+            <Button
+              type="button"
+              size="lg"
+              disabled={!allWorkflowStepsComplete && wizardSteps.some((s) => s.toolId != null)}
+              className="h-12 min-h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 disabled:opacity-50 sm:h-full sm:min-h-[3.25rem]"
+              onClick={async () => {
+                if (!allWorkflowStepsComplete && wizardSteps.some((s) => s.toolId != null)) return;
+                if (onWorkflowFullyComplete) {
+                  await onWorkflowFullyComplete(effectiveSelectedTools);
+                }
+                onOpenChange(false);
+              }}
+            >
+              <CheckCircle className="mr-2 h-4 w-4 shrink-0" />
+              Start project
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    const stepDone = isStepCompleted(currentStep);
+    const isLast = currentStep >= wizardSteps.length - 1;
+    const primaryLabel = !stepDone
+      ? openAppLabel
+      : isLast
+        ? 'Continue to Summary'
+        : 'Continue';
+
+    return (
+      <div className="flex min-h-12 w-full flex-row items-stretch gap-2 sm:min-h-[3.25rem] sm:gap-3">
+        {stepDone && currentToolId ? (
+          <div className="flex min-h-12 min-w-0 flex-[3] basis-0 flex-col sm:min-h-[3.25rem]">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="h-12 min-h-12 w-full px-3 text-sm sm:h-full sm:min-h-[3.25rem]"
+              onClick={() => openPlanningTool(currentToolId)}
+            >
+              Reopen {currentToolMeta?.label ?? 'app'}
+            </Button>
+          </div>
+        ) : (
+          <div className="min-w-0 flex-[3] basis-0" aria-hidden />
+        )}
+        <div className="flex min-h-12 min-w-0 flex-[7] basis-0 flex-col sm:min-h-[3.25rem]">
+          <Button
+            type="button"
+            size="lg"
+            className="h-12 min-h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:h-full sm:min-h-[3.25rem]"
+            disabled={!currentToolId && !stepDone}
+            onClick={handleContinueFromSticky}
+          >
+            <CheckCircle className="mr-2 h-4 w-4 shrink-0" />
+            <span className="text-left leading-tight">{primaryLabel}</span>
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   const shell = (
-    <div className="relative mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden px-2 pb-2 pt-11 sm:gap-3 sm:px-3 sm:pb-3 sm:pt-12 md:h-auto md:overflow-visible">
-      <div className="pointer-events-none absolute right-2 top-[max(0.5rem,env(safe-area-inset-top))] z-20 sm:right-3 sm:top-3">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-auto md:overflow-visible">
+      <div className="flex shrink-0 items-center justify-between gap-2">
+        <PlanningJourneyHeader
+          activeStage="plan"
+          className="min-w-0 flex-1"
+          onDiscoverClick={onReturnToKickoff}
+        />
+        {open && currentProjectRun ? (
+          <ProjectPlanningCountdownBanner
+            minimal
+            projectCreatedAt={currentProjectRun.createdAt}
+            className="shrink-0"
+          />
+        ) : null}
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={() => onOpenChange(false)}
-          className="pointer-events-auto min-h-10 text-xs sm:min-h-9 sm:text-sm"
+          className="min-h-9 shrink-0 text-xs sm:text-sm"
         >
           Close
         </Button>
       </div>
 
-      {open && currentProjectRun ? (
-        <ProjectPlanningCountdownBanner
-          minimal
-          projectCreatedAt={currentProjectRun.createdAt}
-          className="shrink-0"
-        />
-      ) : null}
-
-      <PlanningJourneyHeader
-        activeStage="plan"
-        className="shrink-0"
-        onDiscoverClick={onReturnToKickoff}
-      />
-
-      {/* Step navigation — same card padding / layout rhythm as KickoffWorkflow */}
       <Card className="shrink-0">
-        <CardContent className="p-1.5 sm:p-2 md:p-2.5">
-          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+        <CardContent className="space-y-1.5 p-1.5 sm:p-2 md:p-2.5">
+          {/* Mobile: compact dots */}
+          <div className="flex items-center gap-1 sm:hidden">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={handlePrevious}
+              disabled={wizardPhase === 'steps' && currentStep === 0}
+              aria-label="Previous step"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="scrollbar-hide flex min-w-0 flex-1 items-center justify-center gap-0 overflow-x-auto py-0.5">
+              {wizardSteps.map((step, index) => {
+                const visitable = canVisitPlanningStep(index);
+                return (
+                  <React.Fragment key={step.id}>
+                    {index > 0 ? (
+                      <div className="h-px w-1 shrink-0 bg-muted-foreground/30" aria-hidden />
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => goToPlanningStep(index)}
+                      aria-label={`${step.title}, step ${index + 1}`}
+                      aria-current={wizardPhase === 'steps' && index === currentStep ? 'step' : undefined}
+                      aria-disabled={!visitable}
+                      className={`
+                        flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors
+                        ${visitable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
+                        ${
+                          wizardPhase === 'confirm'
+                            ? 'border-green-500 bg-green-500 text-white'
+                            : index === currentStep
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : isStepCompleted(index)
+                                ? 'border-green-500 bg-green-500 text-white'
+                                : 'border-muted-foreground bg-background'
+                        }
+                      `}
+                    >
+                      {wizardPhase === 'confirm' || isStepCompleted(index) ? (
+                        <CheckCircle className="h-3 w-3" aria-hidden />
+                      ) : (
+                        <span className="text-[10px] font-semibold">{index + 1}</span>
+                      )}
+                    </button>
+                  </React.Fragment>
+                );
+              })}
+              {wizardSteps.length > 0 ? (
+                <>
+                  <div className="h-px w-1 shrink-0 bg-muted-foreground/30" aria-hidden />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!allWorkflowStepsComplete) {
+                        toast.message('Finish all tools to open Planning Summary');
+                        return;
+                      }
+                      markPlanningWizardFirstPassComplete();
+                      setWizardPhase('confirm');
+                    }}
+                    disabled={!allWorkflowStepsComplete && wizardPhase !== 'confirm'}
+                    aria-label="Go to Planning Summary"
+                    className={`
+                      flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2
+                      ${
+                        wizardPhase === 'confirm'
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : allWorkflowStepsComplete
+                            ? 'cursor-pointer border-muted-foreground bg-background'
+                            : 'cursor-not-allowed border-muted-foreground/40 opacity-50'
+                      }
+                    `}
+                  >
+                    <span className="text-[10px] font-semibold">{wizardSteps.length + 1}</span>
+                  </button>
+                </>
+              ) : null}
+            </div>
+            <div className="shrink-0 text-center leading-none tabular-nums">
+              <div className="text-[10px] font-medium text-muted-foreground">
+                {wizardPhase === 'confirm' ? 'Sum' : `${currentStep + 1}/${wizardSteps.length}`}
+              </div>
+            </div>
+          </div>
+
+          {/* sm+: labeled strip */}
+          <div className="hidden flex-col gap-1.5 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-2">
             <div className="flex min-w-0 flex-1 items-start gap-1">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="mt-0.5 h-9 w-9 shrink-0 sm:hidden"
-                onClick={() => scrollStepNav('left')}
-                disabled={wizardSteps.length <= 4}
-                aria-label="Scroll steps left"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
               <div
                 ref={stepNavRef}
                 className="scrollbar-hide flex min-w-0 flex-1 items-start overflow-x-auto px-0.5 pb-1 sm:overflow-visible sm:px-1 sm:pb-0"
               >
-                {wizardSteps.map((step, index) => (
-                  <React.Fragment key={step.id}>
-                    {index > 0 ? (
-                      <div
-                        className="mt-[13px] h-0.5 w-2 shrink-0 self-start bg-muted-foreground/25 sm:mt-[15px] sm:min-w-2 sm:flex-1 sm:w-auto"
-                        aria-hidden
-                      />
-                    ) : null}
-                    <div className="flex w-11 shrink-0 flex-col items-center px-0.5 sm:w-14 md:w-[4.25rem]">
-                      <button
-                        type="button"
-                        onClick={() => goToPlanningStep(index)}
-                        aria-label={
-                          wizardPhase === 'confirm'
-                            ? `Return to ${step.title}, step ${index + 1}`
-                            : `Go to ${step.title}, step ${index + 1}`
-                        }
-                        aria-current={
-                          wizardPhase === 'steps' && index === currentStep ? 'step' : undefined
-                        }
-                        className={`
-                          flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-7 sm:w-7 md:h-8 md:w-8
-                          ${
-                            wizardPhase === 'confirm'
-                              ? 'border-green-500 bg-green-500 text-white'
-                              : index === currentStep
-                                ? 'border-primary bg-primary text-primary-foreground'
-                                : isStepCompleted(index)
-                                  ? 'border-green-500 bg-green-500 text-white'
-                                  : 'border-muted-foreground bg-background'
+                {wizardSteps.map((step, index) => {
+                  const visitable = canVisitPlanningStep(index);
+                  return (
+                    <React.Fragment key={step.id}>
+                      {index > 0 ? (
+                        <div
+                          className="mt-[13px] h-0.5 w-2 shrink-0 self-start bg-muted-foreground/25 sm:mt-[15px] sm:min-w-2 sm:flex-1 sm:w-auto"
+                          aria-hidden
+                        />
+                      ) : null}
+                      <div className="flex w-11 shrink-0 flex-col items-center px-0.5 sm:w-14 md:w-[4.25rem]">
+                        <button
+                          type="button"
+                          onClick={() => goToPlanningStep(index)}
+                          aria-label={`Go to ${step.title}, step ${index + 1}`}
+                          aria-current={
+                            wizardPhase === 'steps' && index === currentStep ? 'step' : undefined
                           }
-                        `}
-                      >
-                        {wizardPhase === 'confirm' || isStepCompleted(index) ? (
-                          <CheckCircle className="h-3.5 w-3.5 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" aria-hidden />
-                        ) : (
-                          <span className="text-[11px] font-medium sm:text-xs md:text-sm">{index + 1}</span>
-                        )}
-                      </button>
-                      <p
-                        className={`mt-1 w-full text-center text-[9px] font-medium leading-[1.15] sm:text-[10px] md:text-xs line-clamp-3 break-words hyphens-auto ${
-                          wizardPhase === 'confirm'
-                            ? 'text-green-700 dark:text-green-400'
-                            : index === currentStep
-                              ? 'text-primary'
-                              : isStepCompleted(index)
-                                ? 'text-green-700 dark:text-green-400'
-                                : 'text-muted-foreground'
-                        }`}
-                      >
-                        {step.title}
-                      </p>
-                    </div>
-                  </React.Fragment>
-                ))}
+                          aria-disabled={!visitable}
+                          className={`
+                            flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:h-8 md:w-8
+                            ${visitable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
+                            ${
+                              wizardPhase === 'confirm'
+                                ? 'border-green-500 bg-green-500 text-white'
+                                : index === currentStep
+                                  ? 'border-primary bg-primary text-primary-foreground'
+                                  : isStepCompleted(index)
+                                    ? 'border-green-500 bg-green-500 text-white'
+                                    : 'border-muted-foreground bg-background'
+                            }
+                          `}
+                        >
+                          {wizardPhase === 'confirm' || isStepCompleted(index) ? (
+                            <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
+                          ) : (
+                            <span className="text-[11px] font-medium md:text-sm">{index + 1}</span>
+                          )}
+                        </button>
+                        <p
+                          className={`mt-1 w-full text-center text-[9px] font-medium leading-[1.15] md:text-xs line-clamp-3 break-words ${
+                            wizardPhase === 'confirm'
+                              ? 'text-green-700 dark:text-green-400'
+                              : index === currentStep
+                                ? 'text-primary'
+                                : isStepCompleted(index)
+                                  ? 'text-green-700 dark:text-green-400'
+                                  : 'text-muted-foreground'
+                          }`}
+                        >
+                          {step.title}
+                        </p>
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
                 {wizardSteps.length > 0 ? (
                   <>
                     <div
@@ -800,18 +984,18 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (!allWorkflowStepsComplete) return;
-                          if (autoOpenTimerRef.current) {
-                            clearTimeout(autoOpenTimerRef.current);
-                            autoOpenTimerRef.current = null;
+                          if (!allWorkflowStepsComplete) {
+                            toast.message('Finish all tools to open Planning Summary');
+                            return;
                           }
+                          markPlanningWizardFirstPassComplete();
                           setWizardPhase('confirm');
                         }}
                         disabled={!allWorkflowStepsComplete && wizardPhase !== 'confirm'}
                         aria-label="Go to Planning Summary"
                         aria-current={wizardPhase === 'confirm' ? 'step' : undefined}
                         className={`
-                          flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-7 sm:w-7 md:h-8 md:w-8
+                          flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors md:h-8 md:w-8
                           ${
                             wizardPhase === 'confirm'
                               ? 'cursor-pointer border-primary bg-primary text-primary-foreground'
@@ -821,12 +1005,12 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                           }
                         `}
                       >
-                        <span className="text-[11px] font-medium sm:text-xs md:text-sm">
+                        <span className="text-[11px] font-medium md:text-sm">
                           {wizardSteps.length + 1}
                         </span>
                       </button>
                       <p
-                        className={`mt-1 w-full text-center text-[9px] font-medium leading-[1.15] sm:text-[10px] md:text-xs line-clamp-3 break-words hyphens-auto ${
+                        className={`mt-1 w-full text-center text-[9px] font-medium leading-[1.15] md:text-xs line-clamp-3 ${
                           wizardPhase === 'confirm'
                             ? 'text-primary'
                             : allWorkflowStepsComplete
@@ -834,58 +1018,15 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                               : 'text-muted-foreground/60'
                         }`}
                       >
-                        Planning Summary
+                        Summary
                       </p>
                     </div>
                   </>
                 ) : null}
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="mt-0.5 h-9 w-9 shrink-0 sm:hidden"
-                onClick={() => scrollStepNav('right')}
-                disabled={wizardSteps.length <= 4}
-                aria-label="Scroll steps right"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
             </div>
 
             <div className="flex w-full flex-col gap-2 sm:w-auto">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full max-w-full text-[10px] leading-tight sm:w-auto sm:text-xs"
-                  >
-                    <Settings2 className="mr-1 h-3.5 w-3.5 shrink-0 sm:mr-1.5 sm:h-4 sm:w-4" />
-                    <span className="hidden lg:inline">Select Planning Studio Tools</span>
-                    <span className="inline lg:hidden">Select tools</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Planning Studio tools for this run</DropdownMenuLabel>
-                  {planningToolsForWizard.map(({ id, label }) => {
-                    const isScope = id === 'scope';
-                    const effectiveSelected = localSelectedTools ?? selectedToolsFromContext;
-                    const checked = effectiveSelected.includes(id);
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={id}
-                        checked={checked}
-                        onSelect={event => event.preventDefault()}
-                        onCheckedChange={value => handlePlanningToolToggle(id, value === true)}
-                        disabled={isScope}
-                      >
-                        {label}
-                      </DropdownMenuCheckboxItem>
-                    );
-                  })}
-                </DropdownMenuContent>
-              </DropdownMenu>
               <div className="flex w-full items-center justify-center gap-1.5 sm:w-auto">
                 <Button
                   type="button"
@@ -894,7 +1035,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                   aria-label="Previous step"
                   onClick={handlePrevious}
                   disabled={wizardPhase === 'steps' && currentStep === 0}
-                  className="h-9 w-9 shrink-0 p-0 lg:h-9 lg:w-auto lg:px-3 lg:flex-initial"
+                  className="h-9 w-9 shrink-0 p-0 lg:h-9 lg:w-auto lg:px-3"
                 >
                   <ChevronLeft className="h-4 w-4 lg:mr-1" />
                   <span className="hidden lg:inline">Previous</span>
@@ -910,90 +1051,67 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                   </div>
                   <Progress value={progress} className="mx-auto mt-1 h-1.5 w-16 sm:h-2 sm:w-20" />
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  aria-label={nextButtonIsReview ? 'Open planning review summary' : 'Next step'}
-                  onClick={handleNext}
-                  disabled={nextButtonDisabled}
-                  className="h-9 w-9 shrink-0 p-0 lg:h-9 lg:w-auto lg:px-3 lg:flex-initial"
-                >
-                  <span className="hidden lg:inline lg:mr-1">{nextButtonIsReview ? 'Review' : 'Next'}</span>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 px-2 text-[10px] text-muted-foreground sm:text-xs"
+                    >
+                      <Settings2 className="mr-1 h-3.5 w-3.5 shrink-0" />
+                      Adjust tools
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Planning tools for this run</DropdownMenuLabel>
+                    {planningToolsForWizard.map(({ id, label }) => {
+                      const isScope = id === 'scope';
+                      const effectiveSelected = localSelectedTools ?? selectedToolsFromContext;
+                      const checked = effectiveSelected.includes(id);
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={id}
+                          checked={checked}
+                          onSelect={(event) => event.preventDefault()}
+                          onCheckedChange={(value) => handlePlanningToolToggle(id, value === true)}
+                          disabled={isScope}
+                        >
+                          {label}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>
+
+          {(currentStepPurpose || currentStepDoneWhen) && wizardPhase === 'steps' ? (
+            <div className="space-y-0.5 border-t border-border/60 pt-1.5">
+              {currentStepPurpose ? (
+                <p className="text-xs text-muted-foreground sm:text-sm">{currentStepPurpose}</p>
+              ) : null}
+              {currentStepDoneWhen ? (
+                <p className="text-[11px] text-muted-foreground/90">Done when: {currentStepDoneWhen}</p>
+              ) : null}
+            </div>
+          ) : wizardPhase === 'confirm' && currentStepPurpose ? (
+            <div className="border-t border-border/60 pt-1.5">
+              <p className="text-xs text-muted-foreground sm:text-sm">{currentStepPurpose}</p>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
-
-      {/* Step purpose — matches KickoffWorkflow purpose card */}
-      {currentStepPurpose ? (
-        <Card className="shrink-0">
-          <CardContent className="flex flex-col gap-0.5 px-2 py-1.5 sm:px-3 sm:py-2">
-            <h2 className="min-w-0 break-words text-base font-semibold leading-snug sm:text-lg">
-              {currentStepPurpose}
-            </h2>
-            {currentStepDoneWhen ? (
-              <p className="text-[11px] text-muted-foreground sm:text-xs">
-                Done when: {currentStepDoneWhen}
-              </p>
-            ) : null}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {wizardPhase === 'confirm' ? (
-        <div className="flex w-full shrink-0 gap-2 px-2 sm:px-0">
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            className="min-h-[48px] min-w-0 flex-[3] border-slate-400 bg-slate-200 text-slate-900 hover:bg-slate-300 hover:text-slate-950"
-            onClick={() => {
-              const firstIncomplete = wizardSteps.findIndex((_, i) => !completedSteps.has(i));
-              setWizardPhase('steps');
-              setCurrentStep(firstIncomplete >= 0 ? firstIncomplete : 0);
-            }}
-          >
-            Edit Plan
-          </Button>
-          <Button
-            type="button"
-            size="lg"
-            disabled={!allWorkflowStepsComplete && wizardSteps.some((s) => s.toolId != null)}
-            className="min-h-[48px] min-w-0 flex-[7] bg-green-600 px-3 text-sm hover:bg-green-700 disabled:opacity-50"
-            onClick={async () => {
-              if (!allWorkflowStepsComplete && wizardSteps.some((s) => s.toolId != null)) return;
-              if (onWorkflowFullyComplete) {
-                await onWorkflowFullyComplete(effectiveSelectedTools);
-              }
-              onOpenChange(false);
-            }}
-          >
-            <CheckCircle className="mr-1.5 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
-            Start project
-          </Button>
-        </div>
-      ) : null}
 
       <div className="flex min-h-0 flex-1 flex-col md:min-h-[min(520px,70vh)]">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] -mx-2 px-2 pb-2 sm:mx-0 sm:px-0 sm:pb-4 md:flex-none md:overflow-visible md:pb-0">
           <div className="min-w-0">{renderCurrentStep()}</div>
         </div>
-        {wizardPhase !== 'confirm' ? (
-          <div className="mt-2 shrink-0 border-t bg-background px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:mt-4 sm:px-0 sm:pb-2 sm:pt-4">
-            <Card>
-              <CardContent className="p-2.5 sm:p-4">
-                <div className="p-2 text-center text-sm text-muted-foreground">
-                  {planIterationFooter}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        ) : null}
       </div>
+
+      <Card className="sticky bottom-0 z-10 shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:static md:border md:bg-card md:backdrop-blur-none">
+        <CardContent className="p-2.5 sm:p-4">{renderStickyActions()}</CardContent>
+      </Card>
     </div>
   );
 

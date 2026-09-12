@@ -34,7 +34,7 @@ export function PlanningJourneyHeader({
         className
       )}
       role="navigation"
-      aria-label="Planning Studio journey"
+      aria-label={activeStage === 'discover' ? 'Discover journey' : 'Plan journey'}
     >
       <JourneyStagePill
         label="Discover"

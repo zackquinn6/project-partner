@@ -286,6 +286,7 @@ export default function UserView({
   const [shoppingChecklistExpandSettingsAccordion, setShoppingChecklistExpandSettingsAccordion] = useState(false);
   const [shoppingChecklistCollapseAllOnOpen, setShoppingChecklistCollapseAllOnOpen] = useState(false);
   const [toolRentalsOpen, setToolRentalsOpen] = useState(false);
+  const [wasteRemovalOpen, setWasteRemovalOpen] = useState(false);
   const [homeManagerOpen, setHomeManagerOpen] = useState(false);
   const [projectBudgetingOpen, setProjectBudgetingOpen] = useState(false);
   const [afterActionReviewOpen, setAfterActionReviewOpen] = useState(false);
@@ -312,12 +313,12 @@ export default function UserView({
   }>({ materials: [], tools: [] });
   const [previousToolsAndMaterials, setPreviousToolsAndMaterials] = useState<{ tools: any[], materials: any[] } | null>(null);
   const planningWizardToolCloseCallbacksRef = useRef<Partial<Record<
-    'customizer' | 'scheduler' | 'shopping' | 'budget' | 'risk' | 'quality' | 'toolRentals' | 'expertSupport' | 'communicationPlan',
+    'customizer' | 'scheduler' | 'shopping' | 'budget' | 'risk' | 'quality' | 'toolRentals' | 'expertSupport' | 'communicationPlan' | 'wasteRemoval',
     () => void
   >>>({});
 
   const registerPlanningWizardToolCloseCallback = useCallback((
-    key: 'customizer' | 'scheduler' | 'shopping' | 'budget' | 'risk' | 'quality' | 'toolRentals' | 'expertSupport' | 'communicationPlan',
+    key: 'customizer' | 'scheduler' | 'shopping' | 'budget' | 'risk' | 'quality' | 'toolRentals' | 'expertSupport' | 'communicationPlan' | 'wasteRemoval',
     callback?: unknown
   ) => {
     if (typeof callback === 'function') {
@@ -328,7 +329,7 @@ export default function UserView({
   }, []);
 
   const completePlanningWizardToolCloseCallback = useCallback((
-    key: 'customizer' | 'scheduler' | 'shopping' | 'budget' | 'risk' | 'quality' | 'toolRentals' | 'expertSupport' | 'communicationPlan'
+    key: 'customizer' | 'scheduler' | 'shopping' | 'budget' | 'risk' | 'quality' | 'toolRentals' | 'expertSupport' | 'communicationPlan' | 'wasteRemoval'
   ) => {
     const callback = planningWizardToolCloseCallbacksRef.current[key];
     delete planningWizardToolCloseCallbacksRef.current[key];
@@ -2377,6 +2378,7 @@ export default function UserView({
         setCommunicationPlanOpen(true);
         break;
       case 'waste-removal':
+        setWasteRemovalOpen(true);
         break;
       case 'project-catalog':
         navigate('/projects');
@@ -3333,6 +3335,12 @@ export default function UserView({
                 registerPlanningWizardToolCloseCallback('communicationPlan', options.onComplete);
               }
               setCommunicationPlanOpen(true);
+            }}
+            onOpenWasteRemoval={(options) => {
+              if (options?.fromPlanningWizard) {
+                registerPlanningWizardToolCloseCallback('wasteRemoval', options.onComplete);
+              }
+              setWasteRemovalOpen(true);
             }}
           />
         </div>
@@ -4299,6 +4307,35 @@ export default function UserView({
           completePlanningWizardToolCloseCallback('toolRentals');
         }}
       />
+
+      <Dialog
+        open={wasteRemovalOpen}
+        onOpenChange={(open) => {
+          setWasteRemovalOpen(open);
+          if (!open) completePlanningWizardToolCloseCallback('wasteRemoval');
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Waste Removal</DialogTitle>
+            <DialogDescription>
+              Plan disposal and debris handling for this project. Full Waste Removal tools are coming soon —
+              close this window to mark the Plan step complete and continue.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end pt-2">
+            <Button
+              type="button"
+              onClick={() => {
+                setWasteRemovalOpen(false);
+                completePlanningWizardToolCloseCallback('wasteRemoval');
+              }}
+            >
+              Done
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Home Manager */}
       <HomeManager

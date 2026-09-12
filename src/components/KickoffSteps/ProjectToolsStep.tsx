@@ -94,8 +94,8 @@ export const PLANNING_TOOLS: {
 
 export type PlanningToolId = (typeof PLANNING_TOOL_IDS)[number];
 
-/** Kickoff step 4 grid: budget & tool rentals last; partner-gated tools still omitted when disabled. */
-const KICKOFF_TOOLS_GRID_ORDER: PlanningToolId[] = [
+/** Shared display/walk-through order for Discover step 4 and Planning Studio. */
+export const PLANNING_TOOLS_DISPLAY_ORDER: PlanningToolId[] = [
   'scope',
   'risk',
   'schedule',
@@ -107,6 +107,9 @@ const KICKOFF_TOOLS_GRID_ORDER: PlanningToolId[] = [
   'waste_removal',
   'expert_support',
 ];
+
+/** @deprecated Prefer PLANNING_TOOLS_DISPLAY_ORDER — same sequence. */
+const KICKOFF_TOOLS_GRID_ORDER = PLANNING_TOOLS_DISPLAY_ORDER;
 
 export const DEFAULT_PLANNING_TOOLS_SELECTION: PlanningToolId[] = ['scope', 'risk'];
 

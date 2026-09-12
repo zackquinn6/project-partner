@@ -265,6 +265,10 @@ export interface ProjectRun {
     workflowOrder: string[];
     /** Kickoff step 4 + Planning Studio: which planning tools are active for this run. */
     selected_planning_tools?: string[];
+    /** Planning Studio: tool ids the user has completed in the Plan walk-through. */
+    planning_wizard_completed_tools?: string[];
+    /** Planning Studio: true after the first full tool pass reaches Planning Summary. */
+    planning_wizard_first_pass_completed?: boolean;
     /** When true, this run was started from Risk Radar (kickoff UI skipped; risks-only session). */
     risk_focus?: boolean;
   };

@@ -13,7 +13,7 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     appName: 'Planning Studio',
     appType: 'native',
     icon: 'Layers',
-    description: 'Discover, iterate your plan backlog, then lock the baseline and start',
+    description: 'Plan your backlog in Planning Studio, then lock the baseline and start',
     actionKey: 'project-planning-wizard',
     displayOrder: 0.5
   },
