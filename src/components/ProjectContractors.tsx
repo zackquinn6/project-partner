@@ -42,6 +42,7 @@ interface Contractor {
   workingHoursStart: string;
   workingHoursEnd: string;
   availabilityDates: { [date: string]: any };
+  notAvailableDates?: string[];
   notes?: string;
   dbId?: string; // ID from user_contractors table
 }
@@ -115,7 +116,10 @@ export function ProjectContractors({ projectRunId, phases }: ProjectContractorsP
             workingHoursStart: contractor.working_hours_start || '08:00',
             workingHoursEnd: contractor.working_hours_end || '17:00',
             availabilityDates: (contractor.availability_dates as any) || {},
-            notes: contractor.notes
+            notes: contractor.notes,
+            notAvailableDates: Array.isArray((contractor.availability_dates as any)?.__blackoutDates)
+              ? (contractor.availability_dates as any).__blackoutDates
+              : [],
           }));
 
           setContractors(loadedContractors);

@@ -89,35 +89,65 @@ export class SchedulingEngine {
 
   private expandAvailability(inputs: SchedulingInputs): TimeSlot[] {
     const slots: TimeSlot[] = [];
-    const searchLimit = new Date(inputs.targetCompletionDate);
-    searchLimit.setDate(searchLimit.getDate() - 90); // Search 90 days back
+    const blackoutKeys = new Set(
+      inputs.blackoutDates.map((d) => d.toDateString())
+    );
 
-    inputs.workers.forEach(worker => {
-      worker.availability.forEach(slot => {
-        // Generate recurring slots based on worker availability
+    inputs.workers.forEach((worker) => {
+      worker.availability.forEach((slot) => {
+        if (!slot.isAvailable) return;
+        // Concrete day windows from buildWorkerTimeSlots / callers
+        const durationMs = slot.end.getTime() - slot.start.getTime();
+        const isConcreteDayWindow = durationMs > 0 && durationMs <= 24 * 60 * 60 * 1000;
+
+        if (isConcreteDayWindow) {
+          if (blackoutKeys.has(slot.start.toDateString())) return;
+          if (slot.start > inputs.targetCompletionDate && (!inputs.dropDeadDate || slot.start > inputs.dropDeadDate)) {
+            return;
+          }
+          slots.push({
+            start: new Date(slot.start),
+            end: new Date(slot.end),
+            workerId: worker.id,
+            isAvailable: true,
+          });
+          return;
+        }
+
+        // Legacy: wide open range — expand day-by-day
+        const searchLimit = new Date(inputs.targetCompletionDate);
+        searchLimit.setDate(searchLimit.getDate() - 90);
         let currentDate = new Date(Math.max(searchLimit.getTime(), slot.start.getTime()));
-        
-        while (currentDate <= inputs.targetCompletionDate) {
-          // Check if this date is a blackout date
-          const isBlackout = inputs.blackoutDates.some(blackout =>
-            blackout.toDateString() === currentDate.toDateString()
-          );
 
-          if (!isBlackout && this.isWorkingDay(currentDate, inputs.siteConstraints)) {
+        while (currentDate <= inputs.targetCompletionDate) {
+          const isBlackout = blackoutKeys.has(currentDate.toDateString());
+          if (!isBlackout && this.isWorkingDay(currentDate, {
+            ...inputs.siteConstraints,
+            weekendsOnly: worker.weekendsOnly ?? inputs.siteConstraints.weekendsOnly,
+          })) {
+            const dayStart = new Date(currentDate);
+            const hours = worker.workingHours ?? {
+              start: inputs.siteConstraints.allowedWorkHours.weekdays.start,
+              end: inputs.siteConstraints.allowedWorkHours.weekdays.end,
+            };
+            const [sh, sm] = hours.start.split(':').map(Number);
+            const [eh, em] = hours.end.split(':').map(Number);
+            dayStart.setHours(sh || 9, sm || 0, 0, 0);
+            const dayEnd = new Date(currentDate);
+            dayEnd.setHours(eh || 17, em || 0, 0, 0);
             slots.push({
-              start: new Date(currentDate),
-              end: new Date(currentDate.getTime() + (slot.end.getTime() - slot.start.getTime())),
+              start: dayStart,
+              end: dayEnd,
               workerId: worker.id,
-              isAvailable: true
+              isAvailable: true,
             });
           }
-          
           currentDate.setDate(currentDate.getDate() + 1);
         }
       });
     });
 
-    return slots.sort((a, b) => b.start.getTime() - a.start.getTime()); // Latest first
+    return slots.sort((a, b) => b.start.getTime() - a.start.getTime());
   }
 
   private validateAndSortTasks(tasks: Task[]): Task[] {

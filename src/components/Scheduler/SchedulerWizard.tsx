@@ -32,7 +32,8 @@ import {
   Loader2,
   Shield,
   TrendingUp,
-  Briefcase
+  Briefcase,
+  Sparkles,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, addDays } from 'date-fns';
@@ -57,6 +58,7 @@ interface TeamMember {
       available: boolean;
     }[];
   };
+  blackoutDates?: string[];
   costPerHour?: number;
   email?: string;
   phone?: string;
@@ -100,6 +102,9 @@ interface SchedulerWizardProps {
   onOpenContractorScheduling?: () => void;
   /** Increment after a successful generate to collapse all wizard sections */
   collapseAccordionSignal?: number;
+  noWorkOnHolidays?: boolean;
+  setNoWorkOnHolidays?: (value: boolean) => void;
+  onOpenAvailabilityAi?: (focusMemberId?: string | null) => void;
 }
 
 type SchedulerAccordionKey = 'dates' | 'availability' | 'tempo' | 'advanced';
@@ -136,11 +141,13 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   setLunchDuration,
   scheduledCompletionDate,
   onOpenContractorScheduling,
-  collapseAccordionSignal = 0
+  collapseAccordionSignal = 0,
+  noWorkOnHolidays = false,
+  setNoWorkOnHolidays,
+  onOpenAvailabilityAi,
 }) => {
   /** Which collapsible step (1–4) is expanded; Generate is always visible below. */
   const [openSection, setOpenSection] = useState<SchedulerAccordionKey | null>('dates');
-  const [noWorkOnHolidays, setNoWorkOnHolidays] = useState(false);
   const [schedulingAlgorithmHelpOpen, setSchedulingAlgorithmHelpOpen] = useState(false);
   /** User confirmed tempo on this visit (defaults alone do not count as completing the step). */
   const [tempoConfirmed, setTempoConfirmed] = useState(false);
@@ -158,7 +165,8 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
   const hasAvailabilitySelected = teamMembers.some(member => 
     Object.keys(member.availability).length > 0 || 
     member.weekendsOnly || 
-    member.weekdaysAfterFivePm
+    member.weekdaysAfterFivePm ||
+    (member.blackoutDates && member.blackoutDates.length > 0)
   );
 
   const setOpenSectionStable = useCallback((next: string) => {
@@ -306,7 +314,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                   <Checkbox
                     id="no-holidays"
                     checked={noWorkOnHolidays}
-                    onCheckedChange={(checked) => setNoWorkOnHolidays(checked as boolean)}
+                    onCheckedChange={(checked) => setNoWorkOnHolidays?.(checked as boolean)}
                   />
                   <Label htmlFor="no-holidays" className="text-xs cursor-pointer">
                     No work on national holidays
@@ -314,6 +322,18 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                 </div>
 
                 <div className="flex flex-col gap-2 mt-3">
+                  {onOpenAvailabilityAi && (
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      onClick={() => onOpenAvailabilityAi(null)}
+                      className="w-full h-9 text-xs"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                      Describe availability
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -776,6 +796,18 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                             <Calendar className="w-3 h-3 mr-1" />
                             Set Availability
                           </Button>
+                          {onOpenAvailabilityAi && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onOpenAvailabilityAi(member.id)}
+                              className="h-8 text-xs px-2 whitespace-nowrap"
+                            >
+                              <Sparkles className="w-3 h-3 mr-1" />
+                              Describe instead
+                            </Button>
+                          )}
                           {teamMembers.length > 1 && (
                             <Button 
                               variant="ghost" 

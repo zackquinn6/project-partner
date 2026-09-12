@@ -40,6 +40,8 @@ import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import { ScheduleSensitivity } from './Scheduler/ScheduleSensitivity';
 import { ScheduleViewDialog } from '@/components/ScheduleViewDialog';
 import { autoRegenerateSchedule } from '@/utils/autoScheduleRegeneration';
+import { collectMemberBlackoutDates, toEngineWorker } from '@/utils/buildWorkerAvailability';
+import { usHolidaysInRange } from '@/utils/usHolidays';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
 import { PlanningToolContextBanner } from '@/components/PlanningWizardSteps/PlanningToolContextBanner';
 import {
@@ -48,6 +50,12 @@ import {
   PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME,
   PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
 } from '@/components/PlanningWizardSteps/planningToolWindowChrome';
+import { AvailabilityAiSheet } from './Scheduler/AvailabilityAiSheet';
+import {
+  loadContractorAvailabilityRoster,
+  persistContractorAvailabilityPatches,
+} from '@/utils/persistContractorAvailability';
+import type { ContractorAvailabilityShape } from '@/utils/applyAvailabilityPatches';
 import { cn } from '@/lib/utils';
 interface ProjectSchedulerProps {
   open: boolean;
@@ -75,6 +83,8 @@ interface TeamMember {
       available: boolean;
     }[];
   };
+  /** YYYY-MM-DD dates this member cannot work (vacation, holidays, etc.) */
+  blackoutDates?: string[];
   costPerHour?: number;
   email?: string;
   phone?: string;
@@ -163,6 +173,11 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [showRiskManager, setShowRiskManager] = useState(false);
   // Contractors dialog state
   const [showContractors, setShowContractors] = useState(false);
+  const [availabilityAiOpen, setAvailabilityAiOpen] = useState(false);
+  const [availabilityAiFocusMemberId, setAvailabilityAiFocusMemberId] = useState<string | null>(null);
+  const [aiContractorRoster, setAiContractorRoster] = useState<
+    (ContractorAvailabilityShape & { dbId?: string })[]
+  >([]);
   /** Phase / operation / step prerequisite map from projects.scheduling_prerequisites (template project). */
   const [schedulingPrerequisites, setSchedulingPrerequisites] = useState<Record<string, string[]>>({});
 
@@ -240,6 +255,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   });
   const [lunchDuration, setLunchDuration] = useState<number>(30); // 30 minutes default
   const [scheduledCompletionDate, setScheduledCompletionDate] = useState<Date | null>(null);
+  const [noWorkOnHolidays, setNoWorkOnHolidays] = useState(false);
   
   // Local state for last scheduled date to ensure badge updates
   const [lastScheduledDate, setLastScheduledDate] = useState<string | null>(null);
@@ -426,6 +442,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       end: '17:00'
     },
     availability: {},
+    blackoutDates: [],
     costPerHour: 0,
     email: '',
     phone: '',
@@ -455,6 +472,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           end: '17:00'
         },
         availability: member.availability || {},
+        blackoutDates: Array.isArray(member.blackoutDates) ? member.blackoutDates : [],
         costPerHour: member.costPerHour || 0,
         email: member.email || '',
         phone: member.phone || '',
@@ -470,6 +488,9 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     }
     if ((savedData as any).lunchDuration) {
       setLunchDuration((savedData as any).lunchDuration);
+    }
+    if (typeof (savedData.globalSettings as any)?.noWorkOnHolidays === 'boolean') {
+      setNoWorkOnHolidays((savedData.globalSettings as any).noWorkOnHolidays);
     }
     // Load schedule optimization method from project run
     if (projectRun?.schedule_optimization_method) {
@@ -1043,20 +1064,29 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       }
       
       // Prepare scheduling inputs with risk-adjusted date
+      const rangeStart = new Date();
+      rangeStart.setHours(0, 0, 0, 0);
+      const rangeEnd = new Date(dropDeadDate);
+      rangeEnd.setHours(23, 59, 59, 999);
+
+      const holidayBlackouts = noWorkOnHolidays
+        ? usHolidaysInRange(rangeStart, rangeEnd).map((h) => h.date)
+        : [];
+      const memberBlackouts = collectMemberBlackoutDates(teamMembers);
+      const allBlackoutYmd = [...new Set([...holidayBlackouts, ...memberBlackouts])].sort();
+      const blackoutDates = allBlackoutYmd.map((ymd) => {
+        const [y, m, d] = ymd.split('-').map(Number);
+        return new Date(y, m - 1, d);
+      });
+
       const schedulingInputs: SchedulingInputs = {
         targetCompletionDate: riskAnalysis.adjustedDate, // Use risk-adjusted date instead of original
         dropDeadDate: new Date(dropDeadDate),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         tasks: schedulingTasks,
-        workers: teamMembers.map(tm => ({
-          ...tm,
-          availability: [{
-            start: new Date(),
-            end: addDays(new Date(), 90),
-            workerId: tm.id,
-            isAvailable: true
-          }]
-        })) as unknown as Worker[],
+        workers: teamMembers.map((tm) =>
+          toEngineWorker(tm, rangeStart, rangeEnd, holidayBlackouts)
+        ),
         siteConstraints: {
           allowedWorkHours: {
             weekdays: {
@@ -1068,12 +1098,12 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               end: quietHours.start
             }
           },
-          weekendsOnly: false,
+          weekendsOnly: teamMembers.every((tm) => tm.weekendsOnly),
           allowNightWork: false,
           noiseCurfew: quietHours.start,
           lunchDuration: lunchDuration // Pass lunch duration to algorithm
         },
-        blackoutDates: [],
+        blackoutDates,
         scheduleTempo,
         preferHelpers: teamMembers.some(tm => tm.type === 'helper'),
         mode: planningMode,
@@ -1138,6 +1168,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         end: '17:00'
       },
       availability: {},
+      blackoutDates: [],
       costPerHour: 25
     };
     setTeamMembers([...teamMembers, newMember]);
@@ -1251,7 +1282,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           })),
           teamMembers: teamMembers,
           globalSettings: {
-            quietHours: quietHours
+            quietHours: quietHours,
+            noWorkOnHolidays,
           },
           lunchDuration: lunchDuration,
           scheduleTempo: scheduleTempo,
@@ -1637,6 +1669,15 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               scheduledCompletionDate={scheduledCompletionDate}
               onOpenContractorScheduling={() => setShowContractors(true)}
               collapseAccordionSignal={schedulerAccordionCollapseSignal}
+              noWorkOnHolidays={noWorkOnHolidays}
+              setNoWorkOnHolidays={setNoWorkOnHolidays}
+              onOpenAvailabilityAi={(memberId) => {
+                setAvailabilityAiFocusMemberId(memberId ?? null);
+                setAvailabilityAiOpen(true);
+                if (user?.id) {
+                  void loadContractorAvailabilityRoster(user.id).then(setAiContractorRoster);
+                }
+              }}
             />
 
             {/* Results - Show View Schedule button after generation */}
@@ -1930,6 +1971,26 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                 onSaveAndClose={saveCalendarChanges}
               />
             </DialogHeader>
+            <div className="px-6 pb-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => {
+                  const memberId = calendarOpen;
+                  cancelCalendarChanges();
+                  setAvailabilityAiFocusMemberId(memberId);
+                  setAvailabilityAiOpen(true);
+                  if (user?.id) {
+                    void loadContractorAvailabilityRoster(user.id).then(setAiContractorRoster);
+                  }
+                }}
+              >
+                <Brain className="w-3.5 h-3.5 mr-1.5" />
+                Describe instead
+              </Button>
+            </div>
             
             <div className="flex flex-col md:flex-row flex-1 min-h-0">
               {/* Left Side - Calendar View */}
@@ -2169,17 +2230,42 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       teamMembers={teamMembers}
     />
 
-    {/* Schedule Sensitivity Dialog */}
-    <ScheduleSensitivity
-      open={showSensitivity}
-      onOpenChange={setShowSensitivity}
-      schedulingResult={schedulingResult}
-      riskTolerance={riskTolerance}
-      scheduleTempo={scheduleTempo}
-      planningMode={planningMode}
-      availableHoursPerWeek={availableHoursPerWeek}
+    {/* AI availability text entry */}
+    <AvailabilityAiSheet
+      open={availabilityAiOpen}
+      onOpenChange={setAvailabilityAiOpen}
+      teamMembers={teamMembers}
+      onTeamMembersChange={(members) => {
+        setTeamMembers((prev) =>
+          prev.map((p) => {
+            const updated = members.find((m) => m.id === p.id);
+            if (!updated) return p;
+            return {
+              ...p,
+              weekendsOnly: updated.weekendsOnly,
+              weekdaysAfterFivePm: updated.weekdaysAfterFivePm,
+              workingHours: updated.workingHours,
+              availability: updated.availability,
+              blackoutDates: updated.blackoutDates ?? [],
+            };
+          })
+        );
+      }}
+      contractors={aiContractorRoster}
+      onContractorsChange={(next) => {
+        setAiContractorRoster(next as (ContractorAvailabilityShape & { dbId?: string })[]);
+        void persistContractorAvailabilityPatches(next).catch((err) => {
+          console.error(err);
+          toast({
+            title: 'Contractor save failed',
+            description: err instanceof Error ? err.message : 'Could not save contractor availability',
+            variant: 'destructive',
+          });
+        });
+      }}
       targetDate={targetDate}
-      tasks={schedulingTasks}
+      dropDeadDate={dropDeadDate}
+      focusMemberId={availabilityAiFocusMemberId}
     />
     </>
   );
