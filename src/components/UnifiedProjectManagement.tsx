@@ -1010,6 +1010,8 @@ export function UnifiedProjectManagement({
         revision_number: nextRevisionNumber,
         phases: [] as Json,
         revision_notes: null,
+        // Do not inherit "current" from the source revision family member.
+        is_current_version: false,
       };
 
       const payload = Object.fromEntries(
@@ -1084,7 +1086,7 @@ export function UnifiedProjectManagement({
         (typeof msg === 'string' && msg.includes('copy_draft_revision_workflow'))
       ) {
         toast.error(
-          'Database is missing copy_draft_revision_workflow. In Supabase SQL editor, run 2026_04_30_migration_draft_revision_single_apply.sql from the repo, then retry.'
+          'Database is missing copy_draft_revision_workflow. In Supabase SQL editor, run supabase/migrations/20260912003000_fix_copy_draft_revision_deep_copy.sql from the repo, then retry.'
         );
       } else if (error?.code === '23502') {
         toast.error(
