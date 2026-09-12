@@ -102,12 +102,12 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
 
   return (
     <>
-      {/* Main Critical Points window */}
+      {/* Main Priorities window */}
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-[90vw] lg:max-w-6xl h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <div className="flex items-center justify-between gap-4">
-              <DialogTitle className="text-lg sm:text-xl font-bold">Critical Points</DialogTitle>
+              <DialogTitle className="text-lg sm:text-xl font-bold">Priorities</DialogTitle>
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
@@ -116,7 +116,7 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
                   className="flex items-center gap-1 text-xs sm:text-sm"
                 >
                   <HelpCircle className="w-4 h-4" />
-                  <span className="hidden sm:inline">What are Critical Points?</span>
+                  <span className="hidden sm:inline">What are Priorities?</span>
                   <span className="sm:hidden">Help</span>
                 </Button>
               </div>
@@ -173,8 +173,8 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
           <div className="flex-1 min-h-0 overflow-y-auto pb-4">
             {criticalOutputs.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p>No critical points found for this operation.</p>
-                <p className="text-sm mt-2">This operation may not have outputs marked as critical.</p>
+                <p>No priorities found for this operation.</p>
+                <p className="text-sm mt-2">This operation may not have outputs marked as priorities.</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -252,15 +252,15 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
       <Dialog open={showHelpPopup} onOpenChange={setShowHelpPopup}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold">What are Critical Points?</DialogTitle>
+            <DialogTitle className="text-lg font-bold">What are Priorities?</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
             <p className="text-primary font-medium">
-              Critical points are how we personalize our projects to each builder.
+              Priorities are how we personalize our projects to each builder.
             </p>
             <p>
               We tailor detail to skill level: first‑timers get the full play‑by‑play, while seasoned DIYers aren't stuck reading what a miter saw looks like. 
-              Critical points deliver the right level of detail for successful project completion.
+              Priorities deliver the right level of detail for successful project completion.
             </p>
             <div className="flex justify-center mt-4">
               <Button 
@@ -272,7 +272,7 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
                 }}
                 className="text-primary border-primary hover:bg-primary/10"
               >
-                Learn More About Critical Points
+                Learn More About Priorities
               </Button>
             </div>
           </div>
@@ -355,7 +355,7 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
         </DialogContent>
       </Dialog>
 
-      {/* Critical Points detailed explainer */}
+      {/* Priorities detailed explainer */}
       <KeyCharacteristicsExplainer 
         open={showKCExplainer} 
         onOpenChange={setShowKCExplainer} 

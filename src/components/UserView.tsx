@@ -519,7 +519,7 @@ export default function UserView({
     loadAppOverrides();
   }, []);
 
-  // Add event listeners for Re-plan window actions
+  // Add event listeners for Course Correct window actions
   useEffect(() => {
     const handleOpenProjectScheduler = (event?: Event) => {
       const detail = (event as CustomEvent<{ fromPlanningWizard?: boolean; onComplete?: () => void }> | undefined)?.detail;
@@ -3946,7 +3946,7 @@ export default function UserView({
         }}
       />
 
-      {/* Materials Selection Dialog (for re-plan -> new materials needed flow) */}
+      {/* Materials Selection Dialog (for Course Correct -> new materials needed flow) */}
       <MaterialsSelectionDialog
         open={materialsSelectionOpen && !!currentProjectRun}
         onOpenChange={setMaterialsSelectionOpen}
@@ -4275,7 +4275,7 @@ export default function UserView({
         />
       )}
 
-      {/* Critical Points window */}
+      {/* Priorities window */}
       {activeProject && (
         <KeyCharacteristicsWindow
           open={keyCharacteristicsOpen}

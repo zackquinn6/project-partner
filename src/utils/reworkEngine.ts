@@ -166,11 +166,11 @@ export function buildRecoveryPlan(triageType: TriageType): RecoveryPlan {
       };
     case 'unplanned_work':
       return {
-        summary: 'Open Re-Plan to add the discovered work, then refresh shopping and schedule.',
+        summary: 'Open Course Correct to add the discovered work, then refresh shopping and schedule.',
         severity: 'critical',
         actions: ['open_unplanned_work', 'open_shopping', 'schedule_slip', 'reopen_step'],
         userSteps: [
-          'Capture the discovery in Unplanned Work / Re-Plan',
+          'Capture the discovery in Unplanned Work / Course Correct',
           'Update shopping if new materials are needed',
           'Accept the new finish date',
         ],

@@ -578,7 +578,7 @@ export default function Auth() {
               </AlertDescription>
             </Alert>}
 
-          {/* Critical Points section */}
+          {/* Priorities section */}
           
         </CardContent>
       </Card>

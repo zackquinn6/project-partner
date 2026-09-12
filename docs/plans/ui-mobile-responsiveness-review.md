@@ -12,7 +12,7 @@
 - [x] Unify mobile breakpoint hooks (`use-mobile` / `useResponsive`)
 - [x] Single `ProjectPlanningWizard` mount in `UserView` (dialog vs fullscreen via `layout`)
 - [x] Remove fixed `MobileDIYDropdown` overlay; DIY tools folded into mobile Project tools
-- [x] `MobileWorkflowView`: plain scroll `div` + `pb-4`, touch targets, tool parity (Critical / Re-Plan / Notes / Progress / Experts / est. finish), clickable project title
+- [x] `MobileWorkflowView`: plain scroll `div` + `pb-4`, touch targets, tool parity (Priorities / Course Correct / Notes / Progress / Experts / est. finish), clickable project title
 - [x] Project Dashboard two-row mobile toolbar / listing via `MobileProjectListing`
 - [x] Task Manager mobile density improvements (`HomeTasksTable` / `HomeTaskList`)
 - [x] Full-screen dialog / Progress views mobile sizing

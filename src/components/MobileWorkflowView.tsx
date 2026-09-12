@@ -669,13 +669,13 @@ export function MobileWorkflowView({
                     {onKeysToSuccessClick ? (
                       <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={onKeysToSuccessClick}>
                         <Key className="mr-2 h-4 w-4" />
-                        Critical Points
+                        Priorities
                       </Button>
                     ) : null}
                     {onUnplannedWorkClick && isKickoffComplete ? (
                       <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={onUnplannedWorkClick}>
                         <Settings className="mr-2 h-4 w-4" />
-                        Re-Plan
+                        Course Correct
                       </Button>
                     ) : null}
                     {onNotesClick ? (

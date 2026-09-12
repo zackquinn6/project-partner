@@ -513,7 +513,7 @@ export function WorkflowSidebar({
                   {/* Project Tools: primary buttons + more in menu (Experts/Tool Rentals follow admin app_settings toggles) */}
                     <div className="space-y-1.5 min-w-0" data-tutorial="project-tools">
                     <div className="text-xs font-semibold text-muted-foreground">Project Tools</div>
-                    {/* Critical Points, Re-Plan */}
+                    {/* Priorities, Course Correct */}
                     <div className="flex items-center gap-1.5 min-w-0">
                       <Button
                         variant="default"
@@ -523,7 +523,7 @@ export function WorkflowSidebar({
                         style={{ backgroundColor: 'rgba(168, 85, 247, 0.40)', color: 'black' }}
                       >
                         <Key className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
-                        <span className="truncate">Critical Points</span>
+                        <span className="truncate">Priorities</span>
                       </Button>
                       {isKickoffComplete && (
                         <Button
@@ -534,7 +534,7 @@ export function WorkflowSidebar({
                           style={{ backgroundColor: 'rgba(236, 72, 153, 0.40)', color: 'black' }}
                         >
                           <Layers className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
-                          <span className="truncate">Re-Plan</span>
+                          <span className="truncate">Course Correct</span>
                         </Button>
                       )}
                     </div>

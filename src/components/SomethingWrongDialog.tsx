@@ -61,7 +61,7 @@ function actionLabel(action: RecoveryAction): string {
     case 'open_shopping':
       return 'Update shopping list';
     case 'open_unplanned_work':
-      return 'Open Re-Plan';
+      return 'Open Course Correct';
     case 'open_tool_rentals':
       return 'Open tool rentals';
     case 'schedule_slip':
