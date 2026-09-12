@@ -46,7 +46,7 @@ export function ProjectWorkflowOverviewPage({
   return (
     <div className="space-y-6">
       <Card className="gradient-card border-0 shadow-card overflow-hidden">
-        <CardHeader className={projectDescription ? 'pb-3' : 'pb-5'}>
+        <CardHeader className={`text-center ${projectDescription ? 'pb-3' : 'pb-5'}`}>
           <CardTitle className="text-2xl font-bold leading-tight sm:text-4xl">
             {projectName}
           </CardTitle>
@@ -61,11 +61,11 @@ export function ProjectWorkflowOverviewPage({
         </CardHeader>
 
         {coverImageUrl ? (
-          <div className="mr-auto w-full md:w-1/2 aspect-[4/3] overflow-hidden rounded-md bg-muted">
+          <div className="mx-auto w-full md:w-1/2 aspect-[4/3] overflow-hidden rounded-md bg-muted">
             <img
               src={coverImageUrl}
               alt={projectName ? `${projectName} cover` : 'Project cover'}
-              className="w-full h-full object-cover object-left"
+              className="w-full h-full object-cover object-center"
             />
           </div>
         ) : null}
@@ -73,7 +73,7 @@ export function ProjectWorkflowOverviewPage({
 
       <Accordion type="single" collapsible>
         <AccordionItem value="project-details">
-          <AccordionTrigger className="text-sm sm:text-base">
+          <AccordionTrigger className="justify-center gap-2 text-sm sm:text-base">
             More Project Details
           </AccordionTrigger>
           <AccordionContent>
