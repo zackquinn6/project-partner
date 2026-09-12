@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SchedulerWizard } from './Scheduler/SchedulerWizard';
@@ -90,6 +90,38 @@ interface GlobalSettings {
     start: string;
     end: string;
   };
+}
+
+/** Calendar date (YYYY-MM-DD) from DB date/timestamptz without UTC day-shift. */
+function toDateInputValue(value: string | Date | null | undefined): string | null {
+  if (value == null) return null;
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  const dateStr = String(value).trim();
+  if (!dateStr) return null;
+  const prefix = dateStr.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (prefix) return prefix[1];
+  const parsed = new Date(dateStr);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return toDateInputValue(parsed);
+}
+
+/** Add n calendar days to a YYYY-MM-DD string. */
+function addCalendarDays(dateStr: string, n: number): string {
+  const d = new Date(`${dateStr}T12:00:00`);
+  d.setDate(d.getDate() + n);
+  return toDateInputValue(d) as string;
+}
+
+function formatGoalDateLabel(value: string | null | undefined): string | null {
+  const dateOnly = toDateInputValue(value);
+  if (!dateOnly) return null;
+  return format(new Date(`${dateOnly}T12:00:00`), 'MMMM dd, yyyy');
 }
 const planningModes: {
   mode: PlanningMode;
@@ -212,58 +244,125 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   // Local state for last scheduled date to ensure badge updates
   const [lastScheduledDate, setLastScheduledDate] = useState<string | null>(null);
   
-  // Initialize target date to empty string
-  // Will be set from database when dialog opens via useEffect
+  // Target ← kickoff initial_timeline; latest ← persisted latest_acceptable_date (seeded once as target+30)
   const [targetDate, setTargetDate] = useState<string>('');
-  const [dropDeadDate, setDropDeadDate] = useState<string>(() => format(addDays(new Date(), 45), 'yyyy-MM-dd'));
+  const [dropDeadDate, setDropDeadDate] = useState<string>('');
 
-  // Update target date and last scheduled when projectRun changes or dialog opens
-  // CRITICAL: Fetch fresh initial_timeline from database to ensure we have latest value
-  useEffect(() => {
-    const fetchAndSetTargetDate = async () => {
-      if (open && projectRun?.id) {
-        try {
-          // Fetch the latest initial_timeline and schedule_events from database
-          const { data: freshData, error } = await supabase
-            .from('project_runs')
-            .select('initial_timeline, schedule_events')
-            .eq('id', projectRun.id)
-            .single();
-          
-          if (error) {
-            console.error('❌ ProjectScheduler: Error fetching data from database:', error);
-            return;
-          }
-          
-          // Set last scheduled date from fresh data
-          if ((freshData?.schedule_events as any)?.lastScheduledAt) {
-            setLastScheduledDate((freshData.schedule_events as any).lastScheduledAt);
-          } else {
-            setLastScheduledDate(null);
-          }
-          
-          // Use fresh data from database if available
-          if (freshData?.initial_timeline) {
-            const goalDate = new Date(freshData.initial_timeline);
-            if (!isNaN(goalDate.getTime())) {
-              const formattedDate = format(goalDate, 'yyyy-MM-dd');
-              setTargetDate(formattedDate);
-            } else {
-              console.warn('⚠️ ProjectScheduler: Invalid date in database:', freshData.initial_timeline);
-              setTargetDate(''); // Clear invalid date
-            }
-          } else {
-            console.warn('⚠️ ProjectScheduler: No initial_timeline found in database - please set a target date in Project Kickoff');
-            setTargetDate(''); // No default fallback
-          }
-        } catch (e) {
-          console.error('❌ ProjectScheduler: Exception fetching/parsing data:', e);
+  const persistLatestAcceptableDate = useCallback(
+    async (latest: string) => {
+      if (!projectRun?.id || !latest) return;
+      const { error } = await supabase
+        .from('project_runs')
+        .update({
+          latest_acceptable_date: latest,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', projectRun.id);
+      if (error) {
+        console.error('ProjectScheduler: failed to persist latest_acceptable_date', error);
+      }
+    },
+    [projectRun?.id]
+  );
+
+  const handleTargetDateChange = useCallback(
+    (next: string) => {
+      setTargetDate(next);
+      setDropDeadDate((prev) => {
+        if (!next || !prev) return prev;
+        if (prev < next) {
+          void persistLatestAcceptableDate(next);
+          return next;
         }
+        return prev;
+      });
+    },
+    [persistLatestAcceptableDate]
+  );
+
+  const handleDropDeadDateChange = useCallback(
+    (next: string) => {
+      const clamped =
+        next && targetDate && next < targetDate ? targetDate : next;
+      setDropDeadDate(clamped);
+      if (clamped) {
+        void persistLatestAcceptableDate(clamped);
+      }
+    },
+    [targetDate, persistLatestAcceptableDate]
+  );
+
+  // Load kickoff timeline → target; seed latest = target+30 once; keep lastScheduledAt
+  useEffect(() => {
+    const fetchAndSetDates = async () => {
+      if (!open || !projectRun?.id) return;
+
+      const contextTarget = toDateInputValue(projectRun.initial_timeline);
+      if (contextTarget) {
+        setTargetDate(contextTarget);
+      }
+
+      try {
+        const { data: freshData, error } = await supabase
+          .from('project_runs')
+          .select('initial_timeline, latest_acceptable_date, schedule_events')
+          .eq('id', projectRun.id)
+          .single();
+
+        if (error) {
+          console.error('ProjectScheduler: Error fetching date fields:', error);
+          return;
+        }
+
+        if ((freshData?.schedule_events as any)?.lastScheduledAt) {
+          setLastScheduledDate((freshData.schedule_events as any).lastScheduledAt);
+        } else {
+          setLastScheduledDate(null);
+        }
+
+        const target =
+          toDateInputValue(freshData?.initial_timeline) ??
+          toDateInputValue(projectRun.initial_timeline);
+        setTargetDate(target ?? '');
+
+        let latest = toDateInputValue(freshData?.latest_acceptable_date);
+
+        if (!latest && target) {
+          latest = addCalendarDays(target, 30);
+          const { error: seedError } = await supabase
+            .from('project_runs')
+            .update({
+              latest_acceptable_date: latest,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', projectRun.id);
+          if (seedError) {
+            console.error('ProjectScheduler: failed to seed latest_acceptable_date', seedError);
+          }
+        } else if (latest && target && latest < target) {
+          latest = target;
+          const { error: clampError } = await supabase
+            .from('project_runs')
+            .update({
+              latest_acceptable_date: latest,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', projectRun.id);
+          if (clampError) {
+            console.error('ProjectScheduler: failed to clamp latest_acceptable_date', clampError);
+          }
+        }
+
+        setDropDeadDate(latest ?? '');
+      } catch (e) {
+        console.error('ProjectScheduler: Exception fetching/parsing date fields:', e);
       }
     };
-    
-    fetchAndSetTargetDate();
-  }, [open, projectRun?.id]);
+
+    void fetchAndSetDates();
+    // Only re-sync when the dialog opens or kickoff timeline changes — not on every projectRun identity change
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately omit full projectRun to avoid clobbering local edits
+  }, [open, projectRun?.id, projectRun.initial_timeline]);
   
   // Fetch project risks when dialog opens
   useEffect(() => {
@@ -913,6 +1012,15 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       return;
     }
 
+    if (dropDeadDate < targetDate) {
+      toast({
+        title: "Latest date too early",
+        description: "Latest acceptable date must be on or after the target completion date.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsComputing(true);
     try {
       // Calculate risk-adjusted completion date
@@ -1491,20 +1599,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         <PlanningToolContextBanner
           projectRun={projectRun}
           label="Timeline"
-          detail={
-            projectRun?.initial_timeline
-              ? format(new Date(projectRun.initial_timeline), 'MMMM dd, yyyy')
-              : null
-          }
+          detail={formatGoalDateLabel(projectRun?.initial_timeline)}
         />
 
         <ScrollArea className={cn('min-h-0 flex-1', PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME)}>
           <div className="space-y-6">
             <SchedulerWizard 
               targetDate={targetDate} 
-              setTargetDate={setTargetDate} 
+              setTargetDate={handleTargetDateChange} 
               dropDeadDate={dropDeadDate} 
-              setDropDeadDate={setDropDeadDate} 
+              setDropDeadDate={handleDropDeadDateChange} 
               planningMode={planningMode} 
               setPlanningMode={setPlanningMode} 
               scheduleTempo={scheduleTempo} 
@@ -1604,14 +1708,14 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                             <Target className="w-3 h-3" />
                             Target Completion Date
                           </Label>
-                          <Input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className="mt-1 h-8" />
+                          <Input type="date" value={targetDate} onChange={e => handleTargetDateChange(e.target.value)} className="mt-1 h-8" />
                         </div>
                         <div>
                           <Label className="text-xs font-medium flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3 text-destructive" />
                             Latest Date
                           </Label>
-                          <Input type="date" value={dropDeadDate} onChange={e => setDropDeadDate(e.target.value)} className="mt-1 h-8" />
+                          <Input type="date" value={dropDeadDate} min={targetDate || undefined} onChange={e => handleDropDeadDateChange(e.target.value)} className="mt-1 h-8" />
                         </div>
                         <p className="text-xs text-muted-foreground">
                           Target is your goal; latest is the absolute latest acceptable date

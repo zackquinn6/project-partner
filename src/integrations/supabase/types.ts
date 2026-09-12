@@ -3094,6 +3094,7 @@ export type Database = {
           is_manual_entry: boolean | null
           issue_reports: Json | null
           item_type: string | null
+          latest_acceptable_date: string | null
           name: string
           notes_data: Json
           phase_ratings: Json | null
@@ -3146,6 +3147,7 @@ export type Database = {
           is_manual_entry?: boolean | null
           issue_reports?: Json | null
           item_type?: string | null
+          latest_acceptable_date?: string | null
           name: string
           notes_data?: Json
           phase_ratings?: Json | null
@@ -3198,6 +3200,7 @@ export type Database = {
           is_manual_entry?: boolean | null
           issue_reports?: Json | null
           item_type?: string | null
+          latest_acceptable_date?: string | null
           name?: string
           notes_data?: Json
           phase_ratings?: Json | null

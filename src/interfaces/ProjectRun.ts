@@ -276,6 +276,8 @@ export interface ProjectRun {
   initial_budget?: string;
   initial_timeline?: string; // ISO date string
   initial_sizing?: string; // Initial project size entered at kickoff
+  /** Scheduler absolute deadline; seeded once from initial_timeline + 30 days */
+  latest_acceptable_date?: string;
   schedule_optimization_method?: 'single-piece-flow' | 'batch-flow'; // Workflow navigation method: single-piece-flow (default) processes one space at a time through custom phases; batch-flow processes all spaces through one phase before moving to the next
   progress_reporting_style?: 'linear' | 'exponential' | 'time-based'; // Progress calculation method: linear (step count), exponential (weighted), or time-based (uses time estimates)
 

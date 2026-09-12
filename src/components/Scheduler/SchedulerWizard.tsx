@@ -257,6 +257,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                     <Input
                       type="date"
                       value={dropDeadDate}
+                      min={targetDate || undefined}
                       onChange={(e) => setDropDeadDate(e.target.value)}
                       className="mt-1 h-9"
                     />

@@ -108,6 +108,8 @@ export function projectRunFromSupabaseRow(freshRun: Record<string, unknown>): Pr
       | undefined,
     initial_budget: typeof freshRun.initial_budget === 'string' ? freshRun.initial_budget : undefined,
     initial_timeline: typeof freshRun.initial_timeline === 'string' ? freshRun.initial_timeline : undefined,
+    latest_acceptable_date:
+      typeof freshRun.latest_acceptable_date === 'string' ? freshRun.latest_acceptable_date : undefined,
     initial_sizing:
       typeof freshRun.initial_sizing === 'string'
         ? freshRun.initial_sizing
