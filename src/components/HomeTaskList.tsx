@@ -929,7 +929,6 @@ export function HomeTaskList({
           >
             <BarChart3 className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Insights</span>
-            <span className="tabular-nums text-muted-foreground">{openTasks.length}/{completedTasks.length}</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-[min(22rem,calc(100vw-2rem))] space-y-3 p-3 text-xs z-[100]">
