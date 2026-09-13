@@ -64,7 +64,7 @@ export const BudgetStep: React.FC<BudgetStepProps> = ({
                   className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
                 >
                   <DollarSign className="shrink-0" aria-hidden />
-                  Open Project Budgeting
+                  Open Budget
                 </Button>
               </div>
             </div>

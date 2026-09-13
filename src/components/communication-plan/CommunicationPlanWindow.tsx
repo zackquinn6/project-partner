@@ -60,6 +60,7 @@ import {
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
 import { PlanningToolContextBanner } from '@/components/PlanningWizardSteps/PlanningToolContextBanner';
 import {
+  PLANNING_TOOL_PRIMARY_CTA_CLASSNAME,
   PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME,
   PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
   PLANNING_TOOL_WINDOW_SECONDARY_STRIP_CLASSNAME,
@@ -171,9 +172,15 @@ function cadenceFromFreq(freq: string): 'weekly' | 'biweekly' | 'monthly' | null
 export interface CommunicationPlanWindowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** When opened from Planning Studio, quiet inactive section pills. */
+  fromPlanningWizard?: boolean;
 }
 
-export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPlanWindowProps) {
+export function CommunicationPlanWindow({
+  open,
+  onOpenChange,
+  fromPlanningWizard = false,
+}: CommunicationPlanWindowProps) {
   const { user } = useAuth();
   const { currentProjectRun } = useProject();
   const runId = currentProjectRun?.id;
@@ -744,8 +751,19 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
                           key={key}
                           type="button"
                           size="sm"
-                          variant={openSection === key ? 'default' : 'outline'}
-                          className="h-8 text-xs"
+                          variant={
+                            openSection === key
+                              ? 'default'
+                              : fromPlanningWizard
+                                ? 'ghost'
+                                : 'outline'
+                          }
+                          className={cn(
+                            'h-8 text-xs',
+                            fromPlanningWizard &&
+                              openSection !== key &&
+                              'text-muted-foreground hover:text-foreground'
+                          )}
                           onClick={() => setOpenSection(key)}
                         >
                           {label}
@@ -868,7 +886,11 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
                                           </span>
                                         </div>
                                       ))}
-                                      <Button size="sm" className="mt-2" onClick={() => setOpenSection('compose')}>
+                                      <Button
+                                        size="sm"
+                                        className={cn('mt-2', PLANNING_TOOL_PRIMARY_CTA_CLASSNAME)}
+                                        onClick={() => setOpenSection('compose')}
+                                      >
                                         Draft an update
                                       </Button>
                                     </CardContent>
@@ -1085,6 +1107,7 @@ export function CommunicationPlanWindow({ open, onOpenChange }: CommunicationPla
                                 <div className="grid gap-2 sm:grid-cols-3">
                                   <Button
                                     onClick={() => void sendEmail()}
+                                    className={PLANNING_TOOL_PRIMARY_CTA_CLASSNAME}
                                     disabled={
                                       !composeStakeholderId ||
                                       composeStakeholderId === '_none' ||

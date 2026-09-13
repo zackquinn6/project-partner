@@ -61,12 +61,12 @@ export const ExpertSupportStep: React.FC<ExpertSupportStepProps> = ({
                   onClick={handleOpen}
                 >
                   <Headphones className="shrink-0" aria-hidden />
-                  Open Expert Support
+                  Open Support
                 </Button>
               </div>
             </div>
             <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
-              {isCompleted ? '✓ Support reviewed' : '\u00a0'}
+              {isCompleted ? '✓ Support completed' : '\u00a0'}
             </p>
           </div>
         </CardContent>

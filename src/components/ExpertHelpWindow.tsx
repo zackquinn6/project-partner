@@ -16,6 +16,8 @@ interface ExpertHelpWindowProps {
   isOpen: boolean;
   onClose: () => void;
   onRequestUpgrade?: () => void;
+  /** When opened from Planning Studio, use journey title Support. */
+  fromPlanningWizard?: boolean;
   /** Optional AI chat handoff context for the pro session */
   escalateContext?: {
     threadId?: string | null;
@@ -28,6 +30,7 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({
   isOpen,
   onClose,
   onRequestUpgrade,
+  fromPlanningWizard = false,
   escalateContext,
 }) => {
   const { hasProjectsTier, loading } = useMembership();
@@ -47,7 +50,7 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({
         onOpenChange={(open) => {
           if (!open) onClose();
         }}
-        title="Video Chat With a Pro"
+        title={fromPlanningWizard ? 'Support' : 'Video Chat With a Pro'}
         description="Premium escalate — book a human expert when AI help is not enough"
         planningToolHeader
         className="relative z-[61] h-[100dvh] max-h-[100dvh] w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:w-[90vw] md:max-w-[min(90vw,calc(100vw-2rem))]"

@@ -44,6 +44,8 @@ interface ProjectCustomizerProps {
   onOpenChange: (open: boolean) => void;
   currentProjectRun?: ProjectRun;
   mode?: 'initial-plan' | 'final-plan' | 'unplanned-work' | 'replan';
+  /** When opened from Planning Studio, use journey title Customize. */
+  fromPlanningWizard?: boolean;
 }
 
 interface ProjectSpace {
@@ -77,7 +79,8 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   open,
   onOpenChange,
   currentProjectRun,
-  mode = 'initial-plan'
+  mode = 'initial-plan',
+  fromPlanningWizard = false,
 }) => {
   const { projects, updateProjectRun } = useProject();
   const { user } = useAuth();
@@ -891,7 +894,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   };
 
   const getModeTitle = () => {
-    return 'Project Customizer';
+    return fromPlanningWizard ? 'Customize' : 'Project Customizer';
   };
 
   const getModeDescription = () => {
@@ -960,7 +963,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         planningToolHeader
         planningToolOnCancel={() => onOpenChange(false)}
         planningToolOnSave={() => void handleSaveCustomization()}
-        planningToolSaveLabel="Save & Apply"
+        planningToolSaveLabel="Save and Close"
       >
         <div className="flex flex-col h-full">
           <PlanningToolContextBanner

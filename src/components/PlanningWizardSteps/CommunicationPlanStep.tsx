@@ -72,7 +72,7 @@ export const CommunicationPlanStep: React.FC<CommunicationPlanStepProps> = ({
             </div>
 
             <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
-              {isCompleted ? '✓ Communication Plan step completed' : '\u00a0'}
+              {isCompleted ? '✓ Communication Plan completed' : '\u00a0'}
             </p>
           </div>
         </CardContent>

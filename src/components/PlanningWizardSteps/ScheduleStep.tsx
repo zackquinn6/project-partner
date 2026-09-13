@@ -56,7 +56,7 @@ export const ScheduleStep: React.FC<ScheduleStepProps> = ({
                   className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
                 >
                   <Calendar className="shrink-0" aria-hidden />
-                  Open Project Scheduler
+                  Open Schedule
                 </Button>
               </div>
             </div>

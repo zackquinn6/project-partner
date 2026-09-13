@@ -316,20 +316,25 @@ function riskFocusSeveritySelectItemClass(level: 'high' | 'medium' | 'low'): str
 
 function RiskFocusDashboard({
   risks,
-  projectDisplayName
+  projectDisplayName,
+  hideMotivationalHero = false,
 }: {
   risks: Risk[];
   projectDisplayName?: string | null;
+  /** When opened from Planning Studio, collapse motivational strip under shared header. */
+  hideMotivationalHero?: boolean;
 }) {
   const { high, medium, low, unset, total } = riskFocusSeverityCounts(risks);
   const name = projectDisplayName?.trim() || null;
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 py-2 md:px-4">
-      <div className="mb-3 rounded-xl border border-slate-700/80 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 px-4 py-3 text-center shadow-sm">
-        <div className="text-base font-bold leading-tight text-blue-50 md:text-lg">
-          You don’t need perfection - each step you take makes success more likely.
+      {!hideMotivationalHero ? (
+        <div className="mb-3 rounded-xl border border-slate-700/80 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 px-4 py-3 text-center shadow-sm">
+          <div className="text-base font-bold leading-tight text-blue-50 md:text-lg">
+            You don’t need perfection - each step you take makes success more likely.
+          </div>
         </div>
-      </div>
+      ) : null}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div className="min-w-0 sm:max-w-[38%] sm:flex-1">
           <PlanningToolContextBanner
@@ -1370,6 +1375,7 @@ export function RiskManagementWindow({
         {variant === 'risk-focus' && mode === 'run' ? (
           <RiskFocusDashboard
             risks={displayRisks}
+            hideMotivationalHero={planningWizardToolPresentation}
             projectDisplayName={
               riskFocusRunForProgress
                 ? riskFocusRunForProgress.customProjectName?.trim() ||

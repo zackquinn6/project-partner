@@ -652,7 +652,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
               <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
                 <div className={PLANNING_WIZARD_STEP_BODY_CLASSNAME}>
                   <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
-                    Open Waste Removal to track cleanup and disposal planning for this project.
+                    Plan disposal and debris handling during the project.
                   </p>
                   <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
                     <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
@@ -670,7 +670,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                     </div>
                   </div>
                   <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
-                    {stepProps.isCompleted ? '✓ Waste Removal reviewed' : '\u00a0'}
+                    {stepProps.isCompleted ? '✓ Waste Removal completed' : '\u00a0'}
                   </p>
                 </div>
               </CardContent>

@@ -51,6 +51,8 @@ interface OrderingWindowProps {
   expandSettingsAccordionWhenOpen?: boolean;
   /** When true (e.g. opened from Planning Studio), all accordion sections start collapsed. */
   collapseAllAccordionSectionsOnOpen?: boolean;
+  /** When opened from Planning Studio, use journey title Shopping. */
+  fromPlanningWizard?: boolean;
 }
 
 interface ShoppingSite {
@@ -101,7 +103,8 @@ export function OrderingWindow({
   selectedMaterials,
   onOrderingComplete,
   expandSettingsAccordionWhenOpen = false,
-  collapseAllAccordionSectionsOnOpen = false
+  collapseAllAccordionSectionsOnOpen = false,
+  fromPlanningWizard = false,
 }: OrderingWindowProps) {
   const {
     updateProjectRun,
@@ -561,8 +564,11 @@ export function OrderingWindow({
   const {
     isMobile
   } = useResponsive();
-  const shoppingTitle =
-    selectedMaterials && (selectedMaterials.materials.length > 0 || selectedMaterials.tools.length > 0)
+  const shoppingTitle = fromPlanningWizard
+    ? selectedMaterials && (selectedMaterials.materials.length > 0 || selectedMaterials.tools.length > 0)
+      ? 'Shopping — New Materials Needed'
+      : 'Shopping'
+    : selectedMaterials && (selectedMaterials.materials.length > 0 || selectedMaterials.tools.length > 0)
       ? 'Shopping Checklist - New Materials Needed'
       : 'Shopping Checklist';
   return (

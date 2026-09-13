@@ -33,6 +33,7 @@ import { PlanningToolContextBanner } from '@/components/PlanningWizardSteps/Plan
 import {
   PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME,
   PLANNING_TOOL_WINDOW_HEADER_SURFACE_CLASSNAME,
+  PLANNING_TOOL_WINDOW_SECONDARY_STRIP_CLASSNAME,
   PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME,
   PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
   PLANNING_TOOL_PRIMARY_CTA_CLASSNAME,
@@ -371,117 +372,123 @@ export function QualityCheckWindow({
           <DialogHeader
             className={cn(
               PLANNING_TOOL_WINDOW_HEADER_SURFACE_CLASSNAME,
-              'flex shrink-0 flex-col space-y-3'
+              'flex shrink-0 flex-row items-start justify-between gap-3'
             )}
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1 space-y-3">
-                <div className="flex min-w-0 flex-wrap items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
-                  <DialogTitle
-                    className={cn(PLANNING_TOOL_WINDOW_TITLE_CLASSNAME, 'truncate')}
-                  >
-                    {appTitle}
-                  </DialogTitle>
-                  <TooltipProvider delayDuration={150}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted"
-                          aria-label="Document upload help"
-                        >
-                          <Info className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        side="bottom"
-                        sideOffset={8}
-                        className="z-[100] max-w-xs text-xs"
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
+                <DialogTitle
+                  className={cn(PLANNING_TOOL_WINDOW_TITLE_CLASSNAME, 'truncate')}
+                >
+                  {appTitle}
+                </DialogTitle>
+                <TooltipProvider delayDuration={150}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted"
+                        aria-label="Document upload help"
                       >
-                        Upload reference documents for this run, such as manufacturer manuals, permits,
-                        inspection records, or design documents.
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <DialogDescription className={PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME}>
-                  Quality control is all about proving you did each critical step - perfect for future reference
-                </DialogDescription>
-                {projectRun ? (
-                  <div className="flex flex-wrap items-center gap-3 pt-0.5">
-                    <QualityControlPdfPrinter
-                      rows={pdfRows}
-                      reportTitle={appTitle}
-                      projectName={projectDisplayName}
-                      userDisplayName={userDisplayName}
+                        <Info className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      sideOffset={8}
+                      className="z-[100] max-w-xs text-xs"
+                    >
+                      Upload reference documents for this run, such as manufacturer manuals, permits,
+                      inspection records, or design documents.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <DialogDescription className={PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME}>
+                Quality control is all about proving you did each critical step - perfect for future reference
+              </DialogDescription>
+            </div>
+            <PlanningToolWindowHeaderActions
+              className="flex-shrink-0"
+              onCancel={() => onOpenChange(false)}
+              onSaveAndClose={() => onOpenChange(false)}
+            />
+          </DialogHeader>
+
+          {(projectRun || onRefresh) ? (
+            <div
+              className={cn(
+                PLANNING_TOOL_WINDOW_SECONDARY_STRIP_CLASSNAME,
+                'flex flex-wrap items-center gap-3'
+              )}
+            >
+              {projectRun ? (
+                <>
+                  <QualityControlPdfPrinter
+                    rows={pdfRows}
+                    reportTitle={appTitle}
+                    projectName={projectDisplayName}
+                    userDisplayName={userDisplayName}
+                  />
+                  <div className="relative">
+                    <input
+                      id="quality-doc-upload-input"
+                      type="file"
+                      className="sr-only"
+                      accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp"
+                      onChange={(event) => {
+                        const nextFile = event.target.files?.[0] ?? null;
+                        void handleDocumentUpload(nextFile);
+                        event.currentTarget.value = '';
+                      }}
+                      disabled={uploadingDocument || !projectRun}
                     />
-                    <div className="relative">
-                      <input
-                        id="quality-doc-upload-input"
-                        type="file"
-                        className="sr-only"
-                        accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp"
-                        onChange={(event) => {
-                          const nextFile = event.target.files?.[0] ?? null;
-                          void handleDocumentUpload(nextFile);
-                          event.currentTarget.value = '';
-                        }}
-                        disabled={uploadingDocument || !projectRun}
-                      />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const input = document.getElementById(
+                          'quality-doc-upload-input'
+                        ) as HTMLInputElement | null;
+                        input?.click();
+                      }}
+                      disabled={uploadingDocument || !projectRun}
+                      className="flex h-9 items-center gap-2 px-4 text-sm font-medium"
+                    >
+                      <FileUp className="h-4 w-4 shrink-0" />
+                      {uploadingDocument ? 'Uploading...' : 'Upload Documents'}
+                    </Button>
+                  </div>
+                </>
+              ) : null}
+              {onRefresh ? (
+                <TooltipProvider delayDuration={150}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => {
-                          const input = document.getElementById(
-                            'quality-doc-upload-input'
-                          ) as HTMLInputElement | null;
-                          input?.click();
-                        }}
-                        disabled={uploadingDocument || !projectRun}
-                        className="flex h-9 items-center gap-2 px-4 text-sm font-medium"
+                        size="icon"
+                        onClick={onRefresh}
+                        aria-label={`Refresh ${appTitle}`}
+                        className="h-8 w-8"
                       >
-                        <FileUp className="h-4 w-4 shrink-0" />
-                        {uploadingDocument ? 'Uploading...' : 'Upload Documents'}
+                        <RefreshCw className="h-4 w-4" />
                       </Button>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                {onRefresh ? (
-                  <TooltipProvider delayDuration={150}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={onRefresh}
-                          aria-label={`Refresh ${appTitle}`}
-                          className="h-8 w-8"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        side="bottom"
-                        sideOffset={8}
-                        className="z-[100] max-w-xs text-xs"
-                      >
-                        Recompute outputs from the current project run.
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ) : null}
-                <PlanningToolWindowHeaderActions
-                  className="flex-shrink-0"
-                  onCancel={() => onOpenChange(false)}
-                  onSaveAndClose={() => onOpenChange(false)}
-                />
-              </div>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      sideOffset={8}
+                      className="z-[100] max-w-xs text-xs"
+                    >
+                      Recompute outputs from the current project run.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : null}
             </div>
-          </DialogHeader>
+          ) : null}
 
           <PlanningToolContextBanner projectRun={projectRun} />
 

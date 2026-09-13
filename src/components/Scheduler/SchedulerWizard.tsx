@@ -7,7 +7,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { PLANNING_TOOL_PRIMARY_CTA_CLASSNAME } from '@/components/PlanningWizardSteps/planningToolWindowChrome';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -852,7 +854,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
 
             <Button
               onClick={onGenerateSchedule}
-              className="h-9 w-full text-sm"
+              className={cn('h-9 w-full text-sm', PLANNING_TOOL_PRIMARY_CTA_CLASSNAME)}
               disabled={isComputing || teamMembers.length === 0 || !targetDate || !hasAvailabilitySelected}
             >
               {isComputing ? (

@@ -68,7 +68,7 @@ export const ToolRentalsStep: React.FC<ToolRentalsStepProps> = ({
             </div>
 
             <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
-              {isCompleted ? '✓ Tool Rental reviewed' : '\u00a0'}
+              {isCompleted ? '✓ Tool Rental completed' : '\u00a0'}
             </p>
           </div>
         </CardContent>

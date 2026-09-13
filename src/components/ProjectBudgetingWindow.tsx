@@ -15,6 +15,7 @@ import { TrendingUp, Plus, Trash2, Upload, DollarSign, Edit, Save } from 'lucide
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
 import { PlanningToolContextBanner } from '@/components/PlanningWizardSteps/PlanningToolContextBanner';
 import {
+  PLANNING_TOOL_PRIMARY_CTA_CLASSNAME,
   PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME,
   PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
   PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
@@ -48,9 +49,15 @@ interface ActualEntry {
 interface ProjectBudgetingWindowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** When opened from Planning Studio, use journey title Budget. */
+  fromPlanningWizard?: boolean;
 }
 
-export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ open, onOpenChange }) => {
+export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
+  open,
+  onOpenChange,
+  fromPlanningWizard = false,
+}) => {
   const { toast } = useToast();
   const { currentProjectRun, updateProjectRun } = useProject();
   const [budgetItems, setBudgetItems] = useState<BudgetLineItem[]>([]);
@@ -661,7 +668,9 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
           } } as any)}
         >
         <DialogHeader className={cn(PLANNING_TOOL_WINDOW_HEADER_CLASSNAME, 'flex-shrink-0')}>
-          <DialogTitle className={PLANNING_TOOL_WINDOW_TITLE_CLASSNAME}>Project Budgeting</DialogTitle>
+          <DialogTitle className={PLANNING_TOOL_WINDOW_TITLE_CLASSNAME}>
+            {fromPlanningWizard ? 'Budget' : 'Project Budgeting'}
+          </DialogTitle>
           <PlanningToolWindowHeaderActions
             onCancel={() => onOpenChange(false)}
             onSaveAndClose={() => onOpenChange(false)}
@@ -790,7 +799,11 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({ 
                       className="h-11 md:h-10"
                     />
                   </div>
-                  <Button type="button" className="h-11 w-full shrink-0 sm:w-auto md:h-10" onClick={() => void applyProjectBudgetGoal()}>
+                  <Button
+                    type="button"
+                    className={cn('h-11 w-full shrink-0 sm:w-auto md:h-10', PLANNING_TOOL_PRIMARY_CTA_CLASSNAME)}
+                    onClick={() => void applyProjectBudgetGoal()}
+                  >
                     Save project budget
                   </Button>
                 </div>

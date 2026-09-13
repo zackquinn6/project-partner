@@ -98,6 +98,13 @@ import { ProjectPerformanceWindow } from './ProjectPerformanceWindow';
 import { RiskManagementWindow } from './RiskManagementWindow';
 import { CommunicationPlanWindow } from './communication-plan/CommunicationPlanWindow';
 import { QualityCheckWindow } from './QualityCheckWindow';
+import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
+import {
+  PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
+  PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME,
+  PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
+} from '@/components/PlanningWizardSteps/planningToolWindowChrome';
+import { cn } from '@/lib/utils';
 import { enforceStandardPhaseOrdering } from '@/utils/phaseOrderingUtils';
 import { PostKickoffNotification } from './PostKickoffNotification';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -219,6 +226,7 @@ export default function UserView({
   const [selectedOutput, setSelectedOutput] = useState<Output | null>(null);
   const [outputPopupOpen, setOutputPopupOpen] = useState(false);
   const [expertHelpOpen, setExpertHelpOpen] = useState(false);
+  const [expertHelpFromPlanningWizard, setExpertHelpFromPlanningWizard] = useState(false);
   const [projectHelpChatOpen, setProjectHelpChatOpen] = useState(false);
   const [helpChatInitialMessage, setHelpChatInitialMessage] = useState<string | null>(null);
   const [expertEscalateContext, setExpertEscalateContext] = useState<{
@@ -277,7 +285,9 @@ export default function UserView({
   const [keyCharacteristicsOpen, setKeyCharacteristicsOpen] = useState(false);
   const [projectCustomizerOpen, setProjectCustomizerOpen] = useState(false);
   const [projectCustomizerMode, setProjectCustomizerMode] = useState<'initial-plan' | 'final-plan' | 'unplanned-work' | 'replan'>('replan');
+  const [projectCustomizerFromPlanningWizard, setProjectCustomizerFromPlanningWizard] = useState(false);
   const [projectSchedulerOpen, setProjectSchedulerOpen] = useState(false);
+  const [projectSchedulerFromPlanningWizard, setProjectSchedulerFromPlanningWizard] = useState(false);
   const [changeManagementOpen, setChangeManagementOpen] = useState(false);
   const [projectPlanningWizardOpen, setProjectPlanningWizardOpen] = useState(false);
   /** Re-open Kickoff from Planning Studio even after kickoff steps are already complete. */
@@ -285,18 +295,23 @@ export default function UserView({
   const [materialsSelectionOpen, setMaterialsSelectionOpen] = useState(false);
   const [shoppingChecklistExpandSettingsAccordion, setShoppingChecklistExpandSettingsAccordion] = useState(false);
   const [shoppingChecklistCollapseAllOnOpen, setShoppingChecklistCollapseAllOnOpen] = useState(false);
+  const [shoppingFromPlanningWizard, setShoppingFromPlanningWizard] = useState(false);
   const [toolRentalsOpen, setToolRentalsOpen] = useState(false);
+  const [toolRentalsFromPlanningWizard, setToolRentalsFromPlanningWizard] = useState(false);
   const [wasteRemovalOpen, setWasteRemovalOpen] = useState(false);
   const [homeManagerOpen, setHomeManagerOpen] = useState(false);
   const [projectBudgetingOpen, setProjectBudgetingOpen] = useState(false);
+  const [projectBudgetingFromPlanningWizard, setProjectBudgetingFromPlanningWizard] = useState(false);
   const [afterActionReviewOpen, setAfterActionReviewOpen] = useState(false);
   const [aarProjectRun, setAarProjectRun] = useState<ProjectRun | null>(null);
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
   const [riskManagementPlanningPresentation, setRiskManagementPlanningPresentation] = useState(false);
   const [projectPerformanceOpen, setProjectPerformanceOpen] = useState(false);
   const [communicationPlanOpen, setCommunicationPlanOpen] = useState(false);
+  const [communicationPlanFromPlanningWizard, setCommunicationPlanFromPlanningWizard] = useState(false);
   const [qualityCheckOpen, setQualityCheckOpen] = useState(false);
   const [qualityCheckExpandSettingsAccordion, setQualityCheckExpandSettingsAccordion] = useState(false);
+  const [qualityCheckFromPlanningWizard, setQualityCheckFromPlanningWizard] = useState(false);
   const [photoGalleryOpen, setPhotoGalleryOpen] = useState(false);
   const [mobilePhotoUploadOpen, setMobilePhotoUploadOpen] = useState(false);
   const [workflowVideosOpen, setWorkflowVideosOpen] = useState(false);
@@ -527,6 +542,7 @@ export default function UserView({
       if (detail?.fromPlanningWizard) {
         registerPlanningWizardToolCloseCallback('scheduler', detail.onComplete);
       }
+      setProjectSchedulerFromPlanningWizard(detail?.fromPlanningWizard === true);
       setProjectSchedulerOpen(true);
     };
     const handleOpenChangeManagement = () => {
@@ -545,11 +561,13 @@ export default function UserView({
       }
       setShoppingChecklistExpandSettingsAccordion(false);
       setShoppingChecklistCollapseAllOnOpen(detail?.fromPlanningWizard === true);
+      setShoppingFromPlanningWizard(detail?.fromPlanningWizard === true);
       setOrderingWindowOpen(true);
     };
     const handleOpenOrderingWindow = (event?: Event) => {
       const detail = (event as CustomEvent<{ expandSettingsAccordionWhenOpen?: boolean }> | undefined)?.detail;
       setShoppingChecklistCollapseAllOnOpen(false);
+      setShoppingFromPlanningWizard(false);
       setShoppingChecklistExpandSettingsAccordion(detail?.expandSettingsAccordionWhenOpen === true);
       setOrderingWindowOpen(true);
     };
@@ -563,6 +581,7 @@ export default function UserView({
         registerPlanningWizardToolCloseCallback('customizer', onComplete);
       }
       
+      setProjectCustomizerFromPlanningWizard(Boolean(fromPlanningWizard));
       setProjectCustomizerMode(mode);
       setProjectCustomizerOpen(true);
     };
@@ -571,6 +590,7 @@ export default function UserView({
       if (detail?.fromPlanningWizard) {
         registerPlanningWizardToolCloseCallback('budget', detail.onComplete);
       }
+      setProjectBudgetingFromPlanningWizard(detail?.fromPlanningWizard === true);
       setProjectBudgetingOpen(true);
     };
     const handleOpenAfterActionReview = (event: Event) => {
@@ -2312,10 +2332,12 @@ export default function UserView({
         setProjectPlanningWizardOpen(true);
         break;
       case 'project-customizer':
+        setProjectCustomizerFromPlanningWizard(false);
         setProjectCustomizerMode('initial-plan');
         setProjectCustomizerOpen(true);
         break;
       case 'project-scheduler':
+        setProjectSchedulerFromPlanningWizard(false);
         setProjectSchedulerOpen(true);
         break;
       case 'change-management':
@@ -2328,6 +2350,7 @@ export default function UserView({
       case 'shopping-checklist':
         setShoppingChecklistExpandSettingsAccordion(false);
         setShoppingChecklistCollapseAllOnOpen(false);
+        setShoppingFromPlanningWizard(false);
         setOrderingWindowOpen(true);
         break;
       case 'materials-selection':
@@ -2343,9 +2366,11 @@ export default function UserView({
         window.dispatchEvent(new CustomEvent('show-tools-library-grid'));
         break;
       case 'tool-access':
+        setToolRentalsFromPlanningWizard(false);
         setToolRentalsOpen(true);
         break;
       case 'project-budgeting':
+        setProjectBudgetingFromPlanningWizard(false);
         setProjectBudgetingOpen(true);
         break;
       case 'project-performance':
@@ -2359,6 +2384,7 @@ export default function UserView({
         window.dispatchEvent(new CustomEvent('open-risk-focus-launcher'));
         break;
       case 'quality-check':
+        setQualityCheckFromPlanningWizard(false);
         setQualityCheckExpandSettingsAccordion(false);
         setQualityCheckOpen(true);
         break;
@@ -2375,6 +2401,7 @@ export default function UserView({
           toast.error('Open a project run first.');
           break;
         }
+        setCommunicationPlanFromPlanningWizard(false);
         setCommunicationPlanOpen(true);
         break;
       case 'waste-removal':
@@ -3302,6 +3329,7 @@ export default function UserView({
               if (options?.fromPlanningWizard) {
                 registerPlanningWizardToolCloseCallback('budget', options.onComplete);
               }
+              setProjectBudgetingFromPlanningWizard(Boolean(options?.fromPlanningWizard));
               setProjectBudgetingOpen(true);
             }}
             onOpenRiskManagement={(options) => {
@@ -3315,6 +3343,7 @@ export default function UserView({
               if (options?.fromPlanningWizard) {
                 registerPlanningWizardToolCloseCallback('quality', options.onComplete);
               }
+              setQualityCheckFromPlanningWizard(Boolean(options?.fromPlanningWizard));
               setQualityCheckExpandSettingsAccordion(true);
               setQualityCheckOpen(true);
             }}
@@ -3322,18 +3351,21 @@ export default function UserView({
               if (options?.fromPlanningWizard) {
                 registerPlanningWizardToolCloseCallback('toolRentals', options.onComplete);
               }
+              setToolRentalsFromPlanningWizard(Boolean(options?.fromPlanningWizard));
               setToolRentalsOpen(true);
             }}
             onOpenExpertSupport={(options) => {
               if (options?.fromPlanningWizard) {
                 registerPlanningWizardToolCloseCallback('expertSupport', options.onComplete);
               }
+              setExpertHelpFromPlanningWizard(Boolean(options?.fromPlanningWizard));
               setExpertHelpOpen(true);
             }}
             onOpenCommunicationPlan={(options) => {
               if (options?.fromPlanningWizard) {
                 registerPlanningWizardToolCloseCallback('communicationPlan', options.onComplete);
               }
+              setCommunicationPlanFromPlanningWizard(Boolean(options?.fromPlanningWizard));
               setCommunicationPlanOpen(true);
             }}
             onOpenWasteRemoval={(options) => {
@@ -3998,12 +4030,14 @@ export default function UserView({
           if (!open) {
             setShoppingChecklistExpandSettingsAccordion(false);
             setShoppingChecklistCollapseAllOnOpen(false);
+            setShoppingFromPlanningWizard(false);
           }
           setOrderingWindowOpen(open);
           if (!open) completePlanningWizardToolCloseCallback('shopping');
         }}
         expandSettingsAccordionWhenOpen={shoppingChecklistExpandSettingsAccordion}
         collapseAllAccordionSectionsOnOpen={shoppingChecklistCollapseAllOnOpen}
+        fromPlanningWizard={shoppingFromPlanningWizard}
         project={currentProject}
         projectRun={currentProjectRun}
         userOwnedTools={userOwnedTools}
@@ -4042,13 +4076,16 @@ export default function UserView({
       {/* Expert Help Window */}
       <ExpertHelpWindow
         isOpen={expertHelpOpen}
+        fromPlanningWizard={expertHelpFromPlanningWizard}
         onClose={() => {
           setExpertHelpOpen(false);
+          setExpertHelpFromPlanningWizard(false);
           setExpertEscalateContext(null);
           completePlanningWizardToolCloseCallback('expertSupport');
         }}
         onRequestUpgrade={() => {
           setExpertHelpOpen(false);
+          setExpertHelpFromPlanningWizard(false);
           setUpgradePromptFeature('Video chat with a pro');
           setShowUpgradePrompt(true);
         }}
@@ -4074,6 +4111,7 @@ export default function UserView({
         onEscalateToPro={(ctx) => {
           setProjectHelpChatOpen(false);
           setExpertEscalateContext(ctx);
+          setExpertHelpFromPlanningWizard(false);
           setExpertHelpOpen(true);
         }}
       />
@@ -4196,6 +4234,7 @@ export default function UserView({
             
             // If customizer was opened from Planning Studio and is now closing, mark step as complete
             if (!open) {
+              setProjectCustomizerFromPlanningWizard(false);
               completePlanningWizardToolCloseCallback('customizer');
             }
             
@@ -4218,6 +4257,7 @@ export default function UserView({
           }}
           currentProjectRun={currentProjectRun}
           mode={projectCustomizerMode}
+          fromPlanningWizard={projectCustomizerFromPlanningWizard}
         />
       )}
 
@@ -4243,10 +4283,14 @@ export default function UserView({
           open={projectSchedulerOpen}
           onOpenChange={(open) => {
             setProjectSchedulerOpen(open);
-            if (!open) completePlanningWizardToolCloseCallback('scheduler');
+            if (!open) {
+              setProjectSchedulerFromPlanningWizard(false);
+              completePlanningWizardToolCloseCallback('scheduler');
+            }
           }}
           project={activeProject as Project}
           projectRun={currentProjectRun}
+          fromPlanningWizard={projectSchedulerFromPlanningWizard}
         />
       )}
 
@@ -4302,8 +4346,10 @@ export default function UserView({
       {/* Tool Rentals Window */}
       <ToolRentalsWindow
         isOpen={toolRentalsOpen}
+        fromPlanningWizard={toolRentalsFromPlanningWizard}
         onClose={() => {
           setToolRentalsOpen(false);
+          setToolRentalsFromPlanningWizard(false);
           completePlanningWizardToolCloseCallback('toolRentals');
         }}
       />
@@ -4315,25 +4361,26 @@ export default function UserView({
           if (!open) completePlanningWizardToolCloseCallback('wasteRemoval');
         }}
       >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Waste Removal</DialogTitle>
-            <DialogDescription>
-              Plan disposal and debris handling for this project. Full Waste Removal tools are coming soon —
-              close this window to mark the Plan step complete and continue.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end pt-2">
-            <Button
-              type="button"
-              onClick={() => {
+        <DialogContent className="max-w-md gap-0 overflow-hidden p-0">
+          <DialogHeader className={cn(PLANNING_TOOL_WINDOW_HEADER_CLASSNAME, 'pr-12')}>
+            <div className="min-w-0 flex-1">
+              <DialogTitle className={PLANNING_TOOL_WINDOW_TITLE_CLASSNAME}>Waste Removal</DialogTitle>
+              <DialogDescription className={PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME}>
+                Plan disposal and debris handling for this project. Full Waste Removal tools are coming soon —
+                close this window to mark the Plan step complete and continue.
+              </DialogDescription>
+            </div>
+            <PlanningToolWindowHeaderActions
+              onCancel={() => {
                 setWasteRemovalOpen(false);
                 completePlanningWizardToolCloseCallback('wasteRemoval');
               }}
-            >
-              Done
-            </Button>
-          </div>
+              onSaveAndClose={() => {
+                setWasteRemovalOpen(false);
+                completePlanningWizardToolCloseCallback('wasteRemoval');
+              }}
+            />
+          </DialogHeader>
         </DialogContent>
       </Dialog>
 
@@ -4346,9 +4393,13 @@ export default function UserView({
       {/* Project Budgeting Window */}
       <ProjectBudgetingWindow
         open={projectBudgetingOpen}
+        fromPlanningWizard={projectBudgetingFromPlanningWizard}
         onOpenChange={(open) => {
           setProjectBudgetingOpen(open);
-          if (!open) completePlanningWizardToolCloseCallback('budget');
+          if (!open) {
+            setProjectBudgetingFromPlanningWizard(false);
+            completePlanningWizardToolCloseCallback('budget');
+          }
         }}
       />
 
@@ -4369,9 +4420,13 @@ export default function UserView({
 
       <CommunicationPlanWindow
         open={communicationPlanOpen}
+        fromPlanningWizard={communicationPlanFromPlanningWizard}
         onOpenChange={(open) => {
           setCommunicationPlanOpen(open);
-          if (!open) completePlanningWizardToolCloseCallback('communicationPlan');
+          if (!open) {
+            setCommunicationPlanFromPlanningWizard(false);
+            completePlanningWizardToolCloseCallback('communicationPlan');
+          }
         }}
       />
 
@@ -4397,12 +4452,15 @@ export default function UserView({
       <QualityCheckWindow
         open={qualityCheckOpen}
         onOpenChange={(open) => {
-          if (!open) setQualityCheckExpandSettingsAccordion(false);
+          if (!open) {
+            setQualityCheckExpandSettingsAccordion(false);
+            setQualityCheckFromPlanningWizard(false);
+          }
           setQualityCheckOpen(open);
           if (!open) completePlanningWizardToolCloseCallback('quality');
         }}
         expandSettingsAccordionWhenOpen={qualityCheckExpandSettingsAccordion}
-        appTitle={qualityControlAppTitle}
+        appTitle={qualityCheckFromPlanningWizard ? 'Quality' : qualityControlAppTitle}
         projectRun={currentProjectRun ?? undefined}
         updateProjectRun={updateProjectRun}
         steps={allSteps as any[]}

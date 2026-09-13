@@ -72,7 +72,7 @@ export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
             </div>
 
             <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
-              {isCompleted ? '✓ Risk Radar step completed' : '\u00a0'}
+              {isCompleted ? '✓ Risk Radar completed' : '\u00a0'}
             </p>
           </div>
         </CardContent>

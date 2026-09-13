@@ -67,7 +67,7 @@ export const ShoppingStep: React.FC<ShoppingStepProps> = ({
             </div>
 
             <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
-              {isCompleted ? '✓ Shopping step completed' : '\u00a0'}
+              {isCompleted ? '✓ Shopping completed' : '\u00a0'}
             </p>
           </div>
         </CardContent>
