@@ -714,38 +714,38 @@ export function MaintenancePlanWorkflow({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="h-[100dvh] max-h-[100dvh] w-full max-w-full rounded-none md:h-[85vh] md:max-h-[90vh] md:w-auto md:max-w-[90vw] md:max-w-6xl md:rounded-lg overflow-hidden flex flex-col p-0"
+        className="h-[100dvh] min-h-[100dvh] max-h-[100dvh] w-full max-w-full rounded-none md:h-[85vh] md:min-h-[85vh] md:max-h-[85vh] md:w-[min(90vw,72rem)] md:max-w-6xl md:rounded-lg overflow-hidden flex flex-col gap-0 p-0"
       >
-        <DialogHeader className="px-4 md:px-8 pt-4 md:pt-6 pb-2 md:pb-3 border-b bg-gradient-to-r from-primary/5 to-primary/10">
-          <div className="flex items-start justify-between gap-3">
-            <DialogTitle className="flex flex-col gap-0.5 text-primary">
-              <span className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 md:h-7 md:w-7 shrink-0" />
-                <span className="text-base md:text-3xl font-semibold">Generate Maintenance Plan</span>
+        <DialogHeader className="shrink-0 space-y-0 border-b px-4 md:px-6 py-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <DialogTitle className="flex items-center gap-2 text-primary min-w-0 text-left">
+              <ClipboardList className="h-4 w-4 shrink-0" />
+              <span className="text-sm md:text-base font-semibold truncate">
+                Generate Maintenance Plan
+                {homeName ? (
+                  <span className="font-medium text-muted-foreground"> · {homeName}</span>
+                ) : null}
               </span>
-              {homeName ? (
-                <span className="text-sm md:text-2xl font-semibold text-muted-foreground mt-0.5">
-                  {homeName}
-                </span>
-              ) : null}
             </DialogTitle>
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="inline-flex min-h-11 md:min-h-0 md:h-8 text-muted-foreground hover:text-foreground"
+              className="inline-flex shrink-0 h-8 px-2.5 text-muted-foreground hover:text-foreground"
               onClick={() => onOpenChange(false)}
             >
               Close
             </Button>
           </div>
-          {!loadingDetails && (
-            <div className="flex items-center gap-3 mt-2">
-              <Progress value={((step + 1) / totalSteps) * 100} className="h-2 flex-1" />
-              <span className="text-xs font-medium text-primary tabular-nums">Step {step + 1} of {totalSteps}</span>
-            </div>
-          )}
         </DialogHeader>
+        {!loadingDetails && (
+          <div className="shrink-0 flex items-center gap-3 px-4 md:px-6 py-2 border-b bg-gradient-to-r from-primary/5 to-primary/10">
+            <Progress value={((step + 1) / totalSteps) * 100} className="h-1.5 flex-1" />
+            <span className="text-xs font-medium text-primary tabular-nums whitespace-nowrap">
+              Step {step + 1} of {totalSteps}
+            </span>
+          </div>
+        )}
 
         {loadingDetails ? (
           <div className="flex-1 flex items-center justify-center min-h-0">
@@ -753,7 +753,7 @@ export function MaintenancePlanWorkflow({
           </div>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto px-4 md:px-8 py-3 md:py-5 min-h-0 md:min-h-[380px]">
+            <div className="flex-1 overflow-y-auto px-4 md:px-8 py-3 md:py-5 min-h-0">
               {/* Step 0 — Heating & Cooling */}
               {step === 0 && (
                 <div className="space-y-4 p-4 rounded-xl border border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
@@ -1421,7 +1421,7 @@ export function MaintenancePlanWorkflow({
               )}
             </div>
 
-            <div className="flex items-center justify-between px-6 py-3 border-t bg-muted/30">
+            <div className="flex items-center justify-between px-6 py-3 border-t bg-muted/30 shrink-0">
               <Button variant="outline" onClick={handleBack} disabled={step === 0}>
                 <ChevronLeft className="h-4 w-4 mr-1" />
                 Back
