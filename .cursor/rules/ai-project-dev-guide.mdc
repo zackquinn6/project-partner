@@ -1,13 +1,17 @@
 ---
 description: >-
-  Follow when the user says "follow ai dev guide" (or similar) or asks to
+  Follow when the user says "follow ai dev guide" (or similar); asks to
   develop/complete catalog project template content (Steps 1–10, risks,
-  schedule prereqs, related phases). Read and obey AI_PROJECT_DEVELOPMENT_REFERENCE.md.
+  schedule prereqs, related phases); or asks to review/research/add/update
+  home maintenance tasks, maintenance_templates, or DIY maintenance catalog
+  industry cadences. Read and obey AI_PROJECT_DEVELOPMENT_REFERENCE.md
+  (including §G for home maintenance).
 alwaysApply: false
 ---
 
 # AI project development guide
 
 1. **Read first:** open and follow repo-root `AI_PROJECT_DEVELOPMENT_REFERENCE.md` end-to-end for the request.
-2. **Field catalogs in §B / §D–§F are required** — use the listed columns/JSON keys; verify names against `src/integrations/supabase/types.ts` and `src/interfaces/Project.ts` before writing SQL or content.
-3. **Continuous improvement:** when a field, constraint, or SQL lesson is proven in-session, append a dated entry under **Revision history** in that file and fold durable rules into the matching section.
+2. **Field catalogs in §B / §D–§F are required** for project catalog work — use the listed columns/JSON keys; verify names against `src/integrations/supabase/types.ts` and `src/interfaces/Project.ts` before writing SQL or content.
+3. **Home maintenance (§G):** when the request is about `maintenance_templates` / home maintenance task lists, follow **§G** (schema/UI fit, criticality levels, industry research protocol, system gating, idempotent SQL). Research standards before changing frequencies or guidance.
+4. **Continuous improvement:** when a field, constraint, or SQL lesson is proven in-session, append a dated entry under **Revision history** in that file and fold durable rules into the matching section.

@@ -1,6 +1,6 @@
 # AI Project Development Reference (DB-first)
 
-**Use when:** admin asks to complete **Step 1–10** of project development for a named template (`project_id`), or says **follow ai dev guide** (or similar). **§B is the single source of truth per step** (no duplicate checklist elsewhere). Field catalogs below list authoring columns/JSON keys; verify every write against `src/integrations/supabase/types.ts` and `src/interfaces/Project.ts`.
+**Use when:** admin asks to complete **Step 1–10** of project development for a named template (`project_id`), says **follow ai dev guide** (or similar), or asks to research/add/update **home maintenance** `maintenance_templates` (§G). **§B is the single source of truth per project step** (no duplicate checklist elsewhere). Field catalogs below list authoring columns/JSON keys; verify every write against `src/integrations/supabase/types.ts` and `src/interfaces/Project.ts`. For maintenance catalog work, use **§G** instead of Steps 1–10.
 
 ---
 
@@ -389,7 +389,84 @@ Never invent related-project relationships. Resolve catalog names carefully (§A
 | 9 | PFMEA tables |
 | 10 | `projects.description`, `projects.project_challenges` |
 
-Also: §D catalog header, §E schedule prereqs, §F related projects / revisions.
+Also: §D catalog header, §E schedule prereqs, §F related projects / revisions, **§G home maintenance templates**.
+
+---
+
+## G) Home maintenance templates (`maintenance_templates`)
+
+**Use when:** the user asks to review, research, add, or update **home maintenance** pre-built tasks / `maintenance_templates` / DIY maintenance catalog cadences (including modern-home / smart-home tasks), or says follow the ai dev guide for maintenance tasks.
+
+This section is **separate** from Steps 1–10 project catalog work. Do not invent project-template tables for maintenance tasks.
+
+### G.1 Read schema and UI first
+
+1. Confirm columns against `src/integrations/supabase/types.ts` → `maintenance_templates` and `user_maintenance_tasks`.
+2. Confirm plan filtering and system hooks in `src/components/MaintenancePlanWorkflow.tsx` (`MAINTENANCE_LEVELS`, `APPLIANCES_SYSTEMS_OPTIONS`, category sets, **exact title** allowlists).
+3. Confirm which fields the tracker UI shows in `HomeMaintenanceWindow.tsx` / `AddMaintenanceTaskDialog.tsx` (title, description, summary, instructions, category, `frequency_days`, `criticality`, risks, benefits, repair savings).
+4. Stay inside existing columns. Do **not** add DIY difficulty, custom recurrence engines, or season-as-schedule fields unless product explicitly expands the schema. Optional `typical_season` may be set for seasonal tasks; the calendar does not consume it today.
+
+### G.2 Product levels ↔ criticality
+
+| User language | Plan UI label | Filter |
+| ------------- | ------------- | ------ |
+| Bare min | Essential only | `criticality >= 3` |
+| Normal | Add recommended | `criticality >= 2` |
+| Comprehensive | Full control | `criticality >= 1` |
+
+**Criticality rubric**
+
+- **3 (High / Essential):** life safety, major water or fire risk, code-adjacent DIY checks.
+- **2 (Medium / Recommended):** cost avoidance, efficiency, moderate damage prevention.
+- **1 (Low / Full):** appearance, convenience, polish.
+
+### G.3 Field catalog (authoring)
+
+| Field | Rule |
+| ----- | ---- |
+| `title` | Stable, unique (case-insensitive). Wizard filters use **exact** titles - renaming requires updating `MaintenancePlanWorkflow.tsx` title sets in the same change. Prefer `Check …` over `Inspect …`. |
+| `description` | Short what/why for list/detail. |
+| `summary` | One-line cadence / outcome. |
+| `instructions` | Numbered DIY steps; call out when a licensed pro is required; no em-dashes. |
+| `category` | Whitelist used by UI: `safety`, `security`, `hvac`, `plumbing`, `exterior`, `electrical`, `interior`, `landscaping`, `appliances` (also `general` / `outdoor` / `roof` if needed). Prefer existing buckets; use `security` for cameras, locks, hubs, sensors. |
+| `frequency_days` | Prefer presets aligned with app: `7`, `30`, `90`, `182`, `365`, `730`, `1095`, `1825`, `3650`. Schedule model is `next_due = now + frequency_days` - do not invent non-day recurrence. |
+| `criticality` | Integer 1–3 per rubric above. |
+| `risks_of_skipping` / `benefits_of_maintenance` / `repair_cost_savings` | Concrete DIY consumer copy; quantify when honest. |
+| `typical_season` | Optional hint (`spring` / `summer` / `fall` / `winter`); not required for due logic. |
+| `photo_url` | Do not invent URLs. |
+
+### G.4 Industry research protocol (required before writing SQL)
+
+Before inserting or changing cadences/guidance, research and cite **at least**:
+
+1. **Standards / government** where applicable (examples: USFA, CPSC, NFPA, ENERGY STAR, EPA WaterSense, NAHB consumer guidance).
+2. **Manufacturer or trade** cadence for that system (HVAC OEM, garage opener maker, EVSE guidance, etc.).
+3. **DIY consumer checklist** realism (what a homeowner can actually do safely).
+
+Record sources in **migration SQL comments** (and PR/commit body when committing). Prefer root-cause frequency fixes over “nice to have” churn.
+
+Tone: DIY-safe visual checks; never instruct homeowners to open sealed combustion chambers, remove electrical dead-front covers, or enter septic tanks.
+
+### G.5 System gating (plan wizard)
+
+- Every **optional-system** template must have: (a) a questionnaire option in `APPLIANCES_SYSTEMS_OPTIONS` or heating/cooling options when relevant, and (b) a **title allowlist / exclusion** in `MaintenancePlanWorkflow` so homes without that system do not get the task.
+- Do **not** rely on category alone for optional systems.
+- The plan wizard does **not** auto-include `security` unless smart-home / camera / lock options are selected - add `categoriesToInclude.add('security')` when those systems are present.
+- Central-air filter task is gated separately from mini-split / heat-pump tasks.
+
+### G.6 SQL delivery rules
+
+- Ship **idempotent** migrations under `supabase/migrations/`: `UPDATE` by `lower(trim(title))`; `INSERT … SELECT … WHERE NOT EXISTS` by title.
+- Fill all guidance columns the UI displays.
+- **Do not** silently mutate existing `user_maintenance_tasks` unless the user explicitly asks to backfill. New catalog rows apply to new plan saves and Add-from-template flows.
+- No new enums or columns unless explicitly requested; verify RLS only if creating new tables (templates table already exists).
+
+### G.7 Out of scope
+
+- New recurrence models (nth weekday, “spring only” due engines).
+- DIY difficulty on maintenance tasks (`home_tasks.diy_level` is a different product surface).
+- Hardcoded business rules outside DB fields + existing wizard filters.
+- Restoring deleted historical seed migrations; forward-fix with new migrations only.
 
 ---
 
@@ -399,6 +476,7 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-14 | Added §G Home maintenance templates: schema/UI fit, criticality↔Essential/Recommended/Full, field catalog, industry research protocol, system gating, idempotent SQL rules | DIY maintenance catalog review; future prompts must research industry standards before updating `maintenance_templates` |
 | 2026-09-11 | `__decision_tree_config__` / phases ops: `decisionDetailedSummary`, `optionImageUrl`, `optionDetailedDescription` for Project Customizer step 3 workflow decisions (summary = name/description/prompt; detail window via Info) | Tile flooring underlayment decision needed images + deeper copy without replacing short summaries |
 | 2026-09-11 | Step 4 Risk Radar copy rules: no "proper" (define the standard); no slow/speed without a timed rate; quantify contingencies/tolerances/$/days; replace vague hours with concrete windows (e.g. 8-9a to 7-8p, no power tools outside) | Tile Flooring Risk Radar review; DIY guidance must be checkable |
 | 2026-09-11 | Step 4: every risk's `mitigation_actions` must cumulatively reduce residual severity to medium or low (ideally low) | Risk Radar check-offs drive "Whats the new status?"; authored mitigations must be able to get there |

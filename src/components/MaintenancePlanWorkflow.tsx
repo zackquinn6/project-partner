@@ -108,8 +108,14 @@ const APPLIANCES_SYSTEMS_OPTIONS = [
   'Dryer (gas/electric)',
   'Dishwasher',
   'Garbage disposal',
+  'Washing machine',
   'Garage door & opener',
   'Pool',
+  'Security cameras / doorbell',
+  'Smart locks / sensors',
+  'Water leak sensors',
+  'EV charger',
+  'UPS / battery backup',
 ] as const;
 
 function zipToClimateRegion(zip: string): string {
@@ -418,7 +424,8 @@ export function MaintenancePlanWorkflow({
               a === 'Sump pump' ||
               a === 'Water softener' ||
               a === 'Septic system' ||
-              a === 'Well water'
+              a === 'Well water' ||
+              a === 'Water leak sensors'
           )
         )
           categoriesToInclude.add('plumbing');
@@ -435,10 +442,23 @@ export function MaintenancePlanWorkflow({
             (a) =>
               a === 'Dishwasher' ||
               a === 'Garbage disposal' ||
-              a === 'Dryer (gas/electric)'
+              a === 'Dryer (gas/electric)' ||
+              a === 'Washing machine'
           )
-        )
+        ) {
           categoriesToInclude.add('appliances');
+        }
+        // Fridge water filter and similar appliance care belong on most plans.
+        categoriesToInclude.add('appliances');
+        if (
+          appliancesSystems.some(
+            (a) =>
+              a === 'Security cameras / doorbell' ||
+              a === 'Smart locks / sensors'
+          )
+        ) {
+          categoriesToInclude.add('security');
+        }
         categoriesToInclude.add('electrical');
         categoriesToInclude.add('interior');
 
@@ -507,29 +527,46 @@ export function MaintenancePlanWorkflow({
 
         // Filter templates that depend on specific systems so we only include them when the user has that system.
         const hasCentralAir = heatingCooling.includes('Central air conditioning');
+        const hasHeatPump = heatingCooling.includes('Heat pump');
+        const hasMiniSplit = heatingCooling.includes('Mini-split system');
         const hasDryer = appliancesSystems.some((a) => a === 'Dryer (gas/electric)');
         const hasDishwasher = appliancesSystems.some((a) => a === 'Dishwasher');
         const hasGarbageDisposal = appliancesSystems.some((a) => a === 'Garbage disposal');
+        const hasWashingMachine = appliancesSystems.some((a) => a === 'Washing machine');
         const hasWaterSoftener = appliancesSystems.some((a) => a === 'Water softener');
         const hasSepticSystem = appliancesSystems.some((a) => a === 'Septic system');
         const hasFireplaceOrChimney = appliancesSystems.some((a) => a === 'Fireplace/chimney');
         const hasGarageDoor = appliancesSystems.some((a) => a === 'Garage door & opener');
         const hasPool = appliancesSystems.some((a) => a === 'Pool');
+        const hasSolar = appliancesSystems.some((a) => a === 'Solar panels');
+        const hasGenerator = appliancesSystems.some((a) => a === 'Generator');
+        const hasSecurityCameras = appliancesSystems.some((a) => a === 'Security cameras / doorbell');
+        const hasSmartLocksSensors = appliancesSystems.some((a) => a === 'Smart locks / sensors');
+        const hasWaterLeakSensors = appliancesSystems.some((a) => a === 'Water leak sensors');
+        const hasEvCharger = appliancesSystems.some((a) => a === 'EV charger');
+        const hasUps = appliancesSystems.some((a) => a === 'UPS / battery backup');
 
         if (!hasCentralAir) {
           selected = selected.filter(
-            (t: MaintenanceTemplate) =>
-              !(t.category === 'hvac' && t.title.toLowerCase().includes('filter'))
+            (t: MaintenanceTemplate) => t.title !== 'Replace HVAC air filter'
+          );
+        }
+        if (!hasMiniSplit) {
+          selected = selected.filter((t: MaintenanceTemplate) => t.title !== 'Clean mini-split filters');
+        }
+        if (!hasHeatPump) {
+          selected = selected.filter(
+            (t: MaintenanceTemplate) => t.title !== 'Check heat pump outdoor unit clearance'
           );
         }
         if (!hasDryer) {
-          const DRYER_TITLES = new Set<string>(['Clean dryer vent', 'Inspect dryer exhaust duct']);
+          const DRYER_TITLES = new Set<string>(['Clean dryer vent', 'Check dryer exhaust duct']);
           selected = selected.filter((t: MaintenanceTemplate) => !DRYER_TITLES.has(t.title));
         }
         if (!hasDishwasher) {
           const DISHWASHER_TITLES = new Set<string>([
             'Clean dishwasher interior and filter',
-            'Inspect dishwasher door seal and connections',
+            'Check dishwasher door seal and connections',
           ]);
           selected = selected.filter((t: MaintenanceTemplate) => !DISHWASHER_TITLES.has(t.title));
         }
@@ -537,18 +574,27 @@ export function MaintenancePlanWorkflow({
           const DISPOSAL_TITLES = new Set<string>(['Clean garbage disposal', 'Sharpen garbage disposal']);
           selected = selected.filter((t: MaintenanceTemplate) => !DISPOSAL_TITLES.has(t.title));
         }
+        if (!hasWashingMachine) {
+          selected = selected.filter((t: MaintenanceTemplate) => t.title !== 'Check washing machine hoses');
+        }
         if (!hasWaterSoftener) {
           selected = selected.filter((t: MaintenanceTemplate) => t.title !== 'Water softener maintenance');
         }
         if (!hasSepticSystem) {
-          const SEPTIC_TITLES = new Set<string>(['Inspect septic tank', 'Pump septic tank']);
+          const SEPTIC_TITLES = new Set<string>(['Check septic system', 'Pump septic tank']);
           selected = selected.filter((t: MaintenanceTemplate) => !SEPTIC_TITLES.has(t.title));
         }
         if (!hasFireplaceOrChimney) {
-          selected = selected.filter((t: MaintenanceTemplate) => t.title !== 'Chimney cleaning');
+          selected = selected.filter(
+            (t: MaintenanceTemplate) => t.title !== 'Chimney inspection and cleaning'
+          );
         }
         if (!hasGarageDoor) {
-          const GARAGE_TITLES = new Set<string>(['Test garage door auto reverse', 'Lubricate garage door openers']);
+          const GARAGE_TITLES = new Set<string>([
+            'Test garage door auto reverse',
+            'Lubricate garage door openers',
+            'Verify garage door opener remote/keypad batteries',
+          ]);
           selected = selected.filter((t: MaintenanceTemplate) => !GARAGE_TITLES.has(t.title));
         }
         if (!hasPool) {
@@ -556,6 +602,44 @@ export function MaintenancePlanWorkflow({
             (t: MaintenanceTemplate) => !t.title.toLowerCase().includes('pool')
           );
         }
+        if (!hasSolar) {
+          selected = selected.filter((t: MaintenanceTemplate) => t.title !== 'Clean solar panels');
+        }
+        if (!hasGenerator) {
+          selected = selected.filter((t: MaintenanceTemplate) => t.title !== 'Exercise standby generator');
+        }
+        if (!hasSecurityCameras) {
+          const CAMERA_TITLES = new Set<string>([
+            'Verify security cameras and doorbell',
+            'Clean camera/doorbell lenses and check night vision',
+          ]);
+          selected = selected.filter((t: MaintenanceTemplate) => !CAMERA_TITLES.has(t.title));
+        }
+        if (!hasSmartLocksSensors) {
+          const SMART_LOCK_TITLES = new Set<string>([
+            'Check smart lock and entry keypad batteries',
+            'Check wireless security sensor batteries',
+          ]);
+          selected = selected.filter((t: MaintenanceTemplate) => !SMART_LOCK_TITLES.has(t.title));
+        }
+        if (!hasSmartLocksSensors && !hasSecurityCameras) {
+          selected = selected.filter(
+            (t: MaintenanceTemplate) => t.title !== 'Update smart home hub firmware and review devices'
+          );
+        }
+        if (!hasWaterLeakSensors) {
+          selected = selected.filter((t: MaintenanceTemplate) => t.title !== 'Test water leak sensors and alerts');
+        }
+        if (!hasEvCharger) {
+          selected = selected.filter(
+            (t: MaintenanceTemplate) => t.title !== 'Inspect EV charger cable and connections'
+          );
+        }
+        if (!hasUps) {
+          selected = selected.filter((t: MaintenanceTemplate) => t.title !== 'Test UPS / network battery backup');
+        }
+        // Whole-house surge protector is optional polish; include only on Full when electrical is present.
+        // (Always available via browse remaining / add task; keep on plans that already include electrical.)
 
         const entries: PlanEntry[] = [
           ...selected.map((t: MaintenanceTemplate) => ({
