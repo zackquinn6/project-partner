@@ -235,7 +235,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
           .filter((id): id is PlanningToolId => typeof id === 'string')
       );
       persistedTools.forEach((id) => {
-        if (typeof id === 'string') prevToolIds.add(id);
+        if (typeof id === 'string') prevToolIds.add(id as PlanningToolId);
       });
       const next = new Set<number>();
       wizardSteps.forEach((step, index) => {
