@@ -386,6 +386,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const [showAddTask, setShowAddTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState<MaintenanceTask | null>(null);
   const [systemFilter, setSystemFilter] = useState<SystemKey | 'all'>('all');
+  const [criticalityFilter, setCriticalityFilter] = useState<'all' | 1 | 2 | 3>('all');
   const [completions, setCompletions] = useState<MaintenanceCompletion[]>([]);
   const [swipedTaskId, setSwipedTaskId] = useState<string | null>(null);
   const [touchStart, setTouchStart] = useState<number>(0);
@@ -687,8 +688,18 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
       console.error('Error deleting task:', error);
     }
   };
+  const getCriticalityLabel = (criticality: number | null | undefined) => {
+    if (criticality === 3) return 'High';
+    if (criticality === 1) return 'Low';
+    if (criticality === 2) return 'Medium';
+    return null;
+  };
+
   const getFilteredTasks = () => {
     let list = systemFilter === 'all' ? tasks : tasks.filter(task => getSystemForCategory(task.category) === systemFilter);
+    if (criticalityFilter !== 'all') {
+      list = list.filter(task => task.criticality === criticalityFilter);
+    }
     return [...list].sort((a, b) => new Date(a.next_due).getTime() - new Date(b.next_due).getTime());
   };
 
@@ -949,7 +960,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             <Calendar className="h-4 w-4 text-primary shrink-0" />
                             <span>Calendar</span>
                           </Button>
-                          {/* Mobile: single filter dropdown (same h-8 as Add Task button); wider so label fits */}
+                          {/* Mobile: system + criticality filter dropdowns */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
@@ -969,6 +980,36 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   return (
                                     <DropdownMenuRadioItem key={sys} value={sys}>
                                       {SYSTEM_CONFIG[sys].label}{count > 0 ? ` (${count})` : ''}
+                                    </DropdownMenuRadioItem>
+                                  );
+                                })}
+                              </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 min-h-8 py-1.5 px-2.5 gap-1 shrink-0 text-xs font-semibold md:hidden rounded-md border border-input min-w-[7rem]"
+                              >
+                                {criticalityFilter === 'all'
+                                  ? 'Criticality'
+                                  : getCriticalityLabel(criticalityFilter)}
+                                <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="min-w-[10rem] w-[10rem]">
+                              <DropdownMenuRadioGroup
+                                value={criticalityFilter === 'all' ? 'all' : String(criticalityFilter)}
+                                onValueChange={(v) => setCriticalityFilter(v === 'all' ? 'all' : parseInt(v, 10) as 1 | 2 | 3)}
+                              >
+                                <DropdownMenuRadioItem value="all">All criticality</DropdownMenuRadioItem>
+                                {([3, 2, 1] as const).map(level => {
+                                  const count = tasks.filter(t => t.criticality === level).length;
+                                  return (
+                                    <DropdownMenuRadioItem key={level} value={String(level)}>
+                                      {getCriticalityLabel(level)}{count > 0 ? ` (${count})` : ''}
                                     </DropdownMenuRadioItem>
                                   );
                                 })}
@@ -1009,6 +1050,30 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                               </Button>
                             );
                           })}
+                          {/* Desktop: criticality slicers */}
+                          {([
+                            { value: 'all' as const, label: 'All levels' },
+                            { value: 3 as const, label: 'High' },
+                            { value: 2 as const, label: 'Medium' },
+                            { value: 1 as const, label: 'Low' },
+                          ]).map(({ value, label }, index) => {
+                            const count = value === 'all'
+                              ? tasks.length
+                              : tasks.filter(t => t.criticality === value).length;
+                            return (
+                              <Button
+                                key={`crit-${value}`}
+                                variant={criticalityFilter === value ? 'default' : 'outline'}
+                                size="sm"
+                                className={`h-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:gap-1.5 shrink-0 text-xs font-semibold hidden md:flex ${index === 0 ? 'md:ml-4' : ''}`}
+                                onClick={() => setCriticalityFilter(value)}
+                                title={`${label}${value !== 'all' && count > 0 ? ` (${count})` : ''}`}
+                              >
+                                <span className="whitespace-nowrap">{label}</span>
+                                {value !== 'all' && count > 0 && <span className="opacity-80">({count})</span>}
+                              </Button>
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -1024,7 +1089,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   {tasks.length === 0 ? <ClipboardList className="h-7 w-7" /> : <ListTodo className="h-7 w-7" />}
                                 </div>
                                 <h3 className="text-lg font-medium mb-2">
-                                  {tasks.length === 0 ? 'Create your maintenance plan' : 'No tasks in this system'}
+                                  {tasks.length === 0
+                                    ? 'Create your maintenance plan'
+                                    : systemFilter !== 'all' || criticalityFilter !== 'all'
+                                      ? 'No tasks match these filters'
+                                      : 'No tasks in this system'}
                                 </h3>
                                 <p className="text-muted-foreground mb-4 text-sm max-w-sm mx-auto">
                                   {tasks.length === 0
@@ -1072,6 +1141,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                           <h4 className="font-medium text-sm leading-snug">{task.title}</h4>
                                           <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
                                             Every {task.frequency_days} days
+                                            {getCriticalityLabel(task.criticality) != null && (
+                                              <> · {getCriticalityLabel(task.criticality)}</>
+                                            )}
                                           </p>
                                           <p className="text-xs text-muted-foreground leading-snug">
                                             Next due: {format(new Date(task.next_due), 'MM/dd/yyyy')}
@@ -1157,6 +1229,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                               <h4 className="font-medium text-sm leading-snug">{task.title}</h4>
                                               <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
                                                 Every {task.frequency_days} days
+                                                {getCriticalityLabel(task.criticality) != null && (
+                                                  <> · {getCriticalityLabel(task.criticality)}</>
+                                                )}
                                               </p>
                                               <p className="text-xs text-muted-foreground leading-snug">
                                                 Next due: {format(new Date(task.next_due), 'MM/dd/yyyy')}
@@ -1224,6 +1299,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   <tr className="border-b border-border bg-muted/40">
                                     <th className="text-left px-2 py-2 font-medium">Task</th>
                                     <th className="text-left px-2 py-2 font-medium">Frequency</th>
+                                    <th className="text-left px-2 py-2 font-medium">Criticality</th>
                                     <th className="text-right px-2 py-2 font-medium">Actions</th>
                                   </tr>
                                 </thead>
@@ -1260,6 +1336,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                           <div className="mt-1 text-[10px] text-muted-foreground">
                                             Next due: {format(new Date(task.next_due), 'MM/dd/yyyy')}
                                           </div>
+                                        </td>
+                                        <td className="px-2 py-2 align-middle">
+                                          {getCriticalityLabel(task.criticality) ?? '—'}
                                         </td>
                                         <td className="px-2 py-2 align-middle">
                                           <div className="flex items-center justify-end gap-2">
@@ -1334,6 +1413,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                             <div className="mt-1 text-[10px] text-muted-foreground">
                                               Next due: {format(new Date(task.next_due), 'MM/dd/yyyy')}
                                             </div>
+                                          </td>
+                                          <td className="px-2 py-2 align-middle">
+                                            {getCriticalityLabel(task.criticality) ?? '—'}
                                           </td>
                                         <td className="px-2 py-2 align-middle">
                                             <div className="flex items-center justify-end gap-2">
