@@ -1,16 +1,17 @@
--- Home maintenance catalog: industry-standard frequency/guidance fixes,
--- missing system-specific templates, and modern-home / technology tasks.
+-- Home maintenance catalog: industry-standard frequency and guidance fixes,
+-- missing system-specific templates, and modern-home technology tasks.
 --
 -- Research sources (2026-09-14 review):
---   USFA / CPSC: smoke/CO monthly test, yearly batteries, 10-year unit replace; dryer vent yearly
---   ENERGY STAR: HVAC filter check monthly / replace by ~90 days; annual HVAC tune-up
---   EPA WaterSense: water heater / softener annual service guidance
+--   USFA and CPSC: smoke and CO monthly test, yearly batteries, 10-year unit replace; dryer vent yearly
+--   ENERGY STAR: HVAC filter check monthly, replace by about 90 days; annual HVAC tune-up
+--   EPA WaterSense: water heater and softener annual service guidance
 --   NFPA 211: chimney inspected annually
 --   Manufacturer guidance: garage door auto-reverse typically monthly
---   DIY / smart-home checklists: camera verify, sensor batteries, leak sensors, EVSE visual check, UPS test
+--   DIY and smart-home checklists: camera verify, sensor batteries, leak sensors, EVSE visual check, UPS test
 --
 -- Idempotent: UPDATE by title; INSERT only when title does not exist.
 -- Does NOT mutate existing user_maintenance_tasks rows.
+-- Avoid slash characters in runnable SQL (some SQL editors mishandle them).
 
 -- ---------------------------------------------------------------------------
 -- A) Frequency and guidance fixes for existing templates
@@ -57,7 +58,7 @@ UPDATE public.maintenance_templates
 SET title = 'Check plumbing for leaks', updated_at = now()
 WHERE lower(trim(title)) = 'inspect plumbing for leaks';
 
--- Smoke/CO batteries: clarify sealed 10-year units vs replaceable batteries.
+-- Smoke and CO batteries: clarify sealed 10-year units vs replaceable batteries.
 UPDATE public.maintenance_templates
 SET
   summary = 'Replace replaceable smoke and CO batteries yearly; skip sealed 10-year units.',
@@ -66,14 +67,15 @@ SET
   benefits_of_maintenance = 'Keeps detection working when you need it most.',
   repair_cost_savings = 'Working alarms are among the highest-ROI life-safety upgrades in a home.',
   updated_at = now()
-WHERE lower(trim(title)) IN ('replace smoke/co batteries');
+-- Avoid slash in the matcher string (some SQL editors mishandle it). Match existing catalog title.
+WHERE lower(trim(title)) LIKE 'replace smoke%batteries';
 
 -- DIY-safe wording for furnace annual check.
 UPDATE public.maintenance_templates
 SET
   title = CASE WHEN title ~* '^Inspect\s+' THEN regexp_replace(title, '^Inspect\s+', 'Check ', 'i') ELSE title END,
   summary = 'Do an annual DIY visual check; schedule a licensed HVAC tune-up for combustion equipment.',
-  instructions = '1. Replace or confirm a clean filter before heating season. 2. Keep clearances around the furnace; remove stored items. 3. Listen for unusual noises on startup. 4. Check for soot, rust, or water near the unit. 5. For gas/oil equipment, schedule a licensed HVAC technician for burner, heat exchanger, and safety control inspection - do not open sealed combustion chambers yourself.',
+  instructions = '1. Replace or confirm a clean filter before heating season. 2. Keep clearances around the furnace; remove stored items. 3. Listen for unusual noises on startup. 4. Check for soot, rust, or water near the unit. 5. For gas or oil equipment, schedule a licensed HVAC technician for burner, heat exchanger, and safety control inspection - do not open sealed combustion chambers yourself.',
   risks_of_skipping = 'Neglected furnaces run inefficiently and can create carbon monoxide or fire hazards.',
   benefits_of_maintenance = 'Improves safety, comfort, and equipment life.',
   repair_cost_savings = 'Annual service costs far less than heat exchanger or full system replacement.',
@@ -128,7 +130,7 @@ SET title = 'Chimney inspection and cleaning', updated_at = now()
 WHERE lower(trim(title)) = 'chimney cleaning';
 
 -- ---------------------------------------------------------------------------
--- B) Missing system-specific templates + modern-home / technology tasks
+-- B) Missing system-specific templates + modern-home technology tasks
 -- ---------------------------------------------------------------------------
 
 INSERT INTO public.maintenance_templates (
@@ -263,7 +265,7 @@ FROM (VALUES
     'summer'
   ),
   (
-    'Winterize / open pool',
+    'Winterize or open pool',
     'Close the pool for freeze season and reopen with balanced water in spring.',
     'Winterize and open the pool on a twice-yearly seasonal cycle.',
     '1. Follow your climate and equipment manual for blow-outs, antifreeze, and cover placement. 2. At opening, remove the cover carefully, reconnect equipment, and balance chemistry before swimming. 3. Inspect for cracks, loose fittings, and animal damage. 4. Hire a pool pro for freeze-prone plumbing if you are unsure. 5. Never leave standing water in exposed lines where hard freezes occur.',
@@ -271,14 +273,14 @@ FROM (VALUES
     182,
     2,
     'Skipped winterizing cracks plumbing; rushed openings risk cloudy unsafe water.',
-    'Protects equipment through freeze/thaw and speeds spring ready-to-swim.',
+    'Protects equipment through freeze-thaw and speeds spring ready-to-swim.',
     'Avoids freeze-broken pipes and pumps.',
     'fall'
   ),
 
-  -- Modern home / technology
+  -- Modern home technology
   (
-    'Replace smoke/CO alarm units (10-year life)',
+    'Replace smoke and CO alarm units (10-year life)',
     'Replace smoke and CO alarms at end of rated life, usually 10 years from the manufacture date.',
     'Replace alarm units about every 10 years from the date on the back.',
     '1. Read the manufacture date on each alarm. 2. Replace any unit at or past its rated life (commonly 10 years for smoke; follow the label for CO). 3. Install new alarms on every level, inside bedrooms, and outside sleeping areas per local code and manufacturer instructions. 4. Interconnect where required. 5. Test every new unit and recycle old alarms per local rules.',
@@ -304,7 +306,7 @@ FROM (VALUES
     NULL
   ),
   (
-    'Clean camera/doorbell lenses and check night vision',
+    'Clean camera and doorbell lenses and check night vision',
     'Clean lenses and IR windows so night video stays usable.',
     'Clean camera optics about twice yearly.',
     '1. Power-safe wipe lenses and IR windows with a microfiber cloth. 2. Clear spider webs and dirt from housings. 3. Confirm night video is not washed out by nearby lights. 4. Re-aim if foliage or new fixtures block the view. 5. Avoid solvents that haze plastic domes.',
@@ -356,7 +358,7 @@ FROM (VALUES
     NULL
   ),
   (
-    'Check fridge/freezer water filter',
+    'Check fridge and freezer water filter',
     'Replace the refrigerator water filter on the interval the maker specifies.',
     'Replace or check the fridge water filter about every 6 months.',
     '1. Read the filter reset interval in the manual or on the filter housing. 2. Shut off the supply if required, swap the cartridge, and check for leaks. 3. Flush several gallons as directed. 4. Reset the filter indicator. 5. If ice taste is poor after a new filter, flush again or check the ice bin.',
@@ -395,7 +397,7 @@ FROM (VALUES
     NULL
   ),
   (
-    'Test UPS / network battery backup',
+    'Test UPS and network battery backup',
     'Self-test UPS units that protect modem, router, and critical networking gear.',
     'Test UPS runtime and replace aging batteries about twice yearly.',
     '1. Confirm modem, router, and critical nodes are actually plugged into battery-backed outlets. 2. Run the UPS self-test or simulate a brief outage and note runtime. 3. Replace sealed lead-acid batteries on the manufacturer interval (often 3-5 years). 4. Check for swelling, alarms, or failed self-tests. 5. Update UPS firmware if the vendor provides it.',
@@ -460,7 +462,7 @@ FROM (VALUES
     NULL
   ),
   (
-    'Verify garage door opener remote/keypad batteries',
+    'Verify garage door opener remote and keypad batteries',
     'Replace batteries in remotes and outdoor keypads before they fail.',
     'Yearly battery check for garage remotes and keypads.',
     '1. Replace remote and keypad batteries with the size listed in the manual. 2. Reprogram codes only if the manufacturer requires it after a battery change. 3. Test from typical parking distance. 4. Confirm the vacation lock or lock button state if equipped. 5. Wipe the keypad and check mounting screws.',

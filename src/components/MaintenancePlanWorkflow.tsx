@@ -11,10 +11,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { addDays } from 'date-fns';
 import { Slider } from '@/components/ui/slider';
 import { Progress } from '@/components/ui/progress';
 import { useResponsive } from '@/hooks/useResponsive';
+import {
+  computeNextDue,
+  formatFrequencyLabel,
+  isSeasonIntent,
+  resolveSeasonalMonths,
+  type ScheduleType,
+} from '@/utils/maintenanceSchedule';
 
 const HEATING_COOLING_OPTIONS = [
   'Oil furnace',
@@ -115,7 +121,7 @@ const APPLIANCES_SYSTEMS_OPTIONS = [
   'Smart locks / sensors',
   'Water leak sensors',
   'EV charger',
-  'UPS / battery backup',
+  'UPS and battery backup',
 ] as const;
 
 function zipToClimateRegion(zip: string): string {
@@ -161,6 +167,8 @@ interface MaintenanceTemplate {
   summary: string | null;
   category: string;
   frequency_days: number;
+  schedule_type?: string | null;
+  season_intent?: string | null;
   instructions: string | null;
   criticality: number | null;
   risks_of_skipping: string | null;
@@ -544,7 +552,9 @@ export function MaintenancePlanWorkflow({
         const hasSmartLocksSensors = appliancesSystems.some((a) => a === 'Smart locks / sensors');
         const hasWaterLeakSensors = appliancesSystems.some((a) => a === 'Water leak sensors');
         const hasEvCharger = appliancesSystems.some((a) => a === 'EV charger');
-        const hasUps = appliancesSystems.some((a) => a === 'UPS / battery backup');
+        const hasUps = appliancesSystems.some(
+          (a) => a === 'UPS and battery backup' || a === 'UPS / battery backup'
+        );
 
         if (!hasCentralAir) {
           selected = selected.filter(
@@ -593,7 +603,7 @@ export function MaintenancePlanWorkflow({
           const GARAGE_TITLES = new Set<string>([
             'Test garage door auto reverse',
             'Lubricate garage door openers',
-            'Verify garage door opener remote/keypad batteries',
+            'Verify garage door opener remote and keypad batteries',
           ]);
           selected = selected.filter((t: MaintenanceTemplate) => !GARAGE_TITLES.has(t.title));
         }
@@ -611,7 +621,7 @@ export function MaintenancePlanWorkflow({
         if (!hasSecurityCameras) {
           const CAMERA_TITLES = new Set<string>([
             'Verify security cameras and doorbell',
-            'Clean camera/doorbell lenses and check night vision',
+            'Clean camera and doorbell lenses and check night vision',
           ]);
           selected = selected.filter((t: MaintenanceTemplate) => !CAMERA_TITLES.has(t.title));
         }
@@ -636,7 +646,9 @@ export function MaintenancePlanWorkflow({
           );
         }
         if (!hasUps) {
-          selected = selected.filter((t: MaintenanceTemplate) => t.title !== 'Test UPS / network battery backup');
+          selected = selected.filter(
+            (t: MaintenanceTemplate) => t.title !== 'Test UPS and network battery backup'
+          );
         }
         // Whole-house surge protector is optional polish; include only on Full when electrical is present.
         // (Always available via browse remaining / add task; keep on plans that already include electrical.)
@@ -686,6 +698,17 @@ export function MaintenancePlanWorkflow({
         if (entry.type === 'template') {
           if (existingTemplateIds.has(entry.maintenanceTemplateId)) continue;
           const t = entry.template;
+          const intent = t.season_intent;
+          const isSeasonal = t.schedule_type === 'seasonal' && isSeasonIntent(intent);
+          const seasonalMonths = isSeasonal
+            ? resolveSeasonalMonths(intent, climateRegion)
+            : null;
+          const scheduleFields = {
+            schedule_type: (isSeasonal ? 'seasonal' : 'interval') as ScheduleType,
+            frequency_days: isSeasonal ? 365 : t.frequency_days,
+            seasonal_months: seasonalMonths,
+            seasonal_day: 1,
+          };
           toInsert.push({
             user_id: user.id,
             home_id: homeId,
@@ -695,8 +718,11 @@ export function MaintenancePlanWorkflow({
             summary: t.summary ?? null,
             instructions: t.instructions ?? null,
             category: t.category,
-            frequency_days: t.frequency_days,
-            next_due: addDays(now, t.frequency_days).toISOString(),
+            frequency_days: scheduleFields.frequency_days,
+            schedule_type: scheduleFields.schedule_type,
+            seasonal_months: scheduleFields.seasonal_months,
+            seasonal_day: scheduleFields.seasonal_day,
+            next_due: computeNextDue(scheduleFields, now, 'onOrAfter').toISOString(),
             risks_of_skipping: t.risks_of_skipping ?? null,
             benefits_of_maintenance: t.benefits_of_maintenance ?? null,
             criticality: t.criticality ?? 2,
@@ -705,14 +731,23 @@ export function MaintenancePlanWorkflow({
           existingTemplateIds.add(entry.maintenanceTemplateId);
         } else {
           if (existingCustomTitles.has(entry.title.trim().toLowerCase())) continue;
+          const scheduleFields = {
+            schedule_type: 'interval' as const,
+            frequency_days: entry.frequency_days,
+            seasonal_months: null,
+            seasonal_day: 1,
+          };
           toInsert.push({
             user_id: user.id,
             home_id: homeId,
             title: entry.title,
             description: null,
             category: 'general',
-            frequency_days: entry.frequency_days,
-            next_due: addDays(now, entry.frequency_days).toISOString(),
+            frequency_days: scheduleFields.frequency_days,
+            schedule_type: scheduleFields.schedule_type,
+            seasonal_months: scheduleFields.seasonal_months,
+            seasonal_day: scheduleFields.seasonal_day,
+            next_due: computeNextDue(scheduleFields, now, 'onOrAfter').toISOString(),
             criticality: 2,
           });
           existingCustomTitles.add(entry.title.trim().toLowerCase());
@@ -1354,7 +1389,16 @@ export function MaintenancePlanWorkflow({
                                     <CardContent className="py-2.5 px-3 flex items-center justify-between gap-2">
                                       <div className="min-w-0 flex-1">
                                         <span className="text-sm font-medium block truncate">{template.title}</span>
-                                        <span className="text-xs text-muted-foreground">Every {template.frequency_days} days</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {formatFrequencyLabel({
+                                            schedule_type: template.schedule_type,
+                                            frequency_days: template.frequency_days,
+                                            seasonal_months:
+                                              template.schedule_type === 'seasonal' && isSeasonIntent(template.season_intent)
+                                                ? resolveSeasonalMonths(template.season_intent, climateRegion)
+                                                : null,
+                                          })}
+                                        </span>
                                       </div>
                                       <Button
                                         type="button"
@@ -1457,7 +1501,15 @@ export function MaintenancePlanWorkflow({
                                 const critLabel = crit >= 3 ? 'High' : crit <= 1 ? 'Low' : 'Medium';
                                 const frequencyLabel =
                                   entry.type === 'template'
-                                    ? `Every ${entry.template.frequency_days} days`
+                                    ? formatFrequencyLabel({
+                                        schedule_type: entry.template.schedule_type,
+                                        frequency_days: entry.template.frequency_days,
+                                        seasonal_months:
+                                          entry.template.schedule_type === 'seasonal' &&
+                                          isSeasonIntent(entry.template.season_intent)
+                                            ? resolveSeasonalMonths(entry.template.season_intent, climateRegion)
+                                            : null,
+                                      })
                                     : CUSTOM_TASK_FREQUENCIES.find((f) => f.days === (entry as PlanCustomItem).frequency_days)
                                         ?.label ?? `${(entry as PlanCustomItem).frequency_days} days`;
                                 return (

@@ -7,6 +7,7 @@ import { addDays, format, getDaysInMonth, isBefore, startOfDay } from 'date-fns'
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { nextSeasonalDueOnOrAfter } from '@/utils/maintenanceSchedule';
 
 export interface MaintenanceTaskForCalendar {
   id: string;
@@ -16,6 +17,9 @@ export interface MaintenanceTaskForCalendar {
   frequency_days: number;
   next_due: string;
   recurrence_start_date?: string | null;
+  schedule_type?: string | null;
+  seasonal_months?: number[] | null;
+  seasonal_day?: number | null;
 }
 
 interface MaintenanceCalendarWindowProps {
@@ -44,6 +48,16 @@ function firstOccurrenceOnOrAfter(anchor: Date, frequencyDays: number, target: D
 function occurrencesInMonth(task: MaintenanceTaskForCalendar, year: number, monthIndex: number): { due: Date; task: MaintenanceTaskForCalendar }[] {
   const monthStart = startOfDay(new Date(year, monthIndex, 1));
   const monthEndExclusive = startOfDay(new Date(year, monthIndex + 1, 1));
+
+  if (task.schedule_type === 'seasonal') {
+    const months = task.seasonal_months ?? [];
+    const calendarMonth = monthIndex + 1;
+    if (!months.includes(calendarMonth)) return [];
+    const day = task.seasonal_day ?? 1;
+    const daysInThisMonth = getDaysInMonth(monthStart);
+    const clampedDay = Math.min(day, daysInThisMonth);
+    return [{ due: startOfDay(new Date(year, monthIndex, clampedDay)), task }];
+  }
 
   const anchorStr = task.recurrence_start_date ?? task.next_due;
   if (!anchorStr) return [];
@@ -195,12 +209,18 @@ export function MaintenanceCalendarWindow({
         anchor = startOfDay(new Date(now.getFullYear() + 1, m - 1, d));
       }
 
-      const nextDue = firstOccurrenceOnOrAfter(anchor, task.frequency_days, now);
+      const nextDue =
+        task.schedule_type === 'seasonal'
+          ? nextSeasonalDueOnOrAfter(task.seasonal_months ?? [m], d, now)
+          : firstOccurrenceOnOrAfter(anchor, task.frequency_days, now);
 
       const { error } = await supabase
         .from('user_maintenance_tasks')
         .update({
           recurrence_start_date: toDateOnlyISO(anchor),
+          ...(task.schedule_type === 'seasonal'
+            ? { seasonal_day: d, seasonal_months: task.seasonal_months?.includes(m) ? task.seasonal_months : [...(task.seasonal_months ?? []), m].sort((a, b) => a - b) }
+            : {}),
           next_due: nextDue.toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -220,7 +240,7 @@ export function MaintenanceCalendarWindow({
   };
 
   const editingTask = editingTaskId ? taskById.get(editingTaskId) : null;
-  const disableMonth = !!editingTask && editingTask.frequency_days <= 31;
+  const disableMonth = !!editingTask && editingTask.schedule_type !== 'seasonal' && editingTask.frequency_days <= 31;
 
   const now = new Date();
   const currentMonthIndex = now.getMonth();

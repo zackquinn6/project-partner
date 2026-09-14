@@ -59,6 +59,9 @@ export interface MaintenanceTaskForDashboard {
   title: string;
   category: string;
   frequency_days: number;
+  schedule_type?: string | null;
+  seasonal_months?: number[] | null;
+  seasonal_day?: number | null;
   next_due: string;
   last_completed: string | null;
   criticality?: number | null;

@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell, ClipboardList, Check, ChevronDown, Menu } from 'lucide-react';
-import { format, differenceInDays, addDays, startOfDay, endOfDay, isSameDay } from 'date-fns';
+import { format, differenceInDays, startOfDay, endOfDay, isSameDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +25,12 @@ import { MaintenancePdfPrinter } from './MaintenancePdfPrinter';
 import { MaintenanceNotifications } from './MaintenanceNotifications';
 import { MaintenanceDashboard, getSystemForCategory, SYSTEM_CONFIG, type SystemKey } from './MaintenanceDashboard';
 import { getTaskProgress } from '@/utils/maintenanceProgress';
+import {
+  computeNextDue,
+  formatFrequencyLabel,
+  MONTH_NAMES,
+  type ScheduleType,
+} from '@/utils/maintenanceSchedule';
 import { HomeManager } from './HomeManager';
 import { MaintenancePhotosWindow } from './MaintenancePhotosWindow';
 import { MaintenancePlanWorkflow } from './MaintenancePlanWorkflow';
@@ -56,6 +62,9 @@ interface MaintenanceTask {
   instructions: string | null;
   category: string;
   frequency_days: number;
+  schedule_type?: ScheduleType | string | null;
+  seasonal_months?: number[] | null;
+  seasonal_day?: number | null;
   last_completed: string | null;
   next_due: string;
   is_active: boolean;
@@ -112,7 +121,10 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
     description: task.description || '',
     instructions: task.instructions ?? '',
     category: task.category,
+    schedule_type: (task.schedule_type === 'seasonal' ? 'seasonal' : 'interval') as ScheduleType,
     frequency_days: task.frequency_days,
+    seasonal_months: [...(task.seasonal_months ?? [])].sort((a, b) => a - b),
+    seasonal_day: task.seasonal_day ?? 1,
     risks_of_skipping: task.risks_of_skipping ?? '',
     benefits_of_maintenance: task.benefits_of_maintenance ?? '',
     criticality: task.criticality ?? 2,
@@ -123,8 +135,23 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
 
   const handleSave = async () => {
     if (!user || !form.title.trim()) return;
+    if (form.schedule_type === 'seasonal' && form.seasonal_months.length === 0) {
+      toast({
+        title: 'Select months',
+        description: 'Seasonal tasks need at least one month of the year.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setSaving(true);
     try {
+      const scheduleFields = {
+        schedule_type: form.schedule_type,
+        frequency_days: form.schedule_type === 'seasonal' ? 365 : form.frequency_days,
+        seasonal_months: form.schedule_type === 'seasonal' ? form.seasonal_months : null,
+        seasonal_day: form.schedule_type === 'seasonal' ? form.seasonal_day : 1,
+      };
+      const nextDue = computeNextDue(scheduleFields, new Date(), 'onOrAfter');
       const { error } = await supabase
         .from('user_maintenance_tasks')
         .update({
@@ -132,7 +159,11 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           description: form.description.trim() || null,
           instructions: form.instructions.trim() || null,
           category: form.category,
-          frequency_days: form.frequency_days,
+          frequency_days: scheduleFields.frequency_days,
+          schedule_type: scheduleFields.schedule_type,
+          seasonal_months: scheduleFields.seasonal_months,
+          seasonal_day: scheduleFields.seasonal_day,
+          next_due: nextDue.toISOString(),
           risks_of_skipping: form.risks_of_skipping.trim() || null,
           benefits_of_maintenance: form.benefits_of_maintenance.trim() || null,
           criticality: form.criticality,
@@ -228,6 +259,30 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
             </Select>
           </div>
           <div className="min-w-0">
+            <Label htmlFor="edit-schedule-type">Schedule</Label>
+            <Select
+              value={form.schedule_type}
+              onValueChange={(v) =>
+                setForm(prev => ({
+                  ...prev,
+                  schedule_type: v as ScheduleType,
+                  seasonal_months:
+                    v === 'seasonal' && prev.seasonal_months.length === 0 ? [11] : prev.seasonal_months,
+                }))
+              }
+            >
+              <SelectTrigger id="edit-schedule-type" className="w-full min-w-0 max-w-full h-7 md:h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-w-[var(--radix-select-trigger-width)]">
+                <SelectItem value="interval">Interval (days)</SelectItem>
+                <SelectItem value="seasonal">Seasonal (months)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        {form.schedule_type === 'interval' ? (
+          <div className="min-w-0">
             <Label htmlFor="edit-frequency" className="whitespace-nowrap">Frequency (days)</Label>
             <Input
               id="edit-frequency"
@@ -244,7 +299,53 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
               }
             />
           </div>
-        </div>
+        ) : (
+          <div className="space-y-2">
+            <Label>Months of year</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {MONTH_NAMES.map((name, idx) => {
+                const month = idx + 1;
+                const selected = form.seasonal_months.includes(month);
+                return (
+                  <Button
+                    key={month}
+                    type="button"
+                    size="sm"
+                    variant={selected ? 'default' : 'outline'}
+                    className="h-7 px-2 text-xs"
+                    onClick={() =>
+                      setForm(prev => ({
+                        ...prev,
+                        seasonal_months: selected
+                          ? prev.seasonal_months.filter(m => m !== month)
+                          : [...prev.seasonal_months, month].sort((a, b) => a - b),
+                      }))
+                    }
+                  >
+                    {name.slice(0, 3)}
+                  </Button>
+                );
+              })}
+            </div>
+            <div className="min-w-0 max-w-[8rem]">
+              <Label htmlFor="edit-seasonal-day">Day of month</Label>
+              <Input
+                id="edit-seasonal-day"
+                type="number"
+                min={1}
+                max={31}
+                className="w-full h-7 md:h-8"
+                value={form.seasonal_day}
+                onChange={(e) =>
+                  setForm(prev => ({
+                    ...prev,
+                    seasonal_day: Math.min(31, Math.max(1, parseInt(e.target.value, 10) || 1)),
+                  }))
+                }
+              />
+            </div>
+          </div>
+        )}
         <div>
           <Label htmlFor="edit-progress">Current progress (% toward due)</Label>
           <div className="flex items-center gap-3 mt-1">
@@ -650,7 +751,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
           photo_url: null,
         });
       if (insertError) throw insertError;
-      const nextDue = addDays(now, task.frequency_days).toISOString();
+      const nextDue = computeNextDue(task, now, 'after').toISOString();
       const { error: updateError } = await supabase
         .from('user_maintenance_tasks')
         .update({
@@ -889,6 +990,9 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                   title: t.title,
                   category: t.category,
                   frequency_days: t.frequency_days,
+                  schedule_type: t.schedule_type,
+                  seasonal_months: t.seasonal_months,
+                  seasonal_day: t.seasonal_day,
                   next_due: t.next_due,
                   last_completed: t.last_completed,
                   criticality: t.criticality ?? undefined,
@@ -1140,7 +1244,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                         <div className="min-w-0 flex-1">
                                           <h4 className="font-medium text-sm leading-snug">{task.title}</h4>
                                           <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                                            Every {task.frequency_days} days
+                                            {formatFrequencyLabel(task)}
                                             {getCriticalityLabel(task.criticality) != null && (
                                               <> · {getCriticalityLabel(task.criticality)}</>
                                             )}
@@ -1228,7 +1332,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                             <div className="min-w-0 flex-1">
                                               <h4 className="font-medium text-sm leading-snug">{task.title}</h4>
                                               <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                                                Every {task.frequency_days} days
+                                                {formatFrequencyLabel(task)}
                                                 {getCriticalityLabel(task.criticality) != null && (
                                                   <> · {getCriticalityLabel(task.criticality)}</>
                                                 )}
@@ -1332,7 +1436,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                           </div>
                                         </td>
                                         <td className="px-2 py-2 align-middle">
-                                          <div>Every {task.frequency_days} days</div>
+                                          <div>{formatFrequencyLabel(task)}</div>
                                           <div className="mt-1 text-[10px] text-muted-foreground">
                                             Next due: {format(new Date(task.next_due), 'MM/dd/yyyy')}
                                           </div>
@@ -1409,7 +1513,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                             </div>
                                           </td>
                                           <td className="px-2 py-2 align-middle">
-                                            <div>Every {task.frequency_days} days</div>
+                                            <div>{formatFrequencyLabel(task)}</div>
                                             <div className="mt-1 text-[10px] text-muted-foreground">
                                               Next due: {format(new Date(task.next_due), 'MM/dd/yyyy')}
                                             </div>
@@ -1576,7 +1680,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
             <div className="flex flex-col gap-3 py-1 overflow-y-auto max-h-[70vh]">
               <div className="text-xs sm:text-sm text-muted-foreground">
                 <div><span className="font-medium">Category:</span> {categoryLabels[selectedTaskForDetails.category] || selectedTaskForDetails.category}</div>
-                <div><span className="font-medium">Frequency:</span> Every {selectedTaskForDetails.frequency_days} days</div>
+                <div><span className="font-medium">Frequency:</span> {formatFrequencyLabel(selectedTaskForDetails)}</div>
                 <div><span className="font-medium">Criticality:</span> {selectedTaskForDetails.criticality === 3 ? 'High' : selectedTaskForDetails.criticality === 1 ? 'Low' : 'Medium'}</div>
                 <div><span className="font-medium">Next due:</span> {format(new Date(selectedTaskForDetails.next_due), 'MMM dd, yyyy')}</div>
               </div>

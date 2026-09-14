@@ -6,12 +6,13 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Calendar as CalendarIcon, Trash2, Pencil } from 'lucide-react';
-import { format, addDays, differenceInDays } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { computeNextDue } from '@/utils/maintenanceSchedule';
 
 interface MaintenanceCompletion {
   id: string;
@@ -127,11 +128,12 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
     if (!user) return;
     const { data: task } = await supabase
       .from('user_maintenance_tasks')
-      .select('frequency_days')
+      .select('frequency_days, schedule_type, seasonal_months, seasonal_day')
       .eq('id', taskId)
       .eq('user_id', user.id)
       .single();
-    if (!task?.frequency_days) return;
+    if (!task) return;
+    if (task.schedule_type !== 'seasonal' && !task.frequency_days) return;
     const { data: remaining } = await supabase
       .from('maintenance_completions')
       .select('completed_at')
@@ -140,9 +142,8 @@ export const MaintenanceHistoryTab: React.FC<MaintenanceHistoryTabProps> = ({ se
       .order('completed_at', { ascending: false })
       .limit(1);
     const lastCompleted = remaining?.[0]?.completed_at ?? null;
-    const nextDue = lastCompleted
-      ? addDays(new Date(lastCompleted), task.frequency_days).toISOString()
-      : addDays(new Date(), task.frequency_days).toISOString();
+    const fromDate = lastCompleted ? new Date(lastCompleted) : new Date();
+    const nextDue = computeNextDue(task, fromDate, lastCompleted ? 'after' : 'onOrAfter').toISOString();
     await supabase
       .from('user_maintenance_tasks')
       .update({ last_completed: lastCompleted, next_due: nextDue, updated_at: new Date().toISOString() })

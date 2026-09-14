@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { formatFrequencyLabel } from '@/utils/maintenanceSchedule';
 
 interface MaintenanceTask {
   id: string;
@@ -15,6 +16,9 @@ interface MaintenanceTask {
   frequency_days: number;
   next_due: string;
   description?: string;
+  schedule_type?: string | null;
+  seasonal_months?: number[] | null;
+  seasonal_day?: number | null;
 }
 
 interface MaintenanceCompletion {
@@ -161,7 +165,7 @@ export const MaintenancePdfPrinter: React.FC<MaintenancePdfPrinterProps> = ({
                   <tr key={task.id} style={{ backgroundColor: index % 2 === 0 ? '#fff' : '#f8f9fa' }}>
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>{task.title}</td>
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>{categoryLabels[task.category]}</td>
-                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>Every {task.frequency_days} days</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>{formatFrequencyLabel(task)}</td>
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                       {format(new Date(task.next_due), 'MMM dd, yyyy')}
                     </td>

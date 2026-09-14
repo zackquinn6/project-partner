@@ -13,7 +13,14 @@ import { Plus, FileText, User, ClipboardList, Inbox, CheckCircle2, Search, X } f
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { addDays } from 'date-fns';
+import {
+  computeNextDue,
+  formatFrequencyLabel,
+  isSeasonIntent,
+  MONTH_NAMES,
+  resolveSeasonalMonths,
+  type ScheduleType,
+} from '@/utils/maintenanceSchedule';
 
 interface MaintenanceTemplate {
   id: string;
@@ -22,6 +29,8 @@ interface MaintenanceTemplate {
   summary?: string | null;
   category: string;
   frequency_days: number;
+  schedule_type?: string | null;
+  season_intent?: string | null;
   instructions: string | null;
   risks_of_skipping?: string | null;
   benefits_of_maintenance?: string | null;
@@ -52,21 +61,32 @@ export function AddMaintenanceTaskDialog({
   const [templateFilterCriticality, setTemplateFilterCriticality] = useState<string>('all');
   const [templateSearchQuery, setTemplateSearchQuery] = useState('');
 
-  // Custom task form
   const [customTask, setCustomTask] = useState({
     title: '',
     description: '',
     category: 'general',
+    schedule_type: 'interval' as ScheduleType,
     frequency_days: 90,
+    seasonal_months: [11] as number[],
+    seasonal_day: 1,
     criticality: 2 as 1 | 2 | 3,
     risks_of_skipping: '',
     benefits_of_maintenance: '',
   });
+  const [climateRegion, setClimateRegion] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       fetchTemplates();
       if (homeId && user?.id) fetchExistingTemplateIds();
+      if (homeId) {
+        supabase
+          .from('home_details')
+          .select('climate_region')
+          .eq('home_id', homeId)
+          .maybeSingle()
+          .then(({ data }) => setClimateRegion(data?.climate_region ?? null));
+      }
     }
   }, [open, homeId, user?.id]);
 
@@ -113,7 +133,18 @@ export function AddMaintenanceTaskDialog({
     
     setLoading(true);
     try {
-      const nextDueDate = addDays(new Date(), template.frequency_days);
+      const intent = template.season_intent;
+      const isSeasonal = template.schedule_type === 'seasonal' && isSeasonIntent(intent);
+      const seasonalMonths = isSeasonal
+        ? resolveSeasonalMonths(intent, climateRegion)
+        : null;
+      const scheduleFields = {
+        schedule_type: (isSeasonal ? 'seasonal' : 'interval') as ScheduleType,
+        frequency_days: isSeasonal ? 365 : template.frequency_days,
+        seasonal_months: seasonalMonths,
+        seasonal_day: 1,
+      };
+      const nextDueDate = computeNextDue(scheduleFields, new Date(), 'onOrAfter');
       
       const { error } = await supabase
         .from('user_maintenance_tasks')
@@ -126,7 +157,10 @@ export function AddMaintenanceTaskDialog({
           summary: template.summary ?? null,
           instructions: template.instructions ?? null,
           category: template.category,
-          frequency_days: template.frequency_days,
+          frequency_days: scheduleFields.frequency_days,
+          schedule_type: scheduleFields.schedule_type,
+          seasonal_months: scheduleFields.seasonal_months,
+          seasonal_day: scheduleFields.seasonal_day,
           next_due: nextDueDate.toISOString(),
           risks_of_skipping: template.risks_of_skipping ?? null,
           benefits_of_maintenance: template.benefits_of_maintenance ?? null,
@@ -154,10 +188,24 @@ export function AddMaintenanceTaskDialog({
 
   const handleAddCustomTask = async () => {
     if (!homeId || !customTask.title.trim()) return;
+    if (customTask.schedule_type === 'seasonal' && customTask.seasonal_months.length === 0) {
+      toast({
+        title: 'Select months',
+        description: 'Seasonal tasks need at least one month of the year.',
+        variant: 'destructive',
+      });
+      return;
+    }
     
     setLoading(true);
     try {
-      const nextDueDate = addDays(new Date(), customTask.frequency_days);
+      const scheduleFields = {
+        schedule_type: customTask.schedule_type,
+        frequency_days: customTask.schedule_type === 'seasonal' ? 365 : customTask.frequency_days,
+        seasonal_months: customTask.schedule_type === 'seasonal' ? customTask.seasonal_months : null,
+        seasonal_day: customTask.schedule_type === 'seasonal' ? customTask.seasonal_day : 1,
+      };
+      const nextDueDate = computeNextDue(scheduleFields, new Date(), 'onOrAfter');
       
       const { error } = await supabase
         .from('user_maintenance_tasks')
@@ -167,7 +215,10 @@ export function AddMaintenanceTaskDialog({
           title: customTask.title.trim(),
           description: customTask.description.trim() || null,
           category: customTask.category,
-          frequency_days: customTask.frequency_days,
+          frequency_days: scheduleFields.frequency_days,
+          schedule_type: scheduleFields.schedule_type,
+          seasonal_months: scheduleFields.seasonal_months,
+          seasonal_day: scheduleFields.seasonal_day,
           next_due: nextDueDate.toISOString(),
           risks_of_skipping: customTask.risks_of_skipping.trim() || null,
           benefits_of_maintenance: customTask.benefits_of_maintenance.trim() || null,
@@ -181,7 +232,10 @@ export function AddMaintenanceTaskDialog({
         title: '',
         description: '',
         category: 'general',
+        schedule_type: 'interval',
         frequency_days: 90,
+        seasonal_months: [11],
+        seasonal_day: 1,
         criticality: 2,
         risks_of_skipping: '',
         benefits_of_maintenance: '',
@@ -366,7 +420,14 @@ export function AddMaintenanceTaskDialog({
                                 <CardTitle className="text-base truncate">{template.title}</CardTitle>
                                 <div className="text-xs text-muted-foreground">
                                   {(categoryLabels[template.category] || template.category) &&
-                                    `${categoryLabels[template.category] || template.category} · Every ${template.frequency_days} days`}
+                                    `${categoryLabels[template.category] || template.category} · ${formatFrequencyLabel({
+                                      schedule_type: template.schedule_type,
+                                      frequency_days: template.frequency_days,
+                                      seasonal_months:
+                                        template.schedule_type === 'seasonal' && isSeasonIntent(template.season_intent)
+                                          ? resolveSeasonalMonths(template.season_intent, climateRegion)
+                                          : null,
+                                    })}`}
                                 </div>
                               </div>
                               <Button 
@@ -445,26 +506,98 @@ export function AddMaintenanceTaskDialog({
                 </div>
 
                 <div>
-                  <Label htmlFor="frequency">Frequency</Label>
+                  <Label htmlFor="schedule-type">Schedule</Label>
                   <Select
-                    value={String(customTask.frequency_days)}
-                    onValueChange={(v) => setCustomTask(prev => ({ ...prev, frequency_days: parseInt(v, 10) || 90 }))}
+                    value={customTask.schedule_type}
+                    onValueChange={(v) =>
+                      setCustomTask(prev => ({
+                        ...prev,
+                        schedule_type: v as ScheduleType,
+                        seasonal_months:
+                          v === 'seasonal' && prev.seasonal_months.length === 0 ? [11] : prev.seasonal_months,
+                      }))
+                    }
                   >
-                    <SelectTrigger id="frequency" className="w-full min-w-0 max-w-full">
+                    <SelectTrigger id="schedule-type" className="w-full min-w-0 max-w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="z-[200]">
-                      <SelectItem value="7">Weekly (7 days)</SelectItem>
-                      <SelectItem value="30">Monthly (30 days)</SelectItem>
-                      <SelectItem value="90">Quarterly (90 days)</SelectItem>
-                      <SelectItem value="182">Bi-annual (Every 6 months)</SelectItem>
-                      <SelectItem value="365">Yearly (365 days)</SelectItem>
-                      <SelectItem value="730">Every 2 years (730 days)</SelectItem>
-                      <SelectItem value="1095">Every 3 years (1095 days)</SelectItem>
-                      <SelectItem value="1825">Every 5 years (1825 days)</SelectItem>
+                      <SelectItem value="interval">Interval (days)</SelectItem>
+                      <SelectItem value="seasonal">Seasonal (months of year)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+
+                {customTask.schedule_type === 'interval' ? (
+                  <div>
+                    <Label htmlFor="frequency">Frequency</Label>
+                    <Select
+                      value={String(customTask.frequency_days)}
+                      onValueChange={(v) => setCustomTask(prev => ({ ...prev, frequency_days: parseInt(v, 10) || 90 }))}
+                    >
+                      <SelectTrigger id="frequency" className="w-full min-w-0 max-w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="z-[200]">
+                        <SelectItem value="7">Weekly (7 days)</SelectItem>
+                        <SelectItem value="30">Monthly (30 days)</SelectItem>
+                        <SelectItem value="90">Quarterly (90 days)</SelectItem>
+                        <SelectItem value="182">Bi-annual (Every 6 months)</SelectItem>
+                        <SelectItem value="365">Yearly (365 days)</SelectItem>
+                        <SelectItem value="730">Every 2 years (730 days)</SelectItem>
+                        <SelectItem value="1095">Every 3 years (1095 days)</SelectItem>
+                        <SelectItem value="1825">Every 5 years (1825 days)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <Label>Months of year</Label>
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {MONTH_NAMES.map((name, idx) => {
+                          const month = idx + 1;
+                          const selected = customTask.seasonal_months.includes(month);
+                          return (
+                            <Button
+                              key={month}
+                              type="button"
+                              size="sm"
+                              variant={selected ? 'default' : 'outline'}
+                              className="h-8 px-2 text-xs"
+                              onClick={() =>
+                                setCustomTask(prev => ({
+                                  ...prev,
+                                  seasonal_months: selected
+                                    ? prev.seasonal_months.filter(m => m !== month)
+                                    : [...prev.seasonal_months, month].sort((a, b) => a - b),
+                                }))
+                              }
+                            >
+                              {name.slice(0, 3)}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="max-w-[8rem]">
+                      <Label htmlFor="seasonal-day">Day of month</Label>
+                      <Input
+                        id="seasonal-day"
+                        type="number"
+                        min={1}
+                        max={31}
+                        value={customTask.seasonal_day}
+                        onChange={(e) =>
+                          setCustomTask(prev => ({
+                            ...prev,
+                            seasonal_day: Math.min(31, Math.max(1, parseInt(e.target.value, 10) || 1)),
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="additional" className="border rounded-md px-3">

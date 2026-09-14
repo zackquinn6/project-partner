@@ -1813,6 +1813,8 @@ export type Database = {
           photo_url: string | null
           repair_cost_savings: string | null
           risks_of_skipping: string | null
+          schedule_type: string
+          season_intent: string | null
           summary: string | null
           title: string
           typical_season: string | null
@@ -1831,6 +1833,8 @@ export type Database = {
           photo_url?: string | null
           repair_cost_savings?: string | null
           risks_of_skipping?: string | null
+          schedule_type?: string
+          season_intent?: string | null
           summary?: string | null
           title: string
           typical_season?: string | null
@@ -1849,6 +1853,8 @@ export type Database = {
           photo_url?: string | null
           repair_cost_savings?: string | null
           risks_of_skipping?: string | null
+          schedule_type?: string
+          season_intent?: string | null
           summary?: string | null
           title?: string
           typical_season?: string | null
@@ -4014,6 +4020,9 @@ export type Database = {
           recurrence_start_date: string | null
           repair_cost_savings: string | null
           risks_of_skipping: string | null
+          schedule_type: string
+          seasonal_day: number
+          seasonal_months: number[] | null
           summary: string | null
           title: string
           updated_at: string
@@ -4038,6 +4047,9 @@ export type Database = {
           recurrence_start_date?: string | null
           repair_cost_savings?: string | null
           risks_of_skipping?: string | null
+          schedule_type?: string
+          seasonal_day?: number
+          seasonal_months?: number[] | null
           summary?: string | null
           title: string
           updated_at?: string
@@ -4062,6 +4074,9 @@ export type Database = {
           recurrence_start_date?: string | null
           repair_cost_savings?: string | null
           risks_of_skipping?: string | null
+          schedule_type?: string
+          seasonal_day?: number
+          seasonal_months?: number[] | null
           summary?: string | null
           title?: string
           updated_at?: string

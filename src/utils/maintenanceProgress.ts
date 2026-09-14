@@ -1,11 +1,11 @@
 import { differenceInDays, startOfDay } from 'date-fns';
+import { effectiveFrequencyDays, type ScheduleFields } from '@/utils/maintenanceSchedule';
 
-export interface TaskForProgress {
+export interface TaskForProgress extends ScheduleFields {
   id: string;
   last_completed: string | null;
   /** When set, progress is derived from calendar days until due (matches “Due …” in the UI). */
   next_due?: string | null;
-  frequency_days: number;
   progress_percentage?: number | null;
 }
 
@@ -23,7 +23,7 @@ export function getTaskProgress(
   if (task.progress_percentage != null) {
     return Math.max(0, task.progress_percentage);
   }
-  const freq = task.frequency_days;
+  const freq = effectiveFrequencyDays(task);
   if (!freq || freq < 1) {
     return 0;
   }
