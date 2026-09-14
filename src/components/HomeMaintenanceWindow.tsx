@@ -675,6 +675,25 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   };
   const formatDaysRelative = (days: number): string =>
     days > 0 ? `+${days} days` : `${days} days`;
+  /** Aligned progress label + track so bars share the same start/end across tasks. */
+  const renderTaskProgressRow = (
+    progress: number,
+    daysRelative: number,
+    options?: { textClassName?: string; editButton?: React.ReactNode }
+  ) => (
+    <div className={`flex items-center gap-1.5 ${options?.textClassName ?? 'text-xs text-muted-foreground'}`}>
+      <span className="shrink-0">Progress</span>
+      <span className="inline-block w-[10ch] shrink-0 tabular-nums text-left">
+        {formatDaysRelative(daysRelative)}
+      </span>
+      <Progress
+        value={Math.min(100, progress)}
+        indicatorClassName={getProgressBarColor(progress)}
+        className="h-2 flex-1 min-w-0 border border-border bg-muted/70 shadow-none py-0"
+      />
+      {options?.editButton}
+    </div>
+  );
   const getTaskStatus = (task: MaintenanceTask) => {
     const dueDate = startOfDay(new Date(task.next_due));
     const now = startOfDay(new Date());
@@ -1252,19 +1271,20 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                           <p className="text-xs text-muted-foreground leading-snug">
                                             Next due: {format(new Date(task.next_due), 'MM/dd/yyyy')}
                                           </p>
-                                          <div className="flex items-center gap-1 mt-0.5 md:mt-2 md:gap-1.5 text-xs text-muted-foreground">
-                                            <span className="shrink-0">Progress</span>
-                                            <span className="shrink-0 tabular-nums">{formatDaysRelative(daysRelative)}</span>
-                                            <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[52%] md:max-w-none border-0 shadow-none py-0" />
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-6 w-6 shrink-0 md:hidden text-muted-foreground hover:text-foreground"
-                                              title="Edit Task"
-                                              onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
-                                            >
-                                              <Pencil className="h-3 w-3 shrink-0" />
-                                            </Button>
+                                          <div className="mt-0.5 md:mt-2">
+                                            {renderTaskProgressRow(progress, daysRelative, {
+                                              editButton: (
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-6 w-6 shrink-0 md:hidden text-muted-foreground hover:text-foreground"
+                                                  title="Edit Task"
+                                                  onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
+                                                >
+                                                  <Pencil className="h-3 w-3 shrink-0" />
+                                                </Button>
+                                              ),
+                                            })}
                                           </div>
                                           <p className="hidden md:block text-xs text-muted-foreground line-clamp-2 mt-1">{summary}</p>
                                         </div>
@@ -1340,19 +1360,20 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                               <p className="text-xs text-muted-foreground leading-snug">
                                                 Next due: {format(new Date(task.next_due), 'MM/dd/yyyy')}
                                               </p>
-                                              <div className="flex items-center gap-1 mt-0.5 md:mt-2 md:gap-1.5 text-xs text-muted-foreground">
-                                                <span className="shrink-0">Progress</span>
-                                                <span className="shrink-0 tabular-nums">{formatDaysRelative(daysRelative)}</span>
-                                                <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1 min-w-0 max-w-[52%] md:max-w-none border-0 shadow-none py-0" />
-                                                <Button
-                                                  variant="ghost"
-                                                  size="icon"
-                                                  className="h-6 w-6 shrink-0 md:hidden text-muted-foreground hover:text-foreground"
-                                                  title="Edit Task"
-                                                  onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
-                                                >
-                                                  <Pencil className="h-3 w-3 shrink-0" />
-                                                </Button>
+                                              <div className="mt-0.5 md:mt-2">
+                                                {renderTaskProgressRow(progress, daysRelative, {
+                                                  editButton: (
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="icon"
+                                                      className="h-6 w-6 shrink-0 md:hidden text-muted-foreground hover:text-foreground"
+                                                      title="Edit Task"
+                                                      onClick={(e) => { e.stopPropagation(); setTaskBeingEdited(task); }}
+                                                    >
+                                                      <Pencil className="h-3 w-3 shrink-0" />
+                                                    </Button>
+                                                  ),
+                                                })}
                                               </div>
                                               <p className="hidden md:block text-xs text-muted-foreground line-clamp-2 mt-1">{summary}</p>
                                             </div>
@@ -1429,10 +1450,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                           <div className="flex items-center gap-2">
                                             <span className="font-medium truncate">{task.title}</span>
                                           </div>
-                                          <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-                                            <span>Progress</span>
-                                            <span className="tabular-nums">{formatDaysRelative(daysRelative)}</span>
-                                            <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1" />
+                                          <div className="mt-1">
+                                            {renderTaskProgressRow(progress, daysRelative, {
+                                              textClassName: 'text-[10px] text-muted-foreground',
+                                            })}
                                           </div>
                                         </td>
                                         <td className="px-2 py-2 align-middle">
@@ -1506,10 +1527,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                             <div className="flex items-center gap-2">
                                               <span className="font-medium truncate">{task.title}</span>
                                             </div>
-                                            <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-                                              <span>Progress</span>
-                                              <span className="tabular-nums">{formatDaysRelative(daysRelative)}</span>
-                                              <Progress value={Math.min(100, progress)} indicatorClassName={getProgressBarColor(progress)} className="h-1.5 flex-1" />
+                                            <div className="mt-1">
+                                              {renderTaskProgressRow(progress, daysRelative, {
+                                                textClassName: 'text-[10px] text-muted-foreground',
+                                              })}
                                             </div>
                                           </td>
                                           <td className="px-2 py-2 align-middle">
