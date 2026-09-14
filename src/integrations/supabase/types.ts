@@ -4429,6 +4429,10 @@ export type Database = {
         Args: { p_invitation_id: string }
         Returns: Json
       }
+      apply_decision_details_to_phases_json: {
+        Args: { p_decision_tree_config: Json; p_phases: Json }
+        Returns: Json
+      }
       attach_foundational_project: {
         Args: { p_child_project_id: string; p_foundation_project_id: string }
         Returns: Json
@@ -4560,6 +4564,10 @@ export type Database = {
         Args: { p_project_id: string; p_workflow: Json }
         Returns: Json
       }
+      get_beta_tile_analytics_payload: {
+        Args: { p_signup_from: string; p_signup_to: string }
+        Returns: Json
+      }
       get_help_usage_status: {
         Args: { p_user_id?: string }
         Returns: {
@@ -4596,13 +4604,6 @@ export type Database = {
           public_count: number
           template_name: string
         }[]
-      }
-      get_beta_tile_analytics_payload: {
-        Args: {
-          p_signup_from: string
-          p_signup_to: string
-        }
-        Returns: Json
       }
       get_photos_by_project_type_internal: {
         Args: never
@@ -4727,6 +4728,18 @@ export type Database = {
         Returns: Json
       }
       record_trial_notification_shown: { Args: never; Returns: undefined }
+      remap_id_array_via_map: {
+        Args: { p_arr: Json; p_id_map: Json }
+        Returns: Json
+      }
+      remap_id_text_via_map: {
+        Args: { p_id: string; p_id_map: Json }
+        Returns: string
+      }
+      remap_scheduling_prerequisites_for_revision: {
+        Args: { p_id_map: Json; p_prereqs: Json }
+        Returns: Json
+      }
       reset_project_revisions_preserve_latest: {
         Args: { p_project_id: string }
         Returns: string
