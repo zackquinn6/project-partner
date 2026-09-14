@@ -24,6 +24,7 @@ import { DataPrivacyManager } from '@/components/DataPrivacyManager';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { useProject } from '@/contexts/ProjectContext';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
+import { useAiFeatureSettings } from '@/hooks/useAiFeatureSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { countDueSoon } from '@/utils/maintenanceProgress';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
@@ -59,6 +60,7 @@ export function MobileOptimizedHome() {
   const { projectRuns, currentProjectRun } = useProject();
   const navigate = useNavigate();
   const { projectCatalogEnabled, workshopLabsAccordionEnabled } = useGlobalPublicSettings();
+  const { aiRepairEnabled } = useAiFeatureSettings();
   
   const [stats, setStats] = useState({
     activeProjects: 0,
@@ -247,13 +249,17 @@ export function MobileOptimizedHome() {
       description: 'Find and rent tools nearby',
       action: () => window.dispatchEvent(new CustomEvent('show-tool-rentals'))
     },
-    {
-      id: 'ai-repair',
-      icon: Camera,
-      title: 'AI Repair',
-      description: 'Diagnose issues with AI',
-      action: () => window.dispatchEvent(new CustomEvent('show-ai-repair'))
-    },
+    ...(aiRepairEnabled
+      ? [
+          {
+            id: 'ai-repair',
+            icon: Camera,
+            title: 'AI Repair',
+            description: 'Diagnose issues with AI',
+            action: () => window.dispatchEvent(new CustomEvent('show-ai-repair'))
+          },
+        ]
+      : []),
     {
       id: 'code-permits',
       icon: Building2,
@@ -375,7 +381,10 @@ export function MobileOptimizedHome() {
             Your work at a glance
           </h2>
           <div className="grid grid-cols-2 gap-3">
-            <Card className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-emerald-900/80 via-emerald-900 to-emerald-900/90 shadow-sm">
+            <Card
+              className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-emerald-900/80 via-emerald-900 to-emerald-900/90 shadow-sm cursor-pointer transition-opacity hover:opacity-90"
+              onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}
+            >
               <div className="absolute inset-x-0 -top-6 h-10 bg-gradient-to-b from-emerald-500/30 to-transparent pointer-events-none" />
               <CardContent className="relative p-3 text-left space-y-1">
                 <p className="text-[11px] uppercase tracking-wide text-emerald-200/80">
@@ -387,7 +396,10 @@ export function MobileOptimizedHome() {
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-sky-900/80 via-sky-900 to-sky-900/90 shadow-sm">
+            <Card
+              className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-sky-900/80 via-sky-900 to-sky-900/90 shadow-sm cursor-pointer transition-opacity hover:opacity-90"
+              onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}
+            >
               <div className="absolute inset-x-0 -top-6 h-10 bg-gradient-to-b from-sky-500/30 to-transparent pointer-events-none" />
               <CardContent className="relative p-3 text-left space-y-1">
                 <p className="text-[11px] uppercase tracking-wide text-sky-200/80">

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
+import { useAiFeatureSettings } from '@/hooks/useAiFeatureSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +58,7 @@ export default function Home({
     workshopLabsAccordionEnabled,
     loading: publicSettingsLoading,
   } = useGlobalPublicSettings();
+  const { aiRepairEnabled } = useAiFeatureSettings();
   const [showFullMarketingLanding, setShowFullMarketingLanding] = useState(false);
   const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [isDIYStyleQuizOpen, setIsDIYStyleQuizOpen] = useState(false);
@@ -160,6 +162,7 @@ export default function Home({
       setIsDIYStyleQuizOpen(true);
     };
     const handleOpenAIRepair = () => {
+      if (!aiRepairEnabled) return;
       setIsAIRepairOpen(true);
     };
     window.addEventListener('open-diy-quiz', handleOpenQuiz);
@@ -168,7 +171,7 @@ export default function Home({
       window.removeEventListener('open-diy-quiz', handleOpenQuiz);
       window.removeEventListener('show-ai-repair', handleOpenAIRepair);
     };
-  }, []);
+  }, [aiRepairEnabled]);
   const handleScrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -195,92 +198,108 @@ export default function Home({
                 Your work at a glance
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-slate-900/80 via-slate-900 to-slate-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm">
-                  <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-amber-500/30 to-transparent pointer-events-none" />
-                  <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
-                    <TooltipProvider delayDuration={200}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-amber-300/80 cursor-default md:whitespace-nowrap">
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'))}
+                        className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-slate-900/80 via-slate-900 to-slate-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
+                      >
+                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-amber-500/30 to-transparent pointer-events-none" />
+                        <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
+                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-amber-300/80 md:whitespace-nowrap">
                             Active projects
                           </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" className="max-w-xs text-[11px]">
-                          <p>
-                            Project runs that show as <span className="font-medium">In progress</span> on your
-                            Project Dashboard (workflow started, not yet complete).
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-amber-50">
-                      {stats.activeProjects ?? 0}
-                    </span>
-                  </div>
-                </div>
+                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-amber-50">
+                            {stats.activeProjects ?? 0}
+                          </span>
+                        </div>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs text-[11px]">
+                      <p>
+                        Project runs that show as <span className="font-medium">In progress</span> on your
+                        Project Dashboard (workflow started, not yet complete).
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
 
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-emerald-900/80 via-emerald-900 to-emerald-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm">
-                  <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-emerald-500/30 to-transparent pointer-events-none" />
-                  <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
-                    <TooltipProvider delayDuration={200}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-emerald-200/80 cursor-default md:whitespace-nowrap">
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}
+                        className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-emerald-900/80 via-emerald-900 to-emerald-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+                      >
+                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-emerald-500/30 to-transparent pointer-events-none" />
+                        <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
+                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-emerald-200/80 md:whitespace-nowrap">
                             Open tasks
                           </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" className="max-w-xs text-[11px]">
-                          <p>All tasks in Project & Task Manager that are not marked complete.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-emerald-50">
-                      {stats.openTasks ?? 0}
-                    </span>
-                  </div>
-                </div>
+                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-emerald-50">
+                            {stats.openTasks ?? 0}
+                          </span>
+                        </div>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs text-[11px]">
+                      <p>All tasks in Project & Task Manager that are not marked complete.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
 
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-sky-900/80 via-sky-900 to-sky-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm">
-                  <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-sky-500/30 to-transparent pointer-events-none" />
-                  <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
-                    <TooltipProvider delayDuration={200}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-sky-200/80 cursor-default md:whitespace-nowrap">
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}
+                        className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-sky-900/80 via-sky-900 to-sky-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60"
+                      >
+                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-sky-500/30 to-transparent pointer-events-none" />
+                        <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
+                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-sky-200/80 md:whitespace-nowrap">
                             Maintenance due soon
                           </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" className="max-w-xs text-[11px]">
-                          <p>Tasks at 90–99% toward due. Matches the Due Soon count in Home Maintenance.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-sky-50">
-                      {stats.maintenanceDueSoon ?? 0}
-                    </span>
-                  </div>
-                </div>
+                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-sky-50">
+                            {stats.maintenanceDueSoon ?? 0}
+                          </span>
+                        </div>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs text-[11px]">
+                      <p>Tasks at 90–99% toward due. Matches the Due Soon count in Home Maintenance.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
 
-                <div className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-violet-900/80 via-violet-900 to-violet-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm">
-                  <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-violet-500/30 to-transparent pointer-events-none" />
-                  <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
-                    <TooltipProvider delayDuration={200}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-violet-200/80 cursor-default md:whitespace-nowrap">
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'))}
+                        className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-violet-900/80 via-violet-900 to-violet-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60"
+                      >
+                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-violet-500/30 to-transparent pointer-events-none" />
+                        <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
+                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-violet-200/80 md:whitespace-nowrap">
                             Projects completed
                           </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" className="max-w-xs text-[11px]">
-                          <p>Project runs in your workshop that are finished (100% complete).</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-violet-50">
-                      {stats.completedProjects ?? 0}
-                    </span>
-                  </div>
-                </div>
+                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-violet-50">
+                            {stats.completedProjects ?? 0}
+                          </span>
+                        </div>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs text-[11px]">
+                      <p>Project runs in your workshop that are finished (100% complete).</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
             
@@ -434,16 +453,18 @@ export default function Home({
                         <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       </div>
                       
-                      <div className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => window.dispatchEvent(new CustomEvent('show-ai-repair'))}>
-                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Camera className="h-5 w-5 text-primary" />
+                      {aiRepairEnabled && (
+                        <div className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => window.dispatchEvent(new CustomEvent('show-ai-repair'))}>
+                          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Camera className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-xs text-card-foreground">AI Repair</h3>
+                            <p className="text-[10px] text-muted-foreground">Diagnose issues with AI</p>
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-xs text-card-foreground">AI Repair</h3>
-                          <p className="text-[10px] text-muted-foreground">Diagnose issues with AI</p>
-                        </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      </div>
+                      )}
                       
                       <div className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setIsCodePermitsOpen(true)}>
                         <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -514,7 +535,9 @@ export default function Home({
       
       <DIYStyleQuiz open={isDIYStyleQuizOpen} onOpenChange={open => setIsDIYStyleQuizOpen(open)} />
 
-      <AIRepairWindow open={isAIRepairOpen} onOpenChange={open => setIsAIRepairOpen(open)} />
+      {aiRepairEnabled && (
+        <AIRepairWindow open={isAIRepairOpen} onOpenChange={open => setIsAIRepairOpen(open)} />
+      )}
 
       <CodePermitsWindow open={isCodePermitsOpen} onOpenChange={setIsCodePermitsOpen} />
       

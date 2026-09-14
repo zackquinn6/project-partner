@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
+import { useAiFeatureSettings } from '@/hooks/useAiFeatureSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +26,7 @@ import { toast } from 'sonner';
 export const PostAuthLanding = () => {
   const navigate = useNavigate();
   const { projectCatalogEnabled, workshopLabsAccordionEnabled } = useGlobalPublicSettings();
+  const { aiRepairEnabled } = useAiFeatureSettings();
   const {
     user
   } = useAuth();
@@ -307,16 +309,18 @@ export const PostAuthLanding = () => {
                         <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       </div>
                       
-                      <div className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setShowAIRepair(true)}>
-                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Camera className="h-5 w-5 text-primary" />
+                      {aiRepairEnabled && (
+                        <div className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setShowAIRepair(true)}>
+                          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Camera className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-sm text-card-foreground">AI Repair</h3>
+                            <p className="text-xs text-muted-foreground">Diagnose issues with AI</p>
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-sm text-card-foreground">AI Repair</h3>
-                          <p className="text-xs text-muted-foreground">Diagnose issues with AI</p>
-                        </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      </div>
+                      )}
                       
                       <div className="flex items-center gap-3 p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setShowCodePermits(true)}>
                         <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -348,7 +352,9 @@ export const PostAuthLanding = () => {
         
         <ExpertHelpWindow isOpen={showExpertHelp} onClose={() => setShowExpertHelp(false)} />
         
-        <AIRepairWindow open={showAIRepair} onOpenChange={setShowAIRepair} />
+        {aiRepairEnabled && (
+          <AIRepairWindow open={showAIRepair} onOpenChange={setShowAIRepair} />
+        )}
         
         <CodePermitsWindow open={showCodePermits} onOpenChange={setShowCodePermits} />
         

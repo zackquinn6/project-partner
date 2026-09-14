@@ -1,0 +1,67 @@
+---
+description: >-
+  Enforce Row Level Security (RLS) for Supabase schema changes and SQL
+  migrations. Use when creating/altering tables, writing supabase/migrations,
+  fixing "tables without RLS" warnings, or adding policies.
+globs: supabase/migrations/**/*.sql
+alwaysApply: false
+---
+
+# Supabase RLS required for schema changes
+
+Any migration that **creates a table** (or exposes a new publicly accessible relation) must enable RLS and define policies in the **same** migration. Do not ship `CREATE TABLE` and leave RLS for a follow-up.
+
+## Required checklist (new table)
+
+1. `ALTER TABLE public.<table> ENABLE ROW LEVEL SECURITY;`
+2. Policies for every needed command (`SELECT` / `INSERT` / `UPDATE` / `DELETE`) and role (`anon` / `authenticated` / `service_role` only if intentional).
+3. Prefer ownership via `auth.uid()` and existing DB relationships (`user_id`, `home_id` → `homes`, `project_id` → `projects` / `project_owners`). Do not hardcode role/name strings for business state.
+4. Idempotent policy creates: `DROP POLICY IF EXISTS ...` then `CREATE POLICY ...`.
+5. Confirm with: table has RLS enabled **and** at least one policy (RLS on with zero policies blocks all non-superuser access and still fails Supabase advisors differently than RLS off).
+
+## New columns / alters
+
+- Adding columns to an existing RLS-protected table usually needs **no** new policy if access is still row-owner based.
+- If the column changes who can read/write rows, update policies in the same migration.
+- Do not disable RLS to "make inserts work" - fix policies instead.
+
+## Examples
+
+```sql
+-- BAD: table created, RLS missing (Supabase advisor warning)
+CREATE TABLE public.example_notes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users (id),
+  body text NOT NULL
+);
+
+-- GOOD: RLS + owner policies in the same migration
+CREATE TABLE public.example_notes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users (id),
+  body text NOT NULL
+);
+
+ALTER TABLE public.example_notes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY example_notes_select_own ON public.example_notes
+  FOR SELECT TO authenticated
+  USING (user_id = auth.uid());
+
+CREATE POLICY example_notes_insert_own ON public.example_notes
+  FOR INSERT TO authenticated
+  WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY example_notes_update_own ON public.example_notes
+  FOR UPDATE TO authenticated
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY example_notes_delete_own ON public.example_notes
+  FOR DELETE TO authenticated
+  USING (user_id = auth.uid());
+```
+
+## Catalog / public-read tables
+
+If authenticated (or anon) clients must read shared catalog data, still `ENABLE ROW LEVEL SECURITY` and add an explicit `FOR SELECT` policy (`USING (true)` only when intentional). Never leave catalog tables with RLS disabled.

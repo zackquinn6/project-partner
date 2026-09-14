@@ -325,11 +325,13 @@ export function SomethingWrongDialog({
                   ))}
                 </ul>
                 <div className="flex flex-wrap gap-1 pt-1">
-                  {recoveryPlan.actions.map((a) => (
-                    <Badge key={a} variant="outline" className="text-[10px]">
-                      {actionLabel(a)}
-                    </Badge>
-                  ))}
+                  {recoveryPlan.actions
+                    .filter((a) => a !== 'ask_ai' || Boolean(onAskAi))
+                    .map((a) => (
+                      <Badge key={a} variant="outline" className="text-[10px]">
+                        {actionLabel(a)}
+                      </Badge>
+                    ))}
                 </div>
               </AlertDescription>
             </Alert>

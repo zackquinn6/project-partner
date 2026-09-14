@@ -35,6 +35,7 @@ import { PhaseAssignment } from '@/components/PhaseAssignment';
 import { ProjectTeamAvailability } from '@/components/ProjectTeamAvailability';
 import { ProjectContractors } from '@/components/ProjectContractors';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAiFeatureSettings } from '@/hooks/useAiFeatureSettings';
 import { ScheduleCalendarView } from '@/components/ScheduleCalendarView';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import { ScheduleSensitivity } from './Scheduler/ScheduleSensitivity';
@@ -169,6 +170,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     isMobile
   } = useResponsive();
   const { user } = useAuth();
+  const { aiSchedulerAvailabilityEnabled } = useAiFeatureSettings();
 
   // Assign work dialog state
   const [showPhaseAssignment, setShowPhaseAssignment] = useState(false);
@@ -1674,13 +1676,17 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               collapseAccordionSignal={schedulerAccordionCollapseSignal}
               noWorkOnHolidays={noWorkOnHolidays}
               setNoWorkOnHolidays={setNoWorkOnHolidays}
-              onOpenAvailabilityAi={(memberId) => {
-                setAvailabilityAiFocusMemberId(memberId ?? null);
-                setAvailabilityAiOpen(true);
-                if (user?.id) {
-                  void loadContractorAvailabilityRoster(user.id).then(setAiContractorRoster);
-                }
-              }}
+              onOpenAvailabilityAi={
+                aiSchedulerAvailabilityEnabled
+                  ? (memberId) => {
+                      setAvailabilityAiFocusMemberId(memberId ?? null);
+                      setAvailabilityAiOpen(true);
+                      if (user?.id) {
+                        void loadContractorAvailabilityRoster(user.id).then(setAiContractorRoster);
+                      }
+                    }
+                  : undefined
+              }
             />
 
             {/* Results - Show View Schedule button after generation */}
@@ -1975,24 +1981,26 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
               />
             </DialogHeader>
             <div className="px-6 pb-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={() => {
-                  const memberId = calendarOpen;
-                  cancelCalendarChanges();
-                  setAvailabilityAiFocusMemberId(memberId);
-                  setAvailabilityAiOpen(true);
-                  if (user?.id) {
-                    void loadContractorAvailabilityRoster(user.id).then(setAiContractorRoster);
-                  }
-                }}
-              >
-                <Brain className="w-3.5 h-3.5 mr-1.5" />
-                Describe instead
-              </Button>
+              {aiSchedulerAvailabilityEnabled && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => {
+                    const memberId = calendarOpen;
+                    cancelCalendarChanges();
+                    setAvailabilityAiFocusMemberId(memberId);
+                    setAvailabilityAiOpen(true);
+                    if (user?.id) {
+                      void loadContractorAvailabilityRoster(user.id).then(setAiContractorRoster);
+                    }
+                  }}
+                >
+                  <Brain className="w-3.5 h-3.5 mr-1.5" />
+                  Describe instead
+                </Button>
+              )}
             </div>
             
             <div className="flex flex-col md:flex-row flex-1 min-h-0">
@@ -2234,42 +2242,44 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     />
 
     {/* AI availability text entry */}
-    <AvailabilityAiSheet
-      open={availabilityAiOpen}
-      onOpenChange={setAvailabilityAiOpen}
-      teamMembers={teamMembers}
-      onTeamMembersChange={(members) => {
-        setTeamMembers((prev) =>
-          prev.map((p) => {
-            const updated = members.find((m) => m.id === p.id);
-            if (!updated) return p;
-            return {
-              ...p,
-              weekendsOnly: updated.weekendsOnly,
-              weekdaysAfterFivePm: updated.weekdaysAfterFivePm,
-              workingHours: updated.workingHours,
-              availability: updated.availability,
-              blackoutDates: updated.blackoutDates ?? [],
-            };
-          })
-        );
-      }}
-      contractors={aiContractorRoster}
-      onContractorsChange={(next) => {
-        setAiContractorRoster(next as (ContractorAvailabilityShape & { dbId?: string })[]);
-        void persistContractorAvailabilityPatches(next).catch((err) => {
-          console.error(err);
-          toast({
-            title: 'Contractor save failed',
-            description: err instanceof Error ? err.message : 'Could not save contractor availability',
-            variant: 'destructive',
+    {aiSchedulerAvailabilityEnabled && (
+      <AvailabilityAiSheet
+        open={availabilityAiOpen}
+        onOpenChange={setAvailabilityAiOpen}
+        teamMembers={teamMembers}
+        onTeamMembersChange={(members) => {
+          setTeamMembers((prev) =>
+            prev.map((p) => {
+              const updated = members.find((m) => m.id === p.id);
+              if (!updated) return p;
+              return {
+                ...p,
+                weekendsOnly: updated.weekendsOnly,
+                weekdaysAfterFivePm: updated.weekdaysAfterFivePm,
+                workingHours: updated.workingHours,
+                availability: updated.availability,
+                blackoutDates: updated.blackoutDates ?? [],
+              };
+            })
+          );
+        }}
+        contractors={aiContractorRoster}
+        onContractorsChange={(next) => {
+          setAiContractorRoster(next as (ContractorAvailabilityShape & { dbId?: string })[]);
+          void persistContractorAvailabilityPatches(next).catch((err) => {
+            console.error(err);
+            toast({
+              title: 'Contractor save failed',
+              description: err instanceof Error ? err.message : 'Could not save contractor availability',
+              variant: 'destructive',
+            });
           });
-        });
-      }}
-      targetDate={targetDate}
-      dropDeadDate={dropDeadDate}
-      focusMemberId={availabilityAiFocusMemberId}
-    />
+        }}
+        targetDate={targetDate}
+        dropDeadDate={dropDeadDate}
+        focusMemberId={availabilityAiFocusMemberId}
+      />
+    )}
     </>
   );
 };

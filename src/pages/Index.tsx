@@ -34,6 +34,7 @@ import { KeyCharacteristicsExplainer } from '@/components/KeyCharacteristicsExpl
 import { Button } from '@/components/ui/button';
 import { useLiabilityAcceptance } from '@/hooks/useLiabilityAcceptance';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
+import { useAiFeatureSettings } from '@/hooks/useAiFeatureSettings';
 import { LiabilityAgreementDialog } from '@/components/LiabilityAgreementDialog';
 import { RiskFocusLauncherDialog } from '@/components/RiskFocusLauncher';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
@@ -88,6 +89,7 @@ const Index = () => {
   const { user } = useAuth();
   const { hasProjectsTier, hasRiskRadarTier, loading: membershipLoading } = useMembership();
   const { projectCatalogEnabled } = useGlobalPublicSettings();
+  const { aiRepairEnabled } = useAiFeatureSettings();
   const { accepted: liabilityAccepted, loading: liabilityLoading, refetch: refetchLiability } = useLiabilityAcceptance();
   const { isAdmin } = useUserRole();
   const { hasProjectOwnerRole } = useProjectOwner();
@@ -348,6 +350,7 @@ const Index = () => {
 
     const handleAIRepairEvent = (event: Event) => {
       event.stopPropagation();
+      if (!aiRepairEnabled) return;
       setIsAIRepairOpen(true);
     };
 
@@ -419,7 +422,7 @@ const Index = () => {
       window.removeEventListener('open-risk-focus-launcher', handleOpenRiskFocusLauncher);
       window.removeEventListener('open-risk-focus-register-for-run', handleOpenRiskFocusRegisterForRun);
     };
-  }, [isMobile]);
+  }, [isMobile, aiRepairEnabled]);
 
   // Listen for force-project-dashboard-listing event - CRITICAL for Project Dashboard button
   useEffect(() => {
@@ -843,10 +846,12 @@ const Index = () => {
           onClose={() => setIsToolRentalsOpen(false)}
         />
         
-        <AIRepairWindow 
-          open={isAIRepairOpen}
-          onOpenChange={setIsAIRepairOpen}
-        />
+        {aiRepairEnabled && (
+          <AIRepairWindow 
+            open={isAIRepairOpen}
+            onOpenChange={setIsAIRepairOpen}
+          />
+        )}
         
         <ContractorFinderWindow 
           open={isContractorFinderOpen}

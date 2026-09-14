@@ -33,6 +33,7 @@ import { AdminFeatureRequestManager } from './AdminFeatureRequestManager';
 import { AdminGuideWindow } from './AdminGuideWindow';
 import { BetaModeToggle } from './BetaModeToggle';
 import { PartnerAppToggles } from './PartnerAppToggles';
+import { AiFeatureToggles } from '@/components/admin/AiFeatureToggles';
 import { PublicSiteSettingsCard } from '@/components/admin/PublicSiteSettingsCard';
 import { AppManager } from './AppManager';
 import { Card as SettingCard, CardHeader as SettingCardHeader, CardTitle as SettingCardTitle, CardDescription as SettingCardDescription, CardContent as SettingCardContent } from '@/components/ui/card';
@@ -385,6 +386,9 @@ export const AdminView: React.FC = () => {
               </div>
               <div className="md:px-6 md:py-5 md:[&>div]:rounded-none md:[&>div]:border-0 md:[&>div]:shadow-none">
                 <PartnerAppToggles />
+              </div>
+              <div className="md:px-6 md:py-5 md:[&>div]:rounded-none md:[&>div]:border-0 md:[&>div]:shadow-none">
+                <AiFeatureToggles />
               </div>
               <div className="md:px-6 md:py-5 md:[&>div]:rounded-none md:[&>div]:border-0 md:[&>div]:shadow-none">
                 <DefaultLandingSetting />

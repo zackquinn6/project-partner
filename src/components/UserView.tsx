@@ -85,6 +85,7 @@ import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import type { PlanningToolId } from '@/components/KickoffSteps/ProjectToolsStep';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
+import { useAiFeatureSettings } from '@/hooks/useAiFeatureSettings';
 import { useMembership } from '@/contexts/MembershipContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { UpgradePrompt } from './UpgradePrompt';
@@ -163,6 +164,7 @@ export default function UserView({
 }: UserViewProps) {
   const navigate = useNavigate();
   const { projectCatalogEnabled } = useGlobalPublicSettings();
+  const { aiProjectHelpChatEnabled } = useAiFeatureSettings();
   const { isMobile } = useResponsive();
   const { isAdmin } = useUserRole();
   const { canAccessApp, hasProjectsTier, hasRiskRadarTier, loading: membershipLoading } = useMembership();
@@ -3414,14 +3416,18 @@ export default function UserView({
             isKickoffComplete && allSteps.length > 0 ? openWorkflowVideosGallery : undefined
           }
           onSomethingWrong={() => setIssueReportOpen(true)}
-          onAskAi={() => {
-            setHelpChatInitialMessage(
-              currentStep?.step
-                ? `I'm stuck on step "${currentStep.step}". Please help me figure out what to do next.`
-                : `I'm stuck on this step. Please help me figure out what to do next.`
-            );
-            setProjectHelpChatOpen(true);
-          }}
+          onAskAi={
+            aiProjectHelpChatEnabled
+              ? () => {
+                  setHelpChatInitialMessage(
+                    currentStep?.step
+                      ? `I'm stuck on step "${currentStep.step}". Please help me figure out what to do next.`
+                      : `I'm stuck on this step. Please help me figure out what to do next.`
+                  );
+                  setProjectHelpChatOpen(true);
+                }
+              : undefined
+          }
           onPhotosClick={() => setPhotoGalleryOpen(true)}
           checkedOutputs={checkedOutputs}
           onToggleOutput={toggleOutputCheck}
@@ -3868,19 +3874,21 @@ export default function UserView({
                     <AlertTriangle className="w-4 h-4" />
                     {!isMobile && <span className="ml-2 text-xs">Something Wrong?</span>}
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 text-xs"
-                    title={isMobile ? "Ask AI" : undefined}
-                    onClick={() => {
-                      setHelpChatInitialMessage(null);
-                      setProjectHelpChatOpen(true);
-                    }}
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    {!isMobile && <span className="ml-2 text-xs">Ask AI</span>}
-                  </Button>
+                  {aiProjectHelpChatEnabled && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 text-xs"
+                      title={isMobile ? "Ask AI" : undefined}
+                      onClick={() => {
+                        setHelpChatInitialMessage(null);
+                        setProjectHelpChatOpen(true);
+                      }}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      {!isMobile && <span className="ml-2 text-xs">Ask AI</span>}
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -4092,29 +4100,31 @@ export default function UserView({
         escalateContext={expertEscalateContext}
       />
 
-      <ProjectHelpChatWindow
-        isOpen={projectHelpChatOpen}
-        onClose={() => {
-          setProjectHelpChatOpen(false);
-          setHelpChatInitialMessage(null);
-        }}
-        projectRunId={currentProjectRun?.id}
-        templateProjectId={currentProjectRun?.projectId || workflowTemplateProject?.id}
-        templateName={workflowTemplateProject?.name || currentProjectRun?.name}
-        templateCategories={workflowTemplateProject?.category || currentProjectRun?.category}
-        stepId={currentStep?.id}
-        stepTitle={currentStep?.step}
-        phaseId={getCurrentPhase()?.id}
-        phaseName={getCurrentPhase()?.name}
-        instructionLevel={currentProjectRun?.instruction_level_preference}
-        initialMessage={helpChatInitialMessage}
-        onEscalateToPro={(ctx) => {
-          setProjectHelpChatOpen(false);
-          setExpertEscalateContext(ctx);
-          setExpertHelpFromPlanningWizard(false);
-          setExpertHelpOpen(true);
-        }}
-      />
+      {aiProjectHelpChatEnabled && (
+        <ProjectHelpChatWindow
+          isOpen={projectHelpChatOpen}
+          onClose={() => {
+            setProjectHelpChatOpen(false);
+            setHelpChatInitialMessage(null);
+          }}
+          projectRunId={currentProjectRun?.id}
+          templateProjectId={currentProjectRun?.projectId || workflowTemplateProject?.id}
+          templateName={workflowTemplateProject?.name || currentProjectRun?.name}
+          templateCategories={workflowTemplateProject?.category || currentProjectRun?.category}
+          stepId={currentStep?.id}
+          stepTitle={currentStep?.step}
+          phaseId={getCurrentPhase()?.id}
+          phaseName={getCurrentPhase()?.name}
+          instructionLevel={currentProjectRun?.instruction_level_preference}
+          initialMessage={helpChatInitialMessage}
+          onEscalateToPro={(ctx) => {
+            setProjectHelpChatOpen(false);
+            setExpertEscalateContext(ctx);
+            setExpertHelpFromPlanningWizard(false);
+            setExpertHelpOpen(true);
+          }}
+        />
+      )}
 
       <SomethingWrongDialog
         open={issueReportOpen}
@@ -4164,14 +4174,18 @@ export default function UserView({
             });
           }
         }}
-        onAskAi={() => {
-          setHelpChatInitialMessage(
-            currentStep?.step
-              ? `I'm stuck on step "${currentStep.step}". Please help me figure out what to do next.`
-              : `I'm stuck on this step. Please help me figure out what to do next.`
-          );
-          setProjectHelpChatOpen(true);
-        }}
+        onAskAi={
+          aiProjectHelpChatEnabled
+            ? () => {
+                setHelpChatInitialMessage(
+                  currentStep?.step
+                    ? `I'm stuck on step "${currentStep.step}". Please help me figure out what to do next.`
+                    : `I'm stuck on this step. Please help me figure out what to do next.`
+                );
+                setProjectHelpChatOpen(true);
+              }
+            : undefined
+        }
       />
 
       {toolInstructions && (

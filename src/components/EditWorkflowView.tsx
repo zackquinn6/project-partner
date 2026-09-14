@@ -32,6 +32,7 @@ import { CompactPpeTable } from '@/components/CompactPpeTable';
 import { CompactAppsSection } from '@/components/CompactAppsSection';
 import { AppsLibraryDialog } from '@/components/AppsLibraryDialog';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
+import { useAiFeatureSettings } from '@/hooks/useAiFeatureSettings';
 import { WorkflowVideosDialog } from '@/components/WorkflowVideosDialog';
 import { loadAllWorkflowVideos, type WorkflowVideoItem } from '@/utils/workflowVideos';
 import { ArrowLeft, Eye, Edit, Package, Wrench, FileOutput, X, Settings, Save, ChevronLeft, ChevronRight, ChevronDown, FileText, List, Upload, Trash2, Brain, Sparkles, RefreshCw, Lock, Shield, Menu, Info, Crosshair, Clock, Video } from 'lucide-react';
@@ -108,6 +109,7 @@ interface EditWorkflowViewProps {
 export default function EditWorkflowView({
   onBackToAdmin
 }: EditWorkflowViewProps) {
+  const { aiProjectGeneratorEnabled } = useAiFeatureSettings();
   const {
     currentProject,
     updateProject
@@ -2295,15 +2297,17 @@ export default function EditWorkflowView({
                         <Upload className="w-4 h-4 mr-2" />
                         Import
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onSelect={(e) => {
-                          e.preventDefault();
-                          setAiProjectGeneratorOpen(true);
-                        }}
-                      >
-                        <Sparkles className="w-4 h-4 mr-2" />
-                        AI
-                      </DropdownMenuItem>
+                      {aiProjectGeneratorEnabled && (
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setAiProjectGeneratorOpen(true);
+                          }}
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          AI
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                   <Button
@@ -3127,13 +3131,15 @@ export default function EditWorkflowView({
       <ProjectContentImport open={importOpen} onOpenChange={setImportOpen} onImport={handleImport} />
       
       {/* AI Project Generator Dialog */}
-      <AIProjectGenerator
-        open={aiProjectGeneratorOpen}
-        onOpenChange={setAiProjectGeneratorOpen}
-        onProjectCreated={(projectId) => {
-                    // Optionally refresh or navigate to the new project
-        }}
-      />
+      {aiProjectGeneratorEnabled && (
+        <AIProjectGenerator
+          open={aiProjectGeneratorOpen}
+          onOpenChange={setAiProjectGeneratorOpen}
+          onProjectCreated={(projectId) => {
+                      // Optionally refresh or navigate to the new project
+          }}
+        />
+      )}
       {/* Tools & Materials Library */}
       <ToolsMaterialsWindow open={toolsMaterialsOpen} onOpenChange={setToolsMaterialsOpen} />
       

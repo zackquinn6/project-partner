@@ -24,6 +24,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectOwner } from '@/hooks/useProjectOwner';
 import { ProjectImageManager } from '@/components/ProjectImageManager';
 import { AIProjectGenerator } from '@/components/AIProjectGenerator';
+import { useAiFeatureSettings } from '@/hooks/useAiFeatureSettings';
 import { PFMEAManagement } from '@/components/PFMEAManagement';
 import { ProjectVisualizerDialog } from '@/components/ProjectVisualizerDialog';
 import { StructureManager } from '@/components/StructureManager';
@@ -100,6 +101,7 @@ export function UnifiedProjectManagement({
   const { user } = useAuth();
   const { isAdmin, loading: roleLoading } = useUserRole();
   const { hasProjectOwnerRole } = useProjectOwner();
+  const { aiProjectGeneratorEnabled } = useAiFeatureSettings();
   const {
     addProject,
     setCurrentProject,
@@ -1575,15 +1577,17 @@ export function UnifiedProjectManagement({
                   <BookOpen className="h-3.5 w-3.5 shrink-0 xl:h-4 xl:w-4" />
                   Planning Guide
                 </Button>
-                <Button
-                  onClick={() => setAiProjectGeneratorOpen(true)}
-                  variant="outline"
-                  size="sm"
-                  className="hidden h-8 shrink-0 gap-1 px-2 text-xs lg:flex xl:h-9 xl:gap-2 xl:px-3 xl:text-sm"
-                >
-                  <Sparkles className="h-3.5 w-3.5 shrink-0 xl:h-4 xl:w-4" />
-                  AI Generator
-                </Button>
+                {aiProjectGeneratorEnabled && (
+                  <Button
+                    onClick={() => setAiProjectGeneratorOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="hidden h-8 shrink-0 gap-1 px-2 text-xs lg:flex xl:h-9 xl:gap-2 xl:px-3 xl:text-sm"
+                  >
+                    <Sparkles className="h-3.5 w-3.5 shrink-0 xl:h-4 xl:w-4" />
+                    AI Generator
+                  </Button>
+                )}
                 {onOpenAnalytics && (
                   <Button
                     onClick={onOpenAnalytics}
@@ -3143,13 +3147,15 @@ export function UnifiedProjectManagement({
       </Dialog>
 
       {/* AI Project Generator Dialog */}
-      <AIProjectGenerator
-        open={aiProjectGeneratorOpen}
-        onOpenChange={setAiProjectGeneratorOpen}
-        onProjectCreated={(projectId) => {
-                    fetchProjects();
-        }}
-      />
+      {aiProjectGeneratorEnabled && (
+        <AIProjectGenerator
+          open={aiProjectGeneratorOpen}
+          onOpenChange={setAiProjectGeneratorOpen}
+          onProjectCreated={(projectId) => {
+                      fetchProjects();
+          }}
+        />
+      )}
 
       <PlanningGuideWindow
         open={planningGuideOpen}

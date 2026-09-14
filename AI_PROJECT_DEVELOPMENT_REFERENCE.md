@@ -460,6 +460,7 @@ Tone: DIY-safe visual checks; never instruct homeowners to open sealed combustio
 - Fill all guidance columns the UI displays.
 - **Do not** silently mutate existing `user_maintenance_tasks` unless the user explicitly asks to backfill. New catalog rows apply to new plan saves and Add-from-template flows.
 - No new enums or columns unless explicitly requested; verify RLS only if creating new tables (templates table already exists).
+- **Avoid `/`, bare `%`, and `;` inside string literals** in migration SQL source. Some SQL editors split statements on `;` without respecting quotes, which can execute a prose fragment and treat a word like `battery` as a relation (`42P01`). Prefer `and` / `or` in titles; write `20 percent` not `20%`; build LIKE wildcards with `chr(37)`; use `.` or ` -` instead of `;` inside guidance prose.
 
 ### G.7 Out of scope
 
