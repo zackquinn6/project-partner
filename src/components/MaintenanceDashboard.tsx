@@ -26,7 +26,11 @@ import {
 } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import { getTaskProgress as getTaskProgressUtil } from '@/utils/maintenanceProgress';
-import { computeMaintenanceHealthScore } from '@/utils/maintenanceHealthScore';
+import {
+  computeMaintenanceHealthScore,
+  getMaintenanceHealthScoreColorClass,
+  getMaintenanceHealthScoreLabel,
+} from '@/utils/maintenanceHealthScore';
 
 export type SystemKey = 'hvac' | 'roof' | 'plumbing' | 'appliances' | 'safety' | 'other';
 
@@ -152,6 +156,8 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
   });
 
   const healthScore = computeMaintenanceHealthScore(tasks, now);
+  const healthScoreLabel = getMaintenanceHealthScoreLabel(healthScore);
+  const healthScoreColorClass = getMaintenanceHealthScoreColorClass(healthScore);
 
   const overdue = tasks.filter((t) => getTaskProgress(t) >= 100);
   const caution = tasks.filter((t) => {
@@ -166,7 +172,9 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
     <div className="space-y-1.5 text-left">
       <p className="font-semibold">Home Health Score</p>
       <p className="text-sm text-muted-foreground">
-        Starts at 100 and decreases for: overdue tasks (5 pts each), their criticality (3 pts per level), and tasks due soon (90–99% toward due, 1 pt each). Higher is better—stay on top of maintenance to keep your score up.
+        This score shows how current your home maintenance is. Below 60 means your home
+        needs attention, so prioritize overdue tasks. 60 to 79 is good. 80 to 89 is great.
+        90 and above is excellent. Finish tasks on time to keep your score high.
       </p>
     </div>
   );
@@ -306,18 +314,15 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                         </g>
                       </svg>
                     </div>
-                    <div className="flex-1 flex items-center justify-center min-w-0">
+                    <div className="flex-1 flex flex-col items-center justify-center min-w-0 gap-0.5">
                       <span
-                        className={`text-4xl font-bold tabular-nums ${
-                          healthScore >= 90
-                            ? 'text-emerald-600'
-                            : healthScore >= 70
-                              ? 'text-amber-500'
-                              : 'text-destructive'
-                        }`}
+                        className={`text-4xl font-bold tabular-nums leading-none ${healthScoreColorClass}`}
                         aria-live="polite"
                       >
                         {healthScore}
+                      </span>
+                      <span className={`text-xs font-medium leading-tight ${healthScoreColorClass}`}>
+                        {healthScoreLabel}
                       </span>
                     </div>
                   </CardContent>
@@ -420,18 +425,17 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                           </g>
                         </svg>
                       </div>
-                      <div className="flex-1 flex items-center justify-center min-w-0">
+                      <div className="flex-1 flex flex-col items-center justify-center min-w-0 gap-0">
                         <span
-                          className={`text-3xl sm:text-[3.36rem] font-bold tabular-nums ${
-                            healthScore >= 90
-                              ? 'text-emerald-600'
-                              : healthScore >= 70
-                                ? 'text-amber-500'
-                                : 'text-destructive'
-                          }`}
+                          className={`text-3xl sm:text-[3.36rem] font-bold tabular-nums leading-none ${healthScoreColorClass}`}
                           aria-live="polite"
                         >
                           {healthScore}
+                        </span>
+                        <span
+                          className={`text-[10px] sm:text-xs font-medium leading-tight text-center ${healthScoreColorClass}`}
+                        >
+                          {healthScoreLabel}
                         </span>
                       </div>
                     </CardContent>

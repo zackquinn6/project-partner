@@ -27,7 +27,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { computeMaintenanceHealthScore, type TaskForHealthScore } from '@/utils/maintenanceHealthScore';
+import {
+  computeMaintenanceHealthScore,
+  getMaintenanceHealthScoreColorClass,
+  getMaintenanceHealthScoreLabel,
+  type TaskForHealthScore,
+} from '@/utils/maintenanceHealthScore';
 import { useSignedStorageUrls } from '@/utils/privateStorageUrls';
 
 interface Home {
@@ -694,18 +699,17 @@ export const HomeDetailsWindow: React.FC<HomeDetailsWindowProps> = ({
                       Home health score
                     </p>
                     <p
-                      className={`text-3xl font-bold tabular-nums ${
-                        maintenanceHealthScore >= 90
-                          ? 'text-emerald-600'
-                          : maintenanceHealthScore >= 70
-                            ? 'text-amber-600'
-                            : 'text-destructive'
-                      }`}
+                      className={`text-3xl font-bold tabular-nums leading-none ${getMaintenanceHealthScoreColorClass(maintenanceHealthScore)}`}
                     >
                       {maintenanceHealthScore}
                     </p>
-                    <p className="text-[11px] text-muted-foreground max-w-md">
-                      Based on overdue and due-soon tasks for this home (same model as Home Maintenance).
+                    <p
+                      className={`text-sm font-medium mt-0.5 ${getMaintenanceHealthScoreColorClass(maintenanceHealthScore)}`}
+                    >
+                      {getMaintenanceHealthScoreLabel(maintenanceHealthScore)}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground max-w-md mt-1">
+                      Below 60 needs attention. 60 to 79 is good. 80 to 89 is great. 90+ is excellent.
                     </p>
                   </div>
                   <Button

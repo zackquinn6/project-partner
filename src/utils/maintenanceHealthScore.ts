@@ -37,3 +37,18 @@ export function computeMaintenanceHealthScore(
 
   return Math.max(0, Math.min(100, Math.round(100 - W_O * O - W_C * C - W_D * D)));
 }
+
+/** Consumer-facing label for a 0–100 maintenance health score. */
+export function getMaintenanceHealthScoreLabel(score: number): string {
+  if (score >= 90) return 'Excellent';
+  if (score >= 80) return 'Great';
+  if (score >= 60) return 'Good';
+  return 'Needs attention';
+}
+
+/** Tailwind text color class aligned with the health score label bands. */
+export function getMaintenanceHealthScoreColorClass(score: number): string {
+  if (score >= 80) return 'text-emerald-600';
+  if (score >= 60) return 'text-amber-500';
+  return 'text-destructive';
+}
