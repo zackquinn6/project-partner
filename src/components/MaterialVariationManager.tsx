@@ -20,7 +20,7 @@ import {
 import { MaterialVariationEditor } from './MaterialVariationEditor';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-const NESTED_DIALOG_OVERLAY = 'z-[150]';
+const NESTED_DIALOG_OVERLAY = 'z-[150] md:top-16';
 const NESTED_DIALOG_CONTENT = 'z-[151]';
 /** Select portals to body; must sit above nested dialog overlay/content. */
 const SELECT_IN_DIALOG_CONTENT = 'z-[300] border bg-popover text-popover-foreground';

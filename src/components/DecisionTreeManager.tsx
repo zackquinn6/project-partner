@@ -654,7 +654,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
         {/* Alternate selector dialog */}
         {showAlternateSelector === itemId && (
-          <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/50">
+          <div className="fixed inset-0 z-[220] md:top-16 flex items-center justify-center bg-black/50">
             <div className="bg-background p-6 rounded-lg max-w-lg w-full max-h-[500px] overflow-auto border shadow-lg">
               <h3 className="text-lg font-semibold mb-4">Select Alternates</h3>
               <p className="text-sm text-muted-foreground mb-4">

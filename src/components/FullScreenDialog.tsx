@@ -27,7 +27,7 @@ export function FullScreenDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
       <DialogPortal>
-        <DialogOverlay className="bg-black/60 backdrop-blur-md fixed inset-0 z-50" />
+        <DialogOverlay className="bg-black/60 backdrop-blur-md fixed inset-0 z-50 md:top-16" />
         <div
           className={cn(
             "fixed z-50 bg-background border shadow-lg flex flex-col",

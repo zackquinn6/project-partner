@@ -22,9 +22,9 @@ import { buildPricingModelRowsForVariation } from '@/utils/pricingModelLabels';
 /** When PostgREST has no `warning_flags` relation, avoid repeat 404s for the session. */
 const WARNING_FLAGS_UNAVAILABLE_SESSION_KEY = 'toolio:warning_flags_unavailable';
 
-/** Nested above parent dialogs that use z-[100] (e.g. VariationViewer); align with VariationManager. */
-const NESTED_EDITOR_OVERLAY_CLASS = 'z-[260] bg-black/80';
-const NESTED_EDITOR_CONTENT_Z = 'z-[270]';
+/** Nested above parent dialogs that use z-[100] (e.g. VariationViewer); stay below app header z-[250]. */
+const NESTED_EDITOR_OVERLAY_CLASS = 'z-[200] md:top-16 bg-black/80';
+const NESTED_EDITOR_CONTENT_Z = 'z-[210]';
 
 interface VariationInstance {
   id: string;

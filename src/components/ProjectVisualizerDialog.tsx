@@ -71,7 +71,7 @@ export function ProjectVisualizerDialog({
         <DialogPortal>
           {open ? (
             <div
-              className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-md transition-opacity duration-200"
+              className="fixed inset-0 z-[90] md:top-16 bg-black/60 backdrop-blur-md transition-opacity duration-200"
               aria-hidden="true"
             />
           ) : null}

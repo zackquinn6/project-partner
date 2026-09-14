@@ -808,99 +808,108 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen relative z-10">
-      {user && !isMobile && <Navigation currentView={currentView} onViewChange={setCurrentView} onAdminAccess={handleAdminAccess} onProjectsView={handleProjectsView} onProjectSelected={handleProjectSelected} />}
-      <div className="w-full h-full">
-        {renderView()}
-      </div>
-      
-      {/* Modal windows that work on both mobile and desktop */}
-      <HomeManager 
-        open={isHomeManagerOpen}
-        onOpenChange={setIsHomeManagerOpen}
-      />
-      
-      <HomeMaintenanceWindow
-        open={isHomeMaintenanceOpen}
-        onOpenChange={setIsHomeMaintenanceOpen}
-      />
-      
-      <CommunityPostsWindow 
-        open={isCommunityPostsOpen}
-        onOpenChange={setIsCommunityPostsOpen}
-      />
-
-      <ToolRentalsWindow 
-        isOpen={isToolRentalsOpen}
-        onClose={() => setIsToolRentalsOpen(false)}
-      />
-      
-      <AIRepairWindow 
-        open={isAIRepairOpen}
-        onOpenChange={setIsAIRepairOpen}
-      />
-      
-      <ContractorFinderWindow 
-        open={isContractorFinderOpen}
-        onOpenChange={setIsContractorFinderOpen}
-      />
-      
-      <ExpertHelpWindow 
-        isOpen={isExpertHelpOpen}
-        onClose={() => setIsExpertHelpOpen(false)}
-      />
-
-      <ProfileManager 
-        open={isProfileOpen}
-        onOpenChange={setIsProfileOpen}
-      />
-
-      {/* Mobile-specific modals */}
-      <KeyCharacteristicsExplainer
-        open={showKCExplainer}
-        onOpenChange={setShowKCExplainer}
-      />
-
-      <ToolsMaterialsLibraryView 
-        open={isToolsLibraryGridOpen}
-        onOpenChange={setIsToolsLibraryGridOpen}
-      />
-
-      {!isMobile && (
-        <HomeTaskList
-          open={isHomeTaskListOpen}
-          onOpenChange={setIsHomeTaskListOpen}
+    <div className="min-h-screen">
+      {/* Keep Navigation outside the z-10 stacking context so z-[250] beats portaled dialog overlays */}
+      {user && !isMobile && (
+        <Navigation
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          onAdminAccess={handleAdminAccess}
+          onProjectsView={handleProjectsView}
+          onProjectSelected={handleProjectSelected}
         />
       )}
-
-      <RiskFocusLauncherDialog
-        open={isRiskFocusLauncherOpen}
-        onOpenChange={setIsRiskFocusLauncherOpen}
-        onRiskFocusRunStarted={(runId) => setRiskFocusRegisterRunId(runId)}
-      />
-
-      <UpgradePrompt
-        open={mobileUpgradeOpen}
-        onOpenChange={setMobileUpgradeOpen}
-        feature={mobileUpgradeFeature}
-      />
-
-      {user && riskFocusRegisterRunId ? (
-        <RiskManagementWindow
-          open
-          onOpenChange={(open) => {
-            if (!open) setRiskFocusRegisterRunId(null);
-          }}
-          projectRunId={riskFocusRegisterRunId}
-          mode="run"
-          variant="risk-focus"
+      <div className="relative z-10 w-full h-full">
+        {renderView()}
+        
+        {/* Modal windows that work on both mobile and desktop */}
+        <HomeManager 
+          open={isHomeManagerOpen}
+          onOpenChange={setIsHomeManagerOpen}
         />
-      ) : null}
+        
+        <HomeMaintenanceWindow
+          open={isHomeMaintenanceOpen}
+          onOpenChange={setIsHomeMaintenanceOpen}
+        />
+        
+        <CommunityPostsWindow 
+          open={isCommunityPostsOpen}
+          onOpenChange={setIsCommunityPostsOpen}
+        />
 
-      <ProjectPortfolioRemindersDialog
-        open={portfolioRemindersOpen}
-        onOpenChange={setPortfolioRemindersOpen}
-      />
+        <ToolRentalsWindow 
+          isOpen={isToolRentalsOpen}
+          onClose={() => setIsToolRentalsOpen(false)}
+        />
+        
+        <AIRepairWindow 
+          open={isAIRepairOpen}
+          onOpenChange={setIsAIRepairOpen}
+        />
+        
+        <ContractorFinderWindow 
+          open={isContractorFinderOpen}
+          onOpenChange={setIsContractorFinderOpen}
+        />
+        
+        <ExpertHelpWindow 
+          isOpen={isExpertHelpOpen}
+          onClose={() => setIsExpertHelpOpen(false)}
+        />
+
+        <ProfileManager 
+          open={isProfileOpen}
+          onOpenChange={setIsProfileOpen}
+        />
+
+        {/* Mobile-specific modals */}
+        <KeyCharacteristicsExplainer
+          open={showKCExplainer}
+          onOpenChange={setShowKCExplainer}
+        />
+
+        <ToolsMaterialsLibraryView 
+          open={isToolsLibraryGridOpen}
+          onOpenChange={setIsToolsLibraryGridOpen}
+        />
+
+        {!isMobile && (
+          <HomeTaskList
+            open={isHomeTaskListOpen}
+            onOpenChange={setIsHomeTaskListOpen}
+          />
+        )}
+
+        <RiskFocusLauncherDialog
+          open={isRiskFocusLauncherOpen}
+          onOpenChange={setIsRiskFocusLauncherOpen}
+          onRiskFocusRunStarted={(runId) => setRiskFocusRegisterRunId(runId)}
+        />
+
+        <UpgradePrompt
+          open={mobileUpgradeOpen}
+          onOpenChange={setMobileUpgradeOpen}
+          feature={mobileUpgradeFeature}
+        />
+
+        {user && riskFocusRegisterRunId ? (
+          <RiskManagementWindow
+            open
+            onOpenChange={(open) => {
+              if (!open) setRiskFocusRegisterRunId(null);
+            }}
+            projectRunId={riskFocusRegisterRunId}
+            mode="run"
+            variant="risk-focus"
+          />
+        ) : null}
+
+        <ProjectPortfolioRemindersDialog
+          open={portfolioRemindersOpen}
+          onOpenChange={setPortfolioRemindersOpen}
+        />
+      </div>
     </div>
   );
 };

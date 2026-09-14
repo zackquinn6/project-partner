@@ -25,10 +25,10 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
-const NESTED_DIALOG_OVERLAY = 'z-[260]';
-const NESTED_DIALOG_CONTENT = 'z-[270]';
+const NESTED_DIALOG_OVERLAY = 'z-[200] md:top-16';
+const NESTED_DIALOG_CONTENT = 'z-[210]';
 /** Select portals to body; must sit above nested dialog overlay/content. */
-const SELECT_IN_DIALOG_CONTENT = 'z-[300] border bg-popover text-popover-foreground';
+const SELECT_IN_DIALOG_CONTENT = 'z-[220] border bg-popover text-popover-foreground';
 
 /** Radix Select: keep `value` always a string so it never flips uncontrolled ↔ controlled. */
 const SELECT_NO_VALUE = '__pp_select_no_value__';

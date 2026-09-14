@@ -342,7 +342,7 @@ export default function Navigation({
     onProjectSelected?.();
   };
   return <>
-      {/* Fixed above app overlays (dialogs use z-50–z-[220]) so chrome stays visible on every screen */}
+      {/* Fixed above app overlays (dialogs use z-50–z-[220]; nested editors ≤z-[210]) so chrome stays visible */}
       <nav className="fixed top-0 left-0 right-0 z-[250] w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-16 items-center px-4 relative">
           {/* Beta release label - centered, visually appealing */}
@@ -355,7 +355,7 @@ export default function Navigation({
                       Beta Release
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-xs text-xs text-left">
+                  <TooltipContent className="z-[260] max-w-xs text-xs text-left">
                     <p>
                       This project is designed to make DIY home improvement more successful. We&apos;d gladly appreciate feedback — use
                       <span className="font-semibold"> Send Feedback</span> from the <span className="font-semibold">?</span> dropdown menu in the upper right corner.
@@ -407,7 +407,7 @@ export default function Navigation({
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-80 z-50 bg-background border shadow-lg" sideOffset={8}>
+                <DropdownMenuContent align="start" className="w-80 z-[260] bg-background border shadow-lg" sideOffset={8}>
                   {/* My Projects Link at top */}
                   <DropdownMenuItem onClick={() => {
                   setCurrentProjectRun(null);

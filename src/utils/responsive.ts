@@ -22,6 +22,12 @@ export const belowAppHeaderFixedClasses =
 export const belowAppHeaderDialogClasses =
   "!inset-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-none !translate-x-0 !translate-y-0 md:!top-16 md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)]";
 
+/**
+ * Dialog overlay that leaves the desktop app header undimmed and clickable.
+ * Mobile stays full-bleed (Navigation is not mounted there).
+ */
+export const belowAppHeaderOverlayClasses = "md:top-16";
+
 // Responsive class generators
 export const responsiveDialogClasses = {
   // Small modal - confirmations, simple forms
