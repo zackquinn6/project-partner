@@ -283,18 +283,18 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
           </div>
           <p className="text-xs text-muted-foreground mt-1">Override progress (0 = just started, 100 = due, &gt;100 = overdue). Whole percent only.</p>
         </div>
-        <Accordion type="single" collapsible className="w-full rounded-lg border bg-card/30 px-2">
+        <Accordion type="single" collapsible className="w-full rounded-lg border bg-card/30 px-3">
           <AccordionItem value="advanced" className="border-0">
             <AccordionTrigger className="py-2 text-sm font-semibold hover:no-underline">
               Advanced settings
             </AccordionTrigger>
-            <AccordionContent className="space-y-3 pb-3 pt-0">
+            <AccordionContent className="space-y-3 px-1 pb-4 pt-1">
               <div>
                 <Label htmlFor="edit-instructions">Instructions</Label>
                 <Textarea
                   id="edit-instructions"
-                  rows={4}
-                  className="min-h-[5.5rem] resize-y mt-1"
+                  rows={3}
+                  className="min-h-[4.75rem] max-h-[13.5rem] resize-y mt-1"
                   value={form.instructions}
                   onChange={(e) => setForm(prev => ({ ...prev, instructions: e.target.value }))}
                   placeholder="Step-by-step instructions"
@@ -304,8 +304,8 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
                 <Label htmlFor="edit-risks">Risks of skipping</Label>
                 <Textarea
                   id="edit-risks"
-                  rows={6}
-                  className="min-h-[9rem] resize-y mt-1"
+                  rows={3}
+                  className="min-h-[4.75rem] max-h-[13.5rem] resize-y mt-1"
                   placeholder="e.g. Sediment buildup, early failure"
                   value={form.risks_of_skipping}
                   onChange={(e) => setForm(prev => ({ ...prev, risks_of_skipping: e.target.value }))}
@@ -315,8 +315,8 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
                 <Label htmlFor="edit-benefits">Benefits of maintenance</Label>
                 <Textarea
                   id="edit-benefits"
-                  rows={6}
-                  className="min-h-[9rem] resize-y mt-1"
+                  rows={3}
+                  className="min-h-[4.75rem] max-h-[13.5rem] resize-y mt-1"
                   placeholder="e.g. Extend life from 10 to 20 yrs"
                   value={form.benefits_of_maintenance}
                   onChange={(e) => setForm(prev => ({ ...prev, benefits_of_maintenance: e.target.value }))}
