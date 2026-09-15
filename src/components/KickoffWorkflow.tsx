@@ -671,56 +671,29 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     ]
   );
 
-  const summaryChips = useMemo(() => {
-    const chips: { key: string; label: string }[] = [];
-    const matchStepIndex = kickoffSteps.findIndex((s) => s.id === 'kickoff-step-1');
-    if (matchStepIndex >= 0 && completedKickoffSteps.has(matchStepIndex)) {
-      const fitLabel = FIT_CHIP_LABEL[matchExplanation.tier];
-      if (fitLabel) chips.push({ key: 'fit', label: `Fit: ${fitLabel}` });
-    }
-    if (profileSkillLevel) {
-      chips.push({ key: 'level', label: `Level: ${profileSkillLevel}` });
-    }
+  const handoffTargetLabel = useMemo(() => {
     const timelineRaw =
       (currentProjectRun as { initial_timeline?: string | null; initialTimeline?: string | null } | null)
         ?.initial_timeline ??
       (currentProjectRun as { initialTimeline?: string | null } | null)?.initialTimeline ??
       null;
-    if (typeof timelineRaw === 'string' && timelineRaw.trim() !== '') {
-      const d = new Date(timelineRaw.includes('T') ? timelineRaw : `${timelineRaw}T12:00:00`);
-      if (!Number.isNaN(d.getTime())) {
-        chips.push({
-          key: 'target',
-          label: `Target: ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`,
-        });
-      }
-    }
+    if (typeof timelineRaw !== 'string' || timelineRaw.trim() === '') return null;
+    const d = new Date(timelineRaw.includes('T') ? timelineRaw : `${timelineRaw}T12:00:00`);
+    if (Number.isNaN(d.getTime())) return null;
+    return `Target: ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+  }, [currentProjectRun]);
+
+  const handoffBudgetLabel = useMemo(() => {
     const budgetRaw =
       (currentProjectRun as { initial_budget?: string | null; initialBudget?: string | null } | null)
         ?.initial_budget ??
       (currentProjectRun as { initialBudget?: string | null } | null)?.initialBudget ??
       null;
-    if (typeof budgetRaw === 'string' && budgetRaw.trim() !== '') {
-      const n = parseFloat(budgetRaw.replace(/[^0-9.-]/g, ''));
-      if (!Number.isNaN(n)) {
-        chips.push({
-          key: 'budget',
-          label: `Budget: $${n >= 1000 ? `${Math.round(n / 1000)}k` : Math.round(n)}`,
-        });
-      }
-    }
-    if (selectedPlanningTools.length > 0) {
-      chips.push({ key: 'tools', label: `${selectedPlanningTools.length} tools` });
-    }
-    return chips;
-  }, [
-    kickoffSteps,
-    completedKickoffSteps,
-    matchExplanation.tier,
-    profileSkillLevel,
-    currentProjectRun,
-    selectedPlanningTools.length,
-  ]);
+    if (typeof budgetRaw !== 'string' || budgetRaw.trim() === '') return null;
+    const n = parseFloat(budgetRaw.replace(/[^0-9.-]/g, ''));
+    if (Number.isNaN(n)) return null;
+    return `Budget: $${n >= 1000 ? `${Math.round(n / 1000)}k` : Math.round(n)}`;
+  }, [currentProjectRun]);
 
   const personalizeBlocked =
     currentStepId === 'kickoff-step-2' &&
@@ -1058,19 +1031,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         </Card>
       </div>
 
-      {summaryChips.length > 0 && currentKickoffStep > 0 ? (
-        <div className="scrollbar-hide flex shrink-0 gap-1.5 overflow-x-auto pb-0.5">
-          {summaryChips.map((chip) => (
-            <span
-              key={chip.key}
-              className="inline-flex shrink-0 animate-in fade-in slide-in-from-bottom-1 items-center rounded-full border bg-card px-2.5 py-1 text-[11px] text-foreground duration-150"
-            >
-              {chip.label}
-            </span>
-          ))}
-        </div>
-      ) : null}
-
       <div className="flex min-h-0 flex-1 flex-col md:min-h-[min(560px,70vh)]">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] -mx-2 px-2 pb-2 sm:mx-0 sm:px-0 sm:pb-4 md:flex-none md:overflow-visible md:pb-0">
           {renderCurrentStep()}
@@ -1091,11 +1051,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
             <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
               <li>Fit: {FIT_CHIP_LABEL[matchExplanation.tier] ?? matchExplanation.tier}</li>
               {profileSkillLevel ? <li>Level: {profileSkillLevel}</li> : null}
-              {summaryChips
-                .filter((c) => c.key === 'target' || c.key === 'budget')
-                .map((c) => (
-                  <li key={c.key}>{c.label}</li>
-                ))}
+              {handoffTargetLabel ? <li>{handoffTargetLabel}</li> : null}
+              {handoffBudgetLabel ? <li>{handoffBudgetLabel}</li> : null}
               {handoffToolNames.length > 0 ? (
                 <li>Tools: {handoffToolNames.join(', ')}</li>
               ) : null}
