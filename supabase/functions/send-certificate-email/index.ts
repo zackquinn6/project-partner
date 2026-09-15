@@ -29,7 +29,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    await verifyAuth(req);
+    const user = await verifyAuth(req);
     const { to_email, certificate_data }: CertificateEmailRequest = await req.json();
 
     if (
@@ -43,6 +43,33 @@ const handler = async (req: Request): Promise<Response> => {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
+    }
+
+    // Only allow sending to the caller's own address or to contacts saved on their account,
+    // so the endpoint cannot be used as an open email relay.
+    const recipient = to_email.trim().toLowerCase();
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } },
+    );
+
+    const allowed = new Set<string>();
+    if (user.email) allowed.add(user.email.toLowerCase());
+    const [{ data: people }, { data: contractors }] = await Promise.all([
+      admin.from("home_task_people").select("email").eq("user_id", user.id),
+      admin.from("user_contractors").select("email").eq("user_id", user.id),
+    ]);
+    for (const row of [...(people ?? []), ...(contractors ?? [])]) {
+      const email = (row as { email?: string | null }).email;
+      if (email) allowed.add(email.toLowerCase());
+    }
+
+    if (!allowed.has(recipient)) {
+      return new Response(
+        JSON.stringify({ error: "Recipient not allowed" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
     }
 
     const projectName = String(certificate_data.project_name ?? "").slice(0, 200);

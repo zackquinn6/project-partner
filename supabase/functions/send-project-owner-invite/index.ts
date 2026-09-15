@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { verifyAuth } from '../_shared/auth.ts'
+import { escapeHtml } from '../_shared/validation.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -88,7 +89,7 @@ serve(async (req) => {
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Project Owner invitation</h2>
-          <p>You have been invited to become a Project Owner for <strong>${projectName}</strong>.</p>
+          <p>You have been invited to become a Project Owner for <strong>${escapeHtml(projectName)}</strong>.</p>
           <p>Accept the Project Owner agreement to get access to project management and analytics for this project.</p>
           <p style="margin-top: 24px;">
             <a href="${acceptUrl}" style="background: #333; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Accept invitation</a>
@@ -105,7 +106,7 @@ serve(async (req) => {
         body: JSON.stringify({
           from: 'Project Partner <noreply@resend.dev>',
           to: [invitation.invited_email],
-          subject: `Project Owner invitation: ${projectName}`,
+          subject: `Project Owner invitation: ${projectName.replace(/[\r\n]/g, ' ').slice(0, 150)}`,
           html: htmlContent,
         }),
       })
