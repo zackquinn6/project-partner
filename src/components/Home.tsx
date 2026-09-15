@@ -218,10 +218,7 @@ export default function Home({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-xs text-[11px]">
-                      <p>
-                        Project runs that show as <span className="font-medium">In progress</span> on your
-                        Project Dashboard (workflow started, not yet complete).
-                      </p>
+                      <p>Open projects currently in progress</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -246,7 +243,7 @@ export default function Home({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-xs text-[11px]">
-                      <p>All tasks in Project & Task Manager that are not marked complete.</p>
+                      <p>See tasks still waiting to get done</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -271,7 +268,7 @@ export default function Home({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-xs text-[11px]">
-                      <p>Tasks at 90–99% toward due. Matches the Due Soon count in Home Maintenance.</p>
+                      <p>Number of maintenance tasks nearly due</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -296,7 +293,7 @@ export default function Home({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-xs text-[11px]">
-                      <p>Project runs in your workshop that are finished (100% complete).</p>
+                      <p>Projects you've finished</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -317,7 +314,7 @@ export default function Home({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="max-w-xs text-center">
-                    <p>Project catalog for detailed multi-step projects like painting, tile, or carpentry.</p>
+                    <p>Browse DIY projects to start next</p>
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -332,7 +329,7 @@ export default function Home({
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs text-center">
-                  <p>Track ongoing maintenance tasks for homes.</p>
+                  <p>Stay on top of home upkeep</p>
                 </TooltipContent>
               </Tooltip>
               <Tooltip>
@@ -345,7 +342,7 @@ export default function Home({
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs text-center">
-                  <p>A task tracker with basic scheduling functions and ability to link to projects. Used for small tasks and large projects.</p>
+                  <p>Organize tasks and link them to projects</p>
                 </TooltipContent>
               </Tooltip>
               <Tooltip>
@@ -358,7 +355,7 @@ export default function Home({
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs text-center">
-                  <p>Start a run dedicated to risks for a project template—foundation and template risks load automatically; add your own on the run.</p>
+                  <p>Plan and track risks for a project</p>
                 </TooltipContent>
               </Tooltip>
             </div>
