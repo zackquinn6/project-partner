@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { verifyAuth } from "../_shared/auth.ts";
 import { escapeHtml } from "../_shared/validation.ts";
 
@@ -83,7 +84,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await resend.emails.send({
       from: "Project Partner <onboarding@resend.dev>",
-      to: [to_email],
+      to: [recipient],
       subject: `🏆 Certificate of Completion: ${projectName.replace(/[\r\n]/g, " ")}`,
       html: `
         <!DOCTYPE html>
