@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, CheckCircle } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { DIYProfileStep } from './KickoffSteps/DIYProfileStep';
 import { ProjectOverviewStep } from './KickoffSteps/ProjectOverviewStep';
 import { ProjectProfileStep } from './KickoffSteps/ProjectProfileStep';
 import {
   ProjectToolsStep,
-  PLANNING_TOOLS,
   type PlanningToolId,
   filterByPartnerAvailability,
   DEFAULT_PLANNING_TOOLS_SELECTION,
@@ -70,12 +69,6 @@ const KICKOFF_STEP_DEFINITIONS: {
   },
 ];
 
-const FIT_CHIP_LABEL: Record<string, string> = {
-  ready_to_start: 'Good fit',
-  proceed_mindfully: 'Stretch',
-  not_yet: 'Not recommended',
-};
-
 interface KickoffWorkflowProps {
   onKickoffComplete: (payload: KickoffCompletePayload) => void | Promise<void>;
   onExit?: () => void; // Add optional exit handler
@@ -112,8 +105,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   const [profileSkillLevel, setProfileSkillLevel] = useState<string | null>(null);
   const [profilePhysicalCapability, setProfilePhysicalCapability] = useState<string | null>(null);
   const [profileReloadToken, setProfileReloadToken] = useState(0);
-  /** Gates step-4 → studio handoff so Planning Studio opens only after confirmation. */
-  const [showHandoff, setShowHandoff] = useState(false);
   const [matchProjectMeta, setMatchProjectMeta] = useState<{
     skillLevel: string | null;
     effortLevel: string | null;
@@ -671,30 +662,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     ]
   );
 
-  const handoffTargetLabel = useMemo(() => {
-    const timelineRaw =
-      (currentProjectRun as { initial_timeline?: string | null; initialTimeline?: string | null } | null)
-        ?.initial_timeline ??
-      (currentProjectRun as { initialTimeline?: string | null } | null)?.initialTimeline ??
-      null;
-    if (typeof timelineRaw !== 'string' || timelineRaw.trim() === '') return null;
-    const d = new Date(timelineRaw.includes('T') ? timelineRaw : `${timelineRaw}T12:00:00`);
-    if (Number.isNaN(d.getTime())) return null;
-    return `Target: ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
-  }, [currentProjectRun]);
-
-  const handoffBudgetLabel = useMemo(() => {
-    const budgetRaw =
-      (currentProjectRun as { initial_budget?: string | null; initialBudget?: string | null } | null)
-        ?.initial_budget ??
-      (currentProjectRun as { initialBudget?: string | null } | null)?.initialBudget ??
-      null;
-    if (typeof budgetRaw !== 'string' || budgetRaw.trim() === '') return null;
-    const n = parseFloat(budgetRaw.replace(/[^0-9.-]/g, ''));
-    if (Number.isNaN(n)) return null;
-    return `Budget: $${n >= 1000 ? `${Math.round(n / 1000)}k` : Math.round(n)}`;
-  }, [currentProjectRun]);
-
   const personalizeBlocked =
     currentStepId === 'kickoff-step-2' &&
     kickoffStepOrder === 'profile_first' &&
@@ -808,16 +775,11 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     }
 
     if (currentStepId === 'kickoff-step-4') {
-      setShowHandoff(true);
+      await handleStepComplete(currentKickoffStep, selectedPlanningTools);
       return;
     }
 
     await handleStepComplete(currentKickoffStep);
-  };
-
-  const handleConfirmHandoff = async () => {
-    setShowHandoff(false);
-    await handleStepComplete(currentKickoffStep, selectedPlanningTools);
   };
 
   const continueLabel =
@@ -884,62 +846,61 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   };
 
   const renderPrimaryActions = () => {
+    /** Fixed footer geometry so the continue control does not jump between steps. */
+    const footerRowClass =
+      'grid h-14 w-full grid-cols-[minmax(0,11.5rem)_minmax(0,1fr)] items-center gap-3';
+    const primaryButtonClass =
+      'font-display h-14 min-h-14 w-full px-3 text-sm font-semibold';
+
     if (!isStepCompleted(currentKickoffStep)) {
       const escape = renderSecondaryEscape();
       return (
-        <div className="flex min-h-12 w-full flex-row items-center gap-3 sm:min-h-[3.25rem]">
-          <div className="flex min-w-0 shrink items-center">{escape}</div>
-          <div className="min-w-0 flex-1">
-            <Button
-              onClick={() => {
-                void handlePrimaryContinue();
-              }}
-              size="lg"
-              disabled={personalizeBlocked}
-              className="font-display h-12 min-h-12 w-full px-3 text-sm font-semibold sm:h-14 sm:min-h-14"
-            >
-              <span className="flex flex-col items-center leading-tight">
-                <span>{continueLabel}</span>
-                {currentStepId === 'kickoff-step-4' && selectedPlanningTools.length > 0 ? (
-                  <span className="text-[10px] font-normal opacity-80">
-                    {selectedPlanningTools.length} planning tools selected
-                  </span>
-                ) : null}
-              </span>
-            </Button>
-          </div>
+        <div className={footerRowClass}>
+          <div className="flex min-w-0 items-center justify-start">{escape}</div>
+          <Button
+            onClick={() => {
+              void handlePrimaryContinue();
+            }}
+            size="lg"
+            disabled={personalizeBlocked}
+            className={primaryButtonClass}
+          >
+            {continueLabel}
+          </Button>
         </div>
       );
     }
 
     if (currentStepId === 'kickoff-step-4' && onReturnToPlanningStudio) {
       return (
-        <div className="flex min-h-12 w-full flex-row items-center gap-3 sm:min-h-[3.25rem]">
-          <div className="min-w-0 flex-1">
-            <Button
-              type="button"
-              size="lg"
-              className="font-display h-12 min-h-12 w-full px-3 text-sm font-semibold sm:h-14 sm:min-h-14"
-              onClick={() => {
-                void handleReturnToPlanningStudio();
-              }}
-            >
-              Save tools & Open Planning Studio
-            </Button>
-          </div>
+        <div className={footerRowClass}>
+          <div className="min-w-0" aria-hidden />
+          <Button
+            type="button"
+            size="lg"
+            className={primaryButtonClass}
+            onClick={() => {
+              void handleReturnToPlanningStudio();
+            }}
+          >
+            Save tools & Open Planning Studio
+          </Button>
         </div>
       );
     }
 
     return (
-      <button
-        type="button"
-        onClick={() => goToKickoffStep(currentKickoffStep)}
-        className="flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-success/30 bg-success/10 px-3 text-sm text-success"
-      >
-        <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        Step complete - tap to edit
-      </button>
+      <div className={footerRowClass}>
+        <div className="min-w-0" aria-hidden />
+        <button
+          type="button"
+          onClick={() => goToKickoffStep(currentKickoffStep)}
+          className="flex h-14 min-h-14 w-full items-center justify-center gap-1.5 rounded-md border border-success/30 bg-success/10 px-3 text-sm text-success"
+        >
+          <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          Step complete - tap to edit
+        </button>
+      </div>
     );
   };
 
@@ -951,10 +912,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     (typeof currentProjectRun.name === 'string' && currentProjectRun.name.trim() !== ''
       ? currentProjectRun.name.trim()
       : 'Project');
-
-  const handoffToolNames = selectedPlanningTools
-    .map((id) => PLANNING_TOOLS.find((t) => t.id === id)?.label)
-    .filter((name): name is string => Boolean(name));
 
   return (
     <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-auto md:overflow-visible">
@@ -1041,43 +998,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       <Card className="sticky bottom-0 z-10 shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:static md:border md:bg-card md:backdrop-blur-none">
         <CardContent className="p-2.5 sm:p-4">{renderPrimaryActions()}</CardContent>
       </Card>
-
-      {showHandoff ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md animate-in fade-in zoom-in-95 rounded-lg border bg-card p-5 shadow-lg duration-200">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-success/15 text-success">
-              <CheckCircle className="h-6 w-6" aria-hidden />
-            </div>
-            <h3 className="font-display text-center text-xl font-semibold">You&apos;re set to plan</h3>
-            <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
-              <li>Fit: {FIT_CHIP_LABEL[matchExplanation.tier] ?? matchExplanation.tier}</li>
-              {profileSkillLevel ? <li>Level: {profileSkillLevel}</li> : null}
-              {handoffTargetLabel ? <li>{handoffTargetLabel}</li> : null}
-              {handoffBudgetLabel ? <li>{handoffBudgetLabel}</li> : null}
-              {handoffToolNames.length > 0 ? (
-                <li>Tools: {handoffToolNames.join(', ')}</li>
-              ) : null}
-            </ul>
-            <Button
-              type="button"
-              size="lg"
-              className="font-display mt-5 h-12 w-full text-sm font-semibold"
-              onClick={() => {
-                void handleConfirmHandoff();
-              }}
-            >
-              Open Planning Studio
-            </Button>
-            <button
-              type="button"
-              className="mt-2 w-full text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
-              onClick={() => setShowHandoff(false)}
-            >
-              Keep editing
-            </button>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 };
