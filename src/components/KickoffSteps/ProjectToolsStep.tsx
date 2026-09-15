@@ -108,7 +108,7 @@ export const PLANNING_TOOLS_DISPLAY_ORDER: PlanningToolId[] = [
   'expert_support',
 ];
 
-/** @deprecated Prefer PLANNING_TOOLS_DISPLAY_ORDER — same sequence. */
+/** @deprecated Prefer PLANNING_TOOLS_DISPLAY_ORDER - same sequence. */
 const KICKOFF_TOOLS_GRID_ORDER = PLANNING_TOOLS_DISPLAY_ORDER;
 
 export const DEFAULT_PLANNING_TOOLS_SELECTION: PlanningToolId[] = ['scope', 'risk'];

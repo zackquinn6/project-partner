@@ -121,12 +121,12 @@ interface ProjectOverviewStepProps {
   mode?: 'kickoff' | 'workflow';
   /**
    * From `user_profiles.skill_level` only (via KickoffWorkflow). Required for Match "Your level"
-   * on skill — never derived from the project run or template.
+   * on skill - never derived from the project run or template.
    */
   profileSkillLevel?: string | null;
   /**
    * From `user_profiles.physical_capability` only (via KickoffWorkflow). Required for Match
-   * "Your level" on effort — never derived from the project run or template.
+   * "Your level" on effort - never derived from the project run or template.
    */
   profilePhysicalCapability?: string | null;
 }
@@ -172,7 +172,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const parentProvidesProfileLevels =
     profileSkillLevel !== undefined || profilePhysicalCapability !== undefined;
 
-  // Your level: user_profiles only — never project run / template skill or effort.
+  // Your level: user_profiles only - never project run / template skill or effort.
   useEffect(() => {
     if (parentProvidesProfileLevels) return;
     if (authLoading) return;
@@ -358,7 +358,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   };
 
   // Helper function to render 3-step slider
-  /** Map profile physical_capability to 0–2 for the Low/Medium/High track (same scale as recommendation logic). */
+  /** Map profile physical_capability to 0-2 for the Low/Medium/High track (same scale as recommendation logic). */
   const getPhysicalCapabilitySegmentIndex = (cap: string | null | undefined): number =>
     physicalCapabilityToEffortSegment(cap) ?? -1;
 
@@ -368,7 +368,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     labels: string[],
     userLevel?: string | null,
     comparison?: { type: string; message: string } | null,
-    /** When set (0–2), positions the “Your level” arrow on that segment (e.g. physical_capability vs Low/Medium/High). */
+    /** When set (0-2), positions the “Your level” arrow on that segment (e.g. physical_capability vs Low/Medium/High). */
     userLevelSegmentOverride?: number | null
   ) => {
     const rawProjectPos = getLevelPosition(currentLevel, levels);
@@ -429,7 +429,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
           ))}
         </div>
         
-        {/* Arrow indicators for project and user levels (independent — show profile even if project level missing) */}
+        {/* Arrow indicators for project and user levels (independent - show profile even if project level missing) */}
         {(hasValue || userLevelIndex >= 0) && (
           <div>
             {/* This project: arrow above label, arrow nearly touching the bar */}

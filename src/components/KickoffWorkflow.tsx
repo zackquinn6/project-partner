@@ -108,7 +108,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   const [completedKickoffSteps, setCompletedKickoffSteps] = useState<Set<number>>(new Set());
   const [checkedOutputs, setCheckedOutputs] = useState<Record<string, Set<string>>>({});
   const [selectedPlanningTools, setSelectedPlanningTools] = useState<PlanningToolId[]>([]);
-  /** user_profiles.skill_level / physical_capability — sole source for Match "Your level". */
+  /** user_profiles.skill_level / physical_capability - sole source for Match "Your level". */
   const [profileSkillLevel, setProfileSkillLevel] = useState<string | null>(null);
   const [profilePhysicalCapability, setProfilePhysicalCapability] = useState<string | null>(null);
   const [profileReloadToken, setProfileReloadToken] = useState(0);
@@ -303,7 +303,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       return;
     }
 
-    // Same run: only add completions from persistence — never remove local checkmarks
+    // Same run: only add completions from persistence - never remove local checkmarks
     setCompletedKickoffSteps((prev) => {
       let changed = false;
       const next = new Set(prev);
@@ -375,7 +375,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         ...new Set([...fromDb, ...fromContext, ...fromLocalUi, stepId, actualStepId]),
       ];
 
-      // Derive UI completion from the list we are about to persist — not from React state, which can be stale
+      // Derive UI completion from the list we are about to persist - not from React state, which can be stale
       // when users advance quickly and would otherwise leave finishingEntireKickoff false after the last step.
       const pendingCompletedIds = new Set(newCompletedSteps);
       const newCompletedKickoffSteps = new Set<number>();
@@ -527,7 +527,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       selected_planning_tools: normalized,
     } as typeof currentProjectRun.customization_decisions;
 
-    // Skip write when nothing changed — still return the effective list for callers.
+    // Skip write when nothing changed - still return the effective list for callers.
     const prev = Array.isArray(persisted) ? [...(persisted as string[])].sort().join(',') : '';
     const next = [...normalized].sort().join(',');
     if (prev !== next) {
@@ -848,11 +848,11 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
   const continueLabel =
     currentStepId === 'kickoff-step-1'
-      ? 'This fits — continue'
+      ? 'This fits - continue'
       : currentStepId === 'kickoff-step-2'
-        ? 'Looks right — continue'
+        ? 'Looks right - continue'
         : currentStepId === 'kickoff-step-3'
-          ? 'Set — continue'
+          ? 'Set - continue'
           : 'Start planning';
 
   const renderSkipEscapeLink = () => {
@@ -964,7 +964,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         className="flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-success/30 bg-success/10 px-3 text-sm text-success"
       >
         <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        Step complete — tap to edit
+        Step complete - tap to edit
       </button>
     );
   };

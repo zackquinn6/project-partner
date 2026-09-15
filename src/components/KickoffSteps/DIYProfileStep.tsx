@@ -176,7 +176,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
         if (cancelled) return;
 
         // Show any saved profile fields (same as My Profile). Do not require
-        // survey_completed_at — onboarding / partial profiles still have skill data.
+        // survey_completed_at - onboarding / partial profiles still have skill data.
         setExistingProfile({
           ...profileData,
           owned_tools: ownedTools,

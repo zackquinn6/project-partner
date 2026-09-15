@@ -7,7 +7,7 @@ const EFFORT_ORDER = ['low', 'medium', 'high'] as const;
 
 /**
  * Aligns user_profiles.skill_level (DIY survey: newbie | confident | hero) and legacy synonyms
- * with project difficulty tiers on a single 0–3 scale (beginner → professional).
+ * with project difficulty tiers on a single 0-3 scale (beginner → professional).
  */
 const USER_SKILL_TO_INDEX: Record<string, number> = {
   newbie: 0,
@@ -27,7 +27,7 @@ const PROJECT_SKILL_TO_INDEX: Record<string, number> = {
   professional: 3,
 };
 
-/** Segment index 0–3, or null if missing / not recognized. */
+/** Segment index 0-3, or null if missing / not recognized. */
 export function userSkillLevelToIndex(raw: string | null | undefined): number | null {
   const k = (raw || '').toLowerCase().trim();
   if (!k) return null;
@@ -35,7 +35,7 @@ export function userSkillLevelToIndex(raw: string | null | undefined): number | 
   return i === undefined ? null : i;
 }
 
-/** Segment index 0–3, or null if missing / not recognized. */
+/** Segment index 0-3, or null if missing / not recognized. */
 export function projectSkillLevelToIndex(raw: string | null | undefined): number | null {
   const k = (raw || '').toLowerCase().trim();
   if (!k) return null;
@@ -44,7 +44,7 @@ export function projectSkillLevelToIndex(raw: string | null | undefined): number
 }
 
 /**
- * Maps user_profiles.physical_capability to the same 0–2 scale as project effort (low/medium/high).
+ * Maps user_profiles.physical_capability to the same 0-2 scale as project effort (low/medium/high).
  * Survey (DIYSurveyPopup) stores light | medium | heavy; older data may use limited | moderate | high.
  */
 const CAPABILITY_TO_SEGMENT: Record<string, number> = {
@@ -57,7 +57,7 @@ const CAPABILITY_TO_SEGMENT: Record<string, number> = {
   'very high': 2,
 };
 
-/** Segment index 0–2, or null if missing / not recognized. */
+/** Segment index 0-2, or null if missing / not recognized. */
 export function physicalCapabilityToEffortSegment(
   raw: string | null | undefined
 ): number | null {
@@ -143,26 +143,26 @@ export function tierFromMatchAxes(
 
 function skillReason(axis: MatchAxisSentiment | null): string {
   if (axis === null) {
-    return 'Skill can’t be compared yet—your profile or this project is missing a clear skill level on one or both sides.';
+    return 'Skill can’t be compared yet-your profile or this project is missing a clear skill level on one or both sides.';
   }
   if (axis === 'negative') {
-    return 'Your saved skill level is below what this project expects—that gap can make the work harder to finish well.';
+    return 'Your saved skill level is below what this project expects-that gap can make the work harder to finish well.';
   }
   if (axis === 'neutral') {
     return 'Your saved skill level matches what this project expects.';
   }
-  return 'Your saved skill level is above what this project expects—you have headroom on technique.';
+  return 'Your saved skill level is above what this project expects-you have headroom on technique.';
 }
 
 function effortReason(axis: MatchAxisSentiment | null): string {
   if (axis === null) {
-    return 'Effort can’t be compared yet—your profile or this project is missing effort level or physical capability on one or both sides.';
+    return 'Effort can’t be compared yet-your profile or this project is missing effort level or physical capability on one or both sides.';
   }
   if (axis === 'negative') {
     return 'Your saved effort capability is below what this project needs physically, and that could be tough for you.';
   }
   if (axis === 'neutral') {
-    return 'Your effort capability is matched to the project’s effort level—be aware this can still be a demanding project.';
+    return 'Your effort capability is matched to the project’s effort level-be aware this can still be a demanding project.';
   }
   return 'Your effort capability meets or exceeds what this project needs physically.';
 }
@@ -182,7 +182,7 @@ function tierSummary(
   if (tier === 'proceed_mindfully') {
     return 'You’re close enough to move forward, but stay deliberate about risks, scope, and getting help when you need it.';
   }
-  return 'Your profile lines up well with this project’s skill and effort expectations—reasonable to start when you’re ready.';
+  return 'Your profile lines up well with this project’s skill and effort expectations-reasonable to start when you’re ready.';
 }
 
 export type ProjectMatchExplanation = {
@@ -213,7 +213,7 @@ export function computeProjectMatchExplanation(params: {
   const challengesRaw = (params.projectChallengesText || '').trim();
   const challengesParagraph = challengesRaw
     ? challengesRaw
-    : 'This template doesn’t list specific project challenges—review scope, codes, and site conditions yourself.';
+    : 'This template doesn’t list specific project challenges-review scope, codes, and site conditions yourself.';
 
   return {
     tier,

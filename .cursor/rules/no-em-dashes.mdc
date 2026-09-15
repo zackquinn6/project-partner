@@ -1,0 +1,28 @@
+---
+description: >-
+  Never use em dashes or en dashes in UI copy, comments, or docs. Prefer a
+  normal hyphen (-) or rephrase. Applies to all product and code text.
+alwaysApply: true
+---
+
+# No em dashes or en dashes
+
+Do not use em dashes (`—`, U+2014) or en dashes (`–`, U+2013) anywhere in the codebase: user-facing copy, comments, JSDoc, markdown, or plan text.
+
+## Use instead
+
+- A normal hyphen with spaces: ` - ` (e.g. `This fits - continue`)
+- For numeric ranges: a hyphen with no spaces (e.g. `0-3`, not `0–3`)
+- Or rephrase with a colon, comma, or period when clearer
+
+```tsx
+// BAD
+'This fits — continue'
+/** Map capability to 0–2 */
+
+// GOOD
+'This fits - continue'
+/** Map capability to 0-2 */
+```
+
+When editing existing text that contains `—` or `–`, replace it with `-` in the same pass.
