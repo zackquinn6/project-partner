@@ -21,12 +21,13 @@ export const Account: React.FC<AccountProps> = ({ open, onOpenChange }) => {
       onOpenChange={onOpenChange}
       size="content-large"
       title="Account"
+      className="md:w-[58.5vw] md:max-w-[58.5vw]"
     >
       <Tabs defaultValue="membership" className="w-full flex-1 flex flex-col min-h-0">
         <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="membership">Membership</TabsTrigger>
           <TabsTrigger value="security">Password & Security</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy Settings</TabsTrigger>
+          <TabsTrigger value="privacy">Privacy</TabsTrigger>
         </TabsList>
 
         <TabsContent value="membership" className="flex-1 overflow-y-auto">

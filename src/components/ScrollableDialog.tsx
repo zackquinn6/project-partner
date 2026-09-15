@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useEffect } from "react"
-import { Dialog, DialogPortal, DialogOverlay, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogPortal, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { PlanningToolWindowHeaderActions } from "@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions"
@@ -75,17 +75,25 @@ export function ScrollableDialog({
       modal={false}
     >
       <DialogPortal>
-        <DialogOverlay className="bg-black/60 backdrop-blur-md fixed inset-0 z-[100] md:top-16 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        {/* Radix does not manage overlay visibility when modal={false}; render manually */}
+        {open && (
+          <div
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm md:top-16"
+            style={{ pointerEvents: 'auto' }}
+            aria-hidden="true"
+            onClick={() => onOpenChange(false)}
+          />
+        )}
         <div
           data-dialog-content
           onClick={(e) => e.stopPropagation()}
           className={cn(
             // Mobile: Full screen
             "fixed inset-0 z-[101]",
-            // Desktop: Centered with 90% viewport, ensure it's always visible
-            "md:fixed md:left-1/2 md:top-1/2 md:right-auto md:bottom-auto md:-translate-x-1/2 md:-translate-y-1/2",
-            "md:w-[90vw] md:max-w-[90vw] md:h-[90vh] md:max-h-[90vh]",
-            "md:max-w-[calc(100vw-2rem)] md:max-h-[calc(100vh-2rem)]",
+            // Desktop: center in the region below the app header so the window is not cut off
+            "md:fixed md:left-1/2 md:top-[calc(50dvh+2rem)] md:right-auto md:bottom-auto md:-translate-x-1/2 md:-translate-y-1/2",
+            "md:w-[90vw] md:max-w-[min(90vw,calc(100vw-2rem))]",
+            "md:h-[min(90vh,calc(100dvh-5rem))] md:max-h-[calc(100dvh-5rem)]",
             "bg-background md:border md:rounded-lg shadow-lg",
             "flex flex-col",
             className
