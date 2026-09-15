@@ -1,31 +1,58 @@
-# Sign-in spinner: cause and fix
+# Kickoff (Steps 1-4) UX Review & Improvements
 
-## What I found
+A review of the Discover flow (Project Match → Personalize → Goals → Your plan) plus the concrete changes I'd make so it reads as one intentional system: **Pick → Discover → Plan → Build**.
 
-Your app's database/auth service (the external Supabase project `drshvrukkavtpsprfcbc`) is not answering right now.
+## What works today
 
-Evidence from direct tests just run:
-- A request without a key is rejected instantly by the edge gateway (fast 401), so DNS/network are fine.
-- A real request with your app's public key — login, and a simple data read — hangs and never returns (timed out at 15-20 seconds each).
-- The tooling report for this project also says the database connection pooler is unavailable, which usually means the project is paused or stuck waking up.
+- Four steps with a persistent step strip, per-step "done" ticks, and saved progress.
+- A two-stage journey header (Discover / Plan) that already hints at the bigger arc.
+- A sticky action bar so "Continue" is always reachable on mobile.
 
-Matching symptom in the browser log: "Failed to fetch" on data loads.
+## Main problems
 
-## Why it shows as an endless spinner
+1. **The bigger journey is hidden.** The header only shows Discover and Plan. The user never sees that picking a project came before and building comes after, so kickoff feels like a form, not a stage in a system.
+2. **Two competing progress systems.** The journey pills and the 4-dot step strip sit in separate cards with separate visual languages, plus a "Step 2 of 4" counter, plus prev/next arrows, plus a scroll-the-steps arrow pair on tablet. That's four ways to express one idea.
+3. **No sense of payoff.** Each step asks for input but never says what the answers change. "Goals" collects size, date, and budget with no live reflection of the effect.
+4. **Escape hatches feel like errors.** "Skip to Planning Studio" is styled as a muted outline button that occupies 30% of the action bar on every step, and on step 1 a red "Not a match" button is the most visually aggressive element on screen.
+5. **Green is doing too much.** The primary Continue button is hardcoded green, completion ticks are green, and the "Step Completed" panel is green — none of it comes from the theme, so it reads generic and breaks dark mode.
+6. **Steps 1 and 3 are dense.** The overview step stacks many small outline badges; the goals step splits attention across several cards with no clear reading order.
+7. **No arrival or completion moment.** Step 1 opens straight into detail, and finishing step 4 jumps to the Planning Studio with no confirmation of what was decided.
 
-When you press Sign In, the app first calls a login rate-limit check and then the login itself, and neither call has any time limit. If the service never answers, the button's spinner spins forever with no error message. So the outage is the cause, and the missing timeout is why it looks like a hang instead of a clear failure.
+## Proposed changes
 
-## Fix
+### A. One progress system
+- Replace the journey pills + step strip + counter with a single kickoff header: project name, a 4-segment progress rail with short labels (Match · You · Goals · Plan), and one line of context.
+- Show the full arc as faint context above it: **Pick · Discover · Plan · Build**, with Discover active. This is the "intentional system" cue.
+- Drop the desktop scroll arrows (four steps always fit) and the "Step X of 4" counter; the rail carries both.
 
-1. Restore the backend (you or I can check its status in the Supabase dashboard; a paused project needs to be resumed there). Until it answers, no login can succeed.
-2. Make the sign-in path fail loudly instead of hanging:
-   - Put a time limit (about 8 seconds) around the rate-limit check; if it doesn't answer, skip it and continue to the actual login instead of blocking.
-   - Put a time limit around the login request itself; on timeout, stop the spinner and show "We can't reach the server right now. Please try again in a moment."
-   - Wrap the two calls so any thrown network error also clears the spinner and shows that message.
-   - Do the same for the sign-up submit and the password-reset dialog, which have the identical pattern.
+### B. Give each step a promise and a payoff
+- Each step gets one short line at the top stating what it decides, e.g. "We'll use this to size the work and warn you about the hard parts."
+- Add a compact, persistent "What we know so far" summary that grows as steps complete (fit rating → your level → target date & budget → tools chosen). It makes progressive loading visible.
+
+### C. Calmer action bar
+- Continue becomes the theme's primary button (no hardcoded green); completion states use a success token defined in the design system.
+- Move "Skip to Planning Studio" and "Not a match" into a single quiet text link / overflow on the left of the bar, same treatment on desktop and mobile.
+- On the final step the primary reads "Start planning" with the count of selected tools beneath it.
+
+### D. Reduce density
+- Step 1: lead with a single verdict card (good fit / stretch / not recommended) and the three drivers behind it; collapse the rest of the detail into expandable sections.
+- Step 3: one card, vertical order — size, then target date, then budget — with an inline note on how the date shifts with size.
+- Step 4: keep the recommended-set card, but preview what each selected tool adds to the plan.
+
+### E. Handoff moment
+- After step 4, a brief confirmation panel: the decisions made, the tools chosen, and a single button into the Planning Studio.
 
 ## Technical notes
 
-- `src/contexts/AuthContext.tsx` — `signIn`: `supabase.functions.invoke('auth-rate-limit', ...)` and `signInWithPassword` are awaited with no timeout, and the post-failure logging calls also await network. Add a `withTimeout` helper (Promise.race + AbortController where supported) and treat rate-limit timeouts as "allow".
-- `src/pages/Auth.tsx` — `handleSignIn` / `handleSignUp` set `isLoading(false)` only after every await completes; a rejected promise leaves the spinner on. Wrap bodies in try/finally and surface a network-error message.
-- The app-init spinner already has a 5 second guard in `AuthContext`, so this change targets the submit path.
+- Changes are presentation-only in `src/components/KickoffWorkflow.tsx`, `src/components/PlanningJourneyHeader.tsx`, and the four files in `src/components/KickoffSteps/`. No changes to save logic, step completion persistence, or the planning-tools selection model.
+- The new 4-stage arc header extends `PlanningJourneyHeader` with stages for pick and build rendered as inactive context.
+- Green/red utility classes (`bg-green-600`, `border-red-300`, `text-green-800`, etc.) get replaced with semantic tokens added to `index.css` and `tailwind.config.ts` (success / destructive-subtle), fixing dark mode.
+- The "What we know so far" summary reads existing state already in `KickoffWorkflow` (profile level, customization decisions, selected tools) — no new queries.
+
+## Suggested order
+
+1. Header + progress consolidation (A)
+2. Token cleanup and action bar (C)
+3. Per-step promise lines and running summary (B)
+4. Density passes on steps 1, 3, 4 (D)
+5. Completion handoff (E)
