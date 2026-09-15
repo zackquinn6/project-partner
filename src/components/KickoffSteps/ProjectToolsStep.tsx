@@ -99,10 +99,10 @@ export const PLANNING_TOOLS_DISPLAY_ORDER: PlanningToolId[] = [
   'scope',
   'risk',
   'schedule',
-  'communication_plan',
+  'budget',
   'shopping_list',
   'quality_control',
-  'budget',
+  'communication_plan',
   'tool_rentals',
   'waste_removal',
   'expert_support',
@@ -305,7 +305,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
         ? 'Recommended for quality focus'
         : projectFocus === 'schedule'
           ? 'Recommended for schedule focus'
-          : 'Recommended starter set';
+          : 'Recommended Planning Tools';
 
   const recommendedToolNames = recommendedIds
     .map((id) => PLANNING_TOOLS.find((t) => t.id === id)?.label)
@@ -402,7 +402,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
                             : 'text-sm text-muted-foreground'
                         }
                       >
-                        Always included
+                        Make key decisions
                       </p>
                     ) : (
                       <p
@@ -431,7 +431,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
         <CardHeader className="p-2 sm:p-3">
           <CardTitle className="text-sm sm:text-base">Your plan</CardTitle>
           <CardDescription className="text-xs mt-0.5">
-            Turn on the steps you want in Planning Studio. Scope stays on.
+            Select the tools to help you plan
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 p-2 sm:space-y-3 sm:p-3">{inner}</CardContent>
