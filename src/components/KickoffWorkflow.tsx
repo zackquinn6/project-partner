@@ -93,6 +93,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   const [kickoffOrderResolved, setKickoffOrderResolved] = useState(false);
   const [kickoffStepOrder, setKickoffStepOrder] = useState<'profile_first' | 'match_first'>('match_first');
   const [currentKickoffStep, setCurrentKickoffStep] = useState(0);
+  /** Highest step index the user has entered sequentially (inclusive). */
+  const [maxReachedKickoffStep, setMaxReachedKickoffStep] = useState(0);
   const [completedKickoffSteps, setCompletedKickoffSteps] = useState<Set<number>>(new Set());
   const [checkedOutputs, setCheckedOutputs] = useState<Record<string, Set<string>>>({});
   const [selectedPlanningTools, setSelectedPlanningTools] = useState<PlanningToolId[]>([]);
@@ -240,11 +242,18 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
     if (isNewHydration) {
       setCompletedKickoffSteps(completedIndices);
+      const completedMax =
+        completedIndices.size > 0 ? Math.max(...Array.from(completedIndices)) : -1;
       if (completedIndices.size < kickoffSteps.length) {
         const firstIncomplete = kickoffSteps.findIndex((_, index) => !completedIndices.has(index));
         if (firstIncomplete !== -1) {
           setCurrentKickoffStep(firstIncomplete);
+          setMaxReachedKickoffStep(Math.max(firstIncomplete, completedMax, 0));
+        } else {
+          setMaxReachedKickoffStep(Math.max(completedMax, 0));
         }
+      } else {
+        setMaxReachedKickoffStep(Math.max(kickoffSteps.length - 1, completedMax, 0));
       }
       return;
     }
@@ -584,14 +593,24 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       setCurrentKickoffStep(currentKickoffStep - 1);
     }
   };
+
+  const handleNext = () => {
+    const next = currentKickoffStep + 1;
+    if (next >= kickoffSteps.length) return;
+    if (!canVisitKickoffStep(next)) {
+      toast.message('Finish the current step to continue');
+      return;
+    }
+    setCurrentKickoffStep(next);
+  };
+
   const isStepCompleted = (stepIndex: number) => completedKickoffSteps.has(stepIndex);
   const allKickoffStepsComplete = completedKickoffSteps.size === kickoffSteps.length;
 
-  /** Linear walk-through: visit completed steps or the current step only (no jump ahead). */
+  /** Allow any step already entered in sequence; block jumping past the frontier. */
   const canVisitKickoffStep = (index: number) => {
     if (index < 0 || index >= kickoffSteps.length) return false;
-    if (index === currentKickoffStep) return true;
-    return completedKickoffSteps.has(index);
+    return index <= maxReachedKickoffStep;
   };
 
   const goToKickoffStep = (index: number) => {
@@ -601,6 +620,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     }
     setCurrentKickoffStep(index);
   };
+
+  useEffect(() => {
+    setMaxReachedKickoffStep((prev) => Math.max(prev, currentKickoffStep));
+  }, [currentKickoffStep]);
 
   const personalizeBlocked =
     currentStepId === 'kickoff-step-2' &&
@@ -928,42 +951,52 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="scrollbar-hide flex min-w-0 flex-1 items-center justify-center gap-0 overflow-x-auto py-0.5">
+            <div className="scrollbar-hide flex min-w-0 flex-1 items-center justify-center gap-1.5 overflow-x-auto py-0.5">
               {kickoffSteps.map((step, index) => {
                 const visitable = canVisitKickoffStep(index);
                 return (
-                  <React.Fragment key={step.id}>
-                    {index > 0 ? (
-                      <div className="h-px w-1 shrink-0 bg-muted-foreground/30" aria-hidden />
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={() => goToKickoffStep(index)}
-                      aria-label={`${step.title}, step ${index + 1}`}
-                      aria-current={index === currentKickoffStep ? 'step' : undefined}
-                      aria-disabled={!visitable}
-                      className={`
-                        flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
-                        ${visitable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
-                        ${
-                          index === currentKickoffStep
-                            ? 'border-primary bg-primary text-primary-foreground'
-                            : isStepCompleted(index)
-                              ? 'border-green-500 bg-green-500 text-white'
-                              : 'border-muted-foreground bg-background'
-                        }
-                      `}
-                    >
-                      {isStepCompleted(index) ? (
-                        <CheckCircle className="h-3 w-3" aria-hidden />
-                      ) : (
-                        <span className="text-[10px] font-semibold">{index + 1}</span>
-                      )}
-                    </button>
-                  </React.Fragment>
+                  <button
+                    key={step.id}
+                    type="button"
+                    onClick={() => goToKickoffStep(index)}
+                    aria-label={`${step.title}, step ${index + 1}`}
+                    aria-current={index === currentKickoffStep ? 'step' : undefined}
+                    aria-disabled={!visitable}
+                    className={`
+                      flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
+                      ${visitable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
+                      ${
+                        index === currentKickoffStep
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : isStepCompleted(index)
+                            ? 'border-green-500 bg-green-500 text-white'
+                            : 'border-muted-foreground bg-background'
+                      }
+                    `}
+                  >
+                    {isStepCompleted(index) ? (
+                      <CheckCircle className="h-3 w-3" aria-hidden />
+                    ) : (
+                      <span className="text-[10px] font-semibold">{index + 1}</span>
+                    )}
+                  </button>
                 );
               })}
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={handleNext}
+              disabled={
+                currentKickoffStep >= kickoffSteps.length - 1 ||
+                !canVisitKickoffStep(currentKickoffStep + 1)
+              }
+              aria-label="Next step"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
             <div className="shrink-0 text-center leading-none tabular-nums">
               <div className="text-[10px] font-medium text-muted-foreground">
                 {currentKickoffStep + 1}/{kickoffSteps.length}
@@ -988,56 +1021,51 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
               </Button>
               <div
                 ref={kickoffStepNavRef}
-                className="scrollbar-hide flex min-w-0 flex-1 items-start overflow-x-auto px-0.5 pb-1 md:overflow-visible md:px-1 md:pb-0"
+                className="scrollbar-hide flex min-w-0 flex-1 items-start gap-1 overflow-x-auto px-0.5 pb-1 md:overflow-visible md:px-1 md:pb-0"
               >
                 {kickoffSteps.map((step, index) => {
                   const visitable = canVisitKickoffStep(index);
                   return (
-                    <React.Fragment key={step.id}>
-                      {index > 0 ? (
-                        <div
-                          className="mt-[13px] h-0.5 w-1 shrink-0 self-start bg-muted-foreground/25 md:mt-[15px] md:w-1.5"
-                          aria-hidden
-                        />
-                      ) : null}
-                      <div className="flex min-w-[4.25rem] flex-1 basis-0 flex-col items-center px-0.5 md:min-w-[5rem]">
-                        <button
-                          type="button"
-                          onClick={() => goToKickoffStep(index)}
-                          aria-label={`Go to ${step.title}, step ${index + 1}`}
-                          aria-current={index === currentKickoffStep ? 'step' : undefined}
-                          aria-disabled={!visitable}
-                          className={`
-                            flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:h-8 md:w-8
-                            ${visitable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
-                            ${
-                              index === currentKickoffStep
-                                ? 'border-primary bg-primary text-primary-foreground'
-                                : isStepCompleted(index)
-                                  ? 'border-green-500 bg-green-500 text-white'
-                                  : 'border-muted-foreground bg-background'
-                            }
-                          `}
-                        >
-                          {isStepCompleted(index) ? (
-                            <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
-                          ) : (
-                            <span className="text-[11px] font-medium md:text-sm">{index + 1}</span>
-                          )}
-                        </button>
-                        <p
-                          className={`mt-1 w-full text-center text-[9px] font-medium leading-tight md:text-xs break-normal [overflow-wrap:normal] [word-break:normal] ${
+                    <div
+                      key={step.id}
+                      className="flex min-w-[4.25rem] flex-1 basis-0 flex-col items-center px-0.5 md:min-w-[5rem]"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => goToKickoffStep(index)}
+                        aria-label={`Go to ${step.title}, step ${index + 1}`}
+                        aria-current={index === currentKickoffStep ? 'step' : undefined}
+                        aria-disabled={!visitable}
+                        className={`
+                          flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:h-8 md:w-8
+                          ${visitable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
+                          ${
                             index === currentKickoffStep
-                              ? 'text-primary'
+                              ? 'border-primary bg-primary text-primary-foreground'
                               : isStepCompleted(index)
-                                ? 'text-green-700 dark:text-green-400'
-                                : 'text-muted-foreground'
-                          }`}
-                        >
-                          {step.title}
-                        </p>
-                      </div>
-                    </React.Fragment>
+                                ? 'border-green-500 bg-green-500 text-white'
+                                : 'border-muted-foreground bg-background'
+                          }
+                        `}
+                      >
+                        {isStepCompleted(index) ? (
+                          <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
+                        ) : (
+                          <span className="text-[11px] font-medium md:text-sm">{index + 1}</span>
+                        )}
+                      </button>
+                      <p
+                        className={`mt-1 w-full text-center text-[9px] font-medium leading-tight md:text-xs break-normal [overflow-wrap:normal] [word-break:normal] ${
+                          index === currentKickoffStep
+                            ? 'text-primary'
+                            : isStepCompleted(index)
+                              ? 'text-green-700 dark:text-green-400'
+                              : 'text-muted-foreground'
+                        }`}
+                      >
+                        {step.title}
+                      </p>
+                    </div>
                   );
                 })}
               </div>
@@ -1074,6 +1102,20 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                   <CheckCircle className="mx-auto mt-0.5 h-3.5 w-3.5 text-green-500" aria-label="Kickoff complete" />
                 )}
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNext}
+                disabled={
+                  currentKickoffStep >= kickoffSteps.length - 1 ||
+                  !canVisitKickoffStep(currentKickoffStep + 1)
+                }
+                className="h-9 w-9 shrink-0 p-0 md:h-9 md:w-auto md:px-3"
+                aria-label="Next step"
+              >
+                <span className="hidden md:inline md:mr-1">Next</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
           </div>
 

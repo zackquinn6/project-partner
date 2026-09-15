@@ -90,7 +90,8 @@ export function enrichOwnedToolsWithCatalogPhotos<T extends OwnedToolPhotoFields
     if (!tool.tool_id) {
       return tool;
     }
-    const photo_url = resolveCatalogPhotoForOwnedTool(tool, corePhotoById, variationsByCore);
+    const resolved = resolveCatalogPhotoForOwnedTool(tool, corePhotoById, variationsByCore);
+    const photo_url = resolved ?? tool.photo_url ?? null;
     return { ...tool, photo_url };
   });
 }

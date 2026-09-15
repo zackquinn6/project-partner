@@ -43,10 +43,6 @@ export function PlanningJourneyHeader({
         stepNumber={1}
         onClick={discoverClickable ? onDiscoverClick : undefined}
       />
-      <div
-        className="h-px w-4 shrink-0 bg-muted-foreground/30 sm:w-6"
-        aria-hidden
-      />
       <JourneyStagePill
         label="Plan"
         active={planActive}

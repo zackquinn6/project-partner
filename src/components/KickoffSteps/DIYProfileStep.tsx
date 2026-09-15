@@ -18,6 +18,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import DIYSurveyPopup from '../DIYSurveyPopup';
 import { PM_FOCUS_OPTIONS } from '@/components/landing/OnboardingDialog';
+import {
+  collectOwnedToolCoreIds,
+  enrichOwnedToolsWithCatalogPhotos,
+  fetchOwnedToolsPhotoResolution,
+} from '@/utils/ownedToolsCatalogPhotos';
 
 interface DIYProfileStepProps {
   onComplete: () => void;
@@ -144,11 +149,32 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
           return;
         }
 
+        const ownedToolsRaw = Array.isArray(profileData.owned_tools) ? profileData.owned_tools : [];
+        let ownedTools = ownedToolsRaw as ProfileData['owned_tools'];
+        try {
+          const coreIds = collectOwnedToolCoreIds(ownedToolsRaw);
+          if (coreIds.length > 0) {
+            const { corePhotoById, variationsByCore } = await fetchOwnedToolsPhotoResolution(
+              supabase,
+              coreIds
+            );
+            ownedTools = enrichOwnedToolsWithCatalogPhotos(
+              ownedToolsRaw,
+              corePhotoById,
+              variationsByCore
+            );
+          }
+        } catch (photoError) {
+          console.error('Error enriching owned tool photos:', photoError);
+        }
+
+        if (cancelled) return;
+
         // Show any saved profile fields (same as My Profile). Do not require
         // survey_completed_at — onboarding / partial profiles still have skill data.
         setExistingProfile({
           ...profileData,
-          owned_tools: Array.isArray(profileData.owned_tools) ? profileData.owned_tools : [],
+          owned_tools: ownedTools,
         } as ProfileData);
       } catch (error) {
         if (cancelled) return;
@@ -336,10 +362,23 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
                       <div className="relative h-9 w-9 shrink-0">
                         <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-md border bg-background">
                           {photoUrl ? (
-                            <img src={photoUrl} alt={label} className="h-full w-full object-cover" />
-                          ) : (
+                            <img
+                              src={photoUrl}
+                              alt={label}
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                const fallback = e.currentTarget.nextElementSibling;
+                                if (fallback instanceof HTMLElement) fallback.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className={`h-full w-full items-center justify-center ${photoUrl ? 'hidden' : 'flex'}`}
+                            aria-hidden={Boolean(photoUrl)}
+                          >
                             <Wrench className="h-4 w-4 text-muted-foreground" aria-hidden />
-                          )}
+                          </div>
                         </div>
                         {typeof quantity === 'number' && quantity > 1 ? (
                           <div className="pointer-events-none absolute -right-1 -top-1 z-10 min-w-[1.125rem] rounded-full border border-primary/30 bg-primary px-1 py-0 text-center text-[10px] font-medium leading-none text-primary-foreground">
