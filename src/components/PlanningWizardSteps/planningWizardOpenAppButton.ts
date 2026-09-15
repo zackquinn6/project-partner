@@ -1,11 +1,7 @@
 /**
  * Shared layout for Planning Studio tool steps:
- * equal card height, header/content padding, description text, and primary actions.
+ * equal card height, header/content padding, description text, and primary open card.
  */
-
-/** Primary "Open …" actions — same height, width cap, and text size. */
-export const PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME =
-  'h-16 min-h-[4rem] w-full max-w-md justify-center text-base font-semibold whitespace-normal leading-snug px-3 py-3 [&_svg]:h-5 [&_svg]:w-5 [&_svg]:shrink-0';
 
 /** Outer card: consistent minimum height across all tool steps. */
 export const PLANNING_WIZARD_STEP_CARD_CLASSNAME =
@@ -20,19 +16,21 @@ export const PLANNING_WIZARD_STEP_CONTENT_CLASSNAME =
   'flex min-h-0 flex-1 flex-col p-3 sm:p-4';
 
 /**
- * Fills space between description and status; centers the primary action in the card body.
+ * Fills space between header and status; centers description + open card.
  */
 export const PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME =
   'flex min-h-0 flex-1 flex-col items-center justify-center';
 
-/** Constrains and centers the Open button horizontally within the action slot. */
-export const PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME = 'mx-auto w-full max-w-md';
+/** Constrains and centers the open card horizontally within the action slot. */
+export const PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME =
+  'mx-auto flex w-full max-w-md flex-col items-center';
 
 export const PLANNING_WIZARD_STEP_BODY_CLASSNAME =
-  'flex min-h-0 flex-1 flex-col gap-3 py-4 text-center';
+  'flex min-h-0 flex-1 flex-col gap-4 py-4 text-center';
 
+/** Descriptor sits directly above the open card. */
 export const PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME =
-  'mx-auto max-w-2xl shrink-0 text-sm text-muted-foreground sm:text-base';
+  'mx-auto mb-1 max-w-md shrink-0 px-1 text-sm text-muted-foreground sm:mb-2 sm:text-base';
 
 /** Reserves space for the green completion line so card height does not jump. */
 export const PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME =

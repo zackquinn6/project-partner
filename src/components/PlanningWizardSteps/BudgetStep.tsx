@@ -1,9 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { DollarSign } from 'lucide-react';
+import { PlanningToolOpenCardButton } from '@/components/PlanningWizardSteps/PlanningToolOpenCardButton';
 import {
-  PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
   PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME,
   PLANNING_WIZARD_STEP_BODY_CLASSNAME,
   PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME,
@@ -24,16 +23,17 @@ interface BudgetStepProps {
 export const BudgetStep: React.FC<BudgetStepProps> = ({
   onComplete,
   isCompleted: _isCompleted,
-  onOpenBudgeting
+  onOpenBudgeting,
 }) => {
-  const handleOpenBudgeting = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleOpenBudgeting = () => {
     if (onOpenBudgeting) {
       onOpenBudgeting({ fromPlanningWizard: true, onComplete });
     } else {
-      window.dispatchEvent(new CustomEvent('open-project-budgeting', {
-        detail: { fromPlanningWizard: true, onComplete }
-      }));
+      window.dispatchEvent(
+        new CustomEvent('open-project-budgeting', {
+          detail: { fromPlanningWizard: true, onComplete },
+        })
+      );
     }
   };
 
@@ -48,21 +48,12 @@ export const BudgetStep: React.FC<BudgetStepProps> = ({
         </CardHeader>
         <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
           <div className={PLANNING_WIZARD_STEP_BODY_CLASSNAME}>
-            <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
-              Manage finances for this project.
-            </p>
-
             <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
               <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
-                <Button
-                  type="button"
-                  variant="default"
-                  onClick={handleOpenBudgeting}
-                  className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
-                >
-                  <DollarSign className="shrink-0" aria-hidden />
-                  Open Budget
-                </Button>
+                <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
+                  Manage finances for this project.
+                </p>
+                <PlanningToolOpenCardButton toolId="budget" onClick={handleOpenBudgeting} />
               </div>
             </div>
           </div>

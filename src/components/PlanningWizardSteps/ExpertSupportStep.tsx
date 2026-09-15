@@ -1,9 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Headphones } from 'lucide-react';
+import { PlanningToolOpenCardButton } from '@/components/PlanningWizardSteps/PlanningToolOpenCardButton';
 import {
-  PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
   PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME,
   PLANNING_WIZARD_STEP_BODY_CLASSNAME,
   PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME,
@@ -26,8 +25,7 @@ export const ExpertSupportStep: React.FC<ExpertSupportStepProps> = ({
   isCompleted: _isCompleted,
   onOpenExpertSupport,
 }) => {
-  const handleOpen = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleOpen = () => {
     if (onOpenExpertSupport) {
       onOpenExpertSupport({ fromPlanningWizard: true, onComplete });
     } else {
@@ -46,20 +44,12 @@ export const ExpertSupportStep: React.FC<ExpertSupportStepProps> = ({
         </CardHeader>
         <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
           <div className={PLANNING_WIZARD_STEP_BODY_CLASSNAME}>
-            <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
-              Configure expert support so you can get guidance when you need it during your project.
-            </p>
             <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
               <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
-                <Button
-                  type="button"
-                  variant="default"
-                  className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
-                  onClick={handleOpen}
-                >
-                  <Headphones className="shrink-0" aria-hidden />
-                  Open Support
-                </Button>
+                <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
+                  Configure expert support so you can get guidance when you need it during your project.
+                </p>
+                <PlanningToolOpenCardButton toolId="expert_support" onClick={handleOpen} />
               </div>
             </div>
           </div>

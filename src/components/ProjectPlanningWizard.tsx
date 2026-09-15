@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -30,8 +29,8 @@ import { parseCustomizationDecisions, isScopeReadyForWorkflow } from '@/utils/cu
 import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
 import { PlanningJourneyHeader } from '@/components/PlanningJourneyHeader';
 import { PlanningConfirmationStep } from './PlanningWizardSteps/PlanningConfirmationStep';
+import { PlanningToolOpenCardButton } from './PlanningWizardSteps/PlanningToolOpenCardButton';
 import {
-  PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
   PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME,
   PLANNING_WIZARD_STEP_BODY_CLASSNAME,
   PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME,
@@ -39,7 +38,6 @@ import {
   PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
   PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
   PLANNING_WIZARD_STEP_HEADER_CLASSNAME,
-  PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME,
   PLANNING_WIZARD_STEP_TITLE_CLASSNAME,
 } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 import type { Phase } from '@/interfaces/Project';
@@ -712,36 +710,23 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                 <CardTitle className={PLANNING_WIZARD_STEP_TITLE_CLASSNAME}>
                   <Trash2 className="h-5 w-5" aria-hidden />
                   Waste Removal
-                  {stepProps.isCompleted && (
-                    <Badge variant="secondary" className="flex-shrink-0 text-xs">
-                      Complete
-                    </Badge>
-                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
                 <div className={PLANNING_WIZARD_STEP_BODY_CLASSNAME}>
-                  <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
-                    Plan disposal and debris handling during the project.
-                  </p>
                   <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
                     <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
-                      <Button
-                        type="button"
-                        variant="default"
-                        className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
+                      <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
+                        Plan disposal and debris handling during the project.
+                      </p>
+                      <PlanningToolOpenCardButton
+                        toolId="waste_removal"
                         onClick={() => {
                           openPlanningTool('waste_removal', stepProps.onComplete);
                         }}
-                      >
-                        <Trash2 className="shrink-0" aria-hidden />
-                        Open Waste Removal
-                      </Button>
+                      />
                     </div>
                   </div>
-                  <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
-                    {stepProps.isCompleted ? '✓ Waste Removal completed' : '\u00a0'}
-                  </p>
                 </div>
               </CardContent>
             </Card>

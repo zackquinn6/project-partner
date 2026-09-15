@@ -1,9 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { ClipboardCheck } from 'lucide-react';
+import { PlanningToolOpenCardButton } from '@/components/PlanningWizardSteps/PlanningToolOpenCardButton';
 import {
-  PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
   PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME,
   PLANNING_WIZARD_STEP_BODY_CLASSNAME,
   PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME,
@@ -37,22 +36,17 @@ export const QualityControlStep: React.FC<QualityControlStepProps> = ({
         </CardHeader>
         <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
           <div className={PLANNING_WIZARD_STEP_BODY_CLASSNAME}>
-            <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
-              Set the detail level of quality (documentation) tracking.
-            </p>
             <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
               <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
-                <Button
-                  type="button"
-                  variant="default"
-                  className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
+                <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
+                  Set the detail level of quality (documentation) tracking.
+                </p>
+                <PlanningToolOpenCardButton
+                  toolId="quality_control"
                   onClick={() => {
                     onOpenQualityControlApp?.({ fromPlanningWizard: true, onComplete });
                   }}
-                >
-                  <ClipboardCheck className="shrink-0" aria-hidden />
-                  Open Quality
-                </Button>
+                />
               </div>
             </div>
           </div>

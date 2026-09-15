@@ -1,9 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
+import { PlanningToolOpenCardButton } from '@/components/PlanningWizardSteps/PlanningToolOpenCardButton';
 import {
-  PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
   PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME,
   PLANNING_WIZARD_STEP_BODY_CLASSNAME,
   PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME,
@@ -21,12 +20,14 @@ interface CustomizationStepProps {
 
 export const CustomizationStep: React.FC<CustomizationStepProps> = ({
   onComplete,
-  isCompleted: _isCompleted
+  isCompleted: _isCompleted,
 }) => {
   const handleOpenCustomizer = () => {
-    window.dispatchEvent(new CustomEvent('open-project-customizer', {
-      detail: { fromPlanningWizard: true, onComplete }
-    }));
+    window.dispatchEvent(
+      new CustomEvent('open-project-customizer', {
+        detail: { fromPlanningWizard: true, onComplete },
+      })
+    );
   };
 
   return (
@@ -40,21 +41,12 @@ export const CustomizationStep: React.FC<CustomizationStepProps> = ({
         </CardHeader>
         <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
           <div className={PLANNING_WIZARD_STEP_BODY_CLASSNAME}>
-            <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
-              Make choices for your unique project to plan out the work to be done
-            </p>
-
             <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
               <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
-                <Button
-                  type="button"
-                  variant="default"
-                  onClick={handleOpenCustomizer}
-                  className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
-                >
-                  <Settings className="shrink-0" aria-hidden />
-                  Open Customize
-                </Button>
+                <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
+                  Make choices for your unique project to plan out the work to be done
+                </p>
+                <PlanningToolOpenCardButton toolId="scope" onClick={handleOpenCustomizer} />
               </div>
             </div>
           </div>

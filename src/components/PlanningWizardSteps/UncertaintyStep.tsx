@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
+import { PlanningToolOpenCardButton } from '@/components/PlanningWizardSteps/PlanningToolOpenCardButton';
 import {
-  PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
   PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME,
   PLANNING_WIZARD_STEP_BODY_CLASSNAME,
   PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME,
@@ -26,7 +25,7 @@ interface UncertaintyStepProps {
 export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
   onComplete,
   isCompleted: _isCompleted,
-  onOpenRiskManagement
+  onOpenRiskManagement,
 }) => {
   const { currentProjectRun } = useProject();
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
@@ -50,21 +49,12 @@ export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
         </CardHeader>
         <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
           <div className={PLANNING_WIZARD_STEP_BODY_CLASSNAME}>
-            <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
-              Identify and plan for things that could impact your timeline and budget
-            </p>
-
             <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
               <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
-                <Button
-                  type="button"
-                  variant="default"
-                  onClick={handleOpenRiskManagement}
-                  className={PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME}
-                >
-                  <AlertTriangle className="shrink-0" aria-hidden />
-                  Open Risk Radar
-                </Button>
+                <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
+                  Identify and plan for things that could impact your timeline and budget
+                </p>
+                <PlanningToolOpenCardButton toolId="risk" onClick={handleOpenRiskManagement} />
               </div>
             </div>
           </div>
