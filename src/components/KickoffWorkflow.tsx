@@ -815,7 +815,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     return (
       <button
         type="button"
-        className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+        className="max-w-full truncate text-sm text-muted-foreground underline-offset-4 hover:underline"
         onClick={handleSkipToScopePlanning}
       >
         Skip ahead
@@ -828,7 +828,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       return (
         <button
           type="button"
-          className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+          className="max-w-full truncate text-sm text-muted-foreground underline-offset-4 hover:underline"
           onClick={() => {
             void handleNotAMatch();
           }}
@@ -850,21 +850,18 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   };
 
   const renderPrimaryActions = () => {
-    /** Full-width continue + reserved escape row so the primary control never shifts. */
+    /** Fixed footer geometry: escape row + primary control never change size/slot. */
     const primaryButtonClass =
-      'font-display h-14 min-h-14 w-full shrink-0 px-3 text-sm font-semibold';
+      'font-display h-14 min-h-14 max-h-14 w-full shrink-0 rounded-xl px-3 text-sm font-semibold leading-none';
 
     let primary: React.ReactNode;
-    let escape: React.ReactNode = null;
 
     if (!isStepCompleted(currentKickoffStep)) {
-      escape = renderSecondaryEscape();
       primary = (
         <Button
           onClick={() => {
             void handlePrimaryContinue();
           }}
-          size="lg"
           disabled={personalizeBlocked}
           className={primaryButtonClass}
         >
@@ -875,7 +872,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       primary = (
         <Button
           type="button"
-          size="lg"
           className={primaryButtonClass}
           onClick={() => {
             void handleReturnToPlanningStudio();
@@ -889,7 +885,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         <button
           type="button"
           onClick={() => goToKickoffStep(currentKickoffStep)}
-          className="flex h-14 min-h-14 w-full shrink-0 items-center justify-center gap-1.5 rounded-md border border-success/30 bg-success/10 px-3 text-sm text-success"
+          className="flex h-14 min-h-14 max-h-14 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl border border-success/30 bg-success/10 px-3 text-sm font-semibold leading-none text-success"
         >
           <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
           Step complete - tap to edit
@@ -898,9 +894,11 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     }
 
     return (
-      <div className="flex w-full flex-col gap-2">
-        {primary}
-        <div className="flex h-5 shrink-0 items-center justify-center">{escape}</div>
+      <div className="flex h-[4.75rem] w-full flex-col justify-between">
+        <div className="flex h-5 w-full shrink-0 items-center justify-center overflow-hidden">
+          {renderSecondaryEscape()}
+        </div>
+        <div className="h-14 w-full shrink-0">{primary}</div>
       </div>
     );
   };
@@ -915,7 +913,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       : 'Project');
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:min-h-[min(720px,calc(100dvh-5rem))]">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-[min(800px,calc(100dvh-5rem))] md:min-h-[min(800px,calc(100dvh-5rem))]">
       <div className="flex shrink-0 items-start justify-between gap-2">
         <Card className="min-w-0 flex-1">
           <CardContent className="space-y-2 p-2.5 sm:p-3">
@@ -995,8 +993,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         {renderCurrentStep()}
       </div>
 
-      <Card className="z-10 shrink-0 border-t bg-background">
-        <CardContent className="p-2.5 sm:p-4">{renderPrimaryActions()}</CardContent>
+      <Card className="z-10 h-[6.25rem] shrink-0 border-t bg-background">
+        <CardContent className="flex h-full items-center p-3">{renderPrimaryActions()}</CardContent>
       </Card>
     </div>
   );

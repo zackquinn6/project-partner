@@ -2940,7 +2940,7 @@ export default function UserView({
     }
     
     return (
-      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden md:min-h-[min(720px,calc(100dvh-5rem))]">
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden md:h-[min(800px,calc(100dvh-5rem))] md:min-h-[min(800px,calc(100dvh-5rem))]">
       <KickoffWorkflow 
         onBeforeFinalKickoffPersistence={() => {
           // Open Planning Studio before kickoff persistence so kickoff never reappears
