@@ -20,13 +20,14 @@
 <!-- PLANNING_STANDARD:BEGIN -->
 ## Shared product planning standard (generated)
 
-**Version:** `1.0.0` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
+**Version:** `1.1.0` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
 
 Do not hand-edit this block. Change the TypeScript module, then run `npm run sync:planning-standard`. Authoring/SQL field catalogs remain in §A / §B below.
 
 ### Product guidelines
 
 - Keep instructions sequential, simple, and broken into clear phases.
+- Number only actions the user performs; put context, why-it-matters, and completion meaning in Background/Need-to-Know - never as their own instruction step.
 - Be specific about tools, materials, timing, and what "good" looks like.
 - Update content regularly to reflect current techniques and standards.
 - Put safety guidance upfront and explain why each step matters.
@@ -146,6 +147,7 @@ Phases & operations = project management. Steps = instructions. Actions = micro 
 - **Tools and materials alternates** (`alternates`): Where a step requires tools or materials, define primary items and alternate options when users may substitute brand, type, or pack size.
 - **No em-dashes in catalog prose** (`no-em-dashes`): Do not use em-dashes in authored catalog / user-facing prose (descriptions, challenges, step instructions, risk copy). Use standard dashes or hyphens.
 - **Actions vs database tables** (`actions-vs-db`): Hierarchy is Phase → Operation → Step → Action. Actions are instructional micro-units inside step_instructions content; they are not a separate database table. DB tables stop at operation_steps + step_instructions.
+- **Step instruction sections** (`step-instruction-sections`): Background/Need-to-Know is valuable domain context (why it matters, timing, complexity, how the app helps) - not a restatement of what the step is. Instructions are numbered sequential actions only; do not number explanatory status or completion notes as their own steps - put that in Background or fold it into an adjacent action. Error-Recovery uses full-sentence context so the user can diagnose quickly (e.g. "If your list is missing something, finish your plan").
 <!-- PLANNING_STANDARD:END -->
 
 ---
@@ -348,6 +350,16 @@ Prereq: every target `operation_steps` row exists. **3** rows per step: beginner
 | `decisionApplicability` | `{ decisionId, choiceIds[] }[]` \| null | AND rules vs general project decisions; null/omit = all choices |
 
 **Default editor sections:** Background/Need-to-Know, Instructions, Error-Recovery (`getDefaultStepContentSections()`). Seed SQL may use `warning` / `standard` / `tip` types.
+
+**Section authoring intent (required):**
+
+| Section | Write for | Do not write |
+| ------- | --------- | ------------ |
+| **Background/Need-to-Know** | Valuable domain context: why the work matters, timing pressure, complexity, and how the in-step app helps. Example for Tool & Material Ordering: rentals are worth using but must be scheduled close to use; material buying needs buffer and contingency; Shopping Checklist optimizes the buy/rent list. Include how this step finishes (e.g. Step Checklist outputs) here when that is status/completion meaning rather than a user motion. | A restatement of what the step is ("this is where you buy/rent…") or a one-line paraphrase of the Instructions. |
+| **Instructions** | Numbered **sequential actions** the user performs in order. Each number must be something they do. | Explanatory descriptions, status meaning, or completion notes numbered as their own steps. Information is not a step - move it to Background or fold it into an adjacent action. |
+| **Error-Recovery** | Full-sentence diagnosis → fix lines a user can scan quickly (e.g. "If your list is missing something, finish your plan so scope, tools, and materials are locked in."). | Telegraphic labels without context ("Missing list items: lock plan/scope first."). |
+
+Level detail still varies (beginner more scaffolding, advanced denser) but **section intent stays the same** across beginner / intermediate / advanced.
 
 ### Step 3 — Outputs (`operation_steps.outputs` JSON)
 
@@ -630,6 +642,7 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-15 | Step 2 section authoring: Background = valuable domain context (not step restatement); Instructions = sequential actions only (information is not a step); Error-Recovery = full-sentence diagnosis. Shared rule `step-instruction-sections` in planning standard v1.1.0 | Tool & Material Ordering advanced copy had explanatory Background, a non-action Instruction #3, and telegraphic Error-Recovery |
 | 2026-09-15 | Shared product planning SoT: `src/utils/projectPlanningStandard.ts` + generated marker block; admin Planning Guide consumes same module; `npm run sync/check:planning-standard` | Align human Planning Guide and AI reference; prevent product-rule drift |
 | 2026-09-14 | Added §G Home maintenance templates: schema/UI fit, criticality↔Essential/Recommended/Full, field catalog, industry research protocol, system gating, idempotent SQL rules | DIY maintenance catalog review; future prompts must research industry standards before updating `maintenance_templates` |
 | 2026-09-11 | `__decision_tree_config__` / phases ops: `decisionDetailedSummary`, `optionImageUrl`, `optionDetailedDescription` for Project Customizer step 3 workflow decisions (summary = name/description/prompt; detail window via Info) | Tile flooring underlayment decision needed images + deeper copy without replacing short summaries |

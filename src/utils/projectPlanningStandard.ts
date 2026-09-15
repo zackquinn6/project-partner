@@ -16,7 +16,7 @@ export { TOOLIO_PROJECT_STRUCTURE_STANDARD };
 export type { ToolioProjectStructureStandard };
 
 /** Bump when shared product rules change; both surfaces must show the same value. */
-export const PLANNING_STANDARD_VERSION = '1.0.0';
+export const PLANNING_STANDARD_VERSION = '1.1.0';
 
 export const PLANNING_TOPIC_IDS = [
   'product-guidelines',
@@ -28,12 +28,14 @@ export const PLANNING_TOPIC_IDS = [
   'alternates',
   'no-em-dashes',
   'actions-vs-db',
+  'step-instruction-sections',
 ] as const;
 
 export type PlanningTopicId = (typeof PLANNING_TOPIC_IDS)[number];
 
 export const PRODUCT_GUIDELINES: string[] = [
   'Keep instructions sequential, simple, and broken into clear phases.',
+  'Number only actions the user performs; put context, why-it-matters, and completion meaning in Background/Need-to-Know - never as their own instruction step.',
   'Be specific about tools, materials, timing, and what "good" looks like.',
   'Update content regularly to reflect current techniques and standards.',
   'Put safety guidance upfront and explain why each step matters.',
@@ -161,6 +163,12 @@ export const CROSS_CUTTING_RULES: CrossCuttingRule[] = [
     title: 'Actions vs database tables',
     rule:
       'Hierarchy is Phase → Operation → Step → Action. Actions are instructional micro-units inside step_instructions content; they are not a separate database table. DB tables stop at operation_steps + step_instructions.',
+  },
+  {
+    id: 'step-instruction-sections',
+    title: 'Step instruction sections',
+    rule:
+      'Background/Need-to-Know is valuable domain context (why it matters, timing, complexity, how the app helps) - not a restatement of what the step is. Instructions are numbered sequential actions only; do not number explanatory status or completion notes as their own steps - put that in Background or fold it into an adjacent action. Error-Recovery uses full-sentence context so the user can diagnose quickly (e.g. "If your list is missing something, finish your plan").',
   },
 ];
 
