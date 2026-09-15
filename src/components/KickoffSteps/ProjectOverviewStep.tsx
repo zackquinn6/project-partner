@@ -21,6 +21,7 @@ import {
   ArrowDown,
   HelpCircle,
   Ban,
+  Hammer,
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -164,6 +165,17 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const resolvedProjectDescription = runDescription && runDescription.length > 0
     ? runDescription
     : (templateDescription || '');
+  const matchProjectName =
+    (typeof currentProjectRun?.customProjectName === 'string' &&
+    currentProjectRun.customProjectName.trim() !== ''
+      ? currentProjectRun.customProjectName.trim()
+      : null) ??
+    (typeof currentProjectRun?.name === 'string' && currentProjectRun.name.trim() !== ''
+      ? currentProjectRun.name.trim()
+      : null) ??
+    (typeof templateProject?.name === 'string' && templateProject.name.trim() !== ''
+      ? templateProject.name.trim()
+      : null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     name: currentProjectRun?.name || '',
@@ -923,9 +935,18 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         </CardHeader>
         <CardContent className="space-y-3 p-2 sm:p-3">
           <section className="space-y-3" aria-label="Project fit recommendation">
+            {matchProjectName ? (
+              <p className="font-display text-base font-semibold leading-tight text-foreground sm:text-lg">
+                {matchProjectName}
+              </p>
+            ) : null}
+
             {resolvedProjectDescription ? (
-              <p className="text-xs leading-snug text-muted-foreground whitespace-pre-line sm:text-sm">
-                {resolvedProjectDescription}
+              <p className="flex gap-2 text-sm text-muted-foreground">
+                <Hammer className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="min-w-0 leading-snug whitespace-pre-line">
+                  {resolvedProjectDescription}
+                </span>
               </p>
             ) : null}
 
