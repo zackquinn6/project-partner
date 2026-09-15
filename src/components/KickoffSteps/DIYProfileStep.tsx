@@ -19,6 +19,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import DIYSurveyPopup from '../DIYSurveyPopup';
 import { PM_FOCUS_OPTIONS } from '@/components/landing/OnboardingDialog';
 import {
+  DIYTraitEditDialog,
+  type DIYTraitKind,
+} from '@/components/KickoffSteps/DIYTraitEditDialog';
+import {
   collectOwnedToolCoreIds,
   enrichOwnedToolsWithCatalogPhotos,
   fetchOwnedToolsPhotoResolution,
@@ -105,6 +109,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
   const [existingProfile, setExistingProfile] = useState<ProfileData | null>(null);
   const [showSurveyEditor, setShowSurveyEditor] = useState(false);
   const [profileReloadToken, setProfileReloadToken] = useState(0);
+  const [editingTrait, setEditingTrait] = useState<DIYTraitKind | null>(null);
 
   useEffect(() => {
     if (!user?.id) {
@@ -210,6 +215,26 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
     window.dispatchEvent(new CustomEvent('user-profile-updated'));
   };
 
+  const handleTraitSaved = (trait: DIYTraitKind, value: string) => {
+    setExistingProfile((prev) => {
+      if (!prev) return prev;
+      if (trait === 'skill') return { ...prev, skill_level: value };
+      if (trait === 'physical_effort') return { ...prev, physical_capability: value };
+      return { ...prev, project_focus: value };
+    });
+    onProfileSaved?.();
+    window.dispatchEvent(new CustomEvent('user-profile-updated'));
+  };
+
+  const traitCurrentValue =
+    editingTrait === 'skill'
+      ? existingProfile?.skill_level
+      : editingTrait === 'physical_effort'
+        ? existingProfile?.physical_capability
+        : editingTrait === 'project_style'
+          ? existingProfile?.project_focus
+          : null;
+
   const renderProfileView = () => {
     if (!existingProfile) {
       return (
@@ -244,7 +269,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
     const visibleTools = ownedTools.slice(0, 12);
 
     const traitCards: {
-      key: string;
+      key: DIYTraitKind;
       title: string;
       value: string;
       Icon: LucideIcon;
@@ -261,8 +286,8 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
         iconWrap: skillVisual?.iconWrap ?? 'bg-muted text-muted-foreground',
       },
       {
-        key: 'effort',
-        title: 'Effort',
+        key: 'physical_effort',
+        title: 'Physical Effort',
         value: effortVisual?.label
           ?? (existingProfile.physical_capability
             ? existingProfile.physical_capability.charAt(0).toUpperCase() + existingProfile.physical_capability.slice(1)
@@ -271,7 +296,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
         iconWrap: effortVisual?.iconWrap ?? 'bg-muted text-muted-foreground',
       },
       {
-        key: 'project-style',
+        key: 'project_style',
         title: 'Project style',
         value: styleLabel || 'Not specified',
         Icon: styleOption?.icon ?? Target,
@@ -305,22 +330,25 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
             </Button>
           </div>
 
-          <dl className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {traitCards.map(({ key, title, value, Icon, iconWrap }) => (
-              <div
+              <button
                 key={key}
-                className="flex flex-col items-center gap-1 rounded-lg border bg-background px-1.5 py-2 text-center sm:px-2"
+                type="button"
+                onClick={() => setEditingTrait(key)}
+                className="flex flex-col items-center gap-1 rounded-lg border bg-background px-1.5 py-2 text-center transition-colors hover:border-primary/50 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 sm:px-2"
+                aria-label={`Edit ${title}`}
               >
                 <span className={`flex h-8 w-8 items-center justify-center rounded-md ${iconWrap}`}>
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>
-                <dt className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground sm:text-[10px]">
+                <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground sm:text-[10px]">
                   {title}
-                </dt>
-                <dd className="text-[11px] font-medium leading-tight text-foreground sm:text-xs">{value}</dd>
-              </div>
+                </span>
+                <span className="text-[11px] font-medium leading-tight text-foreground sm:text-xs">{value}</span>
+              </button>
             ))}
-          </dl>
+          </div>
         </div>
 
         <div className="rounded-md border border-dashed px-3 py-2 space-y-2">
@@ -410,7 +438,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
             {isCompleted && <Badge variant="secondary" className="text-xs">Complete</Badge>}
           </CardTitle>
           <CardDescription className="text-xs mt-0.5">
-            Confirm your DIY skill, effort, and project style for this project.
+            Confirm your DIY skill, physical effort, and project style for this project.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-2 sm:p-3">
@@ -434,7 +462,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
                 {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">
-                Confirm your DIY skill, effort, and project style for this project.
+                Confirm your DIY skill, physical effort, and project style for this project.
               </CardDescription>
             </div>
           </div>
@@ -451,6 +479,16 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
           )}
         </CardContent>
       </Card>
+
+      <DIYTraitEditDialog
+        open={editingTrait != null}
+        onOpenChange={(open) => {
+          if (!open) setEditingTrait(null);
+        }}
+        trait={editingTrait}
+        currentValue={traitCurrentValue}
+        onSaved={handleTraitSaved}
+      />
 
       <DIYSurveyPopup 
         open={showSurveyEditor} 

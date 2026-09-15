@@ -51,7 +51,7 @@ const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string
   {
     id: 'kickoff-step-2',
     title: 'Personalize',
-    description: 'Confirm your DIY skill, effort, and project style',
+    description: 'Confirm your DIY skill, physical effort, and project style',
   },
   {
     id: 'kickoff-step-3',
