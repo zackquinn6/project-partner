@@ -853,6 +853,40 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     );
   };
 
+  const renderAdjustToolsMenu = (align: 'center' | 'end' = 'center') => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2 text-[10px] text-muted-foreground sm:text-xs"
+        >
+          <Settings2 className="mr-1 h-3.5 w-3.5 shrink-0" />
+          Adjust tools
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align={align} className="w-56">
+        <DropdownMenuLabel>Planning tools for this run</DropdownMenuLabel>
+        {planningToolsForWizard.map(({ id, label }) => {
+          const isScope = id === 'scope';
+          const effectiveSelected = localSelectedTools ?? selectedToolsFromContext;
+          const checked = effectiveSelected.includes(id);
+          return (
+            <DropdownMenuCheckboxItem
+              key={id}
+              checked={checked}
+              onSelect={(event) => event.preventDefault()}
+              onCheckedChange={(value) => handlePlanningToolToggle(id, value === true)}
+              disabled={isScope}
+            >
+              {label}
+            </DropdownMenuCheckboxItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   const shell = (
     <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-[min(800px,calc(100dvh-5rem))] md:min-h-[min(800px,calc(100dvh-5rem))]">
       <div className="flex shrink-0 items-center justify-between gap-2">
@@ -1095,8 +1129,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
               </div>
             </div>
 
-            <div className="flex w-full flex-col gap-2 sm:w-auto">
-              <div className="flex w-full items-center justify-center gap-1.5 sm:w-auto">
+            <div className="flex w-full flex-col items-end gap-0 sm:w-auto">
+              <div className="flex w-full items-center justify-end gap-1.5 sm:w-auto">
                 <Button
                   type="button"
                   variant="outline"
@@ -1109,7 +1143,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                   <ChevronLeft className="h-4 w-4 lg:mr-1" />
                   <span className="hidden lg:inline">Previous</span>
                 </Button>
-                <div className="min-w-[70px] px-1 text-center leading-tight">
+                <div className="flex min-w-[70px] flex-col items-center px-1 text-center leading-tight">
                   <div className="text-[10px] font-medium text-foreground sm:text-xs">
                     {wizardPhase === 'confirm' ? 'Planning' : 'Step'}
                   </div>
@@ -1132,50 +1166,49 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                   <span className="hidden lg:inline">Next</span>
                   <ChevronRight className="h-4 w-4 lg:ml-1" />
                 </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-9 px-2 text-[10px] text-muted-foreground sm:text-xs"
-                    >
-                      <Settings2 className="mr-1 h-3.5 w-3.5 shrink-0" />
-                      Adjust tools
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Planning tools for this run</DropdownMenuLabel>
-                    {planningToolsForWizard.map(({ id, label }) => {
-                      const isScope = id === 'scope';
-                      const effectiveSelected = localSelectedTools ?? selectedToolsFromContext;
-                      const checked = effectiveSelected.includes(id);
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={id}
-                          checked={checked}
-                          onSelect={(event) => event.preventDefault()}
-                          onCheckedChange={(value) => handlePlanningToolToggle(id, value === true)}
-                          disabled={isScope}
-                        >
-                          {label}
-                        </DropdownMenuCheckboxItem>
-                      );
-                    })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
             </div>
           </div>
 
-          {currentStepPurpose && wizardPhase === 'steps' ? (
-            <div className="border-t border-border/60 pt-1.5">
-              <p className="text-xs text-muted-foreground sm:text-sm">{currentStepPurpose}</p>
+          <div className="border-t border-border/60 pt-1.5">
+            <div className="flex items-center justify-between gap-2">
+              {currentStepPurpose ? (
+                <p className="min-w-0 flex-1 text-xs text-muted-foreground sm:text-sm">
+                  {currentStepPurpose}
+                </p>
+              ) : (
+                <div className="min-w-0 flex-1" />
+              )}
+              <div className="hidden shrink-0 sm:flex sm:items-center sm:justify-end sm:gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  tabIndex={-1}
+                  aria-hidden
+                  className="pointer-events-none invisible h-9 w-9 shrink-0 p-0 lg:h-9 lg:w-auto lg:px-3"
+                >
+                  <ChevronLeft className="h-4 w-4 lg:mr-1" />
+                  <span className="hidden lg:inline">Previous</span>
+                </Button>
+                <div className="flex min-w-[70px] justify-center px-1">
+                  {renderAdjustToolsMenu('center')}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  tabIndex={-1}
+                  aria-hidden
+                  className="pointer-events-none invisible h-9 w-9 shrink-0 p-0 lg:h-9 lg:w-auto lg:px-3"
+                >
+                  <span className="hidden lg:inline">Next</span>
+                  <ChevronRight className="h-4 w-4 lg:ml-1" />
+                </Button>
+              </div>
             </div>
-          ) : wizardPhase === 'confirm' && currentStepPurpose ? (
-            <div className="border-t border-border/60 pt-1.5">
-              <p className="text-xs text-muted-foreground sm:text-sm">{currentStepPurpose}</p>
-            </div>
-          ) : null}
+            <div className="mt-1 flex justify-center sm:hidden">{renderAdjustToolsMenu('center')}</div>
+          </div>
         </CardContent>
       </Card>
 
