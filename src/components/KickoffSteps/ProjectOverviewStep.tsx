@@ -926,11 +926,6 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         <CardHeader className="p-2 sm:p-3">
           <CardTitle className="font-display text-xl font-semibold leading-tight">
             Project Match
-            {isCompleted ? (
-              <Badge variant="secondary" className="ml-2 align-middle text-xs">
-                Complete
-              </Badge>
-            ) : null}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 p-2 sm:p-3">
