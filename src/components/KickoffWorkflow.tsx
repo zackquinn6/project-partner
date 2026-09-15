@@ -65,7 +65,7 @@ const KICKOFF_STEP_DEFINITIONS: {
     id: 'kickoff-step-4',
     title: 'Your plan',
     shortLabel: 'Plan',
-    promise: "Pick the planning steps you'll run next in the studio.",
+    promise: "Pick the steps you'll run next in the planning studio.",
   },
 ];
 

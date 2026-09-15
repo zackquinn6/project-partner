@@ -87,7 +87,7 @@ const MATCH_TIER_COPY: Record<
 > = {
   not_yet: {
     title: 'Not recommended',
-    subtitle: 'Skill or effort signals suggest waiting or more preparation.',
+    subtitle: 'Skill or physical effort signals suggest waiting or more preparation.',
     Icon: Ban,
     cardClass: 'border-destructive-soft/40 bg-destructive-soft/10',
     iconWrapClass: 'bg-destructive-soft/15 text-destructive-soft',
@@ -105,7 +105,7 @@ const MATCH_TIER_COPY: Record<
   },
   ready_to_start: {
     title: 'Good fit',
-    subtitle: 'Skill and effort alignment supports starting this project.',
+    subtitle: 'Skill and physical effort alignment supports starting this project.',
     Icon: CircleCheckBig,
     cardClass: 'border-success/40 bg-success/10',
     iconWrapClass: 'bg-success/15 text-success',
@@ -563,17 +563,17 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     if (userIndex >= projectIndex) {
       return {
         type: 'success',
-        message: 'Your physical capability matches or exceeds the project effort requirements.'
+        message: 'Your physical capability matches or exceeds the project physical effort requirements.'
       };
     } else if (projectEffort === 'medium' && userIndex < 1) {
       return {
         type: 'warning',
-        message: 'This project requires medium effort, but your physical capability may be limited. Consider the physical demands before proceeding.'
+        message: 'This project requires medium physical effort, but your physical capability may be limited. Consider the physical demands before proceeding.'
       };
     } else if (projectEffort === 'high' && userIndex < 2) {
       return {
         type: 'error',
-        message: 'This project requires high effort, but your physical capability may not be sufficient. This project may be too physically demanding.'
+        message: 'This project requires high physical effort, but your physical capability may not be sufficient. This project may be too physically demanding.'
       };
     }
     return null;
@@ -814,7 +814,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               {/* Left Column - Second Row */}
               <div>
                 <div className="flex items-center gap-1 mb-0">
-                  <Label className="text-xs">Project Effort Level</Label>
+                  <Label className="text-xs">Project Physical Effort Level</Label>
                   <TooltipProvider delayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -824,12 +824,12 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
                       </TooltipTrigger>
                       <TooltipContent className="max-w-sm z-50" side="top">
                         <p className="text-sm">
-                          <strong>Effort level</strong> (physical intensity and duration):
+                          <strong>Physical effort level</strong> (intensity and duration):
                         </p>
                         <ul className="text-xs mt-1 space-y-0.5 list-disc pl-4">
-                          <li><strong>Low:</strong> Light effort (e.g. painting a room for a few hours)</li>
+                          <li><strong>Low:</strong> Light physical effort (e.g. painting a room for a few hours)</li>
                           <li><strong>Medium:</strong> Moderate lifting and duration (e.g. carrying loads, demo for several hours)</li>
-                          <li><strong>High:</strong> Heavy or sustained effort (e.g. heavy materials, mixing and moving loads for extended periods)</li>
+                          <li><strong>High:</strong> Heavy or sustained physical effort (e.g. heavy materials, mixing and moving loads for extended periods)</li>
                         </ul>
                       </TooltipContent>
                     </Tooltip>

@@ -156,15 +156,15 @@ function skillReason(axis: MatchAxisSentiment | null): string {
 
 function effortReason(axis: MatchAxisSentiment | null): string {
   if (axis === null) {
-    return 'Effort can’t be compared yet-your profile or this project is missing effort level or physical capability on one or both sides.';
+    return "Physical effort can’t be compared yet-your profile or this project is missing physical effort level or physical capability on one or both sides.";
   }
   if (axis === 'negative') {
-    return 'Your saved effort capability is below what this project needs physically, and that could be tough for you.';
+    return 'Your saved physical effort capability is below what this project needs, and that could be tough for you.';
   }
   if (axis === 'neutral') {
-    return 'Your effort capability is matched to the project’s effort level-be aware this can still be a demanding project.';
+    return "Your physical effort capability is matched to the project’s physical effort level-be aware this can still be a demanding project.";
   }
-  return 'Your effort capability meets or exceeds what this project needs physically.';
+  return 'Your physical effort capability meets or exceeds what this project needs.';
 }
 
 function tierSummary(
@@ -174,7 +174,7 @@ function tierSummary(
 ): string {
   const incomplete = skillAxis === null || effortAxis === null;
   if (incomplete) {
-    return 'Some fit signals are missing, so this recommendation stays cautious until your profile and project data both include skill and effort.';
+    return 'Some fit signals are missing, so this recommendation stays cautious until your profile and project data both include skill and physical effort.';
   }
   if (tier === 'not_yet') {
     return 'Based on your profile compared to this project, we recommend waiting until you’re better aligned on skill and/or physical demand.';
@@ -182,7 +182,7 @@ function tierSummary(
   if (tier === 'proceed_mindfully') {
     return 'You’re close enough to move forward, but stay deliberate about risks, scope, and getting help when you need it.';
   }
-  return 'Your profile lines up well with this project’s skill and effort expectations-reasonable to start when you’re ready.';
+  return "Your profile lines up well with this project’s skill and physical effort expectations-reasonable to start when you’re ready.";
 }
 
 export type ProjectMatchExplanation = {
