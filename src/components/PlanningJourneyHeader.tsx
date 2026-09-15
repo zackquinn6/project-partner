@@ -1,4 +1,4 @@
-import { CheckCircle } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type PlanningJourneyStage = 'discover' | 'plan';
@@ -13,8 +13,20 @@ export interface PlanningJourneyHeaderProps {
   onPlanClick?: () => void;
 }
 
+type ArcStageId = 'pick' | 'discover' | 'plan' | 'build';
+
+const ARC_STAGES: { id: ArcStageId; label: string }[] = [
+  { id: 'pick', label: 'Pick' },
+  { id: 'discover', label: 'Discover' },
+  { id: 'plan', label: 'Plan' },
+  { id: 'build', label: 'Build' },
+];
+
+const STAGE_ORDER: ArcStageId[] = ['pick', 'discover', 'plan', 'build'];
+
 /**
- * Two-stage journey chrome shared by Kickoff (Discover) and Planning Studio (Plan).
+ * Quiet four-stage journey context shared by Kickoff (Discover) and Planning Studio (Plan).
+ * Pick / Build are context only; Discover / Plan can be return targets when handlers exist.
  */
 export function PlanningJourneyHeader({
   activeStage,
@@ -22,8 +34,8 @@ export function PlanningJourneyHeader({
   onDiscoverClick,
   onPlanClick,
 }: PlanningJourneyHeaderProps) {
-  const discoverDone = activeStage === 'plan';
-  const planActive = activeStage === 'plan';
+  const activeId: ArcStageId = activeStage === 'plan' ? 'plan' : 'discover';
+  const activeIndex = STAGE_ORDER.indexOf(activeId);
   const discoverClickable = Boolean(onDiscoverClick) && activeStage === 'plan';
   const planClickable = Boolean(onPlanClick) && activeStage === 'discover';
 
@@ -36,81 +48,59 @@ export function PlanningJourneyHeader({
       role="navigation"
       aria-label={activeStage === 'discover' ? 'Discover journey' : 'Plan journey'}
     >
-      <JourneyStagePill
-        label="Discover"
-        active={activeStage === 'discover'}
-        complete={discoverDone}
-        stepNumber={1}
-        onClick={discoverClickable ? onDiscoverClick : undefined}
-      />
-      <JourneyStagePill
-        label="Plan"
-        active={planActive}
-        complete={false}
-        stepNumber={2}
-        onClick={planClickable ? onPlanClick : undefined}
-      />
-    </div>
-  );
-}
+      {ARC_STAGES.map((stage, index) => {
+        const isActive = stage.id === activeId;
+        const isPast = index < activeIndex;
+        const isClickable =
+          (stage.id === 'discover' && discoverClickable) ||
+          (stage.id === 'plan' && planClickable);
+        const onClick =
+          stage.id === 'discover' && discoverClickable
+            ? onDiscoverClick
+            : stage.id === 'plan' && planClickable
+              ? onPlanClick
+              : undefined;
 
-function JourneyStagePill({
-  label,
-  active,
-  complete,
-  stepNumber,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  complete: boolean;
-  stepNumber: number;
-  onClick?: () => void;
-}) {
-  const className = cn(
-    'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-xs',
-    active && 'border-primary bg-primary/10 text-primary',
-    complete && !active && 'border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400',
-    !active && !complete && 'border-muted-foreground/25 bg-muted/40 text-muted-foreground',
-    onClick &&
-      'cursor-pointer transition-colors hover:border-primary/60 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-  );
+        const labelClass = cn(
+          'inline-flex items-center gap-0.5 text-[11px] uppercase tracking-wide',
+          isActive && 'font-semibold text-primary',
+          isPast && !isActive && 'text-muted-foreground/70',
+          !isActive && !isPast && 'text-muted-foreground/70',
+          isClickable &&
+            'cursor-pointer underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+        );
 
-  const content = (
-    <>
-      {complete ? (
-        <CheckCircle className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" aria-hidden />
-      ) : (
-        <span
-          className={cn(
-            'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[9px] font-semibold sm:h-4 sm:w-4 sm:text-[10px]',
-            active ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/20'
-          )}
-          aria-hidden
-        >
-          {stepNumber}
-        </span>
-      )}
-      <span>{label}</span>
-    </>
-  );
+        const content = (
+          <>
+            {isPast ? <Check className="h-2.5 w-2.5 shrink-0" aria-hidden /> : null}
+            <span>{stage.label}</span>
+          </>
+        );
 
-  if (onClick) {
-    return (
-      <button
-        type="button"
-        className={className}
-        onClick={onClick}
-        aria-label={`Return to ${label}`}
-      >
-        {content}
-      </button>
-    );
-  }
-
-  return (
-    <div className={className} aria-current={active ? 'step' : undefined}>
-      {content}
+        return (
+          <span key={stage.id} className="inline-flex items-center gap-1.5">
+            {index > 0 ? (
+              <span className="text-[11px] text-muted-foreground/40" aria-hidden>
+                ·
+              </span>
+            ) : null}
+            {onClick ? (
+              <button
+                type="button"
+                className={labelClass}
+                onClick={onClick}
+                aria-label={`Return to ${stage.label}`}
+              >
+                {content}
+              </button>
+            ) : (
+              <span className={labelClass} aria-current={isActive ? 'step' : undefined}>
+                {content}
+              </span>
+            )}
+          </span>
+        );
+      })}
     </div>
   );
 }

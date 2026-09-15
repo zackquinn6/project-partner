@@ -1,20 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, CheckCircle, ArrowLeft, MoreHorizontal } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Check, CheckCircle } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { DIYProfileStep } from './KickoffSteps/DIYProfileStep';
 import { ProjectOverviewStep } from './KickoffSteps/ProjectOverviewStep';
 import { ProjectProfileStep } from './KickoffSteps/ProjectProfileStep';
 import {
   ProjectToolsStep,
+  PLANNING_TOOLS,
   type PlanningToolId,
   filterByPartnerAvailability,
   DEFAULT_PLANNING_TOOLS_SELECTION,
@@ -23,12 +17,13 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
 import { PlanningJourneyHeader } from '@/components/PlanningJourneyHeader';
 import type { ProjectRun } from '@/interfaces/ProjectRun';
 import { reportUserFacingError } from '@/utils/errorReporting';
+import { computeProjectMatchExplanation } from '@/utils/projectMatchRecommendation';
+import { cn } from '@/lib/utils';
 
 /** Passed when finishing kickoff on step 4 so UserView does not use a stale customization_decisions closure. */
 export type KickoffCompletePersist = {
@@ -43,28 +38,43 @@ export type KickoffCompletePayload = {
   persist?: KickoffCompletePersist;
 };
 
-const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string }[] = [
+const KICKOFF_STEP_DEFINITIONS: {
+  id: string;
+  title: string;
+  shortLabel: string;
+  promise: string;
+}[] = [
   {
     id: 'kickoff-step-1',
     title: 'Project Match',
-    description: 'Is this project a good fit for you?',
+    shortLabel: 'Match',
+    promise: "We'll use this to size the work and warn you about the hard parts.",
   },
   {
     id: 'kickoff-step-2',
     title: 'Personalize',
-    description: 'Confirm your DIY skill, physical effort, and project style',
+    shortLabel: 'You',
+    promise: 'Your skill and effort shape which tools and warnings we show.',
   },
   {
     id: 'kickoff-step-3',
     title: 'Goals',
-    description: 'Set project size, target date, and budget',
+    shortLabel: 'Goals',
+    promise: "Size it, date it, budget it. We'll shape the plan around this.",
   },
   {
     id: 'kickoff-step-4',
     title: 'Your plan',
-    description: 'Pick the planning steps to run next',
+    shortLabel: 'Plan',
+    promise: "Pick the planning steps you'll run next in the studio.",
   },
 ];
+
+const FIT_CHIP_LABEL: Record<string, string> = {
+  ready_to_start: 'Good fit',
+  proceed_mindfully: 'Stretch',
+  not_yet: 'Not recommended',
+};
 
 interface KickoffWorkflowProps {
   onKickoffComplete: (payload: KickoffCompletePayload) => void | Promise<void>;
@@ -89,7 +99,6 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     updateProjectRun,
   } = useProject();
   const { user, loading: authLoading } = useAuth();
-  const isMobile = useIsMobile();
   const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled, wasteRemovalEnabled } = usePartnerAppSettings();
   const [kickoffOrderResolved, setKickoffOrderResolved] = useState(false);
   const [kickoffStepOrder, setKickoffStepOrder] = useState<'profile_first' | 'match_first'>('match_first');
@@ -103,21 +112,17 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   const [profileSkillLevel, setProfileSkillLevel] = useState<string | null>(null);
   const [profilePhysicalCapability, setProfilePhysicalCapability] = useState<string | null>(null);
   const [profileReloadToken, setProfileReloadToken] = useState(0);
+  /** Gates step-4 → studio handoff so Planning Studio opens only after confirmation. */
+  const [showHandoff, setShowHandoff] = useState(false);
+  const [matchProjectMeta, setMatchProjectMeta] = useState<{
+    skillLevel: string | null;
+    effortLevel: string | null;
+    challenges: string | null;
+  }>({ skillLevel: null, effortLevel: null, challenges: null });
   // CRITICAL FIX: Use ref instead of state to avoid race conditions
   const isCompletingStepRef = useRef(false);
-  const kickoffStepNavRef = useRef<HTMLDivElement | null>(null);
   /** Tracks which run id we last hydrated completion UI for (avoid wiping checks on remount churn). */
   const hydratedCompletionRunIdRef = useRef<string | null>(null);
-
-  const scrollKickoffStepNav = (direction: 'left' | 'right') => {
-    const el = kickoffStepNavRef.current;
-    if (!el) return;
-    const amount = Math.max(160, Math.floor(el.clientWidth * 0.9));
-    el.scrollBy({
-      left: direction === 'left' ? -amount : amount,
-      behavior: 'smooth',
-    });
-  };
 
   const kickoffSteps = useMemo(() => {
     const copy = KICKOFF_STEP_DEFINITIONS.map((s) => ({ ...s }));
@@ -221,6 +226,45 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     window.addEventListener('user-profile-updated', onProfileUpdated);
     return () => window.removeEventListener('user-profile-updated', onProfileUpdated);
   }, []);
+
+  // Load project skill/effort/challenges for shell-level fit summary (same inputs as Match step).
+  useEffect(() => {
+    const projectId = currentProjectRun?.projectId;
+    if (!projectId) {
+      setMatchProjectMeta({ skillLevel: null, effortLevel: null, challenges: null });
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('skill_level, effort_level, project_challenges')
+        .eq('id', projectId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        setMatchProjectMeta({ skillLevel: null, effortLevel: null, challenges: null });
+        return;
+      }
+      setMatchProjectMeta({
+        skillLevel:
+          typeof data?.skill_level === 'string' && data.skill_level.trim() !== ''
+            ? data.skill_level.trim()
+            : null,
+        effortLevel:
+          typeof data?.effort_level === 'string' && data.effort_level.trim() !== ''
+            ? data.effort_level.trim()
+            : null,
+        challenges:
+          typeof data?.project_challenges === 'string' && data.project_challenges.trim() !== ''
+            ? data.project_challenges.trim()
+            : null,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProjectRun?.projectId]);
 
   // Initialize completed steps from project run data when project or step order changes
   useEffect(() => {
@@ -587,26 +631,9 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   };
 
   const currentStepId = kickoffSteps[currentKickoffStep]?.id;
-  const currentStepDescription = kickoffSteps[currentKickoffStep]?.description ?? '';
-
-  const handlePrevious = () => {
-    if (currentKickoffStep > 0) {
-      setCurrentKickoffStep(currentKickoffStep - 1);
-    }
-  };
-
-  const handleNext = () => {
-    const next = currentKickoffStep + 1;
-    if (next >= kickoffSteps.length) return;
-    if (!canVisitKickoffStep(next)) {
-      toast.message('Finish the current step to continue');
-      return;
-    }
-    setCurrentKickoffStep(next);
-  };
+  const currentStepPromise = kickoffSteps[currentKickoffStep]?.promise ?? '';
 
   const isStepCompleted = (stepIndex: number) => completedKickoffSteps.has(stepIndex);
-  const allKickoffStepsComplete = completedKickoffSteps.size === kickoffSteps.length;
 
   /** Allow any step already entered in sequence; block jumping past the frontier. */
   const canVisitKickoffStep = (index: number) => {
@@ -625,6 +652,75 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   useEffect(() => {
     setMaxReachedKickoffStep((prev) => Math.max(prev, currentKickoffStep));
   }, [currentKickoffStep]);
+
+  const matchExplanation = useMemo(
+    () =>
+      computeProjectMatchExplanation({
+        projectSkillLevel: matchProjectMeta.skillLevel,
+        userSkillLevel: profileSkillLevel,
+        projectEffortLevel: matchProjectMeta.effortLevel,
+        userPhysicalCapability: profilePhysicalCapability,
+        projectChallengesText: matchProjectMeta.challenges,
+      }),
+    [
+      matchProjectMeta.skillLevel,
+      matchProjectMeta.effortLevel,
+      matchProjectMeta.challenges,
+      profileSkillLevel,
+      profilePhysicalCapability,
+    ]
+  );
+
+  const summaryChips = useMemo(() => {
+    const chips: { key: string; label: string }[] = [];
+    const matchStepIndex = kickoffSteps.findIndex((s) => s.id === 'kickoff-step-1');
+    if (matchStepIndex >= 0 && completedKickoffSteps.has(matchStepIndex)) {
+      const fitLabel = FIT_CHIP_LABEL[matchExplanation.tier];
+      if (fitLabel) chips.push({ key: 'fit', label: `Fit: ${fitLabel}` });
+    }
+    if (profileSkillLevel) {
+      chips.push({ key: 'level', label: `Level: ${profileSkillLevel}` });
+    }
+    const timelineRaw =
+      (currentProjectRun as { initial_timeline?: string | null; initialTimeline?: string | null } | null)
+        ?.initial_timeline ??
+      (currentProjectRun as { initialTimeline?: string | null } | null)?.initialTimeline ??
+      null;
+    if (typeof timelineRaw === 'string' && timelineRaw.trim() !== '') {
+      const d = new Date(timelineRaw.includes('T') ? timelineRaw : `${timelineRaw}T12:00:00`);
+      if (!Number.isNaN(d.getTime())) {
+        chips.push({
+          key: 'target',
+          label: `Target: ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`,
+        });
+      }
+    }
+    const budgetRaw =
+      (currentProjectRun as { initial_budget?: string | null; initialBudget?: string | null } | null)
+        ?.initial_budget ??
+      (currentProjectRun as { initialBudget?: string | null } | null)?.initialBudget ??
+      null;
+    if (typeof budgetRaw === 'string' && budgetRaw.trim() !== '') {
+      const n = parseFloat(budgetRaw.replace(/[^0-9.-]/g, ''));
+      if (!Number.isNaN(n)) {
+        chips.push({
+          key: 'budget',
+          label: `Budget: $${n >= 1000 ? `${Math.round(n / 1000)}k` : Math.round(n)}`,
+        });
+      }
+    }
+    if (selectedPlanningTools.length > 0) {
+      chips.push({ key: 'tools', label: `${selectedPlanningTools.length} tools` });
+    }
+    return chips;
+  }, [
+    kickoffSteps,
+    completedKickoffSteps,
+    matchExplanation.tier,
+    profileSkillLevel,
+    currentProjectRun,
+    selectedPlanningTools.length,
+  ]);
 
   const personalizeBlocked =
     currentStepId === 'kickoff-step-2' &&
@@ -738,14 +834,28 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     }
 
     if (currentStepId === 'kickoff-step-4') {
-      await handleStepComplete(currentKickoffStep, selectedPlanningTools);
+      setShowHandoff(true);
       return;
     }
 
     await handleStepComplete(currentKickoffStep);
   };
 
-  const renderSkipPlanningEscape = () => {
+  const handleConfirmHandoff = async () => {
+    setShowHandoff(false);
+    await handleStepComplete(currentKickoffStep, selectedPlanningTools);
+  };
+
+  const continueLabel =
+    currentStepId === 'kickoff-step-1'
+      ? 'This fits — continue'
+      : currentStepId === 'kickoff-step-2'
+        ? 'Looks right — continue'
+        : currentStepId === 'kickoff-step-3'
+          ? 'Set — continue'
+          : 'Start planning';
+
+  const renderSkipEscapeLink = () => {
     const handleSkipToScopePlanning = () => {
       // Open Planning Studio before kickoff flips complete so workflow cannot flash.
       onBeforeFinalKickoffPersistence?.();
@@ -762,90 +872,29 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       });
     };
 
-    if (isMobile) {
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              className="h-12 min-h-12 w-full px-2 text-sm sm:h-full sm:min-h-[3.25rem] sm:px-3 sm:py-3"
-            >
-              <MoreHorizontal className="mr-1.5 h-4 w-4 shrink-0 sm:mr-2" />
-              More
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-72">
-            <DropdownMenuItem
-              onSelect={() => {
-                handleSkipToScopePlanning();
-              }}
-            >
-              Skip to Planning Studio
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    }
     return (
-      <Button
+      <button
         type="button"
-        variant="outline"
-        size="lg"
-        className="h-12 min-h-12 w-full border-muted-foreground/40 px-3 text-sm text-muted-foreground hover:bg-muted/40 sm:h-full sm:min-h-[3.25rem] sm:py-3"
-        onClick={() => {
-          handleSkipToScopePlanning();
-        }}
+        className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+        onClick={handleSkipToScopePlanning}
       >
-        <span className="text-left leading-tight sm:line-clamp-2">Skip to Planning Studio</span>
-      </Button>
+        Skip ahead
+      </button>
     );
   };
 
   const renderSecondaryEscape = () => {
     if (currentStepId === 'kickoff-step-1') {
-      if (isMobile) {
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="h-12 min-h-12 w-full px-2 text-sm sm:h-full sm:min-h-[3.25rem] sm:px-3 sm:py-3"
-              >
-                <MoreHorizontal className="mr-1.5 h-4 w-4 shrink-0 sm:mr-2" />
-                More
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-72">
-              <DropdownMenuItem
-                className="text-red-700 focus:text-red-700"
-                onSelect={() => {
-                  void handleNotAMatch();
-                }}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
-                Not a match: back to catalog
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      }
       return (
-        <Button
+        <button
           type="button"
+          className="text-sm text-muted-foreground underline-offset-4 hover:underline"
           onClick={() => {
             void handleNotAMatch();
           }}
-          variant="outline"
-          size="lg"
-          className="h-12 min-h-12 w-full border-red-300 px-3 text-sm text-red-700 hover:bg-red-50 sm:h-full sm:min-h-[3.25rem] sm:py-3"
         >
-          <ArrowLeft className="mr-2 h-4 w-4 shrink-0" />
-          <span className="text-left leading-tight sm:line-clamp-2">Not a match: back to catalog</span>
-        </Button>
+          Not a match? Back to catalog
+        </button>
       );
     }
 
@@ -854,47 +903,34 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       currentStepId === 'kickoff-step-3' ||
       currentStepId === 'kickoff-step-4'
     ) {
-      return renderSkipPlanningEscape();
+      return renderSkipEscapeLink();
     }
 
-    return <div className="min-h-12 min-w-0 flex-[3] basis-0" aria-hidden />;
+    return null;
   };
 
   const renderPrimaryActions = () => {
     if (!isStepCompleted(currentKickoffStep)) {
-      const showSecondary =
-        currentStepId === 'kickoff-step-1' ||
-        currentStepId === 'kickoff-step-2' ||
-        currentStepId === 'kickoff-step-3' ||
-        currentStepId === 'kickoff-step-4';
+      const escape = renderSecondaryEscape();
       return (
-        <div className="flex min-h-12 w-full flex-row items-stretch gap-2 sm:min-h-[3.25rem] sm:gap-3">
-          {showSecondary ? (
-            <div className="flex min-h-12 min-w-0 flex-[3] basis-0 flex-col justify-center sm:min-h-[3.25rem]">
-              {renderSecondaryEscape()}
-            </div>
-          ) : (
-            <div className="min-w-0 flex-[3] basis-0" aria-hidden />
-          )}
-          <div className="flex min-h-12 min-w-0 flex-[7] basis-0 flex-col sm:min-h-[3.25rem]">
+        <div className="flex min-h-12 w-full flex-row items-center gap-3 sm:min-h-[3.25rem]">
+          <div className="flex min-w-0 shrink items-center">{escape}</div>
+          <div className="min-w-0 flex-1">
             <Button
               onClick={() => {
                 void handlePrimaryContinue();
               }}
               size="lg"
               disabled={personalizeBlocked}
-              className="h-12 min-h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:h-full sm:min-h-[3.25rem] sm:py-3"
+              className="font-display h-12 min-h-12 w-full px-3 text-sm font-semibold sm:h-14 sm:min-h-14"
             >
-              <CheckCircle className="mr-2 h-4 w-4 shrink-0" />
-              <span className="text-left leading-tight sm:line-clamp-2">
-                {currentStepId === 'kickoff-step-4' ? (
-                  <>
-                    <span className="hidden sm:inline">Open Planning Studio</span>
-                    <span className="sm:hidden">Open Studio</span>
-                  </>
-                ) : (
-                  'Continue'
-                )}
+              <span className="flex flex-col items-center leading-tight">
+                <span>{continueLabel}</span>
+                {currentStepId === 'kickoff-step-4' && selectedPlanningTools.length > 0 ? (
+                  <span className="text-[10px] font-normal opacity-80">
+                    {selectedPlanningTools.length} planning tools selected
+                  </span>
+                ) : null}
               </span>
             </Button>
           </div>
@@ -904,22 +940,17 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
 
     if (currentStepId === 'kickoff-step-4' && onReturnToPlanningStudio) {
       return (
-        <div className="flex min-h-12 w-full flex-row items-stretch gap-2 sm:min-h-[3.25rem] sm:gap-3">
-          <div className="min-w-0 flex-[3] basis-0" aria-hidden />
-          <div className="flex min-h-12 min-w-0 flex-[7] basis-0 flex-col sm:min-h-[3.25rem]">
+        <div className="flex min-h-12 w-full flex-row items-center gap-3 sm:min-h-[3.25rem]">
+          <div className="min-w-0 flex-1">
             <Button
               type="button"
               size="lg"
-              className="h-12 min-h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:h-full sm:min-h-[3.25rem] sm:py-3"
+              className="font-display h-12 min-h-12 w-full px-3 text-sm font-semibold sm:h-14 sm:min-h-14"
               onClick={() => {
                 void handleReturnToPlanningStudio();
               }}
             >
-              <CheckCircle className="mr-2 h-4 w-4 shrink-0" />
-              <span className="text-left leading-tight sm:line-clamp-2">
-                <span className="hidden sm:inline">Save tools & Open Planning Studio</span>
-                <span className="sm:hidden">Save & Open Studio</span>
-              </span>
+              Save tools & Open Planning Studio
             </Button>
           </div>
         </div>
@@ -927,244 +958,118 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     }
 
     return (
-      <div className="flex min-h-12 items-center justify-center rounded-lg border border-green-200 bg-green-50 p-2 sm:min-h-[3.25rem] sm:p-3">
-        <p className="text-sm text-green-800">Step Completed ✓</p>
-      </div>
+      <button
+        type="button"
+        onClick={() => goToKickoffStep(currentKickoffStep)}
+        className="flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-success/30 bg-success/10 px-3 text-sm text-success"
+      >
+        <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        Step complete — tap to edit
+      </button>
     );
   };
 
+  const projectDisplayName =
+    (typeof currentProjectRun.customProjectName === 'string' &&
+      currentProjectRun.customProjectName.trim() !== ''
+      ? currentProjectRun.customProjectName.trim()
+      : null) ??
+    (typeof currentProjectRun.name === 'string' && currentProjectRun.name.trim() !== ''
+      ? currentProjectRun.name.trim()
+      : 'Project');
+
+  const handoffToolNames = selectedPlanningTools
+    .map((id) => PLANNING_TOOLS.find((t) => t.id === id)?.label)
+    .filter((name): name is string => Boolean(name));
+
   return (
     <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-auto md:overflow-visible">
-      <div className="flex shrink-0 items-center justify-between gap-2">
-        <PlanningJourneyHeader
-          activeStage="discover"
-          className="min-w-0 flex-1"
-          onPlanClick={
-            onReturnToPlanningStudio
-              ? () => {
-                  void handleReturnToPlanningStudio();
-                }
-              : undefined
-          }
-        />
-        <ProjectPlanningCountdownBanner
-          minimal
-          projectCreatedAt={currentProjectRun.createdAt}
-          className="shrink-0"
-        />
-      </div>
-
-      <Card className="shrink-0">
-        <CardContent className="space-y-1.5 p-2 sm:p-2.5 md:p-3">
-          <div className="flex items-center gap-1 sm:hidden">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={handlePrevious}
-              disabled={currentKickoffStep === 0}
-              aria-label="Previous step"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="scrollbar-hide flex min-w-0 flex-1 items-center justify-center gap-1.5 overflow-x-auto py-0.5">
-              {kickoffSteps.map((step, index) => {
-                const visitable = canVisitKickoffStep(index);
-                return (
-                  <button
-                    key={step.id}
-                    type="button"
-                    onClick={() => goToKickoffStep(index)}
-                    aria-label={`${step.title}, step ${index + 1}`}
-                    aria-current={index === currentKickoffStep ? 'step' : undefined}
-                    aria-disabled={!visitable}
-                    className={`
-                      flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
-                      ${visitable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
-                      ${
-                        index === currentKickoffStep
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : isStepCompleted(index)
-                            ? 'border-green-500 bg-green-500 text-white'
-                            : 'border-muted-foreground bg-background'
+      <div className="flex shrink-0 items-start justify-between gap-2">
+        <Card className="min-w-0 flex-1">
+          <CardContent className="space-y-2 p-2.5 sm:p-3">
+            <div className="flex items-center justify-between gap-2">
+              <PlanningJourneyHeader
+                activeStage="discover"
+                className="min-w-0 flex-1"
+                onPlanClick={
+                  onReturnToPlanningStudio
+                    ? () => {
+                        void handleReturnToPlanningStudio();
                       }
-                    `}
-                  >
-                    {isStepCompleted(index) ? (
-                      <CheckCircle className="h-3 w-3" aria-hidden />
-                    ) : (
-                      <span className="text-[10px] font-semibold">{index + 1}</span>
-                    )}
-                  </button>
-                );
-              })}
+                    : undefined
+                }
+              />
+              <ProjectPlanningCountdownBanner
+                minimal
+                projectCreatedAt={currentProjectRun.createdAt}
+                className="shrink-0"
+              />
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={handleNext}
-              disabled={
-                currentKickoffStep >= kickoffSteps.length - 1 ||
-                !canVisitKickoffStep(currentKickoffStep + 1)
-              }
-              aria-label="Next step"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <div className="shrink-0 text-center leading-none tabular-nums">
-              <div className="text-[10px] font-medium text-muted-foreground">
-                {currentKickoffStep + 1}/{kickoffSteps.length}
-              </div>
-              {allKickoffStepsComplete ? (
-                <CheckCircle className="mx-auto mt-0.5 h-3 w-3 text-green-500" aria-label="Kickoff complete" />
-              ) : null}
-            </div>
-          </div>
 
-          <div className="hidden flex-col gap-1.5 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-            <div className="flex min-w-0 flex-1 items-start gap-1">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="mt-0.5 h-9 w-9 shrink-0 md:hidden"
-                onClick={() => scrollKickoffStepNav('left')}
-                aria-label="Scroll steps left"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div
-                ref={kickoffStepNavRef}
-                className="scrollbar-hide flex min-w-0 flex-1 items-start gap-1 overflow-x-auto px-0.5 pb-1 md:overflow-visible md:px-1 md:pb-0"
-              >
+            <h2 className="font-display truncate text-lg font-semibold leading-tight">
+              {projectDisplayName}
+            </h2>
+
+            <div className="space-y-1" role="navigation" aria-label="Kickoff steps">
+              <div className="grid grid-cols-4 gap-2">
                 {kickoffSteps.map((step, index) => {
+                  const isCurrent = index === currentKickoffStep;
+                  const isDone = isStepCompleted(index);
                   const visitable = canVisitKickoffStep(index);
                   return (
-                    <div
+                    <button
                       key={step.id}
-                      className="flex min-w-[4.25rem] flex-1 basis-0 flex-col items-center px-0.5 md:min-w-[5rem]"
+                      type="button"
+                      onClick={() => goToKickoffStep(index)}
+                      disabled={!visitable}
+                      aria-label={`${step.title}, step ${index + 1}`}
+                      aria-current={isCurrent ? 'step' : undefined}
+                      className={cn(
+                        'flex flex-col items-stretch gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+                        !visitable && 'cursor-not-allowed opacity-50'
+                      )}
                     >
-                      <button
-                        type="button"
-                        onClick={() => goToKickoffStep(index)}
-                        aria-label={`Go to ${step.title}, step ${index + 1}`}
-                        aria-current={index === currentKickoffStep ? 'step' : undefined}
-                        aria-disabled={!visitable}
-                        className={`
-                          flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:h-8 md:w-8
-                          ${visitable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
-                          ${
-                            index === currentKickoffStep
-                              ? 'border-primary bg-primary text-primary-foreground'
-                              : isStepCompleted(index)
-                                ? 'border-green-500 bg-green-500 text-white'
-                                : 'border-muted-foreground bg-background'
-                          }
-                        `}
-                      >
-                        {isStepCompleted(index) ? (
-                          <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden />
-                        ) : (
-                          <span className="text-[11px] font-medium md:text-sm">{index + 1}</span>
+                      <span
+                        className={cn(
+                          'h-1.5 w-full rounded-full',
+                          isDone && 'bg-primary',
+                          isCurrent && !isDone && 'animate-pulse bg-primary/60',
+                          !isDone && !isCurrent && 'bg-muted'
                         )}
-                      </button>
-                      <p
-                        className={`mt-1 w-full text-center text-[9px] font-medium leading-tight md:text-xs break-normal [overflow-wrap:normal] [word-break:normal] ${
-                          index === currentKickoffStep
-                            ? 'text-primary'
-                            : isStepCompleted(index)
-                              ? 'text-green-700 dark:text-green-400'
-                              : 'text-muted-foreground'
-                        }`}
+                      />
+                      <span
+                        className={cn(
+                          'inline-flex items-center justify-center gap-0.5 text-[10px] leading-none',
+                          isCurrent ? 'font-medium text-primary' : isDone ? 'text-muted-foreground' : 'text-muted-foreground/70'
+                        )}
                       >
-                        {step.title}
-                      </p>
-                    </div>
+                        {isDone ? <Check className="h-2.5 w-2.5 shrink-0" aria-hidden /> : null}
+                        {step.shortLabel}
+                      </span>
+                    </button>
                   );
                 })}
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="mt-0.5 h-9 w-9 shrink-0 md:hidden"
-                onClick={() => scrollKickoffStepNav('right')}
-                aria-label="Scroll steps right"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              {currentStepPromise ? (
+                <p className="text-xs text-muted-foreground">{currentStepPromise}</p>
+              ) : null}
             </div>
+          </CardContent>
+        </Card>
+      </div>
 
-            <div className="flex w-full items-center justify-center gap-1.5 md:w-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrevious}
-                disabled={currentKickoffStep === 0}
-                className="h-9 w-9 shrink-0 p-0 md:h-9 md:w-auto md:px-3"
-                aria-label="Previous step"
-              >
-                <ChevronLeft className="h-4 w-4 md:mr-1" />
-                <span className="hidden md:inline">Previous</span>
-              </Button>
-              <div className="min-w-[70px] px-1 text-center leading-tight">
-                <div className="text-[10px] font-medium text-foreground md:text-xs">Step</div>
-                <div className="text-[10px] text-muted-foreground md:text-xs">
-                  {currentKickoffStep + 1} of {kickoffSteps.length}
-                </div>
-                {allKickoffStepsComplete && (
-                  <CheckCircle className="mx-auto mt-0.5 h-3.5 w-3.5 text-green-500" aria-label="Kickoff complete" />
-                )}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNext}
-                disabled={
-                  currentKickoffStep >= kickoffSteps.length - 1 ||
-                  !canVisitKickoffStep(currentKickoffStep + 1)
-                }
-                className="h-9 w-9 shrink-0 p-0 md:h-9 md:w-auto md:px-3"
-                aria-label="Next step"
-              >
-                <span className="hidden md:inline md:mr-1">Next</span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {currentStepDescription ? (
-            <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-1.5">
-              <p className="min-w-0 flex-1 text-xs text-muted-foreground sm:text-sm">{currentStepDescription}</p>
-              {currentStepId === 'kickoff-step-1' && (
-                <TooltipProvider delayDuration={200}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        className="inline-flex shrink-0 cursor-help items-center gap-1 text-[11px] font-medium text-primary underline decoration-dotted hover:opacity-80 sm:text-xs"
-                        aria-label="What is a good fit?"
-                      >
-                        What is a good fit?
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="z-[100] max-w-xs" sideOffset={8}>
-                      <p className="text-sm">
-                        A good fit means the project matches your goals, timeline, and skill level. Check
-                        the overview, estimated time, and challenges. If they align with what you want to
-                        take on, it&apos;s a good fit. You can always adjust scope and schedule later.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
+      {summaryChips.length > 0 && currentKickoffStep > 0 ? (
+        <div className="scrollbar-hide flex shrink-0 gap-1.5 overflow-x-auto pb-0.5">
+          {summaryChips.map((chip) => (
+            <span
+              key={chip.key}
+              className="inline-flex shrink-0 animate-in fade-in slide-in-from-bottom-1 items-center rounded-full border bg-card px-2.5 py-1 text-[11px] text-foreground duration-150"
+            >
+              {chip.label}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       <div className="flex min-h-0 flex-1 flex-col md:min-h-[min(560px,70vh)]">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] -mx-2 px-2 pb-2 sm:mx-0 sm:px-0 sm:pb-4 md:flex-none md:overflow-visible md:pb-0">
@@ -1175,6 +1080,46 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       <Card className="sticky bottom-0 z-10 shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:static md:border md:bg-card md:backdrop-blur-none">
         <CardContent className="p-2.5 sm:p-4">{renderPrimaryActions()}</CardContent>
       </Card>
+
+      {showHandoff ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md animate-in fade-in zoom-in-95 rounded-lg border bg-card p-5 shadow-lg duration-200">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-success/15 text-success">
+              <CheckCircle className="h-6 w-6" aria-hidden />
+            </div>
+            <h3 className="font-display text-center text-xl font-semibold">You&apos;re set to plan</h3>
+            <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
+              <li>Fit: {FIT_CHIP_LABEL[matchExplanation.tier] ?? matchExplanation.tier}</li>
+              {profileSkillLevel ? <li>Level: {profileSkillLevel}</li> : null}
+              {summaryChips
+                .filter((c) => c.key === 'target' || c.key === 'budget')
+                .map((c) => (
+                  <li key={c.key}>{c.label}</li>
+                ))}
+              {handoffToolNames.length > 0 ? (
+                <li>Tools: {handoffToolNames.join(', ')}</li>
+              ) : null}
+            </ul>
+            <Button
+              type="button"
+              size="lg"
+              className="font-display mt-5 h-12 w-full text-sm font-semibold"
+              onClick={() => {
+                void handleConfirmHandoff();
+              }}
+            >
+              Open Planning Studio
+            </Button>
+            <button
+              type="button"
+              className="mt-2 w-full text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
+              onClick={() => setShowHandoff(false)}
+            >
+              Keep editing
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

@@ -40,6 +40,14 @@
   --destructive: 0 80% 55%;
   --destructive-foreground: 0 0% 100%;
 
+  /* Semantic status (Kickoff completion, fit verdicts) */
+  --success: 142 55% 38%;
+  --success-foreground: 0 0% 100%;
+  --warning-soft: 38 92% 50%;
+  --warning-soft-foreground: 24 14% 18%;
+  --destructive-soft: 0 72% 48%;
+  --destructive-soft-foreground: 0 0% 100%;
+
   --border: 32 18% 88%;
   --input: 36 20% 93%;
   --ring: 14 100% 58%;
@@ -119,6 +127,13 @@
 
     --destructive: 0 75% 50%;
     --destructive-foreground: 0 0% 100%;
+
+    --success: 142 50% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning-soft: 38 85% 52%;
+    --warning-soft-foreground: 40 25% 96%;
+    --destructive-soft: 0 70% 55%;
+    --destructive-soft-foreground: 0 0% 100%;
 
     --border: 24 12% 20%;
     --input: 24 12% 17%;

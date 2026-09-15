@@ -432,13 +432,16 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
     return (
       <Card>
         <CardHeader className="p-2 sm:p-3">
-          <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-            <User className="h-4 w-4 flex-shrink-0" />
+          <CardTitle className="font-display text-xl font-semibold leading-tight">
             Personalize
-            {isCompleted && <Badge variant="secondary" className="text-xs">Complete</Badge>}
+            {isCompleted ? (
+              <Badge variant="secondary" className="ml-2 align-middle text-xs">
+                Complete
+              </Badge>
+            ) : null}
           </CardTitle>
-          <CardDescription className="text-xs mt-0.5">
-            Confirm your DIY skill, physical effort, and project style for this project.
+          <CardDescription className="text-sm">
+            Your skill and effort shape which tools and warnings we show.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-2 sm:p-3">
@@ -454,18 +457,17 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
     <>
       <Card>
         <CardHeader className="p-2 sm:p-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-                <User className="w-4 h-4 flex-shrink-0" />
-                <span className="truncate">Personalize</span>
-                {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
-              </CardTitle>
-              <CardDescription className="text-xs mt-0.5">
-                Confirm your DIY skill, physical effort, and project style for this project.
-              </CardDescription>
-            </div>
-          </div>
+          <CardTitle className="font-display text-xl font-semibold leading-tight">
+            Personalize
+            {isCompleted ? (
+              <Badge variant="secondary" className="ml-2 align-middle text-xs">
+                Complete
+              </Badge>
+            ) : null}
+          </CardTitle>
+          <CardDescription className="text-sm">
+            Your skill and effort shape which tools and warnings we show.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 p-2 sm:space-y-3 sm:p-3">
           {renderProfileView()}

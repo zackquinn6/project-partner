@@ -45,17 +45,11 @@ import {
 function MatchReasonRow({ axis, text }: { axis: MatchAxisSentiment | null; text: string }) {
   const icon =
     axis === 'positive' ? (
-      <CheckCircle
-        className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-500"
-        aria-hidden
-      />
+      <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />
     ) : axis === 'negative' ? (
-      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-500" aria-hidden />
+      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive-soft" aria-hidden />
     ) : (
-      <AlertCircle
-        className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-500"
-        aria-hidden
-      />
+      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning-soft" aria-hidden />
     );
   const label =
     axis === 'positive'
@@ -90,36 +84,31 @@ const MATCH_TIER_COPY: Record<
   }
 > = {
   not_yet: {
-    title: 'Not Yet',
+    title: 'Not recommended',
     subtitle: 'Skill or effort signals suggest waiting or more preparation.',
     Icon: Ban,
-    cardClass:
-      'border-red-200 bg-red-50/60 dark:bg-red-950/25 dark:border-red-900/60',
-    iconWrapClass: 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400',
-    titleClass: 'text-red-900 dark:text-red-100',
-    subtitleClass: 'text-red-800/80 dark:text-red-200/80',
+    cardClass: 'border-destructive-soft/40 bg-destructive-soft/10',
+    iconWrapClass: 'bg-destructive-soft/15 text-destructive-soft',
+    titleClass: 'text-destructive-soft',
+    subtitleClass: 'text-muted-foreground',
   },
   proceed_mindfully: {
-    title: 'Proceed Mindfully',
+    title: 'Stretch',
     subtitle: 'Mixed signals: move forward with clear eyes on risk and scope.',
     Icon: AlertTriangle,
-    cardClass:
-      'border-amber-200 bg-amber-50/60 dark:bg-amber-950/25 dark:border-amber-900/60',
-    iconWrapClass:
-      'bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400',
-    titleClass: 'text-amber-950 dark:text-amber-100',
-    subtitleClass: 'text-amber-900/85 dark:text-amber-200/85',
+    cardClass: 'border-warning-soft/40 bg-warning-soft/10',
+    iconWrapClass: 'bg-warning-soft/15 text-warning-soft-foreground',
+    titleClass: 'text-warning-soft-foreground',
+    subtitleClass: 'text-muted-foreground',
   },
   ready_to_start: {
-    title: 'Ready to Start',
+    title: 'Good fit',
     subtitle: 'Skill and effort alignment supports starting this project.',
     Icon: CircleCheckBig,
-    cardClass:
-      'border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/25 dark:border-emerald-900/60',
-    iconWrapClass:
-      'bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400',
-    titleClass: 'text-emerald-950 dark:text-emerald-100',
-    subtitleClass: 'text-emerald-900/85 dark:text-emerald-200/85',
+    cardClass: 'border-success/40 bg-success/10',
+    iconWrapClass: 'bg-success/15 text-success',
+    titleClass: 'text-success',
+    subtitleClass: 'text-muted-foreground',
   },
 };
 
@@ -486,9 +475,17 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         {/* Mismatch / caution only (no green "your level matches" row) */}
         {userLevel && comparison && comparison.type !== 'success' && (
           <div className="mt-2 flex items-center gap-1.5">
-            {comparison.type === 'error' && <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0" />}
-            {comparison.type === 'warning' && <AlertTriangle className="w-3 h-3 text-yellow-500 flex-shrink-0" />}
-            <span className={`text-xs ${comparison.type === 'error' ? 'text-red-600' : 'text-yellow-600'}`}>
+            {comparison.type === 'error' && (
+              <AlertTriangle className="w-3 h-3 shrink-0 text-destructive-soft" />
+            )}
+            {comparison.type === 'warning' && (
+              <AlertTriangle className="w-3 h-3 shrink-0 text-warning-soft" />
+            )}
+            <span
+              className={`text-xs ${
+                comparison.type === 'error' ? 'text-destructive-soft' : 'text-warning-soft-foreground'
+              }`}
+            >
               {comparison.message}
             </span>
           </div>
@@ -902,62 +899,59 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
     <div className="space-y-3">
       <Card>
         <CardHeader className="p-2 sm:p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-              Project Match: {currentProjectRun.name}
-              {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
-            </CardTitle>
-          </div>
+          <CardTitle className="font-display text-xl font-semibold leading-tight">
+            Project Match
+            {isCompleted ? (
+              <Badge variant="secondary" className="ml-2 align-middle text-xs">
+                Complete
+              </Badge>
+            ) : null}
+          </CardTitle>
+          <CardDescription className="text-sm">
+            Confirm this project is a fit before you invest planning time.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2 p-2 sm:space-y-3 sm:p-3">
-          <div className="space-y-0.5">
-            <p className="text-xs text-muted-foreground leading-snug line-clamp-3 whitespace-pre-line sm:text-sm">
-              {resolvedProjectDescription || 'No description provided'}
-            </p>
-          </div>
-
-          <section className="space-y-2 sm:space-y-3" aria-label="Project fit recommendation">
-            <div className="flex w-full justify-center">
-              <div
-                className={`flex w-full max-w-md flex-col items-center gap-2 rounded-lg border-2 px-3 py-3 text-center shadow-sm sm:gap-2.5 sm:rounded-xl sm:px-4 sm:py-4 ${tierVisual.cardClass}`}
-              >
+        <CardContent className="space-y-3 p-2 sm:p-3">
+          <section className="space-y-3" aria-label="Project fit recommendation">
+            <div
+              className={`rounded-lg border px-4 py-4 ${tierVisual.cardClass}`}
+            >
+              <div className="flex items-start gap-3">
                 <div
-                  className={`flex h-11 w-11 items-center justify-center rounded-full sm:h-12 sm:w-12 ${tierVisual.iconWrapClass}`}
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${tierVisual.iconWrapClass}`}
                   aria-hidden
                 >
-                  <TierIcon className="h-6 w-6 stroke-[2.5] sm:h-7 sm:w-7" />
+                  <TierIcon className="h-6 w-6 stroke-[2.5]" />
                 </div>
-                <div className="min-w-0 space-y-0.5">
-                  <p className={`text-sm font-semibold leading-snug sm:text-base ${tierVisual.titleClass}`}>
+                <div className="min-w-0 space-y-1">
+                  <p className={`font-display text-2xl font-semibold leading-tight ${tierVisual.titleClass}`}>
                     {tierVisual.title}
                   </p>
-                  <p className={`text-[11px] leading-snug sm:text-xs ${tierVisual.subtitleClass}`}>
+                  <p className={`text-xs leading-snug ${tierVisual.subtitleClass}`}>
                     {tierVisual.subtitle}
                   </p>
                 </div>
               </div>
+              <ul className="mt-3 space-y-1.5 border-t border-border/40 pt-3 text-sm text-foreground">
+                <MatchReasonRow axis={matchExplanation.skillAxis} text={matchExplanation.reasonSkill} />
+                <MatchReasonRow axis={matchExplanation.effortAxis} text={matchExplanation.reasonEffort} />
+                {matchExplanation.challengesParagraph?.trim() ? (
+                  <li className="flex gap-2">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                    <span className="min-w-0 leading-snug text-muted-foreground">
+                      <span className="font-medium text-foreground/80">Challenges: </span>
+                      {matchExplanation.challengesParagraph}
+                    </span>
+                  </li>
+                ) : null}
+              </ul>
             </div>
 
-            <div className="space-y-2 rounded-lg border bg-muted/20 px-2.5 py-2 text-left sm:space-y-2.5 sm:px-3 sm:py-3">
-              <p className="text-xs leading-snug text-foreground sm:text-sm sm:leading-relaxed">
-                {matchExplanation.summary}
+            {resolvedProjectDescription ? (
+              <p className="text-xs leading-snug text-muted-foreground line-clamp-3 whitespace-pre-line sm:text-sm">
+                {resolvedProjectDescription}
               </p>
-              {matchExplanation.challengesParagraph?.trim() ? (
-                <p className="text-xs leading-snug text-muted-foreground line-clamp-2 sm:text-sm">
-                  <span className="font-medium text-foreground/80">Challenges: </span>
-                  {matchExplanation.challengesParagraph}
-                </p>
-              ) : null}
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs">
-                  Why this recommendation
-                </p>
-                <ul className="list-none space-y-1.5 pl-0 text-xs text-muted-foreground sm:space-y-2 sm:text-sm">
-                  <MatchReasonRow axis={matchExplanation.skillAxis} text={matchExplanation.reasonSkill} />
-                  <MatchReasonRow axis={matchExplanation.effortAxis} text={matchExplanation.reasonEffort} />
-                </ul>
-              </div>
-            </div>
+            ) : null}
           </section>
 
           <Accordion type="single" collapsible defaultValue={undefined} className="w-full rounded-lg border bg-muted/20 px-1.5 sm:px-2">

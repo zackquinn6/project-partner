@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Home, Plus, Minus, DollarSign, Calendar, Ruler, Sparkles } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -654,18 +655,17 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     <>
       <Card>
         <CardHeader className="p-2 sm:p-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-                <Home className="w-4 h-4 flex-shrink-0" />
-                <span className="truncate">Goals</span>
-                {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
-              </CardTitle>
-              <CardDescription className="text-xs mt-0.5">
-                Set project size, target date, and budget.
-              </CardDescription>
-            </div>
-          </div>
+          <CardTitle className="font-display text-xl font-semibold leading-tight">
+            Goals
+            {isCompleted ? (
+              <Badge variant="secondary" className="ml-2 align-middle text-xs">
+                Complete
+              </Badge>
+            ) : null}
+          </CardTitle>
+          <CardDescription className="text-sm">
+            Size it, date it, budget it. We&apos;ll shape the plan around this.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 p-2 sm:p-3">
           <div className="space-y-3 rounded-lg border bg-muted/20 px-3 py-3">
@@ -751,12 +751,10 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="flex flex-col gap-2 rounded-lg border bg-muted/20 px-3 py-3">
+          <div className="rounded-lg border bg-card px-3 py-3">
+            <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-md bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400">
-                  <Ruler className="h-4 w-4" aria-hidden />
-                </span>
+                <Ruler className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                 <div className="min-w-0">
                   <p className="text-sm font-medium leading-none">Size</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">How much work?</p>
@@ -806,13 +804,13 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
               ) : null}
             </div>
 
-            <div className="flex flex-col gap-2 rounded-lg border bg-muted/20 px-3 py-3">
+            <Separator className="my-3" />
+
+            <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-md bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400">
-                  <Calendar className="h-4 w-4" aria-hidden />
-                </span>
+                <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                 <div className="min-w-0">
-                  <p className="text-sm font-medium leading-none">Timeline</p>
+                  <p className="text-sm font-medium leading-none">Target date</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">When done?</p>
                 </div>
               </div>
@@ -855,15 +853,15 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                 </Button>
               </div>
               {timelineRelativeLabel ? (
-                <p className="text-center text-xs text-muted-foreground">{timelineRelativeLabel}</p>
+                <p className="text-xs text-muted-foreground">{timelineRelativeLabel}</p>
               ) : null}
             </div>
 
-            <div className="flex flex-col gap-2 rounded-lg border bg-muted/20 px-3 py-3">
+            <Separator className="my-3" />
+
+            <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
-                  <DollarSign className="h-4 w-4" aria-hidden />
-                </span>
+                <DollarSign className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                 <div className="min-w-0">
                   <p className="text-sm font-medium leading-none">Budget</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">Spend up to?</p>

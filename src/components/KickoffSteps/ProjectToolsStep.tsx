@@ -317,6 +317,10 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     notifySelection(next);
   };
 
+  const selectedToolNames = Array.from(selected)
+    .map((id) => PLANNING_TOOLS.find((t) => t.id === id)?.label)
+    .filter((name): name is string => Boolean(name));
+
   const inner = (
     <>
       <div className={compact ? 'space-y-1.5 rounded-lg border border-primary/30 bg-primary/5 p-2.5' : 'space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-3'}>
@@ -326,6 +330,11 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
             <p className="text-xs text-muted-foreground">
               {recommendedToolNames.join(' · ')}
             </p>
+            {selectedToolNames.length > 0 ? (
+              <p className="text-xs text-primary">
+                Adds to your plan: {selectedToolNames.join(', ')}
+              </p>
+            ) : null}
           </div>
           <Button
             type="button"
@@ -368,9 +377,9 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
             <Card
               key={id}
               className={
-                isScope
-                  ? 'cursor-default border-primary bg-primary/5'
-                  : `cursor-pointer transition-colors hover:bg-muted/50 ${isChecked ? 'border-primary bg-primary/5' : ''}`
+                isScope || isChecked
+                  ? `overflow-hidden border-primary bg-primary/5 border-l-[3px] border-l-primary ${isScope ? 'cursor-default' : 'cursor-pointer'}`
+                  : 'cursor-pointer transition-colors hover:bg-muted/50'
               }
               onClick={isScope ? undefined : () => handleToggle(id)}
             >
@@ -429,9 +438,9 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     return (
       <Card>
         <CardHeader className="p-2 sm:p-3">
-          <CardTitle className="text-sm sm:text-base">Your plan</CardTitle>
-          <CardDescription className="text-xs mt-0.5">
-            Select the tools to help you plan
+          <CardTitle className="font-display text-xl font-semibold">Your plan</CardTitle>
+          <CardDescription className="text-sm mt-0.5">
+            Pick the planning steps you&apos;ll run next in the studio.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 p-2 sm:space-y-3 sm:p-3">{inner}</CardContent>
