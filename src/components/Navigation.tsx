@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, Lock, HelpCircle, BookOpen, MessageCircle, Headphones, Crown, FileText, UserPlus, Mail } from "lucide-react";
+import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, HelpCircle, BookOpen, MessageCircle, Headphones, FileText, UserPlus, Mail, UserCog } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useProject } from '@/contexts/ProjectContext';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
@@ -13,11 +13,10 @@ import { useMembership } from '@/contexts/MembershipContext';
 import { FeedbackDialog } from './FeedbackDialog';
 import { ContactUsWindow } from './ContactUsWindow';
 import { UpgradePrompt } from './UpgradePrompt';
-import { MembershipWindow } from './MembershipWindow';
+import { Account } from './Account';
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from 'sonner';
-import { DataPrivacyManager } from './DataPrivacyManager';
 import { FeatureRoadmapWindow } from './FeatureRoadmapWindow';
 import { AppDocumentationWindow } from './AppDocumentationWindow';
 import { PoliciesWindow } from './PoliciesWindow';
@@ -43,7 +42,7 @@ export default function Navigation({
   onProjectsView,
   onProjectSelected
 }: NavigationProps) {
-  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
   const [isDocumentationOpen, setIsDocumentationOpen] = useState(false);
   const [isPoliciesOpen, setIsPoliciesOpen] = useState(false);
@@ -53,7 +52,6 @@ export default function Navigation({
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [upgradePromptFeature, setUpgradePromptFeature] = useState('Projects membership');
-  const [isMembershipOpen, setIsMembershipOpen] = useState(false);
 
   // Add error boundary for useProject hook
   let projectData;
@@ -475,13 +473,9 @@ export default function Navigation({
                   <User className="h-4 w-4 mr-2" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsMembershipOpen(true)}>
-                  <Crown className="h-4 w-4 mr-2" />
-                  Membership
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsPrivacyOpen(true)}>
-                  <Lock className="h-4 w-4 mr-2" />
-                  Password & Privacy
+                <DropdownMenuItem onClick={() => setIsAccountOpen(true)}>
+                  <UserCog className="h-4 w-4 mr-2" />
+                  Account
                 </DropdownMenuItem>
                 {showAdminPanel && (
                   <DropdownMenuItem onClick={onAdminAccess}>
@@ -542,7 +536,7 @@ export default function Navigation({
       <FeedbackDialog open={showFeedback} onOpenChange={setShowFeedback} />
       <ContactUsWindow open={isContactOpen} onOpenChange={setIsContactOpen} />
       
-      <DataPrivacyManager open={isPrivacyOpen} onOpenChange={setIsPrivacyOpen} />
+      <Account open={isAccountOpen} onOpenChange={setIsAccountOpen} />
       
        <FeatureRoadmapWindow open={isRoadmapOpen} onOpenChange={setIsRoadmapOpen} />
        
@@ -555,7 +549,5 @@ export default function Navigation({
         <ExpertHelpWindow isOpen={isExpertHelpOpen} onClose={() => setIsExpertHelpOpen(false)} />
         
          <UpgradePrompt open={showUpgradePrompt} onOpenChange={setShowUpgradePrompt} feature={upgradePromptFeature} />
-         
-         <MembershipWindow open={isMembershipOpen} onOpenChange={setIsMembershipOpen} />
     </>;
 }

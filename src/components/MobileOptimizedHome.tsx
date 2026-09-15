@@ -19,8 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectOwner } from '@/hooks/useProjectOwner';
 import projectPartnerLogo from '@/assets/project-partner-logo.png';
-import { MembershipWindow } from '@/components/MembershipWindow';
-import { DataPrivacyManager } from '@/components/DataPrivacyManager';
+import { Account } from '@/components/Account';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { useProject } from '@/contexts/ProjectContext';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
@@ -36,8 +35,7 @@ import {
   Settings,
   LogOut,
   Shield,
-  Lock,
-  Crown,
+  UserCog,
   Wrench, 
   BookOpen, 
   MapPin,
@@ -70,8 +68,7 @@ export function MobileOptimizedHome() {
   });
   
   const [userNickname, setUserNickname] = useState<string>('');
-  const [isMembershipOpen, setIsMembershipOpen] = useState(false);
-  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isCodePermitsOpen, setIsCodePermitsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -307,13 +304,9 @@ export function MobileOptimizedHome() {
                   <User className="mr-2 h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsMembershipOpen(true)}>
-                  <Crown className="mr-2 h-4 w-4" />
-                  Membership
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsPrivacyOpen(true)}>
-                  <Lock className="mr-2 h-4 w-4" />
-                  Password & Privacy
+                <DropdownMenuItem onClick={() => setIsAccountOpen(true)}>
+                  <UserCog className="mr-2 h-4 w-4" />
+                  Account
                 </DropdownMenuItem>
                 {showAdminPanel ? (
                   <DropdownMenuItem
@@ -524,8 +517,7 @@ export function MobileOptimizedHome() {
         )}
       </div>
 
-      <DataPrivacyManager open={isPrivacyOpen} onOpenChange={setIsPrivacyOpen} />
-      <MembershipWindow open={isMembershipOpen} onOpenChange={setIsMembershipOpen} />
+      <Account open={isAccountOpen} onOpenChange={setIsAccountOpen} />
       <CodePermitsWindow open={isCodePermitsOpen} onOpenChange={setIsCodePermitsOpen} />
     </div>
   );
