@@ -5,8 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Home, Plus, Minus, DollarSign, Calendar, Ruler, Sparkles } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+import { Home, Plus, Minus, DollarSign, Calendar, Ruler } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -800,16 +799,15 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
               type="button"
               variant="outline"
               size="sm"
-              className="h-9 gap-1.5 text-xs"
+              className="h-9 text-xs"
               onClick={() => applyTypicalProjectGoals()}
             >
-              <Sparkles className="h-3.5 w-3.5" />
               Use typical for this project
             </Button>
           </div>
 
-          <div className="rounded-lg border bg-card px-3 py-3">
-            <div className="flex flex-col gap-2">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="flex flex-col gap-2 rounded-lg border bg-card p-3">
               <div className="flex items-center gap-2">
                 <Ruler className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                 <div className="min-w-0">
@@ -861,9 +859,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
               ) : null}
             </div>
 
-            <Separator className="my-3" />
-
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 rounded-lg border bg-card p-3">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                 <div className="min-w-0">
@@ -917,9 +913,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
               ) : null}
             </div>
 
-            <Separator className="my-3" />
-
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 rounded-lg border bg-card p-3">
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                 <div className="min-w-0">
