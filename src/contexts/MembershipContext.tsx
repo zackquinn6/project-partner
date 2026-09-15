@@ -69,7 +69,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
   // Avoid a failing public settings fetch on the logged-out login screen (preview CORS/504 noise).
   const betaModeEnabled =
     !!user || (typeof window !== 'undefined' && window.location.pathname !== '/auth');
-  const { isBetaMode } = useBetaMode({ enabled: betaModeEnabled });
+  const { isBetaMode, loading: betaLoading } = useBetaMode({ enabled: betaModeEnabled });
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isProjectOwner, setIsProjectOwner] = useState(false);
@@ -78,9 +78,13 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
   const [lastTrialNotificationDate, setLastTrialNotificationDate] = useState<string | null>(null);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('none');
-  const [loading, setLoading] = useState(true);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
 
-  const checkSubscription = async () => {
+  // Keep gates in a loading state until both Stripe/subscription and beta flags resolve.
+  // Otherwise post-login UI briefly treats members as free (flash of "membership required").
+  const loading = subscriptionLoading || (Boolean(user) && betaLoading);
+
+  const checkSubscription = async (options?: { silent?: boolean }) => {
     if (!user) {
       setIsSubscribed(false);
       setIsAdmin(false);
@@ -90,8 +94,14 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
       setLastTrialNotificationDate(null);
       setSubscriptionEnd(null);
       setSubscriptionTier('none');
-      setLoading(false);
+      setSubscriptionLoading(false);
       return;
+    }
+
+    // After logout→login, subscriptionLoading is already false from the logged-out path.
+    // Re-enter loading before the network call so consumers do not flash deny UI.
+    if (!options?.silent) {
+      setSubscriptionLoading(true);
     }
 
     try {
@@ -120,7 +130,7 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
     } catch (error) {
       console.error('Error checking subscription:', error);
     } finally {
-      setLoading(false);
+      setSubscriptionLoading(false);
     }
   };
 
@@ -213,7 +223,8 @@ export const MembershipProvider: React.FC<{ children: ReactNode }> = ({ children
   useEffect(() => {
     void checkSubscription();
 
-    const interval = setInterval(() => void checkSubscription(), 5 * 60 * 1000);
+    // Periodic refresh must stay silent so membership UI does not flash loading every 5 minutes.
+    const interval = setInterval(() => void checkSubscription({ silent: true }), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [user]);
 

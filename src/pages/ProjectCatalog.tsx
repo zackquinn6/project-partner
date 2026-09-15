@@ -14,7 +14,7 @@ const ProjectCatalogPage = () => {
   const { hasProjectsTier, loading: membershipLoading } = useMembership();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  if (loading) {
+  if (loading || (user && membershipLoading)) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
@@ -39,7 +39,7 @@ const ProjectCatalogPage = () => {
     );
   }
 
-  if (user && !membershipLoading && !hasProjectsTier) {
+  if (user && !hasProjectsTier) {
     return (
       <div className="container mx-auto max-w-lg space-y-6 px-4 py-16 text-center">
         <h1 className="text-2xl font-semibold text-foreground">Projects membership required</h1>
