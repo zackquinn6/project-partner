@@ -1,6 +1,10 @@
 # AI Project Development Reference (DB-first)
 
-**Use when:** admin asks to complete **Step 1–10** of project development for a named template (`project_id`), says **follow ai dev guide** (or similar), or asks to research/add/update **home maintenance** `maintenance_templates` (§G). **§B is the single source of truth per project step** (no duplicate checklist elsewhere). Field catalogs below list authoring columns/JSON keys; verify every write against `src/integrations/supabase/types.ts` and `src/interfaces/Project.ts`. For maintenance catalog work, use **§G** instead of Steps 1–10.
+**Use when:** admin asks to complete **Step 1–10** of project development for a named template (`project_id`), says **follow ai dev guide** (or similar), or asks to research/add/update **home maintenance** `maintenance_templates` (§G).
+
+**Sources of truth:**
+- **Shared product rules** (structure limits, publishing checklist, instruction levels, cross-cutting product meaning): `src/utils/projectPlanningStandard.ts` - generated block below. Human Planning Guide in admin Project Management reads the same module.
+- **Authoring / SQL SoT** for Steps 1–10: §A / §B field catalogs below (no duplicate checklist elsewhere for SQL). Verify every write against `src/integrations/supabase/types.ts` and `src/interfaces/Project.ts`. For maintenance catalog work, use **§G** instead of Steps 1–10.
 
 ---
 
@@ -10,6 +14,139 @@
 - No hardcoded strings for state; no hardcoded business logic—use DB fields and relationships.
 - Fix root causes; if the app needs a workaround to run, let it fail—do not force it.
 - **No em-dashes** (—) in authored catalog / user-facing prose (`description`, `project_challenges`, step instructions, risk copy, etc.). Standard dashes/hyphens (-) are okay.
+
+---
+
+<!-- PLANNING_STANDARD:BEGIN -->
+## Shared product planning standard (generated)
+
+**Version:** `1.0.0` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
+
+Do not hand-edit this block. Change the TypeScript module, then run `npm run sync:planning-standard`. Authoring/SQL field catalogs remain in §A / §B below.
+
+### Product guidelines
+
+- Keep instructions sequential, simple, and broken into clear phases.
+- Be specific about tools, materials, timing, and what "good" looks like.
+- Update content regularly to reflect current techniques and standards.
+- Put safety guidance upfront and explain why each step matters.
+- Use visuals only when they add clarity or prevent confusion.
+- Treat feedback as a signal for improvement and respond promptly.
+- Monitor Success Scores and adjust content based on user outcomes.
+- Maintain a supportive, human tone that builds confidence.
+- Offer alternatives and quick fixes when tools or conditions vary.
+- Keep version notes so updates stay consistent across the system.
+
+### Instruction levels
+
+- Levels: `beginner`, `intermediate`, `advanced`
+- Every target step needs three instruction rows: beginner, intermediate, and advanced. Write level-appropriate detail; users see the level that matches their experience.
+
+### Project structure
+
+TOOLIO PROJECT STRUCTURE - QUICK REFERENCE STANDARD. This standard defines what belongs at each level, how long each level should be, and the structural limits for every project.
+
+**Hierarchy:** Phase → Operation → Step → Action
+
+Phases & operations = project management. Steps = instructions. Actions = micro instructions inside step content (not a separate DB table).
+
+#### Phase
+
+- **Description:** Major milestone with a natural stopping point.
+- **Purpose:** Organize the project into big, sequential chunks.
+- **Contains:** No instructions.
+- **Typical duration:** ½–1 day
+- **Max duration:** 1 day
+- **Count:** Unlimited phases per project (typical: 2–5).
+- Represent a meaningful shift in the project.
+- Have a clear "before/after" state.
+- Allow a natural pause (you can stop for hours or overnight).
+- Change tools, materials, or skill type.
+- **Examples:** Removal → Install; Prep → Prime → Paint → Finish → Cleanup
+
+#### Operation
+
+- **Description:** A distinct task inside a phase that produces a specific outcome.
+- **Purpose:** Break phases into teachable, outcome-based tasks.
+- **Contains:** No instructions.
+- **Typical duration:** 1–3 hours
+- **Max duration:** 4 hours
+- **Count:** Maximum 10 operations per phase.
+- Produce a clear, observable result.
+- Be teachable as a standalone skill.
+- Use a consistent tool/material set.
+- Not require stopping mid operation.
+- **Examples:** Set toilet; Connect water; Patch walls; Cut in edges
+
+#### Step
+
+- **Description:** The instructional unit - everything the user needs to complete one part of an operation.
+- **Purpose:** Deliver complete, actionable guidance.
+- **Contains:** Instructions (Actions) with full metadata.
+- **Typical duration:** 5–30 minutes (standard step).
+- **Max duration:** 60 minutes (standard or scaled step).
+- **Count:** Maximum 10 steps per operation.
+- Include all required instructional metadata as defined in the standard.
+- Be completable without splitting across multiple sessions in normal conditions.
+
+#### Action
+
+- **Description:** Micro instruction representing a single motion or micro-task.
+- **Purpose:** Describe the smallest unit of observable work.
+- **Contains:** One motion or micro instruction inside a step.
+- **Typical duration:** Minutes.
+- **Max duration:** Minutes.
+- **Count:** Defined within a single step; not tracked independently at the project level.
+- Be specific and observable (e.g., "Turn wrench ¼ turn").
+- Be written so a user can complete it in one continuous motion or focus block.
+- **Examples:** Turn wrench ¼ turn; Feather brush outward; Press evenly
+
+#### Step requirements (every step)
+
+- Instructions (Actions) with visual aids.
+- Warnings.
+- PPE list.
+- Tool list.
+- Material list.
+- Inputs (factors that matter).
+- Outputs (observable success criteria).
+- Time estimate.
+- Common mistakes.
+- Variations / branching logic.
+- Quality checks.
+- Cleanup requirements.
+
+#### Time standards summary
+
+| Level | Typical | Max | Notes |
+| ----- | ------- | --- | ----- |
+| phase | ½–1 day | 1 day | Natural stopping point. |
+| operation | 1–3 hours | 4 hours | Produces a specific outcome. |
+| step | 5–30 minutes | 60 minutes | Atomic instructional unit. |
+| action | Minutes | Minutes | One motion. |
+
+### Publishing checklist (maps to §B Steps)
+
+| Id | Checklist item | AI Step refs |
+| -- | -------------- | ------------ |
+| `instruction-levels` | **3 levels of instructions** - Beginner, Intermediate, and Advanced content for steps where it matters. | 2 |
+| `tools-alternates` | **Tools & alternates** - Primary tools and alternate options defined for steps that require tools. | 5 |
+| `materials-alternates` | **Materials & alternates** - Materials and quantities (and alternates where applicable) for each step. | 6 |
+| `pfmea` | **PFMEA** - Process FMEA (failure modes and effects) completed where relevant for the project. | 9 |
+| `risks` | **Risks** - Timeline and budget risks with mitigation strategies documented in project risk management. | 4 |
+| `outputs-priorities` | **Outputs / priorities** - Key product or process outputs identified and documented (what "done" looks like). | 3 |
+| `quality-control` | **Quality Control** - Quality control steps and criteria defined where applicable (step types and checks). | 1, 3 |
+| `error-correction` | **Error Correction** - Guidance for common errors and how to correct them (Error-Recovery instruction sections). | 2 |
+| `safety` | **Safety** - Safety guidance upfront and at relevant steps; reasons explained. | 2 |
+
+### Cross-cutting product rules
+
+- **Waiting steps (drying, curing)** (`waiting-steps`): Engineer all waiting steps (e.g. paint dry, curing) as their own step with specific wait times, and set workers needed = 0.
+- **Risks vs PFMEA** (`risks-vs-pfmea`): Project risks (Step 4) cover timeline and budget only. Quality failure modes belong in PFMEA (Step 9), not the risk register.
+- **Tools and materials alternates** (`alternates`): Where a step requires tools or materials, define primary items and alternate options when users may substitute brand, type, or pack size.
+- **No em-dashes in catalog prose** (`no-em-dashes`): Do not use em-dashes in authored catalog / user-facing prose (descriptions, challenges, step instructions, risk copy). Use standard dashes or hyphens.
+- **Actions vs database tables** (`actions-vs-db`): Hierarchy is Phase → Operation → Step → Action. Actions are instructional micro-units inside step_instructions content; they are not a separate database table. DB tables stop at operation_steps + step_instructions.
+<!-- PLANNING_STANDARD:END -->
 
 ---
 
@@ -124,6 +261,8 @@ Author when creating/revising a template or in Step 10 (description/challenges).
 
 ### Step 1 — Structure only (phases, operations, steps)
 
+**Shared checklist:** `quality-control` (step types) · structure limits in generated planning standard above.
+
 **Phases:** If **≥1** `project_phases` row for `project_id` → **do not** INSERT phases; use existing `id` as `phase_id`; **assume phases cover the full template**; if scope cannot map or structure is wrong → **notify the user**, do not add phases without direction. If **0** phases → INSERT phases first, then attach ops. Rename phases only if the prompt requires it.
 
 **Operations & steps:** **Additive:** read existing `phase_operations` / `operation_steps`; **do not** delete or replace rows unless the prompt explicitly requires it. **INSERT** additional rows; keep `display_order` coherent with existing rows.
@@ -180,6 +319,8 @@ After structure changes: rebuild `projects.phases` cache (§A).
 
 ### Step 2 — `step_instructions` (3 levels)
 
+**Shared checklist:** `instruction-levels`, `error-correction`, `safety`.
+
 Prereq: every target `operation_steps` row exists. **3** rows per step: beginner, intermediate, advanced.
 
 #### `step_instructions` fields
@@ -210,6 +351,8 @@ Prereq: every target `operation_steps` row exists. **3** rows per step: beginner
 
 ### Step 3 — Outputs (`operation_steps.outputs` JSON)
 
+**Shared checklist:** `outputs-priorities`, `quality-control`.
+
 Per step: outputs with `name` (≤50 chars, prefer under 30), `description`, `type`, etc. Names = **physical achieved state**, not inspection verbs, unless the step is explicitly inspection.
 
 | Key | Type / enums | Authoring rule |
@@ -224,6 +367,8 @@ Per step: outputs with `name` (≤50 chars, prefer under 30), `description`, `ty
 | `potentialEffects`, `photosOfEffects`, `mustGetRight`, `allowances`, `referenceSpecification` | optional | Enrich when known |
 
 ### Step 4 — Project risks (`project_risks`)
+
+**Shared checklist:** `risks` · see cross-cutting `risks-vs-pfmea`.
 
 **Scope:** timeline and budget only—not quality (that is PFMEA, Step 9). Attach to **root** template id (see §F).
 
@@ -255,6 +400,8 @@ Per step: outputs with `name` (≤50 chars, prefer under 30), `description`, `ty
 
 ### Step 5 — Tools
 
+**Shared checklist:** `tools-alternates`.
+
 Catalog + step JSON; bootstrap by `name`; **RAISE** if unresolved.
 
 #### `tools` catalog (bootstrap)
@@ -272,6 +419,8 @@ Catalog + step JSON; bootstrap by `name`; **RAISE** if unresolved.
 Prefer library-backed refs: `id` / `name`, `description`, `category`, `alternates`, optional `quantity`, `linkedContentSectionIds` (show tool only when linked instruction sections are visible).
 
 ### Step 6 — Materials
+
+**Shared checklist:** `materials-alternates`.
 
 Same pattern as tools; repeat tool bootstrap in the same file.
 
@@ -307,6 +456,8 @@ Serialized shape (`processVariablesUtils.ts`):
 
 ### Step 8 — Time estimates
 
+**Shared product rule:** waiting/cure steps use `number_of_workers = 0` (see cross-cutting `waiting-steps`).
+
 Low / med / high per step; evidence-based; per scaling unit when `step_type` is scaled.
 
 | Field | Authoring rule |
@@ -316,6 +467,8 @@ Low / med / high per step; evidence-based; per scaling unit when `step_type` is 
 | `number_of_workers`, `skill_level` | Align with effort assumptions when set |
 
 ### Step 9 — PFMEA
+
+**Shared checklist:** `pfmea` · see cross-cutting `risks-vs-pfmea`.
 
 Anti-requirement failure modes; align `requirement_output_id` with Step 3 output ids; scoring from `pfmea_scoring`.
 
@@ -477,6 +630,7 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-15 | Shared product planning SoT: `src/utils/projectPlanningStandard.ts` + generated marker block; admin Planning Guide consumes same module; `npm run sync/check:planning-standard` | Align human Planning Guide and AI reference; prevent product-rule drift |
 | 2026-09-14 | Added §G Home maintenance templates: schema/UI fit, criticality↔Essential/Recommended/Full, field catalog, industry research protocol, system gating, idempotent SQL rules | DIY maintenance catalog review; future prompts must research industry standards before updating `maintenance_templates` |
 | 2026-09-11 | `__decision_tree_config__` / phases ops: `decisionDetailedSummary`, `optionImageUrl`, `optionDetailedDescription` for Project Customizer step 3 workflow decisions (summary = name/description/prompt; detail window via Info) | Tile flooring underlayment decision needed images + deeper copy without replacing short summaries |
 | 2026-09-11 | Step 4 Risk Radar copy rules: no "proper" (define the standard); no slow/speed without a timed rate; quantify contingencies/tolerances/$/days; replace vague hours with concrete windows (e.g. 8-9a to 7-8p, no power tools outside) | Tile Flooring Risk Radar review; DIY guidance must be checkable |

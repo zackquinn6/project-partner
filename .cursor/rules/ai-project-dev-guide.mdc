@@ -5,13 +5,16 @@ description: >-
   schedule prereqs, related phases); or asks to review/research/add/update
   home maintenance tasks, maintenance_templates, or DIY maintenance catalog
   industry cadences. Read and obey AI_PROJECT_DEVELOPMENT_REFERENCE.md
-  (including §G for home maintenance).
+  (including §G for home maintenance) and shared product rules in
+  src/utils/projectPlanningStandard.ts.
 alwaysApply: false
 ---
 
 # AI project development guide
 
-1. **Read first:** open and follow repo-root `AI_PROJECT_DEVELOPMENT_REFERENCE.md` end-to-end for the request.
+1. **Read first:** open and follow repo-root `AI_PROJECT_DEVELOPMENT_REFERENCE.md` end-to-end for the request. Treat the generated `<!-- PLANNING_STANDARD:* -->` block and `src/utils/projectPlanningStandard.ts` as the SoT for shared product meaning (structure limits, publishing checklist, instruction levels, cross-cutting rules). Treat §A / §B field catalogs as the SoT for SQL/authoring columns.
 2. **Field catalogs in §B / §D–§F are required** for project catalog work — use the listed columns/JSON keys; verify names against `src/integrations/supabase/types.ts` and `src/interfaces/Project.ts` before writing SQL or content.
 3. **Home maintenance (§G):** when the request is about `maintenance_templates` / home maintenance task lists, follow **§G** (schema/UI fit, criticality levels, industry research protocol, system gating, idempotent SQL). Research standards before changing frequencies or guidance.
-4. **Continuous improvement:** when a field, constraint, or SQL lesson is proven in-session, append a dated entry under **Revision history** in that file and fold durable rules into the matching section.
+4. **Continuous improvement:**
+   - If a **shared product** rule changes (structure, checklist, instruction levels, cross-cutting meaning), update `src/utils/projectPlanningStandard.ts`, then run `npm run sync:planning-standard` (and confirm with `npm run check:planning-standard`). Do not hand-edit the marker block in the markdown.
+   - If a **SQL / field / migration** lesson is proven in-session, append a dated entry under **Revision history** in `AI_PROJECT_DEVELOPMENT_REFERENCE.md` and fold durable rules into the matching §A–§G section.

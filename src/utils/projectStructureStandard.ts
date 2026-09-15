@@ -29,7 +29,7 @@ export interface ToolioProjectStructureStandard {
 
 export const TOOLIO_PROJECT_STRUCTURE_STANDARD: ToolioProjectStructureStandard = {
   summary:
-    'TOOLIO PROJECT STRUCTURE — QUICK REFERENCE STANDARD. This standard defines what belongs at each level, how long each level should be, and the structural limits for every project.',
+    'TOOLIO PROJECT STRUCTURE - QUICK REFERENCE STANDARD. This standard defines what belongs at each level, how long each level should be, and the structural limits for every project.',
   hierarchy: ['Phase → Operation → Step → Action'],
   levels: {
     phase: {
@@ -42,7 +42,7 @@ export const TOOLIO_PROJECT_STRUCTURE_STANDARD: ToolioProjectStructureStandard =
       countRules: 'Unlimited phases per project (typical: 2–5).',
       mustRules: [
         'Represent a meaningful shift in the project.',
-        'Have a clear “before/after” state.',
+        'Have a clear "before/after" state.',
         'Allow a natural pause (you can stop for hours or overnight).',
         'Change tools, materials, or skill type.'
       ],
@@ -66,7 +66,7 @@ export const TOOLIO_PROJECT_STRUCTURE_STANDARD: ToolioProjectStructureStandard =
     },
     step: {
       name: 'Step',
-      description: 'The instructional unit — everything the user needs to complete one part of an operation.',
+      description: 'The instructional unit - everything the user needs to complete one part of an operation.',
       purpose: 'Deliver complete, actionable guidance.',
       contains: 'Instructions (Actions) with full metadata.',
       durationTypical: '5–30 minutes (standard step).',
@@ -87,7 +87,7 @@ export const TOOLIO_PROJECT_STRUCTURE_STANDARD: ToolioProjectStructureStandard =
       durationMax: 'Minutes.',
       countRules: 'Defined within a single step; not tracked independently at the project level.',
       mustRules: [
-        'Be specific and observable (e.g., “Turn wrench ¼ turn”).',
+        'Be specific and observable (e.g., "Turn wrench ¼ turn").',
         'Be written so a user can complete it in one continuous motion or focus block.'
       ],
       examples: ['Turn wrench ¼ turn', 'Feather brush outward', 'Press evenly']
