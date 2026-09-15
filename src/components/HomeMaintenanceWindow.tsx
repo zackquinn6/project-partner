@@ -1083,6 +1083,13 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             <Calendar className="h-4 w-4 text-primary shrink-0" />
                             <span>Calendar</span>
                           </Button>
+                          {/* Shown task count (updates with system + criticality filters) */}
+                          <span
+                            className="text-xs text-muted-foreground tabular-nums shrink-0 whitespace-nowrap md:ml-8"
+                            aria-live="polite"
+                          >
+                            {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
+                          </span>
                           {/* Mobile: system + criticality filter dropdowns */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -1098,14 +1105,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             <DropdownMenuContent align="start" className="max-h-[70vh] overflow-y-auto min-w-[12rem] w-[12rem] md:min-w-0 md:w-auto">
                               <DropdownMenuRadioGroup value={systemFilter} onValueChange={(v) => setSystemFilter(v as SystemKey | 'all')}>
                                 <DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
-                                {(Object.keys(SYSTEM_CONFIG) as SystemKey[]).map(sys => {
-                                  const count = tasks.filter(t => getSystemForCategory(t.category) === sys).length;
-                                  return (
-                                    <DropdownMenuRadioItem key={sys} value={sys}>
-                                      {SYSTEM_CONFIG[sys].label}{count > 0 ? ` (${count})` : ''}
-                                    </DropdownMenuRadioItem>
-                                  );
-                                })}
+                                {(Object.keys(SYSTEM_CONFIG) as SystemKey[]).map(sys => (
+                                  <DropdownMenuRadioItem key={sys} value={sys}>
+                                    {SYSTEM_CONFIG[sys].label}
+                                  </DropdownMenuRadioItem>
+                                ))}
                               </DropdownMenuRadioGroup>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1128,14 +1132,11 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                 onValueChange={(v) => setCriticalityFilter(v === 'all' ? 'all' : parseInt(v, 10) as 1 | 2 | 3)}
                               >
                                 <DropdownMenuRadioItem value="all">All criticality</DropdownMenuRadioItem>
-                                {([3, 2, 1] as const).map(level => {
-                                  const count = tasks.filter(t => t.criticality === level).length;
-                                  return (
-                                    <DropdownMenuRadioItem key={level} value={String(level)}>
-                                      {getCriticalityLabel(level)}{count > 0 ? ` (${count})` : ''}
-                                    </DropdownMenuRadioItem>
-                                  );
-                                })}
+                                {([3, 2, 1] as const).map(level => (
+                                  <DropdownMenuRadioItem key={level} value={String(level)}>
+                                    {getCriticalityLabel(level)}
+                                  </DropdownMenuRadioItem>
+                                ))}
                               </DropdownMenuRadioGroup>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1147,7 +1148,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                   key="all"
                                   variant={systemFilter === 'all' ? 'default' : 'outline'}
                                   size="sm"
-                                  className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:ml-8 shrink-0 text-xs font-semibold p-0 hidden md:flex"
+                                  className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 shrink-0 text-xs font-semibold p-0 hidden md:flex"
                                   onClick={() => setSystemFilter('all')}
                                   title="All"
                                 >
@@ -1157,7 +1158,6 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                               );
                             }
                             const Icon = SYSTEM_CONFIG[sys].icon;
-                            const count = tasks.filter(t => getSystemForCategory(t.category) === sys).length;
                             return (
                               <Button
                                 key={sys}
@@ -1165,11 +1165,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                 size="sm"
                                 className="h-8 w-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:gap-1.5 shrink-0 text-xs font-semibold p-0 hidden md:flex"
                                 onClick={() => setSystemFilter(sys)}
-                                title={`${SYSTEM_CONFIG[sys].label}${count > 0 ? ` (${count})` : ''}`}
+                                title={SYSTEM_CONFIG[sys].label}
                               >
                                 <Icon className="h-4 w-4 md:h-3.5 md:w-3.5 shrink-0" />
                                 <span className="hidden md:inline whitespace-nowrap">{SYSTEM_CONFIG[sys].label}</span>
-                                {count > 0 && <span className="hidden md:inline opacity-80">({count})</span>}
                               </Button>
                             );
                           })}
@@ -1179,24 +1178,18 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             { value: 3 as const, label: 'High' },
                             { value: 2 as const, label: 'Medium' },
                             { value: 1 as const, label: 'Low' },
-                          ]).map(({ value, label }, index) => {
-                            const count = value === 'all'
-                              ? tasks.length
-                              : tasks.filter(t => t.criticality === value).length;
-                            return (
-                              <Button
-                                key={`crit-${value}`}
-                                variant={criticalityFilter === value ? 'default' : 'outline'}
-                                size="sm"
-                                className={`h-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:gap-1.5 shrink-0 text-xs font-semibold hidden md:flex ${index === 0 ? 'md:ml-4' : ''}`}
-                                onClick={() => setCriticalityFilter(value)}
-                                title={`${label}${value !== 'all' && count > 0 ? ` (${count})` : ''}`}
-                              >
-                                <span className="whitespace-nowrap">{label}</span>
-                                {value !== 'all' && count > 0 && <span className="opacity-80">({count})</span>}
-                              </Button>
-                            );
-                          })}
+                          ]).map(({ value, label }, index) => (
+                            <Button
+                              key={`crit-${value}`}
+                              variant={criticalityFilter === value ? 'default' : 'outline'}
+                              size="sm"
+                              className={`h-8 md:h-8 md:w-auto md:min-h-0 md:px-3 md:gap-1.5 shrink-0 text-xs font-semibold hidden md:flex ${index === 0 ? 'md:ml-4' : ''}`}
+                              onClick={() => setCriticalityFilter(value)}
+                              title={label}
+                            >
+                              <span className="whitespace-nowrap">{label}</span>
+                            </Button>
+                          ))}
                         </div>
                       </div>
 
