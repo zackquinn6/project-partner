@@ -138,7 +138,7 @@ interface ProjectOverviewStepProps {
 }
 export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   onComplete,
-  isCompleted,
+  isCompleted: _isCompleted,
   checkedOutputs = new Set(),
   onOutputToggle,
   mode = 'kickoff',
