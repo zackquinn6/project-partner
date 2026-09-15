@@ -1456,9 +1456,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       printContent.style.backgroundColor = 'white';
       printContent.style.position = 'absolute';
       printContent.style.left = '-9999px';
+      const escapeHtml = (value: unknown) =>
+        String(value ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
       printContent.innerHTML = `
         <div style="font-family: Arial, sans-serif;">
-          <h1 style="margin-bottom: 20px; color: #333;">${project?.name || 'Project'} - Schedule</h1>
+          <h1 style="margin-bottom: 20px; color: #333;">${escapeHtml(project?.name || 'Project')} - Schedule</h1>
           <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
             <thead>
               <tr style="background-color: #f3f4f6; border-bottom: 2px solid #e5e7eb;">
@@ -1476,12 +1483,12 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         const worker = teamMembers.find(w => w.id === scheduledTask.workerId);
         return `
                     <tr style="border-bottom: 1px solid #e5e7eb;">
-                      <td style="padding: 8px; border: 1px solid #e5e7eb;">${task?.title || 'Unknown'}</td>
-                      <td style="padding: 8px; border: 1px solid #e5e7eb;">${worker?.name || 'Unknown'}</td>
-                      <td style="padding: 8px; border: 1px solid #e5e7eb;">${format(scheduledTask.startTime, 'MMM dd, h:mm a')}</td>
-                      <td style="padding: 8px; border: 1px solid #e5e7eb; color: #15803d; font-weight: 500;">${format(scheduledTask.targetCompletionDate, 'MMM dd, h:mm a')}</td>
-                      <td style="padding: 8px; border: 1px solid #e5e7eb; color: #b91c1c; font-weight: 500;">${format(scheduledTask.latestCompletionDate, 'MMM dd, h:mm a')}</td>
-                      <td style="padding: 8px; border: 1px solid #e5e7eb;">${scheduledTask.status}</td>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;">${escapeHtml(task?.title || 'Unknown')}</td>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;">${escapeHtml(worker?.name || 'Unknown')}</td>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;">${escapeHtml(format(scheduledTask.startTime, 'MMM dd, h:mm a'))}</td>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb; color: #15803d; font-weight: 500;">${escapeHtml(format(scheduledTask.targetCompletionDate, 'MMM dd, h:mm a'))}</td>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb; color: #b91c1c; font-weight: 500;">${escapeHtml(format(scheduledTask.latestCompletionDate, 'MMM dd, h:mm a'))}</td>
+                      <td style="padding: 8px; border: 1px solid #e5e7eb;">${escapeHtml(scheduledTask.status)}</td>
                     </tr>
                   `;
       }).join('')}

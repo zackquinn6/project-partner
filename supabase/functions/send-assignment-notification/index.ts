@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { verifyAuth } from '../_shared/auth.ts'
+import { escapeHtml } from '../_shared/validation.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,76 +22,113 @@ interface Notification {
 
 interface RequestBody {
   notifications: Notification[];
-  userEmail?: string;
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_NOTIFICATIONS = 25;
+const MAX_ASSIGNMENTS = 50;
+
+const clamp = (value: unknown, max: number) => String(value ?? '').slice(0, max);
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Verify authentication
     const user = await verifyAuth(req);
-    
-    // Parse request body
-    const { notifications, userEmail }: RequestBody = await req.json();
 
-    if (!notifications || notifications.length === 0) {
+    const { notifications }: RequestBody = await req.json();
+
+    if (!Array.isArray(notifications) || notifications.length === 0) {
       return new Response(
         JSON.stringify({ error: 'No notifications provided' }),
-        { 
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get Resend API key
+    if (notifications.length > MAX_NOTIFICATIONS) {
+      return new Response(
+        JSON.stringify({ error: 'Too many notifications in one request' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Build the set of recipients this caller is allowed to email:
+    // their own address plus the people/contractors saved on their own account.
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
+
+    const allowedRecipients = new Set<string>();
+    if (user.email) allowedRecipients.add(user.email.toLowerCase());
+
+    const [{ data: people }, { data: contractors }] = await Promise.all([
+      admin.from('home_task_people').select('email').eq('user_id', user.id),
+      admin.from('user_contractors').select('email').eq('user_id', user.id),
+    ]);
+
+    for (const row of [...(people ?? []), ...(contractors ?? [])]) {
+      const email = (row as { email?: string | null }).email;
+      if (email) allowedRecipients.add(email.toLowerCase());
+    }
+
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-    
+
     if (!RESEND_API_KEY) {
       console.error('RESEND_API_KEY not configured - notifications disabled');
-      // Don't fail - just log and return success
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           message: 'Assignments saved (email notifications not configured)',
           emailsSent: 0
         }),
-        { 
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     let emailsSent = 0;
+    let skipped = 0;
     const errors: string[] = [];
 
-    // Send email notifications
     for (const notification of notifications) {
-      if (!notification.email) continue;
+      const email = typeof notification?.email === 'string' ? notification.email.trim().toLowerCase() : '';
+      if (!email) continue;
 
-      const assignmentsList = notification.assignments
+      if (email.length > 254 || !EMAIL_RE.test(email) || !allowedRecipients.has(email)) {
+        skipped++;
+        console.warn('Blocked assignment notification to a recipient outside the caller\'s own contacts');
+        continue;
+      }
+
+      const assignments = Array.isArray(notification.assignments)
+        ? notification.assignments.slice(0, MAX_ASSIGNMENTS)
+        : [];
+
+      const assignmentsList = assignments
         .map(a => {
-          if (a.subtaskTitle) {
-            return `<li><strong>${a.taskTitle}</strong>: ${a.subtaskTitle}</li>`;
-          }
-          return `<li>${a.taskTitle}</li>`;
+          const taskTitle = escapeHtml(clamp(a?.taskTitle, 200));
+          const subtaskTitle = a?.subtaskTitle ? escapeHtml(clamp(a.subtaskTitle, 200)) : '';
+          return subtaskTitle
+            ? `<li><strong>${taskTitle}</strong>: ${subtaskTitle}</li>`
+            : `<li>${taskTitle}</li>`;
         })
         .join('');
+
+      const personName = escapeHtml(clamp(notification?.personName, 120)) || 'there';
+      const senderEmail = escapeHtml(clamp(user.email ?? '', 254)) || 'your project manager';
 
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">New Task Assignments</h2>
-          <p>Hi ${notification.personName},</p>
+          <p>Hi ${personName},</p>
           <p>You have been assigned the following tasks:</p>
           <ul style="line-height: 1.8;">
             ${assignmentsList}
           </ul>
           <p style="margin-top: 20px; color: #666; font-size: 14px;">
-            This notification was sent by ${userEmail || 'your project manager'}
+            This notification was sent by ${senderEmail}
           </p>
         </div>
       `;
@@ -104,7 +142,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             from: 'Task Manager <noreply@resend.dev>',
-            to: [notification.email],
+            to: [email],
             subject: 'New Task Assignments',
             html: htmlContent,
           }),
@@ -113,45 +151,39 @@ serve(async (req) => {
         if (emailResponse.ok) {
           emailsSent++;
         } else {
-          const errorData = await emailResponse.text();
-          errors.push(`Failed to send email to ${notification.email}: ${errorData}`);
+          console.error('Resend rejected an assignment notification', await emailResponse.text());
+          errors.push('One notification could not be delivered');
         }
       } catch (error) {
-        errors.push(`Error sending email to ${notification.email}: ${error.message}`);
+        console.error('Error sending assignment notification:', error);
+        errors.push('One notification could not be delivered');
       }
     }
 
-    // SMS notifications would go here when Twilio is configured
-    // For now, we'll just log that SMS would be sent
     const smsCount = notifications.filter(n => n.phone && !n.email).length;
     if (smsCount > 0) {
       console.log(`${smsCount} SMS notifications would be sent (not yet configured)`);
     }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         message: 'Notifications processed',
         emailsSent,
+        skipped,
         smsNotConfigured: smsCount,
         errors: errors.length > 0 ? errors : undefined
       }),
-      { 
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Error in send-assignment-notification:', error);
-    
+    const message = error instanceof Error ? error.message : '';
+    const unauthorized = message === 'Missing authorization header' || message === 'Invalid or expired token';
+
     return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Internal server error'
-      }),
-      { 
-        status: error.message === 'Missing authorization header' || error.message === 'Invalid or expired token' ? 401 : 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      JSON.stringify({ error: unauthorized ? 'Authentication required' : 'Request could not be processed' }),
+      { status: unauthorized ? 401 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 })

@@ -737,13 +737,11 @@ CRITICAL RISK RESTRICTION:
     
     const statusCode = error instanceof Error && 
       (error.message.includes('authorization') || error.message.includes('token')) ? 401 : 500;
-    const message = statusCode === 401 ? 'Authentication required' : 
-                   error instanceof Error ? error.message : 'Project generation failed';
-    
+    const message = statusCode === 401 ? 'Authentication required' : 'Project generation failed';
+
     return new Response(JSON.stringify({ 
       success: false,
-      error: message,
-      details: error instanceof Error ? error.stack : String(error)
+      error: message
     }), {
       status: statusCode,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

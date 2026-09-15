@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { verifyAuth } from "../_shared/auth.ts";
 import { escapeHtml } from "../_shared/validation.ts";
 
@@ -29,7 +30,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    await verifyAuth(req);
+    const user = await verifyAuth(req);
     const { to_email, certificate_data }: CertificateEmailRequest = await req.json();
 
     if (
@@ -45,6 +46,33 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    // Only allow sending to the caller's own address or to contacts saved on their account,
+    // so the endpoint cannot be used as an open email relay.
+    const recipient = to_email.trim().toLowerCase();
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } },
+    );
+
+    const allowed = new Set<string>();
+    if (user.email) allowed.add(user.email.toLowerCase());
+    const [{ data: people }, { data: contractors }] = await Promise.all([
+      admin.from("home_task_people").select("email").eq("user_id", user.id),
+      admin.from("user_contractors").select("email").eq("user_id", user.id),
+    ]);
+    for (const row of [...(people ?? []), ...(contractors ?? [])]) {
+      const email = (row as { email?: string | null }).email;
+      if (email) allowed.add(email.toLowerCase());
+    }
+
+    if (!allowed.has(recipient)) {
+      return new Response(
+        JSON.stringify({ error: "Recipient not allowed" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
+
     const projectName = String(certificate_data.project_name ?? "").slice(0, 200);
     const difficulty = certificate_data.difficulty
       ? String(certificate_data.difficulty).slice(0, 100)
@@ -56,7 +84,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await resend.emails.send({
       from: "Project Partner <onboarding@resend.dev>",
-      to: [to_email],
+      to: [recipient],
       subject: `🏆 Certificate of Completion: ${projectName.replace(/[\r\n]/g, " ")}`,
       html: `
         <!DOCTYPE html>
