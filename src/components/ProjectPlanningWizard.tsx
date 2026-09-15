@@ -26,7 +26,7 @@ import { QualityControlStep } from './PlanningWizardSteps/QualityControlStep';
 import { ExpertSupportStep } from './PlanningWizardSteps/ExpertSupportStep';
 import { CommunicationPlanStep } from './PlanningWizardSteps/CommunicationPlanStep';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
-import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
+import { parseCustomizationDecisions, isPlanningScopeComplete } from '@/utils/customizationDecisions';
 import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
 import { PlanningJourneyHeader } from '@/components/PlanningJourneyHeader';
 import { PlanningConfirmationStep } from './PlanningWizardSteps/PlanningConfirmationStep';
@@ -386,10 +386,9 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     wizardSteps.length > 0 &&
     wizardSteps.every((_, i) => completedSteps.has(i));
 
-  // First-pass: auto-open current incomplete tool once when landed on (no post-close chain).
+  // Auto-open the current incomplete tool within 3s of first landing on that step.
   useEffect(() => {
     if (!open) return;
-    if (planningWizardFirstPassCompleted) return;
     if (wizardPhase !== 'steps') return;
     if (isStepCompleted(currentStep)) return;
 
@@ -397,14 +396,14 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     if (!toolId) return;
     if (lastAutoOpenedStepRef.current === currentStep) return;
 
-    lastAutoOpenedStepRef.current = currentStep;
     if (autoOpenTimerRef.current) {
       clearTimeout(autoOpenTimerRef.current);
     }
     autoOpenTimerRef.current = setTimeout(() => {
       autoOpenTimerRef.current = null;
+      lastAutoOpenedStepRef.current = currentStep;
       openPlanningTool(toolId, () => handleStepComplete(currentStep));
-    }, 0);
+    }, 3000);
 
     return () => {
       if (autoOpenTimerRef.current) {
@@ -417,22 +416,32 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     wizardPhase,
     currentStep,
     wizardSteps,
-    planningWizardFirstPassCompleted,
     openPlanningTool,
     handleStepComplete,
     completedSteps,
   ]);
 
+  const scopeStepIndex = useMemo(
+    () => wizardSteps.findIndex((step) => step.toolId === 'scope'),
+    [wizardSteps]
+  );
+
+  const isScopeComplete = useMemo(() => {
+    if (scopeStepIndex < 0) return true;
+    if (completedSteps.has(scopeStepIndex)) return true;
+    return isPlanningScopeComplete(currentProjectRun?.customization_decisions);
+  }, [scopeStepIndex, completedSteps, currentProjectRun?.customization_decisions]);
+
+  /** Free navigation among tools after Scope is complete; Scope is always reachable. */
   const canVisitPlanningStep = (index: number) => {
     if (index < 0 || index >= wizardSteps.length) return false;
-    if (planningWizardFirstPassCompleted) return true;
-    if (index === currentStep) return true;
-    return completedSteps.has(index);
+    if (wizardSteps[index]?.toolId === 'scope') return true;
+    return isScopeComplete;
   };
 
   const goToPlanningStep = (index: number) => {
     if (!canVisitPlanningStep(index)) {
-      toast.message('Finish the current tool to continue');
+      toast.message('Complete Scope before opening other planning tools');
       return;
     }
     if (autoOpenTimerRef.current) {
@@ -471,7 +480,12 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     }
 
     if (currentStep < wizardSteps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      const nextIndex = currentStep + 1;
+      if (!canVisitPlanningStep(nextIndex)) {
+        toast.message('Complete Scope before opening other planning tools');
+        return;
+      }
+      setCurrentStep(nextIndex);
       return;
     }
 
@@ -729,9 +743,6 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       : wizardSteps[currentStep]?.description?.trim() ||
         wizardSteps[currentStep]?.title ||
         '';
-
-  const currentStepDoneWhen =
-    wizardPhase === 'steps' ? wizardSteps[currentStep]?.doneWhen?.trim() || '' : '';
 
   if (layout === 'fullscreen' && !open) {
     return null;
@@ -1110,14 +1121,9 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
             </div>
           </div>
 
-          {(currentStepPurpose || currentStepDoneWhen) && wizardPhase === 'steps' ? (
-            <div className="space-y-0.5 border-t border-border/60 pt-1.5">
-              {currentStepPurpose ? (
-                <p className="text-xs text-muted-foreground sm:text-sm">{currentStepPurpose}</p>
-              ) : null}
-              {currentStepDoneWhen ? (
-                <p className="text-[11px] text-muted-foreground/90">Done when: {currentStepDoneWhen}</p>
-              ) : null}
+          {currentStepPurpose && wizardPhase === 'steps' ? (
+            <div className="border-t border-border/60 pt-1.5">
+              <p className="text-xs text-muted-foreground sm:text-sm">{currentStepPurpose}</p>
             </div>
           ) : wizardPhase === 'confirm' && currentStepPurpose ? (
             <div className="border-t border-border/60 pt-1.5">
