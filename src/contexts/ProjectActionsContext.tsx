@@ -1072,11 +1072,12 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       (projectRun as any).instruction_level_preference ?? null
     );
 
-    const planningToolsSignatureForKey = (raw: unknown) => {
-      const d = parseCustomizationDecisions(raw);
-      const tools = d.selected_planning_tools;
-      return JSON.stringify(Array.isArray(tools) ? tools : []);
-    };
+    // Full decisions blob (spaces, choices, planning tools, etc.) - not just selected_planning_tools.
+    // Keying only on tools caused Save and Close to be skipped after kickoff set the same tools list.
+    const customizationDecisionsKey = JSON.stringify(
+      parseCustomizationDecisions(projectRun.customization_decisions)
+    );
+    const homeIdKey = String((projectRun as any).home_id ?? '');
 
     const updateKeyParts = [
       projectRun.id,
@@ -1092,7 +1093,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       scheduleOptimizationMethodKey,
       qualityControlSettingsKey,
       instructionLevelPreferenceKey,
-      planningToolsSignatureForKey(projectRun.customization_decisions),
+      customizationDecisionsKey,
+      homeIdKey,
       ...(shouldIncludeProgressReportingStyleKey ? [progressReportingStyleKey] : [])
     ];
 
@@ -1152,14 +1154,14 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       qcIncoming !== undefined &&
       JSON.stringify(mergeQualityControlSettings(qcIncoming)) !==
         JSON.stringify(mergeQualityControlSettings(currentProjectRun?.quality_control_settings ?? null));
-    const planningToolsSignature = (raw: unknown) => {
-      const d = parseCustomizationDecisions(raw);
-      const tools = d.selected_planning_tools;
-      return JSON.stringify(Array.isArray(tools) ? tools : []);
-    };
-    const isSelectedPlanningToolsChange =
-      planningToolsSignature(currentProjectRun?.customization_decisions) !==
-      planningToolsSignature(projectRun.customization_decisions);
+    const previousCustomizationDecisionsKey = JSON.stringify(
+      parseCustomizationDecisions(currentProjectRun?.customization_decisions)
+    );
+    const isCustomizationDecisionsChange =
+      customizationDecisionsKey !== previousCustomizationDecisionsKey;
+    const isHomeIdChange =
+      String((projectRun as any).home_id ?? '') !==
+      String((currentProjectRun as any)?.home_id ?? '');
     const isInstructionLevelPreferenceUpdate =
       (projectRun as any).instruction_level_preference !==
       (currentProjectRun as any)?.instruction_level_preference;
@@ -1179,7 +1181,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       isKickoffCompletion ||
       isKickoffStepProgressUpdate ||
       isQualityControlSettingsUpdate ||
-      isSelectedPlanningToolsChange ||
+      isCustomizationDecisionsChange ||
+      isHomeIdChange ||
       isInstructionLevelPreferenceUpdate ||
       isStatusChange;
     
@@ -1436,11 +1439,14 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     };
     
     if (requiresImmediateSave) {
-      // Save immediately for budget_data, issue_reports, time_tracking
-      saveToDatabase();
+      // Await so callers (e.g. Project Customizer Save and Close) finish before
+      // dispatching refetch events that would otherwise read stale DB rows.
+      await saveToDatabase();
     } else {
       // Debounce other updates
-      updateTimeoutRef.current = setTimeout(saveToDatabase, 300);
+      updateTimeoutRef.current = setTimeout(() => {
+        void saveToDatabase();
+      }, 300);
     }
   }, [isGuest, updateGuestProjectRun, user, projectRuns, updateProjectRunsCache, currentProjectRun, setCurrentProjectRun]);
 
