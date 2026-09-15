@@ -25,14 +25,29 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { email, action, ip_address, user_agent }: RateLimitRequest = await req.json();
+    const body: RateLimitRequest = await req.json();
+    const action = body?.action;
+    const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
 
-    if (!email || !action) {
+    if (
+      !email ||
+      email.length > 254 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+      (action !== 'check' && action !== 'record_failure')
+    ) {
       return new Response(
-        JSON.stringify({ error: 'Email and action are required' }),
+        JSON.stringify({ error: 'A valid email and action are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Request metadata is taken from the connection itself, never from the body,
+    // so callers cannot forge the origin of a recorded failure.
+    const ip_address =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      req.headers.get('cf-connecting-ip') ||
+      null;
+    const user_agent = req.headers.get('user-agent')?.slice(0, 500) || null;
 
     if (action === 'check') {
       // Check if rate limit is exceeded
