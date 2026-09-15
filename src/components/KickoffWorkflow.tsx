@@ -721,6 +721,48 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     await handleStepComplete(currentKickoffStep);
   };
 
+  const renderSkipPlanningEscape = () => {
+    if (isMobile) {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="h-12 min-h-12 w-full px-2 text-sm sm:h-full sm:min-h-[3.25rem] sm:px-3 sm:py-3"
+            >
+              <MoreHorizontal className="mr-1.5 h-4 w-4 shrink-0 sm:mr-2" />
+              More
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-72">
+            <DropdownMenuItem
+              onSelect={() => {
+                onKickoffComplete({ mode: 'skip-to-workflow' });
+              }}
+            >
+              Skip planning and start project
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    }
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        className="h-12 min-h-12 w-full border-muted-foreground/40 px-3 text-sm text-muted-foreground hover:bg-muted/40 sm:h-full sm:min-h-[3.25rem] sm:py-3"
+        onClick={() => {
+          onKickoffComplete({ mode: 'skip-to-workflow' });
+        }}
+      >
+        <span className="text-left leading-tight sm:line-clamp-2">Skip planning and start project</span>
+      </Button>
+    );
+  };
+
   const renderSecondaryEscape = () => {
     if (currentStepId === 'kickoff-step-1') {
       if (isMobile) {
@@ -767,46 +809,12 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       );
     }
 
-    if (currentStepId === 'kickoff-step-4') {
-      if (isMobile) {
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="h-12 min-h-12 w-full px-2 text-sm sm:h-full sm:min-h-[3.25rem] sm:px-3 sm:py-3"
-              >
-                <MoreHorizontal className="mr-1.5 h-4 w-4 shrink-0 sm:mr-2" />
-                More
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-72">
-              <DropdownMenuItem
-                onSelect={() => {
-                  onKickoffComplete({ mode: 'skip-to-workflow' });
-                }}
-              >
-                Skip planning: go to project
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      }
-      return (
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          className="h-12 min-h-12 w-full border-muted-foreground/40 px-3 text-sm text-muted-foreground hover:bg-muted/40 sm:h-full sm:min-h-[3.25rem] sm:py-3"
-          onClick={() => {
-            onKickoffComplete({ mode: 'skip-to-workflow' });
-          }}
-        >
-          <span className="text-left leading-tight sm:line-clamp-2">Skip planning: go to project</span>
-        </Button>
-      );
+    if (
+      currentStepId === 'kickoff-step-2' ||
+      currentStepId === 'kickoff-step-3' ||
+      currentStepId === 'kickoff-step-4'
+    ) {
+      return renderSkipPlanningEscape();
     }
 
     return <div className="min-h-12 min-w-0 flex-[3] basis-0" aria-hidden />;
@@ -815,7 +823,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   const renderPrimaryActions = () => {
     if (!isStepCompleted(currentKickoffStep)) {
       const showSecondary =
-        currentStepId === 'kickoff-step-1' || currentStepId === 'kickoff-step-4';
+        currentStepId === 'kickoff-step-1' ||
+        currentStepId === 'kickoff-step-2' ||
+        currentStepId === 'kickoff-step-3' ||
+        currentStepId === 'kickoff-step-4';
       return (
         <div className="flex min-h-12 w-full flex-row items-stretch gap-2 sm:min-h-[3.25rem] sm:gap-3">
           {showSecondary ? (
