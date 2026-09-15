@@ -11,7 +11,7 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import { ChevronLeft, ChevronRight, CheckCircle, Settings2, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, CheckCircle, Settings2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useProject } from '@/contexts/ProjectContext';
 import { PLANNING_TOOLS, PLANNING_TOOLS_DISPLAY_ORDER, normalizePlanningToolsSelection } from './KickoffSteps/ProjectToolsStep';
@@ -200,6 +200,9 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     wasteRemovalEnabled,
   ]);
 
+  const wizardStepsRef = useRef(wizardSteps);
+  wizardStepsRef.current = wizardSteps;
+
   const persistCompletedToolIds = useCallback(
     (nextCompleted: Set<number>, markFirstPass?: boolean) => {
       if (!currentProjectRun) return;
@@ -372,14 +375,31 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     }
 
     setCompletedSteps((prev) => {
+      const wasAlreadyComplete = prev.has(stepIndex);
       const nextCompleted = new Set(prev);
       nextCompleted.add(stepIndex);
       // Persist after computing the next set (avoid side effects reading stale state).
-      queueMicrotask(() => persistCompletedToolIds(nextCompleted));
+      queueMicrotask(() => {
+        persistCompletedToolIds(nextCompleted);
+        // First-time Save and Close: advance so the next tool can auto-open after 2s.
+        if (wasAlreadyComplete) return;
+
+        const steps = wizardStepsRef.current;
+        const nextIndex = stepIndex + 1;
+        if (nextIndex < steps.length) {
+          setWizardPhase('steps');
+          setCurrentStep(nextIndex);
+          return;
+        }
+
+        if (steps.length > 0 && steps.every((_, i) => nextCompleted.has(i))) {
+          markPlanningWizardFirstPassComplete();
+          setWizardPhase('confirm');
+        }
+      });
       return nextCompleted;
     });
-    // Stay on completed step - sticky Continue advances (no auto-open chain).
-  }, [persistCompletedToolIds]);
+  }, [persistCompletedToolIds, markPlanningWizardFirstPassComplete]);
 
   const isStepCompleted = (stepIndex: number) => completedSteps.has(stepIndex);
 
@@ -501,25 +521,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     }
     if (wizardPhase === 'confirm') return;
 
-    if (!isStepCompleted(currentStep)) {
-      openPlanningTool(wizardSteps[currentStep]?.toolId ?? null, () => handleStepComplete(currentStep));
-      return;
-    }
-
-    if (currentStep < wizardSteps.length - 1) {
-      const nextIndex = currentStep + 1;
-      if (!canVisitPlanningStep(nextIndex)) {
-        toast.message('Complete Scope before opening other planning tools');
-        return;
-      }
-      setCurrentStep(nextIndex);
-      return;
-    }
-
-    if (allWorkflowStepsComplete) {
-      markPlanningWizardFirstPassComplete();
-      setWizardPhase('confirm');
-    }
+    openPlanningTool(wizardSteps[currentStep]?.toolId ?? null, () => handleStepComplete(currentStep));
   };
 
   const handleSkipToWorkflow = () => {
@@ -820,14 +822,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     }
 
     const stepDone = isStepCompleted(currentStep);
-    const isLast = currentStep >= wizardSteps.length - 1;
     const onScopeStep = currentToolId === 'scope';
     const showSkipToWorkflow = Boolean(onGoToWorkflow) && isScopeComplete && !onScopeStep;
-    const primaryLabel = !stepDone
-      ? 'Continue'
-      : isLast
-        ? 'Continue to Summary'
-        : 'Continue';
 
     return (
       <div className="flex h-[4.75rem] w-full flex-col justify-between">
@@ -843,14 +839,25 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
           ) : null}
         </div>
         <div className="h-14 w-full shrink-0">
-          <Button
-            type="button"
-            className={primaryButtonClass}
-            disabled={!currentToolId && !stepDone}
-            onClick={handleContinueFromSticky}
-          >
-            {primaryLabel}
-          </Button>
+          {stepDone ? (
+            <button
+              type="button"
+              onClick={handleContinueFromSticky}
+              className="flex h-14 min-h-14 max-h-14 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl border border-success/30 bg-success/10 px-3 text-sm font-semibold leading-none text-success"
+            >
+              <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              Step complete
+            </button>
+          ) : (
+            <Button
+              type="button"
+              className={primaryButtonClass}
+              disabled={!currentToolId}
+              onClick={handleContinueFromSticky}
+            >
+              Continue
+            </Button>
+          )}
         </div>
       </div>
     );
