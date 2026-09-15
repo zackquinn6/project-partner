@@ -76,7 +76,10 @@ export function PoliciesWindow({ open, onOpenChange }: PoliciesWindowProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent
+        className="z-[210] max-h-[85vh] max-w-2xl flex flex-col"
+        overlayClassName="z-[200]"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />

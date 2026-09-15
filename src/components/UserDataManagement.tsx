@@ -3,16 +3,107 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { PoliciesWindow } from '@/components/PoliciesWindow';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Trash2, AlertTriangle, Shield } from 'lucide-react';
+import { Download, Trash2, AlertTriangle } from 'lucide-react';
+import * as XLSX from 'xlsx';
+
+function excelCellValue(value: unknown): string | number | boolean | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+  return JSON.stringify(value);
+}
+
+function excelRowFromObject(obj: Record<string, unknown>): Record<string, string | number | boolean | null> {
+  const row: Record<string, string | number | boolean | null> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    row[key] = excelCellValue(value);
+  }
+  return row;
+}
+
+function sheetNameFromKey(key: string): string {
+  const cleaned = key.replace(/[\\/?*[\]]/g, '_').trim();
+  return (cleaned || 'Sheet').slice(0, 31);
+}
+
+function workbookFromExportData(data: unknown): XLSX.WorkBook {
+  const workbook = XLSX.utils.book_new();
+
+  const appendSheet = (name: string, rows: Record<string, unknown>[]) => {
+    const sheet = XLSX.utils.json_to_sheet(rows.length > 0 ? rows : [{ info: 'No records' }]);
+    XLSX.utils.book_append_sheet(workbook, sheet, sheetNameFromKey(name));
+  };
+
+  if (data === null || data === undefined) {
+    appendSheet('Export', [{ info: 'No data' }]);
+    return workbook;
+  }
+
+  if (Array.isArray(data)) {
+    appendSheet(
+      'Data',
+      data.map((item) =>
+        item && typeof item === 'object' && !Array.isArray(item)
+          ? excelRowFromObject(item as Record<string, unknown>)
+          : { value: excelCellValue(item) }
+      )
+    );
+    return workbook;
+  }
+
+  if (typeof data !== 'object') {
+    appendSheet('Export', [{ value: excelCellValue(data) }]);
+    return workbook;
+  }
+
+  const record = data as Record<string, unknown>;
+  const summaryRows: { Field: string; Value: string | number | boolean | null }[] = [];
+  let sheetCount = 0;
+
+  for (const [key, value] of Object.entries(record)) {
+    if (Array.isArray(value)) {
+      appendSheet(
+        key,
+        value.map((item) =>
+          item && typeof item === 'object' && !Array.isArray(item)
+            ? excelRowFromObject(item as Record<string, unknown>)
+            : { value: excelCellValue(item) }
+        )
+      );
+      sheetCount += 1;
+      continue;
+    }
+
+    if (value && typeof value === 'object') {
+      appendSheet(key, [excelRowFromObject(value as Record<string, unknown>)]);
+      sheetCount += 1;
+      continue;
+    }
+
+    summaryRows.push({ Field: key, Value: excelCellValue(value) });
+  }
+
+  if (summaryRows.length > 0) {
+    appendSheet('Summary', summaryRows);
+    sheetCount += 1;
+  }
+
+  if (sheetCount === 0) {
+    appendSheet('Export', [{ info: 'No data' }]);
+  }
+
+  return workbook;
+}
 
 export const UserDataManagement: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [policiesOpen, setPoliciesOpen] = useState(false);
 
   const exportUserData = async () => {
     if (!user) return;
@@ -25,18 +116,10 @@ export const UserDataManagement: React.FC = () => {
 
       if (error) throw error;
 
-      // Create and download JSON file
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `user-data-export-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-          } catch (error) {
+      const workbook = workbookFromExportData(data);
+      const filename = `user-data-export-${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, filename);
+    } catch (error) {
       console.error('Error exporting user data:', error);
       toast({
         title: "Error",
@@ -88,7 +171,7 @@ export const UserDataManagement: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Download a complete copy of all your personal data including profile, project runs, and role assignments in JSON format.
+              Download a complete copy of all your personal data including profile, project runs, and role assignments in Excel format.
             </p>
             <Button onClick={exportUserData} disabled={loading} size="sm">
               <Download className="h-3 w-3 mr-2" />
@@ -106,16 +189,15 @@ export const UserDataManagement: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Alert className="py-2">
-              <AlertTriangle className="h-3 w-3" />
+            <Alert
+              variant="destructive"
+              className="flex items-start gap-2 py-2 [&>svg]:static [&>svg]:left-auto [&>svg]:top-auto [&>svg~*]:pl-0 [&>svg+div]:translate-y-0"
+            >
+              <AlertTriangle className="h-4 w-4 shrink-0" />
               <AlertDescription className="text-xs">
-                <strong>Warning:</strong> Irreversible action. Permanently removes profile, project runs, and role assignments.
+                Permanently removes profile, project runs, and all other account data.
               </AlertDescription>
             </Alert>
-            
-            <p className="text-xs text-muted-foreground">
-              Permanently delete all personal data. Complies with GDPR "right to erasure" requirements.
-            </p>
 
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <DialogTrigger asChild>
@@ -162,29 +244,20 @@ export const UserDataManagement: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Privacy Information */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Your Privacy Rights</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xs text-muted-foreground space-y-2">
-              <p>
-                <strong>Data Protection:</strong> RLS policies ensure you only access your own information.
-              </p>
-              <p>
-                <strong>Data Retention:</strong> Session data auto-cleaned after 90 days. Profile data retained until deleted.
-              </p>
-              <p>
-                <strong>Admin Access:</strong> Admins view audit logs but need authorization for personal project data.
-              </p>
-              <p>
-                <strong>Security Monitoring:</strong> Login attempts and sessions monitored for account protection.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <p className="text-xs text-muted-foreground">
+          Review how we handle your information in our{' '}
+          <button
+            type="button"
+            className="text-primary underline underline-offset-2 hover:opacity-80"
+            onClick={() => setPoliciesOpen(true)}
+          >
+            Privacy Policy
+          </button>
+          .
+        </p>
       </div>
+
+      <PoliciesWindow open={policiesOpen} onOpenChange={setPoliciesOpen} />
     </div>
   );
 };
