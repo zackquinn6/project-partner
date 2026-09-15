@@ -850,60 +850,57 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   };
 
   const renderPrimaryActions = () => {
-    /** Fixed footer geometry so the continue control does not jump between steps. */
-    const footerRowClass =
-      'grid h-14 w-full grid-cols-[minmax(0,11.5rem)_minmax(0,1fr)] items-center gap-3';
+    /** Full-width continue + reserved escape row so the primary control never shifts. */
     const primaryButtonClass =
-      'font-display h-14 min-h-14 w-full px-3 text-sm font-semibold';
+      'font-display h-14 min-h-14 w-full shrink-0 px-3 text-sm font-semibold';
+
+    let primary: React.ReactNode;
+    let escape: React.ReactNode = null;
 
     if (!isStepCompleted(currentKickoffStep)) {
-      const escape = renderSecondaryEscape();
-      return (
-        <div className={footerRowClass}>
-          <div className="flex min-w-0 items-center justify-start">{escape}</div>
-          <Button
-            onClick={() => {
-              void handlePrimaryContinue();
-            }}
-            size="lg"
-            disabled={personalizeBlocked}
-            className={primaryButtonClass}
-          >
-            {continueLabel}
-          </Button>
-        </div>
+      escape = renderSecondaryEscape();
+      primary = (
+        <Button
+          onClick={() => {
+            void handlePrimaryContinue();
+          }}
+          size="lg"
+          disabled={personalizeBlocked}
+          className={primaryButtonClass}
+        >
+          {continueLabel}
+        </Button>
       );
-    }
-
-    if (currentStepId === 'kickoff-step-4' && onReturnToPlanningStudio) {
-      return (
-        <div className={footerRowClass}>
-          <div className="min-w-0" aria-hidden />
-          <Button
-            type="button"
-            size="lg"
-            className={primaryButtonClass}
-            onClick={() => {
-              void handleReturnToPlanningStudio();
-            }}
-          >
-            Save tools & Open Planning Studio
-          </Button>
-        </div>
+    } else if (currentStepId === 'kickoff-step-4' && onReturnToPlanningStudio) {
+      primary = (
+        <Button
+          type="button"
+          size="lg"
+          className={primaryButtonClass}
+          onClick={() => {
+            void handleReturnToPlanningStudio();
+          }}
+        >
+          Save tools & Open Planning Studio
+        </Button>
       );
-    }
-
-    return (
-      <div className={footerRowClass}>
-        <div className="min-w-0" aria-hidden />
+    } else {
+      primary = (
         <button
           type="button"
           onClick={() => goToKickoffStep(currentKickoffStep)}
-          className="flex h-14 min-h-14 w-full items-center justify-center gap-1.5 rounded-md border border-success/30 bg-success/10 px-3 text-sm text-success"
+          className="flex h-14 min-h-14 w-full shrink-0 items-center justify-center gap-1.5 rounded-md border border-success/30 bg-success/10 px-3 text-sm text-success"
         >
           <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
           Step complete - tap to edit
         </button>
+      );
+    }
+
+    return (
+      <div className="flex w-full flex-col gap-2">
+        {primary}
+        <div className="flex h-5 shrink-0 items-center justify-center">{escape}</div>
       </div>
     );
   };
@@ -918,7 +915,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       : 'Project');
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-auto md:overflow-visible">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:min-h-[min(720px,calc(100dvh-5rem))]">
       <div className="flex shrink-0 items-start justify-between gap-2">
         <Card className="min-w-0 flex-1">
           <CardContent className="space-y-2 p-2.5 sm:p-3">
@@ -985,21 +982,20 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                   );
                 })}
               </div>
-              {currentStepPromise ? (
-                <p className="text-sm text-muted-foreground">{currentStepPromise}</p>
-              ) : null}
+              {/* Fixed promise slot so step copy length does not shift the shell. */}
+              <p className="min-h-10 text-sm leading-snug text-muted-foreground">
+                {currentStepPromise ?? '\u00a0'}
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col md:min-h-[min(560px,70vh)]">
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] -mx-2 px-2 pb-2 sm:mx-0 sm:px-0 sm:pb-4 md:flex-none md:overflow-visible md:pb-0">
-          {renderCurrentStep()}
-        </div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
+        {renderCurrentStep()}
       </div>
 
-      <Card className="sticky bottom-0 z-10 shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:static md:border md:bg-card md:backdrop-blur-none">
+      <Card className="z-10 shrink-0 border-t bg-background">
         <CardContent className="p-2.5 sm:p-4">{renderPrimaryActions()}</CardContent>
       </Card>
     </div>
