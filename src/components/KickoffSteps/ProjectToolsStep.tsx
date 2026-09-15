@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -92,6 +93,20 @@ export const PLANNING_TOOLS: {
 ];
 
 export type PlanningToolId = (typeof PLANNING_TOOL_IDS)[number];
+
+/** Kickoff selection card artwork under /public/planning-tools. */
+export const PLANNING_TOOL_GRAPHICS: Record<PlanningToolId, string> = {
+  scope: '/planning-tools/scope.png',
+  schedule: '/planning-tools/schedule.png',
+  communication_plan: '/planning-tools/communication_plan.png',
+  risk: '/planning-tools/risk.png',
+  budget: '/planning-tools/budget.png',
+  shopping_list: '/planning-tools/shopping_list.png',
+  tool_rentals: '/planning-tools/tool_rentals.png',
+  waste_removal: '/planning-tools/waste_removal.png',
+  quality_control: '/planning-tools/quality_control.png',
+  expert_support: '/planning-tools/expert_support.png',
+};
 
 /** Shared display/walk-through order for Discover step 4 and Planning Studio. */
 export const PLANNING_TOOLS_DISPLAY_ORDER: PlanningToolId[] = [
@@ -362,67 +377,70 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
 
       <div
         className={
-          compact ? 'grid gap-2 sm:grid-cols-1 md:grid-cols-2' : 'grid gap-3 sm:grid-cols-1 md:grid-cols-2'
+          compact
+            ? 'grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4'
+            : 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4'
         }
       >
         {toolsToShow.map(({ id, label, benefit }) => {
           const isScope = id === 'scope';
           const isChecked = selected.has(id);
+          const blurb = isScope ? 'Make key decisions' : benefit;
           return (
-            <Card
+            <button
               key={id}
-              className={
-                isScope || isChecked
-                  ? `overflow-hidden border-primary bg-primary/5 border-l-[3px] border-l-primary ${isScope ? 'cursor-default' : 'cursor-pointer'}`
-                  : 'cursor-pointer transition-colors hover:bg-muted/50'
-              }
+              type="button"
+              disabled={isScope}
+              aria-pressed={isChecked}
+              aria-label={`${label}${isChecked ? ', selected' : ''}`}
               onClick={isScope ? undefined : () => handleToggle(id)}
+              className={cn(
+                'group flex flex-col overflow-hidden rounded-xl border bg-card text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                isChecked
+                  ? 'border-primary ring-2 ring-primary/30 shadow-sm'
+                  : 'border-border hover:border-primary/40 hover:shadow-sm',
+                isScope && 'cursor-default'
+              )}
             >
-              <CardHeader className={compact ? 'p-2 sm:p-3' : 'p-4 pb-2'}>
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <Checkbox
-                    id={id}
-                    checked={isChecked}
-                    onCheckedChange={isScope ? undefined : () => handleToggle(id)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="mt-0.5"
-                    disabled={isScope}
-                  />
-                  <div className="min-w-0 space-y-0">
-                    <CardTitle
-                      className={
-                        compact
-                          ? 'whitespace-normal text-sm font-medium sm:text-base'
-                          : 'whitespace-normal text-base font-medium'
-                      }
-                    >
-                      {label}
-                    </CardTitle>
-                    {isScope ? (
-                      <p
-                        className={
-                          compact
-                            ? 'text-xs leading-snug text-muted-foreground sm:text-sm'
-                            : 'text-sm text-muted-foreground'
-                        }
-                      >
-                        Make key decisions
-                      </p>
-                    ) : (
-                      <p
-                        className={
-                          compact
-                            ? 'text-xs leading-snug text-muted-foreground sm:text-sm'
-                            : 'text-sm text-muted-foreground'
-                        }
-                      >
-                        {benefit}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
+              <div className="relative aspect-[5/4] overflow-hidden bg-muted/40">
+                <img
+                  src={PLANNING_TOOL_GRAPHICS[id]}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  draggable={false}
+                />
+                <span
+                  className={cn(
+                    'absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition-colors',
+                    isChecked
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border/80 bg-background/90 text-transparent'
+                  )}
+                  aria-hidden
+                >
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                </span>
+              </div>
+              <div className={cn('flex min-h-0 flex-1 flex-col gap-0.5', compact ? 'p-2.5' : 'p-3')}>
+                <span
+                  className={cn(
+                    'font-display font-semibold leading-tight text-foreground',
+                    compact ? 'text-sm' : 'text-base'
+                  )}
+                >
+                  {label}
+                </span>
+                <span
+                  className={cn(
+                    'line-clamp-2 text-muted-foreground',
+                    compact ? 'text-[11px] leading-snug' : 'text-xs leading-snug'
+                  )}
+                >
+                  {blurb}
+                </span>
+              </div>
+            </button>
           );
         })}
       </div>
