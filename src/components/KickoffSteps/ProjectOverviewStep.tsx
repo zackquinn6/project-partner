@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,6 +39,7 @@ import {
   projectSkillLevelToIndex,
   userSkillLevelToIndex,
   type MatchAxisSentiment,
+  type ProjectMatchExplanation,
   type ProjectMatchRecommendationTier,
 } from '@/utils/projectMatchRecommendation';
 
@@ -129,6 +130,10 @@ interface ProjectOverviewStepProps {
    * "Your level" on effort - never derived from the project run or template.
    */
   profilePhysicalCapability?: string | null;
+  /**
+   * When provided by KickoffWorkflow, use this instead of recomputing match locally.
+   */
+  matchExplanationOverride?: ProjectMatchExplanation | null;
 }
 export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   onComplete,
@@ -138,6 +143,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   mode = 'kickoff',
   profileSkillLevel,
   profilePhysicalCapability,
+  matchExplanationOverride,
 }) => {
   const {
     currentProjectRun,
@@ -316,27 +322,26 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const displayEstimatedTime = templateProject?.estimatedTime ?? fetchedProjectInfo?.estimatedTime ?? (currentProjectRun as any)?.estimatedTime;
   const displayEffortLevel = templateProject?.effortLevel ?? fetchedProjectInfo?.effortLevel ?? (currentProjectRun as any)?.effortLevel;
 
-  const matchExplanation = useMemo(
-    () =>
-      mode === 'kickoff' && currentProjectRun
-        ? computeProjectMatchExplanation({
-            projectSkillLevel: displaySkillLevel,
-            userSkillLevel: userSkillLevel,
-            projectEffortLevel: displayEffortLevel,
-            userPhysicalCapability: userPhysicalCapability,
-            projectChallengesText: displayProjectChallenges,
-          })
-        : null,
-    [
-      mode,
-      currentProjectRun?.id,
-      displaySkillLevel,
-      userSkillLevel,
-      displayEffortLevel,
-      userPhysicalCapability,
-      displayProjectChallenges,
-    ]
-  );
+  const matchExplanation = useMemo(() => {
+    if (mode !== 'kickoff' || !currentProjectRun) return null;
+    if (matchExplanationOverride != null) return matchExplanationOverride;
+    return computeProjectMatchExplanation({
+      projectSkillLevel: displaySkillLevel,
+      userSkillLevel: userSkillLevel,
+      projectEffortLevel: displayEffortLevel,
+      userPhysicalCapability: userPhysicalCapability,
+      projectChallengesText: displayProjectChallenges,
+    });
+  }, [
+    mode,
+    currentProjectRun?.id,
+    matchExplanationOverride,
+    displaySkillLevel,
+    userSkillLevel,
+    displayEffortLevel,
+    userPhysicalCapability,
+    displayProjectChallenges,
+  ]);
 
   // Budget fields - handle both camelCase and snake_case
   const rawBudgetPerUnit = (templateProject as any)?.budgetPerUnit ?? (templateProject as any)?.budget_perUnit ?? fetchedProjectInfo?.budgetPerUnit ?? (currentProjectRun as any)?.budgetPerUnit ?? (currentProjectRun as any)?.budget_perUnit;
@@ -410,11 +415,11 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
       <div className="mt-2 relative pt-1 pb-1 min-h-[52px]">
         {/* Slider track with colored sections */}
         <div className="relative h-6 rounded-full flex items-center overflow-hidden">
-          {/* Color blocks background - green, blue, black */}
+          {/* Color blocks — token ramp (success → warning-soft → muted-foreground) */}
           <div className="absolute inset-0 flex">
-            <div className="w-1/3 bg-green-500"></div>
-            <div className="w-1/3 bg-blue-500"></div>
-            <div className="w-1/3 bg-black"></div>
+            <div className="w-1/3 bg-success"></div>
+            <div className="w-1/3 bg-warning-soft"></div>
+            <div className="w-1/3 bg-muted-foreground"></div>
           </div>
           {/* Three segments with labels */}
           {levels.map((_, index) => (
@@ -422,7 +427,15 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               key={index}
               className="flex-1 h-full flex items-center justify-center border-r last:border-r-0 border-border/50 relative z-10"
             >
-              <span className="text-[9px] text-white font-medium px-0.5 text-center drop-shadow-sm leading-tight">
+              <span
+                className={`text-[9px] font-medium px-0.5 text-center leading-tight ${
+                  index === 0
+                    ? 'text-success-foreground'
+                    : index === 1
+                      ? 'text-warning-soft-foreground'
+                      : 'text-background'
+                }`}
+              >
                 {labels[index]}
               </span>
             </div>
@@ -907,9 +920,6 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               </Badge>
             ) : null}
           </CardTitle>
-          <CardDescription className="text-sm">
-            Confirm this project is a fit before you invest planning time.
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 p-2 sm:p-3">
           <section className="space-y-3" aria-label="Project fit recommendation">

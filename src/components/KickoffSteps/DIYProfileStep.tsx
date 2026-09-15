@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -440,9 +440,6 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
               </Badge>
             ) : null}
           </CardTitle>
-          <CardDescription className="text-sm">
-            Your skill and effort shape which tools and warnings we show.
-          </CardDescription>
         </CardHeader>
         <CardContent className="p-2 sm:p-3">
           <div className="flex items-center justify-center py-8">
@@ -465,9 +462,6 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
               </Badge>
             ) : null}
           </CardTitle>
-          <CardDescription className="text-sm">
-            Your skill and effort shape which tools and warnings we show.
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 p-2 sm:space-y-3 sm:p-3">
           {renderProfileView()}

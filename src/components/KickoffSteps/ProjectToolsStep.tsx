@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
@@ -439,9 +439,6 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
       <Card>
         <CardHeader className="p-2 sm:p-3">
           <CardTitle className="font-display text-xl font-semibold">Your plan</CardTitle>
-          <CardDescription className="text-sm mt-0.5">
-            Pick the planning steps you&apos;ll run next in the studio.
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 p-2 sm:space-y-3 sm:p-3">{inner}</CardContent>
       </Card>

@@ -733,6 +733,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
             {...stepProps}
             profileSkillLevel={profileSkillLevel}
             profilePhysicalCapability={profilePhysicalCapability}
+            matchExplanationOverride={matchExplanation}
           />
         );
       case 'kickoff-step-2':
