@@ -143,7 +143,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         id: 'no-tools',
         toolId: null as PlanningToolId | null,
         title: 'No tools selected',
-        description: 'Choose planning tools in Discover (Plan tools) for this run.',
+        description: 'Choose planning steps in Discover (Your plan) for this run.',
         doneWhen: '',
       }];
     }
@@ -603,7 +603,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">
-              Choose planning tools in Discover (Plan tools) for this run. Each tool becomes a step in Planning Studio and opens its app when you select it.
+              Choose planning steps in Discover (Your plan) for this run. Each step opens in Planning Studio when you select it.
             </p>
           </CardContent>
         </Card>

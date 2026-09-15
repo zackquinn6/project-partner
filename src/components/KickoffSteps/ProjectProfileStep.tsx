@@ -2,17 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Home, Plus, DollarSign, Calendar, Ruler, ChevronUp, ChevronDown } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Home, Plus, Minus, DollarSign, Calendar, Ruler, Sparkles } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -139,7 +132,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   const [templateBudgetPerUnit, setTemplateBudgetPerUnit] = useState<string | null>(null);
   const [templateBudgetPerTypicalSize, setTemplateBudgetPerTypicalSize] = useState<string | null>(null);
   const [templateEconomicsLoaded, setTemplateEconomicsLoaded] = useState(false);
-  const [goalsMode, setGoalsMode] = useState<'typical' | 'custom'>('typical');
 
   useEffect(() => {
     const fetchScalingUnitAndItemType = async () => {
@@ -228,14 +220,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   }, [templateProject?.id, currentProjectRun?.projectId, currentProjectRun, projects]);
 
   useEffect(() => {
-    if (!currentProjectRun?.id) return;
-    const hasStoredGoals =
-      Boolean(String((currentProjectRun as any).initial_sizing ?? '').trim()) ||
-      Boolean(String((currentProjectRun as any).initial_budget ?? '').trim());
-    setGoalsMode(hasStoredGoals ? 'custom' : 'typical');
-  }, [currentProjectRun?.id]);
-
-  useEffect(() => {
     if (user) {
       fetchHomes();
     }
@@ -303,7 +287,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       initialSizing: sizing,
       initialBudget: budget,
     }));
-    setGoalsMode('typical');
   }, [
     templateTypicalProjectSize,
     templateBudgetPerTypicalSize,
@@ -651,159 +634,21 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   }
 
   const scalingLabel = getScalingUnitShortLabel(scalingUnit, itemType, templateProject as any);
+  const selectedHome = homes.find((h) => h.id === selectedHomeId) ?? homes[0] ?? null;
 
-  const renderGoalFieldsGrid = () => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 max-w-md md:max-w-none mx-auto md:mx-0">
-      <div className="flex flex-col items-center text-center">
-        <Label className="text-xs font-medium mb-0.5 flex items-center gap-1 justify-center">
-          <Ruler className="w-3 h-3" />
-          Project Size
-        </Label>
-        <p className="text-[10px] text-muted-foreground mb-1">How much work are you doing?</p>
-        <div className="flex items-center gap-1 w-full justify-center flex-wrap">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 flex-shrink-0"
-            aria-label="Decrease by 1"
-            onClick={() => {
-              const n = Math.max(0, (parseFloat(projectForm.initialSizing) || 0) - 1);
-              setProjectForm((prev) => ({ ...prev, initialSizing: String(n) }));
-            }}
-          >
-            <ChevronDown className="w-4 h-4" />
-          </Button>
-          <Input
-            type="number"
-            value={projectForm.initialSizing}
-            onChange={(e) => {
-              setProjectForm((prev) => ({ ...prev, initialSizing: e.target.value }));
-            }}
-            placeholder="0"
-            className="text-xs h-9 w-[80px]"
-            step="1"
-            min="0"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 flex-shrink-0"
-            aria-label="Increase by 1"
-            onClick={() => {
-              const n = (parseFloat(projectForm.initialSizing) || 0) + 1;
-              setProjectForm((prev) => ({ ...prev, initialSizing: String(n) }));
-            }}
-          >
-            <ChevronUp className="w-4 h-4" />
-          </Button>
-          <span className="text-xs text-muted-foreground whitespace-nowrap ml-0.5">{scalingLabel}</span>
-        </div>
-      </div>
-
-      <div className="flex flex-col items-center text-center">
-        <Label className="text-xs font-medium mb-0.5 flex items-center gap-1 justify-center">
-          <Calendar className="w-3 h-3" />
-          Timeline
-        </Label>
-        <p className="text-[10px] text-muted-foreground mb-1">When do you want this done?</p>
-        <div className="flex items-center gap-1 w-full justify-center flex-wrap">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 flex-shrink-0"
-            aria-label="Move back one week"
-            onClick={() => {
-              const base = projectForm.initialTimeline || new Date().toISOString().split('T')[0];
-              const next = addWeeks(base, -1);
-              setProjectForm((prev) => ({ ...prev, initialTimeline: next }));
-            }}
-          >
-            <ChevronDown className="w-4 h-4" />
-          </Button>
-          <Input
-            type="date"
-            value={projectForm.initialTimeline}
-            onChange={(e) => {
-              setProjectForm((prev) => ({ ...prev, initialTimeline: e.target.value }));
-            }}
-            className="text-xs h-9 w-auto min-w-[120px]"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 flex-shrink-0"
-            aria-label="Move forward one week"
-            onClick={() => {
-              const base = projectForm.initialTimeline || new Date().toISOString().split('T')[0];
-              const next = addWeeks(base, 1);
-              setProjectForm((prev) => ({ ...prev, initialTimeline: next }));
-            }}
-          >
-            <ChevronUp className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-col items-center text-center">
-        <Label className="text-xs font-medium mb-0.5 flex items-center gap-1 justify-center">
-          <DollarSign className="w-3 h-3" />
-          Budget
-        </Label>
-        <p className="text-[10px] text-muted-foreground mb-1">How much do you want to spend?</p>
-        <div className="flex items-center gap-1 w-full justify-center flex-wrap">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 flex-shrink-0"
-            aria-label="Decrease by $100"
-            onClick={() => {
-              const n = Math.max(
-                0,
-                (parseFloat(projectForm.initialBudget.replace(/[^0-9.-]/g, '')) || 0) - 100
-              );
-              setProjectForm((prev) => ({ ...prev, initialBudget: String(n) }));
-            }}
-          >
-            <ChevronDown className="w-4 h-4" />
-          </Button>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-            <Input
-              value={projectForm.initialBudget}
-              onChange={(e) => {
-                setProjectForm((prev) => ({ ...prev, initialBudget: e.target.value }));
-              }}
-              placeholder="0"
-              className="text-xs h-9 pl-7 w-[100px]"
-              type="number"
-              step="1"
-              min="0"
-              max="999999"
-            />
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 flex-shrink-0"
-            aria-label="Increase by $100"
-            onClick={() => {
-              const n =
-                (parseFloat(projectForm.initialBudget.replace(/[^0-9.-]/g, '')) || 0) + 100;
-              setProjectForm((prev) => ({ ...prev, initialBudget: String(n) }));
-            }}
-          >
-            <ChevronUp className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+  const timelineRelativeLabel = (() => {
+    if (!projectForm.initialTimeline?.trim()) return null;
+    const target = new Date(projectForm.initialTimeline + 'T12:00:00');
+    if (Number.isNaN(target.getTime())) return null;
+    const today = new Date();
+    const todayNoon = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
+    const diffDays = Math.round((target.getTime() - todayNoon.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Tomorrow';
+    if (diffDays > 1) return `In ~${diffDays} days`;
+    if (diffDays === -1) return 'Yesterday';
+    return `${Math.abs(diffDays)} days ago`;
+  })();
 
   return (
     <>
@@ -817,133 +662,268 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                 {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">
-                Set rough size, timing, and budget
+                Set project size, target date, and budget.
               </CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-2 p-2 sm:space-y-3 sm:p-3">
-          <div className="space-y-3">
+        <CardContent className="space-y-3 p-2 sm:p-3">
+          <div className="space-y-3 rounded-lg border bg-muted/20 px-3 py-3">
             <div>
-              <label className="mb-1 block text-xs font-medium">Name</label>
+              <Label htmlFor="goals-project-name" className="mb-1.5 block text-sm font-medium">
+                Project name
+              </Label>
               <Input
+                id="goals-project-name"
                 value={projectForm.customProjectName}
-                onChange={(e) => setProjectForm(prev => ({
-                  ...prev,
-                  customProjectName: e.target.value
-                }))}
-                placeholder="Enter your custom project name"
-                className="text-xs h-9"
+                onChange={(e) =>
+                  setProjectForm((prev) => ({
+                    ...prev,
+                    customProjectName: e.target.value,
+                  }))
+                }
+                placeholder="Enter your project name"
+                className="h-10"
               />
             </div>
 
-            {homes.length > 1 ? (
-              <div>
-                <label className="mb-1 block text-xs font-medium">Home</label>
-                <div className="flex gap-2">
+            <div>
+              <Label className="mb-1.5 block text-sm font-medium">Home</Label>
+              <div className="flex gap-2">
+                {homes.length > 1 ? (
                   <Select value={selectedHomeId} onValueChange={setSelectedHomeId}>
-                    <SelectTrigger className="h-9 text-xs">
+                    <SelectTrigger className="h-10">
                       <SelectValue placeholder="Select a home" />
                     </SelectTrigger>
                     <SelectContent>
                       {homes.map((home) => (
-                        <SelectItem key={home.id} value={home.id} className="text-xs">
+                        <SelectItem key={home.id} value={home.id}>
                           {home.name}
                           {home.is_primary ? ' (primary)' : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-9 shrink-0 px-2"
-                    onClick={() => setShowHomeManager(true)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                ) : (
+                  <div className="flex h-10 min-w-0 flex-1 items-center rounded-md border bg-background px-3 text-sm">
+                    <span className="truncate">
+                      {selectedHome?.name ?? (loading ? 'Loading…' : 'No home yet')}
+                    </span>
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-10 shrink-0 gap-1.5 px-3"
+                  onClick={() => setShowHomeManager(true)}
+                >
+                  {homes.length === 0 ? (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      <span className="hidden sm:inline">Add home</span>
+                    </>
+                  ) : (
+                    <>
+                      <Home className="h-4 w-4" />
+                      <span className="hidden sm:inline">{homes.length > 1 ? 'Manage' : 'Change'}</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-medium text-foreground">Targets</h3>
+              <p className="text-xs text-muted-foreground">You can refine these later</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 gap-1.5 text-xs"
+              onClick={() => applyTypicalProjectGoals()}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Use typical for this project
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="flex flex-col gap-2 rounded-lg border bg-muted/20 px-3 py-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-md bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400">
+                  <Ruler className="h-4 w-4" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium leading-none">Size</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">How much work?</p>
                 </div>
               </div>
-            ) : null}
-
-            <div>
-              <div className="mb-1.5 flex items-center justify-between gap-2">
-                <h3 className="text-xs font-medium text-foreground sm:text-sm">Targets</h3>
-                <p className="text-[10px] text-muted-foreground">You can edit these later</p>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  aria-label="Decrease by 1"
+                  onClick={() => {
+                    const n = Math.max(0, (parseFloat(projectForm.initialSizing) || 0) - 1);
+                    setProjectForm((prev) => ({ ...prev, initialSizing: String(n) }));
+                  }}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Input
+                  type="number"
+                  value={projectForm.initialSizing}
+                  onChange={(e) => {
+                    setProjectForm((prev) => ({ ...prev, initialSizing: e.target.value }));
+                  }}
+                  placeholder="0"
+                  className="h-10 min-w-0 flex-1 text-center"
+                  step="1"
+                  min="0"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  aria-label="Increase by 1"
+                  onClick={() => {
+                    const n = (parseFloat(projectForm.initialSizing) || 0) + 1;
+                    setProjectForm((prev) => ({ ...prev, initialSizing: String(n) }));
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
+              {scalingLabel ? (
+                <p className="text-center text-xs text-muted-foreground">{scalingLabel}</p>
+              ) : null}
+            </div>
 
-              <div className="space-y-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-9 w-full justify-between gap-2 text-xs font-normal"
-                    >
-                      <span className="truncate text-left">
-                        {goalsMode === 'typical'
-                          ? 'Typical project (template defaults)'
-                          : 'Custom project goals'}
-                      </span>
-                      <ChevronDown className="h-4 w-4 shrink-0 opacity-70" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="start"
-                    className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[12rem]"
-                  >
-                    <DropdownMenuItem
-                      className="text-xs"
-                      onClick={() => {
-                        applyTypicalProjectGoals();
-                      }}
-                    >
-                      Use typical project (template size and budget, 30-day target)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-xs" onClick={() => setGoalsMode('custom')}>
-                      Adjust size, timing, and budget
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+            <div className="flex flex-col gap-2 rounded-lg border bg-muted/20 px-3 py-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-md bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400">
+                  <Calendar className="h-4 w-4" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium leading-none">Timeline</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">When done?</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  aria-label="Move back one week"
+                  onClick={() => {
+                    const base = projectForm.initialTimeline || new Date().toISOString().split('T')[0];
+                    const next = addWeeks(base, -1);
+                    setProjectForm((prev) => ({ ...prev, initialTimeline: next }));
+                  }}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Input
+                  type="date"
+                  value={projectForm.initialTimeline}
+                  onChange={(e) => {
+                    setProjectForm((prev) => ({ ...prev, initialTimeline: e.target.value }));
+                  }}
+                  className="h-10 min-w-0 flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  aria-label="Move forward one week"
+                  onClick={() => {
+                    const base = projectForm.initialTimeline || new Date().toISOString().split('T')[0];
+                    const next = addWeeks(base, 1);
+                    setProjectForm((prev) => ({ ...prev, initialTimeline: next }));
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {timelineRelativeLabel ? (
+                <p className="text-center text-xs text-muted-foreground">{timelineRelativeLabel}</p>
+              ) : null}
+            </div>
 
-                {goalsMode === 'typical' ? (
-                  <div className="space-y-1.5 rounded-md border border-border bg-muted/30 px-3 py-2 text-left text-xs">
-                    <div>
-                      <span className="text-muted-foreground">Size: </span>
-                      <span className="font-medium">
-                        {projectForm.initialSizing || '-'} {scalingLabel}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Target date: </span>
-                      <span className="font-medium">{projectForm.initialTimeline || '-'}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Budget: </span>
-                      <span className="font-medium">
-                        {projectForm.initialBudget ? `$${projectForm.initialBudget}` : '-'}
-                      </span>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="h-auto px-0 text-[11px]"
-                      onClick={() => setGoalsMode('custom')}
-                    >
-                      Adjust
-                    </Button>
-                  </div>
-                ) : (
-                  renderGoalFieldsGrid()
-                )}
+            <div className="flex flex-col gap-2 rounded-lg border bg-muted/20 px-3 py-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
+                  <DollarSign className="h-4 w-4" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium leading-none">Budget</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">Spend up to?</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  aria-label="Decrease by $100"
+                  onClick={() => {
+                    const n = Math.max(
+                      0,
+                      (parseFloat(projectForm.initialBudget.replace(/[^0-9.-]/g, '')) || 0) - 100
+                    );
+                    setProjectForm((prev) => ({ ...prev, initialBudget: String(n) }));
+                  }}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <div className="relative min-w-0 flex-1">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                    $
+                  </span>
+                  <Input
+                    value={projectForm.initialBudget}
+                    onChange={(e) => {
+                      setProjectForm((prev) => ({ ...prev, initialBudget: e.target.value }));
+                    }}
+                    placeholder="0"
+                    className="h-10 pl-7 text-center"
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="999999"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  aria-label="Increase by $100"
+                  onClick={() => {
+                    const n =
+                      (parseFloat(projectForm.initialBudget.replace(/[^0-9.-]/g, '')) || 0) + 100;
+                    setProjectForm((prev) => ({ ...prev, initialBudget: String(n) }));
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <HomeManager 
+      <HomeManager
         open={showHomeManager}
         onOpenChange={handleHomeManagerClose}
       />

@@ -5,7 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { FolderKanban, PiggyBank, Award, Calendar } from 'lucide-react';
+import { FolderKanban } from 'lucide-react';
 
 export const PLANNING_TOOL_IDS = [
   'scope',
@@ -31,7 +31,7 @@ export const PLANNING_TOOLS: {
 }[] = [
   {
     id: 'scope',
-    label: 'Customize',
+    label: 'Scope',
     benefit: 'Shape the work to fit your situation',
     doneWhen: 'Scope choices are saved for this run',
   },
@@ -154,8 +154,8 @@ function sortToolsForKickoffGrid(
 }
 
 export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
-  onComplete,
-  isCompleted,
+  onComplete: _onComplete,
+  isCompleted: _isCompleted,
   initialSelected = [],
   onSelectionChange,
   compact = false,
@@ -267,20 +267,6 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     notifySelection(all);
   };
 
-  const handleFocusPreset = (focusKey: 'savings' | 'quality' | 'schedule') => {
-    const ids = filterByPartnerAvailability(
-      FOCUS_PRESETS[focusKey],
-      partnerAppsEnabled,
-      expertSupportEnabled,
-      toolRentalsEnabled
-      ,
-      wasteRemovalEnabled
-    );
-    const next = new Set(ids as PlanningToolId[]);
-    setSelected(next);
-    notifySelection(next);
-  };
-
   const handleClearAll = () => {
     const next = new Set<PlanningToolId>(['scope']);
     setSelected(next);
@@ -331,16 +317,9 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     notifySelection(next);
   };
 
-  const isAlignedToPreference = (buttonKey: 'all_three' | 'savings' | 'quality' | 'schedule') => {
-    if (projectFocus == null) return false;
-    return projectFocus === buttonKey;
-  };
-
-  const [showCustomize, setShowCustomize] = useState(false);
-
   const inner = (
     <>
-      <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
+      <div className={compact ? 'space-y-1.5 rounded-lg border border-primary/30 bg-primary/5 p-2.5' : 'space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-3'}>
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0 space-y-1">
             <p className="text-sm font-medium text-foreground">{recommendedLabel}</p>
@@ -354,145 +333,95 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
             className="h-9 shrink-0"
             onClick={handleUseRecommended}
           >
-            Use recommended
+            Apply recommended
           </Button>
         </div>
-        <p className="text-[11px] text-muted-foreground">
-          {selected.size} tool{selected.size !== 1 ? 's' : ''} selected — these open next in Plan.
-        </p>
-      </div>
-
-      <div className={compact ? 'flex flex-col gap-2 sm:flex-row' : 'flex flex-col sm:flex-row gap-2'}>
-        {[
-          { key: 'savings' as const, label: 'Best for cost-focus', icon: PiggyBank },
-          { key: 'quality' as const, label: 'Best for quality-focus', icon: Award },
-          { key: 'schedule' as const, label: 'Best for schedule focus', icon: Calendar },
-        ].map(({ key, label, icon: Icon }) => {
-          const aligned = isAlignedToPreference(key);
-          return (
-            <div
-              key={key}
-              className={
-                aligned
-                  ? compact
-                    ? 'flex-1 space-y-1 rounded-md border-2 border-dashed border-primary p-0.5'
-                    : 'rounded-lg border-2 border-dashed border-primary p-1 flex-1 space-y-1'
-                  : 'flex-1 space-y-1'
-              }
-            >
-              {aligned && (
-                <p className="text-xs font-medium text-muted-foreground">Aligned to your preference</p>
-              )}
-              <Button
-                type="button"
-                variant="outline"
-                size="default"
-                className={
-                  compact
-                    ? 'h-10 min-h-10 w-full justify-center gap-2 px-3 text-sm leading-tight'
-                    : 'w-full justify-center gap-2 text-center'
-                }
-                onClick={() => handleFocusPreset(key)}
-              >
-                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span>{label}</span>
-              </Button>
-            </div>
-          );
-        })}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className="h-8 px-2 text-xs"
-          onClick={() => setShowCustomize((v) => !v)}
+          className="h-8 gap-1.5 px-2 text-xs"
+          onClick={handleSelectAll}
         >
-          {showCustomize ? 'Hide full list' : 'Customize selection'}
+          <FolderKanban className="h-3.5 w-3.5 shrink-0" />
+          Select all
         </Button>
         {selected.size > 1 ? (
           <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={handleClearAll}>
-            Clear to Customize only
+            Keep Scope only
           </Button>
         ) : null}
       </div>
 
-      {showCustomize ? (
-        <div className="space-y-3">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-9 w-full justify-center gap-2 text-xs text-muted-foreground"
-            onClick={handleSelectAll}
-          >
-            <FolderKanban className="h-3.5 w-3.5 shrink-0" />
-            Select all tools
-          </Button>
-
-          <div
-            className={
-              compact ? 'grid gap-2 sm:grid-cols-1 md:grid-cols-2' : 'grid gap-3 sm:grid-cols-1 md:grid-cols-2'
-            }
-          >
-            {toolsToShow.map(({ id, label, benefit }) => {
-              const isScope = id === 'scope';
-              const isChecked = selected.has(id);
-              return (
-                <Card
-                  key={id}
-                  className={
-                    isScope
-                      ? 'cursor-default border-primary bg-primary/5'
-                      : `cursor-pointer transition-colors hover:bg-muted/50 ${isChecked ? 'border-primary bg-primary/5' : ''}`
-                  }
-                  onClick={isScope ? undefined : () => handleToggle(id)}
-                >
-                  <CardHeader className={compact ? 'p-2 sm:p-3' : 'p-4 pb-2'}>
-                    <div className="flex items-start gap-2 sm:gap-3">
-                      <Checkbox
-                        id={id}
-                        checked={isChecked}
-                        onCheckedChange={isScope ? undefined : () => handleToggle(id)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="mt-0.5"
-                        disabled={isScope}
-                      />
-                      <div className="min-w-0 space-y-0">
-                        <CardTitle
-                          className={
-                            compact
-                              ? 'whitespace-normal text-sm font-medium sm:text-base'
-                              : 'whitespace-normal text-base font-medium'
-                          }
-                        >
-                          {label}
-                        </CardTitle>
-                        <p
-                          className={
-                            compact
-                              ? 'text-xs leading-snug text-muted-foreground sm:text-sm'
-                              : 'text-sm text-muted-foreground'
-                          }
-                        >
-                          {benefit}
-                        </p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
-          Using {selected.size} tool{selected.size !== 1 ? 's' : ''}. Open Customize selection to add or remove
-          tools.
-        </div>
-      )}
+      <div
+        className={
+          compact ? 'grid gap-2 sm:grid-cols-1 md:grid-cols-2' : 'grid gap-3 sm:grid-cols-1 md:grid-cols-2'
+        }
+      >
+        {toolsToShow.map(({ id, label, benefit }) => {
+          const isScope = id === 'scope';
+          const isChecked = selected.has(id);
+          return (
+            <Card
+              key={id}
+              className={
+                isScope
+                  ? 'cursor-default border-primary bg-primary/5'
+                  : `cursor-pointer transition-colors hover:bg-muted/50 ${isChecked ? 'border-primary bg-primary/5' : ''}`
+              }
+              onClick={isScope ? undefined : () => handleToggle(id)}
+            >
+              <CardHeader className={compact ? 'p-2 sm:p-3' : 'p-4 pb-2'}>
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <Checkbox
+                    id={id}
+                    checked={isChecked}
+                    onCheckedChange={isScope ? undefined : () => handleToggle(id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-0.5"
+                    disabled={isScope}
+                  />
+                  <div className="min-w-0 space-y-0">
+                    <CardTitle
+                      className={
+                        compact
+                          ? 'whitespace-normal text-sm font-medium sm:text-base'
+                          : 'whitespace-normal text-base font-medium'
+                      }
+                    >
+                      {label}
+                    </CardTitle>
+                    {isScope ? (
+                      <p
+                        className={
+                          compact
+                            ? 'text-xs leading-snug text-muted-foreground sm:text-sm'
+                            : 'text-sm text-muted-foreground'
+                        }
+                      >
+                        Always included
+                      </p>
+                    ) : (
+                      <p
+                        className={
+                          compact
+                            ? 'text-xs leading-snug text-muted-foreground sm:text-sm'
+                            : 'text-sm text-muted-foreground'
+                        }
+                      >
+                        {benefit}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+          );
+        })}
+      </div>
     </>
   );
 
@@ -500,9 +429,9 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     return (
       <Card>
         <CardHeader className="p-2 sm:p-3">
-          <CardTitle className="text-sm sm:text-base">Plan tools</CardTitle>
+          <CardTitle className="text-sm sm:text-base">Your plan</CardTitle>
           <CardDescription className="text-xs mt-0.5">
-            Choose what to plan next — these tools become your Plan backlog
+            Turn on the steps you want in Planning Studio. Scope stays on.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 p-2 sm:space-y-3 sm:p-3">{inner}</CardContent>

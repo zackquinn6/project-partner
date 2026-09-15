@@ -56,12 +56,12 @@ const KICKOFF_STEP_DEFINITIONS: { id: string; title: string; description: string
   {
     id: 'kickoff-step-3',
     title: 'Goals',
-    description: 'Set rough size, timing, and budget',
+    description: 'Set project size, target date, and budget',
   },
   {
     id: 'kickoff-step-4',
-    title: 'Plan tools',
-    description: 'Choose what to plan next in Planning Studio',
+    title: 'Your plan',
+    description: 'Pick the planning steps to run next',
   },
 ];
 
