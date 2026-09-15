@@ -81,7 +81,7 @@ import {
   KICKOFF_UI_STEP_IDS
 } from '@/utils/projectUtils';
 import { collectPlanningWizardWorkflowCompletion } from '@/utils/planningWizardCompletion';
-import { parseCustomizationDecisions, isPlanningScopeComplete } from '@/utils/customizationDecisions';
+import { parseCustomizationDecisions, isScopeReadyForWorkflow } from '@/utils/customizationDecisions';
 import type { PlanningToolId } from '@/components/KickoffSteps/ProjectToolsStep';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
@@ -364,7 +364,7 @@ export default function UserView({
     : true;
 
   const isScopePlanningComplete = currentProjectRun
-    ? isPlanningScopeComplete(currentProjectRun.customization_decisions)
+    ? isScopeReadyForWorkflow(currentProjectRun)
     : true;
 
   // Restore Planning Studio if kickoff completion marked it pending and this tree remounted.
@@ -3293,7 +3293,7 @@ export default function UserView({
             layout={isMobile ? 'dialog' : 'fullscreen'}
             onOpenChange={(open) => {
               if (!open) {
-                const scopeDone = isPlanningScopeComplete(currentProjectRun.customization_decisions);
+                const scopeDone = isScopeReadyForWorkflow(currentProjectRun);
                 if (!scopeDone && !currentProjectRun.planningCompletedAt) {
                   markPlanningStudioPending(currentProjectRun.id);
                   setProjectPlanningWizardOpen(true);
@@ -3310,6 +3310,11 @@ export default function UserView({
               openWorkflowAtFirstIncompleteStep(completed);
             }}
             onGoToWorkflow={() => {
+              const scopeDone = isScopeReadyForWorkflow(currentProjectRun);
+              if (!scopeDone && !currentProjectRun.planningCompletedAt) {
+                toast.message('Complete Scope to continue to your project');
+                return;
+              }
               clearPlanningStudioPending(currentProjectRun.id);
               setProjectPlanningWizardOpen(false);
             }}
@@ -4237,10 +4242,10 @@ export default function UserView({
           onOpenChange={(open) => {
             setProjectCustomizerOpen(open);
             
-            // If customizer was opened from Planning Studio and is now closing, mark step as complete
             if (!open) {
               setProjectCustomizerFromPlanningWizard(false);
-              completePlanningWizardToolCloseCallback('customizer');
+              // Drop pending checkoff without completing (Cancel / dismiss).
+              registerPlanningWizardToolCloseCallback('customizer');
             }
             
             // When customizer closes, check if shopping is needed
@@ -4263,6 +4268,9 @@ export default function UserView({
           currentProjectRun={currentProjectRun}
           mode={projectCustomizerMode}
           fromPlanningWizard={projectCustomizerFromPlanningWizard}
+          onPlanningWizardComplete={() => {
+            completePlanningWizardToolCloseCallback('customizer');
+          }}
         />
       )}
 

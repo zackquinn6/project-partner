@@ -26,7 +26,7 @@ import { QualityControlStep } from './PlanningWizardSteps/QualityControlStep';
 import { ExpertSupportStep } from './PlanningWizardSteps/ExpertSupportStep';
 import { CommunicationPlanStep } from './PlanningWizardSteps/CommunicationPlanStep';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
-import { parseCustomizationDecisions, isPlanningScopeComplete } from '@/utils/customizationDecisions';
+import { parseCustomizationDecisions, isScopeReadyForWorkflow } from '@/utils/customizationDecisions';
 import { ProjectPlanningCountdownBanner } from '@/components/ProjectPlanningCountdownBanner';
 import { PlanningJourneyHeader } from '@/components/PlanningJourneyHeader';
 import { PlanningConfirmationStep } from './PlanningWizardSteps/PlanningConfirmationStep';
@@ -450,8 +450,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const isScopeComplete = useMemo(() => {
     if (scopeStepIndex < 0) return true;
     if (completedSteps.has(scopeStepIndex)) return true;
-    return isPlanningScopeComplete(currentProjectRun?.customization_decisions);
-  }, [scopeStepIndex, completedSteps, currentProjectRun?.customization_decisions]);
+    return isScopeReadyForWorkflow(currentProjectRun);
+  }, [scopeStepIndex, completedSteps, currentProjectRun]);
 
   /** Free navigation among tools after Scope is complete; Scope is always reachable. */
   const canVisitPlanningStep = (index: number) => {
@@ -781,84 +781,89 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   }
 
   const renderStickyActions = () => {
-    /** Match Kickoff footer geometry: escape row + full-width h-14 continue. */
+    /** Match Kickoff: Exit 30% + Continue 70%, except Scope is Continue-only full width. */
     const primaryButtonClass =
       'font-display h-14 min-h-14 max-h-14 w-full shrink-0 rounded-xl px-3 text-sm font-semibold leading-none';
+    const exitButtonClass =
+      'font-display h-14 min-h-14 max-h-14 w-full shrink-0 rounded-xl px-2 text-sm font-semibold leading-none';
+
+    const exitButton = onGoToWorkflow ? (
+      <Button
+        type="button"
+        variant="outline"
+        className={exitButtonClass}
+        onClick={handleSkipToWorkflow}
+      >
+        Exit
+      </Button>
+    ) : null;
 
     if (wizardPhase === 'confirm') {
+      const startProject = (
+        <Button
+          type="button"
+          disabled={!allWorkflowStepsComplete && wizardSteps.some((s) => s.toolId != null)}
+          className={cn(primaryButtonClass, 'bg-green-600 hover:bg-green-700')}
+          onClick={async () => {
+            if (!allWorkflowStepsComplete && wizardSteps.some((s) => s.toolId != null)) return;
+            if (!isScopeComplete) {
+              toast.message('Complete Scope before starting your project');
+              return;
+            }
+            if (onWorkflowFullyComplete) {
+              await onWorkflowFullyComplete(effectiveSelectedTools);
+            }
+            onOpenChange(false);
+          }}
+        >
+          Start project
+        </Button>
+      );
+
+      if (!exitButton) {
+        return <div className="h-14 w-full shrink-0">{startProject}</div>;
+      }
+
       return (
-        <div className="flex h-[4.75rem] w-full flex-col justify-between">
-          <div className="flex h-5 w-full shrink-0 items-center justify-center overflow-hidden">
-            <button
-              type="button"
-              className="max-w-full truncate text-sm text-muted-foreground underline-offset-4 hover:underline"
-              onClick={() => {
-                const firstIncomplete = wizardSteps.findIndex((_, i) => !completedSteps.has(i));
-                setWizardPhase('steps');
-                setCurrentStep(firstIncomplete >= 0 ? firstIncomplete : 0);
-              }}
-            >
-              Edit plan
-            </button>
-          </div>
-          <div className="h-14 w-full shrink-0">
-            <Button
-              type="button"
-              disabled={!allWorkflowStepsComplete && wizardSteps.some((s) => s.toolId != null)}
-              className={cn(primaryButtonClass, 'bg-green-600 hover:bg-green-700')}
-              onClick={async () => {
-                if (!allWorkflowStepsComplete && wizardSteps.some((s) => s.toolId != null)) return;
-                if (onWorkflowFullyComplete) {
-                  await onWorkflowFullyComplete(effectiveSelectedTools);
-                }
-                onOpenChange(false);
-              }}
-            >
-              Start project
-            </Button>
-          </div>
+        <div className="grid h-14 w-full grid-cols-[3fr_7fr] items-center gap-2">
+          {exitButton}
+          <div className="min-w-0">{startProject}</div>
         </div>
       );
     }
 
     const stepDone = isStepCompleted(currentStep);
     const onScopeStep = currentToolId === 'scope';
-    const showSkipToWorkflow = Boolean(onGoToWorkflow) && isScopeComplete && !onScopeStep;
+
+    const primary = stepDone ? (
+      <button
+        type="button"
+        onClick={handleContinueFromSticky}
+        className="flex h-14 min-h-14 max-h-14 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl border border-success/30 bg-success/10 px-3 text-sm font-semibold leading-none text-success"
+      >
+        <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        Step complete
+      </button>
+    ) : (
+      <Button
+        type="button"
+        className={primaryButtonClass}
+        disabled={!currentToolId}
+        onClick={handleContinueFromSticky}
+      >
+        Continue
+      </Button>
+    );
+
+    // Scope (step 1): Continue only, full width.
+    if (onScopeStep || !exitButton) {
+      return <div className="h-14 w-full shrink-0">{primary}</div>;
+    }
 
     return (
-      <div className="flex h-[4.75rem] w-full flex-col justify-between">
-        <div className="flex h-5 w-full shrink-0 items-center justify-center overflow-hidden">
-          {showSkipToWorkflow ? (
-            <button
-              type="button"
-              className="max-w-full truncate text-sm text-muted-foreground underline-offset-4 hover:underline"
-              onClick={handleSkipToWorkflow}
-            >
-              Skip ahead to workflow
-            </button>
-          ) : null}
-        </div>
-        <div className="h-14 w-full shrink-0">
-          {stepDone ? (
-            <button
-              type="button"
-              onClick={handleContinueFromSticky}
-              className="flex h-14 min-h-14 max-h-14 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl border border-success/30 bg-success/10 px-3 text-sm font-semibold leading-none text-success"
-            >
-              <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              Step complete
-            </button>
-          ) : (
-            <Button
-              type="button"
-              className={primaryButtonClass}
-              disabled={!currentToolId}
-              onClick={handleContinueFromSticky}
-            >
-              Continue
-            </Button>
-          )}
-        </div>
+      <div className="grid h-14 w-full grid-cols-[3fr_7fr] items-center gap-2">
+        {exitButton}
+        <div className="min-w-0">{primary}</div>
       </div>
     );
   };
@@ -1193,7 +1198,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         <div className="min-w-0">{renderCurrentStep()}</div>
       </div>
 
-      <Card className="z-10 h-[6.25rem] shrink-0 border-t bg-background">
+      <Card className="z-10 h-[5.5rem] shrink-0 border-t bg-background">
         <CardContent className="flex h-full items-center p-3">{renderStickyActions()}</CardContent>
       </Card>
     </div>

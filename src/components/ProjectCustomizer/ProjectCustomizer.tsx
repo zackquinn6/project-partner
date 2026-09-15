@@ -47,6 +47,8 @@ interface ProjectCustomizerProps {
   mode?: 'initial-plan' | 'final-plan' | 'unplanned-work' | 'replan';
   /** When opened from Planning Studio, use journey title Customize. */
   fromPlanningWizard?: boolean;
+  /** Called after a successful Save and Close when Scope is fully complete (Planning Studio checkoff). */
+  onPlanningWizardComplete?: () => void;
 }
 
 interface ProjectSpace {
@@ -82,6 +84,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   currentProjectRun,
   mode = 'initial-plan',
   fromPlanningWizard = false,
+  onPlanningWizardComplete,
 }) => {
   const { projects, updateProjectRun } = useProject();
   const { user } = useAuth();
@@ -932,7 +935,33 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       const completedTools = Array.isArray(completedToolsRaw)
         ? completedToolsRaw.filter((id): id is string => typeof id === 'string')
         : [];
-      if (fromPlanningWizard && !completedTools.includes('scope')) {
+
+      const homeSelected = Boolean(selectedHomeId || currentProjectRun.home_id);
+      const spacesSelected = customizationState.spaces.length > 0;
+      const requiredDecisionsComplete =
+        filteredGeneralProjectDecisions.every((decision) =>
+          Boolean(customizationState.generalProjectChoices[decision.id])
+        ) &&
+        customizationState.spaces.every((space) =>
+          areSpaceRequiredDecisionsComplete(
+            currentProjectRun,
+            space.id,
+            customizationState.spaceDecisions
+          )
+        );
+      const customizerFullyComplete =
+        homeSelected && spacesSelected && requiredDecisionsComplete;
+
+      if (fromPlanningWizard && !customizerFullyComplete) {
+        toast({
+          title: 'Scope incomplete',
+          description: 'Finish home, spaces, and required decisions before completing Customize.',
+          variant: 'destructive',
+        });
+        // Still persist progress, but do not mark Scope complete or advance Planning Studio.
+      }
+
+      if (fromPlanningWizard && customizerFullyComplete && !completedTools.includes('scope')) {
         completedTools.push('scope');
       }
 
@@ -942,9 +971,14 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         customization_decisions: {
           ...existingDecisions,
           ...customizationState,
-          ...(fromPlanningWizard
+          ...(fromPlanningWizard && customizerFullyComplete
             ? { planning_wizard_completed_tools: completedTools }
-            : {}),
+            : fromPlanningWizard
+              ? {
+                  // Keep prior completed-tools list; do not add scope until fully complete.
+                  planning_wizard_completed_tools: completedTools.filter((id) => id !== 'scope'),
+                }
+              : {}),
         } as ProjectRun['customization_decisions'],
         updatedAt: new Date()
       };
@@ -955,6 +989,10 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       window.dispatchEvent(new CustomEvent('project-customizer-updated', {
         detail: { projectRunId: currentProjectRun.id }
       }));
+
+      if (fromPlanningWizard && customizerFullyComplete) {
+        onPlanningWizardComplete?.();
+      }
       
             
       onOpenChange(false);

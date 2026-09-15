@@ -795,9 +795,19 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
           ? 'Set - continue'
           : 'Start planning';
 
-  const renderSkipEscapeLink = () => {
-    const handleSkipToScopePlanning = () => {
-      // Open Planning Studio before kickoff flips complete so workflow cannot flash.
+  const renderPrimaryActions = () => {
+    /** Same-row Exit (30%) + Continue (70%). */
+    const primaryButtonClass =
+      'font-display h-14 min-h-14 max-h-14 w-full shrink-0 rounded-xl px-3 text-sm font-semibold leading-none';
+    const exitButtonClass =
+      'font-display h-14 min-h-14 max-h-14 w-full shrink-0 rounded-xl px-2 text-sm font-semibold leading-none';
+
+    const handleExit = () => {
+      if (currentStepId === 'kickoff-step-1') {
+        void handleNotAMatch();
+        return;
+      }
+      // Steps 2-4: leave Discover and open Scope in Planning Studio.
       onBeforeFinalKickoffPersistence?.();
       const existingDecisions = parseCustomizationDecisions(currentProjectRun?.customization_decisions);
       onKickoffComplete({
@@ -805,54 +815,11 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         persist: {
           customization_decisions: {
             ...existingDecisions,
-            // Scope is the only required planning stage when skipping the full backlog.
             selected_planning_tools: ['scope'],
           } as ProjectRun['customization_decisions'],
         },
       });
     };
-
-    return (
-      <button
-        type="button"
-        className="max-w-full truncate text-sm text-muted-foreground underline-offset-4 hover:underline"
-        onClick={handleSkipToScopePlanning}
-      >
-        Skip ahead
-      </button>
-    );
-  };
-
-  const renderSecondaryEscape = () => {
-    if (currentStepId === 'kickoff-step-1') {
-      return (
-        <button
-          type="button"
-          className="max-w-full truncate text-sm text-muted-foreground underline-offset-4 hover:underline"
-          onClick={() => {
-            void handleNotAMatch();
-          }}
-        >
-          Not a match? Back to catalog
-        </button>
-      );
-    }
-
-    if (
-      currentStepId === 'kickoff-step-2' ||
-      currentStepId === 'kickoff-step-3' ||
-      currentStepId === 'kickoff-step-4'
-    ) {
-      return renderSkipEscapeLink();
-    }
-
-    return null;
-  };
-
-  const renderPrimaryActions = () => {
-    /** Fixed footer geometry: escape row + primary control never change size/slot. */
-    const primaryButtonClass =
-      'font-display h-14 min-h-14 max-h-14 w-full shrink-0 rounded-xl px-3 text-sm font-semibold leading-none';
 
     let primary: React.ReactNode;
 
@@ -894,11 +861,16 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
     }
 
     return (
-      <div className="flex h-[4.75rem] w-full flex-col justify-between">
-        <div className="flex h-5 w-full shrink-0 items-center justify-center overflow-hidden">
-          {renderSecondaryEscape()}
-        </div>
-        <div className="h-14 w-full shrink-0">{primary}</div>
+      <div className="grid h-14 w-full grid-cols-[3fr_7fr] items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className={exitButtonClass}
+          onClick={handleExit}
+        >
+          Exit
+        </Button>
+        <div className="min-w-0">{primary}</div>
       </div>
     );
   };
@@ -993,7 +965,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         {renderCurrentStep()}
       </div>
 
-      <Card className="z-10 h-[6.25rem] shrink-0 border-t bg-background">
+      <Card className="z-10 h-[5.5rem] shrink-0 border-t bg-background">
         <CardContent className="flex h-full items-center p-3">{renderPrimaryActions()}</CardContent>
       </Card>
     </div>
