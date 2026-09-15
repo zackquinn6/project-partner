@@ -28,6 +28,8 @@ import { filterGeneralDecisionsForPhases, parseGeneralProjectDecisionsFromPrereq
 import {
   applyWorkflowDecisionDetailsToPhases,
   mergeWorkflowDecisionFieldsByOpId,
+  parsePhasesJson,
+  restoreDecisionOperationsFromTemplate,
   workflowDecisionFieldsByOpIdFromPhases,
   workflowDecisionFieldsByOpIdFromPrerequisites,
   type WorkflowDecisionDetailFields,
@@ -116,6 +118,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   const [selectedHomeId, setSelectedHomeId] = useState<string | null>(null);
   const [itemType, setItemType] = useState<string | null>(null);
   const [templateGeneralDecisions, setTemplateGeneralDecisions] = useState<GeneralProjectDecision[]>([]);
+  const [templatePhasesForDecisions, setTemplatePhasesForDecisions] = useState<Phase[]>([]);
   const [templateWorkflowDecisionFieldsByOpId, setTemplateWorkflowDecisionFieldsByOpId] = useState<
     Record<string, WorkflowDecisionDetailFields>
   >({});
@@ -160,18 +163,36 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
   const projectRunForDecisions = useMemo(() => {
     if (!currentProjectRun) return currentProjectRun;
-    const fromRun = workflowDecisionFieldsByOpIdFromPhases(currentProjectRun.phases);
-    const fromTemplateCache = workflowDecisionFieldsByOpIdFromPhases(templateProject?.phases);
+    const templatePhases =
+      templatePhasesForDecisions.length > 0
+        ? templatePhasesForDecisions
+        : templateProject?.phases;
+    const phasesWithDecisionOps = restoreDecisionOperationsFromTemplate(
+      currentProjectRun.phases,
+      templatePhases
+    );
+    const fromRun = workflowDecisionFieldsByOpIdFromPhases(phasesWithDecisionOps);
+    const fromTemplateCache = workflowDecisionFieldsByOpIdFromPhases(templatePhases);
     const fieldsByOpId = mergeWorkflowDecisionFieldsByOpId(
       templateWorkflowDecisionFieldsByOpId,
       mergeWorkflowDecisionFieldsByOpId(fromTemplateCache, fromRun)
     );
-    if (Object.keys(fieldsByOpId).length === 0) return currentProjectRun;
+    if (Object.keys(fieldsByOpId).length === 0) {
+      return {
+        ...currentProjectRun,
+        phases: phasesWithDecisionOps,
+      };
+    }
     return {
       ...currentProjectRun,
-      phases: applyWorkflowDecisionDetailsToPhases(currentProjectRun.phases || [], fieldsByOpId),
+      phases: applyWorkflowDecisionDetailsToPhases(phasesWithDecisionOps, fieldsByOpId),
     };
-  }, [currentProjectRun, templateProject?.phases, templateWorkflowDecisionFieldsByOpId]);
+  }, [
+    currentProjectRun,
+    templateProject?.phases,
+    templatePhasesForDecisions,
+    templateWorkflowDecisionFieldsByOpId,
+  ]);
 
   const filteredGeneralProjectDecisions = useMemo(
     () =>
@@ -183,7 +204,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   );
 
   const builtInWorkBySpace = useMemo(() => {
-    const phases = (currentProjectRun?.phases || []).filter(
+    const phases = (projectRunForDecisions?.phases || currentProjectRun?.phases || []).filter(
       (phase) => phase.isStandard !== true
     );
     return customizationState.spaces.map((space) => {
@@ -298,6 +319,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       };
     });
   }, [
+    projectRunForDecisions?.phases,
     currentProjectRun?.phases,
     customizationState.spaces,
     customizationState.spaceDecisions,
@@ -352,6 +374,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     const templateId = templateProject?.id || currentProjectRun?.projectId;
     if (!open || !templateId) {
       setTemplateGeneralDecisions([]);
+      setTemplatePhasesForDecisions([]);
       setTemplateWorkflowDecisionFieldsByOpId({});
       return;
     }
@@ -366,12 +389,12 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         setTemplateGeneralDecisions(
           parseGeneralProjectDecisionsFromPrerequisites(data?.scheduling_prerequisites)
         );
+        const parsedPhases = parsePhasesJson(data?.phases);
+        setTemplatePhasesForDecisions(parsedPhases);
         const fromPrereqs = workflowDecisionFieldsByOpIdFromPrerequisites(
           data?.scheduling_prerequisites
         );
-        const fromPhases = workflowDecisionFieldsByOpIdFromPhases(
-          Array.isArray(data?.phases) ? (data.phases as unknown as Phase[]) : undefined
-        );
+        const fromPhases = workflowDecisionFieldsByOpIdFromPhases(parsedPhases);
         setTemplateWorkflowDecisionFieldsByOpId(
           mergeWorkflowDecisionFieldsByOpId(fromPrereqs, fromPhases)
         );
@@ -441,25 +464,26 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
         // If no spaces in database, check customization_decisions
         let spaces = loadedSpaces;
-        if (spaces.length === 0 && currentProjectRun?.customization_decisions) {
-          const savedData = currentProjectRun.customization_decisions as any;
-          const savedSpaces = savedData.spaces || [];
+        const savedData = parseCustomizationDecisions(currentProjectRun?.customization_decisions);
+        const hasSavedDecisions = Object.keys(savedData).length > 0;
+        if (spaces.length === 0 && hasSavedDecisions) {
+          const savedSpaces = Array.isArray(savedData.spaces) ? (savedData.spaces as ProjectSpace[]) : [];
           spaces = savedSpaces.length > 0 ? savedSpaces : [createDefaultSpace()];
         } else if (spaces.length === 0) {
           spaces = [createDefaultSpace()];
         }
 
-        if (currentProjectRun?.customization_decisions) {
-          const savedData = currentProjectRun.customization_decisions as any;
+        if (hasSavedDecisions) {
           setCustomizationState({
             spaces,
-            spaceDecisions: savedData.spaceDecisions || {},
-            standardDecisions: savedData.standardDecisions || {},
-            ifNecessaryWork: savedData.ifNecessaryWork || {},
-            generalProjectChoices: savedData.generalProjectChoices || {},
-            customPlannedWork: savedData.customPlannedWork || [],
-            customUnplannedWork: savedData.customUnplannedWork || [],
-            workflowOrder: savedData.workflowOrder || []
+            spaceDecisions: (savedData.spaceDecisions as CustomizationState['spaceDecisions']) || {},
+            standardDecisions: (savedData.standardDecisions as CustomizationState['standardDecisions']) || {},
+            ifNecessaryWork: (savedData.ifNecessaryWork as CustomizationState['ifNecessaryWork']) || {},
+            generalProjectChoices:
+              (savedData.generalProjectChoices as CustomizationState['generalProjectChoices']) || {},
+            customPlannedWork: (savedData.customPlannedWork as Phase[]) || [],
+            customUnplannedWork: (savedData.customUnplannedWork as Phase[]) || [],
+            workflowOrder: (savedData.workflowOrder as string[]) || []
           });
         } else {
           setCustomizationState(prev => ({
@@ -470,19 +494,20 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       } catch (error) {
         console.error('Error loading spaces:', error);
         // Fallback to customization_decisions if database load fails
-        if (currentProjectRun?.customization_decisions) {
-          const savedData = currentProjectRun.customization_decisions as any;
-          const savedSpaces = savedData.spaces || [];
+        const savedData = parseCustomizationDecisions(currentProjectRun?.customization_decisions);
+        if (Object.keys(savedData).length > 0) {
+          const savedSpaces = Array.isArray(savedData.spaces) ? (savedData.spaces as ProjectSpace[]) : [];
           const spaces = savedSpaces.length > 0 ? savedSpaces : [createDefaultSpace()];
           setCustomizationState({
             spaces,
-            spaceDecisions: savedData.spaceDecisions || {},
-            standardDecisions: savedData.standardDecisions || {},
-            ifNecessaryWork: savedData.ifNecessaryWork || {},
-            generalProjectChoices: savedData.generalProjectChoices || {},
-            customPlannedWork: savedData.customPlannedWork || [],
-            customUnplannedWork: savedData.customUnplannedWork || [],
-            workflowOrder: savedData.workflowOrder || []
+            spaceDecisions: (savedData.spaceDecisions as CustomizationState['spaceDecisions']) || {},
+            standardDecisions: (savedData.standardDecisions as CustomizationState['standardDecisions']) || {},
+            ifNecessaryWork: (savedData.ifNecessaryWork as CustomizationState['ifNecessaryWork']) || {},
+            generalProjectChoices:
+              (savedData.generalProjectChoices as CustomizationState['generalProjectChoices']) || {},
+            customPlannedWork: (savedData.customPlannedWork as Phase[]) || [],
+            customUnplannedWork: (savedData.customUnplannedWork as Phase[]) || [],
+            workflowOrder: (savedData.workflowOrder as string[]) || []
           });
         } else {
           setCustomizationState(prev => ({
@@ -845,9 +870,10 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
     isSavingRef.current = true;
 
     try {
-      
-      // Create a deep copy of phases
-      let newPhases = JSON.parse(JSON.stringify(currentProjectRun.phases || []));
+      // Prefer restored decision catalog so selected alternate ops missing from a
+      // previously stripped run snapshot are written back into phases on save.
+      const phasesForSave = projectRunForDecisions?.phases || currentProjectRun.phases || [];
+      let newPhases = JSON.parse(JSON.stringify(phasesForSave));
 
       // Apply standard decisions and if-necessary work filtering.
       // Space-scoped choices live under spaceDecisions; also honor top-level maps.
@@ -873,16 +899,28 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
           })
         );
         const selectedIfNecessaryIds = new Set(ifNecessaryChoices);
+        const answeredAlternateGroups = new Set(
+          standardChoices
+            .map((choice) => {
+              const sep = choice.indexOf(':');
+              return sep > 0 ? choice.slice(0, sep) : null;
+            })
+            .filter((groupKey): groupKey is string => Boolean(groupKey))
+        );
 
-        // Filter operations based on flowType
+        // Filter operations based on flowType.
+        // Keep unanswered alternate groups intact so Customize can reopen them.
+        // Only drop rivals once a group has an explicit selection.
         const filteredOperations = phase.operations.filter((op) => {
           const flowType = (op as any).flowType || 'prime';
 
           // Always keep prime operations
           if (flowType === 'prime') return true;
 
-          // For alternate operations, only keep selected ones
+          // For alternate operations, only keep selected ones once answered
           if (flowType === 'alternate') {
+            const groupKey = (op as any).alternateGroup || 'choice-group';
+            if (!answeredAlternateGroups.has(groupKey)) return true;
             return selectedOpIds.has(op.id);
           }
 
@@ -938,13 +976,14 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
       const homeSelected = Boolean(selectedHomeId || currentProjectRun.home_id);
       const spacesSelected = customizationState.spaces.length > 0;
+      const runForRequiredCheck = projectRunForDecisions || currentProjectRun;
       const requiredDecisionsComplete =
         filteredGeneralProjectDecisions.every((decision) =>
           Boolean(customizationState.generalProjectChoices[decision.id])
         ) &&
         customizationState.spaces.every((space) =>
           areSpaceRequiredDecisionsComplete(
-            currentProjectRun,
+            runForRequiredCheck,
             space.id,
             customizationState.spaceDecisions
           )

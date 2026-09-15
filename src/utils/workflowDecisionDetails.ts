@@ -162,3 +162,72 @@ export function workflowDecisionFieldsByOpIdFromPrerequisites(
     schedulingPrerequisites[DECISION_TREE_CONFIG_KEY]
   );
 }
+
+function opFlowType(op: Operation): string {
+  return op.flowType || 'prime';
+}
+
+function isDecisionFlowType(flowType: string): boolean {
+  return flowType === 'alternate' || flowType === 'if-necessary';
+}
+
+/** Normalize `projects.phases` / `project_runs.phases` whether array or JSON string. */
+export function parsePhasesJson(raw: unknown): Phase[] {
+  if (Array.isArray(raw)) return raw as Phase[];
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed) return [];
+    try {
+      const parsed = JSON.parse(trimmed) as unknown;
+      return Array.isArray(parsed) ? (parsed as Phase[]) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function findMatchingTemplatePhase(
+  runPhase: Phase,
+  templatePhases: Phase[]
+): Phase | undefined {
+  const byId = templatePhases.find((p) => p.id === runPhase.id);
+  if (byId) return byId;
+  const runName = typeof runPhase.name === 'string' ? runPhase.name.trim().toLowerCase() : '';
+  if (!runName) return undefined;
+  return templatePhases.find(
+    (p) => typeof p.name === 'string' && p.name.trim().toLowerCase() === runName
+  );
+}
+
+/**
+ * Re-attach alternate / if-necessary operations from the template onto a project-run
+ * snapshot. Save-and-close historically stripped unselected decision ops from `phases`,
+ * which left Customize with nothing to show on reopen. Decisions stay in
+ * customization_decisions; this only restores the choice catalog for the UI.
+ */
+export function restoreDecisionOperationsFromTemplate(
+  runPhases: Phase[] | undefined,
+  templatePhases: Phase[] | undefined
+): Phase[] {
+  if (!Array.isArray(runPhases) || runPhases.length === 0) return runPhases || [];
+  if (!Array.isArray(templatePhases) || templatePhases.length === 0) return runPhases;
+
+  return runPhases.map((runPhase) => {
+    const templatePhase = findMatchingTemplatePhase(runPhase, templatePhases);
+    if (!templatePhase) return runPhase;
+
+    const existingIds = new Set((runPhase.operations || []).map((op) => op.id));
+    const missingDecisionOps = (templatePhase.operations || []).filter((op) => {
+      if (existingIds.has(op.id)) return false;
+      return isDecisionFlowType(opFlowType(op));
+    });
+
+    if (missingDecisionOps.length === 0) return runPhase;
+
+    return {
+      ...runPhase,
+      operations: [...(runPhase.operations || []), ...missingDecisionOps],
+    };
+  });
+}
