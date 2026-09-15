@@ -36,6 +36,7 @@ import { PLANNING_TOOL_WINDOW_CONTENT_PADDING_CLASSNAME } from '../PlanningWizar
 import { PlanningToolContextBanner } from '../PlanningWizardSteps/PlanningToolContextBanner';
 import { formatProjectSizeDetail } from '@/utils/projectRunDisplayName';
 import { getDefaultHomeIdForUser } from '@/utils/ensureDefaultHome';
+import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
 import { cn } from '@/lib/utils';
 import { useSteppedAutoAdvance } from '@/hooks/useSteppedAutoAdvance';
 
@@ -115,6 +116,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   const [templateWorkflowDecisionFieldsByOpId, setTemplateWorkflowDecisionFieldsByOpId] = useState<
     Record<string, WorkflowDecisionDetailFields>
   >({});
+  const isSavingRef = useRef(false);
 
   useEffect(() => {
     if (open) {
@@ -836,6 +838,8 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
 
   const handleSaveCustomization = async () => {
     if (!currentProjectRun) return;
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
 
     try {
       
@@ -907,11 +911,29 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         }
       });
 
-      // Update the project run with filtered phases and saved decisions
+      // Merge into existing decisions so Planning Studio keys
+      // (selected_planning_tools, planning_wizard_completed_tools, etc.) are preserved.
+      const existingDecisions = parseCustomizationDecisions(
+        currentProjectRun.customization_decisions
+      );
+      const completedToolsRaw = existingDecisions.planning_wizard_completed_tools;
+      const completedTools = Array.isArray(completedToolsRaw)
+        ? completedToolsRaw.filter((id): id is string => typeof id === 'string')
+        : [];
+      if (fromPlanningWizard && !completedTools.includes('scope')) {
+        completedTools.push('scope');
+      }
+
       const updatedProjectRun = {
         ...currentProjectRun,
         phases: orderedPhases,
-        customization_decisions: customizationState,
+        customization_decisions: {
+          ...existingDecisions,
+          ...customizationState,
+          ...(fromPlanningWizard
+            ? { planning_wizard_completed_tools: completedTools }
+            : {}),
+        } as ProjectRun['customization_decisions'],
         updatedAt: new Date()
       };
 
@@ -931,6 +953,8 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         description: "Failed to save customization",
         variant: "destructive"
       });
+    } finally {
+      isSavingRef.current = false;
     }
   };
 

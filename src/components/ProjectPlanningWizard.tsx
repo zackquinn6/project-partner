@@ -403,7 +403,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       autoOpenTimerRef.current = null;
       lastAutoOpenedStepRef.current = currentStep;
       openPlanningTool(toolId, () => handleStepComplete(currentStep));
-    }, 3000);
+    }, 1000);
 
     return () => {
       if (autoOpenTimerRef.current) {
