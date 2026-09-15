@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ShoppingCart } from 'lucide-react';
 import {
   PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
@@ -12,7 +11,6 @@ import {
   PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
   PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
   PLANNING_WIZARD_STEP_HEADER_CLASSNAME,
-  PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME,
   PLANNING_WIZARD_STEP_TITLE_CLASSNAME,
 } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 
@@ -23,7 +21,7 @@ interface ShoppingStepProps {
 
 export const ShoppingStep: React.FC<ShoppingStepProps> = ({
   onComplete,
-  isCompleted
+  isCompleted: _isCompleted
 }) => {
   const handleOpenShoppingList = () => {
     window.dispatchEvent(
@@ -43,7 +41,6 @@ export const ShoppingStep: React.FC<ShoppingStepProps> = ({
           <CardTitle className={PLANNING_WIZARD_STEP_TITLE_CLASSNAME}>
             <ShoppingCart className="h-5 w-5" aria-hidden />
             Shopping
-            {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
         </CardHeader>
         <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
@@ -65,10 +62,6 @@ export const ShoppingStep: React.FC<ShoppingStepProps> = ({
                 </Button>
               </div>
             </div>
-
-            <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
-              {isCompleted ? '✓ Shopping completed' : '\u00a0'}
-            </p>
           </div>
         </CardContent>
       </Card>

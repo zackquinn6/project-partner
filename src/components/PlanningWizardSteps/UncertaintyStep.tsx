@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { AlertTriangle } from 'lucide-react';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import {
@@ -13,7 +12,6 @@ import {
   PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
   PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
   PLANNING_WIZARD_STEP_HEADER_CLASSNAME,
-  PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME,
   PLANNING_WIZARD_STEP_TITLE_CLASSNAME,
 } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 import { useProject } from '@/contexts/ProjectContext';
@@ -27,7 +25,7 @@ interface UncertaintyStepProps {
 
 export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
   onComplete,
-  isCompleted,
+  isCompleted: _isCompleted,
   onOpenRiskManagement
 }) => {
   const { currentProjectRun } = useProject();
@@ -48,7 +46,6 @@ export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
           <CardTitle className={PLANNING_WIZARD_STEP_TITLE_CLASSNAME}>
             <AlertTriangle className="h-5 w-5" aria-hidden />
             Risk Radar
-            {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
         </CardHeader>
         <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
@@ -70,10 +67,6 @@ export const UncertaintyStep: React.FC<UncertaintyStepProps> = ({
                 </Button>
               </div>
             </div>
-
-            <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
-              {isCompleted ? '✓ Risk Radar completed' : '\u00a0'}
-            </p>
           </div>
         </CardContent>
       </Card>

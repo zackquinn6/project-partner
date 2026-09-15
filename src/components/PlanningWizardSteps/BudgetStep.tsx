@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { DollarSign } from 'lucide-react';
 import {
   PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
@@ -12,7 +11,6 @@ import {
   PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
   PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
   PLANNING_WIZARD_STEP_HEADER_CLASSNAME,
-  PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME,
   PLANNING_WIZARD_STEP_TITLE_CLASSNAME,
 } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 
@@ -25,7 +23,7 @@ interface BudgetStepProps {
 
 export const BudgetStep: React.FC<BudgetStepProps> = ({
   onComplete,
-  isCompleted,
+  isCompleted: _isCompleted,
   onOpenBudgeting
 }) => {
   const handleOpenBudgeting = (e: React.MouseEvent) => {
@@ -46,7 +44,6 @@ export const BudgetStep: React.FC<BudgetStepProps> = ({
           <CardTitle className={PLANNING_WIZARD_STEP_TITLE_CLASSNAME}>
             <DollarSign className="h-5 w-5" aria-hidden />
             Budget
-            {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
         </CardHeader>
         <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
@@ -68,10 +65,6 @@ export const BudgetStep: React.FC<BudgetStepProps> = ({
                 </Button>
               </div>
             </div>
-
-            <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
-              {isCompleted ? '✓ Budget completed' : '\u00a0'}
-            </p>
           </div>
         </CardContent>
       </Card>

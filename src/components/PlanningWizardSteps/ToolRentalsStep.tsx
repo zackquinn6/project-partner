@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Hammer } from 'lucide-react';
 import {
   PLANNING_WIZARD_OPEN_APP_BUTTON_CLASSNAME,
@@ -12,7 +11,6 @@ import {
   PLANNING_WIZARD_STEP_CONTENT_CLASSNAME,
   PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME,
   PLANNING_WIZARD_STEP_HEADER_CLASSNAME,
-  PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME,
   PLANNING_WIZARD_STEP_TITLE_CLASSNAME,
 } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 
@@ -25,7 +23,7 @@ interface ToolRentalsStepProps {
 
 export const ToolRentalsStep: React.FC<ToolRentalsStepProps> = ({
   onComplete,
-  isCompleted,
+  isCompleted: _isCompleted,
   onOpenToolRentals,
 }) => {
   const handleOpen = (e: React.MouseEvent) => {
@@ -44,7 +42,6 @@ export const ToolRentalsStep: React.FC<ToolRentalsStepProps> = ({
           <CardTitle className={PLANNING_WIZARD_STEP_TITLE_CLASSNAME}>
             <Hammer className="h-5 w-5" aria-hidden />
             Tool Rental
-            {isCompleted && <Badge variant="secondary" className="flex-shrink-0 text-xs">Complete</Badge>}
           </CardTitle>
         </CardHeader>
         <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
@@ -66,10 +63,6 @@ export const ToolRentalsStep: React.FC<ToolRentalsStepProps> = ({
                 </Button>
               </div>
             </div>
-
-            <p className={PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME}>
-              {isCompleted ? '✓ Tool Rental completed' : '\u00a0'}
-            </p>
           </div>
         </CardContent>
       </Card>
