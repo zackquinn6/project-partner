@@ -12,7 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
-import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell, ClipboardList, Check, ChevronDown, Menu } from 'lucide-react';
+import { Home, Plus, Calendar, Clock, AlertTriangle, CheckCircle, Trash2, FileText, Pencil, HelpCircle, ImageIcon, Wrench, ListTodo, History, Bell, ClipboardList, Check, ChevronDown, Menu, ArrowDownAZ, ArrowDownWideNarrow } from 'lucide-react';
 import { format, differenceInDays, startOfDay, endOfDay, isSameDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +25,10 @@ import { MaintenancePdfPrinter } from './MaintenancePdfPrinter';
 import { MaintenanceNotifications } from './MaintenanceNotifications';
 import { MaintenanceDashboard, getSystemForCategory, SYSTEM_CONFIG, type SystemKey } from './MaintenanceDashboard';
 import { getTaskProgress } from '@/utils/maintenanceProgress';
+import {
+  compareMaintenanceTasks,
+  type MaintenanceTaskListSort,
+} from '@/utils/maintenanceTaskSort';
 import {
   computeNextDue,
   formatFrequencyLabel,
@@ -488,6 +492,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
   const [selectedTask, setSelectedTask] = useState<MaintenanceTask | null>(null);
   const [systemFilter, setSystemFilter] = useState<SystemKey | 'all'>('all');
   const [criticalityFilter, setCriticalityFilter] = useState<'all' | 1 | 2 | 3>('all');
+  const [taskListSort, setTaskListSort] = useState<MaintenanceTaskListSort>('relevance');
   const [completions, setCompletions] = useState<MaintenanceCompletion[]>([]);
   const [swipedTaskId, setSwipedTaskId] = useState<string | null>(null);
   const [touchStart, setTouchStart] = useState<number>(0);
@@ -820,7 +825,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     if (criticalityFilter !== 'all') {
       list = list.filter(task => task.criticality === criticalityFilter);
     }
-    return [...list].sort((a, b) => new Date(a.next_due).getTime() - new Date(b.next_due).getTime());
+    return [...list].sort((a, b) => compareMaintenanceTasks(a, b, taskListSort));
   };
 
   const filteredTasks = getFilteredTasks();
@@ -1090,6 +1095,39 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                           >
                             {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
                           </span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 shrink-0 gap-0 px-1.5"
+                                aria-label={
+                                  taskListSort === 'relevance'
+                                    ? 'Sort list: Relevance (change)'
+                                    : 'Sort list: A–Z (change)'
+                                }
+                                title="Sort"
+                              >
+                                {taskListSort === 'relevance' ? (
+                                  <ArrowDownWideNarrow className="h-3.5 w-3.5 shrink-0" />
+                                ) : (
+                                  <ArrowDownAZ className="h-3.5 w-3.5 shrink-0" />
+                                )}
+                                <ChevronDown className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="z-[200]">
+                              <DropdownMenuItem onClick={() => setTaskListSort('relevance')}>
+                                <ArrowDownWideNarrow className="mr-2 h-4 w-4" />
+                                Relevance
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setTaskListSort('alpha')}>
+                                <ArrowDownAZ className="mr-2 h-4 w-4" />
+                                A–Z
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           {/* Mobile: system + criticality filter dropdowns */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
