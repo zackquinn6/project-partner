@@ -945,8 +945,8 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
               {projectDisplayName}
             </h2>
 
-            <div className="space-y-1" role="navigation" aria-label="Kickoff steps">
-              <div className="grid grid-cols-4 gap-2">
+            <div className="space-y-1.5" role="navigation" aria-label="Kickoff steps">
+              <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
                 {kickoffSteps.map((step, index) => {
                   const isCurrent = index === currentKickoffStep;
                   const isDone = isStepCompleted(index);
@@ -960,13 +960,13 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       aria-label={`${step.title}, step ${index + 1}`}
                       aria-current={isCurrent ? 'step' : undefined}
                       className={cn(
-                        'flex flex-col items-stretch gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+                        'flex flex-col items-stretch gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
                         !visitable && 'cursor-not-allowed opacity-50'
                       )}
                     >
                       <span
                         className={cn(
-                          'h-1.5 w-full rounded-full',
+                          'h-2.5 w-full rounded-full sm:h-3',
                           isDone && 'bg-primary',
                           isCurrent && !isDone && 'animate-pulse bg-primary/60',
                           !isDone && !isCurrent && 'bg-muted'
@@ -974,11 +974,11 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       />
                       <span
                         className={cn(
-                          'inline-flex items-center justify-center gap-0.5 text-[10px] leading-none',
-                          isCurrent ? 'font-medium text-primary' : isDone ? 'text-muted-foreground' : 'text-muted-foreground/70'
+                          'inline-flex items-center justify-center gap-1 text-xs leading-none sm:text-sm',
+                          isCurrent ? 'font-semibold text-primary' : isDone ? 'font-medium text-muted-foreground' : 'text-muted-foreground'
                         )}
                       >
-                        {isDone ? <Check className="h-2.5 w-2.5 shrink-0" aria-hidden /> : null}
+                        {isDone ? <Check className="h-3.5 w-3.5 shrink-0" aria-hidden /> : null}
                         {step.shortLabel}
                       </span>
                     </button>
@@ -986,7 +986,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                 })}
               </div>
               {currentStepPromise ? (
-                <p className="text-xs text-muted-foreground">{currentStepPromise}</p>
+                <p className="text-sm text-muted-foreground">{currentStepPromise}</p>
               ) : null}
             </div>
           </CardContent>

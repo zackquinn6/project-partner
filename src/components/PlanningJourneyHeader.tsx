@@ -42,7 +42,7 @@ export function PlanningJourneyHeader({
   return (
     <div
       className={cn(
-        'flex shrink-0 items-center justify-center gap-1.5 sm:gap-2',
+        'flex shrink-0 items-center justify-center gap-2 sm:gap-2.5',
         className
       )}
       role="navigation"
@@ -62,25 +62,25 @@ export function PlanningJourneyHeader({
               : undefined;
 
         const labelClass = cn(
-          'inline-flex items-center gap-0.5 text-[11px] uppercase tracking-wide',
+          'inline-flex items-center gap-1 text-xs uppercase tracking-wide sm:text-sm',
           isActive && 'font-semibold text-primary',
-          isPast && !isActive && 'text-muted-foreground/70',
-          !isActive && !isPast && 'text-muted-foreground/70',
+          isPast && !isActive && 'text-muted-foreground',
+          !isActive && !isPast && 'text-muted-foreground',
           isClickable &&
             'cursor-pointer underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
         );
 
         const content = (
           <>
-            {isPast ? <Check className="h-2.5 w-2.5 shrink-0" aria-hidden /> : null}
+            {isPast ? <Check className="h-3.5 w-3.5 shrink-0" aria-hidden /> : null}
             <span>{stage.label}</span>
           </>
         );
 
         return (
-          <span key={stage.id} className="inline-flex items-center gap-1.5">
+          <span key={stage.id} className="inline-flex items-center gap-2">
             {index > 0 ? (
-              <span className="text-[11px] text-muted-foreground/40" aria-hidden>
+              <span className="text-xs text-muted-foreground/40 sm:text-sm" aria-hidden>
                 ·
               </span>
             ) : null}
