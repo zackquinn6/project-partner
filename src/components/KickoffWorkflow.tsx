@@ -47,13 +47,13 @@ const KICKOFF_STEP_DEFINITIONS: {
     id: 'kickoff-step-1',
     title: 'Project Match',
     shortLabel: 'Match',
-    promise: "We'll use this to size the work and warn you about the hard parts.",
+    promise: "Get a feel for the work and decide if it's a fit for you",
   },
   {
     id: 'kickoff-step-2',
     title: 'Personalize',
     shortLabel: 'You',
-    promise: 'Your skill and effort shape which tools and warnings we show.',
+    promise: 'Setup your profile and currently owned tools',
   },
   {
     id: 'kickoff-step-3',
