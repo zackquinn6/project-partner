@@ -11,7 +11,7 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import { ChevronLeft, CheckCircle, Settings2, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, Settings2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useProject } from '@/contexts/ProjectContext';
 import { PLANNING_TOOLS, PLANNING_TOOLS_DISPLAY_ORDER, normalizePlanningToolsSelection } from './KickoffSteps/ProjectToolsStep';
@@ -378,7 +378,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       queueMicrotask(() => persistCompletedToolIds(nextCompleted));
       return nextCompleted;
     });
-    // Stay on completed step — sticky Continue advances (no auto-open chain).
+    // Stay on completed step - sticky Continue advances (no auto-open chain).
   }, [persistCompletedToolIds]);
 
   const isStepCompleted = (stepIndex: number) => completedSteps.has(stepIndex);
@@ -387,7 +387,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     wizardSteps.length > 0 &&
     wizardSteps.every((_, i) => completedSteps.has(i));
 
-  // Auto-open the current incomplete tool within 3s of first landing on that step.
+  // Auto-open the current incomplete tool within 2s of first landing on that step.
   useEffect(() => {
     if (!open) return;
     if (wizardPhase !== 'steps') return;
@@ -404,7 +404,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       autoOpenTimerRef.current = null;
       lastAutoOpenedStepRef.current = currentStep;
       openPlanningTool(toolId, () => handleStepComplete(currentStep));
-    }, 1000);
+    }, 2000);
 
     return () => {
       if (autoOpenTimerRef.current) {
@@ -466,6 +466,32 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
+  };
+
+  const handleNext = () => {
+    if (autoOpenTimerRef.current) {
+      clearTimeout(autoOpenTimerRef.current);
+      autoOpenTimerRef.current = null;
+    }
+    if (wizardPhase === 'confirm') return;
+
+    if (currentStep < wizardSteps.length - 1) {
+      const nextIndex = currentStep + 1;
+      if (!canVisitPlanningStep(nextIndex)) {
+        toast.message('Complete Scope before opening other planning tools');
+        return;
+      }
+      setCurrentStep(nextIndex);
+      return;
+    }
+
+    if (allWorkflowStepsComplete) {
+      markPlanningWizardFirstPassComplete();
+      setWizardPhase('confirm');
+      return;
+    }
+
+    toast.message('Finish all tools to open Planning Summary');
   };
 
   const handleContinueFromSticky = () => {
@@ -944,6 +970,17 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                 {wizardPhase === 'confirm' ? 'Sum' : `${currentStep + 1}/${wizardSteps.length}`}
               </div>
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={handleNext}
+              disabled={wizardPhase === 'confirm'}
+              aria-label="Next step"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
 
           {/* sm+: labeled strip */}
@@ -1086,6 +1123,18 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                   </div>
                   <Progress value={progress} className="mx-auto mt-1 h-1.5 w-16 sm:h-2 sm:w-20" />
                 </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  aria-label="Next step"
+                  onClick={handleNext}
+                  disabled={wizardPhase === 'confirm'}
+                  className="h-9 w-9 shrink-0 p-0 lg:h-9 lg:w-auto lg:px-3"
+                >
+                  <span className="hidden lg:inline">Next</span>
+                  <ChevronRight className="h-4 w-4 lg:ml-1" />
+                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button

@@ -17,6 +17,30 @@ function phaseTitle(phases: Phase[], phaseId: string): string {
   return typeof p?.name === 'string' && p.name.trim() ? p.name.trim() : phaseId;
 }
 
+function resolveChoiceLabel(phases: Phase[], choice: string): string {
+  const parts = choice.split(':');
+  const opId = parts.length > 1 ? parts[parts.length - 1] : choice;
+  for (const phase of phases) {
+    const op = phase.operations?.find((operation) => operation.id === opId);
+    if (op && typeof op.name === 'string' && op.name.trim()) {
+      return op.name.trim();
+    }
+  }
+  return choice;
+}
+
+function appendPhaseChoices(
+  target: Record<string, string[]>,
+  phaseId: string,
+  choices: string[],
+  phases: Phase[]
+) {
+  if (!Array.isArray(choices) || choices.length === 0) return;
+  const labels = choices.map((choice) => resolveChoiceLabel(phases, choice));
+  const existing = target[phaseId] || [];
+  target[phaseId] = Array.from(new Set([...existing, ...labels]));
+}
+
 export interface PlanningConfirmationToolStatus {
   toolId: PlanningToolId;
   label: string;
@@ -67,17 +91,98 @@ export function PlanningConfirmationStep({
 }: PlanningConfirmationStepProps) {
   const decisions = useMemo(() => parseCustomizationDecisions(customizationDecisionsRaw), [customizationDecisionsRaw]);
 
-  const standardDecisions =
-    decisions.standardDecisions && typeof decisions.standardDecisions === 'object' && !Array.isArray(decisions.standardDecisions)
-      ? (decisions.standardDecisions as Record<string, string[]>)
-      : {};
-  const ifNecessaryWork =
-    decisions.ifNecessaryWork && typeof decisions.ifNecessaryWork === 'object' && !Array.isArray(decisions.ifNecessaryWork)
-      ? (decisions.ifNecessaryWork as Record<string, string[]>)
-      : {};
+  const { standardRows, necessaryRows, generalRows, spaceRows, hasStoredScopeContext } = useMemo(() => {
+    const standardMap: Record<string, string[]> = {};
+    const necessaryMap: Record<string, string[]> = {};
 
-  const standardRows = Object.entries(standardDecisions).filter(([, vals]) => Array.isArray(vals) && vals.length > 0);
-  const necessaryRows = Object.entries(ifNecessaryWork).filter(([, vals]) => Array.isArray(vals) && vals.length > 0);
+    const topStandard =
+      decisions.standardDecisions &&
+      typeof decisions.standardDecisions === 'object' &&
+      !Array.isArray(decisions.standardDecisions)
+        ? (decisions.standardDecisions as Record<string, string[]>)
+        : {};
+    const topNecessary =
+      decisions.ifNecessaryWork &&
+      typeof decisions.ifNecessaryWork === 'object' &&
+      !Array.isArray(decisions.ifNecessaryWork)
+        ? (decisions.ifNecessaryWork as Record<string, string[]>)
+        : {};
+
+    Object.entries(topStandard).forEach(([phaseId, vals]) => {
+      appendPhaseChoices(standardMap, phaseId, vals, phases);
+    });
+    Object.entries(topNecessary).forEach(([phaseId, vals]) => {
+      appendPhaseChoices(necessaryMap, phaseId, vals, phases);
+    });
+
+    const spaceDecisions =
+      decisions.spaceDecisions &&
+      typeof decisions.spaceDecisions === 'object' &&
+      !Array.isArray(decisions.spaceDecisions)
+        ? (decisions.spaceDecisions as Record<
+            string,
+            {
+              standardDecisions?: Record<string, string[]>;
+              ifNecessaryWork?: Record<string, string[]>;
+            }
+          >)
+        : {};
+
+    Object.values(spaceDecisions).forEach((spaceState) => {
+      const spaceStandard =
+        spaceState?.standardDecisions &&
+        typeof spaceState.standardDecisions === 'object' &&
+        !Array.isArray(spaceState.standardDecisions)
+          ? spaceState.standardDecisions
+          : {};
+      const spaceNecessary =
+        spaceState?.ifNecessaryWork &&
+        typeof spaceState.ifNecessaryWork === 'object' &&
+        !Array.isArray(spaceState.ifNecessaryWork)
+          ? spaceState.ifNecessaryWork
+          : {};
+      Object.entries(spaceStandard).forEach(([phaseId, vals]) => {
+        appendPhaseChoices(standardMap, phaseId, vals, phases);
+      });
+      Object.entries(spaceNecessary).forEach(([phaseId, vals]) => {
+        appendPhaseChoices(necessaryMap, phaseId, vals, phases);
+      });
+    });
+
+    const generalChoices =
+      decisions.generalProjectChoices &&
+      typeof decisions.generalProjectChoices === 'object' &&
+      !Array.isArray(decisions.generalProjectChoices)
+        ? (decisions.generalProjectChoices as Record<string, string>)
+        : {};
+    const general = Object.entries(generalChoices).filter(
+      ([, value]) => typeof value === 'string' && value.trim() !== ''
+    );
+
+    const spaces = Array.isArray(decisions.spaces) ? decisions.spaces : [];
+    const spaceNames = spaces
+      .map((space) => {
+        if (!space || typeof space !== 'object') return null;
+        const record = space as Record<string, unknown>;
+        const name = record.space_name ?? record.name;
+        return typeof name === 'string' && name.trim() ? name.trim() : null;
+      })
+      .filter((name): name is string => name != null);
+
+    const completedTools = Array.isArray(decisions.planning_wizard_completed_tools)
+      ? decisions.planning_wizard_completed_tools
+      : [];
+    const scopeComplete = completedTools.includes('scope');
+
+    return {
+      standardRows: Object.entries(standardMap).filter(([, vals]) => vals.length > 0),
+      necessaryRows: Object.entries(necessaryMap).filter(([, vals]) => vals.length > 0),
+      generalRows: general,
+      spaceRows: spaceNames,
+      hasStoredScopeContext:
+        scopeComplete || spaces.length > 0 || Object.keys(spaceDecisions).length > 0,
+    };
+  }, [decisions, phases]);
 
   const incompleteCount = toolStatuses.filter((t) => !t.complete).length;
   const allComplete = toolStatuses.length > 0 && incompleteCount === 0;
@@ -213,13 +318,44 @@ export function PlanningConfirmationStep({
 
           <section>
             <h3 className="mb-2 text-sm font-semibold text-foreground">Key scope decisions</h3>
-            {standardRows.length === 0 && necessaryRows.length === 0 ? (
+            {standardRows.length === 0 &&
+            necessaryRows.length === 0 &&
+            generalRows.length === 0 &&
+            spaceRows.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No customization choices are stored yet. If you used Customize (scope), open that step and save your
-                selections, or continue if scope is unchanged.
+                {hasStoredScopeContext
+                  ? 'No alternate or optional scope choices were needed for this run.'
+                  : 'No customization choices are stored yet. If you used Customize (scope), open that step and save your selections, or continue if scope is unchanged.'}
               </p>
             ) : (
               <div className="space-y-4">
+                {spaceRows.length > 0 ? (
+                  <div>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Spaces
+                    </p>
+                    <ul className="space-y-2 text-sm">
+                      <li className="rounded-md border bg-muted/30 px-3 py-2 text-muted-foreground">
+                        {spaceRows.join(', ')}
+                      </li>
+                    </ul>
+                  </div>
+                ) : null}
+                {generalRows.length > 0 ? (
+                  <div>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Project choices
+                    </p>
+                    <ul className="space-y-2 text-sm">
+                      {generalRows.map(([decisionId, value]) => (
+                        <li key={decisionId} className="rounded-md border bg-muted/30 px-3 py-2">
+                          <span className="font-medium text-foreground">{decisionId}</span>
+                          <p className="mt-1 text-muted-foreground">{value}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
                 {standardRows.length > 0 ? (
                   <div>
                     <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Standard path</p>

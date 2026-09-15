@@ -846,42 +846,54 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       // Create a deep copy of phases
       let newPhases = JSON.parse(JSON.stringify(currentProjectRun.phases || []));
 
-      // Apply standard decisions and if-necessary work filtering
-      newPhases = newPhases.map(phase => {
-        const standardChoices = customizationState.standardDecisions[phase.id] || [];
-        const ifNecessaryChoices = customizationState.ifNecessaryWork[phase.id] || [];
+      // Apply standard decisions and if-necessary work filtering.
+      // Space-scoped choices live under spaceDecisions; also honor top-level maps.
+      newPhases = newPhases.map((phase) => {
+        const standardChoices = [
+          ...(customizationState.standardDecisions[phase.id] || []),
+          ...Object.values(customizationState.spaceDecisions).flatMap(
+            (spaceState) => spaceState.standardDecisions?.[phase.id] || []
+          ),
+        ];
+        const ifNecessaryChoices = [
+          ...(customizationState.ifNecessaryWork[phase.id] || []),
+          ...Object.values(customizationState.spaceDecisions).flatMap(
+            (spaceState) => spaceState.ifNecessaryWork?.[phase.id] || []
+          ),
+        ];
 
         // Extract selected operation IDs from "groupKey:operationId" format
-        const selectedOpIds = new Set(standardChoices.map(choice => {
-          const parts = choice.split(':');
-          return parts.length > 1 ? parts[1] : choice;
-        }));
+        const selectedOpIds = new Set(
+          standardChoices.map((choice) => {
+            const parts = choice.split(':');
+            return parts.length > 1 ? parts[1] : choice;
+          })
+        );
+        const selectedIfNecessaryIds = new Set(ifNecessaryChoices);
 
         // Filter operations based on flowType
-        const filteredOperations = phase.operations.filter(op => {
+        const filteredOperations = phase.operations.filter((op) => {
           const flowType = (op as any).flowType || 'prime';
-          
+
           // Always keep prime operations
           if (flowType === 'prime') return true;
-          
+
           // For alternate operations, only keep selected ones
           if (flowType === 'alternate') {
-            const isSelected = selectedOpIds.has(op.id);
-            return isSelected;
+            return selectedOpIds.has(op.id);
           }
-          
+
           // For if-necessary operations, only keep selected ones
           if (flowType === 'if-necessary') {
-            const isSelected = ifNecessaryChoices.includes(op.id);
-            return isSelected;
+            return selectedIfNecessaryIds.has(op.id);
           }
-          
+
           return true;
         });
-        
+
         return {
           ...phase,
-          operations: filteredOperations
+          operations: filteredOperations,
         };
       });
 
