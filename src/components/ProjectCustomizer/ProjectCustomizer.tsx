@@ -87,6 +87,8 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   const [activeStep, setActiveStep] = useState(mode === 'unplanned-work' ? 'step-4' : 'step-1');
   const activeStepRef = useRef(activeStep);
   activeStepRef.current = activeStep;
+  /** Open phase row inside step 4 (`spaceId::phaseId`). */
+  const [openBuiltInPhaseKey, setOpenBuiltInPhaseKey] = useState<string>('');
   const [customizationState, setCustomizationState] = useState<CustomizationState>({
     spaces: [],
     spaceDecisions: {},
@@ -117,8 +119,33 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   useEffect(() => {
     if (open) {
       setActiveStep(mode === 'unplanned-work' ? 'step-4' : 'step-1');
+      setOpenBuiltInPhaseKey('');
     }
   }, [open, mode]);
+
+  // Keep the active customizer step accordion in view when it changes.
+  useEffect(() => {
+    if (!open || !activeStep) return;
+    const frame = window.requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(
+        `[data-customizer-step="${activeStep}"]`
+      );
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, activeStep]);
+
+  // Keep the expanded phase accordion in view when browsing built-in work.
+  useEffect(() => {
+    if (!open || !openBuiltInPhaseKey || activeStep !== 'step-4') return;
+    const frame = window.requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(
+        `[data-built-in-phase="${openBuiltInPhaseKey}"]`
+      );
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, openBuiltInPhaseKey, activeStep]);
 
   // Get template project to access scaling unit and item type
   const templateProject = currentProjectRun?.projectId
@@ -173,9 +200,18 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
             description?: string;
             kind: 'included' | 'choice' | 'optional' | 'pending';
             pendingPrompt?: string;
+            steps: Array<{ id: string; name: string }>;
           }> = [];
 
           const pendingGroups = new Map<string, string>();
+
+          const mapSteps = (op: { id: string; steps?: Array<{ id: string; step?: string }> }) =>
+            (op.steps || [])
+              .map((step) => ({
+                id: step.id,
+                name: typeof step.step === 'string' ? step.step.trim() : '',
+              }))
+              .filter((step) => step.name.length > 0);
 
           phase.operations.forEach((op) => {
             const flowType = (op as any).flowType || 'prime';
@@ -185,6 +221,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 name: op.name,
                 description: op.description || undefined,
                 kind: 'included',
+                steps: mapSteps(op),
               });
               return;
             }
@@ -196,6 +233,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                   name: op.name,
                   description: op.description || undefined,
                   kind: 'choice',
+                  steps: mapSteps(op),
                 });
               } else if (!standardChoices.some((d) => d.startsWith(groupKey + ':'))) {
                 if (!pendingGroups.has(groupKey)) {
@@ -213,6 +251,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 name: op.name,
                 description: op.description || undefined,
                 kind: 'optional',
+                steps: mapSteps(op),
               });
             }
           });
@@ -223,6 +262,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
               name: prompt,
               kind: 'pending',
               pendingPrompt: prompt,
+              steps: [],
             });
           });
 
@@ -242,6 +282,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
           description?: string;
           kind: 'included' | 'choice' | 'optional' | 'pending';
           pendingPrompt?: string;
+          steps: Array<{ id: string; name: string }>;
         }>;
       }>;
 
@@ -986,7 +1027,11 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
               onValueChange={setActiveStep}
               className="space-y-4 pb-4"
             >
-              <AccordionItem value="step-1" className="overflow-hidden rounded-xl border bg-card shadow-sm">
+              <AccordionItem
+                value="step-1"
+                data-customizer-step="step-1"
+                className="overflow-hidden rounded-xl border bg-card shadow-sm"
+              >
                 <AccordionTrigger className="px-4 py-4 hover:no-underline md:px-5">
                   <StepHeading
                     step={1}
@@ -1050,7 +1095,11 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="step-2" className="overflow-hidden rounded-xl border bg-card shadow-sm">
+              <AccordionItem
+                value="step-2"
+                data-customizer-step="step-2"
+                className="overflow-hidden rounded-xl border bg-card shadow-sm"
+              >
                 <AccordionTrigger className="px-4 py-4 hover:no-underline md:px-5">
                   <StepHeading
                     step={2}
@@ -1094,7 +1143,11 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="step-3" className="overflow-hidden rounded-xl border bg-card shadow-sm">
+              <AccordionItem
+                value="step-3"
+                data-customizer-step="step-3"
+                className="overflow-hidden rounded-xl border bg-card shadow-sm"
+              >
                 <AccordionTrigger className="px-4 py-4 hover:no-underline md:px-5">
                   <StepHeading
                     step={3}
@@ -1185,7 +1238,11 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="step-4" className="overflow-hidden rounded-xl border bg-card shadow-sm">
+              <AccordionItem
+                value="step-4"
+                data-customizer-step="step-4"
+                className="overflow-hidden rounded-xl border bg-card shadow-sm"
+              >
                 <AccordionTrigger className="px-4 py-4 hover:no-underline md:px-5">
                   <StepHeading
                     step={4}
@@ -1211,46 +1268,94 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                             Add spaces in step 2 to see the project work list.
                           </p>
                         ) : (
-                          builtInWorkBySpace.map((spaceRow) => (
-                            <div key={spaceRow.spaceId} className="space-y-3">
-                              <h4 className="text-sm font-semibold text-foreground">
-                                {spaceRow.spaceName}
-                              </h4>
-                              {spaceRow.phases.length === 0 ? (
-                                <p className="text-xs text-muted-foreground">
-                                  No operations listed for this space yet.
-                                </p>
-                              ) : (
-                                spaceRow.phases.map((phaseRow) => (
-                                  <div
-                                    key={`${spaceRow.spaceId}-${phaseRow.phaseId}`}
-                                    className="overflow-hidden rounded-md border bg-background/80"
-                                  >
-                                    <div className="border-b bg-muted/40 px-2.5 py-1.5 text-xs font-medium">
-                                      {phaseRow.phaseName}
-                                    </div>
-                                    <div className="divide-y">
-                                      {phaseRow.operations.map((op) => (
-                                        <div
-                                          key={op.id}
-                                          className="grid grid-cols-[minmax(0,11rem)_minmax(0,1fr)] gap-x-3 px-2.5 py-1.5 text-xs sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]"
-                                        >
-                                          <div className="truncate font-medium leading-5">
-                                            {op.name}
-                                          </div>
-                                          <div className="truncate text-muted-foreground leading-5">
-                                            {op.kind === 'pending'
-                                              ? 'Needs choice in step 3'
-                                              : op.description || '—'}
-                                          </div>
+                          <div className="space-y-3">
+                            {builtInWorkBySpace
+                              .filter((spaceRow) => spaceRow.phases.length === 0)
+                              .map((spaceRow) => (
+                                <div
+                                  key={`${spaceRow.spaceId}-empty`}
+                                  className="rounded-md border border-dashed px-2.5 py-2"
+                                >
+                                  <p className="text-sm font-semibold text-foreground">
+                                    {spaceRow.spaceName}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    No operations listed for this space yet.
+                                  </p>
+                                </div>
+                              ))}
+                            <Accordion
+                              type="single"
+                              collapsible
+                              value={openBuiltInPhaseKey}
+                              onValueChange={(value) => {
+                                setOpenBuiltInPhaseKey(value || '');
+                              }}
+                              className="space-y-2"
+                            >
+                              {builtInWorkBySpace.flatMap((spaceRow) =>
+                                spaceRow.phases.map((phaseRow) => {
+                                  const phaseKey = `${spaceRow.spaceId}::${phaseRow.phaseId}`;
+                                  const showSpacePrefix = builtInWorkBySpace.length > 1;
+                                  return (
+                                    <AccordionItem
+                                      key={phaseKey}
+                                      value={phaseKey}
+                                      data-built-in-phase={phaseKey}
+                                      className="overflow-hidden rounded-md border bg-background/80"
+                                    >
+                                      <AccordionTrigger className="px-2.5 py-2 text-xs font-medium hover:no-underline">
+                                        <span className="flex min-w-0 flex-col items-start gap-0.5 text-left">
+                                          {showSpacePrefix ? (
+                                            <span className="text-[10px] font-normal text-muted-foreground">
+                                              {spaceRow.spaceName}
+                                            </span>
+                                          ) : null}
+                                          <span className="flex min-w-0 items-center gap-2">
+                                            <span className="truncate">{phaseRow.phaseName}</span>
+                                            <span className="shrink-0 text-[10px] font-normal text-muted-foreground">
+                                              {phaseRow.operations.length} op
+                                              {phaseRow.operations.length === 1 ? '' : 's'}
+                                            </span>
+                                          </span>
+                                        </span>
+                                      </AccordionTrigger>
+                                      <AccordionContent className="border-t px-0 pb-0">
+                                        <div className="divide-y">
+                                          {phaseRow.operations.map((op) => (
+                                            <div key={op.id} className="space-y-1.5 px-2.5 py-2">
+                                              <div className="grid grid-cols-[minmax(0,11rem)_minmax(0,1fr)] gap-x-3 text-xs sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
+                                                <div className="truncate font-medium leading-5">
+                                                  {op.name}
+                                                </div>
+                                                <div className="truncate text-muted-foreground leading-5">
+                                                  {op.kind === 'pending'
+                                                    ? 'Needs choice in step 3'
+                                                    : op.description || '—'}
+                                                </div>
+                                              </div>
+                                              {op.steps.length > 0 ? (
+                                                <ul className="space-y-1 border-l border-border/60 pl-3">
+                                                  {op.steps.map((step) => (
+                                                    <li
+                                                      key={step.id}
+                                                      className="truncate text-[11px] leading-4 text-muted-foreground"
+                                                    >
+                                                      {step.name}
+                                                    </li>
+                                                  ))}
+                                                </ul>
+                                              ) : null}
+                                            </div>
+                                          ))}
                                         </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ))
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  );
+                                })
                               )}
-                            </div>
-                          ))
+                            </Accordion>
+                          </div>
                         )}
                         <div className="flex flex-row items-center gap-2 pt-1">
                           <Button
