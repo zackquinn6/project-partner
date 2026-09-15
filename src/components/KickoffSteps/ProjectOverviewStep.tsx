@@ -923,6 +923,22 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
         </CardHeader>
         <CardContent className="space-y-3 p-2 sm:p-3">
           <section className="space-y-3" aria-label="Project fit recommendation">
+            {resolvedProjectDescription ? (
+              <p className="text-xs leading-snug text-muted-foreground whitespace-pre-line sm:text-sm">
+                {resolvedProjectDescription}
+              </p>
+            ) : null}
+
+            {matchExplanation.challengesParagraph?.trim() ? (
+              <p className="flex gap-2 text-sm text-muted-foreground">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="min-w-0 leading-snug">
+                  <span className="font-medium text-foreground/80">Challenges: </span>
+                  {matchExplanation.challengesParagraph}
+                </span>
+              </p>
+            ) : null}
+
             <div
               className={`rounded-lg border px-4 py-4 ${tierVisual.cardClass}`}
             >
@@ -945,23 +961,8 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
               <ul className="mt-3 space-y-1.5 border-t border-border/40 pt-3 text-sm text-foreground">
                 <MatchReasonRow axis={matchExplanation.skillAxis} text={matchExplanation.reasonSkill} />
                 <MatchReasonRow axis={matchExplanation.effortAxis} text={matchExplanation.reasonEffort} />
-                {matchExplanation.challengesParagraph?.trim() ? (
-                  <li className="flex gap-2">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                    <span className="min-w-0 leading-snug text-muted-foreground">
-                      <span className="font-medium text-foreground/80">Challenges: </span>
-                      {matchExplanation.challengesParagraph}
-                    </span>
-                  </li>
-                ) : null}
               </ul>
             </div>
-
-            {resolvedProjectDescription ? (
-              <p className="text-xs leading-snug text-muted-foreground line-clamp-3 whitespace-pre-line sm:text-sm">
-                {resolvedProjectDescription}
-              </p>
-            ) : null}
           </section>
 
           <Accordion type="single" collapsible defaultValue={undefined} className="w-full rounded-lg border bg-muted/20 px-1.5 sm:px-2">
