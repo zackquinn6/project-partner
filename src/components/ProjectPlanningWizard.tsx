@@ -43,6 +43,7 @@ import {
   PLANNING_WIZARD_STEP_TITLE_CLASSNAME,
 } from '@/components/PlanningWizardSteps/planningWizardOpenAppButton';
 import type { Phase } from '@/interfaces/Project';
+import { cn } from '@/lib/utils';
 
 interface ProjectPlanningWizardProps {
   open: boolean;
@@ -495,14 +496,17 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     }
   };
 
+  const handleSkipToWorkflow = () => {
+    if (!isScopeComplete) {
+      toast.message('Complete Scope before opening your project workflow');
+      return;
+    }
+    if (!onGoToWorkflow) return;
+    onGoToWorkflow();
+  };
+
   const progress = wizardSteps.length > 0 ? completedSteps.size / wizardSteps.length * 100 : 0;
   const currentToolId = wizardSteps[currentStep]?.toolId ?? null;
-  const currentToolMeta = currentToolId
-    ? PLANNING_TOOLS.find((t) => t.id === currentToolId)
-    : undefined;
-  const openAppLabel = currentToolMeta?.label
-    ? `Open ${currentToolMeta.label}`
-    : 'Open app';
 
   const phasesForSummary = useMemo(
     () => (Array.isArray(currentProjectRun?.phases) ? (currentProjectRun!.phases as Phase[]) : []),
@@ -749,30 +753,31 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   }
 
   const renderStickyActions = () => {
+    /** Match Kickoff footer geometry: escape row + full-width h-14 continue. */
+    const primaryButtonClass =
+      'font-display h-14 min-h-14 max-h-14 w-full shrink-0 rounded-xl px-3 text-sm font-semibold leading-none';
+
     if (wizardPhase === 'confirm') {
       return (
-        <div className="flex min-h-12 w-full flex-row items-stretch gap-2 sm:min-h-[3.25rem] sm:gap-3">
-          <div className="flex min-h-12 min-w-0 flex-[3] basis-0 flex-col sm:min-h-[3.25rem]">
-            <Button
+        <div className="flex h-[4.75rem] w-full flex-col justify-between">
+          <div className="flex h-5 w-full shrink-0 items-center justify-center overflow-hidden">
+            <button
               type="button"
-              variant="outline"
-              size="lg"
-              className="h-12 min-h-12 w-full border-slate-400 bg-slate-200 px-3 text-sm text-slate-900 hover:bg-slate-300 hover:text-slate-950 sm:h-full sm:min-h-[3.25rem]"
+              className="max-w-full truncate text-sm text-muted-foreground underline-offset-4 hover:underline"
               onClick={() => {
                 const firstIncomplete = wizardSteps.findIndex((_, i) => !completedSteps.has(i));
                 setWizardPhase('steps');
                 setCurrentStep(firstIncomplete >= 0 ? firstIncomplete : 0);
               }}
             >
-              Edit Plan
-            </Button>
+              Edit plan
+            </button>
           </div>
-          <div className="flex min-h-12 min-w-0 flex-[7] basis-0 flex-col sm:min-h-[3.25rem]">
+          <div className="h-14 w-full shrink-0">
             <Button
               type="button"
-              size="lg"
               disabled={!allWorkflowStepsComplete && wizardSteps.some((s) => s.toolId != null)}
-              className="h-12 min-h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 disabled:opacity-50 sm:h-full sm:min-h-[3.25rem]"
+              className={cn(primaryButtonClass, 'bg-green-600 hover:bg-green-700')}
               onClick={async () => {
                 if (!allWorkflowStepsComplete && wizardSteps.some((s) => s.toolId != null)) return;
                 if (onWorkflowFullyComplete) {
@@ -781,7 +786,6 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                 onOpenChange(false);
               }}
             >
-              <CheckCircle className="mr-2 h-4 w-4 shrink-0" />
               Start project
             </Button>
           </div>
@@ -791,39 +795,35 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
 
     const stepDone = isStepCompleted(currentStep);
     const isLast = currentStep >= wizardSteps.length - 1;
+    const onScopeStep = currentToolId === 'scope';
+    const showSkipToWorkflow = Boolean(onGoToWorkflow) && isScopeComplete && !onScopeStep;
     const primaryLabel = !stepDone
-      ? openAppLabel
+      ? 'Continue'
       : isLast
         ? 'Continue to Summary'
         : 'Continue';
 
     return (
-      <div className="flex min-h-12 w-full flex-row items-stretch gap-2 sm:min-h-[3.25rem] sm:gap-3">
-        {stepDone && currentToolId ? (
-          <div className="flex min-h-12 min-w-0 flex-[3] basis-0 flex-col sm:min-h-[3.25rem]">
-            <Button
+      <div className="flex h-[4.75rem] w-full flex-col justify-between">
+        <div className="flex h-5 w-full shrink-0 items-center justify-center overflow-hidden">
+          {showSkipToWorkflow ? (
+            <button
               type="button"
-              variant="outline"
-              size="lg"
-              className="h-12 min-h-12 w-full px-3 text-sm sm:h-full sm:min-h-[3.25rem]"
-              onClick={() => openPlanningTool(currentToolId)}
+              className="max-w-full truncate text-sm text-muted-foreground underline-offset-4 hover:underline"
+              onClick={handleSkipToWorkflow}
             >
-              Reopen {currentToolMeta?.label ?? 'app'}
-            </Button>
-          </div>
-        ) : (
-          <div className="min-w-0 flex-[3] basis-0" aria-hidden />
-        )}
-        <div className="flex min-h-12 min-w-0 flex-[7] basis-0 flex-col sm:min-h-[3.25rem]">
+              Skip ahead to workflow
+            </button>
+          ) : null}
+        </div>
+        <div className="h-14 w-full shrink-0">
           <Button
             type="button"
-            size="lg"
-            className="h-12 min-h-12 w-full bg-green-600 px-3 text-sm hover:bg-green-700 sm:h-full sm:min-h-[3.25rem]"
+            className={primaryButtonClass}
             disabled={!currentToolId && !stepDone}
             onClick={handleContinueFromSticky}
           >
-            <CheckCircle className="mr-2 h-4 w-4 shrink-0" />
-            <span className="text-left leading-tight">{primaryLabel}</span>
+            {primaryLabel}
           </Button>
         </div>
       </div>
@@ -831,7 +831,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   };
 
   const shell = (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-auto md:overflow-visible">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-[min(800px,calc(100dvh-5rem))] md:min-h-[min(800px,calc(100dvh-5rem))]">
       <div className="flex shrink-0 items-center justify-between gap-2">
         <PlanningJourneyHeader
           activeStage="plan"
@@ -1133,14 +1133,12 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         </CardContent>
       </Card>
 
-      <div className="flex min-h-0 flex-1 flex-col md:min-h-[min(520px,70vh)]">
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] -mx-2 px-2 pb-2 sm:mx-0 sm:px-0 sm:pb-4 md:flex-none md:overflow-visible md:pb-0">
-          <div className="min-w-0">{renderCurrentStep()}</div>
-        </div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
+        <div className="min-w-0">{renderCurrentStep()}</div>
       </div>
 
-      <Card className="sticky bottom-0 z-10 shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:static md:border md:bg-card md:backdrop-blur-none">
-        <CardContent className="p-2.5 sm:p-4">{renderStickyActions()}</CardContent>
+      <Card className="z-10 h-[6.25rem] shrink-0 border-t bg-background">
+        <CardContent className="flex h-full items-center p-3">{renderStickyActions()}</CardContent>
       </Card>
     </div>
   );
