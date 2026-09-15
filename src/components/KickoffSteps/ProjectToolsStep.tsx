@@ -5,7 +5,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { FolderKanban } from 'lucide-react';
 
 export const PLANNING_TOOL_IDS = [
   'scope',
@@ -289,10 +288,23 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     notifySelection(all);
   };
 
-  const handleClearAll = () => {
+  const handleDeselectAll = () => {
     const next = new Set<PlanningToolId>(['scope']);
     setSelected(next);
     notifySelection(next);
+  };
+
+  const allSelectableIds = React.useMemo(
+    () => toolsToShow.map((t) => t.id),
+    [toolsToShow]
+  );
+
+  const allSelected =
+    allSelectableIds.length > 0 && allSelectableIds.every((id) => selected.has(id));
+
+  const handleToggleSelectAll = () => {
+    if (allSelected) handleDeselectAll();
+    else handleSelectAll();
   };
 
   const recommendedIds = React.useMemo(() => {
@@ -320,71 +332,32 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     wasteRemovalEnabled,
   ]);
 
-  const recommendedLabel =
-    projectFocus === 'savings'
-      ? 'Recommended for cost focus'
-      : projectFocus === 'quality'
-        ? 'Recommended for quality focus'
-        : projectFocus === 'schedule'
-          ? 'Recommended for schedule focus'
-          : 'Recommended Planning Tools';
-
-  const recommendedToolNames = recommendedIds
-    .map((id) => PLANNING_TOOLS.find((t) => t.id === id)?.label)
-    .filter((name): name is string => Boolean(name));
-
   const handleUseRecommended = () => {
     const next = new Set(recommendedIds as PlanningToolId[]);
     setSelected(next);
     notifySelection(next);
   };
 
-  const selectedToolNames = Array.from(selected)
-    .map((id) => PLANNING_TOOLS.find((t) => t.id === id)?.label)
-    .filter((name): name is string => Boolean(name));
-
   const inner = (
     <>
-      <div className={compact ? 'space-y-1.5 rounded-lg border border-primary/30 bg-primary/5 p-2.5' : 'space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-3'}>
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0 space-y-1">
-            <p className="text-sm font-medium text-foreground">{recommendedLabel}</p>
-            <p className="text-xs text-muted-foreground">
-              {recommendedToolNames.join(' · ')}
-            </p>
-            {selectedToolNames.length > 0 ? (
-              <p className="text-xs text-primary">
-                Adds to your plan: {selectedToolNames.join(', ')}
-              </p>
-            ) : null}
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            className="h-9 shrink-0"
-            onClick={handleUseRecommended}
-          >
-            Apply recommended
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          className="h-9"
+          onClick={handleUseRecommended}
+        >
+          Apply Recommended Planning Tools
+        </Button>
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="h-8 gap-1.5 px-2 text-xs"
-          onClick={handleSelectAll}
+          className="h-9 text-xs"
+          onClick={handleToggleSelectAll}
         >
-          <FolderKanban className="h-3.5 w-3.5 shrink-0" />
-          Select all
+          {allSelected ? 'Deselect all' : 'Select all'}
         </Button>
-        {selected.size > 1 ? (
-          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={handleClearAll}>
-            Keep Scope only
-          </Button>
-        ) : null}
       </div>
 
       <div
