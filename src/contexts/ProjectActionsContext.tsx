@@ -1072,6 +1072,12 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       (projectRun as any).instruction_level_preference ?? null
     );
 
+    const planningToolsSignatureForKey = (raw: unknown) => {
+      const d = parseCustomizationDecisions(raw);
+      const tools = d.selected_planning_tools;
+      return JSON.stringify(Array.isArray(tools) ? tools : []);
+    };
+
     const updateKeyParts = [
       projectRun.id,
       projectRun.status,
@@ -1086,6 +1092,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       scheduleOptimizationMethodKey,
       qualityControlSettingsKey,
       instructionLevelPreferenceKey,
+      planningToolsSignatureForKey(projectRun.customization_decisions),
       ...(shouldIncludeProgressReportingStyleKey ? [progressReportingStyleKey] : [])
     ];
 

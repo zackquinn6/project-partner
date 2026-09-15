@@ -9,7 +9,7 @@ import { ProjectProfileStep } from './KickoffSteps/ProjectProfileStep';
 import {
   ProjectToolsStep,
   type PlanningToolId,
-  filterByPartnerAvailability,
+  normalizePlanningToolsSelection,
   DEFAULT_PLANNING_TOOLS_SELECTION,
 } from './KickoffSteps/ProjectToolsStep';
 import { toast } from 'sonner';
@@ -100,7 +100,9 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   const [maxReachedKickoffStep, setMaxReachedKickoffStep] = useState(0);
   const [completedKickoffSteps, setCompletedKickoffSteps] = useState<Set<number>>(new Set());
   const [checkedOutputs, setCheckedOutputs] = useState<Record<string, Set<string>>>({});
-  const [selectedPlanningTools, setSelectedPlanningTools] = useState<PlanningToolId[]>([]);
+  const [selectedPlanningTools, setSelectedPlanningTools] = useState<PlanningToolId[]>([
+    ...DEFAULT_PLANNING_TOOLS_SELECTION,
+  ]);
   /** user_profiles.skill_level / physical_capability - sole source for Match "Your level". */
   const [profileSkillLevel, setProfileSkillLevel] = useState<string | null>(null);
   const [profilePhysicalCapability, setProfilePhysicalCapability] = useState<string | null>(null);
@@ -395,7 +397,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
             tools = [...DEFAULT_PLANNING_TOOLS_SELECTION];
           }
         }
-        const normalized = filterByPartnerAvailability(
+        const normalized = normalizePlanningToolsSelection(
           tools,
           partnerAppsEnabled,
           expertSupportEnabled,
@@ -432,12 +434,14 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         'kickoff-step-4',
       ] as const;
       const allKickoffUiPresent = kickoffUiIds.every((id) => newCompletedSteps.includes(id));
+
+      // Optimistic context write first so Planning Studio never mounts with empty tools,
+      // then open the studio before awaiting the network round-trip.
+      const savePromise = updateProjectRun(updatedProjectRun);
       if (finishingEntireKickoff && allKickoffUiPresent) {
         onBeforeFinalKickoffPersistence?.();
       }
-
-      // Wait for database update to complete
-      await updateProjectRun(updatedProjectRun);
+      await savePromise;
 
       // Check if all kickoff steps are complete
       if (newCompletedKickoffSteps.size === kickoffSteps.length) {
@@ -505,7 +509,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
           ? (persisted as PlanningToolId[])
           : [...DEFAULT_PLANNING_TOOLS_SELECTION];
 
-    const normalized = filterByPartnerAvailability(
+    const normalized = normalizePlanningToolsSelection(
       sourceTools,
       partnerAppsEnabled,
       expertSupportEnabled,

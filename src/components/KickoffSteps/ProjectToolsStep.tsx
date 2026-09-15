@@ -146,6 +146,28 @@ export function filterByPartnerAvailability(
   });
 }
 
+/**
+ * Product invariant: Planning Studio always includes Scope (project customizer).
+ * Partner-gated tools are filtered; empty input becomes scope-only.
+ */
+export function normalizePlanningToolsSelection(
+  ids: PlanningToolId[],
+  partnerAppsEnabled: boolean,
+  expertSupportEnabled: boolean,
+  toolRentalsEnabled: boolean,
+  wasteRemovalEnabled: boolean
+): PlanningToolId[] {
+  const filtered = filterByPartnerAvailability(
+    ids,
+    partnerAppsEnabled,
+    expertSupportEnabled,
+    toolRentalsEnabled,
+    wasteRemovalEnabled
+  );
+  if (filtered.includes('scope')) return filtered;
+  return ['scope', ...filtered];
+}
+
 function sortToolsForKickoffGrid(
   tools: (typeof PLANNING_TOOLS)[number][]
 ): (typeof PLANNING_TOOLS)[number][] {
@@ -204,7 +226,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   useEffect(() => {
     const fromPersisted =
       initialSelected.length > 0 ? initialSelected : DEFAULT_PLANNING_TOOLS_SELECTION;
-    const next = filterByPartnerAvailability(
+    const next = normalizePlanningToolsSelection(
       fromPersisted as PlanningToolId[],
       partnerAppsEnabled,
       expertSupportEnabled,

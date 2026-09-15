@@ -14,7 +14,7 @@ import {
 import { ChevronLeft, CheckCircle, Settings2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useProject } from '@/contexts/ProjectContext';
-import { PLANNING_TOOLS, PLANNING_TOOLS_DISPLAY_ORDER } from './KickoffSteps/ProjectToolsStep';
+import { PLANNING_TOOLS, PLANNING_TOOLS_DISPLAY_ORDER, normalizePlanningToolsSelection } from './KickoffSteps/ProjectToolsStep';
 import type { PlanningToolId } from './KickoffSteps/ProjectToolsStep';
 import { CustomizationStep } from './PlanningWizardSteps/CustomizationStep';
 import { ScheduleStep } from './PlanningWizardSteps/ScheduleStep';
@@ -104,14 +104,14 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
   const selectedToolsFromContext = useMemo(() => {
     const decisions = parseCustomizationDecisions(currentProjectRun?.customization_decisions);
     const rawSelected = (decisions.selected_planning_tools as unknown as string[] | undefined) ?? [];
-    const normalized = rawSelected.filter((id): id is PlanningToolId => validToolIds.has(id as any));
-    return normalized.filter(id => {
-      if (!partnerAppsEnabled && (id === 'expert_support' || id === 'tool_rentals' || id === 'waste_removal')) return false;
-      if (id === 'expert_support' && !expertSupportEnabled) return false;
-      if (id === 'tool_rentals' && !toolRentalsEnabled) return false;
-      if (id === 'waste_removal' && !wasteRemovalEnabled) return false;
-      return true;
-    });
+    const asIds = rawSelected.filter((id): id is PlanningToolId => validToolIds.has(id as any));
+    return normalizePlanningToolsSelection(
+      asIds,
+      partnerAppsEnabled,
+      expertSupportEnabled,
+      toolRentalsEnabled,
+      wasteRemovalEnabled
+    );
   }, [
     currentProjectRun?.id,
     currentProjectRun?.customization_decisions,
@@ -127,6 +127,45 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     return decisions.planning_wizard_first_pass_completed === true;
   }, [currentProjectRun?.customization_decisions]);
 
+  // Persist Scope when the run is missing selected_planning_tools (or omitted scope).
+  useEffect(() => {
+    if (!open || !currentProjectRun) return;
+    const decisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
+    const raw = decisions.selected_planning_tools;
+    const rawIds = Array.isArray(raw)
+      ? raw.filter((id): id is PlanningToolId => typeof id === 'string' && validToolIds.has(id as any))
+      : [];
+    const normalized = normalizePlanningToolsSelection(
+      rawIds,
+      partnerAppsEnabled,
+      expertSupportEnabled,
+      toolRentalsEnabled,
+      wasteRemovalEnabled
+    );
+    const prevSig = [...rawIds].sort().join(',');
+    const nextSig = [...normalized].sort().join(',');
+    if (prevSig === nextSig) return;
+    void updateProjectRun({
+      ...currentProjectRun,
+      customization_decisions: {
+        ...decisions,
+        selected_planning_tools: normalized,
+      } as any,
+      updatedAt: new Date(),
+    });
+  }, [
+    open,
+    currentProjectRun?.id,
+    currentProjectRun?.customization_decisions,
+    partnerAppsEnabled,
+    expertSupportEnabled,
+    toolRentalsEnabled,
+    wasteRemovalEnabled,
+    validToolIds,
+    updateProjectRun,
+    currentProjectRun,
+  ]);
+
   const wizardSteps = useMemo(() => {
     const selected = localSelectedTools ?? selectedToolsFromContext;
     const selectedSet = new Set(selected);
@@ -138,16 +177,9 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
       return true;
     });
     const ordered = orderFiltered.filter(id => selectedSet.has(id));
-    if (ordered.length === 0) {
-      return [{
-        id: 'no-tools',
-        toolId: null as PlanningToolId | null,
-        title: 'No tools selected',
-        description: 'Choose planning steps in Discover (Your plan) for this run.',
-        doneWhen: '',
-      }];
-    }
-    return ordered.map(toolId => {
+    // Scope is always required; normalizePlanningToolsSelection guarantees it is selected.
+    const steps = ordered.length > 0 ? ordered : (['scope'] as PlanningToolId[]);
+    return steps.map(toolId => {
       const meta = PLANNING_TOOLS.find(t => t.id === toolId);
       const title = meta?.trackerLabel ?? meta?.label ?? toolId;
       return {
@@ -599,15 +631,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     };
 
     if (currentToolId === null) {
-      return (
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">
-              Choose planning steps in Discover (Your plan) for this run. Each step opens in Planning Studio when you select it.
-            </p>
-          </CardContent>
-        </Card>
-      );
+      return <CustomizationStep {...stepProps} />;
     }
 
     switch (currentToolId) {
