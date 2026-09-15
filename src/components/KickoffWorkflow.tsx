@@ -35,6 +35,7 @@ export type KickoffCompletePersist = {
   customization_decisions: ProjectRun['customization_decisions'];
 };
 
+/** continue-planning = full Plan backlog; skip-to-workflow = Scope-only Planning Studio (workflow blocked until Scope done). */
 export type KickoffCompleteMode = 'continue-planning' | 'skip-to-workflow';
 
 export type KickoffCompletePayload = {
@@ -745,6 +746,22 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
   };
 
   const renderSkipPlanningEscape = () => {
+    const handleSkipToScopePlanning = () => {
+      // Open Planning Studio before kickoff flips complete so workflow cannot flash.
+      onBeforeFinalKickoffPersistence?.();
+      const existingDecisions = parseCustomizationDecisions(currentProjectRun?.customization_decisions);
+      onKickoffComplete({
+        mode: 'skip-to-workflow',
+        persist: {
+          customization_decisions: {
+            ...existingDecisions,
+            // Scope is the only required planning stage when skipping the full backlog.
+            selected_planning_tools: ['scope'],
+          } as ProjectRun['customization_decisions'],
+        },
+      });
+    };
+
     if (isMobile) {
       return (
         <DropdownMenu>
@@ -762,10 +779,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
           <DropdownMenuContent align="start" className="w-72">
             <DropdownMenuItem
               onSelect={() => {
-                onKickoffComplete({ mode: 'skip-to-workflow' });
+                handleSkipToScopePlanning();
               }}
             >
-              Skip planning and start project
+              Skip to Planning Studio
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -778,10 +795,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         size="lg"
         className="h-12 min-h-12 w-full border-muted-foreground/40 px-3 text-sm text-muted-foreground hover:bg-muted/40 sm:h-full sm:min-h-[3.25rem] sm:py-3"
         onClick={() => {
-          onKickoffComplete({ mode: 'skip-to-workflow' });
+          handleSkipToScopePlanning();
         }}
       >
-        <span className="text-left leading-tight sm:line-clamp-2">Skip planning and start project</span>
+        <span className="text-left leading-tight sm:line-clamp-2">Skip to Planning Studio</span>
       </Button>
     );
   };

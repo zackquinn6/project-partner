@@ -81,7 +81,7 @@ import {
   KICKOFF_UI_STEP_IDS
 } from '@/utils/projectUtils';
 import { collectPlanningWizardWorkflowCompletion } from '@/utils/planningWizardCompletion';
-import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
+import { parseCustomizationDecisions, isPlanningScopeComplete } from '@/utils/customizationDecisions';
 import type { PlanningToolId } from '@/components/KickoffSteps/ProjectToolsStep';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
@@ -363,21 +363,33 @@ export default function UserView({
     ? isKickoffPhaseComplete(currentProjectRun.completedSteps ?? [])
     : true;
 
+  const isScopePlanningComplete = currentProjectRun
+    ? isPlanningScopeComplete(currentProjectRun.customization_decisions)
+    : true;
+
   // Restore Planning Studio if kickoff completion marked it pending and this tree remounted.
+  // Also keep studio open until Scope (project customizer) is completed — workflow stays blocked.
   useEffect(() => {
     const runId = currentProjectRun?.id;
     if (!runId || forceShowKickoff || projectPlanningWizardOpen) return;
     if (!isKickoffComplete) return;
-    if (!pendingPlanningStudioByRunId.has(runId)) return;
     if (currentProjectRun.planningCompletedAt) {
       clearPlanningStudioPending(runId);
       return;
     }
+    if (!isScopePlanningComplete) {
+      markPlanningStudioPending(runId);
+      setProjectPlanningWizardOpen(true);
+      return;
+    }
+    if (!pendingPlanningStudioByRunId.has(runId)) return;
     setProjectPlanningWizardOpen(true);
   }, [
     currentProjectRun?.id,
     currentProjectRun?.planningCompletedAt,
+    currentProjectRun?.customization_decisions,
     isKickoffComplete,
+    isScopePlanningComplete,
     forceShowKickoff,
     projectPlanningWizardOpen,
   ]);
@@ -2948,7 +2960,6 @@ export default function UserView({
         }
         onKickoffComplete={async (payload: KickoffCompletePayload) => {
             const persist = payload.persist;
-            const skipToWorkflow = payload.mode === 'skip-to-workflow';
             if (currentProjectRun && updateProjectRun) {
              // Ensure ALL kickoff steps are marked complete (prevent duplicates)
              const existingSteps = currentProjectRun.completedSteps || [];
@@ -3112,25 +3123,11 @@ export default function UserView({
               }
               setCompletedSteps(new Set(uniqueSteps));
 
-              if (skipToWorkflow) {
-                // Escape hatch: mark selected planning tools complete and enter workflow.
-                clearPlanningStudioPending(currentProjectRun.id);
-                const toolsFromPersist = (persist?.customization_decisions as { selected_planning_tools?: PlanningToolId[] } | undefined)
-                  ?.selected_planning_tools;
-                const decisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
-                const toolsFromRun = decisions.selected_planning_tools as PlanningToolId[] | undefined;
-                const skipTools: PlanningToolId[] =
-                  Array.isArray(toolsFromPersist) && toolsFromPersist.length > 0
-                    ? toolsFromPersist
-                    : Array.isArray(toolsFromRun) && toolsFromRun.length > 0
-                      ? toolsFromRun
-                      : (['scope', 'risk'] as PlanningToolId[]);
-                const completed = await handlePlanningWizardFullyComplete(skipTools);
-                openWorkflowAtFirstIncompleteStep(completed);
-              } else {
-                markPlanningStudioPending(currentProjectRun.id);
-                setProjectPlanningWizardOpen(true);
-              }
+              // Both continue and skip open Planning Studio. Skip persists Scope-only tools;
+              // workflow stays blocked until Scope is completed (see restore effect / onOpenChange).
+              markPlanningStudioPending(currentProjectRun.id);
+              setForceShowKickoff(false);
+              setProjectPlanningWizardOpen(true);
             } else {
               // Update project run if kickoff phase not found
               const phasesForProgressElse = Array.isArray(currentProjectRun.phases) ? currentProjectRun.phases : [];
@@ -3181,24 +3178,9 @@ export default function UserView({
                 }
               }
               setCompletedSteps(new Set(uniqueSteps));
-              if (skipToWorkflow) {
-                clearPlanningStudioPending(currentProjectRun.id);
-                const toolsFromPersist = (persist?.customization_decisions as { selected_planning_tools?: PlanningToolId[] } | undefined)
-                  ?.selected_planning_tools;
-                const decisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
-                const toolsFromRun = decisions.selected_planning_tools as PlanningToolId[] | undefined;
-                const skipTools: PlanningToolId[] =
-                  Array.isArray(toolsFromPersist) && toolsFromPersist.length > 0
-                    ? toolsFromPersist
-                    : Array.isArray(toolsFromRun) && toolsFromRun.length > 0
-                      ? toolsFromRun
-                      : (['scope', 'risk'] as PlanningToolId[]);
-                const completed = await handlePlanningWizardFullyComplete(skipTools);
-                openWorkflowAtFirstIncompleteStep(completed);
-              } else {
-                markPlanningStudioPending(currentProjectRun.id);
-                setProjectPlanningWizardOpen(true);
-              }
+              markPlanningStudioPending(currentProjectRun.id);
+              setForceShowKickoff(false);
+              setProjectPlanningWizardOpen(true);
             }
             
             // Show post-kickoff notification if user hasn't disabled it
@@ -3310,7 +3292,16 @@ export default function UserView({
             open={projectPlanningWizardOpen}
             layout={isMobile ? 'dialog' : 'fullscreen'}
             onOpenChange={(open) => {
-              if (!open) clearPlanningStudioPending(currentProjectRun.id);
+              if (!open) {
+                const scopeDone = isPlanningScopeComplete(currentProjectRun.customization_decisions);
+                if (!scopeDone && !currentProjectRun.planningCompletedAt) {
+                  markPlanningStudioPending(currentProjectRun.id);
+                  setProjectPlanningWizardOpen(true);
+                  toast.message('Complete Scope to continue to your project');
+                  return;
+                }
+                clearPlanningStudioPending(currentProjectRun.id);
+              }
               setProjectPlanningWizardOpen(open);
             }}
             onWorkflowFullyComplete={async (tools) => {

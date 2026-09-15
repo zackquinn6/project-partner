@@ -18,3 +18,10 @@ export function parseCustomizationDecisions(raw: unknown): Record<string, unknow
   }
   return {};
 }
+
+/** True when Planning Studio Scope (project customizer) has been completed for this run. */
+export function isPlanningScopeComplete(customizationDecisions: unknown): boolean {
+  const decisions = parseCustomizationDecisions(customizationDecisions);
+  const completed = decisions.planning_wizard_completed_tools;
+  return Array.isArray(completed) && completed.includes('scope');
+}
