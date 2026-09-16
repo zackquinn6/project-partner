@@ -384,10 +384,10 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
                   return (
                     <div
                       key={toolId ?? toolName ?? String(index)}
-                      className="flex w-[3.25rem] flex-col items-center gap-0.5 flex-shrink-0 sm:w-[3.5rem]"
+                      className="flex w-[3.575rem] flex-col items-center gap-0.5 flex-shrink-0 sm:w-[3.85rem]"
                       title={label}
                     >
-                      <div className="relative h-9 w-9 shrink-0">
+                      <div className="relative h-[2.475rem] w-[2.475rem] shrink-0">
                         <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-md border bg-background">
                           {photoUrl ? (
                             <img
@@ -405,7 +405,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
                             className={`h-full w-full items-center justify-center ${photoUrl ? 'hidden' : 'flex'}`}
                             aria-hidden={Boolean(photoUrl)}
                           >
-                            <Wrench className="h-4 w-4 text-muted-foreground" aria-hidden />
+                            <Wrench className="h-[1.1rem] w-[1.1rem] text-muted-foreground" aria-hidden />
                           </div>
                         </div>
                         {typeof quantity === 'number' && quantity > 1 ? (
@@ -414,6 +414,9 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
                           </div>
                         ) : null}
                       </div>
+                      <span className="w-full break-words text-center text-[9px] leading-tight text-muted-foreground line-clamp-2">
+                        {label}
+                      </span>
                     </div>
                   );
                 })}
