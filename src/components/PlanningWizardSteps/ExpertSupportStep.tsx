@@ -39,7 +39,7 @@ export const ExpertSupportStep: React.FC<ExpertSupportStepProps> = ({
         <CardHeader className={PLANNING_WIZARD_STEP_HEADER_CLASSNAME}>
           <CardTitle className={PLANNING_WIZARD_STEP_TITLE_CLASSNAME}>
             <Headphones className="h-5 w-5" aria-hidden />
-            Support
+            Expert Support
           </CardTitle>
         </CardHeader>
         <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>

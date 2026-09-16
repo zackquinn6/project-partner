@@ -47,7 +47,7 @@ interface ProjectCustomizerProps {
   onOpenChange: (open: boolean) => void;
   currentProjectRun?: ProjectRun;
   mode?: 'initial-plan' | 'final-plan' | 'unplanned-work' | 'replan';
-  /** When opened from Planning Studio, use journey title Customize. */
+  /** When opened from Planning Studio, Save and Close gates on full Scope completion. */
   fromPlanningWizard?: boolean;
   /** Called after a successful Save and Close when Scope is fully complete (Planning Studio checkoff). */
   onPlanningWizardComplete?: () => void;
@@ -909,7 +909,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         );
 
         // Filter operations based on flowType.
-        // Keep unanswered alternate groups intact so Customize can reopen them.
+        // Keep unanswered alternate groups intact so Scope can reopen them.
         // Only drop rivals once a group has an explicit selection.
         const filteredOperations = phase.operations.filter((op) => {
           const flowType = (op as any).flowType || 'prime';
@@ -994,7 +994,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       if (fromPlanningWizard && !customizerFullyComplete) {
         toast({
           title: 'Scope incomplete',
-          description: 'Finish home, spaces, and required decisions before completing Customize.',
+          description: 'Finish home, spaces, and required decisions before completing Scope.',
           variant: 'destructive',
         });
         // Still persist progress, but do not mark Scope complete or advance Planning Studio.
@@ -1048,7 +1048,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   };
 
   const getModeTitle = () => {
-    return fromPlanningWizard ? 'Customize' : 'Project Customizer';
+    return 'Scope';
   };
 
   const getModeDescription = () => {

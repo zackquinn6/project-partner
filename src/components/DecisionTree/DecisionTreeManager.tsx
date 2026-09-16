@@ -82,7 +82,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               <TabsList className="mx-6 mt-6 w-fit">
                 <TabsTrigger value="customizer" className="flex items-center gap-2">
                   <CheckSquare className="w-4 h-4" />
-                  Customize Project
+                  Scope
                 </TabsTrigger>
                 <TabsTrigger value="phases-overview" className="flex items-center gap-2">
                   <Layout className="w-4 h-4" />

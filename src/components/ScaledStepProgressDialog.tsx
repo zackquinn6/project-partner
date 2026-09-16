@@ -194,7 +194,7 @@ export const ScaledStepProgressDialog: React.FC<ScaledStepProgressDialogProps> =
           </DialogHeader>
           <div className="py-8 text-center">
             <p className="text-muted-foreground mb-4">
-              No spaces have been defined for this project. Please add spaces in the Scope Builder during the Planning phase.
+              No spaces have been defined for this project. Please add spaces in Scope during the Planning phase.
             </p>
           </div>
           <DialogFooter>

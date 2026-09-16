@@ -86,7 +86,8 @@ export const PLANNING_TOOLS: {
   },
   {
     id: 'expert_support',
-    label: 'Support',
+    label: 'Expert Support',
+    trackerLabel: 'Support',
     benefit: 'Setup on-call expert support for when you need help',
     doneWhen: 'Support preferences are set',
   },

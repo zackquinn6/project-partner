@@ -518,7 +518,7 @@ export function MobileWorkflowView({
                   {((currentStep.step?.toLowerCase().includes('project') && (currentStep.step?.toLowerCase().includes('plan') || currentStep.step?.toLowerCase().includes('scope'))) ||
                     currentStep.step?.toLowerCase().includes('scheduling')) && (
                     <div className="flex flex-col gap-3 pt-4">
-                      {/* Project Customizer button for Project Planning and Scope steps */}
+                      {/* Scope button for Project Planning and Scope steps */}
                       {(currentStep.step?.toLowerCase().includes('project') && (currentStep.step?.toLowerCase().includes('plan') || currentStep.step?.toLowerCase().includes('scope'))) && (
                         <Button 
                           onClick={() => {
@@ -529,11 +529,11 @@ export function MobileWorkflowView({
                           size="sm"
                         >
                           <HelpCircle className="w-4 h-4" />
-                          Project Customizer
+                          Scope
                         </Button>
                       )}
 
-                      {/* Project Scheduler button for scheduling step */}
+                      {/* Schedule button for scheduling step */}
                       {currentStep.step?.toLowerCase().includes('scheduling') && (
                         <Button 
                           onClick={() => {
@@ -544,7 +544,7 @@ export function MobileWorkflowView({
                           size="sm"
                         >
                           <CalendarIcon className="w-4 h-4" />
-                          Project Scheduler
+                          Schedule
                         </Button>
                       )}
                     </div>
@@ -644,7 +644,7 @@ export function MobileWorkflowView({
                     ) : null}
                     <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={() => window.dispatchEvent(new CustomEvent('openProjectScheduler'))}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      Scheduler
+                      Schedule
                     </Button>
                     <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={() => launchActionKey('shopping-checklist')}>
                       <ShoppingCart className="mr-2 h-4 w-4" />

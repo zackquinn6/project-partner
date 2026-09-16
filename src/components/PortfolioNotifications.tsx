@@ -564,7 +564,7 @@ export function PortfolioNotifications({ onSaved }: PortfolioNotificationsProps)
                 Daily digest — time &amp; region
               </div>
               <p className="text-[11px] md:text-xs text-muted-foreground leading-relaxed">
-                The daily email lists workflow tasks from your Timekeeper schedule that are due
+                The daily email lists workflow tasks from your Schedule that are due
                 today and tasks that were due before today, with reminders to update status in the
                 app. Delivery uses your region&apos;s local date and the time you choose.
               </p>

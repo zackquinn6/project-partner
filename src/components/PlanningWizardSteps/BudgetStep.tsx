@@ -16,7 +16,7 @@ import {
 interface BudgetStepProps {
   onComplete: () => void;
   isCompleted: boolean;
-  /** When provided (e.g. from UserView), opens Project Budgeting directly so the link works from the wizard */
+  /** When provided (e.g. from UserView), opens Budget directly so the link works from the wizard */
   onOpenBudgeting?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
 }
 

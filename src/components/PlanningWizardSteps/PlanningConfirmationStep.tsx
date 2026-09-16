@@ -325,7 +325,7 @@ export function PlanningConfirmationStep({
               <p className="text-sm text-muted-foreground">
                 {hasStoredScopeContext
                   ? 'No alternate or optional scope choices were needed for this run.'
-                  : 'No customization choices are stored yet. If you used Customize (scope), open that step and save your selections, or continue if scope is unchanged.'}
+                  : 'No scope choices are stored yet. Open Scope and save your selections, or continue if scope is unchanged.'}
               </p>
             ) : (
               <div className="space-y-4">

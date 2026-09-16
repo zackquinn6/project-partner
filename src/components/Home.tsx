@@ -444,7 +444,7 @@ export default function Home({
                           <Hammer className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-xs text-card-foreground">Tool Access</h3>
+                          <h3 className="font-medium text-xs text-card-foreground">Tool Rental</h3>
                           <p className="text-[10px] text-muted-foreground">Find and rent tools nearby</p>
                         </div>
                         <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />

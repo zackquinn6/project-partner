@@ -34,7 +34,7 @@ export const FeaturesSection = () => {
 
   const additionalFeatures = [
     { icon: Home, label: "Home Maintenance" },
-    { icon: Calendar, label: "Project Scheduler" },
+    { icon: Calendar, label: "Schedule" },
     { icon: Wrench, label: "Tool Rentals" },
     { icon: ShoppingCart, label: "Materials Ordering" },
     { icon: Users, label: "Contractor Finder" },

@@ -577,7 +577,7 @@ export function WorkflowSidebar({
                       ) : null}
                     </div>
 
-                        {/* Partner Tools + Progress first (A–Z); project apps below (A–Z): Budget, Quality Control, Risk Radar, Scheduler, Shopping */}
+                        {/* Partner Tools + Progress first (A-Z); project apps below (A-Z): Budget, Quality, Risk Radar, Schedule, Shopping */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -617,7 +617,7 @@ export function WorkflowSidebar({
                                   onClick={onToolRentalsClick}
                                 >
                                   <Wrench className="h-3.5 w-3.5 shrink-0" />
-                                  Tool Rentals
+                                  Tool Rental
                                 </DropdownMenuItem>
                               )}
                               {wasteRemovalEnabled && (
@@ -660,7 +660,7 @@ export function WorkflowSidebar({
                           onClick={() => openAppByActionKey('quality-check')}
                         >
                           <ClipboardCheck className="h-3.5 w-3.5 shrink-0" />
-                          Quality Control
+                          Quality
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"
@@ -681,7 +681,7 @@ export function WorkflowSidebar({
                           onClick={onViewScheduleClick}
                         >
                           <Calendar className="h-3.5 w-3.5 shrink-0" />
-                          Scheduler
+                          Schedule
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"

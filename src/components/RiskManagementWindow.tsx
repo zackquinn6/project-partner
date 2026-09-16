@@ -1316,7 +1316,7 @@ export function RiskManagementWindow({
               ) : (
                 <Shield className="h-5 w-5 shrink-0" />
               )}
-              {useRiskRadarChrome ? 'Risk Radar' : 'Risk Management'}
+              Risk Radar
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>

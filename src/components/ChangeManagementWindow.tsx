@@ -177,7 +177,7 @@ export function ChangeManagementWindow({
                       {!projectRun.planningCompletedAt ? (
                         <p>
                           When you finish Planning Studio and start the project, schedule,
-                          budget, and scope builder choices are stored as the baseline to compare later
+                          budget, and Scope choices are stored as the baseline to compare later
                           changes against.
                         </p>
                       ) : baselineVersion === 1 && scheduleSnap ? (
@@ -196,7 +196,7 @@ export function ChangeManagementWindow({
                               Plan bounds: start and end dates from the run at lock time are stored for
                               comparison.
                             </li>
-                            <li>Budget line items and customizer decisions are fingerprinted at lock time.</li>
+                            <li>Budget line items and Scope decisions are fingerprinted at lock time.</li>
                           </ul>
                         </>
                       ) : (
@@ -229,7 +229,7 @@ export function ChangeManagementWindow({
                       </p>
                     ) : rows.length === 0 && !loading ? (
                       <p className="text-sm text-muted-foreground">
-                        No changes recorded yet after your baseline. Edits from Timekeeper, Scope Builder,
+                        No changes recorded yet after your baseline. Edits from Schedule, Scope,
                         budgeting, shopping, and quality settings appear here with a short summary.
                       </p>
                     ) : (

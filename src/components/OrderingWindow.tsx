@@ -51,8 +51,6 @@ interface OrderingWindowProps {
   expandSettingsAccordionWhenOpen?: boolean;
   /** When true (e.g. opened from Planning Studio), all accordion sections start collapsed. */
   collapseAllAccordionSectionsOnOpen?: boolean;
-  /** When opened from Planning Studio, use journey title Shopping. */
-  fromPlanningWizard?: boolean;
 }
 
 interface ShoppingSite {
@@ -104,7 +102,6 @@ export function OrderingWindow({
   onOrderingComplete,
   expandSettingsAccordionWhenOpen = false,
   collapseAllAccordionSectionsOnOpen = false,
-  fromPlanningWizard = false,
 }: OrderingWindowProps) {
   const {
     updateProjectRun,
@@ -564,13 +561,10 @@ export function OrderingWindow({
   const {
     isMobile
   } = useResponsive();
-  const shoppingTitle = fromPlanningWizard
-    ? selectedMaterials && (selectedMaterials.materials.length > 0 || selectedMaterials.tools.length > 0)
-      ? 'Shopping — New Materials Needed'
-      : 'Shopping'
-    : selectedMaterials && (selectedMaterials.materials.length > 0 || selectedMaterials.tools.length > 0)
-      ? 'Shopping Checklist - New Materials Needed'
-      : 'Shopping Checklist';
+  const shoppingTitle =
+    selectedMaterials && (selectedMaterials.materials.length > 0 || selectedMaterials.tools.length > 0)
+      ? 'Shopping - New Materials Needed'
+      : 'Shopping';
   return (
     <ResponsiveDialog
       open={open}
@@ -759,7 +753,7 @@ export function OrderingWindow({
 
           <AccordionItem value="shopping-checklist" className="rounded-lg border px-3">
             <AccordionTrigger className="py-3 text-sm font-semibold hover:no-underline">
-              Shopping Checklist
+              Shopping List
             </AccordionTrigger>
             <AccordionContent className="space-y-4 pb-4 pt-0">
               {!isScheduled && <Alert className="mb-2">

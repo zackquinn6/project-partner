@@ -49,14 +49,11 @@ interface ActualEntry {
 interface ProjectBudgetingWindowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** When opened from Planning Studio, use journey title Budget. */
-  fromPlanningWizard?: boolean;
 }
 
 export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
   open,
   onOpenChange,
-  fromPlanningWizard = false,
 }) => {
   const { toast } = useToast();
   const { currentProjectRun, updateProjectRun } = useProject();
@@ -669,7 +666,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
         >
         <DialogHeader className={cn(PLANNING_TOOL_WINDOW_HEADER_CLASSNAME, 'flex-shrink-0')}>
           <DialogTitle className={PLANNING_TOOL_WINDOW_TITLE_CLASSNAME}>
-            {fromPlanningWizard ? 'Budget' : 'Project Budgeting'}
+            Budget
           </DialogTitle>
           <PlanningToolWindowHeaderActions
             onCancel={() => onOpenChange(false)}

@@ -63,8 +63,6 @@ interface ProjectSchedulerProps {
   onOpenChange: (open: boolean) => void;
   project: Project;
   projectRun: ProjectRun;
-  /** When opened from Planning Studio, use journey title Schedule. */
-  fromPlanningWizard?: boolean;
 }
 interface TeamMember {
   id: string;
@@ -158,7 +156,6 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   onOpenChange,
   project,
   projectRun,
-  fromPlanningWizard = false,
 }) => {
   const {
     updateProjectRun
@@ -1597,7 +1594,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             </div>
             <div className="min-w-0 space-y-1">
               <DialogTitle className={PLANNING_TOOL_WINDOW_TITLE_CLASSNAME}>
-                {fromPlanningWizard ? 'Schedule' : 'Project Scheduler'}
+                Schedule
               </DialogTitle>
               <p className={PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME}>
                 Schedules give the best opportunity to execute the project as intended

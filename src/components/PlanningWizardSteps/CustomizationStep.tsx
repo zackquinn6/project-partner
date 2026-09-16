@@ -36,7 +36,7 @@ export const CustomizationStep: React.FC<CustomizationStepProps> = ({
         <CardHeader className={PLANNING_WIZARD_STEP_HEADER_CLASSNAME}>
           <CardTitle className={PLANNING_WIZARD_STEP_TITLE_CLASSNAME}>
             <Settings className="h-5 w-5" aria-hidden />
-            Customize
+            Scope
           </CardTitle>
         </CardHeader>
         <CardContent className={PLANNING_WIZARD_STEP_CONTENT_CLASSNAME}>
@@ -44,7 +44,7 @@ export const CustomizationStep: React.FC<CustomizationStepProps> = ({
             <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
               <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
                 <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
-                  Make choices for your unique project to plan out the work to be done
+                  Pick the home and spaces you are working on, then the options that apply to this run
                 </p>
                 <PlanningToolOpenCardButton toolId="scope" onClick={handleOpenCustomizer} />
               </div>

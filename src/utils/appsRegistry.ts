@@ -18,7 +18,7 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     displayOrder: 0.5
   },
   'project-customizer': {
-    appName: 'Scope Builder',
+    appName: 'Scope',
     appType: 'native',
     icon: 'Settings',
     description: 'Decide what work will actually be done in each space',
@@ -26,7 +26,7 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     displayOrder: 1
   },
   'project-scheduler': {
-    appName: 'Timekeeper',
+    appName: 'Schedule',
     appType: 'native',
     icon: 'Calendar',
     description: 'Put a realistic timeline to the work',
@@ -74,7 +74,7 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     displayOrder: 6
   },
   'tool-access': {
-    appName: 'Tool Access',
+    appName: 'Tool Rental',
     appType: 'native',
     icon: 'Hammer',
     description: 'Find tool rental locations and access options',
@@ -83,7 +83,7 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     isBeta: true
   },
   'project-budgeting': {
-    appName: 'Project Budgeting',
+    appName: 'Budget',
     appType: 'native',
     icon: 'DollarSign',
     description: 'Set budgets and track actual spending',
@@ -99,7 +99,7 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     displayOrder: 9
   },
   'risk-management': {
-    appName: 'Risk Management',
+    appName: 'Risk Radar',
     appType: 'native',
     icon: 'Shield',
     description: 'Identify, assess, and mitigate project risks',
@@ -107,7 +107,7 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     displayOrder: 10
   },
   'risk-focus': {
-    appName: 'Risk Radar',
+    appName: 'Start Risk Radar',
     appType: 'native',
     icon: 'Crosshair',
     description: 'Start a project run dedicated to tracking risks for a template',
@@ -115,7 +115,7 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     displayOrder: 10.25
   },
   'quality-check': {
-    appName: 'Quality Control',
+    appName: 'Quality',
     appType: 'native',
     icon: 'CheckCircle',
     description: 'Verify workflow outputs are completed',

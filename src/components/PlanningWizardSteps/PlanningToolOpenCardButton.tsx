@@ -24,7 +24,7 @@ export function PlanningToolOpenCardButton({
 }: PlanningToolOpenCardButtonProps) {
   const meta = PLANNING_TOOLS.find((tool) => tool.id === toolId);
   const label = meta?.label ?? toolId;
-  const blurb = toolId === 'scope' ? 'Make key decisions' : meta?.benefit ?? '';
+  const blurb = meta?.benefit ?? '';
 
   return (
     <button

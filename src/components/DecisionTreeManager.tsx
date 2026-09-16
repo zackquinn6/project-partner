@@ -1526,7 +1526,7 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                           </span>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" align="start" className="max-w-sm text-left">
-                          Project-wide choices (e.g. tile size, layout). Homeowners pick these in Project Customizer
+                          Project-wide choices (e.g. tile size, layout). Homeowners pick these in Scope
                           alongside phase/alternate decisions. Link instruction sections and tools to these in the
                           workflow editor.
                         </TooltipContent>

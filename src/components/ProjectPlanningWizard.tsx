@@ -49,7 +49,7 @@ interface ProjectPlanningWizardProps {
   onGoToWorkflow?: () => void;
   /** Return from Plan stage to Kickoff (Discover). */
   onReturnToKickoff?: () => void;
-  /** When provided, opens Project Budgeting from the Budget step without relying on window event */
+  /** When provided, opens Budget from the Budget step without relying on window event */
   onOpenBudgeting?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;
   /** When provided, opens Risk Management at the host level (avoids nested dialog) */
   onOpenRiskManagement?: (options?: { fromPlanningWizard?: boolean; onComplete?: () => void }) => void;

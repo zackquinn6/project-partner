@@ -1,0 +1,38 @@
+---
+description: >-
+  Do not write overly literal or tautological UI guidance. Copy must add
+  information the user cannot already see from the UI itself.
+alwaysApply: true
+---
+
+# No obvious or tautological UI copy
+
+Do not write helper text, empty states, tooltips, or instructional strings that only restate what the UI already shows or what the control does by definition.
+
+If a sentence is true of almost any similar control ("select it to open it", "click to continue", "choose an option from the list"), cut it or replace it with something the layout does not already communicate.
+
+## Bad (tautology / narration)
+
+```tsx
+// BAD - restates the control; adds no decision help
+'Choose planning steps in Discover (Your plan) for this run. Each step opens in Planning Studio when you select it.'
+
+// BAD - narrates the click
+'Click a step to open it.'
+'Select an item from the list below.'
+'Use the button to continue.'
+```
+
+## Good (useful, non-obvious)
+
+```tsx
+// GOOD - tells the user why, what happens next, or a constraint they cannot see
+'Steps you include here are generated for this run only.'
+'Unselected steps stay in Discover and are not part of this plan.'
+```
+
+## Checklist before shipping UI strings
+
+- Does this say something the labels, layout, or interaction already make obvious? If yes, delete it.
+- Prefer silence over filler. Empty or short copy beats a tautology.
+- When guidance is needed, state a consequence, constraint, scope, or non-default behavior - not the click itself.

@@ -105,7 +105,7 @@ export const UserProjectCustomizer: React.FC<UserProjectCustomizerProps> = ({
               Back
             </Button>
             <div>
-              <h2 className="text-2xl font-bold">Customize Your Project</h2>
+              <h2 className="text-2xl font-bold">Scope</h2>
               <p className="text-muted-foreground">Make decisions about your specific project needs</p>
             </div>
           </div>

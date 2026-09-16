@@ -38,8 +38,8 @@ type SpaceDecisionMap = Record<
 >;
 
 /**
- * True when saved Customize content has a home, at least one space, and required
- * space decisions - the Project Customizer decision path itself.
+ * True when saved Scope content has a home, at least one space, and required
+ * space decisions - the Scope decision path itself.
  */
 export function isCustomizationContentComplete(
   projectRun: Pick<ProjectRun, 'home_id' | 'phases' | 'customization_decisions'> | null | undefined
@@ -74,7 +74,7 @@ export function isCustomizationContentComplete(
 }
 
 /**
- * Workflow may start only when Studio Scope is checkoff-complete and Customize content is complete.
+ * Workflow may start only when Studio Scope is checkoff-complete and Scope content is complete.
  */
 export function isScopeReadyForWorkflow(
   projectRun: Pick<ProjectRun, 'home_id' | 'phases' | 'customization_decisions'> | null | undefined

@@ -242,7 +242,7 @@ export function MobileOptimizedHome() {
     {
       id: 'tool-rentals',
       icon: Hammer,
-      title: 'Tool Access',
+      title: 'Tool Rental',
       description: 'Find and rent tools nearby',
       action: () => window.dispatchEvent(new CustomEvent('show-tool-rentals'))
     },

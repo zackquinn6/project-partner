@@ -11,11 +11,9 @@ import { useProject } from '@/contexts/ProjectContext';
 interface ToolRentalsWindowProps {
   isOpen: boolean;
   onClose: () => void;
-  /** When opened from Planning Studio, use journey title Tool Rental. */
-  fromPlanningWizard?: boolean;
 }
 
-export const ToolRentalsWindow = ({ isOpen, onClose, fromPlanningWizard = false }: ToolRentalsWindowProps) => {
+export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) => {
   const { currentProjectRun } = useProject();
   const handleVisitToolio = () => {
     window.open('https://toolio.us', '_blank');
@@ -32,7 +30,7 @@ export const ToolRentalsWindow = ({ isOpen, onClose, fromPlanningWizard = false 
       <ScrollableDialog
         open={isOpen}
         onOpenChange={onClose}
-        title={fromPlanningWizard ? 'Tool Rental' : 'Tool Access & Rentals'}
+        title="Tool Rental"
         description="Find rentals and plan tool access for your project"
         planningToolHeader
         className="relative z-[61] h-[100dvh] max-h-[100dvh] w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:w-[90vw] md:max-w-[min(90vw,calc(100vw-2rem))]"

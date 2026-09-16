@@ -203,7 +203,7 @@ function findMatchingTemplatePhase(
 /**
  * Re-attach alternate / if-necessary operations from the template onto a project-run
  * snapshot. Save-and-close historically stripped unselected decision ops from `phases`,
- * which left Customize with nothing to show on reopen. Decisions stay in
+ * which left Scope with nothing to show on reopen. Decisions stay in
  * customization_decisions; this only restores the choice catalog for the UI.
  */
 export function restoreDecisionOperationsFromTemplate(
