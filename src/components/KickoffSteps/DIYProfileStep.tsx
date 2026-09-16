@@ -414,7 +414,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
                           </div>
                         ) : null}
                       </div>
-                      <span className="w-full break-words text-center text-[9px] leading-tight text-muted-foreground line-clamp-2">
+                      <span className="line-clamp-2 h-[22px] w-full break-words text-center text-[9px] leading-[11px] text-muted-foreground sm:h-[24px] sm:text-[10px] sm:leading-[12px]">
                         {label}
                       </span>
                     </div>
