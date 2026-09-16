@@ -795,12 +795,18 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
           ? 'Set - continue'
           : 'Start planning';
 
+  /** Step 1 leaves the project entirely; later steps keep the run and jump to Scope. */
+  const exitLabel =
+    currentStepId === 'kickoff-step-1'
+      ? 'Not a match - take me back to the catalog'
+      : 'Skip to Scope Planning';
+
   const renderPrimaryActions = () => {
-    /** Same-row Exit (30%) + Continue (70%). */
+    /** Same-row exit (30%) + continue (70%). */
     const primaryButtonClass =
       'font-display h-14 min-h-14 max-h-14 w-full shrink-0 rounded-xl px-3 text-sm font-semibold leading-none';
     const exitButtonClass =
-      'font-display h-14 min-h-14 max-h-14 w-full shrink-0 rounded-xl px-2 text-sm font-semibold leading-none';
+      'font-display h-14 min-h-14 max-h-14 w-full shrink-0 whitespace-normal rounded-xl px-2 text-center text-[11px] font-semibold leading-tight sm:text-xs';
 
     const handleExit = () => {
       if (currentStepId === 'kickoff-step-1') {
@@ -868,7 +874,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
           className={exitButtonClass}
           onClick={handleExit}
         >
-          Exit
+          {exitLabel}
         </Button>
         <div className="min-w-0">{primary}</div>
       </div>
