@@ -51,8 +51,8 @@ const KICKOFF_STEP_DEFINITIONS: {
   },
   {
     id: 'kickoff-step-2',
-    title: 'Personalize',
-    shortLabel: 'You',
+    title: 'Profile',
+    shortLabel: 'Profile',
     promise: 'Setup your profile and currently owned tools',
   },
   {
@@ -63,8 +63,8 @@ const KICKOFF_STEP_DEFINITIONS: {
   },
   {
     id: 'kickoff-step-4',
-    title: 'Your plan',
-    shortLabel: 'Plan',
+    title: 'Plan Setup',
+    shortLabel: 'Plan Setup',
     promise: "Pick the steps you'll run next in the planning studio.",
   },
 ];
@@ -947,7 +947,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
                       />
                       <span
                         className={cn(
-                          'inline-flex items-center justify-center gap-1 text-xs leading-none sm:text-sm',
+                          'inline-flex items-center justify-center gap-1 text-center text-xs leading-tight sm:text-sm',
                           isCurrent ? 'font-semibold text-primary' : isDone ? 'font-medium text-muted-foreground' : 'text-muted-foreground'
                         )}
                       >

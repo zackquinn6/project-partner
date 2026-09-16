@@ -241,7 +241,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
         <div className="text-center space-y-2">
           <User className="w-10 h-10 mx-auto text-muted-foreground" />
           <div>
-            <h3 className="text-sm font-semibold mb-1">Personalize</h3>
+            <h3 className="text-sm font-semibold mb-1">Profile</h3>
             <p className="text-xs text-muted-foreground mb-2">
               Help us personalize your project experience by completing your DIY profile.
             </p>
@@ -436,7 +436,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
       <Card>
         <CardHeader className="p-2 sm:p-3">
           <CardTitle className="font-display text-xl font-semibold leading-tight">
-            Personalize
+            Profile
             {isCompleted ? (
               <Badge variant="secondary" className="ml-2 align-middle text-xs">
                 Complete
@@ -458,7 +458,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
       <Card>
         <CardHeader className="p-2 sm:p-3">
           <CardTitle className="font-display text-xl font-semibold leading-tight">
-            Personalize
+            Profile
             {isCompleted ? (
               <Badge variant="secondary" className="ml-2 align-middle text-xs">
                 Complete

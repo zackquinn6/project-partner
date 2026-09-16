@@ -452,7 +452,7 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
     return (
       <Card>
         <CardHeader className="p-2 sm:p-3">
-          <CardTitle className="font-display text-xl font-semibold">Your plan</CardTitle>
+          <CardTitle className="font-display text-xl font-semibold">Plan Setup</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 p-2 sm:space-y-3 sm:p-3">{inner}</CardContent>
       </Card>
