@@ -21,22 +21,38 @@ ALTER TABLE public.pfmea_potential_causes
   ALTER COLUMN occurrence_score DROP DEFAULT,
   ALTER COLUMN occurrence_score DROP NOT NULL;
 
+-- These tables were created outside this migration history, so some of the constraints below
+-- already exist with definitions this file cannot see. Each is dropped and recreated so the
+-- end state is the definition stated here. A recreate that existing rows violate fails
+-- loudly, which is the point: the range checks now have to permit null, and an older
+-- definition that forbids it would keep unscored lines impossible to represent.
+
+ALTER TABLE public.pfmea_failure_modes
+  DROP CONSTRAINT IF EXISTS pfmea_failure_modes_severity_score_range;
 ALTER TABLE public.pfmea_failure_modes
   ADD CONSTRAINT pfmea_failure_modes_severity_score_range
   CHECK (severity_score IS NULL OR severity_score BETWEEN 1 AND 10);
 
 ALTER TABLE public.pfmea_potential_effects
+  DROP CONSTRAINT IF EXISTS pfmea_potential_effects_severity_score_range;
+ALTER TABLE public.pfmea_potential_effects
   ADD CONSTRAINT pfmea_potential_effects_severity_score_range
   CHECK (severity_score IS NULL OR severity_score BETWEEN 1 AND 10);
 
+ALTER TABLE public.pfmea_potential_causes
+  DROP CONSTRAINT IF EXISTS pfmea_potential_causes_occurrence_score_range;
 ALTER TABLE public.pfmea_potential_causes
   ADD CONSTRAINT pfmea_potential_causes_occurrence_score_range
   CHECK (occurrence_score IS NULL OR occurrence_score BETWEEN 1 AND 10);
 
 ALTER TABLE public.pfmea_controls
+  DROP CONSTRAINT IF EXISTS pfmea_controls_detection_score_range;
+ALTER TABLE public.pfmea_controls
   ADD CONSTRAINT pfmea_controls_detection_score_range
   CHECK (detection_score IS NULL OR detection_score BETWEEN 1 AND 10);
 
+ALTER TABLE public.pfmea_controls
+  DROP CONSTRAINT IF EXISTS pfmea_controls_control_type_check;
 ALTER TABLE public.pfmea_controls
   ADD CONSTRAINT pfmea_controls_control_type_check
   CHECK (control_type IN ('prevention', 'detection'));

@@ -5,8 +5,14 @@
 -- and code, schedule on days lost against the step's committed window, budget on dollars
 -- against planned spend.
 
+-- pfmea_scoring was created outside this migration history, so it already carries some of
+-- the constraints below with definitions this file cannot see. Each one is dropped and
+-- recreated rather than added, so the end state is the definition stated here regardless of
+-- what was there before. A recreate that existing rows violate fails loudly, which is the
+-- point: it means the live data disagrees with what the scoring code assumes.
+
 ALTER TABLE public.pfmea_scoring
-  ADD COLUMN dimension text;
+  ADD COLUMN IF NOT EXISTS dimension text;
 
 UPDATE public.pfmea_scoring SET dimension = 'quality' WHERE dimension IS NULL;
 
@@ -14,18 +20,66 @@ ALTER TABLE public.pfmea_scoring
   ALTER COLUMN dimension SET NOT NULL;
 
 ALTER TABLE public.pfmea_scoring
+  DROP CONSTRAINT IF EXISTS pfmea_scoring_dimension_check;
+ALTER TABLE public.pfmea_scoring
   ADD CONSTRAINT pfmea_scoring_dimension_check
   CHECK (dimension IN ('quality', 'safety', 'schedule', 'budget'));
 
+ALTER TABLE public.pfmea_scoring
+  DROP CONSTRAINT IF EXISTS pfmea_scoring_criterion_type_check;
 ALTER TABLE public.pfmea_scoring
   ADD CONSTRAINT pfmea_scoring_criterion_type_check
   CHECK (criterion_type IN ('severity', 'occurrence', 'detection'));
 
 ALTER TABLE public.pfmea_scoring
+  DROP CONSTRAINT IF EXISTS pfmea_scoring_score_range;
+ALTER TABLE public.pfmea_scoring
   ADD CONSTRAINT pfmea_scoring_score_range CHECK (score BETWEEN 1 AND 10);
 
+-- The uniqueness grain changed: a score is unique per component now, not globally. Any
+-- pre-existing unique key that does not include dimension would reject safety severity 10
+-- because quality severity 10 exists, so those keys are retired here. The primary key is
+-- left alone; if it turns out to be the conflicting key, the seed below fails and says so
+-- rather than having the table's identity silently changed underneath it.
+DO $$
+DECLARE
+  v_index record;
+BEGIN
+  FOR v_index IN
+    SELECT i.relname AS index_name
+    FROM pg_index x
+    JOIN pg_class i ON i.oid = x.indexrelid
+    JOIN pg_class t ON t.oid = x.indrelid
+    JOIN pg_namespace n ON n.oid = t.relnamespace
+    WHERE n.nspname = 'public'
+      AND t.relname = 'pfmea_scoring'
+      AND x.indisunique
+      AND NOT x.indisprimary
+      AND NOT EXISTS (
+        SELECT 1
+        FROM pg_attribute a
+        WHERE a.attrelid = t.oid
+          AND a.attnum = ANY (x.indkey)
+          AND a.attname = 'dimension'
+      )
+  LOOP
+    RAISE NOTICE 'Dropping unique key %, which predates the dimension column', v_index.index_name;
+    -- Unique constraints own their index, so try the constraint form first.
+    BEGIN
+      EXECUTE format('ALTER TABLE public.pfmea_scoring DROP CONSTRAINT %I', v_index.index_name);
+    EXCEPTION WHEN undefined_object THEN
+      EXECUTE format('DROP INDEX public.%I', v_index.index_name);
+    END;
+  END LOOP;
+END $$;
+
+DROP INDEX IF EXISTS public.pfmea_scoring_dimension_criterion_score_key;
 CREATE UNIQUE INDEX pfmea_scoring_dimension_criterion_score_key
   ON public.pfmea_scoring (dimension, criterion_type, score);
+
+-- This migration owns the safety, schedule, and budget rows, so it replaces them instead of
+-- appending. Quality rows are the pre-existing data and are not touched.
+DELETE FROM public.pfmea_scoring WHERE dimension IN ('safety', 'schedule', 'budget');
 
 -- ---------------------------------------------------------------------------
 -- Safety severity
