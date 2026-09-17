@@ -26,8 +26,7 @@ DECLARE
   v_phase_prep uuid;
   v_phase_install uuid;
   v_phase_grout uuid;
-  v_op_membrane uuid;
-  v_op_backer uuid;
+  v_op_count integer;
   v_op_install uuid;
   v_op_grout uuid;
   v_step_wash uuid;
@@ -143,20 +142,20 @@ BEGIN
       v_phase_prep, v_phase_install, v_phase_grout, v_project_id;
   END IF;
 
-  SELECT id INTO v_op_membrane FROM public.phase_operations
-  WHERE phase_id = v_phase_prep AND lower(btrim(operation_name)) = 'install uncoupling membrane';
-  SELECT id INTO v_op_backer FROM public.phase_operations
-  WHERE phase_id = v_phase_prep AND lower(btrim(operation_name)) = 'install cement backer board';
-  SELECT id INTO v_op_install FROM public.phase_operations
-  WHERE phase_id = v_phase_install AND lower(btrim(operation_name)) = 'install floor tile';
-  SELECT id INTO v_op_grout FROM public.phase_operations
-  WHERE phase_id = v_phase_grout AND lower(btrim(operation_name)) = 'grout and cure';
-
-  IF v_op_membrane IS NULL OR v_op_backer IS NULL OR v_op_install IS NULL OR v_op_grout IS NULL THEN
-    RAISE EXCEPTION
-      'Tile Flooring Installation operations did not resolve (membrane=%, backer=%, install=%, grout=%).',
-      v_op_membrane, v_op_backer, v_op_install, v_op_grout;
+  -- Operations are resolved through their phase, not by name. The two Prepare subfloor
+  -- alternates were renamed to carry product names, and Install and Grout & Finish each hold a
+  -- single operation, which is where the new steps land.
+  SELECT count(*)::integer INTO v_op_count FROM public.phase_operations WHERE phase_id = v_phase_install;
+  IF v_op_count <> 1 THEN
+    RAISE EXCEPTION 'Install phase holds % operations, expected exactly 1.', v_op_count;
   END IF;
+  SELECT id INTO v_op_install FROM public.phase_operations WHERE phase_id = v_phase_install;
+
+  SELECT count(*)::integer INTO v_op_count FROM public.phase_operations WHERE phase_id = v_phase_grout;
+  IF v_op_count <> 1 THEN
+    RAISE EXCEPTION 'Grout & Finish phase holds % operations, expected exactly 1.', v_op_count;
+  END IF;
+  SELECT id INTO v_op_grout FROM public.phase_operations WHERE phase_id = v_phase_grout;
 
   -- ---------------------------------------------------------------------------
   -- Every step authored in Step 1 must still be present before enrichment.
@@ -165,7 +164,10 @@ BEGIN
     IF NOT EXISTS (
       SELECT 1
       FROM public.operation_steps os
-      WHERE os.operation_id IN (v_op_membrane, v_op_backer, v_op_install, v_op_grout)
+      WHERE os.operation_id IN (
+        SELECT po.id FROM public.phase_operations po
+        WHERE po.phase_id IN (v_phase_prep, v_phase_install, v_phase_grout)
+      )
         AND lower(btrim(os.step_title)) = lower(btrim(v_title))
     ) THEN
       v_missing := array_append(v_missing, v_title);
@@ -200,7 +202,10 @@ BEGIN
     ('Prepare joints for grout', 'scaled', 1, 'Beginner'),
     ('Pack grout and initial clean', 'scaled', 1, 'Intermediate')
   ) AS v(step_title, step_type, workers, skill_level)
-  WHERE os.operation_id IN (v_op_membrane, v_op_backer, v_op_install, v_op_grout)
+  WHERE os.operation_id IN (
+    SELECT po.id FROM public.phase_operations po
+    WHERE po.phase_id IN (v_phase_prep, v_phase_install, v_phase_grout)
+  )
     AND lower(btrim(os.step_title)) = lower(btrim(v.step_title));
 
   -- ---------------------------------------------------------------------------
@@ -234,7 +239,10 @@ BEGIN
     ('Pack grout and initial clean',
      'Fill joints to full depth with the grout type the joint width calls for and take off the bulk of the residue in the same pass.')
   ) AS v(step_title, description)
-  WHERE os.operation_id IN (v_op_membrane, v_op_backer, v_op_install, v_op_grout)
+  WHERE os.operation_id IN (
+    SELECT po.id FROM public.phase_operations po
+    WHERE po.phase_id IN (v_phase_prep, v_phase_install, v_phase_grout)
+  )
     AND lower(btrim(os.step_title)) = lower(btrim(v.step_title));
 
   -- ---------------------------------------------------------------------------
@@ -340,7 +348,7 @@ BEGIN
   -- Rebuild the phases cache from the normalized tables.
   -- ---------------------------------------------------------------------------
   UPDATE public.projects
-  SET phases = public.rebuild_phases_json_from_project_phases(v_project_id),
+  SET phases = public.rebuild_phases_json_from_project_phases_internal(v_project_id),
       updated_at = now()
   WHERE id = v_project_id;
 

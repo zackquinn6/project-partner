@@ -18,10 +18,7 @@ DO $migration$
 DECLARE
   v_project_id uuid;
   v_nroots integer;
-  v_op_membrane uuid;
-  v_op_backer uuid;
-  v_op_install uuid;
-  v_op_grout uuid;
+  v_owned_n integer;
   v_missing text[] := ARRAY[]::text[];
   v_name text;
   v_updated integer;
@@ -171,35 +168,23 @@ BEGIN
   END IF;
 
   -- ---------------------------------------------------------------------------
-  -- Owned operations
+  -- Owned steps, scoped by the phase columns that define ownership rather than by operation
+  -- name. The two Prepare subfloor operations were renamed to carry product names, so a name
+  -- match there resolves nothing.
   -- ---------------------------------------------------------------------------
-  SELECT po.id INTO v_op_membrane FROM public.phase_operations po
+  DROP TABLE IF EXISTS owned_steps;
+  CREATE TEMP TABLE owned_steps ON COMMIT DROP AS
+  SELECT os.id AS step_id, lower(btrim(os.step_title)) AS step_key
+  FROM public.operation_steps os
+  JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
-  WHERE pp.project_id = v_project_id AND pp.is_standard IS NOT TRUE AND pp.is_linked IS NOT TRUE
-    AND pp.source_phase_id IS NULL AND pp.source_project_id IS NULL
-    AND lower(btrim(po.operation_name)) = 'install uncoupling membrane';
+  WHERE pp.project_id = v_project_id
+    AND pp.is_standard IS NOT TRUE AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL AND pp.source_project_id IS NULL;
 
-  SELECT po.id INTO v_op_backer FROM public.phase_operations po
-  JOIN public.project_phases pp ON pp.id = po.phase_id
-  WHERE pp.project_id = v_project_id AND pp.is_standard IS NOT TRUE AND pp.is_linked IS NOT TRUE
-    AND pp.source_phase_id IS NULL AND pp.source_project_id IS NULL
-    AND lower(btrim(po.operation_name)) = 'install cement backer board';
-
-  SELECT po.id INTO v_op_install FROM public.phase_operations po
-  JOIN public.project_phases pp ON pp.id = po.phase_id
-  WHERE pp.project_id = v_project_id AND pp.is_standard IS NOT TRUE AND pp.is_linked IS NOT TRUE
-    AND pp.source_phase_id IS NULL AND pp.source_project_id IS NULL
-    AND lower(btrim(po.operation_name)) = 'install floor tile';
-
-  SELECT po.id INTO v_op_grout FROM public.phase_operations po
-  JOIN public.project_phases pp ON pp.id = po.phase_id
-  WHERE pp.project_id = v_project_id AND pp.is_standard IS NOT TRUE AND pp.is_linked IS NOT TRUE
-    AND pp.source_phase_id IS NULL AND pp.source_project_id IS NULL
-    AND lower(btrim(po.operation_name)) = 'grout and cure';
-
-  IF v_op_membrane IS NULL OR v_op_backer IS NULL OR v_op_install IS NULL OR v_op_grout IS NULL THEN
-    RAISE EXCEPTION 'Owned operations did not resolve (membrane=%, backer=%, install=%, grout=%).',
-      v_op_membrane, v_op_backer, v_op_install, v_op_grout;
+  SELECT count(*)::integer INTO v_owned_n FROM owned_steps;
+  IF v_owned_n <> 17 THEN
+    RAISE EXCEPTION 'Expected 17 owned steps, found %. Run the step 1 structure migration first.', v_owned_n;
   END IF;
 
   -- ---------------------------------------------------------------------------
@@ -361,7 +346,7 @@ BEGIN
   ]')
 
   ) AS v(step_title, tools)
-  WHERE os.operation_id IN (v_op_membrane, v_op_backer, v_op_install, v_op_grout)
+  WHERE os.id IN (SELECT step_id FROM owned_steps)
     AND lower(btrim(os.step_title)) = lower(btrim(v.step_title));
 
   GET DIAGNOSTICS v_updated = ROW_COUNT;
@@ -370,7 +355,7 @@ BEGIN
   END IF;
 
   UPDATE public.projects
-  SET phases = public.rebuild_phases_json_from_project_phases(v_project_id),
+  SET phases = public.rebuild_phases_json_from_project_phases_internal(v_project_id),
       updated_at = now()
   WHERE id = v_project_id;
 

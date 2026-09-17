@@ -49,6 +49,7 @@ BEGIN
   END IF;
 
   -- Owned steps the register rows point at.
+  DROP TABLE IF EXISTS owned_steps;
   CREATE TEMP TABLE owned_steps ON COMMIT DROP AS
   SELECT os.id AS step_id, lower(btrim(os.step_title)) AS step_key
   FROM public.operation_steps os
