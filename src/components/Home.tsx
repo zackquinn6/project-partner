@@ -204,11 +204,11 @@ export default function Home({
                       <button
                         type="button"
                         onClick={() => window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'))}
-                        className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-muted via-muted to-muted px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning-soft"
+                        className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-warning-soft via-warning-soft to-warning-soft px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning-soft"
                       >
                         <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-warning-soft to-transparent pointer-events-none" />
                         <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
-                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-warning-soft/80 md:whitespace-nowrap">
+                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-warning-soft-foreground md:whitespace-nowrap">
                             Active projects
                           </span>
                           <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-warning-soft-foreground">
