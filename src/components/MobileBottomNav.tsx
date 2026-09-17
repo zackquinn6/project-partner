@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, Folder, HelpCircle, CheckSquare, MessageCircle, TrendingUp, BookOpen, Mail } from 'lucide-react';
+import { Home, Folder, HelpCircle, CheckSquare, MessageCircle, TrendingUp, BookOpen, Mail, Palette } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -8,6 +8,7 @@ import { FeedbackDialog } from './FeedbackDialog';
 import { FeatureRoadmapWindow } from './FeatureRoadmapWindow';
 import { AppDocumentationWindow } from './AppDocumentationWindow';
 import { ContactUsWindow } from './ContactUsWindow';
+import { AppearanceSettingsDialog } from './AppearanceSettingsDialog';
 interface MobileBottomNavProps {
   currentView: string;
   onViewChange: (view: 'home' | 'projects' | 'tasks' | 'profile' | 'help' | 'expert') => void;
@@ -22,6 +23,7 @@ export function MobileBottomNav({ currentView, onViewChange, onQuickAction }: Mo
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
   const [isDocumentationOpen, setIsDocumentationOpen] = useState(false);
+  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
 
   useEffect(() => {
     setActiveTab(currentView);
@@ -101,6 +103,10 @@ export function MobileBottomNav({ currentView, onViewChange, onQuickAction }: Mo
                 side="top"
                 className="z-[9999] bg-popover text-popover-foreground border border-border shadow-2xl min-w-[200px] !opacity-100 mb-2"
               >
+                <DropdownMenuItem onClick={() => setIsAppearanceOpen(true)}>
+                  <Palette className="h-4 w-4 mr-2" />
+                  Appearance
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowFeedback(true)}>
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Send Feedback
@@ -126,6 +132,7 @@ export function MobileBottomNav({ currentView, onViewChange, onQuickAction }: Mo
       </div>
 
       {/* Dialogs */}
+      <AppearanceSettingsDialog open={isAppearanceOpen} onOpenChange={setIsAppearanceOpen} />
       <FeedbackDialog open={showFeedback} onOpenChange={setShowFeedback} />
       <ContactUsWindow open={isContactOpen} onOpenChange={setIsContactOpen} />
       <FeatureRoadmapWindow open={isRoadmapOpen} onOpenChange={setIsRoadmapOpen} />
