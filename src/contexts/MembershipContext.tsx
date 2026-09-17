@@ -11,7 +11,11 @@ export type SubscriptionTier = 'none' | 'risk_less' | 'projects';
 export const PROJECTS_TIER_APP_ACTION_KEYS = ['project-catalog'] as const;
 
 /** Native app keys that require Risk Radar ($15/yr) or Projects tier. */
-export const RISK_RADAR_APP_ACTION_KEYS = ['risk-management', 'risk-focus'] as const;
+export const RISK_RADAR_APP_ACTION_KEYS = [
+  'risk-management',
+  'risk-dashboard',
+  'risk-focus',
+] as const;
 
 interface MembershipContextType {
   isSubscribed: boolean;

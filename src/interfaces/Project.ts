@@ -83,6 +83,12 @@ export interface Output {
   id: string;
   name: string;
   description: string;
+  /**
+   * Consequence class: what kind of harm a miss on this output causes. This is not the Key
+   * Characteristic designation. Whether an output needs the user's attention comes from
+   * `project_run_key_characteristics`, which also weighs how often the failure happens and
+   * whether anything already makes it impossible.
+   */
   type: 'none' | 'major-aesthetics' | 'performance-durability' | 'safety';
   requirement?: string;
   potentialEffects?: string;

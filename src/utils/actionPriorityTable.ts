@@ -37,6 +37,8 @@ export interface ActionPriorityLabel {
   label: string;
   description: string;
   urgencyRank: number;
+  /** Whether this level is urgent enough for an item to be singled out as a KC. */
+  countsForKeyCharacteristic: boolean;
 }
 
 export interface ActionPriorityTable {
@@ -129,6 +131,7 @@ function toLabels(rows: ActionPriorityLabelRow[]): Record<ActionPriority, Action
       label: row.consumer_label,
       description: row.consumer_description,
       urgencyRank: row.urgency_rank,
+      countsForKeyCharacteristic: row.counts_for_key_characteristic,
     };
   }
   for (const ap of ['H', 'M', 'L'] as const) {

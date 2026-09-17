@@ -15,6 +15,8 @@ lookup table that lives in the database. When a user starts a run, a rules engin
 about that specific user, moves occurrence and detection, and writes a plain-language risk list
 onto the run along with an audit trail of every rule that fired. That list is what the user
 sees, in the Risk Radar, in the planning walkthrough, and inline on the step they are working.
+From that list a shorter one is derived: the Key Characteristics, the specific items where this
+user's attention is what decides the outcome.
 
 Three layers, in order:
 
@@ -22,7 +24,7 @@ Three layers, in order:
 | --- | --- | --- |
 | Stage 1, template risk | The analysis an author does once, for everyone | `pfmea_*` tables, `project_risks` |
 | Stage 2, logic layer | Rules that turn the template's risk into this user's risk | `project_risk_rules`, `src/utils/projectRiskLogic.ts` |
-| Stage 3, applied profile | The scored, translated list for one run | `project_run_risks`, `project_run_risk_profile` |
+| Stage 3, applied profile | The scored, translated list for one run, plus the KC register derived from it | `project_run_risks`, `project_run_risk_profile`, `project_run_key_characteristics` |
 
 ## 1. The four components
 
@@ -394,20 +396,121 @@ Re-evaluation is not idempotent in the sense of being pointless. Tools, spaces, 
 change between runs, and re-evaluating at completion is what makes the next run start from what
 actually happened on this one.
 
-## 6. Where the user encounters it
+## 6. Key Characteristics
+
+A Key Characteristic is an item where the person doing the work is the variable. It is not the
+same as a severe risk, and keeping the two apart is the whole point: severity says what happens
+if it goes wrong, a KC says whether paying attention changes the odds.
+
+### The three-part test
+
+An item qualifies when all three hold. All three inputs are data, so a component can be retuned
+by migration rather than by code change.
+
+| Test | Reads | Passes when |
+| --- | --- | --- |
+| It needs attention | `risk_action_priority_labels.counts_for_key_characteristic` against the applied Action Priority | The level qualifies. Seeded true for `urgency_rank >= 2`, which is H and M |
+| Occurrence is human-variable | `risk_occurrence_drivers.is_human_variable` against the authored `occurrence_driver` | The driver is the person, not the process |
+| It is not mistake-proofed | Quality: a prevention control on that cause with `control_strength = 'mistake_proof'`. Register: `project_risks.prevention_strength` | Nothing removes the opportunity for the error |
+
+The third test is what keeps the list short enough to read. A high-severity failure that a jig
+makes impossible is not a KC, because there is nothing for the user to watch. Without that test
+the list degenerates into "everything severe", which is the failure mode of most quality
+systems.
+
+Unclassified is a real state, matching the unscored precedent. A cause or risk with a null
+`occurrence_driver` is not a KC and is not assumed safe. It is counted and reported in both
+authoring surfaces, because an unclassified cause excludes an item silently.
+
+`evaluateKeyCharacteristic` in `src/utils/keyCharacteristics.ts` returns either a qualifying
+verdict or one of five reasons: `unclassified_driver`, `unscored`,
+`priority_does_not_qualify`, `driver_not_human_variable`, `mistake_proofed`. The PFMEA grid's
+`kc` column shows the reason, so an author sees the consequence of a classification immediately.
+
+### Driver vocabulary
+
+`risk_occurrence_drivers`, seeded. Only the first three make a KC possible.
+
+| Driver | Human-variable | What it means |
+| --- | --- | --- |
+| `skill` | yes | Goes wrong until the technique is practiced |
+| `experience` | yes | Goes wrong when the person has not met this case before |
+| `attention` | yes | Goes wrong when rushing, tired, or distracted, regardless of skill |
+| `process_design` | no | Goes wrong for everyone because the method invites the error |
+| `material_variation` | no | The material itself differs piece to piece |
+| `tool_condition` | no | The tool is worn, wrong, or cannot hold the tolerance |
+| `environment` | no | Temperature, humidity, light, access, or the state of the space |
+| `upstream_input` | no | An earlier step handed this one something out of tolerance |
+
+### What a KC points at
+
+`risk_item_kind`: `output`, `process_variable`, `instruction`, `material`, `tool`, `step`. This
+follows the `pfmea_requirements` precedent of a real step FK plus the id of an item inside that
+step's JSON. `step` is the case where the risk is about the step as a whole and carries no item
+id; the database constrains that pairing both ways.
+
+`process_variable` is first-class because `operation_steps.process_variables` already holds the
+controllable parameters, and a KC is often not the output itself but the parameter that decides
+whether the output lands.
+
+### Where the classifications are authored
+
+| Layer | Columns | Surface |
+| --- | --- | --- |
+| Quality | `pfmea_potential_causes.occurrence_driver`, `implicated_item_kind`, `implicated_item_id`; `pfmea_controls.control_strength` | PFMEA grid, in the Potential Causes and Prevention Controls cells |
+| Register | `project_risks.occurrence_driver`, `prevention_strength`, `implicated_item_kind`, `implicated_item_id` | Risk Radar template risk form |
+
+Quality carries them on the cause, because occurrence lives there and the cause is what
+implicates a specific item. Safety, schedule, and budget carry them on the risk row, because
+those rows have no cause model: control analysis on that side is necessarily less specific, so
+it is one classification per risk rather than per control.
+
+`prevention_strength` allows `none` as distinct from null. Null means nobody has judged the
+controls; `none` means they were judged and there is nothing in place.
+
+### The run register
+
+`project_run_key_characteristics` is derived, never authored. `recomputeProjectRunKeyCharacteristics`
+in `src/utils/applyProjectRiskLogic.ts` deletes and rewrites the run's rows from the applied
+list, on the same four triggers as the risk profile. So KCs move when the user's signals move:
+an item can be a KC for a beginner and not for an expert, because the urgency test reads the
+personalized Action Priority rather than the template's.
+
+Delete and rewrite rather than upsert, because a classification change can remove an item from
+the register and a leftover row would tell the user to watch something the analysis dropped.
+
+One row per item per source risk, so one failure mode with three causes implicating three
+different items produces three rows against a single `project_run_risks` row. That grain is why
+this is a separate table rather than columns on the applied list.
+
+`item_label` is resolved at write time from the step's JSON, and `resolveKcItemLabel` throws
+rather than falling back when the id does not resolve. A KC that renders as an id tells the user
+to pay attention to something they cannot identify, which is worse than not listing it.
+
+A risk with no `operation_step_id` cannot produce a KC, since a KC has to point at something in
+the workflow. A qualifying cause that names no item lands under `step`, which the authoring
+surfaces report as a gap.
+
+## 7. Where the user encounters it
 
 | Surface | What it shows |
 | --- | --- |
 | Risk Radar header | Four-component strip: worst priority per component with DIY labels (Result, Safety, Time, Cost), counts, and a tooltip naming what is at stake |
 | Risk Radar triage | High-first walkthrough grouped by `action_priority`, ordered by priority then RPN then title, with per-component filter chips |
-| Step header, desktop and mobile | `StepRiskPriorityBadge` with a popover of that step's risk items |
+| Step header, desktop and mobile | `StepRiskPriorityBadge` with a popover of that step's risk items, each marking the items it puts on the KC register |
 | Step body, mobile | Sections start collapsed on Low-priority steps and expanded otherwise |
-| Step body | `StepMustGetRightCallout` renders High items inline |
-| Key Characteristics | Lists steps whose applied priority is High or Medium, replacing the old filter on output type |
-| PFMEA authoring | Prevention gap notes, detection reality flags, and an occurrence contradiction card |
+| Step body | `StepMustGetRightCallout` renders High items inline, with KCs called out separately as the ones the user can change by working differently |
+| Priorities window | The run's KC register, grouped by item rather than by step, worst priority first |
+| PFMEA authoring | A `kc` column showing the verdict or the reason, plus prevention gap notes, detection reality flags, an occurrence contradiction card, and unclassified counts |
+| Risk Radar template authoring | Unclassified driver and prevention counts for register risks |
 
-The read side is `useRunStepRisk`, which groups applied rows by `operation_step_id` and sorts
-worst first. It skips excluded and hidden rows.
+The read side is `useRunStepRisk`, which groups applied rows by `operation_step_id`, attaches
+each row's KC entries, and sorts worst first. It skips excluded and hidden rows.
+
+`Output.type` (`safety`, `performance-durability`, `major-aesthetics`, `none`) is the consequence
+class only: what kind of harm a miss causes. It is not the KC designation, and the Priorities
+window no longer reads it. Quality-scope settings still use it to mean "this output has a named
+consequence", which is a different question.
 
 ### Evidence loop
 
@@ -418,28 +521,30 @@ reporting problems on that is authored as effectively never. It reports the disa
 does not invent a score. `riskDimensionForTriageType` in `src/utils/reworkEngine.ts` routes a
 reported problem to the component it counted against.
 
-## 7. Table reference
+## 8. Table reference
 
 | Table | Role |
 | --- | --- |
 | `pfmea_requirements` | Stage 1 quality requirements, one per step output |
 | `pfmea_failure_modes` | Failure modes, FK to requirement and step |
 | `pfmea_potential_effects` | Effects with severity |
-| `pfmea_potential_causes` | Causes with occurrence |
-| `pfmea_controls` | Prevention and detection controls, detection score |
+| `pfmea_potential_causes` | Causes with occurrence, occurrence driver, and implicated item |
+| `pfmea_controls` | Prevention and detection controls, detection score, prevention strength |
 | `pfmea_scoring` | Written 1-10 anchors, per component per criterion |
 | `pfmea_action_priority_rules` | The Action Priority lookup, per component |
-| `risk_action_priority_labels` | User-facing wording and urgency rank for H, M, L |
-| `project_risks` | Stage 1 register risks for safety, schedule, budget, plus foundation risks |
+| `risk_action_priority_labels` | User-facing wording, urgency rank, and KC qualification for H, M, L |
+| `risk_occurrence_drivers` | Driver vocabulary and which drivers are human-variable |
+| `project_risks` | Stage 1 register risks for safety, schedule, budget, plus foundation risks, with their KC classifications |
 | `project_risk_rules` | Stage 2 personalization rules |
 | `project_run_risks` | Stage 3 applied list, all four components, plus user-added rows |
 | `project_run_risk_profile` | Stage 3 per-component rollup |
+| `project_run_key_characteristics` | Stage 3 KC register, one row per item per source risk |
 
-RLS: the `pfmea_*` and rule tables are readable by authenticated users and writable by project
-editors or admins. `project_run_risk_profile` is scoped to the owner of the run through
-`project_runs.user_id`.
+RLS: the `pfmea_*`, rule, and lookup tables are readable by authenticated users and writable by
+project editors or admins. `project_run_risk_profile` and `project_run_key_characteristics` are
+scoped to the owner of the run through `project_runs.user_id`.
 
-## 8. Gaps and known problems
+## 9. Gaps and known problems
 
 Things this document would otherwise imply exist.
 
@@ -482,3 +587,23 @@ tell a real 5 from a defaulted one in existing data.
 **Occurrence is still authored, not measured.** The evidence loop reports where reported
 problems contradict authored occurrence, and stops there. Nothing feeds observed frequency back
 into an occurrence score automatically, by design for now, since the sample per step is small.
+
+**No classifications are authored yet.** The KC columns ship nullable with no backfill, so until
+an author sets occurrence drivers, every run's KC register is empty and the Priorities window
+shows nothing. The authoring surfaces report the count of unclassified causes and risks, which
+is the number to work down.
+
+**The KC urgency test reads the failure mode, not the cause.** Stage 2 moves one occurrence per
+item, and an item is a failure mode, so the applied Action Priority belongs to the failure mode
+while the driver and mistake-proofing belong to the cause. A KC therefore means "this risk needs
+attention, and this cause of it is one the person controls". A cause with a low occurrence of
+its own inside a high-priority failure mode still qualifies.
+
+**Register prevention strength is coarse.** Safety, schedule, and budget risks carry one
+strength for the whole risk, because those rows have no typed controls, only
+`mitigation_strategy` text and a `mitigation_actions` array. A risk with one mistake-proof
+control and three procedural ones cannot express that.
+
+**`Output.mustGetRight` is orphaned.** The free-text field still exists on outputs and is no
+longer read by any surface, now that the Priorities window reads the derived register. It is
+neither migrated into the KC data nor removed.

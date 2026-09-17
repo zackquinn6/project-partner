@@ -7,6 +7,8 @@ import {
   type ActionPriority,
   type RiskDimension,
 } from '@/utils/riskDimensions';
+import { fetchProjectRunKeyCharacteristics } from '@/utils/applyProjectRiskLogic';
+import type { KeyCharacteristicRow } from '@/utils/keyCharacteristics';
 
 export interface StepRiskItem {
   id: string;
@@ -15,6 +17,12 @@ export interface StepRiskItem {
   dimension: RiskDimension;
   actionPriority: ActionPriority | null;
   rpn: number | null;
+  /**
+   * The items this risk puts on the Key Characteristic register. Empty means the risk is real
+   * but attention is not the lever: either the process decides it or a control already makes
+   * the error impossible.
+   */
+  keyCharacteristics: KeyCharacteristicRow[];
 }
 
 export interface StepRiskSummary {
@@ -23,6 +31,8 @@ export interface StepRiskSummary {
   /** Ordered worst first, then by RPN, so the first entry is the one to read. */
   items: StepRiskItem[];
   highCount: number;
+  /** The step's Key Characteristics, across all of its risks. */
+  keyCharacteristics: KeyCharacteristicRow[];
 }
 
 export interface RunStepRiskState {
@@ -84,6 +94,26 @@ export function useRunStepRisk(projectRunId: string | null | undefined): RunStep
         return;
       }
 
+      let keyCharacteristics: KeyCharacteristicRow[];
+      try {
+        keyCharacteristics = await fetchProjectRunKeyCharacteristics(projectRunId);
+      } catch (err) {
+        if (cancelled) return;
+        console.error('Key characteristic load failed:', err);
+        setError(err instanceof Error ? err.message : 'Key characteristics could not be read');
+        setByStepId(new Map());
+        setLoading(false);
+        return;
+      }
+      if (cancelled) return;
+
+      const kcByRiskId = new Map<string, KeyCharacteristicRow[]>();
+      for (const kc of keyCharacteristics) {
+        const list = kcByRiskId.get(kc.projectRunRiskId);
+        if (list) list.push(kc);
+        else kcByRiskId.set(kc.projectRunRiskId, [kc]);
+      }
+
       const grouped = new Map<string, StepRiskItem[]>();
       for (const row of data ?? []) {
         if (!row.operation_step_id) continue;
@@ -97,6 +127,7 @@ export function useRunStepRisk(projectRunId: string | null | undefined): RunStep
           dimension: row.risk_dimension,
           actionPriority: isActionPriority(row.action_priority) ? row.action_priority : null,
           rpn: row.rpn,
+          keyCharacteristics: kcByRiskId.get(row.id) ?? [],
         };
         const list = grouped.get(row.operation_step_id);
         if (list) {
@@ -117,6 +148,7 @@ export function useRunStepRisk(projectRunId: string | null | undefined): RunStep
           ),
           items,
           highCount: items.filter((item) => item.actionPriority === 'H').length,
+          keyCharacteristics: items.flatMap((item) => item.keyCharacteristics),
         });
       }
 

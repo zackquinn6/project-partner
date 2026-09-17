@@ -2221,6 +2221,7 @@ export type Database = {
         Row: {
           cause_id: string | null
           control_description: string
+          control_strength: string | null
           control_type: string
           created_at: string
           detection_score: number | null
@@ -2231,6 +2232,7 @@ export type Database = {
         Insert: {
           cause_id?: string | null
           control_description?: string
+          control_strength?: string | null
           control_type: string
           created_at?: string
           detection_score?: number | null
@@ -2241,6 +2243,7 @@ export type Database = {
         Update: {
           cause_id?: string | null
           control_description?: string
+          control_strength?: string | null
           control_type?: string
           created_at?: string
           detection_score?: number | null
@@ -2326,6 +2329,9 @@ export type Database = {
           created_at: string
           failure_mode_id: string
           id: string
+          implicated_item_id: string | null
+          implicated_item_kind: Database["public"]["Enums"]["risk_item_kind"] | null
+          occurrence_driver: string | null
           occurrence_score: number | null
           updated_at: string
         }
@@ -2334,6 +2340,9 @@ export type Database = {
           created_at?: string
           failure_mode_id: string
           id?: string
+          implicated_item_id?: string | null
+          implicated_item_kind?: Database["public"]["Enums"]["risk_item_kind"] | null
+          occurrence_driver?: string | null
           occurrence_score?: number | null
           updated_at?: string
         }
@@ -2342,6 +2351,9 @@ export type Database = {
           created_at?: string
           failure_mode_id?: string
           id?: string
+          implicated_item_id?: string | null
+          implicated_item_kind?: Database["public"]["Enums"]["risk_item_kind"] | null
+          occurrence_driver?: string | null
           occurrence_score?: number | null
           updated_at?: string
         }
@@ -2352,6 +2364,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pfmea_failure_modes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pfmea_potential_causes_occurrence_driver_fkey"
+            columns: ["occurrence_driver"]
+            isOneToOne: false
+            referencedRelation: "risk_occurrence_drivers"
+            referencedColumns: ["driver"]
           },
         ]
       }
@@ -2839,13 +2858,17 @@ export type Database = {
           display_order: number | null
           id: string
           impact: string | null
+          implicated_item_id: string | null
+          implicated_item_kind: Database["public"]["Enums"]["risk_item_kind"] | null
           likelihood: string | null
           mitigation_actions: Json | null
           mitigation_cost: number | null
           mitigation_effort_level: string | null
           mitigation_strategy: string | null
+          occurrence_driver: string | null
           occurrence_score: number | null
           operation_step_id: string | null
+          prevention_strength: string | null
           project_id: string
           recommendation: string | null
           risk_description: string | null
@@ -2866,13 +2889,17 @@ export type Database = {
           display_order?: number | null
           id?: string
           impact?: string | null
+          implicated_item_id?: string | null
+          implicated_item_kind?: Database["public"]["Enums"]["risk_item_kind"] | null
           likelihood?: string | null
           mitigation_actions?: Json | null
           mitigation_cost?: number | null
           mitigation_effort_level?: string | null
           mitigation_strategy?: string | null
+          occurrence_driver?: string | null
           occurrence_score?: number | null
           operation_step_id?: string | null
+          prevention_strength?: string | null
           project_id: string
           recommendation?: string | null
           risk_description?: string | null
@@ -2893,13 +2920,17 @@ export type Database = {
           display_order?: number | null
           id?: string
           impact?: string | null
+          implicated_item_id?: string | null
+          implicated_item_kind?: Database["public"]["Enums"]["risk_item_kind"] | null
           likelihood?: string | null
           mitigation_actions?: Json | null
           mitigation_cost?: number | null
           mitigation_effort_level?: string | null
           mitigation_strategy?: string | null
+          occurrence_driver?: string | null
           occurrence_score?: number | null
           operation_step_id?: string | null
+          prevention_strength?: string | null
           project_id?: string
           recommendation?: string | null
           risk_description?: string | null
@@ -2918,6 +2949,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "operation_steps"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_risks_occurrence_driver_fkey"
+            columns: ["occurrence_driver"]
+            isOneToOne: false
+            referencedRelation: "risk_occurrence_drivers"
+            referencedColumns: ["driver"]
           },
           {
             foreignKeyName: "project_risks_project_id_fkey"
@@ -3065,6 +3103,87 @@ export type Database = {
             columns: ["project_run_id"]
             isOneToOne: false
             referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_run_key_characteristics: {
+        Row: {
+          action_priority: string
+          attention_reason: string
+          computed_at: string
+          id: string
+          item_id: string | null
+          item_kind: Database["public"]["Enums"]["risk_item_kind"]
+          item_label: string
+          occurrence_driver: string
+          operation_step_id: string
+          project_run_id: string
+          project_run_risk_id: string
+          risk_dimension: string
+        }
+        Insert: {
+          action_priority: string
+          attention_reason: string
+          computed_at?: string
+          id?: string
+          item_id?: string | null
+          item_kind: Database["public"]["Enums"]["risk_item_kind"]
+          item_label: string
+          occurrence_driver: string
+          operation_step_id: string
+          project_run_id: string
+          project_run_risk_id: string
+          risk_dimension: string
+        }
+        Update: {
+          action_priority?: string
+          attention_reason?: string
+          computed_at?: string
+          id?: string
+          item_id?: string | null
+          item_kind?: Database["public"]["Enums"]["risk_item_kind"]
+          item_label?: string
+          occurrence_driver?: string
+          operation_step_id?: string
+          project_run_id?: string
+          project_run_risk_id?: string
+          risk_dimension?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_key_characteristics_action_priority_fkey"
+            columns: ["action_priority"]
+            isOneToOne: false
+            referencedRelation: "risk_action_priority_labels"
+            referencedColumns: ["action_priority"]
+          },
+          {
+            foreignKeyName: "project_run_key_characteristics_occurrence_driver_fkey"
+            columns: ["occurrence_driver"]
+            isOneToOne: false
+            referencedRelation: "risk_occurrence_drivers"
+            referencedColumns: ["driver"]
+          },
+          {
+            foreignKeyName: "project_run_key_characteristics_operation_step_id_fkey"
+            columns: ["operation_step_id"]
+            isOneToOne: false
+            referencedRelation: "operation_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_run_key_characteristics_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_run_key_characteristics_project_run_risk_id_fkey"
+            columns: ["project_run_risk_id"]
+            isOneToOne: false
+            referencedRelation: "project_run_risks"
             referencedColumns: ["id"]
           },
         ]
@@ -3671,6 +3790,7 @@ export type Database = {
           action_priority: string
           consumer_description: string
           consumer_label: string
+          counts_for_key_characteristic: boolean
           created_at: string
           updated_at: string
           urgency_rank: number
@@ -3679,6 +3799,7 @@ export type Database = {
           action_priority: string
           consumer_description: string
           consumer_label: string
+          counts_for_key_characteristic: boolean
           created_at?: string
           updated_at?: string
           urgency_rank: number
@@ -3687,9 +3808,40 @@ export type Database = {
           action_priority?: string
           consumer_description?: string
           consumer_label?: string
+          counts_for_key_characteristic?: boolean
           created_at?: string
           updated_at?: string
           urgency_rank?: number
+        }
+        Relationships: []
+      }
+      risk_occurrence_drivers: {
+        Row: {
+          created_at: string
+          description: string
+          display_order: number
+          driver: string
+          is_human_variable: boolean
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          display_order: number
+          driver: string
+          is_human_variable: boolean
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          display_order?: number
+          driver?: string
+          is_human_variable?: boolean
+          label?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -5081,7 +5233,13 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      risk_item_kind:
+        | "output"
+        | "process_variable"
+        | "instruction"
+        | "material"
+        | "tool"
+        | "step"
     }
     CompositeTypes: {
       [_ in never]: never

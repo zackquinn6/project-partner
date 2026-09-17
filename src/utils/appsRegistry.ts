@@ -106,6 +106,14 @@ export const NATIVE_APPS: Record<string, Omit<AppReference, 'id'>> = {
     actionKey: 'risk-management',
     displayOrder: 10
   },
+  'risk-dashboard': {
+    appName: 'Risk Dashboard',
+    appType: 'native',
+    icon: 'Crosshair',
+    description: 'Current risk level, top items, and impact for each of the four risk components',
+    actionKey: 'risk-dashboard',
+    displayOrder: 10.1
+  },
   'risk-focus': {
     appName: 'Start Risk Radar',
     appType: 'native',

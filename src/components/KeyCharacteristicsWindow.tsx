@@ -3,14 +3,17 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, AlertTriangle, Star, Shield, HelpCircle } from "lucide-react";
-import { Operation, Output } from "@/interfaces/Project";
+import { ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
+import { Operation } from "@/interfaces/Project";
 import { KeyCharacteristicsExplainer } from "./KeyCharacteristicsExplainer";
-import { StepRiskPriorityBadge } from "@/components/StepRiskPriorityBadge";
 import type { StepRiskSummary } from "@/hooks/useRunStepRisk";
 import { RISK_COMPONENT_CONSUMER_LABELS } from "@/utils/riskProfileRollup";
+import {
+  RISK_ITEM_KIND_LABELS,
+  type KeyCharacteristicRow,
+  type RiskItemKind,
+} from "@/utils/keyCharacteristics";
 
 interface KeyCharacteristicsWindowProps {
   open: boolean;
@@ -18,9 +21,9 @@ interface KeyCharacteristicsWindowProps {
   operations: Operation[];
   currentStepId?: string;
   /**
-   * Applied risk per step for this run. Priorities come from the analysis rather than from
-   * whether an output happens to carry a type, so what is listed here is what the scoring says
-   * needs attention on this run.
+   * Applied risk per step for this run, carrying the run's Key Characteristic register. What is
+   * listed here is what the analysis says this user's attention decides, not every output that
+   * happens to carry a type.
    */
   stepRiskByStepId?: Map<string, StepRiskSummary>;
 }
@@ -35,7 +38,6 @@ export function KeyCharacteristicsWindow({
   const [selectedOperationIndex, setSelectedOperationIndex] = useState(0);
   const [showHelpPopup, setShowHelpPopup] = useState(false);
   const [showKCExplainer, setShowKCExplainer] = useState(false);
-  const [selectedOutput, setSelectedOutput] = useState<Output | null>(null);
 
   // Effect to find and navigate to the operation containing the current step
   React.useEffect(() => {
@@ -59,65 +61,52 @@ export function KeyCharacteristicsWindow({
   }, [open, operations.length, currentStepId]);
 
   const getCurrentOperation = () => operations[selectedOperationIndex];
-  
+
   /**
-   * Steps this operation has to get right, worst priority first.
+   * The operation's Key Characteristics, grouped by the item they are about.
    *
-   * A step earns a place here by having applied risk at Medium or High, not by having an output
-   * with a type set. The old signal listed every typed output whether or not the analysis said
-   * it was a concern, which made the list too long to act on.
+   * Grouping by item rather than by step is the point of this list: it reads as the handful of
+   * things where the user's attention is the variable, not as a tour of the risky steps. A
+   * severe risk that a jig already makes impossible does not appear, because there is nothing
+   * for the user to do about it.
    */
-  const getPrioritySteps = (operation: Operation) => {
-    const rows: {
-      step: string;
-      stepId: string;
-      summary: StepRiskSummary;
-      outputs: Output[];
+  const getKeyCharacteristicGroups = (operation: Operation) => {
+    const groups: {
+      key: string;
+      itemLabel: string;
+      itemKind: RiskItemKind;
+      stepTitle: string;
+      rows: KeyCharacteristicRow[];
+      worstRank: number;
     }[] = [];
 
     for (const step of operation.steps) {
       const summary = stepRiskByStepId?.get(step.id);
-      if (!summary) continue;
-      if (summary.worstActionPriority !== 'H' && summary.worstActionPriority !== 'M') continue;
+      if (!summary || summary.keyCharacteristics.length === 0) continue;
 
-      rows.push({
-        step: step.step,
-        stepId: step.id,
-        summary,
-        outputs: Array.isArray(step.outputs) ? step.outputs : [],
-      });
+      const byItem = new Map<string, KeyCharacteristicRow[]>();
+      for (const row of summary.keyCharacteristics) {
+        const key = `${row.itemKind}:${row.itemId ?? step.id}`;
+        const existing = byItem.get(key);
+        if (existing) existing.push(row);
+        else byItem.set(key, [row]);
+      }
+
+      for (const [key, rows] of byItem) {
+        groups.push({
+          key: `${step.id}:${key}`,
+          itemLabel: rows[0].itemLabel,
+          itemKind: rows[0].itemKind,
+          stepTitle: step.step,
+          rows,
+          worstRank: Math.max(
+            ...rows.map((row) => (row.actionPriority === 'H' ? 3 : row.actionPriority === 'M' ? 2 : 1))
+          ),
+        });
+      }
     }
 
-    return rows.sort((a, b) => {
-      const rank = (summary: StepRiskSummary) => (summary.worstActionPriority === 'H' ? 2 : 1);
-      return rank(b.summary) - rank(a.summary) || b.summary.highCount - a.summary.highCount;
-    });
-  };
-
-  const getOutputIcon = (type: Output['type']) => {
-    switch (type) {
-      case 'safety':
-        return <Shield className="w-4 h-4 text-red-500" />;
-      case 'performance-durability':
-        return <Star className="w-4 h-4 text-blue-500" />;
-      case 'major-aesthetics':
-        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
-      default:
-        return null;
-    }
-  };
-
-  const getOutputTypeLabel = (type: Output['type']) => {
-    switch (type) {
-      case 'safety':
-        return 'Safety Critical';
-      case 'performance-durability':
-        return 'Performance';
-      case 'major-aesthetics':
-        return 'Aesthetics';
-      default:
-        return '';
-    }
+    return groups.sort((a, b) => b.worstRank - a.worstRank || a.stepTitle.localeCompare(b.stepTitle));
   };
 
   const goToPrevious = () => {
@@ -131,7 +120,7 @@ export function KeyCharacteristicsWindow({
   if (operations.length === 0) return null;
 
   const currentOperation = getCurrentOperation();
-  const prioritySteps = getPrioritySteps(currentOperation);
+  const keyCharacteristicGroups = getKeyCharacteristicGroups(currentOperation);
 
   return (
     <>
@@ -202,85 +191,38 @@ export function KeyCharacteristicsWindow({
             </div>
           </div>
 
-          {/* 2-Column Tabular View */}
           <div className="flex-1 min-h-0 overflow-y-auto pb-4">
-            {prioritySteps.length === 0 ? (
+            {keyCharacteristicGroups.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p>Nothing in this operation scored high enough to single out.</p>
-                <p className="text-sm mt-2">
-                  The normal instructions cover it.
-                </p>
+                <p>Nothing in this operation depends on how carefully you work it.</p>
+                <p className="text-sm mt-2">The normal instructions cover it.</p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {prioritySteps.map((stepOutput, stepIndex) => (
-                  <div key={stepIndex} className="space-y-3 sm:space-y-4">
-                    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b bg-background pb-2">
-                      <h4 className="font-medium text-sm sm:text-base">{stepOutput.step}</h4>
-                      <StepRiskPriorityBadge summary={stepOutput.summary} />
+              <div className="space-y-4">
+                {keyCharacteristicGroups.map((group) => (
+                  <div key={group.key} className="rounded-lg border p-3 sm:p-4">
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <h4 className="text-sm font-semibold sm:text-base">{group.itemLabel}</h4>
+                      <span className="text-xs text-muted-foreground">
+                        {RISK_ITEM_KIND_LABELS[group.itemKind]} on {group.stepTitle}
+                      </span>
+                      {group.worstRank === 3 ? (
+                        <Badge variant="destructive" className="text-xs">
+                          Get this right first
+                        </Badge>
+                      ) : null}
                     </div>
 
-                    <ul className="space-y-1.5">
-                      {stepOutput.summary.items.map((item) => (
-                        <li key={item.id} className="text-xs text-muted-foreground">
+                    <ul className="mt-2 space-y-2">
+                      {group.rows.map((row) => (
+                        <li key={row.id} className="text-xs leading-relaxed">
                           <span className="font-medium text-foreground">
-                            {RISK_COMPONENT_CONSUMER_LABELS[item.dimension]}:
+                            {RISK_COMPONENT_CONSUMER_LABELS[row.dimension]}:
                           </span>{' '}
-                          {item.description ?? item.title}
+                          <span className="text-muted-foreground">{row.attentionReason}</span>
                         </li>
                       ))}
                     </ul>
-
-                    <div className="space-y-3">
-                      {stepOutput.outputs.map((output, outputIndex) => (
-                        <div key={outputIndex} className="grid grid-cols-1 lg:grid-cols-2 gap-4 border rounded-lg p-3 sm:p-4 hover:bg-muted/50 transition-colors">
-                          {/* Left Column - Output Details */}
-                          <div 
-                            className="space-y-2 cursor-pointer"
-                            onClick={() => setSelectedOutput(output)}
-                          >
-                            <div className="flex items-start gap-2 flex-wrap">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <h5 className="font-semibold text-sm leading-tight">
-                                  {output.name}
-                                </h5>
-                                {output.type !== 'none' && (
-                                  <div className="flex items-center gap-1">
-                                    {getOutputIcon(output.type)}
-                                    <Badge variant="secondary" className="text-xs px-2 py-0">
-                                      {getOutputTypeLabel(output.type)}
-                                    </Badge>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {output.description && (
-                              <p className="text-xs text-muted-foreground leading-relaxed">
-                                {output.description}
-                              </p>
-                            )}
-                          </div>
-                          
-                          {/* Right Column - Key Inputs */}
-                          <div className="space-y-2">
-                            <h6 className="font-medium text-xs text-blue-600">Key Inputs:</h6>
-                            {output.keyInputs && output.keyInputs.length > 0 ? (
-                              <ul className="text-xs text-muted-foreground leading-relaxed space-y-1">
-                                {output.keyInputs.map((input, idx) => (
-                                  <li key={idx} className="flex items-start gap-1">
-                                    <span className="text-blue-400 flex-shrink-0 mt-0.5">•</span>
-                                    <span>{input}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-xs text-muted-foreground italic">No key inputs specified</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 ))}
               </div>
@@ -303,11 +245,18 @@ export function KeyCharacteristicsWindow({
           </DialogHeader>
           <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
             <p className="text-primary font-medium">
-              Priorities are how we personalize our projects to each builder.
+              These are the items where how carefully you work decides the outcome.
             </p>
             <p>
-              We tailor detail to skill level: first‑timers get the full play‑by‑play, while seasoned DIYers aren't stuck reading what a miter saw looks like. 
-              Priorities deliver the right level of detail for successful project completion.
+              A risk lands here only when three things are true: it matters enough to act on, how
+              often it goes wrong depends on the person rather than on the process or the
+              material, and nothing in the setup already makes the mistake impossible.
+            </p>
+            <p>
+              That last test is why this list is short. Something severe that a jig or a fixture
+              already prevents is not here, because there is nothing left for you to watch. The
+              list also changes with your profile: an item can need attention from a first-timer
+              and not from someone who has done it many times.
             </p>
             <div className="flex justify-center mt-4">
               <Button 
@@ -323,82 +272,6 @@ export function KeyCharacteristicsWindow({
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Output Details Popup */}
-      <Dialog open={!!selectedOutput} onOpenChange={() => setSelectedOutput(null)}>
-        <DialogContent className="max-w-[90vw] lg:max-w-3xl max-h-[90vh] overflow-y-auto">
-          {selectedOutput && (
-            <>
-              <DialogHeader>
-                <div className="flex items-start justify-between gap-2">
-                  <DialogTitle className="text-lg font-bold leading-tight">
-                    {selectedOutput.name}
-                  </DialogTitle>
-                  {selectedOutput.type !== 'none' && (
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {getOutputIcon(selectedOutput.type)}
-                      <Badge variant="secondary" className="text-xs px-2 py-0">
-                        {getOutputTypeLabel(selectedOutput.type)}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-              </DialogHeader>
-              
-              <div className="space-y-4 text-sm">
-                {selectedOutput.description && (
-                  <div>
-                    <h4 className="font-medium text-sm mb-2 text-primary">Description:</h4>
-                    <p className="text-muted-foreground leading-relaxed">{selectedOutput.description}</p>
-                  </div>
-                )}
-                
-                {selectedOutput.requirement && (
-                  <div>
-                    <h4 className="font-medium text-sm mb-2 text-primary">Requirement:</h4>
-                    <p className="text-muted-foreground leading-relaxed">{selectedOutput.requirement}</p>
-                  </div>
-                )}
-                
-                {selectedOutput.potentialEffects && (
-                  <div>
-                    <h4 className="font-medium text-sm mb-2 text-orange-600">Potential Effects:</h4>
-                    <p className="text-muted-foreground leading-relaxed">{selectedOutput.potentialEffects}</p>
-                  </div>
-                )}
-                
-                {selectedOutput.qualityChecks && (
-                  <div>
-                    <h4 className="font-medium text-sm mb-2 text-green-600">Quality Checks:</h4>
-                    <p className="text-muted-foreground leading-relaxed">{selectedOutput.qualityChecks}</p>
-                  </div>
-                )}
-                
-                {selectedOutput.mustGetRight && (
-                  <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded border border-red-200 dark:border-red-800">
-                    <h4 className="font-medium text-sm mb-2 text-red-700 dark:text-red-400">Must Get Right:</h4>
-                    <p className="text-red-600 dark:text-red-300 leading-relaxed">{selectedOutput.mustGetRight}</p>
-                  </div>
-                )}
-                
-                {selectedOutput.keyInputs && selectedOutput.keyInputs.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-sm mb-2 text-blue-600">Key Inputs:</h4>
-                    <ul className="text-muted-foreground leading-relaxed space-y-1">
-                      {selectedOutput.keyInputs.map((input, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <span className="text-blue-400 flex-shrink-0 mt-0.5">•</span>
-                          <span>{input}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
         </DialogContent>
       </Dialog>
 

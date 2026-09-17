@@ -8,6 +8,7 @@
 
 import {
   RISK_DIMENSIONS,
+  actionPriorityUrgency,
   isActionPriority,
   isRiskDimension,
   worstActionPriority,
@@ -20,6 +21,10 @@ export interface RiskRollupRow {
   action_priority: string | null;
   excluded_by_customization?: boolean | null;
   hidden_from_register?: boolean | null;
+}
+
+export interface RiskRpnRow extends RiskRollupRow {
+  rpn?: number | null;
 }
 
 export interface RiskComponentRollup {
@@ -86,6 +91,56 @@ export function rollupRiskComponents(
   }
 
   return rollups;
+}
+
+/**
+ * The worst line's RPN per component, on the 1-1000 scale every scored line already carries.
+ *
+ * The max rather than an average or a weighted sum: an average is an invented weighting, and
+ * it lets nine Lows hide the one High that is the actual problem. Null means no line in the
+ * component is scored, which is not the same reading as a low score.
+ */
+export function worstRpnByComponent(
+  rows: readonly RiskRpnRow[]
+): Record<RiskDimension, number | null> {
+  const worst = {} as Record<RiskDimension, number | null>;
+  for (const dimension of RISK_DIMENSIONS) {
+    worst[dimension] = null;
+  }
+
+  for (const row of rows) {
+    if (!isRiskDimension(row.risk_dimension)) continue;
+    if (row.excluded_by_customization === true || row.hidden_from_register === true) continue;
+    if (row.rpn == null || !Number.isFinite(row.rpn)) continue;
+
+    const current = worst[row.risk_dimension];
+    if (current === null || row.rpn > current) {
+      worst[row.risk_dimension] = row.rpn;
+    }
+  }
+
+  return worst;
+}
+
+export interface RiskPriorityOrderRow {
+  action_priority: string | null;
+  rpn?: number | null;
+  title: string;
+}
+
+/**
+ * Worst priority first, then the bigger RPN, then alphabetical, so "top items" means the same
+ * thing in the register and in the dashboard. Unscored rows sort last rather than being given
+ * a priority they do not have.
+ */
+export function compareByRiskPriority(a: RiskPriorityOrderRow, b: RiskPriorityOrderRow): number {
+  const apA = isActionPriority(a.action_priority) ? actionPriorityUrgency(a.action_priority) : 0;
+  const apB = isActionPriority(b.action_priority) ? actionPriorityUrgency(b.action_priority) : 0;
+  if (apA !== apB) return apB - apA;
+  const rpnA = a.rpn ?? 0;
+  const rpnB = b.rpn ?? 0;
+  if (rpnA !== rpnB) return rpnB - rpnA;
+  return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
 }
 
 /** DIY-facing component names for the overview. */

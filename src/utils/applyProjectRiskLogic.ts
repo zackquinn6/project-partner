@@ -15,8 +15,17 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import type { Json } from '@/integrations/supabase/types';
-import { fetchActionPriorityTable } from '@/utils/actionPriorityTable';
+import type { Database, Json } from '@/integrations/supabase/types';
+import { fetchActionPriorityTable, type ActionPriorityTable } from '@/utils/actionPriorityTable';
+import {
+  evaluateKeyCharacteristic,
+  fetchOccurrenceDriverTable,
+  resolveKcItemLabel,
+  type KeyCharacteristicRow,
+  type OccurrenceDriver,
+  type RiskItemKind,
+  type StepItemSource,
+} from '@/utils/keyCharacteristics';
 import {
   maxPfmeaSeverityForFailureMode,
   minPfmeaDetectionScoreForFailureMode,
@@ -33,6 +42,8 @@ import {
   RISK_DIMENSIONS,
   isRegisterRiskDimension,
   isActionPriority,
+  isRiskDimension,
+  type ActionPriority,
   type RiskDimension,
 } from '@/utils/riskDimensions';
 import { rollupRiskComponents, type RiskComponentRollup } from '@/utils/riskProfileRollup';
@@ -85,6 +96,22 @@ function translateQualityItem(input: {
   return { title, description: parts.filter((part) => part !== '').join(' ') };
 }
 
+/**
+ * One thing a Key Characteristic could be about, before the test is applied.
+ *
+ * Quality contributes one per cause, because the driver and the implicated item are properties
+ * of the cause rather than of the failure mode. The register contributes exactly one per risk,
+ * since those rows have no cause model.
+ */
+interface KcCandidateSource {
+  occurrenceDriver: string | null;
+  isMistakeProofed: boolean;
+  itemKind: RiskItemKind | null;
+  itemId: string | null;
+  /** The cause text for quality, null for the register where the title carries the what. */
+  causeDescription: string | null;
+}
+
 interface Stage1Load {
   items: RiskLogicItem[];
   /** Per failure mode, the text needed to write the applied row. */
@@ -94,7 +121,11 @@ interface Stage1Load {
   >;
   /** Register items keep their authored title, so only the template risk id is needed. */
   registerTitleById: Map<string, string>;
+  /** Keyed `${targetKind}:${targetId}`, so the KC pass can join to the applied rows. */
+  kcSources: Map<string, KcCandidateSource[]>;
   operationStepIds: string[];
+  /** Prevention controls with no strength recorded, so mistake-proofing is unknown. */
+  unclassifiedControlStrengthCount: number;
 }
 
 /** Worst occurrence across the causes that have been scored, or null when none have been. */
@@ -113,7 +144,7 @@ async function loadStage1(
     supabase
       .from('pfmea_failure_modes')
       .select(
-        'id, failure_mode, operation_step_id, requirement_id, severity_score, pfmea_potential_effects(effect_description, severity_score), pfmea_potential_causes(id, occurrence_score), pfmea_controls(control_type, cause_id, detection_score)'
+        'id, failure_mode, operation_step_id, requirement_id, severity_score, pfmea_potential_effects(effect_description, severity_score), pfmea_potential_causes(id, cause_description, occurrence_score, occurrence_driver, implicated_item_kind, implicated_item_id), pfmea_controls(control_type, control_strength, cause_id, detection_score)'
       )
       .eq('project_id', pfmeaProjectId),
     supabase
@@ -123,7 +154,7 @@ async function loadStage1(
     supabase
       .from('project_risks')
       .select(
-        'id, risk_title, risk_dimension, severity_score, occurrence_score, detection_score, operation_step_id'
+        'id, risk_title, risk_dimension, severity_score, occurrence_score, detection_score, operation_step_id, occurrence_driver, prevention_strength, implicated_item_kind, implicated_item_id'
       )
       .eq('project_id', templateRootIdForRisks),
   ]);
@@ -168,6 +199,8 @@ async function loadStage1(
 
   const items: RiskLogicItem[] = [];
   const qualityContext: Stage1Load['qualityContext'] = new Map();
+  const kcSources: Stage1Load['kcSources'] = new Map();
+  let unclassifiedControlStrengthCount = 0;
 
   for (const fm of failureModes) {
     const requirementText = requirementTextById.get(fm.requirement_id);
@@ -209,6 +242,39 @@ async function loadStage1(
         .map((effect) => effect.effect_description)
         .filter((text): text is string => typeof text === 'string' && text.trim() !== ''),
     });
+
+    const controls = fm.pfmea_controls ?? [];
+    for (const control of controls) {
+      if (control.control_type === 'prevention' && control.control_strength === null) {
+        unclassifiedControlStrengthCount += 1;
+      }
+    }
+
+    // A cause is mistake-proofed when a prevention control scoped to it removes the
+    // opportunity for the error. Controls attached to the failure mode rather than to a cause
+    // cover every cause of it, which is how the authoring grid writes a blanket control.
+    const mistakeProofedCauseIds = new Set<string>();
+    let mistakeProofedWholeFailureMode = false;
+    for (const control of controls) {
+      if (control.control_type !== 'prevention') continue;
+      if (control.control_strength !== 'mistake_proof') continue;
+      if (control.cause_id) {
+        mistakeProofedCauseIds.add(control.cause_id);
+      } else {
+        mistakeProofedWholeFailureMode = true;
+      }
+    }
+
+    kcSources.set(
+      `pfmea_failure_mode:${fm.id}`,
+      (fm.pfmea_potential_causes ?? []).map((cause) => ({
+        occurrenceDriver: cause.occurrence_driver,
+        isMistakeProofed: mistakeProofedWholeFailureMode || mistakeProofedCauseIds.has(cause.id),
+        itemKind: cause.implicated_item_kind,
+        itemId: cause.implicated_item_id,
+        causeDescription: cause.cause_description,
+      }))
+    );
   }
 
   const registerTitleById = new Map<string, string>();
@@ -227,9 +293,26 @@ async function loadStage1(
       occurrenceScore: risk.occurrence_score ?? null,
       detectionScore: risk.detection_score ?? null,
     });
+
+    kcSources.set(`template_risk:${risk.id}`, [
+      {
+        occurrenceDriver: risk.occurrence_driver,
+        isMistakeProofed: risk.prevention_strength === 'mistake_proof',
+        itemKind: risk.implicated_item_kind,
+        itemId: risk.implicated_item_id,
+        causeDescription: null,
+      },
+    ]);
   }
 
-  return { items, qualityContext, registerTitleById, operationStepIds: stepIds };
+  return {
+    items,
+    qualityContext,
+    registerTitleById,
+    kcSources,
+    operationStepIds: stepIds,
+    unclassifiedControlStrengthCount,
+  };
 }
 
 function auditJson(item: AppliedRiskItem): Json {
@@ -286,9 +369,10 @@ export async function applyProjectRiskLogicToRun(
 
   const stage1 = await loadStage1(run.project_id, templateRootIdForRisks);
   if (stage1.items.length === 0) {
-    // Nothing scored anywhere in this template. The profile still gets rebuilt so a stale
-    // rollup from an earlier evaluation cannot linger.
+    // Nothing scored anywhere in this template. The profile and the KC register still get
+    // rebuilt so a stale result from an earlier evaluation cannot linger.
     await recomputeProjectRunRiskProfile(projectRunId);
+    await clearProjectRunKeyCharacteristics(projectRunId);
     return;
   }
 
@@ -322,6 +406,7 @@ export async function applyProjectRiskLogicToRun(
   }
 
   await recomputeProjectRunRiskProfile(projectRunId);
+  await recomputeProjectRunKeyCharacteristics(projectRunId, stage1, actionPriorityTable);
 }
 
 /**
@@ -515,5 +600,220 @@ export async function fetchProjectRunRiskProfile(
       lowCount: row.low_count,
       unscoredCount: row.unscored_count,
       totalCount: row.high_count + row.medium_count + row.low_count + row.unscored_count,
+    }));
+}
+
+async function clearProjectRunKeyCharacteristics(projectRunId: string): Promise<void> {
+  const { error } = await supabase
+    .from('project_run_key_characteristics')
+    .delete()
+    .eq('project_run_id', projectRunId);
+  if (error) {
+    throw new Error(`Key characteristics could not be cleared: ${error.message}`);
+  }
+}
+
+/** The step JSON the KC pass needs to turn an item id into a name the user recognizes. */
+async function loadStepItemSources(
+  stepIds: readonly string[]
+): Promise<Map<string, StepItemSource>> {
+  if (stepIds.length === 0) return new Map();
+
+  const [stepsResult, instructionsResult] = await Promise.all([
+    supabase
+      .from('operation_steps')
+      .select('id, step_title, outputs, process_variables, materials, tools')
+      .in('id', [...stepIds]),
+    supabase.from('step_instructions').select('step_id, content').in('step_id', [...stepIds]),
+  ]);
+
+  if (stepsResult.error) {
+    throw new Error(`Key characteristics could not read operation_steps: ${stepsResult.error.message}`);
+  }
+  if (instructionsResult.error) {
+    throw new Error(
+      `Key characteristics could not read step_instructions: ${instructionsResult.error.message}`
+    );
+  }
+
+  // An instruction section can appear at more than one instruction level, so the sections are
+  // pooled per step and the first id match wins. The user sees one name either way.
+  const sectionsByStepId = new Map<string, unknown[]>();
+  for (const row of instructionsResult.data ?? []) {
+    const sections = Array.isArray(row.content) ? row.content : [];
+    const existing = sectionsByStepId.get(row.step_id);
+    if (existing) {
+      existing.push(...sections);
+    } else {
+      sectionsByStepId.set(row.step_id, [...sections]);
+    }
+  }
+
+  const sources = new Map<string, StepItemSource>();
+  for (const step of stepsResult.data ?? []) {
+    sources.set(step.id, {
+      stepTitle: step.step_title,
+      outputs: step.outputs,
+      processVariables: step.process_variables,
+      materials: step.materials,
+      tools: step.tools,
+      instructionSections: sectionsByStepId.get(step.id) ?? [],
+    });
+  }
+  return sources;
+}
+
+/** One sentence telling the user what to watch on this item and why it is on the list. */
+function attentionReason(source: KcCandidateSource, driver: OccurrenceDriver): string {
+  const parts = source.causeDescription
+    ? [sentence(source.causeDescription), sentence(driver.description)]
+    : [sentence(driver.description)];
+  return parts.filter((part) => part !== '').join(' ');
+}
+
+/**
+ * Rebuilds the run's Key Characteristic register from the applied risk list.
+ *
+ * The urgency test reads the applied Action Priority on the failure mode or register risk,
+ * while the driver and mistake-proofing tests read the cause. So a KC says: this risk needs
+ * attention, and this particular cause of it is one the person controls, and nothing makes that
+ * error impossible.
+ *
+ * Rows excluded by a rule or hidden by the user are skipped, matching the rollup: they are not
+ * part of this run's work.
+ */
+export async function recomputeProjectRunKeyCharacteristics(
+  projectRunId: string,
+  stage1: Stage1Load,
+  actionPriorityTable: ActionPriorityTable
+): Promise<void> {
+  const drivers = await fetchOccurrenceDriverTable();
+
+  const { data: appliedRows, error: appliedError } = await supabase
+    .from('project_run_risks')
+    .select(
+      'id, source, source_template_id, risk_dimension, action_priority, operation_step_id, excluded_by_customization, hidden_from_register'
+    )
+    .eq('project_run_id', projectRunId)
+    .not('source', 'is', null);
+
+  if (appliedError) {
+    throw new Error(`Key characteristics could not read the applied risks: ${appliedError.message}`);
+  }
+
+  const stepIds = Array.from(
+    new Set(
+      (appliedRows ?? [])
+        .map((row) => row.operation_step_id)
+        .filter((id): id is string => typeof id === 'string')
+    )
+  );
+  const stepSources = await loadStepItemSources(stepIds);
+
+  type KcInsert = Database['public']['Tables']['project_run_key_characteristics']['Insert'];
+  const inserts: KcInsert[] = [];
+
+  for (const row of appliedRows ?? []) {
+    if (row.excluded_by_customization === true || row.hidden_from_register === true) continue;
+    if (!isRiskDimension(row.risk_dimension)) continue;
+    // A KC has to point at something in the workflow, so a risk with no step cannot be one.
+    if (!row.operation_step_id) continue;
+    if (!row.source_template_id) continue;
+
+    const targetKind = row.source === 'pfmea' ? 'pfmea_failure_mode' : 'template_risk';
+    const sources = stage1.kcSources.get(`${targetKind}:${row.source_template_id}`);
+    if (!sources) continue;
+
+    const appliedPriority = isActionPriority(row.action_priority) ? row.action_priority : null;
+
+    for (const source of sources) {
+      const verdict = evaluateKeyCharacteristic(
+        {
+          actionPriority: appliedPriority,
+          occurrenceDriver: source.occurrenceDriver,
+          isMistakeProofed: source.isMistakeProofed,
+        },
+        drivers,
+        actionPriorityTable
+      );
+      if (verdict.outcome !== 'key_characteristic') continue;
+
+      // The author marked this as human-variable but never said which item it is about. The
+      // step as a whole is the honest answer, not a guessed output.
+      const itemKind = source.itemKind ?? 'step';
+      const itemId = itemKind === 'step' ? null : source.itemId;
+      if (itemKind !== 'step' && itemId === null) {
+        throw new Error(
+          `A key characteristic on step ${row.operation_step_id} names a ${itemKind} with no id.`
+        );
+      }
+
+      const stepSource = stepSources.get(row.operation_step_id);
+      if (!stepSource) {
+        throw new Error(
+          `Key characteristics could not load step ${row.operation_step_id} to name its items.`
+        );
+      }
+
+      inserts.push({
+        project_run_id: projectRunId,
+        project_run_risk_id: row.id,
+        operation_step_id: row.operation_step_id,
+        item_kind: itemKind,
+        item_id: itemId,
+        item_label: resolveKcItemLabel({ kind: itemKind, id: itemId }, stepSource),
+        risk_dimension: row.risk_dimension,
+        action_priority: verdict.actionPriority,
+        occurrence_driver: verdict.driver.driver,
+        attention_reason: attentionReason(source, verdict.driver),
+      });
+    }
+  }
+
+  // Delete then insert rather than upsert: a classification change can remove an item from the
+  // register, and a leftover row would tell the user to watch something the analysis dropped.
+  await clearProjectRunKeyCharacteristics(projectRunId);
+
+  if (inserts.length === 0) return;
+
+  const { error: insertError } = await supabase
+    .from('project_run_key_characteristics')
+    .insert(inserts);
+  if (insertError) {
+    throw new Error(`Key characteristics could not be saved: ${insertError.message}`);
+  }
+}
+
+/** The run's Key Characteristic register, worst priority first. */
+export async function fetchProjectRunKeyCharacteristics(
+  projectRunId: string
+): Promise<KeyCharacteristicRow[]> {
+  const { data, error } = await supabase
+    .from('project_run_key_characteristics')
+    .select(
+      'id, project_run_risk_id, operation_step_id, item_kind, item_id, item_label, risk_dimension, action_priority, occurrence_driver, attention_reason'
+    )
+    .eq('project_run_id', projectRunId);
+
+  if (error) {
+    throw new Error(`Key characteristics could not be read: ${error.message}`);
+  }
+
+  return (data ?? [])
+    .filter(
+      (row): row is typeof row & { risk_dimension: RiskDimension; action_priority: ActionPriority } =>
+        isRiskDimension(row.risk_dimension) && isActionPriority(row.action_priority)
+    )
+    .map((row) => ({
+      id: row.id,
+      projectRunRiskId: row.project_run_risk_id,
+      operationStepId: row.operation_step_id,
+      itemKind: row.item_kind,
+      itemId: row.item_id,
+      itemLabel: row.item_label,
+      dimension: row.risk_dimension,
+      actionPriority: row.action_priority,
+      occurrenceDriver: row.occurrence_driver,
+      attentionReason: row.attention_reason,
     }));
 }

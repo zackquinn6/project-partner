@@ -67,6 +67,15 @@ export const StepRiskPriorityBadge: React.FC<{
                   {item.description ? (
                     <div className="text-muted-foreground">{item.description}</div>
                   ) : null}
+                  {/*
+                    Separates the two cases a single priority badge hides: a risk your attention
+                    changes, and a risk that is severe but already engineered out.
+                  */}
+                  {item.keyCharacteristics.length > 0 ? (
+                    <div className="mt-1 text-amber-800 dark:text-amber-200">
+                      Watch: {item.keyCharacteristics.map((kc) => kc.itemLabel).join(', ')}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </li>
@@ -80,6 +89,10 @@ export const StepRiskPriorityBadge: React.FC<{
 /**
  * The short list a user should read before starting a High step, inline rather than behind a
  * click, because a warning that needs a click is a warning that gets skipped.
+ *
+ * Key Characteristics are called out separately from the rest. Both are High, but only the KCs
+ * are things the user can change by working differently, so lumping them together would spend
+ * the user's attention on failures they cannot affect.
  */
 export const StepMustGetRightCallout: React.FC<{ summary: StepRiskSummary | undefined }> = ({
   summary,
@@ -87,6 +100,7 @@ export const StepMustGetRightCallout: React.FC<{ summary: StepRiskSummary | unde
   if (!summary || summary.highCount === 0) return null;
 
   const highItems = summary.items.filter((item) => item.actionPriority === 'H');
+  const keyCharacteristics = highItems.flatMap((item) => item.keyCharacteristics);
 
   return (
     <div className="mt-3 rounded-md border border-red-300 bg-red-50/70 p-3 dark:border-red-800 dark:bg-red-950/30">
@@ -104,6 +118,20 @@ export const StepMustGetRightCallout: React.FC<{ summary: StepRiskSummary | unde
           </li>
         ))}
       </ul>
+      {keyCharacteristics.length > 0 ? (
+        <div className="mt-2.5 border-t border-red-300/70 pt-2 dark:border-red-800/70">
+          <div className="text-xs font-semibold text-red-900 dark:text-red-200">
+            Where your attention changes the outcome
+          </div>
+          <ul className="mt-1 space-y-1">
+            {keyCharacteristics.map((kc) => (
+              <li key={kc.id} className="text-xs text-red-900 dark:text-red-100">
+                <span className="font-medium">{kc.itemLabel}:</span> {kc.attentionReason}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 };

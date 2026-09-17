@@ -102,6 +102,8 @@ import { ProjectBudgetingWindow } from './ProjectBudgetingWindow';
 import { AfterActionReviewWindow } from './AfterActionReviewWindow';
 import { ProjectPerformanceWindow } from './ProjectPerformanceWindow';
 import { RiskManagementWindow } from './RiskManagementWindow';
+import { RiskDashboardWindow } from './RiskDashboardWindow';
+import { isRiskDimension, type RiskDimension } from '@/utils/riskDimensions';
 import { CommunicationPlanWindow } from './communication-plan/CommunicationPlanWindow';
 import { QualityCheckWindow } from './QualityCheckWindow';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
@@ -308,6 +310,8 @@ export default function UserView({
   const [aarProjectRun, setAarProjectRun] = useState<ProjectRun | null>(null);
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
   const [riskManagementPlanningPresentation, setRiskManagementPlanningPresentation] = useState(false);
+  const [riskDashboardOpen, setRiskDashboardOpen] = useState(false);
+  const [riskDashboardDimension, setRiskDashboardDimension] = useState<RiskDimension | null>(null);
   const [projectPerformanceOpen, setProjectPerformanceOpen] = useState(false);
   const [communicationPlanOpen, setCommunicationPlanOpen] = useState(false);
   const [communicationPlanFromPlanningWizard, setCommunicationPlanFromPlanningWizard] = useState(false);
@@ -2388,6 +2392,10 @@ export default function UserView({
         setRiskManagementPlanningPresentation(false);
         setRiskManagementOpen(true);
         break;
+      case 'risk-dashboard':
+        setRiskDashboardDimension(null);
+        setRiskDashboardOpen(true);
+        break;
       case 'risk-focus':
         window.dispatchEvent(new CustomEvent('open-risk-focus-launcher'));
         break;
@@ -4439,6 +4447,22 @@ export default function UserView({
           mode="run"
           variant="risk-focus"
           planningWizardToolPresentation={riskManagementPlanningPresentation}
+        />
+      )}
+
+      {/* Risk Dashboard (opened from the Risk Radar component lights or the app grid) */}
+      {currentProjectRun && (
+        <RiskDashboardWindow
+          open={riskDashboardOpen}
+          onOpenChange={(open) => {
+            setRiskDashboardOpen(open);
+            if (!open) setRiskDashboardDimension(null);
+          }}
+          projectRunId={currentProjectRun.id}
+          projectDisplayName={
+            currentProjectRun.customProjectName?.trim() || currentProjectRun.name?.trim() || null
+          }
+          initialDimension={riskDashboardDimension}
         />
       )}
 

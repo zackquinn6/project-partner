@@ -77,6 +77,22 @@ import {
   stepsNeedingOccurrenceReview,
   type StepOccurrenceComparison,
 } from '@/utils/riskEvidence';
+import { useOccurrenceDrivers } from '@/hooks/useOccurrenceDrivers';
+import {
+  CONTROL_STRENGTHS,
+  CONTROL_STRENGTH_LABELS,
+  KC_DISQUALIFICATION_TEXT,
+  RISK_ITEM_KINDS,
+  RISK_ITEM_KIND_LABELS,
+  evaluateKeyCharacteristic,
+  isControlStrength,
+  listKcItemOptions,
+  summarizeKcClassificationGaps,
+  type ControlStrength,
+  type OccurrenceDriverTable,
+  type RiskItemKind,
+  type StepItemSource,
+} from '@/utils/keyCharacteristics';
 
 // Database types for PFMEA
 interface DatabaseProject {
@@ -122,6 +138,8 @@ interface PFMEARequirement {
     description?: string | null;
     outputs?: unknown;
     process_variables?: unknown;
+    materials?: unknown;
+    tools?: unknown;
   } | null;
 }
 
@@ -151,6 +169,10 @@ interface PFMEAPotentialCause {
   failure_mode_id: string;
   cause_description: string;
   occurrence_score: number | null;
+  /** Null until classified. An unclassified cause cannot become a Key Characteristic. */
+  occurrence_driver: string | null;
+  implicated_item_kind: RiskItemKind | null;
+  implicated_item_id: string | null;
 }
 
 interface PFMEAControl {
@@ -160,6 +182,8 @@ interface PFMEAControl {
   control_type: string;
   control_description: string;
   detection_score?: number;
+  /** Prevention only. Mistake-proofing is what takes an item off the KC register. */
+  control_strength: string | null;
 }
 
 interface PFMEAActionItem {
@@ -257,6 +281,124 @@ function PfmeaProcessVariablesReadonlyCell({
   );
 }
 
+/**
+ * Sentinel for "nothing chosen" in the classification selects. Radix needs a non-empty value,
+ * and an empty string cannot be used because `none` is a real prevention strength.
+ */
+const KC_UNSET = '__unset';
+
+/**
+ * Occurrence driver and implicated item, authored on the cause.
+ *
+ * These are shown on every cause rather than behind a dialog because leaving the driver blank
+ * quietly keeps the item off the Key Characteristic register, so the blank has to be visible.
+ */
+function CauseClassificationControls({
+  cause,
+  drivers,
+  stepItemSource,
+  editable,
+  onDriverChange,
+  onItemChange,
+}: {
+  cause: PFMEAPotentialCause;
+  drivers: OccurrenceDriverTable | null;
+  stepItemSource: StepItemSource | null;
+  editable: boolean;
+  onDriverChange: (driver: string | null) => void;
+  onItemChange: (kind: RiskItemKind | null, itemId: string | null) => void;
+}) {
+  const itemKind = cause.implicated_item_kind;
+  const itemOptions =
+    stepItemSource && itemKind && itemKind !== 'step'
+      ? listKcItemOptions(stepItemSource, itemKind)
+      : [];
+
+  if (!editable) {
+    const driverLabel = cause.occurrence_driver
+      ? drivers?.byDriver[cause.occurrence_driver]?.label ?? cause.occurrence_driver
+      : null;
+    const itemLabel = itemKind
+      ? itemKind === 'step'
+        ? RISK_ITEM_KIND_LABELS.step
+        : itemOptions.find((option) => option.id === cause.implicated_item_id)?.name ?? null
+      : null;
+    if (!driverLabel && !itemLabel) return null;
+    return (
+      <div className="px-1 pb-1 text-xs text-muted-foreground">
+        {[driverLabel, itemLabel].filter(Boolean).join(' · ')}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1 px-1 pb-1" onMouseDown={(e) => e.stopPropagation()}>
+      <Select
+        value={cause.occurrence_driver ?? KC_UNSET}
+        onValueChange={(value) => onDriverChange(value === KC_UNSET ? null : value)}
+      >
+        <SelectTrigger className="h-6 w-full px-1.5 text-xs">
+          <SelectValue placeholder="What drives how often" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={KC_UNSET}>What drives how often</SelectItem>
+          {(drivers?.ordered ?? []).map((driver) => (
+            <SelectItem key={driver.driver} value={driver.driver} title={driver.description}>
+              {driver.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={itemKind ?? KC_UNSET}
+        onValueChange={(value) =>
+          onItemChange(value === KC_UNSET ? null : (value as RiskItemKind), null)
+        }
+      >
+        <SelectTrigger className="h-6 w-full px-1.5 text-xs">
+          <SelectValue placeholder="What it affects" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={KC_UNSET}>What it affects</SelectItem>
+          {RISK_ITEM_KINDS.map((kind) => (
+            <SelectItem key={kind} value={kind}>
+              {RISK_ITEM_KIND_LABELS[kind]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {itemKind && itemKind !== 'step' ? (
+        itemOptions.length > 0 ? (
+          <Select
+            value={cause.implicated_item_id ?? KC_UNSET}
+            onValueChange={(value) => onItemChange(itemKind, value === KC_UNSET ? null : value)}
+          >
+            <SelectTrigger className="h-6 w-full px-1.5 text-xs">
+              <SelectValue placeholder={`Which ${RISK_ITEM_KIND_LABELS[itemKind].toLowerCase()}`} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={KC_UNSET}>
+                {`Which ${RISK_ITEM_KIND_LABELS[itemKind].toLowerCase()}`}
+              </SelectItem>
+              {itemOptions.map((option) => (
+                <SelectItem key={option.id} value={option.id}>
+                  {option.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <div className="text-xs text-amber-800">
+            {`This step has no ${RISK_ITEM_KIND_LABELS[itemKind].toLowerCase()} to point at.`}
+          </div>
+        )
+      ) : null}
+    </div>
+  );
+}
+
 function getPotentialCauseSubtext(failureMode: PFMEAFailureMode, cause: PFMEAPotentialCause | null): string {
   if (cause?.cause_description) return cause.cause_description;
   const causes = failureMode.pfmea_potential_causes ?? [];
@@ -277,6 +419,7 @@ type PfmeaNavColumn =
   | 'd'
   | 'rpn'
   | 'ap'
+  | 'kc'
   | 'recommended_actions';
 
 const PFMEA_NAV_COLS: PfmeaNavColumn[] = [
@@ -292,6 +435,7 @@ const PFMEA_NAV_COLS: PfmeaNavColumn[] = [
   'd',
   'rpn',
   'ap',
+  'kc',
   'recommended_actions',
 ];
 
@@ -345,6 +489,10 @@ const PFMEA_SCROLL_HEADER_STICKY: Record<
     className: 'border-b border-slate-800 shadow-sm',
   },
   ap: {
+    backgroundColor: '#475569',
+    className: 'border-b border-slate-800 shadow-sm',
+  },
+  kc: {
     backgroundColor: '#475569',
     className: 'border-b border-slate-800 shadow-sm',
   },
@@ -412,6 +560,14 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   const [workflowStepPvByStepId, setWorkflowStepPvByStepId] = useState<
     Record<string, WorkflowStepProcessVariableRow[]>
   >({});
+  /** Pooled instruction sections per step, so a cause can name the instruction it is about. */
+  const [instructionSectionsByStepId, setInstructionSectionsByStepId] = useState<
+    Record<string, unknown[]>
+  >({});
+  const {
+    table: occurrenceDriverTable,
+    error: occurrenceDriverError,
+  } = useOccurrenceDrivers();
   const [loading, setLoading] = useState(true);
   const [editingCell, setEditingCell] = useState<{
     entityId: string;
@@ -452,6 +608,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     d: 64,
     rpn: 80,
     ap: 120,
+    kc: 190,
     recommended_actions: 260,
   });
 
@@ -530,7 +687,9 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
               display_order,
               description,
               outputs,
-              process_variables
+              process_variables,
+              materials,
+              tools
             )
           )
         `
@@ -575,6 +734,8 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                 description: step.description,
                 outputs: step.outputs,
                 process_variables: (step as { process_variables?: unknown }).process_variables,
+                materials: (step as { materials?: unknown }).materials,
+                tools: (step as { tools?: unknown }).tools,
               },
             });
           }
@@ -601,6 +762,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
       if (rows.length === 0) {
         setWorkflowStepPvByStepId({});
+        setInstructionSectionsByStepId({});
         setFailureModes([]);
         return;
       }
@@ -624,6 +786,24 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         }
       }
       setWorkflowStepPvByStepId(wfByStep);
+
+      // Instruction sections are the one addressable item kind that does not live on the step
+      // row, so the implicated item picker needs them loaded separately.
+      const sectionsByStepId: Record<string, unknown[]> = {};
+      const { data: instructionRows, error: instructionError } = await supabase
+        .from('step_instructions')
+        .select('step_id, content')
+        .in('step_id', stepIds);
+      if (instructionError) {
+        console.error('step_instructions load:', instructionError);
+      } else {
+        for (const row of instructionRows ?? []) {
+          const sections = Array.isArray(row.content) ? row.content : [];
+          if (!sectionsByStepId[row.step_id]) sectionsByStepId[row.step_id] = [];
+          sectionsByStepId[row.step_id].push(...sections);
+        }
+      }
+      setInstructionSectionsByStepId(sectionsByStepId);
 
       const { data: fmData, error: fmError } = await supabase
         .from('pfmea_failure_modes')
@@ -919,6 +1099,87 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     },
     [actionPriorityTable]
   );
+
+  /** The step's addressable items, for the implicated item picker and the KC verdict. */
+  const stepItemSourceFor = useCallback(
+    (requirement: PFMEARequirement): StepItemSource | null => {
+      const step = requirement.operation_steps;
+      if (!step) return null;
+      return {
+        stepTitle: step.step_title,
+        outputs: step.outputs,
+        processVariables: step.process_variables,
+        materials: step.materials,
+        tools: step.tools,
+        instructionSections: instructionSectionsByStepId[step.id] ?? [],
+      };
+    },
+    [instructionSectionsByStepId]
+  );
+
+  /**
+   * Whether one cause line resolves to a Key Characteristic, using the same test Stage 3 runs.
+   * Null while either lookup table is still loading, since a verdict without them is a guess.
+   */
+  const keyCharacteristicVerdictFor = useCallback(
+    (failureMode: PFMEAFailureMode, cause: PFMEAPotentialCause) => {
+      if (!actionPriorityTable || !occurrenceDriverTable) return null;
+      const preventionForCause = failureMode.pfmea_controls.filter(
+        (control) =>
+          control.control_type === 'prevention' &&
+          (!control.cause_id || control.cause_id === cause.id)
+      );
+      return evaluateKeyCharacteristic(
+        {
+          actionPriority: calculateActionPriority(failureMode, actionPriorityTable, 'quality'),
+          occurrenceDriver: cause.occurrence_driver,
+          isMistakeProofed: preventionForCause.some((c) => c.control_strength === 'mistake_proof'),
+        },
+        occurrenceDriverTable,
+        actionPriorityTable
+      );
+    },
+    [actionPriorityTable, occurrenceDriverTable]
+  );
+
+  /**
+   * What is keeping causes off the KC register. An unclassified driver is the important number:
+   * it silently excludes the item rather than producing a wrong answer.
+   */
+  const kcClassificationGaps = useMemo(() => {
+    if (!actionPriorityTable || !occurrenceDriverTable) return null;
+    let unclassifiedControlStrengthCount = 0;
+    const items = failureModes.flatMap((fm) => {
+      for (const control of fm.pfmea_controls) {
+        if (control.control_type === 'prevention' && control.control_strength === null) {
+          unclassifiedControlStrengthCount += 1;
+        }
+      }
+      const mistakeProofedCauseIds = new Set<string>();
+      let mistakeProofedAll = false;
+      for (const control of fm.pfmea_controls) {
+        if (control.control_type !== 'prevention') continue;
+        if (control.control_strength !== 'mistake_proof') continue;
+        if (control.cause_id) mistakeProofedCauseIds.add(control.cause_id);
+        else mistakeProofedAll = true;
+      }
+      const priority = calculateActionPriority(fm, actionPriorityTable, 'quality');
+      return (fm.pfmea_potential_causes ?? []).map((cause) => ({
+        candidate: {
+          actionPriority: priority,
+          occurrenceDriver: cause.occurrence_driver,
+          isMistakeProofed: mistakeProofedAll || mistakeProofedCauseIds.has(cause.id),
+        },
+        hasItemRef: cause.implicated_item_kind !== null,
+      }));
+    });
+    return summarizeKcClassificationGaps(
+      items,
+      unclassifiedControlStrengthCount,
+      occurrenceDriverTable,
+      actionPriorityTable
+    );
+  }, [failureModes, actionPriorityTable, occurrenceDriverTable]);
 
   /** Null until the action priority table has loaded. Counts are never shown without it. */
   const pfmeaMetrics = useMemo(
@@ -1297,6 +1558,69 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         .eq('id', causeId);
       if (error) {
         toast.error('Failed to update occurrence');
+        return;
+      }
+      if (selectedPfmeaProject) await fetchPfmeaDetails(selectedPfmeaProject.project_id);
+    },
+    [pfmeaIsEditable, selectedPfmeaProject, fetchPfmeaDetails]
+  );
+
+  /**
+   * What decides how often this cause happens. Recorded on the cause because that is where
+   * occurrence lives, and it is the second of the three Key Characteristic tests.
+   */
+  const updateCauseOccurrenceDriver = useCallback(
+    async (causeId: string, driver: string | null) => {
+      if (!pfmeaIsEditable) return;
+      const { error } = await supabase
+        .from('pfmea_potential_causes')
+        .update({ occurrence_driver: driver })
+        .eq('id', causeId);
+      if (error) {
+        toast.error('Failed to update the occurrence driver');
+        return;
+      }
+      if (selectedPfmeaProject) await fetchPfmeaDetails(selectedPfmeaProject.project_id);
+    },
+    [pfmeaIsEditable, selectedPfmeaProject, fetchPfmeaDetails]
+  );
+
+  /**
+   * Which workflow item the cause is about. Clearing the kind clears the id with it, since the
+   * database rejects an id without a kind.
+   */
+  const updateCauseImplicatedItem = useCallback(
+    async (causeId: string, kind: RiskItemKind | null, itemId: string | null) => {
+      if (!pfmeaIsEditable) return;
+      const { error } = await supabase
+        .from('pfmea_potential_causes')
+        .update({
+          implicated_item_kind: kind,
+          implicated_item_id: kind === null || kind === 'step' ? null : itemId,
+        })
+        .eq('id', causeId);
+      if (error) {
+        toast.error('Failed to update the item this cause affects');
+        return;
+      }
+      if (selectedPfmeaProject) await fetchPfmeaDetails(selectedPfmeaProject.project_id);
+    },
+    [pfmeaIsEditable, selectedPfmeaProject, fetchPfmeaDetails]
+  );
+
+  /**
+   * Whether the prevention control removes the opportunity for the error or only asks the
+   * person to follow it. Only the first takes the item off the KC register.
+   */
+  const updateControlStrength = useCallback(
+    async (controlId: string, strength: ControlStrength | null) => {
+      if (!pfmeaIsEditable) return;
+      const { error } = await supabase
+        .from('pfmea_controls')
+        .update({ control_strength: strength })
+        .eq('id', controlId);
+      if (error) {
+        toast.error('Failed to update the control strength');
         return;
       }
       if (selectedPfmeaProject) await fetchPfmeaDetails(selectedPfmeaProject.project_id);
@@ -2312,6 +2636,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       d: 'bg-violet-100/55',
       rpn: 'bg-slate-50/55',
       ap: 'bg-slate-100/55',
+      kc: 'bg-amber-50/55',
       recommended_actions: 'bg-slate-50/55',
     };
     const band = (col: PfmeaNavColumn) => cn('border-l border-border/30', pfmeaColBand[col]);
@@ -2331,6 +2656,32 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
               {orphanedRequirementIds.length === 1 ? '' : 's'} point at an output that no longer
               exists on its step. Their failure modes are still stored. Remove them from the
               Requirements column, or restore the output in Process Map.
+            </div>
+          ) : null}
+          {occurrenceDriverError ? (
+            <div className="border-b border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              Occurrence drivers are unavailable: {occurrenceDriverError}
+            </div>
+          ) : null}
+          {kcClassificationGaps &&
+          (kcClassificationGaps.unclassifiedDriverCount > 0 ||
+            kcClassificationGaps.unclassifiedControlStrengthCount > 0 ||
+            kcClassificationGaps.missingItemRefCount > 0) ? (
+            <div className="border-b border-amber-500/40 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              {[
+                kcClassificationGaps.unclassifiedDriverCount > 0
+                  ? `${kcClassificationGaps.unclassifiedDriverCount} cause${kcClassificationGaps.unclassifiedDriverCount === 1 ? '' : 's'} with no occurrence driver, so they cannot reach the Key Characteristics list`
+                  : null,
+                kcClassificationGaps.unclassifiedControlStrengthCount > 0
+                  ? `${kcClassificationGaps.unclassifiedControlStrengthCount} prevention control${kcClassificationGaps.unclassifiedControlStrengthCount === 1 ? '' : 's'} with no strength recorded, so mistake-proofing is unknown`
+                  : null,
+                kcClassificationGaps.missingItemRefCount > 0
+                  ? `${kcClassificationGaps.missingItemRefCount} qualifying cause${kcClassificationGaps.missingItemRefCount === 1 ? '' : 's'} that name no item, so they list under the step instead`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join('. ')}
+              .
             </div>
           ) : null}
           <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-muted-foreground border-b bg-muted/20">
@@ -2590,6 +2941,12 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                     hidePlus: true,
                     sortKey: 'ap',
                     sortDefaultDir: 'desc',
+                    stickyHeaderVerticalScrollRegion: true,
+                  })}
+                  {renderHeaderWithPlus('Key Characteristic', 'kc', {
+                    derived: true,
+                    barClassName: pfmeaHeaderBar.other,
+                    hidePlus: true,
                     stickyHeaderVerticalScrollRegion: true,
                   })}
                   {renderHeaderWithPlus('Recommended Actions', 'recommended_actions', {
@@ -2999,6 +3356,20 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                               ) : (
                                 <div className="text-sm text-muted-foreground italic">No causes</div>
                               )}
+                              {cause ? (
+                                <CauseClassificationControls
+                                  cause={cause}
+                                  drivers={occurrenceDriverTable}
+                                  stepItemSource={stepItemSourceFor(requirement)}
+                                  editable={pfmeaIsEditable}
+                                  onDriverChange={(driver) =>
+                                    void updateCauseOccurrenceDriver(cause.id, driver)
+                                  }
+                                  onItemChange={(kind, itemId) =>
+                                    void updateCauseImplicatedItem(cause.id, kind, itemId)
+                                  }
+                                />
+                              ) : null}
                             </div>
                             {gridFocus.rowIndex === rowIndex && gridFocus.col === 'causes' ? (
                               <div className={pfmeaCellToolbar}>
@@ -3073,6 +3444,35 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                         )
                                       : null}
                                   </div>
+                                  {pfmeaIsEditable ? (
+                                    <div className="pt-1" onMouseDown={(e) => e.stopPropagation()}>
+                                      <Select
+                                        value={control.control_strength ?? KC_UNSET}
+                                        onValueChange={(value) =>
+                                          void updateControlStrength(
+                                            control.id,
+                                            value === KC_UNSET ? null : (value as ControlStrength)
+                                          )
+                                        }
+                                      >
+                                        <SelectTrigger className="h-6 w-full px-1.5 text-xs">
+                                          <SelectValue placeholder="How strong is it" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value={KC_UNSET}>How strong is it</SelectItem>
+                                          {CONTROL_STRENGTHS.map((strength) => (
+                                            <SelectItem key={strength} value={strength}>
+                                              {CONTROL_STRENGTH_LABELS[strength]}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  ) : isControlStrength(control.control_strength) ? (
+                                    <div className="pt-0.5 text-xs text-muted-foreground">
+                                      {CONTROL_STRENGTH_LABELS[control.control_strength]}
+                                    </div>
+                                  ) : null}
                                 </div>
                               ))
                             ) : cause ? (
@@ -3286,6 +3686,40 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                 Not scored
                               </Badge>
                             )
+                          ) : null}
+                        </div>
+                      </TableCell>
+
+                      <TableCell
+                        className={cn(td, band('kc'), 'align-middle', focusCellClass(rowIndex, 'kc'))}
+                        style={{ width: `${colWidths.kc}px`, minWidth: `${colWidths.kc}px` }}
+                        onMouseDown={(e) => pfmeaGridCellMouseDown(e, rowIndex, 'kc')}
+                      >
+                        <div className="flex min-h-8 w-full items-center justify-center px-1 text-center">
+                          {failureMode && cause ? (
+                            (() => {
+                              const verdict = keyCharacteristicVerdictFor(failureMode, cause);
+                              if (!verdict) {
+                                return (
+                                  <span className="text-xs text-muted-foreground">Loading</span>
+                                );
+                              }
+                              if (verdict.outcome === 'key_characteristic') {
+                                return (
+                                  <Badge
+                                    className="border-amber-600/40 bg-amber-100 text-xs text-amber-950 hover:bg-amber-100 dark:bg-amber-950/50 dark:text-amber-100"
+                                    title={verdict.driver.description}
+                                  >
+                                    {verdict.driver.label}
+                                  </Badge>
+                                );
+                              }
+                              return (
+                                <span className="text-xs leading-snug text-muted-foreground">
+                                  {KC_DISQUALIFICATION_TEXT[verdict.reason]}
+                                </span>
+                              );
+                            })()
                           ) : null}
                         </div>
                       </TableCell>

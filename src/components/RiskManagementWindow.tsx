@@ -73,17 +73,31 @@ import { useSteppedAutoAdvance } from '@/hooks/useSteppedAutoAdvance';
 import { useRunRiskReevaluation } from '@/hooks/useRunRiskReevaluation';
 import { ProjectRiskRulesEditor } from '@/components/ProjectRiskRulesEditor';
 import { useActionPriorityTable } from '@/hooks/useActionPriorityTable';
+import { useOccurrenceDrivers } from '@/hooks/useOccurrenceDrivers';
 import { actionPriorityLabel } from '@/utils/actionPriorityTable';
+import {
+  PREVENTION_STRENGTHS,
+  PREVENTION_STRENGTH_LABELS,
+  RISK_ITEM_KINDS,
+  RISK_ITEM_KIND_LABELS,
+  isPreventionStrength,
+  isRiskItemKind,
+  listKcItemOptions,
+  type PreventionStrength,
+  type RiskItemKind,
+  type StepItemSource,
+} from '@/utils/keyCharacteristics';
 import {
   RISK_COMPONENT_CONSUMER_LABELS,
   RISK_COMPONENT_CONSUMER_STAKES,
+  compareByRiskPriority,
   rollupRiskComponents,
+  worstRpnByComponent,
 } from '@/utils/riskProfileRollup';
 import {
   REGISTER_RISK_DIMENSIONS,
   RISK_DIMENSIONS,
   RISK_DIMENSION_LABELS,
-  actionPriorityUrgency,
   isActionPriority,
   isRegisterRiskDimension,
   isRiskDimension,
@@ -161,6 +175,14 @@ interface Risk {
   occurrence_score?: number | null;
   detection_score?: number | null;
   operation_step_id?: string | null;
+  /**
+   * Key Characteristic classifications, authored on the template register. Null means nobody
+   * has judged them, which keeps the risk off the KC register rather than assuming it is safe.
+   */
+  occurrence_driver?: string | null;
+  prevention_strength?: string | null;
+  implicated_item_kind?: RiskItemKind | null;
+  implicated_item_id?: string | null;
   /** Priority from the seeded table, or null when the row is unclassified or unscored. */
   action_priority?: ActionPriority | null;
   rpn?: number | null;
@@ -295,13 +317,10 @@ function riskTriageLevel(risk: Risk): 'low' | 'medium' | 'high' {
 
 /** Within one pass: worst priority first, then the bigger RPN, then alphabetical. */
 function compareRisksByPriority(a: Risk, b: Risk): number {
-  const apA = isActionPriority(a.action_priority) ? actionPriorityUrgency(a.action_priority) : 0;
-  const apB = isActionPriority(b.action_priority) ? actionPriorityUrgency(b.action_priority) : 0;
-  if (apA !== apB) return apB - apA;
-  const rpnA = a.rpn ?? 0;
-  const rpnB = b.rpn ?? 0;
-  if (rpnA !== rpnB) return rpnB - rpnA;
-  return (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' });
+  return compareByRiskPriority(
+    { action_priority: a.action_priority ?? null, rpn: a.rpn ?? null, title: a.risk || '' },
+    { action_priority: b.action_priority ?? null, rpn: b.rpn ?? null, title: b.risk || '' }
+  );
 }
 
 type PlanningRiskStepKey = 'high' | 'medium' | 'low';
@@ -369,6 +388,14 @@ interface RiskFormData {
   detection_score: number | null;
   /** Optional link to the step where the risk arises, so it can surface during execution. */
   operation_step_id: string | null;
+  /**
+   * Key Characteristic classifications. The register carries one per risk rather than per
+   * control, because these rows have no cause model to hang controls off.
+   */
+  occurrence_driver: string | null;
+  prevention_strength: PreventionStrength | null;
+  implicated_item_kind: RiskItemKind | null;
+  implicated_item_id: string | null;
 }
 
 const EMPTY_RISK_FORM: RiskFormData = {
@@ -387,6 +414,10 @@ const EMPTY_RISK_FORM: RiskFormData = {
   occurrence_score: null,
   detection_score: null,
   operation_step_id: null,
+  occurrence_driver: null,
+  prevention_strength: null,
+  implicated_item_kind: null,
+  implicated_item_id: null,
 };
 
 /** User-added run risks (not template / foundation copies). */
@@ -428,25 +459,69 @@ function riskFocusSeveritySelectItemClass(level: 'high' | 'medium' | 'low'): str
   }
 }
 
+/** Light colour for a component's worst priority. Grey is "nothing scored", not "clear". */
+function riskComponentLightClass(ap: ActionPriority | null): string {
+  switch (ap) {
+    case 'H':
+      return 'bg-red-500 ring-red-500/30';
+    case 'M':
+      return 'bg-amber-500 ring-amber-500/30';
+    case 'L':
+      return 'bg-emerald-500 ring-emerald-500/30';
+    default:
+      return 'bg-muted-foreground/40 ring-muted-foreground/15';
+  }
+}
+
+function riskComponentTileClass(ap: ActionPriority | null): string {
+  switch (ap) {
+    case 'H':
+      return 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/40';
+    case 'M':
+      return 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40';
+    case 'L':
+      return 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30';
+    default:
+      return 'border-border bg-background';
+  }
+}
+
 /**
- * One line per component: what its worst item demands, and how many items sit behind that.
- * Four separate readings rather than one blended score, because a project can be safe and
- * still be late, and the user acts on those differently.
+ * One light per component: what its worst item demands, the worst line's score out of 1000,
+ * and how many items sit behind that. Four separate readings rather than one blended score,
+ * because a project can be safe and still be late, and the user acts on those differently.
+ *
+ * Each light opens the Risk Dashboard on that component.
  */
-function RiskComponentOverview({ risks }: { risks: Risk[] }) {
+function RiskComponentOverview({
+  risks,
+  projectRunId,
+}: {
+  risks: Risk[];
+  /** Absent on the template view, which has no run to open a dashboard for. */
+  projectRunId?: string;
+}) {
   const { table } = useActionPriorityTable();
-  const rollups = useMemo(
+  const rollupRows = useMemo(
     () =>
-      rollupRiskComponents(
-        risks.map((risk) => ({
-          risk_dimension: risk.risk_dimension ?? null,
-          action_priority: risk.action_priority ?? null,
-          excluded_by_customization: risk.excluded_by_customization ?? null,
-          hidden_from_register: risk.hidden_from_register ?? null,
-        }))
-      ),
+      risks.map((risk) => ({
+        risk_dimension: risk.risk_dimension ?? null,
+        action_priority: risk.action_priority ?? null,
+        excluded_by_customization: risk.excluded_by_customization ?? null,
+        hidden_from_register: risk.hidden_from_register ?? null,
+        rpn: risk.rpn ?? null,
+      })),
     [risks]
   );
+  const rollups = useMemo(() => rollupRiskComponents(rollupRows), [rollupRows]);
+  const worstRpn = useMemo(() => worstRpnByComponent(rollupRows), [rollupRows]);
+
+  const openDashboard = (dimension: RiskDimension) => {
+    if (!projectRunId) return;
+    window.dispatchEvent(
+      new CustomEvent('open-risk-dashboard', { detail: { projectRunId, dimension } })
+    );
+  };
 
   return (
     <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
@@ -455,36 +530,56 @@ function RiskComponentOverview({ risks }: { risks: Risk[] }) {
         const ap = rollup.worstActionPriority;
         const label = ap && table ? actionPriorityLabel(table, ap).label : null;
         const description = ap && table ? actionPriorityLabel(table, ap).description : null;
+        const score = worstRpn[dimension];
+
+        const body = (
+          <>
+            <div className="flex items-center gap-1.5">
+              <span
+                className={cn('h-2.5 w-2.5 shrink-0 rounded-full ring-2', riskComponentLightClass(ap))}
+                aria-hidden
+              />
+              <span className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {RISK_COMPONENT_CONSUMER_LABELS[dimension]}
+              </span>
+            </div>
+            <div className="truncate text-xs font-semibold">
+              {label ?? (rollup.totalCount === 0 ? 'Nothing recorded' : 'Not scored')}
+            </div>
+            <div className="text-[10px] tabular-nums text-muted-foreground">
+              {score != null ? `${score} / 1000` : 'No score'}
+            </div>
+            <div className="text-[10px] text-muted-foreground">
+              {rollup.highCount > 0
+                ? `${rollup.highCount} to act on`
+                : rollup.unscoredCount > 0
+                  ? `${rollup.unscoredCount} unscored`
+                  : `${rollup.totalCount} tracked`}
+            </div>
+          </>
+        );
+
+        const tileClass = cn('min-w-0 rounded-md border px-2 py-1.5 text-left', riskComponentTileClass(ap));
 
         return (
           <Tooltip key={dimension}>
             <TooltipTrigger asChild>
-              <div
-                className={cn(
-                  'min-w-0 rounded-md border px-2 py-1.5 text-left',
-                  ap === 'H'
-                    ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/40'
-                    : ap === 'M'
-                      ? 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40'
-                      : ap === 'L'
-                        ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30'
-                        : 'border-border bg-background'
-                )}
-              >
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {RISK_COMPONENT_CONSUMER_LABELS[dimension]}
-                </div>
-                <div className="truncate text-xs font-semibold">
-                  {label ?? (rollup.totalCount === 0 ? 'Nothing recorded' : 'Not scored')}
-                </div>
-                <div className="text-[10px] text-muted-foreground">
-                  {rollup.highCount > 0
-                    ? `${rollup.highCount} to act on`
-                    : rollup.unscoredCount > 0
-                      ? `${rollup.unscoredCount} unscored`
-                      : `${rollup.totalCount} tracked`}
-                </div>
-              </div>
+              {projectRunId ? (
+                <button
+                  type="button"
+                  onClick={() => openDashboard(dimension)}
+                  onDoubleClick={() => openDashboard(dimension)}
+                  className={cn(
+                    tileClass,
+                    'transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:brightness-110'
+                  )}
+                  aria-label={`${RISK_COMPONENT_CONSUMER_LABELS[dimension]} risk: open dashboard`}
+                >
+                  {body}
+                </button>
+              ) : (
+                <div className={tileClass}>{body}</div>
+              )}
             </TooltipTrigger>
             <TooltipContent side="bottom" className="max-w-xs">
               <p className="text-xs font-medium">
@@ -495,6 +590,11 @@ function RiskComponentOverview({ risks }: { risks: Risk[] }) {
                 {rollup.highCount} act now, {rollup.mediumCount} safeguard, {rollup.lowCount} covered
                 {rollup.unscoredCount > 0 ? `, ${rollup.unscoredCount} unscored` : ''}
               </p>
+              {score != null ? (
+                <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                  Worst line scores {score} out of 1000
+                </p>
+              ) : null}
             </TooltipContent>
           </Tooltip>
         );
@@ -507,11 +607,14 @@ function RiskFocusDashboard({
   risks,
   projectDisplayName,
   hideMotivationalHero = false,
+  projectRunId,
 }: {
   risks: Risk[];
   projectDisplayName?: string | null;
   /** When opened from Planning Studio, collapse motivational strip under shared header. */
   hideMotivationalHero?: boolean;
+  /** Run whose dashboard the component lights open. Absent on the template view. */
+  projectRunId?: string;
 }) {
   const { high, medium, low, unset, total } = riskFocusSeverityCounts(risks);
   const name = projectDisplayName?.trim() || null;
@@ -582,7 +685,7 @@ function RiskFocusDashboard({
             </Card>
           </div>
           <div className="mt-2 w-full">
-            <RiskComponentOverview risks={risks} />
+            <RiskComponentOverview risks={risks} projectRunId={projectRunId} />
           </div>
         </div>
       </div>
@@ -854,6 +957,7 @@ export function RiskManagementWindow({
   const [formData, setFormData] = useState<RiskFormData>(EMPTY_RISK_FORM);
 
   const { table: actionPriorityTable } = useActionPriorityTable();
+  const { table: occurrenceDriverTable, error: occurrenceDriverError } = useOccurrenceDrivers();
 
   /** Live priority for the row being authored, so the author sees the effect of each score. */
   const formDataPriority = useMemo(
@@ -876,8 +980,42 @@ export function RiskManagementWindow({
     ]
   );
 
-  /** Steps of the template being authored, for the optional step link on a register risk. */
-  const [templateSteps, setTemplateSteps] = useState<{ id: string; label: string }[]>([]);
+  /**
+   * Steps of the template being authored, for the optional step link on a register risk and for
+   * the implicated item picker, which lists what that step actually has.
+   */
+  const [templateSteps, setTemplateSteps] = useState<
+    { id: string; label: string; itemSource: StepItemSource }[]
+  >([]);
+
+  /**
+   * What is keeping register risks off the Key Characteristics list. An unclassified driver is
+   * the important number, because it excludes the risk silently rather than producing a wrong
+   * answer. Null when there is nothing to report.
+   */
+  const registerClassificationGaps = useMemo(() => {
+    if (mode !== 'template') return null;
+    const unclassifiedDrivers = risks.filter((risk) => !risk.occurrence_driver).length;
+    const unclassifiedPrevention = risks.filter((risk) => !risk.prevention_strength).length;
+    const parts = [
+      unclassifiedDrivers > 0
+        ? `${unclassifiedDrivers} risk${unclassifiedDrivers === 1 ? '' : 's'} with no occurrence driver, so they cannot reach the Key Characteristics list`
+        : null,
+      unclassifiedPrevention > 0
+        ? `${unclassifiedPrevention} risk${unclassifiedPrevention === 1 ? '' : 's'} with nothing recorded about what stops them`
+        : null,
+    ].filter(Boolean);
+    return parts.length > 0 ? `${parts.join('. ')}.` : null;
+  }, [mode, risks]);
+
+  /** What the chosen step has of the chosen kind, for the implicated item picker. */
+  const registerItemOptions = useMemo(() => {
+    const kind = formData.implicated_item_kind;
+    if (!kind || kind === 'step' || !formData.operation_step_id) return [];
+    const step = templateSteps.find((s) => s.id === formData.operation_step_id);
+    if (!step) return [];
+    return listKcItemOptions(step.itemSource, kind);
+  }, [formData.implicated_item_kind, formData.operation_step_id, templateSteps]);
 
   useEffect(() => {
     if (!open || mode !== 'template' || !templateProjectIdForRisks) {
@@ -889,7 +1027,7 @@ export function RiskManagementWindow({
       const { data, error } = await supabase
         .from('project_phases')
         .select(
-          'name, position_value, phase_operations(operation_name, display_order, operation_steps(id, step_title, display_order))'
+          'name, position_value, phase_operations(operation_name, display_order, operation_steps(id, step_title, display_order, outputs, process_variables, materials, tools))'
         )
         .eq('project_id', templateProjectIdForRisks)
         .order('position_value', { ascending: true });
@@ -901,7 +1039,33 @@ export function RiskManagementWindow({
         return;
       }
 
-      const steps: { id: string; label: string }[] = [];
+      const stepIds = (data ?? []).flatMap((phase) =>
+        (phase.phase_operations ?? []).flatMap((operation) =>
+          (operation.operation_steps ?? []).map((step) => step.id)
+        )
+      );
+
+      // Instruction sections are the one addressable item kind that does not live on the step
+      // row. A failure here leaves the instruction option empty rather than blocking the form.
+      const sectionsByStepId = new Map<string, unknown[]>();
+      if (stepIds.length > 0) {
+        const { data: instructionRows, error: instructionError } = await supabase
+          .from('step_instructions')
+          .select('step_id, content')
+          .in('step_id', stepIds);
+        if (instructionError) {
+          console.error('Template step instruction load failed:', instructionError);
+        } else {
+          for (const row of instructionRows ?? []) {
+            const sections = Array.isArray(row.content) ? row.content : [];
+            const existing = sectionsByStepId.get(row.step_id);
+            if (existing) existing.push(...sections);
+            else sectionsByStepId.set(row.step_id, [...sections]);
+          }
+        }
+      }
+
+      const steps: { id: string; label: string; itemSource: StepItemSource }[] = [];
       for (const phase of data ?? []) {
         const operations = [...(phase.phase_operations ?? [])].sort(
           (a, b) => a.display_order - b.display_order
@@ -914,6 +1078,14 @@ export function RiskManagementWindow({
             steps.push({
               id: step.id,
               label: `${phase.name} - ${operation.operation_name} - ${step.step_title}`,
+              itemSource: {
+                stepTitle: step.step_title,
+                outputs: step.outputs,
+                processVariables: step.process_variables,
+                materials: step.materials,
+                tools: step.tools,
+                instructionSections: sectionsByStepId.get(step.id) ?? [],
+              },
             });
           }
         }
@@ -1140,6 +1312,12 @@ export function RiskManagementWindow({
           occurrence_score: risk.occurrence_score ?? null,
           detection_score: risk.detection_score ?? null,
           operation_step_id: risk.operation_step_id ?? null,
+          occurrence_driver: risk.occurrence_driver ?? null,
+          prevention_strength: risk.prevention_strength ?? null,
+          implicated_item_kind: isRiskItemKind(risk.implicated_item_kind)
+            ? risk.implicated_item_kind
+            : null,
+          implicated_item_id: risk.implicated_item_id ?? null,
         }));
         
         setRisks(mappedRisks);
@@ -1224,11 +1402,26 @@ export function RiskManagementWindow({
           return;
         }
 
+        // The item reference is meaningless without knowing which step it sits on, and the
+        // database enforces that, so it is dropped along with the step rather than rejected.
+        const classification = {
+          occurrence_driver: formData.occurrence_driver,
+          prevention_strength: formData.prevention_strength,
+          implicated_item_kind: formData.operation_step_id ? formData.implicated_item_kind : null,
+          implicated_item_id:
+            formData.operation_step_id &&
+            formData.implicated_item_kind &&
+            formData.implicated_item_kind !== 'step'
+              ? formData.implicated_item_id
+              : null,
+        };
+
         // Save template risk
         if (editingRisk) {
           const { error } = await supabase
             .from('project_risks')
             .update({
+              ...classification,
               risk_title: formData.risk.trim(),
               risk_description: null,
               benefit: formData.notes.trim() || null,
@@ -1267,6 +1460,7 @@ export function RiskManagementWindow({
           const { error } = await supabase
             .from('project_risks')
             .insert({
+              ...classification,
               project_id: templateProjectIdForRisks,
               risk_title: formData.risk.trim(),
               risk_description: null,
@@ -1399,6 +1593,12 @@ export function RiskManagementWindow({
       occurrence_score: risk.occurrence_score ?? null,
       detection_score: risk.detection_score ?? null,
       operation_step_id: risk.operation_step_id ?? null,
+      occurrence_driver: risk.occurrence_driver ?? null,
+      prevention_strength: isPreventionStrength(risk.prevention_strength)
+        ? risk.prevention_strength
+        : null,
+      implicated_item_kind: risk.implicated_item_kind ?? null,
+      implicated_item_id: risk.implicated_item_id ?? null,
     });
     setShowAddForm(true);
   };
@@ -1685,6 +1885,7 @@ export function RiskManagementWindow({
           <RiskFocusDashboard
             risks={displayRisks}
             hideMotivationalHero={planningWizardToolPresentation}
+            projectRunId={projectRunId}
             projectDisplayName={
               riskFocusRunForProgress
                 ? riskFocusRunForProgress.customProjectName?.trim() ||
@@ -2029,6 +2230,11 @@ export function RiskManagementWindow({
                 <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
                   These priorities were not refreshed for your profile, so they are the template's
                   own numbers: {riskReevaluation.error}
+                </div>
+              ) : null}
+              {mode === 'template' && registerClassificationGaps ? (
+                <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  {registerClassificationGaps}
                 </div>
               ) : null}
               {risks.length === 0 ? (
@@ -2508,6 +2714,133 @@ export function RiskManagementWindow({
                       A linked risk appears while that step is being worked, not only during
                       planning.
                     </p>
+                  </div>
+
+                  <div className="space-y-3 border-t pt-3">
+                    <div>
+                      <Label htmlFor="occurrence_driver">What decides how often this happens</Label>
+                      <Select
+                        value={formData.occurrence_driver ?? 'unset'}
+                        onValueChange={(value) =>
+                          setFormData({
+                            ...formData,
+                            occurrence_driver: value === 'unset' ? null : value,
+                          })
+                        }
+                      >
+                        <SelectTrigger id="occurrence_driver" className="w-full">
+                          <SelectValue placeholder="Not set" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unset">Not set</SelectItem>
+                          {(occurrenceDriverTable?.ordered ?? []).map((driver) => (
+                            <SelectItem key={driver.driver} value={driver.driver}>
+                              {driver.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Only risks the person controls reach the Key Characteristics list.
+                        Everything else is fixed by changing the process.
+                      </p>
+                      {occurrenceDriverError ? (
+                        <p className="mt-1 text-xs text-destructive">{occurrenceDriverError}</p>
+                      ) : null}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="prevention_strength">What stops it today</Label>
+                      <Select
+                        value={formData.prevention_strength ?? 'unset'}
+                        onValueChange={(value) =>
+                          setFormData({
+                            ...formData,
+                            prevention_strength:
+                              value === 'unset' ? null : (value as PreventionStrength),
+                          })
+                        }
+                      >
+                        <SelectTrigger id="prevention_strength" className="w-full">
+                          <SelectValue placeholder="Not set" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unset">Not set</SelectItem>
+                          {PREVENTION_STRENGTHS.map((strength) => (
+                            <SelectItem key={strength} value={strength}>
+                              {PREVENTION_STRENGTH_LABELS[strength]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {formData.operation_step_id ? (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                          <Label htmlFor="implicated_item_kind">What it affects</Label>
+                          <Select
+                            value={formData.implicated_item_kind ?? 'unset'}
+                            onValueChange={(value) =>
+                              setFormData({
+                                ...formData,
+                                implicated_item_kind:
+                                  value === 'unset' ? null : (value as RiskItemKind),
+                                implicated_item_id: null,
+                              })
+                            }
+                          >
+                            <SelectTrigger id="implicated_item_kind" className="w-full">
+                              <SelectValue placeholder="Not set" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="unset">Not set</SelectItem>
+                              {RISK_ITEM_KINDS.map((kind) => (
+                                <SelectItem key={kind} value={kind}>
+                                  {RISK_ITEM_KIND_LABELS[kind]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {formData.implicated_item_kind &&
+                        formData.implicated_item_kind !== 'step' ? (
+                          <div>
+                            <Label htmlFor="implicated_item_id">
+                              {`Which ${RISK_ITEM_KIND_LABELS[formData.implicated_item_kind].toLowerCase()}`}
+                            </Label>
+                            {registerItemOptions.length > 0 ? (
+                              <Select
+                                value={formData.implicated_item_id ?? 'unset'}
+                                onValueChange={(value) =>
+                                  setFormData({
+                                    ...formData,
+                                    implicated_item_id: value === 'unset' ? null : value,
+                                  })
+                                }
+                              >
+                                <SelectTrigger id="implicated_item_id" className="w-full">
+                                  <SelectValue placeholder="Not set" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="unset">Not set</SelectItem>
+                                  {registerItemOptions.map((option) => (
+                                    <SelectItem key={option.id} value={option.id}>
+                                      {option.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <p className="mt-2 text-xs text-amber-800">
+                                {`This step has no ${RISK_ITEM_KIND_LABELS[formData.implicated_item_kind].toLowerCase()} to point at.`}
+                              </p>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ) : null}
