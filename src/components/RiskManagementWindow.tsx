@@ -1171,7 +1171,7 @@ export function RiskManagementWindow({
 
   // Opening Risk Radar is one of the re-evaluation points: the user's tools, spaces, and
   // history may have moved since this run's list was written.
-  const riskReevaluation = useRunRiskReevaluation({
+  useRunRiskReevaluation({
     projectRunId: mode === 'run' ? projectRunId : null,
     enabled: open,
     onReevaluated: () => {
@@ -2187,12 +2187,6 @@ export function RiskManagementWindow({
                       </Button>
                     ) : null}
                   </div>
-                </div>
-              ) : null}
-              {riskReevaluation.error ? (
-                <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-                  These priorities are the template's own numbers, not yours.{' '}
-                  {riskReevaluation.error}
                 </div>
               ) : null}
               {mode === 'template' && registerClassificationGaps ? (

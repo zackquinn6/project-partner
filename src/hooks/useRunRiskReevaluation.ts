@@ -13,12 +13,6 @@ interface UseRunRiskReevaluationOptions {
 
 export interface RunRiskReevaluationState {
   running: boolean;
-  /**
-   * Plain-language sentence with a support code, set when the rebuild failed, so the surface
-   * can say the numbers are stale. Technical detail stays in the console; admins get a
-   * notifications-pane alert.
-   */
-  error: string | null;
 }
 
 /**
@@ -28,8 +22,10 @@ export interface RunRiskReevaluationState {
  * sessions, so a list written at run creation goes stale. Re-evaluation only rewrites the
  * derived baseline; mitigation progress and hidden rows are the user's and are left alone.
  *
- * It runs once per run per open. A failure is reported rather than retried, because a rule
- * set that cannot be evaluated is an authoring problem, not a transient one.
+ * It runs once per run per open. A failure is toasted (with a support code) and reported to
+ * admins rather than retried, because a rule set that cannot be evaluated is an authoring
+ * problem, not a transient one. Risk Radar itself never surfaces an in-app error banner for
+ * this - the list stays on screen and a toast is enough.
  */
 export function useRunRiskReevaluation({
   projectRunId,
@@ -38,7 +34,6 @@ export function useRunRiskReevaluation({
 }: UseRunRiskReevaluationOptions): RunRiskReevaluationState {
   const { user } = useAuth();
   const [running, setRunning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const lastRunRef = useRef<string | null>(null);
   const userIdRef = useRef<string | null>(null);
   userIdRef.current = user?.id ?? null;
@@ -55,7 +50,6 @@ export function useRunRiskReevaluation({
 
     let cancelled = false;
     setRunning(true);
-    setError(null);
 
     void reevaluateProjectRunRiskLogic(projectRunId)
       .then(() => {
@@ -64,7 +58,7 @@ export function useRunRiskReevaluation({
       })
       .catch(async (err: unknown) => {
         if (cancelled) return;
-        const supportCode = await reportUserFacingError({
+        await reportUserFacingError({
           source: 'risk_radar',
           operation: 'reevaluate_run_risk',
           userId: userIdRef.current,
@@ -72,12 +66,8 @@ export function useRunRiskReevaluation({
           error: err,
           userMessage: 'Your risk priorities could not be refreshed for your profile.',
           notificationTitle: 'Risk priorities not refreshed',
-          toastPresenter: 'none',
+          toastPresenter: 'sonner',
         });
-        if (cancelled) return;
-        setError(
-          `Your risk priorities could not be refreshed for your profile. Error code: ${supportCode}`
-        );
       })
       .finally(() => {
         if (!cancelled) setRunning(false);
@@ -88,5 +78,5 @@ export function useRunRiskReevaluation({
     };
   }, [enabled, projectRunId]);
 
-  return { running, error };
+  return { running };
 }
