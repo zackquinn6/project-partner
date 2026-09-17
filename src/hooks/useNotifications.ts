@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AppNotification {
@@ -17,42 +18,52 @@ const PAGE_SIZE = 20;
 
 export function useNotifications() {
   const { user } = useAuth();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [list, setList] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchRecent = useCallback(async (limit = 10) => {
-    if (!user?.id) return [];
-    const { data, error } = await supabase
+    if (!user?.id || roleLoading) return [];
+    let query = supabase
       .from('notifications')
       .select('id, user_id, type, title, body, read_at, created_at, metadata')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(limit);
+    // Runtime/function failures are admin-facing only. In-app toasts cover the user.
+    if (!isAdmin) {
+      query = query.neq('type', 'runtime_error');
+    }
+    const { data, error } = await query;
     if (error) {
       console.error('Error fetching notifications:', error);
       return [];
     }
     return (data || []) as AppNotification[];
-  }, [user?.id]);
+  }, [user?.id, isAdmin, roleLoading]);
 
   const fetchAll = useCallback(async (page = 0) => {
-    if (!user?.id) return { data: [], hasMore: false };
+    if (!user?.id || roleLoading) return { data: [], hasMore: false };
     const from = page * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
-    const { data, error } = await supabase
+    let query = supabase
       .from('notifications')
       .select('id, user_id, type, title, body, read_at, created_at, metadata')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .range(from, to);
+    if (!isAdmin) {
+      query = query.neq('type', 'runtime_error');
+    }
+    const { data, error } = await query;
     if (error) {
       console.error('Error fetching notifications:', error);
       return { data: [], hasMore: false };
     }
     const items = (data || []) as AppNotification[];
     return { data: items, hasMore: items.length === PAGE_SIZE };
-  }, [user?.id]);
+  }, [user?.id, isAdmin, roleLoading]);
 
   const refetch = useCallback(async () => {
     if (!user?.id) {
@@ -61,14 +72,22 @@ export function useNotifications() {
       setLoading(false);
       return;
     }
+    if (roleLoading) {
+      setLoading(true);
+      return;
+    }
     setLoading(true);
+    let unreadQuery = supabase
+      .from('notifications')
+      .select('id', { count: 'exact' })
+      .eq('user_id', user.id)
+      .is('read_at', null);
+    if (!isAdmin) {
+      unreadQuery = unreadQuery.neq('type', 'runtime_error');
+    }
     const [recent, countResult] = await Promise.all([
       fetchRecent(10),
-      supabase
-        .from('notifications')
-        .select('id', { count: 'exact' })
-        .eq('user_id', user.id)
-        .is('read_at', null)
+      unreadQuery,
     ]);
     if (countResult.error) {
       console.error('Error counting unread notifications:', countResult.error);
@@ -83,7 +102,7 @@ export function useNotifications() {
     setList(recent);
     setUnreadCount(countResult.count);
     setLoading(false);
-  }, [user?.id, fetchRecent]);
+  }, [user?.id, fetchRecent, isAdmin, roleLoading]);
 
   useEffect(() => {
     refetch();

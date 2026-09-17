@@ -15,8 +15,8 @@ export interface RunRiskReevaluationState {
   running: boolean;
   /**
    * Plain-language sentence with a support code, set when the rebuild failed, so the surface
-   * can say the numbers are stale. The database's own wording stays in the console and on the
-   * error notification.
+   * can say the numbers are stale. Technical detail stays in the console; admins get a
+   * notifications-pane alert.
    */
   error: string | null;
 }

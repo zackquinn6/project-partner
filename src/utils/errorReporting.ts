@@ -104,7 +104,7 @@ function showImmediateError(message: string, presenter: ToastPresenter): void {
   sonnerToast.error(message);
 }
 
-async function persistErrorNotification({
+async function persistAdminErrorNotification({
   userId,
   source,
   operation,
@@ -131,20 +131,19 @@ async function persistErrorNotification({
   stepId?: string | null;
   retryable?: boolean;
 }): Promise<void> {
-  if (!userId) return;
-
-  const { error } = await (supabase.from('notifications' as never) as any).insert({
-    user_id: userId,
-    type: 'runtime_error',
-    title: notificationTitle ?? 'App error',
-    body:
+  // Users see the failure in-app (toast / inline). Only admins get a notifications-pane entry.
+  const { error } = await supabase.rpc('notifications_notify_admins', {
+    p_type: 'runtime_error',
+    p_title: notificationTitle ?? 'App function error',
+    p_body:
       notificationBody ??
       `${userMessage} Error code: ${supportCode}`,
-    metadata: {
+    p_metadata: {
       error_code: supportCode,
       source,
       operation,
       retryable: retryable === true,
+      affected_user_id: userId ?? null,
       project_id: projectId ?? null,
       project_run_id: projectRunId ?? null,
       step_id: stepId ?? null,
@@ -158,7 +157,7 @@ async function persistErrorNotification({
   });
 
   if (error) {
-    console.error('Failed to persist runtime error notification:', error, {
+    console.error('Failed to persist admin runtime error notification:', error, {
       supportCode,
       source,
       operation,
@@ -187,7 +186,7 @@ export async function reportUserFacingError({
 
   showImmediateError(`${userMessage} Error code: ${supportCode}`, toastPresenter);
 
-  await persistErrorNotification({
+  await persistAdminErrorNotification({
     userId,
     source,
     operation,

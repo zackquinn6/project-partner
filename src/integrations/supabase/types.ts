@@ -5182,6 +5182,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      notifications_notify_admins: {
+        Args: {
+          p_body: string
+          p_metadata?: Json
+          p_title: string
+          p_type: string
+        }
+        Returns: undefined
+      }
       notifications_notify_project_owners: {
         Args: {
           p_body: string
