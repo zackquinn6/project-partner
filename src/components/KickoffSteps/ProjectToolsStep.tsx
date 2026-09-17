@@ -379,7 +379,8 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
       <div
         className={
           compact
-            ? 'grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4'
+            ? // Desktop: 5 cols / 2 rows so every tool fits the kickoff shell without scrolling.
+              'grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 lg:gap-1.5'
             : 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4'
         }
       >
@@ -403,7 +404,12 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
                 isScope && 'cursor-default'
               )}
             >
-              <div className="relative aspect-[5/4] overflow-hidden bg-muted/40">
+              <div
+                className={cn(
+                  'relative overflow-hidden bg-muted/40',
+                  compact ? 'aspect-[5/4] lg:aspect-[3/2]' : 'aspect-[5/4]'
+                )}
+              >
                 <img
                   src={PLANNING_TOOL_GRAPHICS[id]}
                   alt=""
@@ -413,29 +419,37 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
                 />
                 <span
                   className={cn(
-                    'absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition-colors',
+                    'absolute right-2 top-2 flex items-center justify-center rounded-full border shadow-sm transition-colors',
+                    compact ? 'h-6 w-6 lg:h-5 lg:w-5 lg:right-1.5 lg:top-1.5' : 'h-7 w-7',
                     isChecked
                       ? 'border-primary bg-primary text-primary-foreground'
                       : 'border-border/80 bg-background/90 text-transparent'
                   )}
                   aria-hidden
                 >
-                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                  <Check className={cn(compact ? 'h-3 w-3 lg:h-2.5 lg:w-2.5' : 'h-3.5 w-3.5')} strokeWidth={3} />
                 </span>
               </div>
-              <div className={cn('flex min-h-0 flex-1 flex-col gap-0.5', compact ? 'p-2.5' : 'p-3')}>
+              <div
+                className={cn(
+                  'flex min-h-0 flex-1 flex-col gap-0.5',
+                  compact ? 'p-2 lg:p-1.5' : 'p-3'
+                )}
+              >
                 <span
                   className={cn(
                     'font-display font-semibold leading-tight text-foreground',
-                    compact ? 'text-sm' : 'text-base'
+                    compact ? 'text-sm lg:text-xs' : 'text-base'
                   )}
                 >
                   {label}
                 </span>
                 <span
                   className={cn(
-                    'line-clamp-2 text-muted-foreground',
-                    compact ? 'text-[11px] leading-snug' : 'text-xs leading-snug'
+                    'text-muted-foreground',
+                    compact
+                      ? 'line-clamp-2 text-[11px] leading-snug lg:line-clamp-1 lg:text-[10px]'
+                      : 'line-clamp-2 text-xs leading-snug'
                   )}
                 >
                   {blurb}
@@ -451,10 +465,10 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
   if (compact) {
     return (
       <Card>
-        <CardHeader className="p-2 sm:p-3">
-          <CardTitle className="font-display text-xl font-semibold">Plan Setup</CardTitle>
+        <CardHeader className="p-2 sm:p-3 lg:pb-1">
+          <CardTitle className="font-display text-xl font-semibold lg:text-lg">Plan Setup</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 p-2 sm:space-y-3 sm:p-3">{inner}</CardContent>
+        <CardContent className="space-y-3 p-2 sm:space-y-3 sm:p-3 lg:space-y-2">{inner}</CardContent>
       </Card>
     );
   }
