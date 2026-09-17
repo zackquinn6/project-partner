@@ -17,6 +17,7 @@ import { reportUserFacingError } from '@/utils/errorReporting';
 import { Slider } from '@/components/ui/slider';
 import {
   QUALITY_GOAL_OPTIONS,
+  DEFAULT_QUALITY_GOAL,
   type QualityGoal,
   parseQualityGoalColumn,
 } from '@/utils/qualityGoal';
@@ -144,7 +145,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     initialSizing: '',
     initialTimeline: '',
     initialBudget: '',
-    initialQualityGoal: 'great' as QualityGoal,
+    initialQualityGoal: DEFAULT_QUALITY_GOAL,
   });
   const [loading, setLoading] = useState(true);
   const [showHomeManager, setShowHomeManager] = useState(false);
@@ -301,7 +302,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         initialSizing: runSizing || typicalSizing,
         initialTimeline: runTimeline || defaultDateString,
         initialBudget: runBudget || typicalBudget,
-        initialQualityGoal: runQualityGoal ?? 'great',
+        initialQualityGoal: runQualityGoal ?? DEFAULT_QUALITY_GOAL,
       });
 
       if (currentProjectRun.home_id) {

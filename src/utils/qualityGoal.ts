@@ -6,6 +6,9 @@ export const QUALITY_GOAL_OPTIONS = [
 
 export type QualityGoal = (typeof QUALITY_GOAL_OPTIONS)[number]['value'];
 
+/** Default quality goal for new project runs. */
+export const DEFAULT_QUALITY_GOAL: QualityGoal = 'great';
+
 export function isQualityGoal(value: unknown): value is QualityGoal {
   return value === 'good' || value === 'great' || value === 'professional';
 }
