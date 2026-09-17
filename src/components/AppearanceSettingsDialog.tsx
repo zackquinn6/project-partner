@@ -1,6 +1,6 @@
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme, type ColorScheme } from '@/contexts/ThemeContext';
 
@@ -26,7 +26,6 @@ export function AppearanceSettingsDialog({ open, onOpenChange }: AppearanceSetti
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Appearance</DialogTitle>
-          <DialogDescription>Saved to your profile and applied on every device you sign in from.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
@@ -81,9 +80,6 @@ export function AppearanceSettingsDialog({ open, onOpenChange }: AppearanceSetti
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              Recolors buttons, links, and highlights across the app.
-            </p>
           </div>
         </div>
       </DialogContent>

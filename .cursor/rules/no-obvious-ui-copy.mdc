@@ -7,11 +7,11 @@ alwaysApply: true
 
 # No obvious or tautological UI copy
 
-Do not write helper text, empty states, tooltips, or instructional strings that only restate what the UI already shows or what the control does by definition.
+Do not write helper text, empty states, tooltips, dialog descriptions, or instructional strings that only restate what the UI already shows, what the control does by definition, or what users already expect from any similar product.
 
-If a sentence is true of almost any similar control ("select it to open it", "click to continue", "choose an option from the list"), cut it or replace it with something the layout does not already communicate.
+If a sentence is true of almost any similar control or setting ("select it to open it", "click to continue", "preferences are saved", "changing the color updates the UI"), cut it or replace it with something the layout does not already communicate.
 
-## Bad (tautology / narration)
+## Bad (tautology / narration / expected behavior)
 
 ```tsx
 // BAD - restates the control; adds no decision help
@@ -21,6 +21,12 @@ If a sentence is true of almost any similar control ("select it to open it", "cl
 'Click a step to open it.'
 'Select an item from the list below.'
 'Use the button to continue.'
+
+// BAD - true but expected; users already assume this
+'Saved to your profile and applied on every device you sign in from.'
+'Recolors buttons, links, and highlights across the app.'
+'Your changes will be saved automatically.'
+'This updates the look of the application.'
 ```
 
 ## Good (useful, non-obvious)
@@ -34,5 +40,6 @@ If a sentence is true of almost any similar control ("select it to open it", "cl
 ## Checklist before shipping UI strings
 
 - Does this say something the labels, layout, or interaction already make obvious? If yes, delete it.
+- Is this true of nearly every similar app or setting (saved preferences, color changes the theme)? If yes, delete it.
 - Prefer silence over filler. Empty or short copy beats a tautology.
-- When guidance is needed, state a consequence, constraint, scope, or non-default behavior - not the click itself.
+- When guidance is needed, state a consequence, constraint, scope, or non-default behavior - not the click itself and not default product expectations.
