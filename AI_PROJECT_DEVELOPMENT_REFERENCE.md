@@ -1,6 +1,8 @@
 # AI Project Development Reference (DB-first)
 
-**Use when:** admin asks to complete **Step 1–10** of project development for a named template (`project_id`), says **follow ai dev guide** (or similar), or asks to research/add/update **home maintenance** `maintenance_templates` (§G).
+**Use when:** admin asks to complete **Step 1–10** of project development for a named template (`project_id`), says **follow ai dev guide** / **ref ai dev guide** (or similar), asks to **build out** the content for a named project, or asks to research/add/update **home maintenance** `maintenance_templates` (§G).
+
+**"Ref ai dev guide and build out project X" is a complete instruction.** It means: run §H end to end for that template - owned phases only, full completeness audit, every required component, migrations under `supabase/migrations/`, commit and push. Do not ask which steps, which phases, or which deliverable format; §H already answers all three.
 
 **Sources of truth:**
 - **Shared product rules** (structure limits, publishing checklist, instruction levels, cross-cutting product meaning): `src/utils/projectPlanningStandard.ts` - generated block below. Human Planning Guide in admin Project Management reads the same module.
@@ -17,10 +19,73 @@
 
 ---
 
+## H) Build out a project (end-to-end protocol)
+
+**Trigger:** "Ref ai dev guide and build out project X", "build out the content for X", "complete project X". No further scoping questions are needed.
+
+### H.1 Scope: owned phases only
+
+| Phase kind | How to detect on `project_phases` | Treatment |
+| ---------- | --------------------------------- | --------- |
+| **Owned** | `is_standard IS NOT TRUE` **and** `is_linked IS NOT TRUE` **and** `source_phase_id IS NULL` **and** `source_project_id IS NULL` | **In scope.** Author operations, steps, instructions, and all enrichments here. |
+| **Standard foundation** | `is_standard = true` (Kickoff, Plan, Ordering, Close style phases) | **Out of scope.** Read for context only. Never edit its phases, operations, steps, `step_instructions`, or enrichments during a project build out. |
+| **Linked / adopted from another template** | `is_linked = true` or `source_project_id` / `source_phase_id` set | **Out of scope.** Owned by the source template; edits there would change every project that adopted it. |
+
+- Build the owned-phase list **from these columns**, never from phase names.
+- Never add, rename, reorder, or delete phases during a build out. If owned phases cannot carry the scope, **report it and stop** (Step 1 rule).
+- Gaps found inside a standard or adopted phase go in the final report as a note naming the source template. Do not patch them in this project.
+- `allow_content_edit = true` on a step inside a standard phase is **not** an invitation to author it here; it only unlocks admin editing.
+
+### H.2 Audit before authoring
+
+Read the current state first, then author. Produce a per-step matrix over **all** owned steps (not just recently touched ones) with one column per required component:
+
+| Component | Source of truth | Guide step |
+| --------- | --------------- | ---------- |
+| Step exists with title, description, `display_order`, `flow_type`, `step_type`, `number_of_workers`, `skill_level` | `operation_steps` | 1 |
+| 3 instruction levels with Background / Instructions / Error-Recovery | `step_instructions` | 2 |
+| Outputs | `operation_steps.outputs` | 3 |
+| Tools (+ alternates) | `tools` library + `operation_steps.tools` | 5 |
+| Materials (+ alternates) | `materials` library + `operation_steps.materials` | 6 |
+| Process variables | `operation_steps.process_variables` | 7 |
+| Time estimates low / med / high | `operation_steps.time_estimate_*` | 8 |
+| Failure modes where relevant | `pfmea_*` | 9 |
+
+Project-level components audited once: `project_risks` (Step 4), `projects.description` / `project_challenges` (Step 10), `scheduling_prerequisites` (§E), catalog header (§D).
+
+**A component counts as present only if it is complete for that step.** One instruction level out of three, or a tools array with no alternates where substitution is realistic, is a gap.
+
+### H.3 Authoring order (fixed)
+
+1. **Structure** (Step 1): phases → operations → steps. Confirm structure limits and durations from the generated standard, confirm `step_type` and `number_of_workers` (waiting/cure steps = 0 workers), and fix ordering before writing any prose. Structure churn after instructions exist wastes the instruction work.
+2. **Instructions** (Step 2): 3 levels per step, section intent per §B.
+3. **Outputs** (Step 3) - needed before PFMEA, which keys on output ids.
+4. **Tools** (Step 5), then **Materials** (Step 6), including library bootstrap (H.4).
+5. **Process variables** (Step 7), then **time estimates** (Step 8).
+6. **Project risks** (Step 4), then **PFMEA** (Step 9).
+7. **Catalog copy** (Step 10) and schedule prerequisites (§E) last, once scope is settled.
+
+### H.4 General library bootstrap is expected
+
+Adding rows to the shared `public.tools` and `public.materials` catalogs is **normal build-out work, not an exception**. Do not skip a tool or material because it is missing from the library, and do not inline a step-only item that other projects would reasonably reuse.
+
+- Match by `name`; insert when absent with every NOT NULL / constrained column filled (`tools.category` ∈ `PPE` / `Hand Tool` / `Power Tool` / `Other`; `materials.category` ∈ `Components` / `Consumables` / `PPE`).
+- Write generic library copy (`description`, `unit`, `unit_size`, `alternates`) that reads correctly for any project, then keep project-specific quantities and coverage in the step JSON.
+- Resolve library ids after bootstrap or **RAISE**. No orphan JSON with invented ids.
+
+### H.5 Deliverable
+
+- **Default deliverable is migration SQL** under `supabase/migrations/`, one file per guide step per project slug, idempotent, runnable as-is, `RAISE` on missing prerequisites (§A).
+- Rebuild the phases cache after any structure change (§A).
+- Commit and push. Commit body lists what each migration covers.
+- Final report: the H.2 matrix after the change, anything intentionally left out, and gaps observed in standard or adopted phases.
+
+---
+
 <!-- PLANNING_STANDARD:BEGIN -->
 ## Shared product planning standard (generated)
 
-**Version:** `1.1.0` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
+**Version:** `1.2.0` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
 
 Do not hand-edit this block. Change the TypeScript module, then run `npm run sync:planning-standard`. Authoring/SQL field catalogs remain in §A / §B below.
 
@@ -148,6 +213,8 @@ Phases & operations = project management. Steps = instructions. Actions = micro 
 - **No em-dashes in catalog prose** (`no-em-dashes`): Do not use em-dashes in authored catalog / user-facing prose (descriptions, challenges, step instructions, risk copy). Use standard dashes or hyphens.
 - **Actions vs database tables** (`actions-vs-db`): Hierarchy is Phase → Operation → Step → Action. Actions are instructional micro-units inside step_instructions content; they are not a separate database table. DB tables stop at operation_steps + step_instructions.
 - **Step instruction sections** (`step-instruction-sections`): Background/Need-to-Know is valuable domain context (why it matters, timing, complexity, how the app helps) - not a restatement of what the step is. Instructions are numbered sequential actions only; do not number explanatory status or completion notes as their own steps - put that in Background or fold it into an adjacent action. Error-Recovery uses full-sentence context so the user can diagnose quickly (e.g. "If your list is missing something, finish your plan").
+- **Owned vs standard and adopted phases** (`owned-vs-adopted-phases`): A project only owns the phases authored on it. Standard foundation phases and phases linked or adopted from another template are read-only inside this project: their phases, operations, steps, instructions, and enrichments are edited in the source template instead. Project content work covers owned phases only; gaps found in a standard or adopted phase get reported to the owner of that template, not patched locally.
+- **Content completeness per step** (`content-completeness`): A project is content complete when every step in every owned phase satisfies the step requirements above: three instruction levels, outputs, tools, materials, process variables, time estimates, quality checks, and failure modes where relevant. Partial coverage is a gap list, not a finished project, so audit every owned step rather than the ones most recently touched.
 <!-- PLANNING_STANDARD:END -->
 
 ---
@@ -554,7 +621,7 @@ Never invent related-project relationships. Resolve catalog names carefully (§A
 | 9 | PFMEA tables |
 | 10 | `projects.description`, `projects.project_challenges` |
 
-Also: §D catalog header, §E schedule prereqs, §F related projects / revisions, **§G home maintenance templates**.
+Also: **§H build out a project end to end**, §D catalog header, §E schedule prereqs, §F related projects / revisions, **§G home maintenance templates**.
 
 ---
 
@@ -642,6 +709,7 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-16 | Added §H build-out protocol (owned-phase scope by column not name, completeness audit matrix, fixed authoring order, library bootstrap expected, migrations + push as default deliverable); shared rules `owned-vs-adopted-phases` and `content-completeness` in planning standard v1.2.0 | "Ref ai dev guide and build out project X" must be a sufficient instruction with no scoping questions |
 | 2026-09-15 | Step 2 section authoring: Background = valuable domain context (not step restatement); Instructions = sequential actions only (information is not a step); Error-Recovery = full-sentence diagnosis. Shared rule `step-instruction-sections` in planning standard v1.1.0 | Tool & Material Ordering advanced copy had explanatory Background, a non-action Instruction #3, and telegraphic Error-Recovery |
 | 2026-09-15 | Shared product planning SoT: `src/utils/projectPlanningStandard.ts` + generated marker block; admin Planning Guide consumes same module; `npm run sync/check:planning-standard` | Align human Planning Guide and AI reference; prevent product-rule drift |
 | 2026-09-14 | Added §G Home maintenance templates: schema/UI fit, criticality↔Essential/Recommended/Full, field catalog, industry research protocol, system gating, idempotent SQL rules | DIY maintenance catalog review; future prompts must research industry standards before updating `maintenance_templates` |

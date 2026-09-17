@@ -16,7 +16,7 @@ export { TOOLIO_PROJECT_STRUCTURE_STANDARD };
 export type { ToolioProjectStructureStandard };
 
 /** Bump when shared product rules change; both surfaces must show the same value. */
-export const PLANNING_STANDARD_VERSION = '1.1.0';
+export const PLANNING_STANDARD_VERSION = '1.2.0';
 
 export const PLANNING_TOPIC_IDS = [
   'product-guidelines',
@@ -29,6 +29,8 @@ export const PLANNING_TOPIC_IDS = [
   'no-em-dashes',
   'actions-vs-db',
   'step-instruction-sections',
+  'owned-vs-adopted-phases',
+  'content-completeness',
 ] as const;
 
 export type PlanningTopicId = (typeof PLANNING_TOPIC_IDS)[number];
@@ -169,6 +171,18 @@ export const CROSS_CUTTING_RULES: CrossCuttingRule[] = [
     title: 'Step instruction sections',
     rule:
       'Background/Need-to-Know is valuable domain context (why it matters, timing, complexity, how the app helps) - not a restatement of what the step is. Instructions are numbered sequential actions only; do not number explanatory status or completion notes as their own steps - put that in Background or fold it into an adjacent action. Error-Recovery uses full-sentence context so the user can diagnose quickly (e.g. "If your list is missing something, finish your plan").',
+  },
+  {
+    id: 'owned-vs-adopted-phases',
+    title: 'Owned vs standard and adopted phases',
+    rule:
+      'A project only owns the phases authored on it. Standard foundation phases and phases linked or adopted from another template are read-only inside this project: their phases, operations, steps, instructions, and enrichments are edited in the source template instead. Project content work covers owned phases only; gaps found in a standard or adopted phase get reported to the owner of that template, not patched locally.',
+  },
+  {
+    id: 'content-completeness',
+    title: 'Content completeness per step',
+    rule:
+      'A project is content complete when every step in every owned phase satisfies the step requirements above: three instruction levels, outputs, tools, materials, process variables, time estimates, quality checks, and failure modes where relevant. Partial coverage is a gap list, not a finished project, so audit every owned step rather than the ones most recently touched.',
   },
 ];
 
