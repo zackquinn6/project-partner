@@ -145,7 +145,7 @@ export function compareByRiskPriority(a: RiskPriorityOrderRow, b: RiskPriorityOr
 
 /** DIY-facing component names for the overview. */
 export const RISK_COMPONENT_CONSUMER_LABELS: Record<RiskDimension, string> = {
-  quality: 'Result',
+  quality: 'Quality',
   safety: 'Safety',
   schedule: 'Time',
   budget: 'Cost',
