@@ -1044,25 +1044,25 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           style: {
             background:
               config?.type === 'blocked'
-                ? '#e7e5e4'
+                ? 'hsl(var(--muted))'
                 : config?.type === 'if-necessary'
-                  ? '#fef3c7'
+                  ? 'hsl(var(--warning-soft) / 0.15)'
                   : config?.type === 'alternate'
-                    ? '#dbeafe'
+                    ? 'hsl(var(--info) / 0.15)'
                     : config?.type === 'dependent'
-                      ? '#f3e8ff'
-                      : '#f3f4f6',
+                      ? 'hsl(var(--category-3) / 0.15)'
+                      : 'hsl(var(--muted))',
             border: '2px solid',
             borderColor:
               config?.type === 'blocked'
-                ? '#57534e'
+                ? 'hsl(var(--muted-foreground))'
                 : config?.type === 'if-necessary'
-                  ? '#f59e0b'
+                  ? 'hsl(var(--warning-soft))'
                   : config?.type === 'alternate'
-                    ? '#3b82f6'
+                    ? 'hsl(var(--info))'
                     : config?.type === 'dependent'
-                      ? '#a855f7'
-                      : '#9ca3af',
+                      ? 'hsl(var(--category-3))'
+                      : 'hsl(var(--muted-foreground))',
             borderRadius: '8px',
             padding: '10px',
             width: 180,
@@ -1090,8 +1090,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             position: { x: xPos + nodeSpacing - 100, y: 100 + verticalSpacing / 2 },
             type: 'default',
             style: {
-              background: '#fef3c7',
-              border: '2px solid #f59e0b',
+              background: 'hsl(var(--warning-soft) / 0.15)',
+              border: '2px solid hsl(var(--warning-soft))',
               borderRadius: '50%',
               padding: '15px',
               width: 60,
@@ -1109,8 +1109,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             source: phase.id,
             target: decisionNodeId,
             animated: true,
-            style: { stroke: '#f59e0b' },
-            markerEnd: { type: MarkerType.ArrowClosed, color: '#f59e0b' },
+            style: { stroke: 'hsl(var(--warning-soft))' },
+            markerEnd: { type: MarkerType.ArrowClosed, color: 'hsl(var(--warning-soft))' },
           });
 
           config.alternateIds.forEach((altId, altIndex) => {
@@ -1123,8 +1123,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 position: { x: xPos + nodeSpacing, y: 100 + yOffset },
                 type: 'default',
                 style: {
-                  background: '#dbeafe',
-                  border: '2px solid #3b82f6',
+                  background: 'hsl(var(--info) / 0.15)',
+                  border: '2px solid hsl(var(--info))',
                   borderRadius: '8px',
                   padding: '10px',
                   width: 180,
@@ -1137,8 +1137,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 source: decisionNodeId,
                 target: altId,
                 animated: true,
-                style: { stroke: '#3b82f6', strokeDasharray: '5,5' },
-                markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
+                style: { stroke: 'hsl(var(--info))', strokeDasharray: '5,5' },
+                markerEnd: { type: MarkerType.ArrowClosed, color: 'hsl(var(--info))' },
               });
             }
           });
@@ -1156,8 +1156,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
           position: { x: xPos, y: 0 },
           type: 'default',
           style: {
-            background: '#f0fdf4',
-            border: '2px solid #16a34a',
+            background: 'hsl(var(--success) / 0.12)',
+            border: '2px solid hsl(var(--success))',
             borderRadius: '8px',
             padding: '10px',
             fontWeight: 'bold',
@@ -1182,13 +1182,13 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             position: { x: xPos, y: 100 },
             type: 'default',
             style: {
-              background: config?.type === 'if-necessary' ? '#fef3c7' : 
-                         config?.type === 'alternate' ? '#dbeafe' : 
-                         config?.type === 'dependent' ? '#f3e8ff' : '#ffffff',
+              background: config?.type === 'if-necessary' ? 'hsl(var(--warning-soft) / 0.15)' : 
+                         config?.type === 'alternate' ? 'hsl(var(--info) / 0.15)' : 
+                         config?.type === 'dependent' ? 'hsl(var(--category-3) / 0.15)' : 'hsl(var(--card))',
               border: '2px solid',
-              borderColor: config?.type === 'if-necessary' ? '#f59e0b' : 
-                          config?.type === 'alternate' ? '#3b82f6' : 
-                          config?.type === 'dependent' ? '#a855f7' : '#d1d5db',
+              borderColor: config?.type === 'if-necessary' ? 'hsl(var(--warning-soft))' : 
+                          config?.type === 'alternate' ? 'hsl(var(--info))' : 
+                          config?.type === 'dependent' ? 'hsl(var(--category-3))' : 'hsl(var(--border))',
               borderRadius: '8px',
               padding: '10px',
               width: 180,
@@ -1224,8 +1224,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               position: { x: xPos + nodeSpacing - 100, y: 100 + verticalSpacing / 2 },
               type: 'default',
               style: {
-                background: '#fef3c7',
-                border: '2px solid #f59e0b',
+                background: 'hsl(var(--warning-soft) / 0.15)',
+                border: '2px solid hsl(var(--warning-soft))',
                 borderRadius: '50%',
                 padding: '15px',
                 width: 60,
@@ -1243,8 +1243,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               source: operation.id,
               target: decisionNodeId,
               animated: true,
-              style: { stroke: '#f59e0b' },
-              markerEnd: { type: MarkerType.ArrowClosed, color: '#f59e0b' },
+              style: { stroke: 'hsl(var(--warning-soft))' },
+              markerEnd: { type: MarkerType.ArrowClosed, color: 'hsl(var(--warning-soft))' },
             });
 
             config.alternateIds.forEach((altId, altIndex) => {
@@ -1257,8 +1257,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                   position: { x: xPos + nodeSpacing, y: 100 + yOffset },
                   type: 'default',
                   style: {
-                    background: '#dbeafe',
-                    border: '2px solid #3b82f6',
+                    background: 'hsl(var(--info) / 0.15)',
+                    border: '2px solid hsl(var(--info))',
                     borderRadius: '8px',
                     padding: '10px',
                     width: 180,
@@ -1271,8 +1271,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                   source: decisionNodeId,
                   target: altId,
                   animated: true,
-                  style: { stroke: '#3b82f6', strokeDasharray: '5,5' },
-                  markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
+                  style: { stroke: 'hsl(var(--info))', strokeDasharray: '5,5' },
+                  markerEnd: { type: MarkerType.ArrowClosed, color: 'hsl(var(--info))' },
                 });
               }
             });
@@ -1292,8 +1292,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
             position: { x: xPos, y: 0 },
             type: 'default',
             style: {
-              background: '#f0fdf4',
-              border: '2px solid #16a34a',
+              background: 'hsl(var(--success) / 0.12)',
+              border: '2px solid hsl(var(--success))',
               borderRadius: '8px',
               padding: '8px',
               fontSize: '12px',
@@ -1318,13 +1318,13 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
               position: { x: xPos, y: 100 },
               type: 'default',
               style: {
-                background: config?.type === 'if-necessary' ? '#fef3c7' : 
-                           config?.type === 'alternate' ? '#dbeafe' : 
-                           config?.type === 'dependent' ? '#f3e8ff' : '#ffffff',
+                background: config?.type === 'if-necessary' ? 'hsl(var(--warning-soft) / 0.15)' : 
+                           config?.type === 'alternate' ? 'hsl(var(--info) / 0.15)' : 
+                           config?.type === 'dependent' ? 'hsl(var(--category-3) / 0.15)' : 'hsl(var(--card))',
                 border: '1px solid',
-                borderColor: config?.type === 'if-necessary' ? '#f59e0b' : 
-                            config?.type === 'alternate' ? '#3b82f6' : 
-                            config?.type === 'dependent' ? '#a855f7' : '#d1d5db',
+                borderColor: config?.type === 'if-necessary' ? 'hsl(var(--warning-soft))' : 
+                            config?.type === 'alternate' ? 'hsl(var(--info))' : 
+                            config?.type === 'dependent' ? 'hsl(var(--category-3))' : 'hsl(var(--border))',
                 borderRadius: '6px',
                 padding: '8px',
                 fontSize: '12px',
@@ -1361,8 +1361,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 position: { x: xPos + nodeSpacing * 0.5, y: 100 + verticalSpacing / 2 },
                 type: 'default',
                 style: {
-                  background: '#fef3c7',
-                  border: '2px solid #f59e0b',
+                  background: 'hsl(var(--warning-soft) / 0.15)',
+                  border: '2px solid hsl(var(--warning-soft))',
                   borderRadius: '50%',
                   padding: '12px',
                   width: 50,
@@ -1380,8 +1380,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                 source: step.id,
                 target: decisionNodeId,
                 animated: true,
-                style: { stroke: '#f59e0b' },
-                markerEnd: { type: MarkerType.ArrowClosed, color: '#f59e0b' },
+                style: { stroke: 'hsl(var(--warning-soft))' },
+                markerEnd: { type: MarkerType.ArrowClosed, color: 'hsl(var(--warning-soft))' },
               });
 
               config.alternateIds.forEach((altId, altIndex) => {
@@ -1394,8 +1394,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                     position: { x: xPos + nodeSpacing, y: 100 + yOffset },
                     type: 'default',
                     style: {
-                      background: '#dbeafe',
-                      border: '1px solid #3b82f6',
+                      background: 'hsl(var(--info) / 0.15)',
+                      border: '1px solid hsl(var(--info))',
                       borderRadius: '6px',
                       padding: '8px',
                       fontSize: '12px',
@@ -1409,8 +1409,8 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
                     source: decisionNodeId,
                     target: altId,
                     animated: true,
-                    style: { stroke: '#3b82f6', strokeDasharray: '5,5' },
-                    markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
+                    style: { stroke: 'hsl(var(--info))', strokeDasharray: '5,5' },
+                    markerEnd: { type: MarkerType.ArrowClosed, color: 'hsl(var(--info))' },
                   });
                 }
               });

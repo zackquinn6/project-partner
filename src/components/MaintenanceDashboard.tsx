@@ -275,10 +275,10 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                       >
                         <defs>
                           <linearGradient id="gaugeTrack" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#ef4444" />
-                            <stop offset="40%" stopColor="#f97316" />
-                            <stop offset="70%" stopColor="#eab308" />
-                            <stop offset="100%" stopColor="#22c55e" />
+                            <stop offset="0%" stopColor="hsl(var(--destructive-soft))" />
+                            <stop offset="40%" stopColor="hsl(var(--warning-soft))" />
+                            <stop offset="70%" stopColor="hsl(var(--warning-soft))" />
+                            <stop offset="100%" stopColor="hsl(var(--success))" />
                           </linearGradient>
                         </defs>
                         <path
@@ -386,10 +386,10 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                         >
                           <defs>
                             <linearGradient id="gaugeTrackMobile" x1="0%" y1="0%" x2="100%" y2="0%">
-                              <stop offset="0%" stopColor="#ef4444" />
-                              <stop offset="40%" stopColor="#f97316" />
-                              <stop offset="70%" stopColor="#eab308" />
-                              <stop offset="100%" stopColor="#22c55e" />
+                              <stop offset="0%" stopColor="hsl(var(--destructive-soft))" />
+                              <stop offset="40%" stopColor="hsl(var(--warning-soft))" />
+                              <stop offset="70%" stopColor="hsl(var(--warning-soft))" />
+                              <stop offset="100%" stopColor="hsl(var(--success))" />
                             </linearGradient>
                           </defs>
                           <path

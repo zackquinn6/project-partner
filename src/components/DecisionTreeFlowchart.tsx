@@ -137,7 +137,7 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
                   label: option.label,
                   type: 'smoothstep',
                   markerEnd: { type: MarkerType.ArrowClosed },
-                  style: { stroke: '#10b981' },
+                  style: { stroke: 'hsl(var(--success))' },
                 });
               }
               if (option.alternateStepId) {

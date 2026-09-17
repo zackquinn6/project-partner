@@ -160,7 +160,7 @@ const archetypes: Record<string, Archetype> = {
   "sprint-builder": {
     name: "The Sprint Builder",
     icon: Zap,
-    color: "bg-warning-soft",
+    color: "bg-warning-soft text-warning-soft-foreground",
     description: "Pragmatic, efficient, thrives on momentum. They want a project plan that's lean, time-boxed, and optimized for rapid wins.",
     traits: [
       "Speed: Tight schedule, milestone-driven",
@@ -178,7 +178,7 @@ const archetypes: Record<string, Archetype> = {
   "master-crafter": {
     name: "The Master Crafter",
     icon: Award,
-    color: "bg-category-3",
+    color: "bg-category-3 text-category-3-foreground",
     description: "Perfectionist, detail-oriented, motivated by craftsmanship. They want to savor the process and produce heirloom-quality results.",
     traits: [
       "Speed: Willing to take time, sees DIY as a lifestyle",
@@ -196,7 +196,7 @@ const archetypes: Record<string, Archetype> = {
   "explorer": {
     name: "The Explorer",
     icon: Compass,
-    color: "bg-info",
+    color: "bg-info text-info-foreground",
     description: "Curious, playful, and motivated by learning. They enjoy the journey as much as the outcome.",
     traits: [
       "Speed: Flexible, lifestyle pace",
@@ -214,7 +214,7 @@ const archetypes: Record<string, Archetype> = {
   "guided-achiever": {
     name: "The Guided Achiever",
     icon: Shield,
-    color: "bg-success",
+    color: "bg-success text-success-foreground",
     description: "Motivated by clarity and reassurance. They want to feel supported and confident they're 'doing it right.'",
     traits: [
       "Speed: Likes structure but not frantic—steady progress",
@@ -360,7 +360,7 @@ export default function DIYStyleQuiz({ open, onOpenChange }: DIYStyleQuizProps) 
           </DialogHeader>
 
           <div className="space-y-6">
-            <div className={`${archetype.color} text-white p-8 rounded-lg text-center`}>
+            <div className={`${archetype.color} p-8 rounded-lg text-center`}>
               <ArchetypeIcon className="w-16 h-16 mx-auto mb-4" />
               <h2 className="text-3xl font-bold mb-2">{archetype.name}</h2>
               <p className="text-lg opacity-90">{archetype.description}</p>

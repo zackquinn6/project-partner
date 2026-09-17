@@ -293,7 +293,7 @@ const ProjectAnalytics: React.FC = () => {
                   labelLine={false}
                   label={({ name, value }) => `${name}: ${value}%`}
                   outerRadius={80}
-                  fill="#8884d8"
+                  fill="hsl(var(--category-3))"
                   dataKey="value"
                 >
                   {analyticsData.issueData.map((entry, index) => (

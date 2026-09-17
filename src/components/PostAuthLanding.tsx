@@ -117,8 +117,8 @@ export const PostAuthLanding = () => {
       window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'));
       navigate('/', { state: { view: 'user' } });
     },
-    color: "bg-info", // Projects: Blue
-    textColor: "text-white"
+    color: "bg-info text-info-foreground", // Projects: Blue
+    textColor: ""
   }, {
     icon: Home,
     title: "My Home Maintenance",
@@ -126,14 +126,14 @@ export const PostAuthLanding = () => {
       const event = new CustomEvent('show-home-maintenance');
       window.dispatchEvent(event);
     },
-    color: "bg-success", // Home: Green
-    textColor: "text-white"
+    color: "bg-success text-success-foreground", // Home: Green
+    textColor: ""
   }, {
     icon: ListChecks,
     title: "Project & Task Manager",
     action: () => setShowHomeTaskList(true),
-    color: "bg-success", // Home: Green
-    textColor: "text-white"
+    color: "bg-success text-success-foreground", // Home: Green
+    textColor: ""
   }, {
     icon: Wrench,
     title: "My Tool Library",
@@ -141,8 +141,8 @@ export const PostAuthLanding = () => {
       const event = new CustomEvent('show-user-tools-materials');
       window.dispatchEvent(event);
     },
-    color: "bg-warning-soft", // Tools: Orange
-    textColor: "text-white"
+    color: "bg-warning-soft text-warning-soft-foreground", // Tools: Orange
+    textColor: ""
   }];
 
   const exploreActions = useMemo(
@@ -159,8 +159,8 @@ export const PostAuthLanding = () => {
                 }
                 navigate('/projects');
               },
-              color: 'bg-info',
-              textColor: 'text-white',
+              color: 'bg-info text-info-foreground',
+              textColor: '',
             },
           ]
         : []),
@@ -168,15 +168,15 @@ export const PostAuthLanding = () => {
         icon: HelpCircle,
         title: 'Expert Help',
         action: () => setShowExpertHelp(true),
-        color: 'bg-category-3',
-        textColor: 'text-white',
+        color: 'bg-category-3 text-category-3-foreground',
+        textColor: '',
       },
       {
         icon: Hammer,
         title: 'Tool Rental',
         action: () => setShowToolRentals(true),
-        color: 'bg-warning-soft',
-        textColor: 'text-white',
+        color: 'bg-warning-soft text-warning-soft-foreground',
+        textColor: '',
       },
     ],
     [projectCatalogEnabled, navigate, hasProjectsTier, membershipLoading]
@@ -190,8 +190,8 @@ export const PostAuthLanding = () => {
       const event = new CustomEvent('open-profile-manager');
       window.dispatchEvent(event);
     },
-    color: "bg-muted-foreground", // Profile: Gray
-    textColor: "text-white"
+    color: "bg-muted-foreground text-background", // Profile: Gray
+    textColor: ""
   }, {
     icon: Home,
     title: "My Homes",
@@ -199,8 +199,8 @@ export const PostAuthLanding = () => {
       const event = new CustomEvent('show-home-manager');
       window.dispatchEvent(event);
     },
-    color: "bg-success", // Home: Green
-    textColor: "text-white"
+    color: "bg-success text-success-foreground", // Home: Green
+    textColor: ""
   }];
   return <div className="min-h-screen bg-background pt-16 md:pt-20 pb-8 md:pb-12">      
       <div className="container mx-auto px-2 md:px-4 max-w-6xl">

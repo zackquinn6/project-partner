@@ -184,21 +184,21 @@ export function MobileOptimizedHome() {
       id: 'home-task-list',
       icon: ListChecks,
       title: 'Project & Task Manager',
-      color: 'bg-success', // Home: Green
+      color: 'bg-success text-success-foreground', // Home: Green
       action: () => window.dispatchEvent(new CustomEvent('show-home-task-list'))
     },
     {
       id: 'home-maintenance',
       icon: HomeIcon,
       title: 'Home Maintenance',
-      color: 'bg-success', // Home: Green
+      color: 'bg-success text-success-foreground', // Home: Green
       action: () => window.dispatchEvent(new CustomEvent('show-home-maintenance'))
     },
     {
       id: 'risk-focus',
       icon: Crosshair,
       title: 'Risk Radar',
-      color: 'bg-success',
+      color: 'bg-success text-success-foreground',
       action: () => window.dispatchEvent(new CustomEvent('open-risk-focus-launcher'))
     }
   ];
@@ -209,7 +209,7 @@ export function MobileOptimizedHome() {
       icon: User,
       title: 'My Profile',
       description: 'Account details and preferences',
-      color: 'bg-muted-foreground',
+      color: 'bg-muted-foreground text-background',
       action: () => window.dispatchEvent(new CustomEvent('open-profile-manager'))
     },
     {
@@ -217,7 +217,7 @@ export function MobileOptimizedHome() {
       icon: MapPin,
       title: 'My Homes',
       description: 'Properties linked to your workshop',
-      color: 'bg-success',
+      color: 'bg-success text-success-foreground',
       action: () => window.dispatchEvent(new CustomEvent('show-home-manager'))
     },
     {
@@ -225,7 +225,7 @@ export function MobileOptimizedHome() {
       icon: Wrench,
       title: 'My Tools',
       description: 'Your tool library',
-      color: 'bg-warning-soft',
+      color: 'bg-warning-soft text-warning-soft-foreground',
       action: () => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))
     }
   ];
@@ -433,7 +433,7 @@ export function MobileOptimizedHome() {
                 >
                   <CardContent className="p-3 text-center flex flex-col items-center justify-center h-full min-h-[100px]">
                     <div className={`w-10 h-10 ${action.color} rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition-transform`}>
-                      <Icon className="h-5 w-5 text-white" />
+                      <Icon className="h-5 w-5" />
                     </div>
                     <p className="text-xs font-medium text-card-foreground leading-tight">{action.title}</p>
                   </CardContent>
@@ -463,7 +463,7 @@ export function MobileOptimizedHome() {
                         onClick={app.action}
                       >
                         <div className={`w-10 h-10 ${app.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                          <Icon className="h-5 w-5 text-white" />
+                          <Icon className="h-5 w-5" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-medium text-sm text-card-foreground">{app.title}</h3>

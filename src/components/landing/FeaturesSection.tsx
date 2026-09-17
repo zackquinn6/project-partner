@@ -28,7 +28,7 @@ export const FeaturesSection = () => {
       title: "AI Help When You're Stuck",
       description: "Seconds-fast answers scoped to your project family, with a recovery plan and premium live-pro escalate",
       badge: "In-step support",
-      color: "bg-category-3"
+      color: "bg-category-3 text-category-3-foreground"
     }
   ];
 
@@ -61,7 +61,7 @@ export const FeaturesSection = () => {
             const Icon = feature.icon;
             return (
               <Card key={index} className="p-6 text-center hover:shadow-xl transition-all duration-300 hover-lift bg-card border-border">
-                <div className={`w-16 h-16 ${feature.color} rounded-2xl flex items-center justify-center mx-auto mb-4 text-white`}>
+                <div className={`w-16 h-16 ${feature.color} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
                   <Icon className="h-8 w-8" />
                 </div>
                 <CardTitle className="text-xl mb-3 text-foreground">

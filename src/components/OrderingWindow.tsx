@@ -73,23 +73,23 @@ type QualityTierPreference = typeof QUALITY_TIER_OPTIONS[number]['value'];
 const SHOPPING_SITES: ShoppingSite[] = [{
   name: "Lowe's",
   url: "https://lowes.com",
-  color: "bg-info hover:bg-info"
+  color: "bg-info hover:bg-info text-info-foreground"
 }, {
   name: "Floor & Decor",
   url: "https://flooranddecor.com",
-  color: "bg-warning-soft hover:bg-warning-soft"
+  color: "bg-warning-soft hover:bg-warning-soft text-warning-soft-foreground"
 }, {
   name: "Wayfair",
   url: "https://wayfair.com",
-  color: "bg-category-3 hover:bg-category-3"
+  color: "bg-category-3 hover:bg-category-3 text-category-3-foreground"
 }, {
   name: "Amazon",
   url: "https://amazon.com",
-  color: "bg-warning-soft hover:bg-warning-soft"
+  color: "bg-warning-soft hover:bg-warning-soft text-warning-soft-foreground"
 }, {
   name: "Toolio.us",
   url: "https://toolio.us",
-  color: "bg-success hover:bg-success"
+  color: "bg-success hover:bg-success text-success-foreground"
 }];
 export function OrderingWindow({
   open,
@@ -734,7 +734,7 @@ export function OrderingWindow({
                 <div>
                   <h4 className="font-medium text-xs mb-2">Quick links</h4>
                   <div className="flex flex-wrap gap-1.5">
-                    {SHOPPING_SITES.map(site => <Button key={site.name} onClick={() => window.open(site.url, '_blank')} size="sm" className={`text-xs px-2 py-1 h-auto ${site.color} text-white`}>
+                    {SHOPPING_SITES.map(site => <Button key={site.name} onClick={() => window.open(site.url, '_blank')} size="sm" className={`text-xs px-2 py-1 h-auto ${site.color}`}>
                         <ExternalLink className="w-2.5 h-2.5 mr-1" />
                         {site.name}
                       </Button>)}

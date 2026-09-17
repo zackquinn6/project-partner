@@ -26,8 +26,7 @@ export const SignatureCapture: React.FC<SignatureCaptureProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set up canvas
-    ctx.strokeStyle = '#000000';
+    // Stroke colour is resolved per stroke in startDrawing, so it follows the active theme.
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -61,6 +60,8 @@ export const SignatureCapture: React.FC<SignatureCaptureProps> = ({
     if (!canvas || !ctx) return;
 
     setIsDrawing(true);
+    // Ink matches the canvas surface's own foreground, so it stays visible in either theme mode.
+    ctx.strokeStyle = getComputedStyle(canvas).color;
     const pos = getEventPos(e);
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
@@ -112,7 +113,7 @@ export const SignatureCapture: React.FC<SignatureCaptureProps> = ({
             ref={canvasRef}
             width={width}
             height={height}
-            className="w-full h-32 bg-card border border-border rounded cursor-crosshair touch-none"
+            className="w-full h-32 bg-card text-card-foreground border border-border rounded cursor-crosshair touch-none"
             onMouseDown={startDrawing}
             onMouseMove={draw}
             onMouseUp={stopDrawing}

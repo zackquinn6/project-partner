@@ -137,25 +137,25 @@ export default function Home({
   // Semantic color system for app icons
   const appColors = {
     // Projects & Planning (Blue shades)
-    rapidPlan: 'bg-info',
-    projectCatalog: 'bg-info',
+    rapidPlan: 'bg-info text-info-foreground',
+    projectCatalog: 'bg-info text-info-foreground',
     // Home & Maintenance (Green shades)
-    homeMaintenance: 'bg-success',
-    homeTaskList: 'bg-success',
-    myHomes: 'bg-success',
-    riskFocus: 'bg-success',
+    homeMaintenance: 'bg-success text-success-foreground',
+    homeTaskList: 'bg-success text-success-foreground',
+    myHomes: 'bg-success text-success-foreground',
+    riskFocus: 'bg-success text-success-foreground',
     // Tools & Resources (Orange/Amber shades)
-    toolLibrary: 'bg-warning-soft',
-    toolAccess: 'bg-warning-soft',
+    toolLibrary: 'bg-warning-soft text-warning-soft-foreground',
+    toolAccess: 'bg-warning-soft text-warning-soft-foreground',
     // Help & Learning (Purple shades)
-    expertHelp: 'bg-category-3',
-    community: 'bg-category-3',
+    expertHelp: 'bg-category-3 text-category-3-foreground',
+    community: 'bg-category-3 text-category-3-foreground',
     // Profile & Settings (Gray shades)
-    myProfile: 'bg-muted-foreground',
+    myProfile: 'bg-muted-foreground text-background',
     // Beta/Experimental (Indigo/Pink)
-    contractorFinder: 'bg-category-1',
-    aiRepair: 'bg-category-5',
-    codePermits: 'bg-category-1'
+    contractorFinder: 'bg-category-1 text-category-1-foreground',
+    aiRepair: 'bg-category-5 text-category-5-foreground',
+    codePermits: 'bg-category-1 text-category-1-foreground'
   };
   useEffect(() => {
     const handleOpenQuiz = () => {
@@ -323,7 +323,7 @@ export default function Home({
                 <TooltipTrigger asChild>
                   <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}>
                     <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.homeMaintenance} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                      <HomeIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                      <HomeIcon className="w-6 h-6 sm:w-8 sm:h-8" />
                     </div>
                     <span className="text-xs font-medium text-foreground text-center leading-tight px-1">Home Maintenance</span>
                   </div>
@@ -336,7 +336,7 @@ export default function Home({
                 <TooltipTrigger asChild>
                   <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}>
                     <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.homeTaskList} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                      <ListChecks className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                      <ListChecks className="w-6 h-6 sm:w-8 sm:h-8" />
                     </div>
                     <span className="text-xs font-medium text-foreground text-center leading-tight px-1">Project & Task Manager</span>
                   </div>
@@ -349,7 +349,7 @@ export default function Home({
                 <TooltipTrigger asChild>
                   <div className="flex flex-col items-center group cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('open-risk-focus-launcher'))}>
                     <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.riskFocus} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
-                      <Crosshair className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                      <Crosshair className="w-6 h-6 sm:w-8 sm:h-8" />
                     </div>
                     <span className="text-xs font-medium text-foreground text-center leading-tight px-1">Risk Radar</span>
                   </div>
@@ -377,7 +377,7 @@ export default function Home({
                         onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}
                       >
                         <div className={`w-10 h-10 ${appColors.myProfile} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                          <User className="h-5 w-5 text-white" />
+                          <User className="h-5 w-5" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-medium text-xs text-card-foreground">My Profile</h3>
@@ -390,7 +390,7 @@ export default function Home({
                         onClick={() => window.dispatchEvent(new CustomEvent('show-home-manager'))}
                       >
                         <div className={`w-10 h-10 ${appColors.myHomes} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                          <MapPin className="h-5 w-5 text-white" />
+                          <MapPin className="h-5 w-5" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-medium text-xs text-card-foreground">My Homes</h3>
@@ -403,7 +403,7 @@ export default function Home({
                         onClick={() => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))}
                       >
                         <div className={`w-10 h-10 ${appColors.toolLibrary} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                          <Wrench className="h-5 w-5 text-white" />
+                          <Wrench className="h-5 w-5" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-medium text-xs text-card-foreground">My Tools</h3>
