@@ -22,10 +22,9 @@ export interface RunRiskReevaluationState {
  * sessions, so a list written at run creation goes stale. Re-evaluation only rewrites the
  * derived baseline; mitigation progress and hidden rows are the user's and are left alone.
  *
- * It runs once per run per open. A failure is toasted (with a support code) and reported to
- * admins rather than retried, because a rule set that cannot be evaluated is an authoring
- * problem, not a transient one. Risk Radar itself never surfaces an in-app error banner for
- * this - the list stays on screen and a toast is enough.
+ * It runs once per run per open. A failure is logged and reported to admins rather than
+ * retried, because a rule set that cannot be evaluated is an authoring problem, not a
+ * transient one. The risk list stays on screen with no user-facing toast or banner.
  */
 export function useRunRiskReevaluation({
   projectRunId,
@@ -66,7 +65,7 @@ export function useRunRiskReevaluation({
           error: err,
           userMessage: 'Your risk priorities could not be refreshed for your profile.',
           notificationTitle: 'Risk priorities not refreshed',
-          toastPresenter: 'sonner',
+          toastPresenter: 'none',
         });
       })
       .finally(() => {
