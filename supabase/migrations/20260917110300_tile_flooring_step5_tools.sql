@@ -24,6 +24,7 @@ DECLARE
   v_op_grout uuid;
   v_missing text[] := ARRAY[]::text[];
   v_name text;
+  v_updated integer;
   v_required_tools text[] := ARRAY[
     'Safety Glasses', 'Knee Pads', 'Work Gloves', 'Dust Mask / Respirator', 'Hearing Protection',
     'Chemical-Resistant Gloves', 'Shop Vacuum', 'Broom', 'Straightedge', 'Tape Measure',
@@ -362,6 +363,11 @@ BEGIN
   ) AS v(step_title, tools)
   WHERE os.operation_id IN (v_op_membrane, v_op_backer, v_op_install, v_op_grout)
     AND lower(btrim(os.step_title)) = lower(btrim(v.step_title));
+
+  GET DIAGNOSTICS v_updated = ROW_COUNT;
+  IF v_updated <> 17 THEN
+    RAISE EXCEPTION 'Expected 17 owned steps to receive tools, updated %.', v_updated;
+  END IF;
 
   UPDATE public.projects
   SET phases = public.rebuild_phases_json_from_project_phases(v_project_id),

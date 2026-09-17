@@ -49,9 +49,11 @@ Read the current state first, then author. Produce a per-step matrix over **all*
 | Materials (+ alternates) | `materials` library + `operation_steps.materials` | 6 |
 | Process variables | `operation_steps.process_variables` | 7 |
 | Time estimates low / med / high | `operation_steps.time_estimate_*` | 8 |
-| Failure modes where relevant | `pfmea_*` | 9 |
+| Failure modes where relevant | `pfmea_requirements` → `pfmea_failure_modes` → effects / causes / controls | 9 |
 
-Project-level components audited once: `project_risks` (Step 4), `projects.description` / `project_challenges` (Step 10), `scheduling_prerequisites` (§E), catalog header (§D).
+Project-level components audited once: `project_risks` (Step 4, including component and scores on every row), `projects.description` / `project_challenges` (Step 10), `scheduling_prerequisites` (§E), catalog header (§D).
+
+**Check the JSON shape against the component that reads it, not against what is already stored.** Step JSON written by an older authoring surface can be structurally stale (for example tool rows keyed on `coreItemId` render with no name in `CompactToolsTable`). A populated column is not the same as a working one.
 
 **A component counts as present only if it is complete for that step.** One instruction level out of three, or a tools array with no alternates where substitution is realistic, is a gap.
 
@@ -77,6 +79,8 @@ Adding rows to the shared `public.tools` and `public.materials` catalogs is **no
 
 - **Default deliverable is migration SQL** under `supabase/migrations/`, one file per guide step per project slug, idempotent, runnable as-is, `RAISE` on missing prerequisites (§A).
 - Rebuild the phases cache after any structure change (§A).
+- **Verify row counts in the migration itself.** Author against a `VALUES` list keyed by step title, then `GET DIAGNOSTICS` and `RAISE` when the update count does not match the number of owned steps. A title typo otherwise leaves a silent hole.
+- **Close with a content audit migration** that asserts the completeness definition per owned step (three instruction levels, outputs, tools, materials array, process variables, time estimates, structure metadata) and raises with the full gap list. Enforce only what the build out owns; report gaps outside it with `RAISE NOTICE` instead of failing the deploy.
 - Commit and push. Commit body lists what each migration covers.
 - Final report: the H.2 matrix after the change, anything intentionally left out, and gaps observed in standard or adopted phases.
 
@@ -449,7 +453,11 @@ Per step: outputs with `name` (≤50 chars, prefer under 30), `description`, `ty
 
 **Shared checklist:** `risks` · see cross-cutting `risks-vs-pfmea`.
 
-**Scope:** timeline and budget only—not quality (that is PFMEA, Step 9). Attach to **root** template id (see §F).
+**Scope:** the three components the register owns - **safety, schedule, and budget**. Quality is the PFMEA (Step 9). Attach to **root** template id (see §F). See `docs/RISK_ENGINE.md` for the shared model.
+
+**Every row needs a component and three scores**, or it is reported as unscored rather than prioritized: `risk_dimension` ∈ `safety` / `schedule` / `budget`, plus `severity_score`, `occurrence_score`, `detection_score` on 1-10 scales anchored in `pfmea_scoring` (detection inverted: high is bad). Action Priority comes from `pfmea_action_priority_rules`; never author a priority directly.
+
+**Key Characteristic classification** (`occurrence_driver`, `prevention_strength`, `implicated_item_kind`, `implicated_item_id`): `occurrence_driver` FKs `risk_occurrence_drivers` and says what actually drives the frequency, `prevention_strength` ∈ `mistake_proof` / `procedural` / `none`, and the item pair points at the step 3 output, step 7 process variable, or step 5 / 6 tool or material id the risk lives on (`implicated_item_kind = 'step'` carries no id and requires `operation_step_id`). Leave a classification null rather than guessing: null is reported as unclassified, a wrong value silently changes the KC register.
 
 **Mitigation completeness:** Every identified risk must include `mitigation_actions` that, taken together, can bring residual severity to **medium or low** (ideally **low**). Do not leave a risk whose full mitigation set still leaves residual **high**. Prefer concrete, checkable actions; set `mitigation_effort_level` honestly so Risk Radar can sort easiest-first.
 
@@ -476,6 +484,12 @@ Per step: outputs with `name` (≤50 chars, prefer under 30), `description`, `ty
 | `recommendation` | string \| null | What to do; quantified gate or default, not vague advice |
 | `benefit` | string \| null | What if it happens / notes; include $ and/or day ranges when known |
 | `display_order` | number \| null | Register order |
+| `risk_dimension` | string \| null | `safety` / `schedule` / `budget`; required for the row to be prioritized |
+| `severity_score`, `occurrence_score`, `detection_score` | number \| null | 1-10 each; all three or the row counts as unscored |
+| `occurrence_driver` | string \| null | FK `risk_occurrence_drivers.driver` |
+| `prevention_strength` | string \| null | `mistake_proof` / `procedural` / `none` |
+| `operation_step_id` | uuid \| null | Required when `implicated_item_kind` is set |
+| `implicated_item_kind`, `implicated_item_id` | enum / string \| null | `output` / `process_variable` / `instruction` / `material` / `tool` / `step`; id must resolve in that step's JSON |
 
 ### Step 5 — Tools
 
@@ -495,7 +509,9 @@ Catalog + step JSON; bootstrap by `name`; **RAISE** if unresolved.
 
 #### `operation_steps.tools` JSON (app shape)
 
-Prefer library-backed refs: `id` / `name`, `description`, `category`, `alternates`, optional `quantity`, `linkedContentSectionIds` (show tool only when linked instruction sections are visible).
+Prefer library-backed refs: `id` / `name`, `description`, `category`, `alternates`, optional `quantity`, `purpose`, `linkedContentSectionIds` (show tool only when linked instruction sections are visible).
+
+**Substitutes are child rows, not text.** `CompactToolsTable` renders a row carrying `parentId` (the id of the primary row it can replace) as an indented alternate, and it only falls back to the `alternates` string list when the primary has no child rows. Author the library-backed substitute as its own row with `parentId`, and keep `tools.alternates` in the catalog for substitutes that are guidance rather than a specific item.
 
 ### Step 6 — Materials
 
@@ -514,7 +530,9 @@ Same pattern as tools; repeat tool bootstrap in the same file.
 
 #### `operation_steps.materials` JSON (app shape)
 
-`id` / `name`, `description`, `category`, `unit`, `unit_size`, `alternates`, optional `quantity`, `coveragePerUnit`, `wasteFactor`, `packSize`, `linkedContentSectionIds`.
+`id` / `name`, `description`, `category`, `unit`, `unit_size`, `alternates`, optional `quantity`, `purpose`, `parentId`, `coveragePerUnit`, `wasteFactor`, `packSize`, `linkedContentSectionIds`. Substitutes use `parentId` child rows as in Step 5. Coverage math (`coveragePerUnit`, `wasteFactor`, `packSize`) is what lets scope turn into a purchase quantity, so state the assumption it depends on (trowel notch, joint width, tile size) in the row `description`. Omit coverage on anything that does not scale with the scaling unit rather than inventing a rate.
+
+**PPE lives in these same arrays**, classified by `category = 'PPE'`; the step editor and workflow views split it into the PPE table by category, not by a separate column.
 
 ### Step 7 — Process variables (`operation_steps.process_variables`)
 
@@ -547,21 +565,40 @@ Low / med / high per step; evidence-based; per scaling unit when `step_type` is 
 
 ### Step 9 — PFMEA
 
-**Shared checklist:** `pfmea` · see cross-cutting `risks-vs-pfmea`.
+**Shared checklist:** `pfmea` · see cross-cutting `risks-vs-pfmea` and `docs/RISK_ENGINE.md`.
 
-Anti-requirement failure modes; align `requirement_output_id` with Step 3 output ids; scoring from `pfmea_scoring`.
+Quality only. A failure mode is a requirement stated as the thing that goes wrong, and it hangs off a **`pfmea_requirements`** row rather than off an output id directly.
 
-Core `pfmea_failure_modes`:
+`pfmea_requirements` (author first):
 
 | Field | Authoring rule |
 | ----- | -------------- |
 | `project_id` | Root template |
 | `operation_step_id` | Target step |
-| `requirement_output_id` | Must match a Step 3 output `id` on that step |
-| `failure_mode` | Anti-requirement narrative |
-| `severity_score` | From `pfmea_scoring` reference |
+| `output_id` | The Step 3 output `id` this requirement comes from; must still exist in that step's `outputs` JSON |
+| `requirement_text` | A limit that can be failed, not a goal |
+| `display_order` | Author order |
 
-Related tables (when filling full PFMEA): `pfmea_potential_causes`, `pfmea_potential_effects`, `pfmea_controls`, `pfmea_action_items`.
+`pfmea_failure_modes`:
+
+| Field | Authoring rule |
+| ----- | -------------- |
+| `project_id` | Root template |
+| `operation_step_id` | Target step |
+| `requirement_id` | FK to the `pfmea_requirements` row (**not** an output id) |
+| `failure_mode` | Anti-requirement narrative |
+| `severity_score` | 1-10 from `pfmea_scoring`; keep it consistent with the effect severity |
+
+Related tables, all part of a complete PFMEA:
+
+| Table | Authoring rule |
+| ----- | -------------- |
+| `pfmea_potential_effects` | Consequence the user lives with, not a restatement of the failure; `severity_score` agrees with the failure mode |
+| `pfmea_potential_causes` | `occurrence_score` 1-10, plus `occurrence_driver` (FK `risk_occurrence_drivers`) and `implicated_item_kind` / `implicated_item_id` pointing at the output, process variable, tool, or material id the cause lives on (`step` kind carries no id) |
+| `pfmea_controls` | `control_type` `prevention` or `detection`. Detection controls carry `detection_score` 1-10 (inverted: high is bad). **`control_strength` is prevention-only** and is `mistake_proof` only when the control removes the opportunity for the error, which is also what disqualifies the item as a Key Characteristic |
+| `pfmea_action_items` | Required on lines that land High. Because the Action Priority table is tuned so another inspection does not move a High, an action has to change the method or remove the chance to get it wrong |
+
+**Never invent a score, a driver, or a strength to fill a column.** Unscored and unclassified are real states the risk engine reports; a guessed value silently changes what the user is told to pay attention to.
 
 ### Step 10 — `projects.description` + `projects.project_challenges`
 
@@ -709,6 +746,7 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-17 | Step 4 rewritten for the shared risk model (component + three scores + KC classification fields); Step 9 rewritten for `pfmea_requirements` and `requirement_id`, with cause drivers, `control_strength`, and action items on High lines; Steps 5 and 6 document `parentId` substitute rows, `purpose`, coverage math, and PPE by category; §H.2 adds "check JSON shape against the component that reads it"; §H.5 adds in-migration row-count verification and a closing content audit migration | Tile Flooring build out found step tool JSON in a shape the app cannot render, PFMEA keyed on a column that no longer exists, and a register with no safety component and no scores |
 | 2026-09-16 | Added §H build-out protocol (owned-phase scope by column not name, completeness audit matrix, fixed authoring order, library bootstrap expected, migrations + push as default deliverable); shared rules `owned-vs-adopted-phases` and `content-completeness` in planning standard v1.2.0 | "Ref ai dev guide and build out project X" must be a sufficient instruction with no scoping questions |
 | 2026-09-15 | Step 2 section authoring: Background = valuable domain context (not step restatement); Instructions = sequential actions only (information is not a step); Error-Recovery = full-sentence diagnosis. Shared rule `step-instruction-sections` in planning standard v1.1.0 | Tool & Material Ordering advanced copy had explanatory Background, a non-action Instruction #3, and telegraphic Error-Recovery |
 | 2026-09-15 | Shared product planning SoT: `src/utils/projectPlanningStandard.ts` + generated marker block; admin Planning Guide consumes same module; `npm run sync/check:planning-standard` | Align human Planning Guide and AI reference; prevent product-rule drift |
