@@ -13,11 +13,23 @@ import { getNotificationSupportCode } from '@/utils/errorReporting';
 
 export function NotificationDropdown() {
   const { notifications, unreadCount, loading, refetch, markAsRead, deleteNotification } = useNotifications();
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [windowOpen, setWindowOpen] = React.useState(false);
+
+  const openAllNotifications = () => {
+    setDropdownOpen(false);
+    setWindowOpen(true);
+  };
 
   return (
     <>
-      <DropdownMenu onOpenChange={(open) => open && refetch()}>
+      <DropdownMenu
+        open={dropdownOpen}
+        onOpenChange={(open) => {
+          setDropdownOpen(open);
+          if (open) refetch();
+        }}
+      >
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm" className="h-9 w-9 p-0 shrink-0 relative" aria-label="Notifications">
             <Bell className="h-5 w-5" />
@@ -37,6 +49,7 @@ export function NotificationDropdown() {
                 size="sm"
                 className="h-7 text-xs gap-1 px-2"
                 onClick={() => {
+                  setDropdownOpen(false);
                   window.dispatchEvent(new CustomEvent('open-portfolio-reminders'));
                 }}
               >
@@ -47,7 +60,7 @@ export function NotificationDropdown() {
                 variant="ghost"
                 size="sm"
                 className="h-7 text-xs"
-                onClick={() => setWindowOpen(true)}
+                onClick={openAllNotifications}
               >
                 View all
               </Button>
@@ -119,7 +132,7 @@ export function NotificationDropdown() {
                 variant="ghost"
                 size="sm"
                 className="w-full gap-2"
-                onClick={() => setWindowOpen(true)}
+                onClick={openAllNotifications}
               >
                 <CheckCheck className="h-4 w-4" />
                 View all notifications
