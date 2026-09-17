@@ -1030,8 +1030,6 @@ export function RiskManagementWindow({
   );
 
   const [planningRiskStep, setPlanningRiskStep] = useState<PlanningRiskStepKey>('high');
-  /** Which component the open triage pass is working through. */
-  const [planningRiskComponent, setPlanningRiskComponent] = useState<RiskDimension | 'all'>('all');
   const [rulesEditorOpen, setRulesEditorOpen] = useState(false);
 
   useEffect(() => {
@@ -1263,39 +1261,18 @@ export function RiskManagementWindow({
     return counts;
   }, [displayRisks]);
 
-  /** Risks in the open pass, by component, so the walkthrough runs one component at a time. */
-  const passRisksByComponent = useMemo(() => {
-    const inPass = displayRisks.filter((r) => riskTriageLevel(r) === planningRiskStep);
-    const counts = {} as Record<RiskDimension, Risk[]>;
-    for (const dimension of RISK_DIMENSIONS) counts[dimension] = [];
-    for (const risk of inPass) {
-      if (risk.risk_dimension && isRiskDimension(risk.risk_dimension)) {
-        counts[risk.risk_dimension].push(risk);
-      }
-    }
-    return { inPass, byComponent: counts };
-  }, [displayRisks, planningRiskStep]);
-
   const listRisks = useMemo(() => {
     if (!usePlanningToolShell) return displayRisks;
-    const source =
-      planningRiskComponent === 'all'
-        ? passRisksByComponent.inPass
-        : passRisksByComponent.byComponent[planningRiskComponent];
-    return [...source].sort(compareRisksByPriority);
-  }, [usePlanningToolShell, displayRisks, passRisksByComponent, planningRiskComponent]);
+    return displayRisks
+      .filter((r) => riskTriageLevel(r) === planningRiskStep)
+      .sort(compareRisksByPriority);
+  }, [usePlanningToolShell, displayRisks, planningRiskStep]);
 
   const setPlanningRiskStepStable = useCallback((next: string) => {
     if (next === 'high' || next === 'medium' || next === 'low') {
       setPlanningRiskStep(next);
     }
   }, []);
-
-  // A new pass starts with everything in view, so a component filter from the previous pass
-  // cannot hide work.
-  useEffect(() => {
-    setPlanningRiskComponent('all');
-  }, [planningRiskStep]);
 
   useSteppedAutoAdvance({
     enabled: open && usePlanningToolShell,
@@ -2037,6 +2014,7 @@ export function RiskManagementWindow({
           ) : (
             <div className="flex min-h-0 flex-1 flex-col gap-3">
               {riskFocusRun &&
+              !usePlanningToolShell &&
               (showAddRiskRow || showRiskFocusHiddenToggle || risks.length > 0) ? (
                 <>
                   {/* Risk Radar mobile: compact stacked controls */}
@@ -2115,7 +2093,7 @@ export function RiskManagementWindow({
                     </div>
                   </div>
                 </>
-              ) : showAddRiskRow || showRiskFocusHiddenToggle ? (
+              ) : !usePlanningToolShell && (showAddRiskRow || showRiskFocusHiddenToggle) ? (
                 <div
                   className={cn(
                     'flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between',
@@ -2195,59 +2173,68 @@ export function RiskManagementWindow({
                       key={step.key}
                       value={step.key}
                       className={cn(
-                        'rounded-lg border bg-card px-4',
+                        // Closed headers must not shrink when the open pane fills leftover height.
+                        'shrink-0 rounded-lg border bg-card px-4',
                         'data-[state=open]:flex data-[state=open]:min-h-0 data-[state=open]:flex-1 data-[state=open]:flex-col data-[state=open]:overflow-hidden',
-                        // Keep the title row content-sized so it cannot eat the table viewport.
                         'data-[state=open]:[&>:first-child]:flex-none',
-                        // Radix Content root: fill leftover height and host the scroll region.
                         'data-[state=open]:[&>[data-state=open]]:flex data-[state=open]:[&>[data-state=open]]:min-h-0 data-[state=open]:[&>[data-state=open]]:flex-1 data-[state=open]:[&>[data-state=open]]:flex-col data-[state=open]:[&>[data-state=open]]:overflow-hidden data-[state=open]:[&>[data-state=open]]:animate-none data-[state=open]:[&>[data-state=open]]:!h-auto',
-                        // Inner padding wrapper from AccordionContent must also fill.
                         'data-[state=open]:[&>[data-state=open]>div]:flex data-[state=open]:[&>[data-state=open]>div]:h-full data-[state=open]:[&>[data-state=open]>div]:min-h-0 data-[state=open]:[&>[data-state=open]>div]:flex-1 data-[state=open]:[&>[data-state=open]>div]:flex-col data-[state=open]:[&>[data-state=open]>div]:overflow-hidden data-[state=open]:[&>[data-state=open]>div]:pb-3 data-[state=open]:[&>[data-state=open]>div]:pt-0'
                       )}
                     >
-                      <AccordionTrigger className="shrink-0 grow-0 py-2.5 hover:no-underline">
-                        <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                      <AccordionTrigger className="shrink-0 grow-0 py-3 hover:no-underline">
+                        <div className="flex items-center gap-3 text-left">
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                             {index + 1}
                           </div>
                           <div className="min-w-0">
-                            <div className="text-sm font-semibold sm:text-base">{step.title}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {planningRiskCounts[step.key]} risk
-                              {planningRiskCounts[step.key] === 1 ? '' : 's'}
+                            <div className="text-sm font-semibold leading-snug sm:text-base">
+                              {step.title}
                             </div>
+                            {planningRiskStep === step.key ? (
+                              <div className="text-xs text-muted-foreground">
+                                {planningRiskCounts[step.key]} risk
+                                {planningRiskCounts[step.key] === 1 ? '' : 's'}
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="!pb-0 !pt-0">
                         {planningRiskStep === step.key ? (
                           <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-                            <div className="mb-2 flex shrink-0 flex-wrap gap-1">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant={planningRiskComponent === 'all' ? 'default' : 'outline'}
-                                className="h-7 px-2.5 text-xs"
-                                onClick={() => setPlanningRiskComponent('all')}
-                              >
-                                Everything ({passRisksByComponent.inPass.length})
-                              </Button>
-                              {RISK_DIMENSIONS.map((dimension) => {
-                                const count = passRisksByComponent.byComponent[dimension].length;
-                                if (count === 0) return null;
-                                return (
-                                  <Button
-                                    key={dimension}
-                                    type="button"
-                                    size="sm"
-                                    variant={planningRiskComponent === dimension ? 'default' : 'outline'}
-                                    className="h-7 px-2.5 text-xs"
-                                    onClick={() => setPlanningRiskComponent(dimension)}
-                                  >
-                                    {RISK_COMPONENT_CONSUMER_LABELS[dimension]} ({count})
-                                  </Button>
-                                );
-                              })}
+                            <div className="mb-2 flex shrink-0 flex-wrap items-center gap-2">
+                              {risks.length > 0 ? (
+                                <RiskRadarRegisterPrimarySortMenu
+                                  value={riskRadarRegisterPrimarySort}
+                                  onValueChange={setRiskRadarRegisterPrimarySort}
+                                  align="start"
+                                  triggerClassName="h-7"
+                                />
+                              ) : null}
+                              <RiskRadarEditVisibilityMenu
+                                showHiddenToggle={showRiskFocusHiddenToggle}
+                                isRiskFocusRun={riskFocusRun}
+                                showHiddenRisks={showHiddenRisks}
+                                onShowHiddenChange={setShowHiddenRisks}
+                                hideStandardRisks={hideStandardRisks}
+                                onHideStandardChange={setHideStandardRisks}
+                                triggerClassName="h-7 px-2.5 text-xs"
+                              />
+                              {showAddRiskRow ? (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingRisk(null);
+                                    setFormData(EMPTY_RISK_FORM);
+                                    setShowAddForm(true);
+                                  }}
+                                  className="ml-auto h-7 gap-1 px-3 text-xs font-medium"
+                                >
+                                  <Plus className="h-3.5 w-3.5 shrink-0" />
+                                  Add Risk
+                                </Button>
+                              ) : null}
                             </div>
                             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                               <RiskRegisterList
