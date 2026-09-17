@@ -1048,7 +1048,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
   };
 
   const getModeTitle = () => {
-    return 'Scope';
+    return 'Project Scope';
   };
 
   const getModeDescription = () => {
@@ -1103,6 +1103,28 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         <div className="text-base font-semibold text-foreground md:text-lg">{title}</div>
         <div className="mt-1 text-xs leading-relaxed text-muted-foreground md:text-sm">{description}</div>
       </div>
+    </div>
+  );
+
+  const CustomWorkActions = () => (
+    <div className="flex flex-row items-center gap-2">
+      <Button
+        type="button"
+        size="sm"
+        onClick={() => void handleSaveCustomization()}
+        className="flex-1 bg-success text-xs text-success-foreground hover:bg-success sm:flex-none"
+      >
+        Continue with no Custom Work
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        onClick={() => setShowCustomWorkManager(true)}
+        className="flex-1 text-xs sm:flex-none"
+      >
+        Add Custom Work
+      </Button>
     </div>
   );
 
@@ -1376,6 +1398,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
+                        <CustomWorkActions />
                         {builtInWorkBySpace.length === 0 ? (
                           <p className="text-sm text-muted-foreground">
                             Add spaces in step 2 to see the project work list.
@@ -1444,7 +1467,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                                                 <div className="truncate text-muted-foreground leading-5">
                                                   {op.kind === 'pending'
                                                     ? 'Needs choice in step 3'
-                                                    : op.description || '—'}
+                                                    : op.description || '-'}
                                                 </div>
                                               </div>
                                               {op.steps.length > 0 ? (
@@ -1470,25 +1493,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                             </Accordion>
                           </div>
                         )}
-                        <div className="flex flex-row items-center gap-2 pt-1">
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => void handleSaveCustomization()}
-                            className="flex-1 bg-success text-xs text-success-foreground hover:bg-success sm:flex-none"
-                          >
-                            Continue with no Custom Work
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setShowCustomWorkManager(true)}
-                            className="flex-1 text-xs sm:flex-none"
-                          >
-                            Add Custom Work
-                          </Button>
-                        </div>
+                        <CustomWorkActions />
                       </CardContent>
                     </Card>
 
