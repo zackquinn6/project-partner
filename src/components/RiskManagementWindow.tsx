@@ -278,7 +278,7 @@ function riskFocusSeverityCounts(risks: Risk[]) {
     else if (s === 'low') low += 1;
     else unset += 1;
   }
-  return { high, medium, low, unset, total: risks.length };
+  return { high, medium, low, unset };
 }
 
 function riskFocusLevelValue(risk: Risk): 'low' | 'medium' | 'high' {
@@ -591,7 +591,7 @@ function RiskFocusDashboard({
   /** Run whose dashboard the component lights open. Absent on the template view. */
   projectRunId?: string;
 }) {
-  const { high, medium, low, unset, total } = riskFocusSeverityCounts(risks);
+  const { high, medium, low, unset } = riskFocusSeverityCounts(risks);
   const name = projectDisplayName?.trim() || null;
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 py-2 md:px-4">
@@ -614,53 +614,44 @@ function RiskFocusDashboard({
           <div className="mb-1 w-full text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Current Risk Summary
           </div>
-          <p className="mb-2 w-full text-center text-[11px] leading-snug text-muted-foreground">
-            Your Goal is 0 Highs and few Lows
-          </p>
           <div className="flex w-full justify-center">
             <Card className="min-w-0 w-full max-w-md overflow-hidden">
-              <CardContent className="flex flex-row flex-wrap items-center justify-center gap-y-1 px-1.5 py-1 sm:px-2 sm:py-1">
-                <div className="flex min-w-0 flex-row flex-wrap items-center justify-center gap-x-2 gap-y-0.5 sm:gap-x-3">
+              <CardContent className="p-0">
+                <div className="flex flex-row flex-wrap items-center justify-center gap-x-3 gap-y-0.5 px-2 py-1 sm:gap-x-5">
                   <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
                     <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                       High
                     </span>
                     <span className="text-base font-bold tabular-nums text-destructive sm:text-lg">{high}</span>
                   </div>
-                  <div className="flex flex-row items-baseline gap-1.5 border-l border-foreground/20 pl-2 dark:border-foreground/30 sm:gap-2 sm:pl-3">
+                  <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
                     <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                       Med
                     </span>
                     <span className="text-base font-bold tabular-nums text-warning-soft sm:text-lg">{medium}</span>
                   </div>
-                  <div className="flex flex-row items-baseline gap-1.5 border-l border-foreground/20 pl-2 dark:border-foreground/30 sm:gap-2 sm:pl-3">
+                  <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
                     <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                       Low
                     </span>
                     <span className="text-base font-bold tabular-nums text-success sm:text-lg">{low}</span>
                   </div>
-                  <div
-                    className="mx-0.5 h-6 w-px shrink-0 self-center bg-foreground/45 dark:bg-foreground/55 sm:mx-1.5"
-                    aria-hidden
-                    role="presentation"
-                  />
-                  <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-                    <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                      Total
-                    </span>
-                    <span className="text-base font-bold tabular-nums sm:text-lg">{total}</span>
-                  </div>
+                  {unset > 0 ? (
+                    <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
+                      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                        Not set
+                      </span>
+                      <span className="text-base font-bold tabular-nums text-muted-foreground sm:text-lg">
+                        {unset}
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+                <div className="border-t border-border/60">
+                  <RiskComponentOverview risks={risks} projectRunId={projectRunId} />
                 </div>
               </CardContent>
-              {unset > 0 ? (
-                <div className="border-t border-border/50 px-1.5 py-0.5 text-center text-[10px] text-muted-foreground">
-                  Not set: {unset}
-                </div>
-              ) : null}
             </Card>
-          </div>
-          <div className="mt-2 w-full">
-            <RiskComponentOverview risks={risks} projectRunId={projectRunId} />
           </div>
         </div>
       </div>
