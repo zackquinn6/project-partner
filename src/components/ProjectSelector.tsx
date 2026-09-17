@@ -461,10 +461,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                              <Badge 
                                variant="outline"
                                className={
-                                 currentProject.effortLevel === 'Low' ? 'bg-blue-100 text-blue-800 text-sm' :
-                                 currentProject.effortLevel === 'Medium' ? 'bg-orange-100 text-orange-800 text-sm' :
-                                 currentProject.effortLevel === 'High' ? 'bg-red-100 text-red-800 text-sm' :
-                                 'bg-gray-100 text-gray-800 text-sm'
+                                 currentProject.effortLevel === 'Low' ? 'bg-info/15 text-info text-sm' :
+                                 currentProject.effortLevel === 'Medium' ? 'bg-warning-soft/15 text-warning-soft text-sm' :
+                                 currentProject.effortLevel === 'High' ? 'bg-destructive-soft/15 text-destructive-soft text-sm' :
+                                 'bg-muted text-foreground text-sm'
                                }
                              >
                                {currentProject.effortLevel || 'Not specified'}
@@ -475,10 +475,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                              <Badge 
                                variant="outline"
                                className={
-                                 currentProject.skillLevel === 'Beginner' ? 'bg-green-100 text-green-800 text-sm' :
-                                 currentProject.skillLevel === 'Intermediate' ? 'bg-yellow-100 text-yellow-800 text-sm' :
-                                 currentProject.skillLevel === 'Advanced' ? 'bg-red-100 text-red-800 text-sm' :
-                                 'bg-gray-100 text-gray-800 text-sm'
+                                 currentProject.skillLevel === 'Beginner' ? 'bg-success/15 text-success text-sm' :
+                                 currentProject.skillLevel === 'Intermediate' ? 'bg-warning-soft/15 text-warning-soft text-sm' :
+                                 currentProject.skillLevel === 'Advanced' ? 'bg-destructive-soft/15 text-destructive-soft text-sm' :
+                                 'bg-muted text-foreground text-sm'
                                }
                              >
                                {currentProject.skillLevel || 'Not specified'}
@@ -497,7 +497,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ isAdminMode = 
                              <h4 className="text-sm font-medium mb-1">Status</h4>
                              <Badge 
                                variant={currentProject.publishStatus === 'published' ? 'default' : 'secondary'}
-                               className={`text-sm ${currentProject.publishStatus === 'published' ? 'bg-green-500 text-white' : ''}`}
+                               className={`text-sm ${currentProject.publishStatus === 'published' ? 'bg-success text-success-foreground' : ''}`}
                              >
                                {currentProject.publishStatus}
                              </Badge>

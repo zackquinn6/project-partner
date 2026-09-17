@@ -214,22 +214,22 @@ export const ProcessImprovementEngine: React.FC<ProcessImprovementEngineProps> =
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'step-addition': return <Plus className="w-4 h-4 text-green-500" />;
-      case 'step-modification': return <RotateCcw className="w-4 h-4 text-blue-500" />;
-      case 'tool-update': return <Wrench className="w-4 h-4 text-purple-500" />;
-      case 'tip-addition': return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
-      case 'process-reorder': return <RotateCcw className="w-4 h-4 text-orange-500" />;
-      default: return <CheckCircle className="w-4 h-4 text-gray-500" />;
+      case 'step-addition': return <Plus className="w-4 h-4 text-success" />;
+      case 'step-modification': return <RotateCcw className="w-4 h-4 text-info" />;
+      case 'tool-update': return <Wrench className="w-4 h-4 text-category-3" />;
+      case 'tip-addition': return <AlertTriangle className="w-4 h-4 text-warning-soft" />;
+      case 'process-reorder': return <RotateCcw className="w-4 h-4 text-warning-soft" />;
+      default: return <CheckCircle className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
   const getSourceTypeColor = (sourceType: string) => {
     switch (sourceType) {
-      case 'manufacturer': return 'bg-blue-500/10 text-blue-500';
-      case 'industry-guide': return 'bg-green-500/10 text-green-500';
-      case 'safety-standard': return 'bg-red-500/10 text-red-500';
-      case 'best-practice': return 'bg-purple-500/10 text-purple-500';
-      default: return 'bg-gray-500/10 text-gray-500';
+      case 'manufacturer': return 'bg-info/10 text-info';
+      case 'industry-guide': return 'bg-success/10 text-success';
+      case 'safety-standard': return 'bg-destructive-soft/10 text-destructive-soft';
+      case 'best-practice': return 'bg-category-3/10 text-category-3';
+      default: return 'bg-muted-foreground/10 text-muted-foreground';
     }
   };
 
@@ -310,7 +310,7 @@ export const ProcessImprovementEngine: React.FC<ProcessImprovementEngineProps> =
                     <p className="text-sm font-medium text-muted-foreground">Sources Analyzed</p>
                     <p className="text-2xl font-bold">{sourcesAnalyzed}</p>
                   </div>
-                  <ExternalLink className="h-8 w-8 text-green-500" />
+                  <ExternalLink className="h-8 w-8 text-success" />
                 </div>
               </CardContent>
             </Card>
@@ -326,7 +326,7 @@ export const ProcessImprovementEngine: React.FC<ProcessImprovementEngineProps> =
                         : 0}%
                     </p>
                   </div>
-                  <Shield className="h-8 w-8 text-blue-500" />
+                  <Shield className="h-8 w-8 text-info" />
                 </div>
               </CardContent>
             </Card>

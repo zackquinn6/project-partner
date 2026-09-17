@@ -109,22 +109,23 @@ function seasonLabel(season: SeasonKey): string {
   }
 }
 
+// Seasons are a taxonomy, not a status, so they use the category tokens.
 function seasonBarClass(season: SeasonKey): string {
   switch (season) {
-    case 'spring': return 'bg-emerald-900/90 text-emerald-50 border-emerald-700';
-    case 'summer': return 'bg-sky-900/90 text-sky-50 border-sky-700';
-    case 'fall': return 'bg-amber-900/90 text-amber-50 border-amber-700';
-    case 'winter': return 'bg-slate-900/90 text-slate-50 border-slate-700';
+    case 'spring': return 'bg-category-2 text-category-2-foreground border-category-2-foreground/25';
+    case 'summer': return 'bg-category-6 text-category-6-foreground border-category-6-foreground/25';
+    case 'fall': return 'bg-category-4 text-category-4-foreground border-category-4-foreground/25';
+    case 'winter': return 'bg-category-1 text-category-1-foreground border-category-1-foreground/25';
   }
 }
 
 function monthHeaderClass(monthIndex: number): string {
   const season = seasonForMonthIndex(monthIndex);
   switch (season) {
-    case 'spring': return 'bg-emerald-950/70 text-emerald-50';
-    case 'summer': return 'bg-sky-950/70 text-sky-50';
-    case 'fall': return 'bg-amber-950/70 text-amber-50';
-    case 'winter': return 'bg-slate-950/70 text-slate-50';
+    case 'spring': return 'bg-category-2/75 text-category-2-foreground';
+    case 'summer': return 'bg-category-6/75 text-category-6-foreground';
+    case 'fall': return 'bg-category-4/75 text-category-4-foreground';
+    case 'winter': return 'bg-category-1/75 text-category-1-foreground';
   }
 }
 

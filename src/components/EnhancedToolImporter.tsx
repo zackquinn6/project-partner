@@ -228,12 +228,12 @@ export function EnhancedToolImporter({ open, onOpenChange, onSuccess }: Enhanced
   };
 
   const warningFlagOptions = [
-    { id: 'sharp', label: 'Sharp', color: 'text-red-500' },
-    { id: 'chemical', label: 'Chemical', color: 'text-orange-500' },
-    { id: 'hot', label: 'Hot', color: 'text-red-600' },
-    { id: 'heavy', label: 'Heavy', color: 'text-blue-500' },
-    { id: 'battery', label: 'Battery', color: 'text-green-500' },
-    { id: 'powered', label: 'Powered', color: 'text-yellow-500' }
+    { id: 'sharp', label: 'Sharp', color: 'text-destructive-soft' },
+    { id: 'chemical', label: 'Chemical', color: 'text-warning-soft' },
+    { id: 'hot', label: 'Hot', color: 'text-destructive-soft' },
+    { id: 'heavy', label: 'Heavy', color: 'text-info' },
+    { id: 'battery', label: 'Battery', color: 'text-success' },
+    { id: 'powered', label: 'Powered', color: 'text-warning-soft' }
   ];
 
   return (
@@ -442,33 +442,33 @@ export function EnhancedToolImporter({ open, onOpenChange, onSuccess }: Enhanced
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   {importResults.success > 0 ? (
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-success" />
                   ) : (
-                    <AlertCircle className="h-5 w-5 text-red-600" />
+                    <AlertCircle className="h-5 w-5 text-destructive-soft" />
                   )}
                   Import Results
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-md">
-                    <span className="text-green-800">Successfully Imported</span>
-                    <Badge variant="default" className="bg-green-600">
+                  <div className="flex items-center justify-between p-3 bg-success/10 rounded-md">
+                    <span className="text-success">Successfully Imported</span>
+                    <Badge variant="default" className="bg-success">
                       {importResults.success} tools
                     </Badge>
                   </div>
 
                   {importResults.errors.length > 0 && (
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between p-3 bg-red-50 rounded-md">
-                        <span className="text-red-800">Failed to Import</span>
+                      <div className="flex items-center justify-between p-3 bg-destructive-soft/10 rounded-md">
+                        <span className="text-destructive-soft">Failed to Import</span>
                         <Badge variant="destructive">
                           {importResults.errors.length} tools
                         </Badge>
                       </div>
                       <div className="max-h-32 overflow-y-auto space-y-1">
                         {importResults.errors.map((error, index) => (
-                          <div key={index} className="text-xs text-red-600 p-2 bg-red-50 rounded">
+                          <div key={index} className="text-xs text-destructive-soft p-2 bg-destructive-soft/10 rounded">
                             {error}
                           </div>
                         ))}

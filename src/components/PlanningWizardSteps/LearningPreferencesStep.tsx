@@ -38,7 +38,7 @@ export const LearningPreferencesStep: React.FC<LearningPreferencesStepProps> = (
               Open learning preferences
             </Button>
             {isCompleted && (
-              <p className="text-xs sm:text-sm text-green-600 font-medium">
+              <p className="text-xs sm:text-sm text-success font-medium">
                 ✓ Learning preferences reviewed
               </p>
             )}

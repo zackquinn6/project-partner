@@ -44,10 +44,10 @@ export function ToolsMaterialsSection({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <CardTitle className="text-base">Tools & Materials</CardTitle>
-            <Badge variant={allComplete ? "default" : "outline"} className={allComplete ? "bg-green-500 text-white text-xs" : "text-xs"}>
+            <Badge variant={allComplete ? "default" : "outline"} className={allComplete ? "bg-success text-success-foreground text-xs" : "text-xs"}>
               {checkedMaterialsCount + checkedToolsCount}/{materialsCount + toolsCount}
             </Badge>
-            {allComplete && <CheckCircle className="w-4 h-4 text-green-500" />}
+            {allComplete && <CheckCircle className="w-4 h-4 text-success" />}
           </div>
           <Button
             variant="ghost"
@@ -66,7 +66,7 @@ export function ToolsMaterialsSection({
             <div className="space-y-2" data-tutorial="materials">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Materials</h4>
-                <Badge variant={allMaterialsChecked ? "default" : "outline"} className={allMaterialsChecked ? "bg-green-500 text-white text-xs" : "text-xs"}>
+                <Badge variant={allMaterialsChecked ? "default" : "outline"} className={allMaterialsChecked ? "bg-success text-success-foreground text-xs" : "text-xs"}>
                   {checkedMaterialsCount}/{materialsCount}
                 </Badge>
               </div>
@@ -99,7 +99,7 @@ export function ToolsMaterialsSection({
             <div className="space-y-2" data-tutorial="tools">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold">Tools</h4>
-                <Badge variant={allToolsChecked ? "default" : "outline"} className={allToolsChecked ? "bg-green-500 text-white text-xs" : "text-xs"}>
+                <Badge variant={allToolsChecked ? "default" : "outline"} className={allToolsChecked ? "bg-success text-success-foreground text-xs" : "text-xs"}>
                   {checkedToolsCount}/{toolsCount}
                 </Badge>
               </div>

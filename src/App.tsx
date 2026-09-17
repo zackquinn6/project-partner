@@ -7,6 +7,7 @@ import { ProjectActionsProvider } from '@/contexts/ProjectActionsContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { GuestProvider } from '@/contexts/GuestContext';
 import { MembershipProvider } from '@/contexts/MembershipContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { SecurityMaintenanceProvider } from '@/components/SecurityMaintenanceProvider';
 import { SecurityHeadersProvider } from '@/components/SecurityHeadersProvider';
 // Temporarily disabled due to initialization order issues
@@ -33,6 +34,7 @@ const App: React.FC = () => {
       <SecurityHeadersProvider>
         <GuestProvider>
           <AuthProvider>
+            <ThemeProvider>
             <MembershipProvider>
               <SecurityMaintenanceProvider>
                 <TempQuizProvider>
@@ -63,6 +65,7 @@ const App: React.FC = () => {
                 </TempQuizProvider>
               </SecurityMaintenanceProvider>
             </MembershipProvider>
+            </ThemeProvider>
           </AuthProvider>
         </GuestProvider>
       </SecurityHeadersProvider>

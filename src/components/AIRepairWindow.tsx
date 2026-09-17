@@ -203,11 +203,11 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
         <div className="h-full flex flex-col min-h-0">
           
           {/* Beta Banner */}
-          <div className="bg-gradient-to-r from-orange-100 to-yellow-100 border-b border-orange-200 p-3">
+          <div className="bg-gradient-to-r from-warning-soft/15 to-warning-soft/15 border-b border-warning-soft/40 p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Badge className="bg-orange-500 text-white">BETA</Badge>
-                <span className="text-sm font-medium text-orange-800">
+                <Badge className="bg-warning-soft text-warning-soft-foreground">BETA</Badge>
+                <span className="text-sm font-medium text-warning-soft">
                   Feature under development - Hit the ? icon in upper right to share your thoughts!
                 </span>
               </div>
@@ -221,14 +221,14 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
             <div className="pb-4 min-h-0">
               {/* Pricing Alert */}
               {showPricingAlert && (
-                <div className="bg-gradient-to-r from-orange-50 to-green-50 border border-orange-200 p-4 m-4 rounded-xl shadow-sm">
+                <div className="bg-gradient-to-r from-warning-soft/10 to-success/10 border border-warning-soft/40 p-4 m-4 rounded-xl shadow-sm">
                   <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-full bg-gradient-to-r from-orange-500 to-green-500">
+                    <div className="p-2 rounded-full bg-gradient-to-r from-warning-soft to-success">
                       <Sparkles className="w-4 h-4 text-white" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-bold text-gray-900 mb-1">Free Trial During Launch</h4>
-                      <p className="text-sm text-gray-700 leading-relaxed">
+                      <h4 className="font-bold text-foreground mb-1">Free Trial During Launch</h4>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
                         This feature is completely free during our initial app launch. Regular pricing will be $1 per photo analyzed.
                       </p>
                     </div>
@@ -236,7 +236,7 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowPricingAlert(false)}
-                      className="text-gray-500 hover:text-gray-700 hover:bg-white/50 rounded-full h-8 w-8 p-0"
+                      className="text-muted-foreground hover:text-muted-foreground hover:bg-card/50 rounded-full h-8 w-8 p-0"
                     >
                       ×
                     </Button>
@@ -400,7 +400,7 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
                       <ul className="space-y-1">
                         {analysis.recommended_materials?.map((material, index) => (
                           <li key={index} className="text-sm flex items-center gap-2">
-                            <CheckCircle className="w-3 h-3 text-green-600" />
+                            <CheckCircle className="w-3 h-3 text-success" />
                             {material}
                           </li>
                         ))}
@@ -416,7 +416,7 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
                       <ul className="space-y-1">
                         {analysis.recommended_tools?.map((tool, index) => (
                           <li key={index} className="text-sm flex items-center gap-2">
-                            <CheckCircle className="w-3 h-3 text-green-600" />
+                            <CheckCircle className="w-3 h-3 text-success" />
                             {tool}
                           </li>
                         ))}

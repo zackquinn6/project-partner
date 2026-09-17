@@ -190,7 +190,7 @@ export const SpaceDecisionFlow: React.FC<SpaceDecisionFlowProps> = ({
                 )}
               </div>
               {isSpaceComplete(space.id) && (
-                <Badge variant="default" className="bg-green-500 text-xs">
+                <Badge variant="default" className="bg-success text-xs">
                   <CheckCircle2 className="w-3 h-3 mr-1" />
                   Complete
                 </Badge>

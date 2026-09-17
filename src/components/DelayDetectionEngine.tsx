@@ -202,10 +202,10 @@ export const DelayDetectionEngine: React.FC<DelayDetectionEngineProps> = ({
 
   const getRiskColor = (risk: DelayDetection['delayRisk']) => {
     switch (risk) {
-      case 'low': return 'text-green-600 border-green-200 bg-green-50';
-      case 'medium': return 'text-yellow-600 border-yellow-200 bg-yellow-50';
-      case 'high': return 'text-orange-600 border-orange-200 bg-orange-50';
-      case 'critical': return 'text-red-600 border-red-200 bg-red-50';
+      case 'low': return 'text-success border-success/40 bg-success/10';
+      case 'medium': return 'text-warning-soft border-warning-soft/40 bg-warning-soft/10';
+      case 'high': return 'text-warning-soft border-warning-soft/40 bg-warning-soft/10';
+      case 'critical': return 'text-destructive-soft border-destructive-soft/40 bg-destructive-soft/10';
     }
   };
 

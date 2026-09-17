@@ -3597,23 +3597,23 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
             Back
           </Button>
         </div>
-        <Card className="border-red-500">
+        <Card className="border-destructive-soft/40">
           <CardHeader>
-            <CardTitle className="text-red-600">Validation Error</CardTitle>
+            <CardTitle className="text-destructive-soft">Validation Error</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-red-600 mb-4">{validationError.message}</p>
+            <p className="text-sm text-destructive-soft mb-4">{validationError.message}</p>
             {validationError.details && validationError.details.length > 0 && (
               <div className="mb-4">
                 <p className="text-sm font-semibold mb-2">Details:</p>
-                <ul className="list-disc list-inside text-sm text-gray-700">
+                <ul className="list-disc list-inside text-sm text-muted-foreground">
                   {validationError.details.map((detail, index) => (
                     <li key={index}>{detail}</li>
                   ))}
                 </ul>
               </div>
             )}
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Please contact an admin to review and fix the database. Process Map cannot load until validation passes.
             </p>
           </CardContent>
@@ -3740,7 +3740,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
               return (
                 <Card 
                   key={phase.id}
-                  className={`border-2 ${phaseIsStandard ? 'bg-blue-50 border-blue-200' : phaseIsLinked ? 'bg-purple-100 border-purple-300' : ''}`}
+                  className={`border-2 ${phaseIsStandard ? 'bg-info/10 border-info/40' : phaseIsLinked ? 'bg-category-3/15 border-category-3/40' : ''}`}
                 >
                   <CardHeader className="py-2 px-4">
                     <div className="flex items-center justify-between">
@@ -3818,7 +3818,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                           <div className="flex-1">
                             <CardTitle className="text-sm flex items-center gap-2">
                               {phase.name}
-                              {phaseIsStandard && <span className="text-xs text-blue-600">(Standard - Locked)</span>}
+                              {phaseIsStandard && <span className="text-xs text-info">(Standard - Locked)</span>}
                               {phaseIsLinked && !phaseIsStandard && (
                                 <Badge variant="outline" className="text-xs flex items-center gap-1">
                                   <Link className="w-3 h-3" />
@@ -4455,7 +4455,7 @@ export const StructureManager: React.FC<StructureManagerProps> = ({ onBack }) =>
                 }
               }}
               disabled={isDeletingPhase}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive-soft hover:bg-destructive-soft"
             >
               {isDeletingPhase ? (
                 <>

@@ -28,7 +28,7 @@ export const FeaturesSection = () => {
       title: "AI Help When You're Stuck",
       description: "Seconds-fast answers scoped to your project family, with a recovery plan and premium live-pro escalate",
       badge: "In-step support",
-      color: "bg-purple-600"
+      color: "bg-category-3"
     }
   ];
 

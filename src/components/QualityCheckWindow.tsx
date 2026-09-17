@@ -377,7 +377,7 @@ export function QualityCheckWindow({
           >
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
                 <DialogTitle
                   className={cn(PLANNING_TOOL_WINDOW_TITLE_CLASSNAME, 'truncate')}
                 >

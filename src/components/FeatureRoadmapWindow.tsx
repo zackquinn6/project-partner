@@ -224,29 +224,29 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
+        return <CheckCircle className="w-4 h-4 text-success" />;
       case 'in-progress':
-        return <Clock className="w-4 h-4 text-blue-600" />;
+        return <Clock className="w-4 h-4 text-info" />;
       case 'planned':
-        return <Calendar className="w-4 h-4 text-gray-600" />;
+        return <Calendar className="w-4 h-4 text-muted-foreground" />;
       case 'cancelled':
-        return <AlertCircle className="w-4 h-4 text-red-600" />;
+        return <AlertCircle className="w-4 h-4 text-destructive-soft" />;
       default:
-        return <Calendar className="w-4 h-4 text-gray-600" />;
+        return <Calendar className="w-4 h-4 text-muted-foreground" />;
     }
   };
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'critical':
-        return 'border-l-red-500 bg-red-50 dark:bg-red-950/20';
+        return 'border-l-red-500 bg-destructive-soft/10';
       case 'high':
-        return 'border-l-orange-500 bg-orange-50 dark:bg-orange-950/20';
+        return 'border-l-orange-500 bg-warning-soft/10';
       case 'medium':
-        return 'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950/20';
+        return 'border-l-yellow-500 bg-warning-soft/10';
       case 'low':
-        return 'border-l-gray-500 bg-gray-50 dark:bg-gray-950/20';
+        return 'border-l-gray-500 bg-muted';
       default:
-        return 'border-l-gray-500 bg-gray-50 dark:bg-gray-950/20';
+        return 'border-l-gray-500 bg-muted';
     }
   };
   if (loading) {
@@ -357,15 +357,15 @@ export const FeatureRoadmapWindow: React.FC<FeatureRoadmapWindowProps> = ({
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <CardTitle className="flex items-center gap-2 text-lg">
-                            <Star className="w-4 h-4 text-yellow-500" />
+                            <Star className="w-4 h-4 text-warning-soft" />
                             {request.title}
                           </CardTitle>
                            <p className="text-muted-foreground mt-2">{request.description}</p>
-                           {request.admin_response && <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                           {request.admin_response && <div className="mt-3 p-3 bg-info/10 rounded-lg border border-info/40">
                                <div className="flex items-center gap-2 mb-1">
                                  <Badge variant="outline" className="text-xs">Admin Response</Badge>
                                </div>
-                               <p className="text-sm text-blue-800 dark:text-blue-200">{request.admin_response}</p>
+                               <p className="text-sm text-info">{request.admin_response}</p>
                              </div>}
                          </div>
                          <div className="flex flex-col items-end gap-2">

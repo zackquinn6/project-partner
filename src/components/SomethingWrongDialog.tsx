@@ -270,7 +270,7 @@ export function SomethingWrongDialog({
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-600" />
+            <AlertTriangle className="h-5 w-5 text-warning-soft" />
             Something wrong?
           </DialogTitle>
           <DialogDescription>

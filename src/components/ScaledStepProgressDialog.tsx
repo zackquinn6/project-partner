@@ -221,9 +221,9 @@ export const ScaledStepProgressDialog: React.FC<ScaledStepProgressDialogProps> =
 
         <div className="my-4">
           {allSpacesComplete && (
-            <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-              <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-              <span className="text-sm font-medium text-green-700 dark:text-green-300">
+            <div className="flex items-center gap-2 p-3 bg-success/10 rounded-lg border border-success/40">
+              <CheckCircle2 className="w-5 h-5 text-success" />
+              <span className="text-sm font-medium text-success">
                 All spaces complete! This step will be marked as done.
               </span>
             </div>

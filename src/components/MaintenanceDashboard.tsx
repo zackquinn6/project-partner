@@ -201,8 +201,8 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                 status === 'red'
                   ? 'text-destructive'
                   : status === 'yellow'
-                    ? 'text-amber-500'
-                    : 'text-emerald-600';
+                    ? 'text-warning-soft'
+                    : 'text-success';
               return (
                 <Tooltip key={sys}>
                   <TooltipTrigger asChild>
@@ -238,7 +238,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
         <CardContent className="p-2 flex flex-col flex-1 min-h-0 justify-center gap-1">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">Est. repairs avoided</span>
-            <span className="text-base sm:text-lg font-bold tabular-nums text-emerald-600">${moneySaved}</span>
+            <span className="text-base sm:text-lg font-bold tabular-nums text-success">${moneySaved}</span>
           </div>
           <div className="flex items-center justify-between gap-2 border-t pt-1">
             <span className="text-xs text-muted-foreground">Cumulative completed</span>
@@ -344,7 +344,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                   <span className="text-xs text-muted-foreground">Overdue</span>
                   <span
                     className={`text-lg font-bold tabular-nums ${
-                      overdue.length === 0 ? 'text-emerald-600' : 'text-destructive'
+                      overdue.length === 0 ? 'text-success' : 'text-destructive'
                     }`}
                   >
                     {overdue.length}
@@ -457,7 +457,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                     <span className="text-xs text-muted-foreground">Overdue</span>
                     <span
                       className={`text-lg sm:text-xl font-bold tabular-nums ${
-                        overdue.length === 0 ? 'text-emerald-600' : 'text-destructive'
+                        overdue.length === 0 ? 'text-success' : 'text-destructive'
                       }`}
                     >
                       {overdue.length}
@@ -495,8 +495,8 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                             status === 'red'
                               ? 'text-destructive'
                               : status === 'yellow'
-                                ? 'text-amber-500'
-                                : 'text-emerald-600';
+                                ? 'text-warning-soft'
+                                : 'text-success';
                           return (
                             <Tooltip key={sys}>
                               <TooltipTrigger asChild>
@@ -526,7 +526,7 @@ export function MaintenanceDashboard({ tasks, completions }: MaintenanceDashboar
                       <CardContent className="p-2 flex flex-col gap-1.5">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs text-muted-foreground">Est. repairs avoided</span>
-                          <span className="text-base sm:text-lg font-bold tabular-nums text-emerald-600">
+                          <span className="text-base sm:text-lg font-bold tabular-nums text-success">
                             ${moneySaved}
                           </span>
                         </div>

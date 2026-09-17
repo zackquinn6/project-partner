@@ -200,7 +200,7 @@ export const MembershipAgreementDialog: React.FC<MembershipAgreementDialogProps>
               id="agree-terms"
               checked={hasAgreedToTerms}
               onChange={(e) => setHasAgreedToTerms(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300"
+              className="h-4 w-4 rounded border-border"
             />
             <Label htmlFor="agree-terms" className="text-sm">
               I have read and agree to the Service Terms

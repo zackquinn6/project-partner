@@ -148,10 +148,10 @@ export const ProjectCalendarPlanning: React.FC<ProjectCalendarPlanningProps> = (
 
   const getScenarioColor = (scenario: string) => {
     switch (scenario) {
-      case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'medium': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'high': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+      case 'low': return 'bg-success/15 text-success';
+      case 'medium': return 'bg-info/15 text-info';
+      case 'high': return 'bg-destructive-soft/15 text-destructive-soft';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -275,7 +275,7 @@ export const ProjectCalendarPlanning: React.FC<ProjectCalendarPlanningProps> = (
             <Badge className={getScenarioColor(scenario)}>
               {scenario === 'low' ? 'Best Case' : scenario === 'medium' ? 'Typical' : 'Worst Case'}
             </Badge>
-            {isCompleted && <CheckCircle className="w-5 h-5 text-green-500" />}
+            {isCompleted && <CheckCircle className="w-5 h-5 text-success" />}
           </CardTitle>
         </CardHeader>
         
@@ -284,7 +284,7 @@ export const ProjectCalendarPlanning: React.FC<ProjectCalendarPlanningProps> = (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Total Work Time</p>
-              <p className="font-semibold text-blue-600">
+              <p className="font-semibold text-info">
                 {formatTime(phaseEstimates.reduce((total, phase) => total + phase.workTime, 0))}
               </p>
             </div>
@@ -444,7 +444,7 @@ export const ProjectCalendarPlanning: React.FC<ProjectCalendarPlanningProps> = (
                       <div className="flex-1">
                         <h4 className="font-medium flex items-center gap-2">
                           {phase.phaseName}
-                          {isComplete && <CheckCircle className="w-4 h-4 text-green-500" />}
+                          {isComplete && <CheckCircle className="w-4 h-4 text-success" />}
                         </h4>
                         <p className="text-sm text-muted-foreground">
                           {formatTime(scheduledHours)} / {formatTime(phase.workTime)} scheduled
@@ -465,12 +465,12 @@ export const ProjectCalendarPlanning: React.FC<ProjectCalendarPlanningProps> = (
           </Card>
 
           {/* Planning Recommendations */}
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
+          <div className="p-4 bg-info/10 border border-info/40 rounded-lg">
+            <h4 className="font-semibold text-info mb-2 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" />
               Planning Tips
             </h4>
-            <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+            <div className="text-sm text-info space-y-1">
               <p>• Schedule prep tasks during shorter time slots</p>
               <p>• Reserve longer sessions for major construction work</p>
               <p>• Plan material delivery 1-2 days before you need them</p>

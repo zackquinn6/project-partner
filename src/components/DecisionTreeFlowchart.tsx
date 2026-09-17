@@ -32,12 +32,12 @@ interface DecisionTreeFlowchartProps {
 const StepNode = ({ data }: { data: any }) => {
   const getNodeColor = (flowType?: string) => {
     switch (flowType) {
-      case 'prime': return 'bg-blue-100 border-blue-500 text-blue-900';
-      case 'alternate': return 'bg-orange-100 border-orange-500 text-orange-900';
-      case 'if-necessary': return 'bg-gray-100 border-gray-500 text-gray-900';
-      case 'inspection': return 'bg-purple-100 border-purple-500 text-purple-900';
-      case 'repeat': return 'bg-green-100 border-green-500 text-green-900';
-      default: return 'bg-white border-gray-300 text-gray-900';
+      case 'prime': return 'bg-category-1/15 border-category-1 text-category-1';
+      case 'alternate': return 'bg-category-4/15 border-category-4 text-category-4';
+      case 'if-necessary': return 'bg-muted border-muted-foreground/60 text-muted-foreground';
+      case 'inspection': return 'bg-category-3/15 border-category-3 text-category-3';
+      case 'repeat': return 'bg-category-2/15 border-category-2 text-category-2';
+      default: return 'bg-card border-border text-foreground';
     }
   };
 
@@ -68,7 +68,7 @@ const StepNode = ({ data }: { data: any }) => {
 // Custom node component for decision points
 const DecisionNode = ({ data }: { data: any }) => {
   return (
-    <Card className="min-w-56 border-2 bg-yellow-100 border-yellow-500 text-yellow-900">
+    <Card className="min-w-56 border-2 bg-category-5/15 border-category-5 text-category-5">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <span>🔀</span>
@@ -148,7 +148,7 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
                   label: `Alt: ${option.label}`,
                   type: 'smoothstep',
                   markerEnd: { type: MarkerType.ArrowClosed },
-                  style: { stroke: '#f59e0b', strokeDasharray: '5,5' },
+                  style: { stroke: 'hsl(var(--category-4))', strokeDasharray: '5,5' },
                 });
               }
             });
@@ -170,7 +170,7 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
                 label: 'Alternate',
                 type: 'smoothstep',
                 markerEnd: { type: MarkerType.ArrowClosed },
-                style: { stroke: '#f59e0b', strokeDasharray: '5,5' },
+                style: { stroke: 'hsl(var(--category-4))', strokeDasharray: '5,5' },
               });
             }
 
@@ -350,23 +350,23 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
       <div className="border-b bg-muted/30 p-4">
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-500 rounded"></div>
+            <div className="w-4 h-4 bg-category-1 rounded"></div>
             <span>Necessary Steps</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-orange-500 rounded"></div>
+            <div className="w-4 h-4 bg-category-4 rounded"></div>
             <span>Alternate Steps</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-500 rounded"></div>
+            <div className="w-4 h-4 bg-muted-foreground rounded"></div>
             <span>Optional Steps</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+            <div className="w-4 h-4 bg-category-5 rounded"></div>
             <span>Decision Points</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-1 bg-orange-500" style={{ borderTop: '2px dashed #f59e0b' }}></div>
+            <div className="w-8 h-1 bg-category-4" style={{ borderTop: '2px dashed hsl(var(--category-4))' }}></div>
             <span>Alternate Path</span>
           </div>
         </div>
@@ -383,7 +383,7 @@ export const DecisionTreeFlowchart: React.FC<DecisionTreeFlowchartProps> = ({
           onNodeClick={(event, node) => handleNodeClick(node.id)}
           nodeTypes={nodeTypes}
           fitView
-          style={{ backgroundColor: '#f8fafc' }}
+          style={{ backgroundColor: 'hsl(var(--muted))' }}
         >
           <Controls />
           <MiniMap />

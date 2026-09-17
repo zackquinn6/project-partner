@@ -99,13 +99,13 @@ export const AdminSecurityDashboard: React.FC = () => {
   const getSeverityColor = (accessType: string) => {
     switch (accessType) {
       case 'emergency_request':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive-soft/15 text-destructive-soft';
       case 'masked_view':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-info/15 text-info';
       case 'justified_access':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning-soft/15 text-warning-soft';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -124,9 +124,9 @@ export const AdminSecurityDashboard: React.FC = () => {
       </div>
 
       {/* Critical Security Alert */}
-      <Alert className="border-red-200 bg-red-50">
-        <AlertTriangle className="h-4 w-4 text-red-600" />
-        <AlertDescription className="text-red-800">
+      <Alert className="border-destructive-soft/40 bg-destructive-soft/10">
+        <AlertTriangle className="h-4 w-4 text-destructive-soft" />
+        <AlertDescription className="text-destructive-soft">
           <strong>Security Notice:</strong> This dashboard provides access to sensitive user data. 
           All actions are logged and monitored. Misuse of administrative privileges is strictly prohibited 
           and may result in account suspension and legal action.

@@ -26,7 +26,7 @@ import {
   PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
 } from '@/components/PlanningWizardSteps/planningToolWindowChrome';
 import { useActionPriorityTable } from '@/hooks/useActionPriorityTable';
-import { actionPriorityLabel } from '@/utils/actionPriorityTable';
+import { actionPriorityLabel, type ActionPriorityTable } from '@/utils/actionPriorityTable';
 import { useRunRiskDashboard, type DashboardRisk, type ScoreCriterion } from '@/hooks/useRunRiskDashboard';
 import {
   RISK_COMPONENT_CONSUMER_LABELS,
@@ -34,6 +34,7 @@ import {
   compareByRiskPriority,
   rollupRiskComponents,
   worstRpnByComponent,
+  type RiskComponentRollup,
 } from '@/utils/riskProfileRollup';
 import { RISK_DIMENSIONS, type ActionPriority, type RiskDimension } from '@/utils/riskDimensions';
 
@@ -43,11 +44,11 @@ const TOP_ITEM_LIMIT = 5;
 function lightClass(ap: ActionPriority | null): string {
   switch (ap) {
     case 'H':
-      return 'bg-red-500 ring-red-500/30';
+      return 'bg-destructive-soft ring-destructive-soft';
     case 'M':
-      return 'bg-amber-500 ring-amber-500/30';
+      return 'bg-warning-soft ring-warning-soft';
     case 'L':
-      return 'bg-emerald-500 ring-emerald-500/30';
+      return 'bg-success ring-success';
     default:
       return 'bg-muted-foreground/40 ring-muted-foreground/15';
   }
@@ -56,11 +57,11 @@ function lightClass(ap: ActionPriority | null): string {
 function sectorClass(ap: ActionPriority | null): string {
   switch (ap) {
     case 'H':
-      return 'border-red-300 dark:border-red-800';
+      return 'border-destructive-soft/40';
     case 'M':
-      return 'border-amber-300 dark:border-amber-700';
+      return 'border-warning-soft/40';
     case 'L':
-      return 'border-emerald-300 dark:border-emerald-800';
+      return 'border-success/40';
     default:
       return 'border-border';
   }
@@ -283,7 +284,7 @@ function RegisterActions({ risk }: { risk: DashboardRisk }) {
                   {action.action}
                 </p>
                 {action.benefit ? (
-                  <p className="mt-1 text-[11px] leading-snug text-emerald-700 dark:text-emerald-400">
+                  <p className="mt-1 text-[11px] leading-snug text-success">
                     Closing this gets you: {action.benefit}
                   </p>
                 ) : null}
@@ -303,12 +304,21 @@ function RegisterActions({ risk }: { risk: DashboardRisk }) {
 function RiskDrillDown({
   risk,
   scoreMeaning,
+  table,
+  tableError,
 }: {
   risk: DashboardRisk;
   scoreMeaning: ReturnType<typeof useRunRiskDashboard>['scoreMeaning'];
+  table: ActionPriorityTable | null;
+  tableError: string | null;
 }) {
-  const { table, error: tableError } = useActionPriorityTable();
   const label = risk.actionPriority && table ? actionPriorityLabel(table, risk.actionPriority) : null;
+  const scheduleImpact = rangeText(
+    risk.scheduleImpactLowDays,
+    risk.scheduleImpactHighDays,
+    formatDays
+  );
+  const budgetImpact = rangeText(risk.budgetImpactLow, risk.budgetImpactHigh, formatDollars);
 
   return (
     <div className="space-y-4">
@@ -391,20 +401,14 @@ function RiskDrillDown({
         )}
       </section>
 
-      {risk.scheduleImpactLowDays != null || risk.scheduleImpactHighDays != null ? (
+      {scheduleImpact || budgetImpact ? (
         <section className="space-y-1">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             If it happens
           </h3>
-          <p className="text-xs">
-            {rangeText(risk.scheduleImpactLowDays, risk.scheduleImpactHighDays, formatDays)} of delay
-          </p>
+          {scheduleImpact ? <p className="text-xs">{scheduleImpact} of delay</p> : null}
+          {budgetImpact ? <p className="text-xs">{budgetImpact} of extra spend</p> : null}
         </section>
-      ) : null}
-      {risk.budgetImpactLow != null || risk.budgetImpactHigh != null ? (
-        <p className="text-xs">
-          {rangeText(risk.budgetImpactLow, risk.budgetImpactHigh, formatDollars)} of extra spend
-        </p>
       ) : null}
     </div>
   );
@@ -412,31 +416,23 @@ function RiskDrillDown({
 
 function ComponentSector({
   dimension,
-  risks,
+  rows,
+  rollup,
+  score,
   highlighted,
+  table,
   onSelectRisk,
 }: {
   dimension: RiskDimension;
-  risks: DashboardRisk[];
+  /** Rows this component counts, already filtered. */
+  rows: DashboardRisk[];
+  rollup: RiskComponentRollup;
+  /** Worst line's RPN, or null when nothing in the component is scored. */
+  score: number | null;
   highlighted: boolean;
+  table: ActionPriorityTable | null;
   onSelectRisk: (risk: DashboardRisk) => void;
 }) {
-  const { table, error: tableError } = useActionPriorityTable();
-
-  const rows = useMemo(() => componentRisks(risks, dimension), [risks, dimension]);
-  const rollupRows = useMemo(
-    () =>
-      rows.map((risk) => ({
-        risk_dimension: risk.dimension,
-        action_priority: risk.actionPriority,
-        excluded_by_customization: risk.excludedByCustomization,
-        hidden_from_register: risk.hiddenFromRegister,
-        rpn: risk.rpn,
-      })),
-    [rows]
-  );
-  const rollup = useMemo(() => rollupRiskComponents(rollupRows)[dimension], [rollupRows, dimension]);
-  const score = useMemo(() => worstRpnByComponent(rollupRows)[dimension], [rollupRows, dimension]);
   const topItems = useMemo(
     () =>
       [...rows]
@@ -489,7 +485,6 @@ function ComponentSector({
             <span className="text-muted-foreground">{impact.detail}</span>
           </p>
         ) : null}
-        {tableError ? <p className="mt-1 text-[11px] text-destructive">{tableError}</p> : null}
       </header>
 
       <div className="min-h-0 flex-1 p-2">
@@ -560,11 +555,38 @@ export function RiskDashboardWindow({
   initialDimension,
 }: RiskDashboardWindowProps) {
   const { risks, scoreMeaning, loading, error } = useRunRiskDashboard(projectRunId, open);
+  const { table, error: tableError } = useActionPriorityTable();
   const [selectedRiskId, setSelectedRiskId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) setSelectedRiskId(null);
   }, [open]);
+
+  const sectors = useMemo(() => {
+    const rollups = rollupRiskComponents(
+      risks.map((risk) => ({
+        risk_dimension: risk.dimension,
+        action_priority: risk.actionPriority,
+        excluded_by_customization: risk.excludedByCustomization,
+        hidden_from_register: risk.hiddenFromRegister,
+      }))
+    );
+    const worst = worstRpnByComponent(
+      risks.map((risk) => ({
+        risk_dimension: risk.dimension,
+        action_priority: risk.actionPriority,
+        excluded_by_customization: risk.excludedByCustomization,
+        hidden_from_register: risk.hiddenFromRegister,
+        rpn: risk.rpn,
+      }))
+    );
+    return RISK_DIMENSIONS.map((dimension) => ({
+      dimension,
+      rows: componentRisks(risks, dimension),
+      rollup: rollups[dimension],
+      score: worst[dimension],
+    }));
+  }, [risks]);
 
   const selectedRisk = useMemo(
     () => (selectedRiskId ? (risks.find((r) => r.id === selectedRiskId) ?? null) : null),
@@ -605,17 +627,25 @@ export function RiskDashboardWindow({
             ) : error ? (
               <p className="text-sm text-destructive">{error}</p>
             ) : (
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {RISK_DIMENSIONS.map((dimension) => (
-                  <ComponentSector
-                    key={dimension}
-                    dimension={dimension}
-                    risks={risks}
-                    highlighted={initialDimension === dimension}
-                    onSelectRisk={(risk) => setSelectedRiskId(risk.id)}
-                  />
-                ))}
-              </div>
+              <>
+                {tableError ? (
+                  <p className="mb-3 text-sm text-destructive">{tableError}</p>
+                ) : null}
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {sectors.map((sector) => (
+                    <ComponentSector
+                      key={sector.dimension}
+                      dimension={sector.dimension}
+                      rows={sector.rows}
+                      rollup={sector.rollup}
+                      score={sector.score}
+                      highlighted={initialDimension === sector.dimension}
+                      table={table}
+                      onSelectRisk={(risk) => setSelectedRiskId(risk.id)}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </DialogContent>
@@ -629,7 +659,12 @@ export function RiskDashboardWindow({
                 <SheetTitle className="pr-6 text-base leading-snug">{selectedRisk.title}</SheetTitle>
               </SheetHeader>
               <div className="mt-4">
-                <RiskDrillDown risk={selectedRisk} scoreMeaning={scoreMeaning} />
+                <RiskDrillDown
+                  risk={selectedRisk}
+                  scoreMeaning={scoreMeaning}
+                  table={table}
+                  tableError={tableError}
+                />
               </div>
             </>
           ) : null}

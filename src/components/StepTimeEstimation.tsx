@@ -59,7 +59,7 @@ export const StepTimeEstimation: React.FC<StepTimeEstimationProps> = ({
           
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="variable-low" className="text-sm font-medium text-green-700">
+              <Label htmlFor="variable-low" className="text-sm font-medium text-success">
                 Best Case
               </Label>
               <Input
@@ -74,7 +74,7 @@ export const StepTimeEstimation: React.FC<StepTimeEstimationProps> = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="variable-medium" className="text-sm font-medium text-blue-700">
+              <Label htmlFor="variable-medium" className="text-sm font-medium text-info">
                 Typical
               </Label>
               <Input
@@ -89,7 +89,7 @@ export const StepTimeEstimation: React.FC<StepTimeEstimationProps> = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="variable-high" className="text-sm font-medium text-red-700">
+              <Label htmlFor="variable-high" className="text-sm font-medium text-destructive-soft">
                 Worst Case
               </Label>
               <Input

@@ -492,9 +492,9 @@ IMPORTANT FORMAT NOTES:
           </CardHeader>
           <CardContent>
             <div className="space-y-3 text-sm">
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <strong className="text-yellow-800">⚠️ Common CSV Issues:</strong>
-                <ul className="mt-2 text-yellow-700 space-y-1">
+              <div className="p-3 bg-warning-soft/10 border border-warning-soft/40 rounded-lg">
+                <strong className="text-warning-soft">⚠️ Common CSV Issues:</strong>
+                <ul className="mt-2 text-warning-soft space-y-1">
                   <li>• Each field must be in its own column - don't put multiple values separated by commas in one field</li>
                   <li>• Phase should be a single name like "Planning" or "Execution"</li>
                   <li>• Operation should be a single name like "Site Prep" or "Installation"</li>
@@ -553,8 +553,8 @@ IMPORTANT FORMAT NOTES:
                       <h3 className="font-bold text-lg text-primary mb-2">{phase.name}</h3>
                       
                       {phase.operations.map((operation, opIndex) => (
-                        <div key={operation.id} className="ml-4 mb-3 border-l-2 border-blue-200 pl-4">
-                          <h4 className="font-medium text-blue-600 mb-2">{operation.name}</h4>
+                        <div key={operation.id} className="ml-4 mb-3 border-l-2 border-info/40 pl-4">
+                          <h4 className="font-medium text-info mb-2">{operation.name}</h4>
                           
                           {operation.steps.map((step, stepIndex) => (
                             <div key={step.id} className="ml-4 mb-2 p-2 bg-muted rounded">

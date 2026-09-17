@@ -2124,12 +2124,12 @@ export default function EditWorkflowView({
                   Process Map
                 </Button>
               </div>
-              <Badge variant="outline" className="bg-blue-100 text-blue-800">
+              <Badge variant="outline" className="bg-info/15 text-info">
                 Process Map
               </Badge>
             </div>
             <div className="md:hidden">
-              <Badge variant="outline" className="bg-blue-100 text-blue-800">
+              <Badge variant="outline" className="bg-info/15 text-info">
                 Process Map
               </Badge>
             </div>
@@ -2455,12 +2455,12 @@ export default function EditWorkflowView({
                         </div>
                         <div className="p-2 bg-muted rounded-md text-sm">
                           {editingStep.flowType === 'alternate' && (
-                            <Badge variant="secondary" className="bg-orange-500/10 text-orange-700 border-orange-500/20">
+                            <Badge variant="secondary" className="bg-warning-soft/10 text-warning-soft border-warning-soft/40">
                               Alternate - Decision point in workflow
                             </Badge>
                           )}
                           {editingStep.flowType === 'if-necessary' && (
-                            <Badge variant="secondary" className="bg-gray-500/10 text-gray-700 border-gray-500/20">
+                            <Badge variant="secondary" className="bg-muted-foreground/10 text-muted-foreground border-border">
                               If Necessary - Conditional operation
                             </Badge>
                           )}

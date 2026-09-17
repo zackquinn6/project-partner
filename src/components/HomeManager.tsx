@@ -444,7 +444,7 @@ export const HomeManager: React.FC<HomeManagerProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="state">State <span className="text-red-500">*</span></Label>
+                <Label htmlFor="state">State <span className="text-destructive-soft">*</span></Label>
                 <Select value={formData.state} onValueChange={value => setFormData(prev => ({
               ...prev,
               state: value

@@ -87,17 +87,17 @@ export function AdminPhotoAggregation() {
                             Total: {stat.photo_count}
                           </Badge>
                           {stat.public_count > 0 && (
-                            <Badge className="text-xs bg-green-100 text-green-800">
+                            <Badge className="text-xs bg-success/15 text-success">
                               Public: {stat.public_count}
                             </Badge>
                           )}
                           {stat.project_partner_count > 0 && (
-                            <Badge className="text-xs bg-blue-100 text-blue-800">
+                            <Badge className="text-xs bg-info/15 text-info">
                               PP: {stat.project_partner_count}
                             </Badge>
                           )}
                           {stat.personal_count > 0 && (
-                            <Badge className="text-xs bg-gray-100 text-gray-600">
+                            <Badge className="text-xs bg-muted text-muted-foreground">
                               Personal: {stat.personal_count} (not accessible)
                             </Badge>
                           )}

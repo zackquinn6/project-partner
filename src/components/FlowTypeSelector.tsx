@@ -15,21 +15,21 @@ const flowTypes = [
     value: 'prime',
     label: 'Prime',
     icon: CheckCircle,
-    color: 'bg-green-600',
+    color: 'bg-success',
     description: 'Main workflow path - always executed'
   },
   {
     value: 'alternate',
     label: 'Alternate', 
     icon: GitBranch,
-    color: 'bg-orange-500',
+    color: 'bg-warning-soft',
     description: 'Alternative path based on decision point'
   },
   {
     value: 'if-necessary',
     label: 'If Necessary',
     icon: HelpCircle,
-    color: 'bg-gray-500', 
+    color: 'bg-muted-foreground', 
     description: 'Conditional path - only executed when specific conditions are met'
   }
 ];

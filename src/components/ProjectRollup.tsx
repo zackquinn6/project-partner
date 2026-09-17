@@ -75,24 +75,24 @@ const RollupSection: React.FC<RollupSectionProps> = ({
   const optionalItems = items.filter(item => !item.alternates || item.alternates.length === 0);
   const getCategoryColor = (category: string) => {
     const colors = {
-      'Hardware': 'bg-blue-100 text-blue-800',
-      'Software': 'bg-green-100 text-green-800',
-      'Consumable': 'bg-orange-100 text-orange-800',
-      'Consumables': 'bg-orange-100 text-orange-800',
-      'Components': 'bg-slate-200 text-slate-900',
-      'PPE': 'bg-cyan-100 text-cyan-900',
-      'Hand Tool': 'bg-purple-100 text-purple-800',
-      'Power Tool': 'bg-red-100 text-red-800',
-      'Other': 'bg-gray-100 text-gray-800'
+      'Hardware': 'bg-category-1/15 text-category-1',
+      'Software': 'bg-category-2/15 text-category-2',
+      'Consumable': 'bg-category-4/15 text-category-4',
+      'Consumables': 'bg-category-4/15 text-category-4',
+      'Components': 'bg-category-6/15 text-category-6',
+      'PPE': 'bg-category-6/15 text-category-6',
+      'Hand Tool': 'bg-category-3/15 text-category-3',
+      'Power Tool': 'bg-category-5/15 text-category-5',
+      'Other': 'bg-muted text-muted-foreground'
     };
-    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[category as keyof typeof colors] || 'bg-muted text-muted-foreground';
   };
   const renderItemCard = (item: ItemUsage) => <Card key={item.id} className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <CardTitle className="text-lg flex items-center gap-2">
-              {item.alternates && item.alternates.length > 0 ? <CheckCircle className="w-5 h-5 text-green-600" /> : <AlertTriangle className="w-5 h-5 text-yellow-600" />}
+              {item.alternates && item.alternates.length > 0 ? <CheckCircle className="w-5 h-5 text-success" /> : <AlertTriangle className="w-5 h-5 text-warning-soft" />}
               {item.name}
             </CardTitle>
             <CardDescription className="mt-1">{item.description}</CardDescription>
@@ -137,7 +137,7 @@ const RollupSection: React.FC<RollupSectionProps> = ({
   return <div className="space-y-6">
       {requiredItems.length > 0 && <div>
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
+            <CheckCircle className="w-5 h-5 text-success" />
             Required {type === 'material' ? 'Materials' : 'Tools'} ({requiredItems.length})
           </h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -148,7 +148,7 @@ const RollupSection: React.FC<RollupSectionProps> = ({
       {optionalItems.length > 0 && <div>
           <Separator className="my-6" />
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-yellow-600" />
+            <AlertTriangle className="w-5 h-5 text-warning-soft" />
             Optional {type === 'material' ? 'Materials' : 'Tools'} ({optionalItems.length})
           </h3>
           <Accordion type="single" collapsible className="space-y-2">

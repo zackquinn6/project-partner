@@ -498,7 +498,7 @@ export function AIProjectGenerator({
                     you'll need to create a new revision in Project Management before using the AI generator.
                   </p>
                   {projectTemplates.length === 0 && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                    <p className="text-xs text-warning-soft">
                       No draft revisions available. Create a new project or create a draft revision of an existing project.
                     </p>
                   )}
@@ -730,9 +730,9 @@ export function AIProjectGenerator({
                         <li>Example: "If necessary" operations like wall spackling (conditional step based on wall condition)</li>
                       </ul>
                     </div>
-                    <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <p className="font-semibold mb-1 text-blue-900 dark:text-blue-100">Key Differentiator:</p>
-                      <p className="text-blue-800 dark:text-blue-200">
+                    <div className="p-3 bg-info/10 rounded-lg border border-info/40">
+                      <p className="font-semibold mb-1 text-info">Key Differentiator:</p>
+                      <p className="text-info">
                         <strong>Same process, different tools = Alternate Tools</strong> | 
                         <strong> Different process/methodology = Alternate Operations</strong>
                       </p>

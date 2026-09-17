@@ -524,7 +524,7 @@ export function HomeTaskPeople({ userId, homeId, onPeopleChange }: HomeTaskPeopl
                        variant="outline"
                        size="sm"
                        onClick={handleSaveEdit}
-                       className="flex-1 h-6 text-[10px] bg-green-600 hover:bg-green-700 text-white border-green-600"
+                       className="flex-1 h-6 text-[10px] bg-success hover:bg-success text-success-foreground border-success/40"
                      >
                        <Check className="h-3 w-3 mr-1" />
                        Save

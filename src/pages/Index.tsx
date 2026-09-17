@@ -38,6 +38,8 @@ import { useAiFeatureSettings } from '@/hooks/useAiFeatureSettings';
 import { LiabilityAgreementDialog } from '@/components/LiabilityAgreementDialog';
 import { RiskFocusLauncherDialog } from '@/components/RiskFocusLauncher';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
+import { RiskDashboardWindow } from '@/components/RiskDashboardWindow';
+import { isRiskDimension, type RiskDimension } from '@/utils/riskDimensions';
 import type { ProjectRun } from '@/interfaces/ProjectRun';
 import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
@@ -125,6 +127,9 @@ const Index = () => {
   const [isRiskFocusLauncherOpen, setIsRiskFocusLauncherOpen] = useState(false);
   /** Risk Radar: full-screen register only (no workflow); set after Start from launcher. */
   const [riskFocusRegisterRunId, setRiskFocusRegisterRunId] = useState<string | null>(null);
+  /** Risk Dashboard: the run whose component lights were clicked, and which component. */
+  const [riskDashboardRunId, setRiskDashboardRunId] = useState<string | null>(null);
+  const [riskDashboardDimension, setRiskDashboardDimension] = useState<RiskDimension | null>(null);
   const [portfolioRemindersOpen, setPortfolioRemindersOpen] = useState(false);
 
   // CRITICAL: All hooks must be at the top - before any conditional logic
@@ -406,6 +411,16 @@ const Index = () => {
     };
     window.addEventListener('open-risk-focus-register-for-run', handleOpenRiskFocusRegisterForRun);
 
+    const handleOpenRiskDashboard = (event: Event) => {
+      const detail = (event as CustomEvent).detail as
+        | { projectRunId?: string; dimension?: unknown }
+        | undefined;
+      if (!detail?.projectRunId) return;
+      setRiskDashboardDimension(isRiskDimension(detail.dimension) ? detail.dimension : null);
+      setRiskDashboardRunId(detail.projectRunId);
+    };
+    window.addEventListener('open-risk-dashboard', handleOpenRiskDashboard);
+
     return () => {
       window.removeEventListener('show-home-manager', handleHomeManagerEvent);
       window.removeEventListener('show-home-maintenance', handleHomeMaintenanceEvent);
@@ -421,6 +436,7 @@ const Index = () => {
       window.removeEventListener('show-home-task-list', handleHomeTaskListEvent);
       window.removeEventListener('open-risk-focus-launcher', handleOpenRiskFocusLauncher);
       window.removeEventListener('open-risk-focus-register-for-run', handleOpenRiskFocusRegisterForRun);
+      window.removeEventListener('open-risk-dashboard', handleOpenRiskDashboard);
     };
   }, [isMobile, aiRepairEnabled]);
 
@@ -907,6 +923,20 @@ const Index = () => {
             projectRunId={riskFocusRegisterRunId}
             mode="run"
             variant="risk-focus"
+          />
+        ) : null}
+
+        {user && riskDashboardRunId ? (
+          <RiskDashboardWindow
+            open
+            onOpenChange={(open) => {
+              if (!open) {
+                setRiskDashboardRunId(null);
+                setRiskDashboardDimension(null);
+              }
+            }}
+            projectRunId={riskDashboardRunId}
+            initialDimension={riskDashboardDimension}
           />
         ) : null}
 

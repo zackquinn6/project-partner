@@ -213,7 +213,7 @@ export const AdminFeatureRequestManager: React.FC<AdminFeatureRequestManagerProp
                             {request.description}
                           </p>
                           {request.admin_response && (
-                            <div className="mt-2 flex items-center gap-1 text-xs text-blue-600">
+                            <div className="mt-2 flex items-center gap-1 text-xs text-info">
                               <MessageSquare className="w-3 h-3" />
                               Response provided
                             </div>

@@ -39,12 +39,12 @@ export const PLANNING_TOOL_WINDOW_SECONDARY_STRIP_CLASSNAME =
  * Keep in sync with PlanningToolWindowHeaderActions.
  */
 export const PLANNING_TOOL_PRIMARY_CTA_CLASSNAME =
-  'bg-green-800 text-white shadow-sm hover:bg-green-900 focus-visible:ring-green-800';
+  'bg-success text-success-foreground shadow-sm hover:bg-success focus-visible:ring-success';
 
 /** Soft success surface for completed states inside planning tools. */
 export const PLANNING_TOOL_SUCCESS_SURFACE_CLASSNAME =
-  'border-green-500/30 bg-green-500/5 text-green-800 dark:text-green-300';
+  'border-success/40 bg-success/5 text-success';
 
 /** Soft warning surface for incomplete / attention states. */
 export const PLANNING_TOOL_WARNING_SURFACE_CLASSNAME =
-  'border-amber-500/40 bg-amber-500/5 text-amber-900 dark:text-amber-200';
+  'border-warning-soft/40 bg-warning-soft/5 text-warning-soft';

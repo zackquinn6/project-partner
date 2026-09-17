@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, HelpCircle, BookOpen, MessageCircle, Headphones, FileText, UserPlus, Mail, UserCog } from "lucide-react";
+import { Home, FolderOpen, ChevronDown, Settings, LogOut, User, Users, TrendingUp, Shield, HelpCircle, BookOpen, MessageCircle, Headphones, FileText, UserPlus, Mail, UserCog, Palette } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useProject } from '@/contexts/ProjectContext';
 import { calculateProjectProgress } from '@/utils/progressCalculation';
@@ -14,6 +14,7 @@ import { FeedbackDialog } from './FeedbackDialog';
 import { ContactUsWindow } from './ContactUsWindow';
 import { UpgradePrompt } from './UpgradePrompt';
 import { Account } from './Account';
+import { AppearanceSettingsDialog } from './AppearanceSettingsDialog';
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from 'sonner';
@@ -43,6 +44,7 @@ export default function Navigation({
   onProjectSelected
 }: NavigationProps) {
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
   const [isDocumentationOpen, setIsDocumentationOpen] = useState(false);
   const [isPoliciesOpen, setIsPoliciesOpen] = useState(false);
@@ -349,7 +351,7 @@ export default function Navigation({
               <TooltipProvider delayDuration={150}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="inline-flex cursor-help items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-r from-amber-500/90 to-orange-500/90 px-3 py-1.5 text-xs font-semibold text-white shadow-md ring-1 ring-white/20 pointer-events-auto">
+                    <span className="inline-flex cursor-help items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-r from-warning-soft to-warning-soft px-3 py-1.5 text-xs font-semibold text-white shadow-md ring-1 ring-white/20 pointer-events-auto">
                       Beta Release
                     </span>
                   </TooltipTrigger>
@@ -468,7 +470,7 @@ export default function Navigation({
                   <Settings className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="z-[9999] !bg-white dark:!bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl min-w-[200px] !opacity-100" sideOffset={5}>
+              <DropdownMenuContent align="end" className="z-[9999] bg-popover text-popover-foreground border border-border shadow-2xl min-w-[200px] !opacity-100" sideOffset={5}>
                 <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}>
                   <User className="h-4 w-4 mr-2" />
                   Profile
@@ -476,6 +478,10 @@ export default function Navigation({
                 <DropdownMenuItem onClick={() => setIsAccountOpen(true)}>
                   <UserCog className="h-4 w-4 mr-2" />
                   Account
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsAppearanceOpen(true)}>
+                  <Palette className="h-4 w-4 mr-2" />
+                  Appearance
                 </DropdownMenuItem>
                 {showAdminPanel && (
                   <DropdownMenuItem onClick={onAdminAccess}>
@@ -497,7 +503,7 @@ export default function Navigation({
                   <HelpCircle className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="z-[9999] !bg-white dark:!bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl min-w-[200px] !opacity-100 overflow-visible" sideOffset={5}>
+              <DropdownMenuContent align="end" className="z-[9999] bg-popover text-popover-foreground border border-border shadow-2xl min-w-[200px] !opacity-100 overflow-visible" sideOffset={5}>
                 <DropdownMenuItem onClick={() => setShowFeedback(true)}>
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Send Feedback
@@ -537,6 +543,8 @@ export default function Navigation({
       <ContactUsWindow open={isContactOpen} onOpenChange={setIsContactOpen} />
       
       <Account open={isAccountOpen} onOpenChange={setIsAccountOpen} />
+
+      <AppearanceSettingsDialog open={isAppearanceOpen} onOpenChange={setIsAppearanceOpen} />
       
        <FeatureRoadmapWindow open={isRoadmapOpen} onOpenChange={setIsRoadmapOpen} />
        

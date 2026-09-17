@@ -14,14 +14,14 @@ const stepTypes = [
     value: 'prime',
     label: 'Prime',
     icon: CheckCircle,
-    color: 'bg-green-500',
+    color: 'bg-success',
     description: 'Fixed time estimates that do not scale with project size'
   },
   {
     value: 'scaled',
     label: 'Scaled', 
     icon: RotateCcw,
-    color: 'bg-blue-500',
+    color: 'bg-info',
     description: 'Time estimates scale according to the project scaling unit'
   }
 ];

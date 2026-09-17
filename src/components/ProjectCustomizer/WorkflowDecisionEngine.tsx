@@ -167,15 +167,15 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
                   <div
                     key={groupKey}
                     className={`rounded-lg border ${isMobile ? 'p-3' : 'p-4'} ${
-                      isAnswered ? 'border-green-300 bg-green-50/40' : ''
+                      isAnswered ? 'border-success/40 bg-success/10' : ''
                     }`}
                   >
                     <div className={`mb-3 flex items-start gap-3 ${isMobile ? 'flex-col sm:flex-row' : ''}`}>
                       <div className={`${isMobile ? 'self-start' : 'mt-0.5'}`}>
                         {isAnswered ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-600" aria-hidden />
+                          <CheckCircle2 className="h-5 w-5 text-success" aria-hidden />
                         ) : (
-                          <AlertCircle className="h-5 w-5 text-orange-500" aria-hidden />
+                          <AlertCircle className="h-5 w-5 text-warning-soft" aria-hidden />
                         )}
                       </div>
                       <div className="flex-1">
@@ -196,7 +196,7 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
                             ) : null}
                           </span>
                           {isAnswered ? (
-                            <Badge variant="secondary" className="bg-green-100 text-xs text-green-800">
+                            <Badge variant="secondary" className="bg-success/15 text-xs text-success">
                               Done
                             </Badge>
                           ) : (
@@ -252,7 +252,7 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
                   <div key={operation.id} className={`border rounded-lg ${isMobile ? 'p-3' : 'p-4'}`}>
                     <div className={`flex items-start gap-3 ${isMobile ? 'flex-col sm:flex-row' : ''}`}>
                       <div className={`${isMobile ? 'self-start' : 'mt-0.5'}`}>
-                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        <CheckCircle2 className="w-5 h-5 text-success" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-start space-x-3">
@@ -299,7 +299,7 @@ export const WorkflowDecisionEngine: React.FC<WorkflowDecisionEngineProps> = ({
           {(!phasesWithDecisions || phasesWithDecisions.length === 0) && (
             <Card>
               <CardContent className="py-8 text-center">
-                <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-500" />
+                <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-success" />
                 <h3 className="mb-2 text-lg font-semibold">No Decisions Required</h3>
                 <p className="text-muted-foreground">
                   This project has a straightforward workflow with no alternate paths or optional work.

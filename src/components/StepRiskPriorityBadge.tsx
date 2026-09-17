@@ -10,9 +10,9 @@ import { RISK_COMPONENT_CONSUMER_LABELS } from '@/utils/riskProfileRollup';
 import type { ActionPriority } from '@/utils/riskDimensions';
 
 const BADGE_CLASS: Record<ActionPriority, string> = {
-  H: 'border-red-300 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200',
-  M: 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200',
-  L: 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200',
+  H: 'border-destructive-soft/40 bg-destructive-soft/10 text-destructive-soft',
+  M: 'border-warning-soft/40 bg-warning-soft/10 text-warning-soft',
+  L: 'border-success/40 bg-success/10 text-success',
 };
 
 /**
@@ -72,7 +72,7 @@ export const StepRiskPriorityBadge: React.FC<{
                     changes, and a risk that is severe but already engineered out.
                   */}
                   {item.keyCharacteristics.length > 0 ? (
-                    <div className="mt-1 text-amber-800 dark:text-amber-200">
+                    <div className="mt-1 text-warning-soft">
                       Watch: {item.keyCharacteristics.map((kc) => kc.itemLabel).join(', ')}
                     </div>
                   ) : null}
@@ -103,14 +103,14 @@ export const StepMustGetRightCallout: React.FC<{ summary: StepRiskSummary | unde
   const keyCharacteristics = highItems.flatMap((item) => item.keyCharacteristics);
 
   return (
-    <div className="mt-3 rounded-md border border-red-300 bg-red-50/70 p-3 dark:border-red-800 dark:bg-red-950/30">
-      <div className="flex items-center gap-1.5 text-sm font-semibold text-red-900 dark:text-red-200">
+    <div className="mt-3 rounded-md border border-destructive-soft/40 bg-destructive-soft/10 p-3">
+      <div className="flex items-center gap-1.5 text-sm font-semibold text-destructive-soft">
         <Info className="h-4 w-4 shrink-0" />
         Get this right the first time
       </div>
       <ul className="mt-2 space-y-1.5">
         {highItems.map((item) => (
-          <li key={item.id} className="text-xs text-red-900 dark:text-red-100">
+          <li key={item.id} className="text-xs text-destructive-soft">
             <span className="font-medium">
               {RISK_COMPONENT_CONSUMER_LABELS[item.dimension]}:
             </span>{' '}
@@ -119,13 +119,13 @@ export const StepMustGetRightCallout: React.FC<{ summary: StepRiskSummary | unde
         ))}
       </ul>
       {keyCharacteristics.length > 0 ? (
-        <div className="mt-2.5 border-t border-red-300/70 pt-2 dark:border-red-800/70">
-          <div className="text-xs font-semibold text-red-900 dark:text-red-200">
+        <div className="mt-2.5 border-t border-destructive-soft/40 pt-2">
+          <div className="text-xs font-semibold text-destructive-soft">
             Where your attention changes the outcome
           </div>
           <ul className="mt-1 space-y-1">
             {keyCharacteristics.map((kc) => (
-              <li key={kc.id} className="text-xs text-red-900 dark:text-red-100">
+              <li key={kc.id} className="text-xs text-destructive-soft">
                 <span className="font-medium">{kc.itemLabel}:</span> {kc.attentionReason}
               </li>
             ))}

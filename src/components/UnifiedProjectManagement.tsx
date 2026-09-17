@@ -1495,22 +1495,22 @@ export function UnifiedProjectManagement({
     const currentIndicator = isCurrentVersion ? " (Current)" : "";
     switch (status) {
       case 'published':
-        return <Badge className={`${baseClasses} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200`}>
+        return <Badge className={`${baseClasses} bg-success/15 text-success`}>
           <CheckCircle className="w-3 h-3 mr-1" />
           Published{currentIndicator}
         </Badge>;
       case 'beta':
-        return <Badge className={`${baseClasses} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200`}>
+        return <Badge className={`${baseClasses} bg-info/15 text-info`}>
           <Eye className="w-3 h-3 mr-1" />
           Beta{currentIndicator}
         </Badge>;
       case 'draft':
-        return <Badge className={`${baseClasses} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200`}>
+        return <Badge className={`${baseClasses} bg-warning-soft/15 text-warning-soft`}>
           <Clock className="w-3 h-3 mr-1" />
           Draft{currentIndicator}
         </Badge>;
       case 'archived':
-        return <Badge className={`${baseClasses} bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200`}>
+        return <Badge className={`${baseClasses} bg-muted text-foreground`}>
           <Archive className="w-3 h-3 mr-1" />
           Archived
         </Badge>;
@@ -2244,9 +2244,9 @@ export function UnifiedProjectManagement({
                                        <div className="space-y-1">
                                          <Label className="text-xs">Total Time per {scalingUnitDisplay} + Fixed Time</Label>
                                          <div className="grid grid-cols-3 gap-2 text-xs">
-                                           <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
-                                             <div className="text-green-700 dark:text-green-300 font-medium">Low</div>
-                                             <div className="text-green-900 dark:text-green-100 font-semibold text-[10px] leading-tight">
+                                           <div className="p-2 bg-success/10 rounded border border-success/40">
+                                             <div className="text-success font-medium">Low</div>
+                                             <div className="text-success font-semibold text-[10px] leading-tight">
                                                {timeEstimate.scaledTimePerUnit.low > 0 && (
                                                  <div>{formatTimePerUnit(timeEstimate.scaledTimePerUnit.low)} per {scalingUnitDisplay}</div>
                                                )}
@@ -2258,9 +2258,9 @@ export function UnifiedProjectManagement({
                                                {timeEstimate.scaledTimePerUnit.low === 0 && timeEstimate.fixedTime.low === 0 && '0'}
                                              </div>
                                            </div>
-                                           <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
-                                             <div className="text-blue-700 dark:text-blue-300 font-medium">Medium</div>
-                                             <div className="text-blue-900 dark:text-blue-100 font-semibold text-[10px] leading-tight">
+                                           <div className="p-2 bg-info/10 rounded border border-info/40">
+                                             <div className="text-info font-medium">Medium</div>
+                                             <div className="text-info font-semibold text-[10px] leading-tight">
                                                {timeEstimate.scaledTimePerUnit.medium > 0 && (
                                                  <div>{formatTimePerUnit(timeEstimate.scaledTimePerUnit.medium)} per {scalingUnitDisplay}</div>
                                                )}
@@ -2272,9 +2272,9 @@ export function UnifiedProjectManagement({
                                                {timeEstimate.scaledTimePerUnit.medium === 0 && timeEstimate.fixedTime.medium === 0 && '0'}
                                              </div>
                                            </div>
-                                           <div className="p-2 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-800">
-                                             <div className="text-red-700 dark:text-red-300 font-medium">High</div>
-                                             <div className="text-red-900 dark:text-red-100 font-semibold text-[10px] leading-tight">
+                                           <div className="p-2 bg-destructive-soft/10 rounded border border-destructive-soft/40">
+                                             <div className="text-destructive-soft font-medium">High</div>
+                                             <div className="text-destructive-soft font-semibold text-[10px] leading-tight">
                                                {timeEstimate.scaledTimePerUnit.high > 0 && (
                                                  <div>{formatTimePerUnit(timeEstimate.scaledTimePerUnit.high)} per {scalingUnitDisplay}</div>
                                                )}
@@ -2295,21 +2295,21 @@ export function UnifiedProjectManagement({
                                        <div className="space-y-1">
                                          <Label className="text-xs">Total Time for Typical Project Size ({typicalSize} {scalingUnitDisplay})</Label>
                                          <div className="grid grid-cols-3 gap-2 text-xs">
-                                           <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
-                                             <div className="text-green-700 dark:text-green-300 font-medium">Low</div>
-                                             <div className="text-green-900 dark:text-green-100 font-semibold">
+                                           <div className="p-2 bg-success/10 rounded border border-success/40">
+                                             <div className="text-success font-medium">Low</div>
+                                             <div className="text-success font-semibold">
                                                {formatTime(totalTimeForTypicalSize.low)}
                                              </div>
                                            </div>
-                                           <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
-                                             <div className="text-blue-700 dark:text-blue-300 font-medium">Medium</div>
-                                             <div className="text-blue-900 dark:text-blue-100 font-semibold">
+                                           <div className="p-2 bg-info/10 rounded border border-info/40">
+                                             <div className="text-info font-medium">Medium</div>
+                                             <div className="text-info font-semibold">
                                                {formatTime(totalTimeForTypicalSize.medium)}
                                              </div>
                                            </div>
-                                           <div className="p-2 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-800">
-                                             <div className="text-red-700 dark:text-red-300 font-medium">High</div>
-                                             <div className="text-red-900 dark:text-red-100 font-semibold">
+                                           <div className="p-2 bg-destructive-soft/10 rounded border border-destructive-soft/40">
+                                             <div className="text-destructive-soft font-medium">High</div>
+                                             <div className="text-destructive-soft font-semibold">
                                                {formatTime(totalTimeForTypicalSize.high)}
                                              </div>
                                            </div>
@@ -2342,17 +2342,17 @@ export function UnifiedProjectManagement({
                                                <div className="space-y-1 mb-2">
                                                  <Label className="text-xs">Fixed Time (hours)</Label>
                                                  <div className="grid grid-cols-3 gap-2 text-xs">
-                                                   <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
-                                                     <div className="text-green-700 dark:text-green-300 font-medium">Low</div>
-                                                     <div className="text-green-900 dark:text-green-100 font-semibold">{phase.fixedTime.low.toFixed(1)}</div>
+                                                   <div className="p-2 bg-success/10 rounded border border-success/40">
+                                                     <div className="text-success font-medium">Low</div>
+                                                     <div className="text-success font-semibold">{phase.fixedTime.low.toFixed(1)}</div>
                                                    </div>
-                                                   <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
-                                                     <div className="text-blue-700 dark:text-blue-300 font-medium">Medium</div>
-                                                     <div className="text-blue-900 dark:text-blue-100 font-semibold">{phase.fixedTime.medium.toFixed(1)}</div>
+                                                   <div className="p-2 bg-info/10 rounded border border-info/40">
+                                                     <div className="text-info font-medium">Medium</div>
+                                                     <div className="text-info font-semibold">{phase.fixedTime.medium.toFixed(1)}</div>
                                                    </div>
-                                                   <div className="p-2 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-800">
-                                                     <div className="text-red-700 dark:text-red-300 font-medium">High</div>
-                                                     <div className="text-red-900 dark:text-red-100 font-semibold">{phase.fixedTime.high.toFixed(1)}</div>
+                                                   <div className="p-2 bg-destructive-soft/10 rounded border border-destructive-soft/40">
+                                                     <div className="text-destructive-soft font-medium">High</div>
+                                                     <div className="text-destructive-soft font-semibold">{phase.fixedTime.high.toFixed(1)}</div>
                                                    </div>
                                                  </div>
                                                </div>
@@ -2363,17 +2363,17 @@ export function UnifiedProjectManagement({
                                                <div className="space-y-1">
                                                  <Label className="text-xs">Time per {phaseScalingUnit} (hours)</Label>
                                                  <div className="grid grid-cols-3 gap-2 text-xs">
-                                                   <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
-                                                     <div className="text-green-700 dark:text-green-300 font-medium">Low</div>
-                                                     <div className="text-green-900 dark:text-green-100 font-semibold">{phase.scaledTimePerUnit.low.toFixed(2)}</div>
+                                                   <div className="p-2 bg-success/10 rounded border border-success/40">
+                                                     <div className="text-success font-medium">Low</div>
+                                                     <div className="text-success font-semibold">{phase.scaledTimePerUnit.low.toFixed(2)}</div>
                                                    </div>
-                                                   <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
-                                                     <div className="text-blue-700 dark:text-blue-300 font-medium">Medium</div>
-                                                     <div className="text-blue-900 dark:text-blue-100 font-semibold">{phase.scaledTimePerUnit.medium.toFixed(2)}</div>
+                                                   <div className="p-2 bg-info/10 rounded border border-info/40">
+                                                     <div className="text-info font-medium">Medium</div>
+                                                     <div className="text-info font-semibold">{phase.scaledTimePerUnit.medium.toFixed(2)}</div>
                                                    </div>
-                                                   <div className="p-2 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-800">
-                                                     <div className="text-red-700 dark:text-red-300 font-medium">High</div>
-                                                     <div className="text-red-900 dark:text-red-100 font-semibold">{phase.scaledTimePerUnit.high.toFixed(2)}</div>
+                                                   <div className="p-2 bg-destructive-soft/10 rounded border border-destructive-soft/40">
+                                                     <div className="text-destructive-soft font-medium">High</div>
+                                                     <div className="text-destructive-soft font-semibold">{phase.scaledTimePerUnit.high.toFixed(2)}</div>
                                                    </div>
                                                  </div>
                                                </div>
@@ -2686,7 +2686,7 @@ export function UnifiedProjectManagement({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-orange-500" />
+              <AlertTriangle className="w-5 h-5 text-warning-soft" />
               Confirm {newStatus === 'beta-testing' ? 'Beta Release' : 'Publication'}
             </DialogTitle>
           </DialogHeader>
@@ -2712,19 +2712,19 @@ export function UnifiedProjectManagement({
               const validation = validateProjectForProduction(projectForValidation);
               if (!validation.isValid) {
                 return (
-                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                  <div className="p-3 bg-destructive-soft/10 border border-destructive-soft/40 rounded-md">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                      <AlertTriangle className="w-5 h-5 text-destructive-soft flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-red-900 dark:text-red-100 mb-2">
+                        <p className="text-sm font-medium text-destructive-soft mb-2">
                           Missing Required Fields ({validation.missingFields.length})
                         </p>
-                        <ul className="text-xs text-red-800 dark:text-red-200 space-y-1 list-disc list-inside">
+                        <ul className="text-xs text-destructive-soft space-y-1 list-disc list-inside">
                           {validation.missingFields.map(field => (
                             <li key={field}>{field}</li>
                           ))}
                         </ul>
-                        <p className="text-xs text-red-700 dark:text-red-300 mt-2">
+                        <p className="text-xs text-destructive-soft mt-2">
                           Please fill in all required fields in the Project Information section before publishing.
                         </p>
                       </div>
@@ -2774,7 +2774,7 @@ export function UnifiedProjectManagement({
                 }
               }
               return !validateProjectForProduction(projectForValidation).isValid;
-            })())} className={newStatus === 'published' ? 'bg-green-600 hover:bg-green-700' : ''}>
+            })())} className={newStatus === 'published' ? 'bg-success hover:bg-success' : ''}>
                 {newStatus === 'beta-testing' ? 'Release to Beta' : 'Publish'}
               </Button>
             </div>

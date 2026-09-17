@@ -137,25 +137,25 @@ export default function Home({
   // Semantic color system for app icons
   const appColors = {
     // Projects & Planning (Blue shades)
-    rapidPlan: 'bg-blue-500',
-    projectCatalog: 'bg-blue-700',
+    rapidPlan: 'bg-info',
+    projectCatalog: 'bg-info',
     // Home & Maintenance (Green shades)
-    homeMaintenance: 'bg-green-600',
-    homeTaskList: 'bg-green-500',
-    myHomes: 'bg-green-700',
-    riskFocus: 'bg-teal-600',
+    homeMaintenance: 'bg-success',
+    homeTaskList: 'bg-success',
+    myHomes: 'bg-success',
+    riskFocus: 'bg-success',
     // Tools & Resources (Orange/Amber shades)
-    toolLibrary: 'bg-orange-600',
-    toolAccess: 'bg-orange-500',
+    toolLibrary: 'bg-warning-soft',
+    toolAccess: 'bg-warning-soft',
     // Help & Learning (Purple shades)
-    expertHelp: 'bg-purple-600',
-    community: 'bg-purple-500',
+    expertHelp: 'bg-category-3',
+    community: 'bg-category-3',
     // Profile & Settings (Gray shades)
-    myProfile: 'bg-slate-600',
+    myProfile: 'bg-muted-foreground',
     // Beta/Experimental (Indigo/Pink)
-    contractorFinder: 'bg-indigo-600',
-    aiRepair: 'bg-pink-600',
-    codePermits: 'bg-indigo-500'
+    contractorFinder: 'bg-category-1',
+    aiRepair: 'bg-category-5',
+    codePermits: 'bg-category-1'
   };
   useEffect(() => {
     const handleOpenQuiz = () => {
@@ -204,14 +204,14 @@ export default function Home({
                       <button
                         type="button"
                         onClick={() => window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'))}
-                        className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-slate-900/80 via-slate-900 to-slate-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
+                        className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-muted via-muted to-muted px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning-soft"
                       >
-                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-amber-500/30 to-transparent pointer-events-none" />
+                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-warning-soft to-transparent pointer-events-none" />
                         <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
-                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-amber-300/80 md:whitespace-nowrap">
+                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-warning-soft/80 md:whitespace-nowrap">
                             Active projects
                           </span>
-                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-amber-50">
+                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-warning-soft-foreground">
                             {stats.activeProjects ?? 0}
                           </span>
                         </div>
@@ -229,14 +229,14 @@ export default function Home({
                       <button
                         type="button"
                         onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}
-                        className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-emerald-900/80 via-emerald-900 to-emerald-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+                        className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-success via-success to-success px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success"
                       >
-                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-emerald-500/30 to-transparent pointer-events-none" />
+                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-success to-transparent pointer-events-none" />
                         <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
-                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-emerald-200/80 md:whitespace-nowrap">
+                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-success-foreground md:whitespace-nowrap">
                             Open tasks
                           </span>
-                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-emerald-50">
+                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-success-foreground">
                             {stats.openTasks ?? 0}
                           </span>
                         </div>
@@ -254,14 +254,14 @@ export default function Home({
                       <button
                         type="button"
                         onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}
-                        className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-sky-900/80 via-sky-900 to-sky-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60"
+                        className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-info via-info to-info px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info"
                       >
-                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-sky-500/30 to-transparent pointer-events-none" />
+                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-info to-transparent pointer-events-none" />
                         <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
-                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-sky-200/80 md:whitespace-nowrap">
+                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-info-foreground md:whitespace-nowrap">
                             Maintenance due soon
                           </span>
-                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-sky-50">
+                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-info-foreground">
                             {stats.maintenanceDueSoon ?? 0}
                           </span>
                         </div>
@@ -279,14 +279,14 @@ export default function Home({
                       <button
                         type="button"
                         onClick={() => window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'))}
-                        className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-violet-900/80 via-violet-900 to-violet-900/90 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60"
+                        className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-category-3 via-category-3 to-category-3 px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-category-3"
                       >
-                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-violet-500/30 to-transparent pointer-events-none" />
+                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-category-3 to-transparent pointer-events-none" />
                         <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
-                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-violet-200/80 md:whitespace-nowrap">
+                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-category-3-foreground md:whitespace-nowrap">
                             Projects completed
                           </span>
-                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-violet-50">
+                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-category-3-foreground">
                             {stats.completedProjects ?? 0}
                           </span>
                         </div>
@@ -325,7 +325,7 @@ export default function Home({
                     <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.homeMaintenance} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                       <HomeIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                     </div>
-                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Home Maintenance</span>
+                    <span className="text-xs font-medium text-foreground text-center leading-tight px-1">Home Maintenance</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs text-center">
@@ -338,7 +338,7 @@ export default function Home({
                     <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.homeTaskList} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                       <ListChecks className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                     </div>
-                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Project & Task Manager</span>
+                    <span className="text-xs font-medium text-foreground text-center leading-tight px-1">Project & Task Manager</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs text-center">
@@ -351,7 +351,7 @@ export default function Home({
                     <div className={`w-14 h-14 sm:w-16 sm:h-16 ${appColors.riskFocus} rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform shadow-lg`}>
                       <Crosshair className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                     </div>
-                    <span className="text-xs font-medium text-black text-center leading-tight px-1">Risk Radar</span>
+                    <span className="text-xs font-medium text-foreground text-center leading-tight px-1">Risk Radar</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs text-center">

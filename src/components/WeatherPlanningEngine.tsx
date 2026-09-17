@@ -355,17 +355,17 @@ export const WeatherPlanningEngine: React.FC<WeatherPlanningEngineProps> = ({
           {weatherData && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="text-center">
-                <Thermometer className="h-6 w-6 mx-auto mb-1 text-orange-500" />
+                <Thermometer className="h-6 w-6 mx-auto mb-1 text-warning-soft" />
                 <div className="text-2xl font-bold">{weatherData.current.temperature_2m.toFixed(1)}°C</div>
                 <div className="text-sm text-muted-foreground">Temperature</div>
               </div>
               <div className="text-center">
-                <CloudRain className="h-6 w-6 mx-auto mb-1 text-blue-500" />
+                <CloudRain className="h-6 w-6 mx-auto mb-1 text-info" />
                 <div className="text-2xl font-bold">{weatherData.current.precipitation.toFixed(1)}mm</div>
                 <div className="text-sm text-muted-foreground">Precipitation</div>
               </div>
               <div className="text-center">
-                <Sun className="h-6 w-6 mx-auto mb-1 text-yellow-500" />
+                <Sun className="h-6 w-6 mx-auto mb-1 text-warning-soft" />
                 <div className="text-lg font-semibold">{getCurrentSeason().charAt(0).toUpperCase() + getCurrentSeason().slice(1)}</div>
                 <div className="text-sm text-muted-foreground">Season</div>
               </div>

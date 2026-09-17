@@ -236,10 +236,10 @@ function formatActionStatusLabel(status: string): string {
 
 function readOnlyActionStatusBadgeClassName(status: string): string {
   if (status === 'complete') {
-    return 'border-emerald-600/35 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100';
+    return 'border-success/40 bg-success/10 text-success';
   }
   if (status === 'in_progress') {
-    return 'border-blue-600/35 bg-blue-50 text-blue-900 dark:bg-blue-950/40 dark:text-blue-100';
+    return 'border-info/40 bg-info/10 text-info';
   }
   if (status === 'blocked') {
     return 'border-destructive/40 bg-destructive/10 text-destructive';
@@ -390,7 +390,7 @@ function CauseClassificationControls({
             </SelectContent>
           </Select>
         ) : (
-          <div className="text-xs text-amber-800">
+          <div className="text-xs text-warning-soft">
             {`This step has no ${RISK_ITEM_KIND_LABELS[itemKind].toLowerCase()} to point at.`}
           </div>
         )
@@ -445,60 +445,60 @@ const PFMEA_SCROLL_HEADER_STICKY: Record<
   { backgroundColor: string; className: string }
 > = {
   requirements: {
-    backgroundColor: '#fde047',
-    className: 'border-b border-yellow-500/70 shadow-sm',
+    backgroundColor: 'hsl(var(--warning-soft))',
+    className: 'border-b border-warning-soft-foreground/25 shadow-sm',
   },
   failure_mode: {
-    backgroundColor: '#fde047',
-    className: 'border-b border-yellow-500/70 shadow-sm',
+    backgroundColor: 'hsl(var(--warning-soft))',
+    className: 'border-b border-warning-soft-foreground/25 shadow-sm',
   },
   effects: {
-    backgroundColor: '#722f37',
-    className: 'border-b border-[#5c262e] shadow-sm',
+    backgroundColor: 'hsl(var(--destructive-soft))',
+    className: 'border-b border-destructive-soft-foreground/25 shadow-sm',
   },
   s: {
-    backgroundColor: '#722f37',
-    className: 'border-b border-[#5c262e] shadow-sm',
+    backgroundColor: 'hsl(var(--destructive-soft))',
+    className: 'border-b border-destructive-soft-foreground/25 shadow-sm',
   },
   process_variables: {
-    backgroundColor: '#166534',
-    className: 'border-b border-green-950/70 shadow-sm',
+    backgroundColor: 'hsl(var(--success))',
+    className: 'border-b border-success-foreground/25 shadow-sm',
   },
   causes: {
-    backgroundColor: '#166534',
-    className: 'border-b border-green-950/70 shadow-sm',
+    backgroundColor: 'hsl(var(--success))',
+    className: 'border-b border-success-foreground/25 shadow-sm',
   },
   prevention_controls: {
-    backgroundColor: '#166534',
-    className: 'border-b border-green-950/70 shadow-sm',
+    backgroundColor: 'hsl(var(--success))',
+    className: 'border-b border-success-foreground/25 shadow-sm',
   },
   o: {
-    backgroundColor: '#166534',
-    className: 'border-b border-green-950/70 shadow-sm',
+    backgroundColor: 'hsl(var(--success))',
+    className: 'border-b border-success-foreground/25 shadow-sm',
   },
   detection_controls: {
-    backgroundColor: '#6b21a8',
-    className: 'border-b border-purple-950/80 shadow-sm',
+    backgroundColor: 'hsl(var(--category-3))',
+    className: 'border-b border-category-3-foreground/25 shadow-sm',
   },
   d: {
-    backgroundColor: '#6b21a8',
-    className: 'border-b border-purple-950/80 shadow-sm',
+    backgroundColor: 'hsl(var(--category-3))',
+    className: 'border-b border-category-3-foreground/25 shadow-sm',
   },
   rpn: {
-    backgroundColor: '#475569',
-    className: 'border-b border-slate-800 shadow-sm',
+    backgroundColor: 'hsl(var(--muted-foreground))',
+    className: 'border-b border-background/25 shadow-sm',
   },
   ap: {
-    backgroundColor: '#475569',
-    className: 'border-b border-slate-800 shadow-sm',
+    backgroundColor: 'hsl(var(--muted-foreground))',
+    className: 'border-b border-background/25 shadow-sm',
   },
   kc: {
-    backgroundColor: '#475569',
-    className: 'border-b border-slate-800 shadow-sm',
+    backgroundColor: 'hsl(var(--muted-foreground))',
+    className: 'border-b border-background/25 shadow-sm',
   },
   recommended_actions: {
-    backgroundColor: '#475569',
-    className: 'border-b border-slate-800 shadow-sm',
+    backgroundColor: 'hsl(var(--muted-foreground))',
+    className: 'border-b border-background/25 shadow-sm',
   },
 };
 
@@ -1222,16 +1222,16 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   }, [evidenceProjectId]);
 
   const getActionPriorityRowClass = (ap: ActionPriority | null): string => {
-    if (ap === 'H') return 'bg-red-50';
-    if (ap === 'M') return 'bg-orange-50';
-    if (ap === 'L') return 'bg-green-50';
+    if (ap === 'H') return 'bg-destructive-soft/10';
+    if (ap === 'M') return 'bg-warning-soft/10';
+    if (ap === 'L') return 'bg-success/10';
     return '';
   };
 
   const getActionPriorityBadgeClasses = (ap: ActionPriority | null): string => {
-    if (ap === 'H') return 'border-red-500 text-red-700';
-    if (ap === 'M') return 'border-orange-500 text-orange-700';
-    if (ap === 'L') return 'border-green-500 text-green-700';
+    if (ap === 'H') return 'border-destructive-soft/40 text-destructive-soft';
+    if (ap === 'M') return 'border-warning-soft/40 text-warning-soft';
+    if (ap === 'L') return 'border-success/40 text-success';
     return 'border-muted-foreground/40 text-muted-foreground';
   };
 
@@ -2293,15 +2293,19 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   }, []);
 
   const pfmeaThSticky = 'sticky top-0 z-20 border-b shadow-sm';
-  /** Column header bar colors (PFMEA table). `!text-white` overrides TableHead default `text-muted-foreground`. */
+  /**
+   * Column header bar colors (PFMEA table). Each band pairs a solid token with that token's own
+   * foreground, so the band inverts between light and dark mode and its label stays legible.
+   * The `!` overrides TableHead's default `text-muted-foreground`.
+   */
   const pfmeaHeaderBar = {
-    structure: `${pfmeaThSticky} bg-[#0c2744] !text-white border-blue-950/60`,
-    requirements: `${pfmeaThSticky} bg-yellow-300 text-yellow-950 border-yellow-500/70`,
-    failure: `${pfmeaThSticky} bg-yellow-300 text-yellow-950 border-yellow-500/70`,
-    effectSeverity: `${pfmeaThSticky} bg-[#722f37] text-white border-[#5c262e]`,
-    causeOccurrence: `${pfmeaThSticky} bg-green-800 text-white border-green-950/70`,
-    detectionPurple: `${pfmeaThSticky} bg-purple-800 text-white border-purple-950/80`,
-    other: `${pfmeaThSticky} bg-slate-600 text-white border-slate-800`,
+    structure: `${pfmeaThSticky} bg-category-1 !text-category-1-foreground border-category-1-foreground/25`,
+    requirements: `${pfmeaThSticky} bg-warning-soft !text-warning-soft-foreground border-warning-soft-foreground/25`,
+    failure: `${pfmeaThSticky} bg-warning-soft !text-warning-soft-foreground border-warning-soft-foreground/25`,
+    effectSeverity: `${pfmeaThSticky} bg-destructive-soft !text-destructive-soft-foreground border-destructive-soft-foreground/25`,
+    causeOccurrence: `${pfmeaThSticky} bg-success !text-success-foreground border-success-foreground/25`,
+    detectionPurple: `${pfmeaThSticky} bg-category-3 !text-category-3-foreground border-category-3-foreground/25`,
+    other: `${pfmeaThSticky} bg-muted-foreground !text-background border-background/25`,
   } as const;
 
   const togglePfmeaSort = useCallback(
@@ -2343,7 +2347,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       onMouseDown={(e) => startResize(colKey, e)}
       className={cn(
         'absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none',
-        dark ? 'hover:bg-white/30' : 'hover:bg-slate-400/60'
+        dark ? 'hover:bg-card/30' : 'hover:bg-muted-foreground/60'
       )}
       title="Drag to resize column"
     />
@@ -2389,7 +2393,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           <span
             className={cn(
               'text-center text-xs font-medium leading-tight',
-              opts?.lightBar ? 'text-amber-950' : 'text-white'
+              opts?.lightBar ? 'text-warning-soft-foreground' : 'text-success-foreground'
             )}
           >
             {label}
@@ -2401,7 +2405,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
               size="icon"
               className={cn(
                 'h-7 w-7 shrink-0',
-                opts?.lightBar ? 'text-amber-950 hover:bg-amber-950/15' : 'text-white hover:bg-white/15'
+                opts?.lightBar ? 'text-warning-soft-foreground hover:bg-background/15' : 'text-success-foreground hover:bg-background/15'
               )}
               title={`Sort by ${label}`}
               onClick={() => togglePfmeaSort(opts.sortKey!, opts.sortDefaultDir)}
@@ -2416,7 +2420,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
               size="icon"
               className={cn(
                 'h-7 w-7 shrink-0',
-                opts?.lightBar ? 'text-amber-950 hover:bg-amber-950/15' : 'text-white hover:bg-white/15'
+                opts?.lightBar ? 'text-warning-soft-foreground hover:bg-background/15' : 'text-success-foreground hover:bg-background/15'
               )}
               disabled={opts?.derived}
               title={
@@ -2621,23 +2625,24 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       minWidth: widthPx,
       width: widthPx,
       maxWidth: widthPx,
-      backgroundColor: '#0c2744',
+      backgroundColor: 'hsl(var(--category-1))',
     });
+    // Column-group banding, not status: worksheet columns are shaded so related groups read together.
     const pfmeaColBand: Record<PfmeaNavColumn, string> = {
-      requirements: 'bg-yellow-50/55',
-      failure_mode: 'bg-yellow-50/55',
-      effects: 'bg-rose-50/55',
-      s: 'bg-rose-100/55',
-      process_variables: 'bg-emerald-50/55',
-      causes: 'bg-emerald-50/55',
-      prevention_controls: 'bg-emerald-100/55',
-      o: 'bg-emerald-50/55',
-      detection_controls: 'bg-violet-50/55',
-      d: 'bg-violet-100/55',
-      rpn: 'bg-slate-50/55',
-      ap: 'bg-slate-100/55',
-      kc: 'bg-amber-50/55',
-      recommended_actions: 'bg-slate-50/55',
+      requirements: 'bg-category-4/8',
+      failure_mode: 'bg-category-4/8',
+      effects: 'bg-category-5/8',
+      s: 'bg-category-5/14',
+      process_variables: 'bg-category-2/8',
+      causes: 'bg-category-2/8',
+      prevention_controls: 'bg-category-2/14',
+      o: 'bg-category-2/8',
+      detection_controls: 'bg-category-3/8',
+      d: 'bg-category-3/14',
+      rpn: 'bg-muted/40',
+      ap: 'bg-muted/70',
+      kc: 'bg-category-1/8',
+      recommended_actions: 'bg-muted/40',
     };
     const band = (col: PfmeaNavColumn) => cn('border-l border-border/30', pfmeaColBand[col]);
 
@@ -2651,7 +2656,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
             </div>
           ) : null}
           {orphanedRequirementIds.length > 0 ? (
-            <div className="border-b border-amber-500/40 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            <div className="border-b border-warning-soft/40 bg-warning-soft/10 px-3 py-2 text-xs text-warning-soft">
               {orphanedRequirementIds.length} requirement
               {orphanedRequirementIds.length === 1 ? '' : 's'} point at an output that no longer
               exists on its step. Their failure modes are still stored. Remove them from the
@@ -2667,7 +2672,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           (kcClassificationGaps.unclassifiedDriverCount > 0 ||
             kcClassificationGaps.unclassifiedControlStrengthCount > 0 ||
             kcClassificationGaps.missingItemRefCount > 0) ? (
-            <div className="border-b border-amber-500/40 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            <div className="border-b border-warning-soft/40 bg-warning-soft/10 px-3 py-2 text-xs text-warning-soft">
               {[
                 kcClassificationGaps.unclassifiedDriverCount > 0
                   ? `${kcClassificationGaps.unclassifiedDriverCount} cause${kcClassificationGaps.unclassifiedDriverCount === 1 ? '' : 's'} with no occurrence driver, so they cannot reach the Key Characteristics list`
@@ -2778,16 +2783,16 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                 <TableRow>
                   {pfmeaColVisibility.phase ? (
                     <TableHead
-                      className="border-b border-blue-950/60 border-r border-blue-950/50 shadow-sm !text-white h-auto px-1 py-1 font-medium align-middle"
+                      className="border-b border-info-foreground/25 border-r border-info-foreground/25 shadow-sm !text-category-1-foreground h-auto px-1 py-1 font-medium align-middle"
                       style={frozenHeaderThStyle(leftPhase, wPhase)}
                     >
                       <div className="relative flex min-h-9 w-full items-center justify-center gap-0.5">
-                        <span className="text-xs font-medium text-white">Phase</span>
+                        <span className="text-xs font-medium text-category-1-foreground">Phase</span>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 shrink-0 text-white hover:bg-white/15"
+                          className="h-7 w-7 shrink-0 text-category-1-foreground hover:bg-card/15"
                           title="Sort by Phase"
                           onClick={() => togglePfmeaSort('phase')}
                         >
@@ -2799,16 +2804,16 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                   ) : null}
                   {pfmeaColVisibility.operation ? (
                     <TableHead
-                      className="border-b border-blue-950/60 border-r border-blue-950/50 shadow-sm !text-white h-auto px-1 py-1 font-medium align-middle"
+                      className="border-b border-info-foreground/25 border-r border-info-foreground/25 shadow-sm !text-category-1-foreground h-auto px-1 py-1 font-medium align-middle"
                       style={frozenHeaderThStyle(leftOp, wOp)}
                     >
                       <div className="relative flex min-h-9 w-full items-center justify-center gap-0.5">
-                        <span className="text-xs font-medium text-white">Operation</span>
+                        <span className="text-xs font-medium text-category-1-foreground">Operation</span>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 shrink-0 text-white hover:bg-white/15"
+                          className="h-7 w-7 shrink-0 text-category-1-foreground hover:bg-card/15"
                           title="Sort by Operation"
                           onClick={() => togglePfmeaSort('operation')}
                         >
@@ -2820,16 +2825,16 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                   ) : null}
                   {pfmeaColVisibility.step ? (
                     <TableHead
-                      className="border-b border-blue-950/60 border-r border-blue-950/50 shadow-sm !text-white h-auto px-1 py-1 font-medium align-middle"
+                      className="border-b border-info-foreground/25 border-r border-info-foreground/25 shadow-sm !text-category-1-foreground h-auto px-1 py-1 font-medium align-middle"
                       style={frozenHeaderThStyle(leftStep, wStep)}
                     >
                       <div className="relative flex min-h-9 w-full items-center justify-center gap-0.5">
-                        <span className="text-xs font-medium text-white">Process Step</span>
+                        <span className="text-xs font-medium text-category-1-foreground">Process Step</span>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 shrink-0 text-white hover:bg-white/15"
+                          className="h-7 w-7 shrink-0 text-category-1-foreground hover:bg-card/15"
                           title="Sort by Step"
                           onClick={() => togglePfmeaSort('step')}
                         >
@@ -2841,16 +2846,16 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                   ) : null}
                   {pfmeaColVisibility.step_description ? (
                     <TableHead
-                      className="border-b border-blue-950/60 border-r border-blue-950/50 shadow-sm !text-white h-auto px-1 py-1 font-medium align-middle"
+                      className="border-b border-info-foreground/25 border-r border-info-foreground/25 shadow-sm !text-category-1-foreground h-auto px-1 py-1 font-medium align-middle"
                       style={frozenHeaderThStyle(leftDesc, wDesc)}
                     >
                       <div className="relative flex min-h-9 w-full items-center justify-center gap-0.5">
-                        <span className="text-xs font-medium text-white">Step Description</span>
+                        <span className="text-xs font-medium text-category-1-foreground">Step Description</span>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 shrink-0 text-white hover:bg-white/15"
+                          className="h-7 w-7 shrink-0 text-category-1-foreground hover:bg-card/15"
                           title="Sort by Step Description"
                           onClick={() => togglePfmeaSort('step_description')}
                         >
@@ -3100,7 +3105,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                               </div>
                             </div>
                             {preventionCoverage?.isDetectionOnly ? (
-                              <p className="px-1.5 pb-1 text-xs text-amber-800">
+                              <p className="px-1.5 pb-1 text-xs text-warning-soft">
                                 Only detection controls. Priority stays High until a prevention
                                 control is added to a cause.
                               </p>
@@ -3476,7 +3481,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                 </div>
                               ))
                             ) : cause ? (
-                              <div className="px-1 py-1 text-sm text-amber-800">
+                              <div className="px-1 py-1 text-sm text-warning-soft">
                                 Nothing prevents this cause, so the only defence is noticing the
                                 failure afterward.
                               </div>
@@ -3585,7 +3590,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                       : null}
                                   </div>
                                   {unbackedDetectionControlIds.has(control.id) ? (
-                                    <p className="w-full text-xs text-amber-800">
+                                    <p className="w-full text-xs text-warning-soft">
                                       This score assumes a check the step does not describe. Add
                                       quality checks, allowances, or a reference specification to
                                       the output first.
@@ -3707,7 +3712,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                               if (verdict.outcome === 'key_characteristic') {
                                 return (
                                   <Badge
-                                    className="border-amber-600/40 bg-amber-100 text-xs text-amber-950 hover:bg-amber-100 dark:bg-amber-950/50 dark:text-amber-100"
+                                    className="border-warning-soft/40 bg-warning-soft/15 text-xs text-warning-soft hover:bg-warning-soft/15"
                                     title={verdict.driver.description}
                                   >
                                     {verdict.driver.label}
@@ -4147,7 +4152,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                           td,
                           band('rpn'),
                           'text-center text-lg font-bold tabular-nums',
-                          ap === 'H' ? 'text-red-600' : ap === 'M' ? 'text-orange-600' : 'text-green-700',
+                          ap === 'H' ? 'text-destructive-soft' : ap === 'M' ? 'text-warning-soft' : 'text-success',
                           focusCellClass(rowIndex, 'rpn')
                         )}
                         onMouseDown={() => setGridFocus({ rowIndex, col: 'rpn' })}
@@ -4168,7 +4173,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       >
                         <div className="flex w-full min-w-0 flex-col gap-1">
                           {failureMode.pfmea_action_items.map((action) => (
-                            <div key={action.id} className="rounded border bg-blue-50 p-1 text-sm">
+                            <div key={action.id} className="rounded border bg-info/10 p-1 text-sm">
                               <div className="flex items-start gap-0.5">
                                 <div className="min-w-0 flex-1">
                                   {renderEditableCell(action.recommended_action, action.id, 'recommended_action', 'action', false, {
@@ -4382,35 +4387,35 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="bg-info/10 p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <FileText className="w-5 h-5 text-blue-600" />
+                        <FileText className="w-5 h-5 text-info" />
                         <span className="font-medium">Requirements</span>
                       </div>
-                      <div className="text-2xl font-bold text-blue-600">{requirements.length}</div>
+                      <div className="text-2xl font-bold text-info">{requirements.length}</div>
                     </div>
-                    <div className="bg-orange-50 p-4 rounded-lg">
+                    <div className="bg-warning-soft/10 p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <AlertTriangle className="w-5 h-5 text-orange-600" />
+                        <AlertTriangle className="w-5 h-5 text-warning-soft" />
                         <span className="font-medium">Failure Modes</span>
                       </div>
-                      <div className="text-2xl font-bold text-orange-600">{failureModes.length}</div>
+                      <div className="text-2xl font-bold text-warning-soft">{failureModes.length}</div>
                     </div>
-                    <div className="bg-red-50 p-4 rounded-lg">
+                    <div className="bg-destructive-soft/10 p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                        <AlertTriangle className="w-5 h-5 text-destructive-soft" />
                         <span className="font-medium">High Priority (AP = H)</span>
                       </div>
-                      <div className="text-2xl font-bold text-red-600">
+                      <div className="text-2xl font-bold text-destructive-soft">
                         {pfmeaMetrics ? pfmeaMetrics.high : '—'}
                       </div>
                     </div>
-                    <div className="bg-purple-50 p-4 rounded-lg">
+                    <div className="bg-category-3/10 p-4 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <Target className="w-5 h-5 text-purple-600" />
+                        <Target className="w-5 h-5 text-category-3" />
                         <span className="font-medium">Open Actions</span>
                       </div>
-                      <div className="text-2xl font-bold text-purple-600">
+                      <div className="text-2xl font-bold text-category-3">
                         {failureModes.reduce(
                           (count, fm) =>
                             count +
@@ -4436,9 +4441,9 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                   ) : (
                     <div className="space-y-3">
                       {[
-                        { label: 'High (H)', color: 'bg-red-500', count: pfmeaMetrics.high },
-                        { label: 'Medium (M)', color: 'bg-orange-500', count: pfmeaMetrics.medium },
-                        { label: 'Low (L)', color: 'bg-green-500', count: pfmeaMetrics.low },
+                        { label: 'High (H)', color: 'bg-destructive-soft', count: pfmeaMetrics.high },
+                        { label: 'Medium (M)', color: 'bg-warning-soft', count: pfmeaMetrics.medium },
+                        { label: 'Low (L)', color: 'bg-success', count: pfmeaMetrics.low },
                         {
                           label: 'Not scored',
                           color: 'bg-muted-foreground/40',
@@ -4640,7 +4645,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                         void updatePfmeaActionItemTracking(actionItem, { dueYmd: v || null });
                                       }
                                     }}
-                                    className={dueOverdue ? 'text-red-600 font-medium' : ''}
+                                    className={dueOverdue ? 'text-destructive-soft font-medium' : ''}
                                   />
                                 </TableCell>
                                 <TableCell className="align-top">

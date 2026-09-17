@@ -145,7 +145,7 @@ export const ScheduleOutputView: React.FC<ScheduleOutputViewProps> = ({
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+          <Card className="bg-gradient-to-br from-success to-success border-success/40">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -153,7 +153,7 @@ export const ScheduleOutputView: React.FC<ScheduleOutputViewProps> = ({
                   <p className="text-2xl font-bold">{confirmedTasks.length}</p>
                   <p className="text-xs text-muted-foreground">scheduled</p>
                 </div>
-                <CheckCircle2 className="w-8 h-8 text-green-600 opacity-80" />
+                <CheckCircle2 className="w-8 h-8 text-success opacity-80" />
               </div>
             </CardContent>
           </Card>
@@ -441,10 +441,10 @@ export const ScheduleOutputView: React.FC<ScheduleOutputViewProps> = ({
                     <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground tabular-nums">
                       Hours
                     </th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-green-700">
+                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-success">
                       Target Complete
                     </th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-700">
+                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-destructive-soft">
                       Latest Complete
                     </th>
                     <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -477,14 +477,14 @@ export const ScheduleOutputView: React.FC<ScheduleOutputViewProps> = ({
                           <td className="px-3 py-3 text-xs text-right tabular-nums font-medium">
                             {formatDurationHours(scheduledTask.startTime, scheduledTask.endTime)}
                           </td>
-                          <td className="px-3 py-3 text-xs text-green-700 font-medium">
+                          <td className="px-3 py-3 text-xs text-success font-medium">
                             {format(scheduledTask.targetCompletionDate, 'MMM dd, h:mm a')}
                           </td>
-                          <td className="px-3 py-3 text-xs text-red-700 font-medium">
+                          <td className="px-3 py-3 text-xs text-destructive-soft font-medium">
                             {format(scheduledTask.latestCompletionDate, 'MMM dd, h:mm a')}
                           </td>
                           <td className="px-3 py-3">
-                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                            <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/40">
                               {scheduledTask.status}
                             </Badge>
                           </td>

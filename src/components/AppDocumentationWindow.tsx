@@ -397,19 +397,19 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                           </p>
                           <ul className="space-y-2">
                             <li className="flex items-start gap-2 text-sm">
-                              <Shield className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                              <Shield className="w-4 h-4 text-success mt-0.5 flex-shrink-0" />
                               <span><strong>Proven Templates:</strong> 100+ tested project workflows with step-by-step guidance</span>
                             </li>
                             <li className="flex items-start gap-2 text-sm">
-                              <Clock className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                              <Clock className="w-4 h-4 text-info mt-0.5 flex-shrink-0" />
                               <span><strong>Time Savings:</strong> Avoid costly mistakes with expert-designed processes</span>
                             </li>
                             <li className="flex items-start gap-2 text-sm">
-                              <Target className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                              <Target className="w-4 h-4 text-category-3 mt-0.5 flex-shrink-0" />
                               <span><strong>Personalization:</strong> Recommendations based on your skills, tools, and home</span>
                             </li>
                             <li className="flex items-start gap-2 text-sm">
-                              <Users className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                              <Users className="w-4 h-4 text-warning-soft mt-0.5 flex-shrink-0" />
                               <span><strong>Human Support:</strong> Expert help when you need it most</span>
                             </li>
                           </ul>
@@ -549,7 +549,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                       {/* Beta Features Section */}
                       <div className="space-y-4 pt-4">
                         <div className="flex items-center gap-2 pb-2 border-b">
-                          <Zap className="w-5 h-5 text-amber-600" />
+                          <Zap className="w-5 h-5 text-warning-soft" />
                           <h3 className="text-xl font-bold">Beta & Labs Features</h3>
                           <Badge variant="secondary" className="ml-2">Experimental</Badge>
                         </div>
@@ -557,8 +557,8 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                           <Card key={feature.id} className="border-l-4 border-l-amber-500">
                             <CardHeader className="pb-3">
                               <CardTitle className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                                  <feature.icon className="w-5 h-5 text-amber-600" />
+                                <div className="w-10 h-10 bg-warning-soft/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <feature.icon className="w-5 h-5 text-warning-soft" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <h3 className="text-lg font-bold">{feature.name}</h3>
@@ -574,7 +574,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                                 <ul className="space-y-1">
                                   {feature.keyFeatures.map((feat, index) => (
                                     <li key={index} className="flex items-start gap-2 text-sm">
-                                      <div className="w-1.5 h-1.5 bg-amber-600 rounded-full mt-1.5 flex-shrink-0" />
+                                      <div className="w-1.5 h-1.5 bg-warning-soft rounded-full mt-1.5 flex-shrink-0" />
                                       <span>{feat}</span>
                                     </li>
                                   ))}
@@ -620,7 +620,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                         <Card className="border-l-4 border-l-blue-500">
                           <CardHeader className="pb-3">
                             <CardTitle className="flex items-center gap-2 text-base">
-                              <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">1</div>
+                              <div className="w-8 h-8 bg-info text-info-foreground rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">1</div>
                               Complete Your Profile
                             </CardTitle>
                           </CardHeader>
@@ -638,7 +638,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                         <Card className="border-l-4 border-l-green-500">
                           <CardHeader className="pb-3">
                             <CardTitle className="flex items-center gap-2 text-base">
-                              <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
+                              <div className="w-8 h-8 bg-success text-success-foreground rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
                               Set Up Home Maintenance
                             </CardTitle>
                           </CardHeader>
@@ -656,7 +656,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                         <Card className="border-l-4 border-l-purple-500">
                           <CardHeader className="pb-3">
                             <CardTitle className="flex items-center gap-2 text-base">
-                              <div className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
+                              <div className="w-8 h-8 bg-category-3 text-category-3-foreground rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
                               Start Your First Project
                             </CardTitle>
                           </CardHeader>
@@ -674,7 +674,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                         <Card className="border-l-4 border-l-orange-500">
                           <CardHeader className="pb-3">
                             <CardTitle className="flex items-center gap-2 text-base">
-                              <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">4</div>
+                              <div className="w-8 h-8 bg-warning-soft text-warning-soft-foreground rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">4</div>
                               Execute with Confidence
                             </CardTitle>
                           </CardHeader>
@@ -692,7 +692,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                         <Card className="border-l-4 border-l-indigo-500">
                           <CardHeader className="pb-3">
                             <CardTitle className="flex items-center gap-2 text-base">
-                              <div className="w-8 h-8 bg-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">5</div>
+                              <div className="w-8 h-8 bg-category-1 text-category-1-foreground rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">5</div>
                               Plan Purchases with Lead Times
                             </CardTitle>
                           </CardHeader>

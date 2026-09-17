@@ -5,28 +5,28 @@ const stepTypes = [{
   value: 'prime',
   label: 'Prime',
   icon: CheckCircle,
-  color: 'bg-green-500',
+  color: 'bg-success',
   description: 'Fixed time estimates that do not scale with project size',
   weight: 0.1
 }, {
   value: 'scaled',
   label: 'Scaled',
   icon: RotateCcw,
-  color: 'bg-blue-500',
+  color: 'bg-info',
   description: 'Time estimates scale according to the project scaling unit',
   weight: 1.0
 }, {
   value: 'quality_control_non_scaled',
   label: 'Quality Control – Non Scaled',
   icon: Search,
-  color: 'bg-orange-500',
+  color: 'bg-warning-soft',
   description: 'Fixed QC steps that do not scale with project size',
   weight: 0.1
 }, {
   value: 'quality_control_scaled',
   label: 'Quality Control – Scaled',
   icon: Search,
-  color: 'bg-purple-500',
+  color: 'bg-category-3',
   description: 'QC steps that scale according to the project scaling unit (same unit as base project)',
   weight: 1.0
 }];
@@ -34,35 +34,35 @@ const flowTypes = [{
   value: 'prime',
   label: 'Prime',
   icon: CheckCircle,
-  color: 'bg-green-500',
+  color: 'bg-success',
   description: 'Required one-time step - must be 100% complete to proceed',
   progress: 'Binary: 0% until complete, then 100%'
 }, {
   value: 'repeat',
   label: 'Repeat',
   icon: RotateCcw,
-  color: 'bg-blue-500',
+  color: 'bg-info',
   description: 'Can be partially completed and updated over time',
   progress: 'Incremental: 20%, 50%, 80%, etc.'
 }, {
   value: 'inspection',
   label: 'Inspection',
   icon: Search,
-  color: 'bg-orange-500',
+  color: 'bg-warning-soft',
   description: 'Quality check that ensures standards are met',
   progress: 'Pass/fail - may loop back for rework'
 }, {
   value: 'alternate',
   label: 'Alternate',
   icon: GitBranch,
-  color: 'bg-purple-500',
+  color: 'bg-category-3',
   description: 'Choose one path from several options',
   progress: 'Only selected branch executes'
 }, {
   value: 'if-necessary',
   label: 'If Necessary',
   icon: HelpCircle,
-  color: 'bg-gray-500',
+  color: 'bg-muted-foreground',
   description: 'Conditional step - only appears when criteria met',
   progress: 'Skipped if condition not met'
 }];
@@ -111,20 +111,20 @@ export const FlowTypeLegend: React.FC<FlowTypeLegendProps> = ({
               </div>}
           </div>)}
         
-        {showOnlyStepTypes && <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
-            <div className="text-sm text-blue-800 dark:text-blue-200">
+        {showOnlyStepTypes && <div className="mt-4 p-3 bg-info/10 rounded-md border border-info/40">
+            <div className="text-sm text-info">
               <strong>💡 Progress Weighting:</strong> Scaled and Quality Control – Scaled steps contribute more to overall progress (1 point each) 
               since they represent the bulk of work. Prime and Quality Control – Non Scaled steps contribute less (0.1 points each) 
               as they are quick verification or setup steps.
             </div>
-            <div className="text-sm text-blue-800 dark:text-blue-200 mt-2">
+            <div className="text-sm text-info mt-2">
               <strong>💡 Time Estimates:</strong> Each step type includes low/medium/high time estimates stored in the database. 
               Scaled types multiply estimates by project size, while Prime and Non-Scaled QC use fixed estimates.
             </div>
           </div>}
         
-        {!showOnlyStepTypes && <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
-            <div className="text-sm text-blue-800 dark:text-blue-200">
+        {!showOnlyStepTypes && <div className="mt-4 p-3 bg-info/10 rounded-md border border-info/40">
+            <div className="text-sm text-info">
               <strong>💡 Why this matters:</strong> Step types help you understand the workflow logic, 
               track progress accurately, and identify potential process improvements.
             </div>

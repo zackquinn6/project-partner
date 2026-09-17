@@ -1023,8 +1023,8 @@ export default function DIYSurveyPopup({
                     <div className="relative py-1.5">
                       {/* Color sections background - positioned to align with slider track */}
                       <div className="absolute top-1/2 left-0 right-0 flex h-2 -translate-y-1/2 rounded-full overflow-hidden pointer-events-none">
-                        <div className="w-1/3 bg-green-500"></div>
-                        <div className="w-1/3 bg-blue-500"></div>
+                        <div className="w-1/3 bg-success"></div>
+                        <div className="w-1/3 bg-info"></div>
                         <div className="w-1/3 bg-black"></div>
                       </div>
                       <Slider
@@ -1083,8 +1083,8 @@ export default function DIYSurveyPopup({
                     <div className="relative py-1.5">
                       {/* Color sections background - positioned to align with slider track */}
                       <div className="absolute top-1/2 left-0 right-0 flex h-2 -translate-y-1/2 rounded-full overflow-hidden pointer-events-none">
-                        <div className="w-1/3 bg-green-500"></div>
-                        <div className="w-1/3 bg-blue-500"></div>
+                        <div className="w-1/3 bg-success"></div>
+                        <div className="w-1/3 bg-info"></div>
                         <div className="w-1/3 bg-black"></div>
                       </div>
                       <Slider

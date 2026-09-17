@@ -190,10 +190,10 @@ export const KnowledgeIngestionSystem: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': case 'approved': return 'bg-green-500/10 text-green-500';
-      case 'pending': return 'bg-yellow-500/10 text-yellow-500';
-      case 'error': case 'rejected': return 'bg-red-500/10 text-red-500';
-      default: return 'bg-gray-500/10 text-gray-500';
+      case 'active': case 'approved': return 'bg-success/10 text-success';
+      case 'pending': return 'bg-warning-soft/10 text-warning-soft';
+      case 'error': case 'rejected': return 'bg-destructive-soft/10 text-destructive-soft';
+      default: return 'bg-muted-foreground/10 text-muted-foreground';
     }
   };
 
@@ -324,14 +324,14 @@ export const KnowledgeIngestionSystem: React.FC = () => {
 
                     <div className="grid gap-2">
                       <div>
-                        <span className="text-sm font-medium text-red-600">Before:</span>
-                        <p className="text-sm bg-red-50 p-2 rounded border-l-2 border-red-200">
+                        <span className="text-sm font-medium text-destructive-soft">Before:</span>
+                        <p className="text-sm bg-destructive-soft/10 p-2 rounded border-l-2 border-destructive-soft/40">
                           {revision.originalContent}
                         </p>
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-green-600">After:</span>
-                        <p className="text-sm bg-green-50 p-2 rounded border-l-2 border-green-200">
+                        <span className="text-sm font-medium text-success">After:</span>
+                        <p className="text-sm bg-success/10 p-2 rounded border-l-2 border-success/40">
                           {revision.revisedContent}
                         </p>
                       </div>

@@ -41,7 +41,7 @@ export function MobileDIYDropdown({
             size="sm"
             className="h-10 w-10 p-0 hover:bg-accent text-foreground flex items-center justify-center"
           >
-            <span className="text-orange-500 text-xl font-bold leading-none">⚠️</span>
+            <span className="text-warning-soft text-xl font-bold leading-none">⚠️</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent 
@@ -54,7 +54,7 @@ export function MobileDIYDropdown({
               onClick={() => handleOptionClick(onHelpClick)}
               variant="ghost"
               size="sm"
-              className="w-full justify-start h-10 px-3 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-150 border border-blue-200 hover:border-blue-300 text-blue-800 hover:text-blue-900"
+              className="w-full justify-start h-10 px-3 bg-gradient-to-br from-info/10 to-info/15 hover:from-info/15 hover:to-info/20 border border-info/40 hover:border-info/40 text-info hover:text-info"
             >
               <MessageCircle className="mr-2 h-4 w-4" />
               <span className="font-medium">Experts</span>
@@ -64,7 +64,7 @@ export function MobileDIYDropdown({
               onClick={() => handleOptionClick(onKeysToSuccessClick)}
               variant="ghost"
               size="sm"
-              className="w-full justify-start h-10 px-3 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-150 border border-green-200 hover:border-green-300 text-green-800 hover:text-green-900"
+              className="w-full justify-start h-10 px-3 bg-gradient-to-br from-success/10 to-success/15 hover:from-success/15 hover:to-success/20 border border-success/40 hover:border-success/40 text-success hover:text-success"
             >
               <Key className="mr-2 h-4 w-4" />
               <span className="font-medium">Priorities</span>
@@ -75,7 +75,7 @@ export function MobileDIYDropdown({
                 onClick={() => handleOptionClick(onUnplannedWorkClick)}
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start h-10 px-3 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-150 border border-orange-200 hover:border-orange-300 text-orange-800 hover:text-orange-900"
+                className="w-full justify-start h-10 px-3 bg-gradient-to-br from-warning-soft/10 to-warning-soft/15 hover:from-warning-soft/15 hover:to-warning-soft/20 border border-warning-soft/40 hover:border-warning-soft/40 text-warning-soft hover:text-warning-soft"
               >
                 <Settings className="mr-2 h-4 w-4" />
                 <span className="font-medium">Course Correct</span>

@@ -34,4 +34,4 @@ export const PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME =
 
 /** Reserves space for the green completion line so card height does not jump. */
 export const PLANNING_WIZARD_STEP_STATUS_ROW_CLASSNAME =
-  'shrink-0 min-h-[1.25rem] text-xs font-medium text-green-600 sm:text-sm';
+  'shrink-0 min-h-[1.25rem] text-xs font-medium text-success sm:text-sm';

@@ -83,7 +83,7 @@ export const UsageAgreementsList: React.FC = () => {
                     <Badge variant="secondary" className="capitalize">
                       {row.agreement_type}
                     </Badge>
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    <Badge variant="outline" className="bg-success/10 text-success border-success/40">
                       Accepted
                     </Badge>
                   </div>

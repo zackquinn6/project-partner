@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Circle, Clock, Menu, Eye, EyeOff, HelpCircle, Calendar as CalendarIcon, BookOpen, Settings2, Sparkles, DollarSign, ClipboardCheck, ShoppingCart, MessageCircle, Crosshair, Video, AlertTriangle, Camera, Key, Settings, FileText, BarChart3 } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Circle, Clock, Menu, Eye, EyeOff, HelpCircle, Calendar as CalendarIcon, BookOpen, Settings2, Sparkles, DollarSign, ClipboardCheck, ShoppingCart, MessageCircle, Crosshair, Video, AlertTriangle, Camera, Key, Settings, FileText, BarChart3, Palette } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -12,7 +12,7 @@ import { MultiContentRenderer } from '@/components/MultiContentRenderer';
 import { useStepInstructions } from '@/hooks/useStepInstructions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { WorkflowThemeSelector } from './WorkflowThemeSelector';
+import { AppearanceSettingsDialog } from './AppearanceSettingsDialog';
 import type { GeneralProjectDecision } from '@/interfaces/Project';
 import type { GeneralProjectChoicesMap } from '@/utils/generalProjectDecisions';
 import { filterSectionRowsForMicroDecisions } from '@/utils/microDecisionVisibility';
@@ -124,6 +124,7 @@ export function MobileWorkflowView({
   const [showMaterials, setShowMaterials] = useState(true);
   const [showTools, setShowTools] = useState(true);
   const [isStepListOpen, setIsStepListOpen] = useState(false);
+  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['options', 'materials', 'tools', 'project-tools']));
   const stepRef = useRef<HTMLDivElement>(null);
 
@@ -296,7 +297,7 @@ export function MobileWorkflowView({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
                   {isStepCompleted ? (
-                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-success flex-shrink-0" />
                   ) : (
                     <Circle className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground flex-shrink-0" />
                   )}
@@ -396,7 +397,7 @@ export function MobileWorkflowView({
                   })}
                   {requirePhotosPerStep ? (
                     <div className="flex items-center justify-between gap-2 pt-1">
-                      <p className="text-[10px] text-amber-800 dark:text-amber-100">
+                      <p className="text-[10px] text-warning-soft">
                         Photo required ({stepPhotoCount}/1)
                       </p>
                       {onUploadPhoto ? (
@@ -451,9 +452,9 @@ export function MobileWorkflowView({
                           key={idx}
                           className={`p-3 rounded-lg border text-xs ${
                             section.type === 'warning'
-                              ? 'bg-orange-50 border-orange-200'
+                              ? 'bg-warning-soft/10 border-warning-soft/40'
                               : section.type === 'tip'
-                              ? 'bg-blue-50 border-blue-200'
+                              ? 'bg-info/10 border-info/40'
                               : 'bg-muted'
                           }`}
                         >
@@ -612,10 +613,16 @@ export function MobileWorkflowView({
                     </div>
                   )}
                   <div className="space-y-2">
-                    <Label className="text-xs font-medium">Theme</Label>
-                    <div className="flex items-center justify-start rounded-lg border bg-background/60 p-2">
-                      <WorkflowThemeSelector />
-                    </div>
+                    <Label className="text-xs font-medium">Appearance</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 w-full justify-start gap-2 text-xs"
+                      onClick={() => setIsAppearanceOpen(true)}
+                    >
+                      <Palette className="h-4 w-4" />
+                      Theme and accent color
+                    </Button>
                   </div>
                 </CardContent>
               </CollapsibleContent>
@@ -936,6 +943,8 @@ export function MobileWorkflowView({
           </Button>
         </div>
       </div>
+
+      <AppearanceSettingsDialog open={isAppearanceOpen} onOpenChange={setIsAppearanceOpen} />
     </div>
   );
 }
@@ -985,7 +994,7 @@ function StepsList({ allSteps, currentStepIndex, completedSteps, onNavigateToSte
                     >
                       <div className="flex items-start gap-1.5 sm:gap-2 w-full">
                         {isCompleted ? (
-                          <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                          <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-success mt-0.5 flex-shrink-0" />
                         ) : isCurrent ? (
                           <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary mt-0.5 flex-shrink-0" />
                         ) : (

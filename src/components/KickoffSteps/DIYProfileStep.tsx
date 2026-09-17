@@ -46,21 +46,21 @@ const PROJECT_STYLE_LABELS: Record<string, string> = {
 };
 
 const SKILL_VISUALS: Record<string, { label: string; Icon: LucideIcon; iconWrap: string }> = {
-  newbie: { label: 'Newbie', Icon: Sparkles, iconWrap: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
-  beginner: { label: 'Newbie', Icon: Sparkles, iconWrap: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
-  confident: { label: 'Confident', Icon: Wrench, iconWrap: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400' },
-  intermediate: { label: 'Confident', Icon: Wrench, iconWrap: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400' },
-  hero: { label: 'Hero', Icon: Hammer, iconWrap: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400' },
-  advanced: { label: 'Hero', Icon: Hammer, iconWrap: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400' },
+  newbie: { label: 'Newbie', Icon: Sparkles, iconWrap: 'bg-success/15 text-success' },
+  beginner: { label: 'Newbie', Icon: Sparkles, iconWrap: 'bg-success/15 text-success' },
+  confident: { label: 'Confident', Icon: Wrench, iconWrap: 'bg-info/15 text-info' },
+  intermediate: { label: 'Confident', Icon: Wrench, iconWrap: 'bg-info/15 text-info' },
+  hero: { label: 'Hero', Icon: Hammer, iconWrap: 'bg-warning-soft/15 text-warning-soft' },
+  advanced: { label: 'Hero', Icon: Hammer, iconWrap: 'bg-warning-soft/15 text-warning-soft' },
 };
 
 const EFFORT_VISUALS: Record<string, { label: string; Icon: LucideIcon; iconWrap: string }> = {
-  light: { label: 'Light', Icon: Feather, iconWrap: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
-  limited: { label: 'Light', Icon: Feather, iconWrap: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' },
-  medium: { label: 'Medium', Icon: Dumbbell, iconWrap: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400' },
-  moderate: { label: 'Medium', Icon: Dumbbell, iconWrap: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400' },
-  heavy: { label: 'Heavy', Icon: Flame, iconWrap: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400' },
-  high: { label: 'Heavy', Icon: Flame, iconWrap: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400' },
+  light: { label: 'Light', Icon: Feather, iconWrap: 'bg-success/15 text-success' },
+  limited: { label: 'Light', Icon: Feather, iconWrap: 'bg-success/15 text-success' },
+  medium: { label: 'Medium', Icon: Dumbbell, iconWrap: 'bg-info/15 text-info' },
+  moderate: { label: 'Medium', Icon: Dumbbell, iconWrap: 'bg-info/15 text-info' },
+  heavy: { label: 'Heavy', Icon: Flame, iconWrap: 'bg-warning-soft/15 text-warning-soft' },
+  high: { label: 'Heavy', Icon: Flame, iconWrap: 'bg-warning-soft/15 text-warning-soft' },
 };
 
 function toolDisplayName(tool: Record<string, unknown> | null | undefined): string | undefined {

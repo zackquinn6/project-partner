@@ -147,7 +147,7 @@ export const AdminActionCenter: React.FC<AdminActionCenterProps> = ({
             ) : feedbackItems.length === 0 ? (
               <Card>
                 <CardContent className="p-6 text-center">
-                  <CheckCircle className="w-12 h-12 mx-auto text-green-500 mb-4" />
+                  <CheckCircle className="w-12 h-12 mx-auto text-success mb-4" />
                   <h4 className="font-medium mb-2">No Pending Feedback</h4>
                   <p className="text-muted-foreground">
                     All feedback has been reviewed or actioned. New items will appear here when users submit feedback.

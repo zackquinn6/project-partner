@@ -447,7 +447,7 @@ export function EnhancedVariationViewer({
                                 <Badge 
                                   key={flag} 
                                   variant="secondary" 
-                                  className={`text-xs ${flagData?.color_class || 'text-gray-500'}`}
+                                  className={`text-xs ${flagData?.color_class || 'text-muted-foreground'}`}
                                 >
                                   {flag}
                                 </Badge>
@@ -526,7 +526,7 @@ export function EnhancedVariationViewer({
                                         href={price.product_url} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="text-xs text-blue-500 hover:underline flex items-center gap-1"
+                                        className="text-xs text-info hover:underline flex items-center gap-1"
                                       >
                                         View <ExternalLink className="h-3 w-3" />
                                       </a>

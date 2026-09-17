@@ -99,7 +99,7 @@ const MATCH_TIER_COPY: Record<
     subtitle: 'Mixed signals: move forward with clear eyes on risk and scope.',
     Icon: AlertTriangle,
     cardClass: 'border-warning-soft/40 bg-warning-soft/10',
-    iconWrapClass: 'bg-warning-soft/15 text-warning-soft-foreground',
+    iconWrapClass: 'bg-warning-soft/15 text-warning-soft',
     titleClass: 'text-warning-soft-foreground',
     subtitleClass: 'text-muted-foreground',
   },

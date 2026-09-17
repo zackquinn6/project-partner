@@ -97,18 +97,18 @@ export function AdminDataRefresh() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'inactive': return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-      case 'error': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+      case 'active': return 'bg-success/15 text-success';
+      case 'inactive': return 'bg-muted text-foreground';
+      case 'error': return 'bg-destructive-soft/15 text-destructive-soft';
+      default: return 'bg-muted text-foreground';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active': return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'error': return <AlertCircle className="w-4 h-4 text-red-600" />;
-      default: return <Clock className="w-4 h-4 text-gray-600" />;
+      case 'active': return <CheckCircle className="w-4 h-4 text-success" />;
+      case 'error': return <AlertCircle className="w-4 h-4 text-destructive-soft" />;
+      default: return <Clock className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
@@ -138,7 +138,7 @@ export function AdminDataRefresh() {
 
       <div className="grid gap-4">
         {dataSources.map((source) => (
-          <Card key={source.id} className={`transition-colors ${isOverdue(source.lastRefresh, source.autoRefreshDays) ? 'border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20' : ''}`}>
+          <Card key={source.id} className={`transition-colors ${isOverdue(source.lastRefresh, source.autoRefreshDays) ? 'border-warning-soft/40 bg-warning-soft/10' : ''}`}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -150,7 +150,7 @@ export function AdminDataRefresh() {
                     {source.status}
                   </Badge>
                   {isOverdue(source.lastRefresh, source.autoRefreshDays) && (
-                    <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-300">
+                    <Badge variant="outline" className="border-warning-soft/40 text-warning-soft">
                       Overdue
                     </Badge>
                   )}
@@ -214,12 +214,12 @@ export function AdminDataRefresh() {
                     {Math.floor((Date.now() - source.lastRefresh.getTime()) / (1000 * 60 * 60 * 24))} / {source.autoRefreshDays}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                <div className="w-full bg-muted rounded-full h-2">
                   <div 
                     className={`h-2 rounded-full transition-all ${
                       isOverdue(source.lastRefresh, source.autoRefreshDays) 
-                        ? 'bg-red-500' 
-                        : 'bg-blue-500'
+                        ? 'bg-destructive-soft' 
+                        : 'bg-info'
                     }`}
                     style={{
                       width: `${Math.min(100, (Math.floor((Date.now() - source.lastRefresh.getTime()) / (1000 * 60 * 60 * 24)) / source.autoRefreshDays) * 100)}%`

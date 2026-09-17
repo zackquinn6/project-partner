@@ -190,20 +190,20 @@ export const WorkflowOptimizationEngine: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'implemented': return 'bg-green-500/10 text-green-500';
-      case 'validated': return 'bg-blue-500/10 text-blue-500';
-      case 'testing': return 'bg-yellow-500/10 text-yellow-500';
-      case 'suggested': return 'bg-purple-500/10 text-purple-500';
-      default: return 'bg-gray-500/10 text-gray-500';
+      case 'implemented': return 'bg-success/10 text-success';
+      case 'validated': return 'bg-info/10 text-info';
+      case 'testing': return 'bg-warning-soft/10 text-warning-soft';
+      case 'suggested': return 'bg-category-3/10 text-category-3';
+      default: return 'bg-muted-foreground/10 text-muted-foreground';
     }
   };
 
   const getImpactColor = (impact: string) => {
     switch (impact) {
-      case 'high': return 'bg-red-500/10 text-red-500';
-      case 'medium': return 'bg-yellow-500/10 text-yellow-500';
-      case 'low': return 'bg-green-500/10 text-green-500';
-      default: return 'bg-gray-500/10 text-gray-500';
+      case 'high': return 'bg-destructive-soft/10 text-destructive-soft';
+      case 'medium': return 'bg-warning-soft/10 text-warning-soft';
+      case 'low': return 'bg-success/10 text-success';
+      default: return 'bg-muted-foreground/10 text-muted-foreground';
     }
   };
 
@@ -239,7 +239,7 @@ export const WorkflowOptimizationEngine: React.FC = () => {
                 <p className="text-sm font-medium text-muted-foreground">Total Time Saved</p>
                 <p className="text-2xl font-bold">{totalTimeSavings} min</p>
               </div>
-              <Clock className="h-8 w-8 text-green-500" />
+              <Clock className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -251,7 +251,7 @@ export const WorkflowOptimizationEngine: React.FC = () => {
                 <p className="text-sm font-medium text-muted-foreground">Active Optimizations</p>
                 <p className="text-2xl font-bold">{optimizations.filter(opt => opt.applied).length}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-blue-500" />
+              <CheckCircle className="h-8 w-8 text-info" />
             </div>
           </CardContent>
         </Card>
@@ -265,7 +265,7 @@ export const WorkflowOptimizationEngine: React.FC = () => {
                   {Math.round(optimizations.reduce((sum, opt) => sum + opt.confidence, 0) / optimizations.length)}%
                 </p>
               </div>
-              <TrendingUp className="h-8 w-8 text-purple-500" />
+              <TrendingUp className="h-8 w-8 text-category-3" />
             </div>
           </CardContent>
         </Card>
@@ -290,10 +290,10 @@ export const WorkflowOptimizationEngine: React.FC = () => {
                           <Badge className={getStatusColor(optimization.status)}>
                             {optimization.status}
                           </Badge>
-                          {optimization.type === 'step-reorder' && <Wrench className="h-4 w-4 text-blue-500" />}
-                          {optimization.type === 'tool-consolidation' && <Wrench className="h-4 w-4 text-green-500" />}
-                          {optimization.type === 'time-reduction' && <Clock className="h-4 w-4 text-purple-500" />}
-                          {optimization.type === 'parallel-tasks' && <Zap className="h-4 w-4 text-yellow-500" />}
+                          {optimization.type === 'step-reorder' && <Wrench className="h-4 w-4 text-info" />}
+                          {optimization.type === 'tool-consolidation' && <Wrench className="h-4 w-4 text-success" />}
+                          {optimization.type === 'time-reduction' && <Clock className="h-4 w-4 text-category-3" />}
+                          {optimization.type === 'parallel-tasks' && <Zap className="h-4 w-4 text-warning-soft" />}
                         </div>
                         <p className="text-muted-foreground">{optimization.description}</p>
                       </div>
@@ -308,19 +308,19 @@ export const WorkflowOptimizationEngine: React.FC = () => {
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <p className="text-sm font-medium text-green-600">Time Savings</p>
+                        <p className="text-sm font-medium text-success">Time Savings</p>
                         <p className="text-xl font-bold">{optimization.timeSavings} min</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-blue-600">Effort Reduction</p>
+                        <p className="text-sm font-medium text-info">Effort Reduction</p>
                         <p className="text-xl font-bold">{optimization.effortReduction}%</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-purple-600">Confidence</p>
+                        <p className="text-sm font-medium text-category-3">Confidence</p>
                         <p className="text-xl font-bold">{optimization.confidence}%</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-600">User Data</p>
+                        <p className="text-sm font-medium text-muted-foreground">User Data</p>
                         <p className="text-xl font-bold">{optimization.basedOnData.userCompletions}</p>
                       </div>
                     </div>
@@ -342,7 +342,7 @@ export const WorkflowOptimizationEngine: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="bg-gray-50 p-3 rounded-lg">
+                    <div className="bg-muted p-3 rounded-lg">
                       <p className="text-sm font-medium mb-1">Performance Data</p>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                         <div>
@@ -361,7 +361,7 @@ export const WorkflowOptimizationEngine: React.FC = () => {
                     </div>
 
                     {optimization.applied && (
-                      <div className="flex items-center gap-2 text-sm text-green-600">
+                      <div className="flex items-center gap-2 text-sm text-success">
                         <CheckCircle className="h-4 w-4" />
                         Applied on {optimization.appliedDate?.toLocaleDateString()}
                       </div>

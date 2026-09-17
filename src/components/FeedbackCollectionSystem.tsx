@@ -122,7 +122,7 @@ export const FeedbackCollectionSystem: React.FC<FeedbackCollectionSystemProps> =
           key={star}
           onClick={() => onRatingChange(star)}
           className={`${size} transition-colors ${
-            star <= rating ? 'text-yellow-400' : 'text-gray-300'
+            star <= rating ? 'text-warning-soft' : 'text-muted-foreground'
           }`}
         >
           <Star className="w-full h-full fill-current" />
@@ -188,7 +188,7 @@ export const FeedbackCollectionSystem: React.FC<FeedbackCollectionSystemProps> =
             {feedbackType === 'issue' && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-orange-500" />
+                  <AlertTriangle className="h-4 w-4 text-warning-soft" />
                   <span className="font-medium">What went wrong?</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -222,7 +222,7 @@ export const FeedbackCollectionSystem: React.FC<FeedbackCollectionSystemProps> =
             {feedbackType === 'suggestion' && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-blue-500" />
+                  <Lightbulb className="h-4 w-4 text-info" />
                   <span className="font-medium">Share your suggestion</span>
                 </div>
                 <Textarea 
@@ -239,7 +239,7 @@ export const FeedbackCollectionSystem: React.FC<FeedbackCollectionSystemProps> =
             {feedbackType === 'praise' && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Star className="h-4 w-4 text-yellow-500" />
+                  <Star className="h-4 w-4 text-warning-soft" />
                   <span className="font-medium">What worked well?</span>
                 </div>
                 <div className="flex flex-wrap gap-2">

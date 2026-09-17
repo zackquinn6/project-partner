@@ -58,6 +58,25 @@ export default {
 					DEFAULT: 'hsl(var(--warning-soft))',
 					foreground: 'hsl(var(--warning-soft-foreground))'
 				},
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					foreground: 'hsl(var(--info-foreground))'
+				},
+				/* Taxonomy hues for categories that carry no status meaning */
+				category: {
+					1: 'hsl(var(--category-1))',
+					'1-foreground': 'hsl(var(--category-1-foreground))',
+					2: 'hsl(var(--category-2))',
+					'2-foreground': 'hsl(var(--category-2-foreground))',
+					3: 'hsl(var(--category-3))',
+					'3-foreground': 'hsl(var(--category-3-foreground))',
+					4: 'hsl(var(--category-4))',
+					'4-foreground': 'hsl(var(--category-4-foreground))',
+					5: 'hsl(var(--category-5))',
+					'5-foreground': 'hsl(var(--category-5-foreground))',
+					6: 'hsl(var(--category-6))',
+					'6-foreground': 'hsl(var(--category-6-foreground))'
+				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
 					foreground: 'hsl(var(--muted-foreground))'

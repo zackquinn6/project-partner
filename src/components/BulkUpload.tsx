@@ -248,7 +248,7 @@ Sandpaper,Fine grit sandpaper,Pack of 10 sheets`;
                       {item.errors?.length ? (
                         <AlertCircle className="h-4 w-4 text-destructive" />
                       ) : (
-                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <CheckCircle className="h-4 w-4 text-success" />
                       )}
                     </div>
                   </div>

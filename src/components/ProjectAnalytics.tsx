@@ -178,7 +178,7 @@ const ProjectAnalytics: React.FC = () => {
                 <p className="text-sm font-medium text-muted-foreground">Total Completions</p>
                 <p className="text-2xl font-bold">{analyticsData.totalCompletions.toLocaleString()}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
+              <CheckCircle className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -190,7 +190,7 @@ const ProjectAnalytics: React.FC = () => {
                 <p className="text-sm font-medium text-muted-foreground">Avg Duration</p>
                 <p className="text-2xl font-bold">{analyticsData.averageDuration.toFixed(1)} days</p>
               </div>
-              <Clock className="h-8 w-8 text-blue-600" />
+              <Clock className="h-8 w-8 text-info" />
             </div>
           </CardContent>
         </Card>
@@ -214,7 +214,7 @@ const ProjectAnalytics: React.FC = () => {
                 <p className="text-sm font-medium text-muted-foreground">Issue Reports</p>
                 <p className="text-2xl font-bold">{analyticsData.issueReportRate.toFixed(1)}%</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-orange-600" />
+              <AlertTriangle className="h-8 w-8 text-warning-soft" />
             </div>
           </CardContent>
         </Card>
@@ -226,7 +226,7 @@ const ProjectAnalytics: React.FC = () => {
                 <p className="text-sm font-medium text-muted-foreground">Avg Phase Rating</p>
                 <p className="text-2xl font-bold">{analyticsData.overallPhaseRating.toFixed(1)}/5</p>
               </div>
-              <Star className="h-8 w-8 text-yellow-500" fill="currentColor" />
+              <Star className="h-8 w-8 text-warning-soft" fill="currentColor" />
             </div>
           </CardContent>
         </Card>
@@ -433,7 +433,7 @@ const ProjectAnalytics: React.FC = () => {
                       <p className="text-xs text-muted-foreground">{phase.count} ratings</p>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
+                      <Star className="w-4 h-4 text-warning-soft" fill="currentColor" />
                       <span className="font-bold text-lg">{phase.avgRating}</span>
                       <span className="text-sm text-muted-foreground">/5</span>
                     </div>

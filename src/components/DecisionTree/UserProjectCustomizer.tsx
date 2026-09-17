@@ -123,11 +123,11 @@ export const UserProjectCustomizer: React.FC<UserProjectCustomizerProps> = ({
       <div className="border-b bg-muted/30 p-4">
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-green-600" />
+            <CheckCircle className="w-4 h-4 text-success" />
             <span>Required Decisions: {alternateAnsweredCount} / {alternateDecisionsCount}</span>
           </div>
           <div className="flex items-center gap-2">
-            <HelpCircle className="w-4 h-4 text-blue-600" />
+            <HelpCircle className="w-4 h-4 text-info" />
             <span>Optional Work: {ifNecessarySelectedCount} selected</span>
           </div>
         </div>
@@ -178,8 +178,8 @@ export const UserProjectCustomizer: React.FC<UserProjectCustomizerProps> = ({
                     </RadioGroup>
                     
                     {selections.alternateChoices[groupKey] && (
-                      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-                        <p className="text-sm text-green-800 flex items-center gap-2">
+                      <div className="mt-4 p-3 bg-success/10 border border-success/40 rounded-md">
+                        <p className="text-sm text-success flex items-center gap-2">
                           <CheckCircle className="w-4 h-4" />
                           Selected: {group.operations.find(op => op.id === selections.alternateChoices[groupKey])?.name}
                         </p>
@@ -231,7 +231,7 @@ export const UserProjectCustomizer: React.FC<UserProjectCustomizerProps> = ({
                                 </p>
                               )}
                               {userPrompt && (
-                                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-900">
+                                <div className="mt-2 p-2 bg-info/10 border border-info/40 rounded text-sm text-info">
                                   <HelpCircle className="w-3 h-3 inline mr-1" />
                                   {userPrompt}
                                 </div>

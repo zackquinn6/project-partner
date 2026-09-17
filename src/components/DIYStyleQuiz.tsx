@@ -160,7 +160,7 @@ const archetypes: Record<string, Archetype> = {
   "sprint-builder": {
     name: "The Sprint Builder",
     icon: Zap,
-    color: "bg-orange-500",
+    color: "bg-warning-soft",
     description: "Pragmatic, efficient, thrives on momentum. They want a project plan that's lean, time-boxed, and optimized for rapid wins.",
     traits: [
       "Speed: Tight schedule, milestone-driven",
@@ -178,7 +178,7 @@ const archetypes: Record<string, Archetype> = {
   "master-crafter": {
     name: "The Master Crafter",
     icon: Award,
-    color: "bg-purple-500",
+    color: "bg-category-3",
     description: "Perfectionist, detail-oriented, motivated by craftsmanship. They want to savor the process and produce heirloom-quality results.",
     traits: [
       "Speed: Willing to take time, sees DIY as a lifestyle",
@@ -196,7 +196,7 @@ const archetypes: Record<string, Archetype> = {
   "explorer": {
     name: "The Explorer",
     icon: Compass,
-    color: "bg-blue-500",
+    color: "bg-info",
     description: "Curious, playful, and motivated by learning. They enjoy the journey as much as the outcome.",
     traits: [
       "Speed: Flexible, lifestyle pace",
@@ -214,7 +214,7 @@ const archetypes: Record<string, Archetype> = {
   "guided-achiever": {
     name: "The Guided Achiever",
     icon: Shield,
-    color: "bg-green-500",
+    color: "bg-success",
     description: "Motivated by clarity and reassurance. They want to feel supported and confident they're 'doing it right.'",
     traits: [
       "Speed: Likes structure but not frantic—steady progress",

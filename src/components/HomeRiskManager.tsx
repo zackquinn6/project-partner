@@ -167,22 +167,22 @@ export const HomeRiskManager: React.FC = () => {
 
   const getRiskIcon = (level: string) => {
     switch (level) {
-      case 'critical': return <AlertCircle className="w-4 h-4 text-red-500" />;
-      case 'high': return <AlertTriangle className="w-4 h-4 text-orange-500" />;
-      case 'medium': return <Clock className="w-4 h-4 text-yellow-500" />;
-      default: return <Info className="w-4 h-4 text-blue-500" />;
+      case 'critical': return <AlertCircle className="w-4 h-4 text-destructive-soft" />;
+      case 'high': return <AlertTriangle className="w-4 h-4 text-warning-soft" />;
+      case 'medium': return <Clock className="w-4 h-4 text-warning-soft" />;
+      default: return <Info className="w-4 h-4 text-info" />;
     }
   };
 
   const getRiskColor = (level: string, isMitigated: boolean = false) => {
     if (isMitigated) {
-      return 'bg-green-50 border-green-200';
+      return 'bg-success/10 border-success/40';
     }
     switch (level) {
-      case 'critical': return 'bg-red-50 border-red-200';
-      case 'high': return 'bg-orange-50 border-orange-200';
-      case 'medium': return 'bg-yellow-50 border-yellow-200';
-      default: return 'bg-blue-50 border-blue-200';
+      case 'critical': return 'bg-destructive-soft/10 border-destructive-soft/40';
+      case 'high': return 'bg-warning-soft/10 border-warning-soft/40';
+      case 'medium': return 'bg-warning-soft/10 border-warning-soft/40';
+      default: return 'bg-info/10 border-info/40';
     }
   };
 

@@ -332,22 +332,22 @@ export function CommunityPosts() {
 
   const getPlatformColor = (platform: string) => {
     switch (platform) {
-      case 'Reddit': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-      case 'Facebook': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'Instagram': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-      case 'YouTube': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'Forum': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'Discord': return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+      case 'Reddit': return 'bg-category-4/15 text-category-4';
+      case 'Facebook': return 'bg-category-1/15 text-category-1';
+      case 'Instagram': return 'bg-category-3/15 text-category-3';
+      case 'YouTube': return 'bg-category-5/15 text-category-5';
+      case 'Forum': return 'bg-category-2/15 text-category-2';
+      case 'Discord': return 'bg-category-6/15 text-category-6';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const getPopularityColor = (score: number) => {
-    if (score >= 90) return 'text-red-500';
-    if (score >= 80) return 'text-orange-500';
-    if (score >= 70) return 'text-yellow-500';
-    if (score >= 60) return 'text-green-500';
-    return 'text-gray-500';
+    if (score >= 90) return 'text-destructive-soft';
+    if (score >= 80) return 'text-warning-soft';
+    if (score >= 70) return 'text-warning-soft';
+    if (score >= 60) return 'text-success';
+    return 'text-muted-foreground';
   };
 
   if (loading) {

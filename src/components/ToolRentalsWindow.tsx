@@ -135,15 +135,15 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">1</div>
+                      <div className="w-8 h-8 bg-warning-soft text-warning-soft-foreground rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">1</div>
                       <p className="text-sm">Browse professional-grade tools matched to your specific project needs</p>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
+                      <div className="w-8 h-8 bg-warning-soft text-warning-soft-foreground rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
                       <p className="text-sm">Rent by the day, week, or complete project duration</p>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
+                      <div className="w-8 h-8 bg-warning-soft text-warning-soft-foreground rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
                       <p className="text-sm">Get free local delivery and pickup service</p>
                     </div>
                   </div>
@@ -154,7 +154,7 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
               <div className="text-center space-y-3">
                 <Button 
                   onClick={handleVisitToolio}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                  className="w-full bg-warning-soft hover:bg-warning-soft text-warning-soft-foreground"
                   size="lg"
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />

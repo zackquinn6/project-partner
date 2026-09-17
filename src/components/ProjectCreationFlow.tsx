@@ -180,7 +180,7 @@ export const ProjectCreationFlow: React.FC<ProjectCreationFlowProps> = ({
                           
                           {selectedHomeId === home.id && (
                             <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                              <div className="w-2 h-2 bg-white rounded-full" />
+                              <div className="w-2 h-2 bg-card rounded-full" />
                             </div>
                           )}
                         </div>

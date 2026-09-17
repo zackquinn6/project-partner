@@ -184,21 +184,21 @@ export function MobileOptimizedHome() {
       id: 'home-task-list',
       icon: ListChecks,
       title: 'Project & Task Manager',
-      color: 'bg-green-500', // Home: Green
+      color: 'bg-success', // Home: Green
       action: () => window.dispatchEvent(new CustomEvent('show-home-task-list'))
     },
     {
       id: 'home-maintenance',
       icon: HomeIcon,
       title: 'Home Maintenance',
-      color: 'bg-green-600', // Home: Green
+      color: 'bg-success', // Home: Green
       action: () => window.dispatchEvent(new CustomEvent('show-home-maintenance'))
     },
     {
       id: 'risk-focus',
       icon: Crosshair,
       title: 'Risk Radar',
-      color: 'bg-teal-600',
+      color: 'bg-success',
       action: () => window.dispatchEvent(new CustomEvent('open-risk-focus-launcher'))
     }
   ];
@@ -209,7 +209,7 @@ export function MobileOptimizedHome() {
       icon: User,
       title: 'My Profile',
       description: 'Account details and preferences',
-      color: 'bg-slate-600',
+      color: 'bg-muted-foreground',
       action: () => window.dispatchEvent(new CustomEvent('open-profile-manager'))
     },
     {
@@ -217,7 +217,7 @@ export function MobileOptimizedHome() {
       icon: MapPin,
       title: 'My Homes',
       description: 'Properties linked to your workshop',
-      color: 'bg-green-700',
+      color: 'bg-success',
       action: () => window.dispatchEvent(new CustomEvent('show-home-manager'))
     },
     {
@@ -225,7 +225,7 @@ export function MobileOptimizedHome() {
       icon: Wrench,
       title: 'My Tools',
       description: 'Your tool library',
-      color: 'bg-orange-600',
+      color: 'bg-warning-soft',
       action: () => window.dispatchEvent(new CustomEvent('show-tools-library-grid'))
     }
   ];
@@ -296,7 +296,7 @@ export function MobileOptimizedHome() {
                 align="end"
                 side="bottom"
                 sideOffset={5}
-                className="z-[9999] min-w-[200px] border border-gray-200 bg-white shadow-2xl !opacity-100 dark:border-gray-700 dark:bg-gray-900"
+                className="z-[9999] min-w-[200px] border border-border bg-card shadow-2xl !opacity-100"
               >
                 <DropdownMenuItem
                   onClick={() => window.dispatchEvent(new CustomEvent('open-profile-manager'))}
@@ -375,30 +375,30 @@ export function MobileOptimizedHome() {
           </h2>
           <div className="grid grid-cols-2 gap-3">
             <Card
-              className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-emerald-900/80 via-emerald-900 to-emerald-900/90 shadow-sm cursor-pointer transition-opacity hover:opacity-90"
+              className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-success via-success to-success shadow-sm cursor-pointer transition-opacity hover:opacity-90"
               onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}
             >
-              <div className="absolute inset-x-0 -top-6 h-10 bg-gradient-to-b from-emerald-500/30 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 -top-6 h-10 bg-gradient-to-b from-success to-transparent pointer-events-none" />
               <CardContent className="relative p-3 text-left space-y-1">
-                <p className="text-[11px] uppercase tracking-wide text-emerald-200/80">
+                <p className="text-[11px] uppercase tracking-wide text-success-foreground">
                   Open tasks
                 </p>
-                <p className="text-xl font-semibold text-emerald-50">
+                <p className="text-xl font-semibold text-success-foreground">
                   {stats.openTasks ?? 0}
                 </p>
               </CardContent>
             </Card>
 
             <Card
-              className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-sky-900/80 via-sky-900 to-sky-900/90 shadow-sm cursor-pointer transition-opacity hover:opacity-90"
+              className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-info via-info to-info shadow-sm cursor-pointer transition-opacity hover:opacity-90"
               onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}
             >
-              <div className="absolute inset-x-0 -top-6 h-10 bg-gradient-to-b from-sky-500/30 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 -top-6 h-10 bg-gradient-to-b from-info to-transparent pointer-events-none" />
               <CardContent className="relative p-3 text-left space-y-1">
-                <p className="text-[11px] uppercase tracking-wide text-sky-200/80">
+                <p className="text-[11px] uppercase tracking-wide text-info-foreground">
                   Maintenance due soon
                 </p>
-                <p className="text-xl font-semibold text-sky-50">
+                <p className="text-xl font-semibold text-info-foreground">
                   {stats.maintenanceDueSoon ?? 0}
                 </p>
               </CardContent>

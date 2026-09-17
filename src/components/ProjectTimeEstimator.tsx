@@ -97,10 +97,10 @@ export const ProjectTimeEstimator: React.FC<ProjectTimeEstimatorProps> = ({
 
   const getScenarioColor = (scenario: string) => {
     switch (scenario) {
-      case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'medium': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'high': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+      case 'low': return 'bg-success/15 text-success';
+      case 'medium': return 'bg-info/15 text-info';
+      case 'high': return 'bg-destructive-soft/15 text-destructive-soft';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -171,9 +171,9 @@ export const ProjectTimeEstimator: React.FC<ProjectTimeEstimatorProps> = ({
         <div className="grid md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-4 text-center">
-              <Clock className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+              <Clock className="w-8 h-8 text-info mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">Work Time</p>
-              <p className="text-2xl font-bold text-blue-600">
+              <p className="text-2xl font-bold text-info">
                 {formatTime(timeEstimates.totalWorkTime)}
               </p>
             </CardContent>
@@ -212,7 +212,7 @@ export const ProjectTimeEstimator: React.FC<ProjectTimeEstimatorProps> = ({
                 <div className="flex items-center gap-6 text-sm">
                   <div className="text-center">
                     <p className="text-muted-foreground">Work Time</p>
-                    <p className="font-semibold text-blue-600">
+                    <p className="font-semibold text-info">
                       {formatTime(phase.workTime)}
                     </p>
                   </div>
@@ -224,12 +224,12 @@ export const ProjectTimeEstimator: React.FC<ProjectTimeEstimatorProps> = ({
 
         {/* Planning Recommendations */}
         {projectRun && (
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
+          <div className="p-4 bg-info/10 border border-info/40 rounded-lg">
+            <h4 className="font-semibold text-info mb-2 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" />
               Planning Recommendations
             </h4>
-            <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+            <div className="text-sm text-info space-y-1">
               <p>
                 • Based on {projectRun.availableHoursPerDay || 4} hours/day, {projectRun.workingDaysPerWeek || 2} days/week
               </p>

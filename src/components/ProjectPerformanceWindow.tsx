@@ -163,7 +163,7 @@ export const ProjectPerformanceWindow: React.FC<ProjectPerformanceWindowProps> =
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t">
                   <span className="text-sm font-medium">Variance:</span>
-                  <span className={`font-bold ${budgetMetrics.variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className={`font-bold ${budgetMetrics.variance >= 0 ? 'text-success' : 'text-destructive-soft'}`}>
                     {budgetMetrics.variance >= 0 ? <TrendingUp className="w-4 h-4 inline" /> : <TrendingDown className="w-4 h-4 inline" />}
                     ${Math.abs(budgetMetrics.variance).toFixed(2)}
                   </span>
@@ -310,13 +310,13 @@ export const ProjectPerformanceWindow: React.FC<ProjectPerformanceWindowProps> =
                 <div className="space-y-2">
                   <div className="flex justify-between p-3 bg-muted rounded">
                     <span>Total Variance</span>
-                    <span className={`font-bold ${budgetMetrics.variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`font-bold ${budgetMetrics.variance >= 0 ? 'text-success' : 'text-destructive-soft'}`}>
                       ${budgetMetrics.variance.toFixed(2)} ({budgetMetrics.variancePercent.toFixed(1)}%)
                     </span>
                   </div>
                   {budgetMetrics.variance < 0 && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded text-sm">
-                      <AlertTriangle className="w-4 h-4 inline mr-2 text-red-600" />
+                    <div className="p-3 bg-destructive-soft/10 border border-destructive-soft/40 rounded text-sm">
+                      <AlertTriangle className="w-4 h-4 inline mr-2 text-destructive-soft" />
                       Over budget by ${Math.abs(budgetMetrics.variance).toFixed(2)}
                     </div>
                   )}
@@ -335,19 +335,19 @@ export const ProjectPerformanceWindow: React.FC<ProjectPerformanceWindowProps> =
                   <div className="flex items-center gap-4">
                     <div className="flex-1">
                       <div className="text-sm text-muted-foreground mb-1">Low Estimate</div>
-                      <div className="h-8 bg-green-200 rounded flex items-center justify-center">
+                      <div className="h-8 bg-success/25 rounded flex items-center justify-center">
                         {scheduleMetrics.estimatedLow.toFixed(0)} days
                       </div>
                     </div>
                     <div className="flex-1">
                       <div className="text-sm text-muted-foreground mb-1">Medium Estimate</div>
-                      <div className="h-8 bg-yellow-200 rounded flex items-center justify-center">
+                      <div className="h-8 bg-warning-soft/25 rounded flex items-center justify-center">
                         {scheduleMetrics.estimatedMed.toFixed(0)} days
                       </div>
                     </div>
                     <div className="flex-1">
                       <div className="text-sm text-muted-foreground mb-1">High Estimate</div>
-                      <div className="h-8 bg-red-200 rounded flex items-center justify-center">
+                      <div className="h-8 bg-destructive-soft/25 rounded flex items-center justify-center">
                         {scheduleMetrics.estimatedHigh.toFixed(0)} days
                       </div>
                     </div>

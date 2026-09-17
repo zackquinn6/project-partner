@@ -163,7 +163,7 @@ export const marketingCopyByMode: Record<MarketingMode, MarketingCopy> = {
           title: 'Complete Beginners',
           description:
             "Never used a drill? We've got you. Start with simple projects and build confidence as you go.",
-          bgColor: 'bg-green-100 dark:bg-green-950',
+          bgColor: 'bg-success/15',
           useIcon: false,
         },
         {
@@ -171,14 +171,14 @@ export const marketingCopyByMode: Record<MarketingMode, MarketingCopy> = {
           title: 'Weekend Warriors',
           description:
             'Make the most of your limited time. Get efficient plans that fit your busy schedule.',
-          bgColor: 'bg-blue-100 dark:bg-blue-950',
+          bgColor: 'bg-info/15',
           useIcon: false,
         },
         {
           emoji: '🚀',
           title: 'DIY Enthusiasts',
           description: 'Level up with advanced techniques. Tackle complex projects with confidence.',
-          bgColor: 'bg-purple-100 dark:bg-purple-950',
+          bgColor: 'bg-category-3/15',
           useIcon: false,
         },
         {
@@ -186,7 +186,7 @@ export const marketingCopyByMode: Record<MarketingMode, MarketingCopy> = {
           title: 'Contractor',
           description:
             'Streamline your projects with professional-grade tools and workflows designed for builders.',
-          bgColor: 'bg-orange-100 dark:bg-orange-950',
+          bgColor: 'bg-warning-soft/15',
           useIcon: true,
         },
       ],
@@ -271,7 +271,7 @@ export const marketingCopyByMode: Record<MarketingMode, MarketingCopy> = {
           title: 'First-Time Tilers',
           description:
             'Never set a tile? Start with clear floor or backsplash workflows and build confidence as you go.',
-          bgColor: 'bg-green-100 dark:bg-green-950',
+          bgColor: 'bg-success/15',
           useIcon: false,
         },
         {
@@ -279,7 +279,7 @@ export const marketingCopyByMode: Record<MarketingMode, MarketingCopy> = {
           title: 'Weekend Warriors',
           description:
             'Make the most of limited time. Get efficient tile plans that fit a busy schedule.',
-          bgColor: 'bg-blue-100 dark:bg-blue-950',
+          bgColor: 'bg-info/15',
           useIcon: false,
         },
         {
@@ -287,7 +287,7 @@ export const marketingCopyByMode: Record<MarketingMode, MarketingCopy> = {
           title: 'DIY Enthusiasts',
           description:
             'Level up on wet areas and complex layouts. Tackle showers and baths with confidence.',
-          bgColor: 'bg-purple-100 dark:bg-purple-950',
+          bgColor: 'bg-category-3/15',
           useIcon: false,
         },
         {
@@ -295,7 +295,7 @@ export const marketingCopyByMode: Record<MarketingMode, MarketingCopy> = {
           title: 'Contractor',
           description:
             'Streamline residential tile jobs with professional-grade workflows designed for builders.',
-          bgColor: 'bg-orange-100 dark:bg-orange-950',
+          bgColor: 'bg-warning-soft/15',
           useIcon: true,
         },
       ],

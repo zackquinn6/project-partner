@@ -20,26 +20,26 @@ export const OutputDetailPopup: React.FC<OutputDetailPopupProps> = ({
   const getTypeIcon = (type: Output['type']) => {
     switch (type) {
       case 'safety':
-        return <AlertTriangle className="w-4 h-4 text-red-500" />;
+        return <AlertTriangle className="w-4 h-4 text-destructive-soft" />;
       case 'performance-durability':
-        return <Target className="w-4 h-4 text-blue-500" />;
+        return <Target className="w-4 h-4 text-info" />;
       case 'major-aesthetics':
-        return <Eye className="w-4 h-4 text-purple-500" />;
+        return <Eye className="w-4 h-4 text-category-3" />;
       default:
-        return <CheckCircle className="w-4 h-4 text-gray-500" />;
+        return <CheckCircle className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
   const getTypeColor = (type: Output['type']) => {
     switch (type) {
       case 'safety':
-        return 'bg-red-100 text-red-800 border-red-300';
+        return 'bg-destructive-soft/15 text-destructive-soft border-destructive-soft/40';
       case 'performance-durability':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
+        return 'bg-info/15 text-info border-info/40';
       case 'major-aesthetics':
-        return 'bg-purple-100 text-purple-800 border-purple-300';
+        return 'bg-category-3/15 text-category-3 border-category-3/40';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return 'bg-muted text-foreground border-border';
     }
   };
 
@@ -95,7 +95,7 @@ export const OutputDetailPopup: React.FC<OutputDetailPopupProps> = ({
             <Card>
               <CardContent className="p-4">
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-orange-500" />
+                  <AlertTriangle className="w-4 h-4 text-warning-soft" />
                   Potential Effects if Error
                 </h4>
                 <p className="text-muted-foreground">{output.potentialEffects}</p>
@@ -145,7 +145,7 @@ export const OutputDetailPopup: React.FC<OutputDetailPopupProps> = ({
             <Card>
               <CardContent className="p-4">
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle className="w-4 h-4 text-success" />
                   Quality control
                 </h4>
                 <p className="text-muted-foreground">{output.qualityChecks}</p>

@@ -367,13 +367,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   const getDifficultyColor = useCallback((difficulty: string) => {
     switch (difficulty) {
       case 'Beginner':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success/15 text-success';
       case 'Intermediate':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning-soft/15 text-warning-soft';
       case 'Advanced':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive-soft/15 text-destructive-soft';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
     }
   }, []);
   
@@ -919,7 +919,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
 
         <div className="text-center mb-4 md:mb-8 md:pt-1 md:pb-3">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 md:mb-4 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 leading-[1.35]">
-            <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent inline-block pb-1 pt-0.5">
+            <span className="bg-gradient-to-r from-primary to-warning-soft bg-clip-text text-transparent inline-block pb-1 pt-0.5">
               Project Catalog
             </span>
           </h1>
@@ -1201,7 +1201,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                               className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                           ) : (
-                            <div className="absolute inset-0 bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary to-warning-soft flex items-center justify-center">
                               <IconComponent className="w-8 h-8 text-white/90" />
                             </div>
                           )}
@@ -1344,7 +1344,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-primary to-orange-500 flex items-center justify-center">
+                          <div className="w-full h-full bg-gradient-to-br from-primary to-warning-soft flex items-center justify-center">
                             <IconComponent className="w-5 h-5 text-white" />
                           </div>
                         )}
@@ -1357,12 +1357,12 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                           </h3>
                           <div className="flex items-center gap-1 shrink-0">
                             {project.publishStatus === 'beta-testing' && (
-                              <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-[10px] px-1 py-0">
+                              <Badge variant="secondary" className="bg-warning-soft/15 text-warning-soft text-[10px] px-1 py-0">
                                 BETA
                               </Badge>
                             )}
                             {(project as any).visibility_status === 'coming-soon' && (
-                              <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-[10px] px-1 py-0">
+                              <Badge variant="secondary" className="bg-info/15 text-info text-[10px] px-1 py-0">
                                 Soon
                               </Badge>
                             )}
@@ -1406,7 +1406,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                     >
                       {/* Gradient background - always present, shows when no image or image fails */}
                       <div 
-                        className="gradient-background absolute inset-0 bg-gradient-to-br from-primary to-orange-500"
+                        className="gradient-background absolute inset-0 bg-gradient-to-br from-primary to-warning-soft"
                         style={{
                           opacity: gridUrl ? 0 : 1,
                           transition: 'opacity 0.3s ease',
@@ -1464,13 +1464,13 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       {/* Badges */}
                       <div className="absolute top-2 right-2 flex gap-1" style={{ zIndex: 4 }}>
                         {project.publishStatus === 'beta-testing' && (
-                          <Badge variant="secondary" className="bg-orange-500/20 text-orange-200 border-orange-300/30 backdrop-blur-sm text-[10px] px-1.5 py-0">
+                          <Badge variant="secondary" className="bg-warning-soft text-warning-soft-foreground border-warning-soft-foreground/25 text-[10px] px-1.5 py-0">
                             <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
                             BETA
                           </Badge>
                         )}
                         {(project as any).visibility_status === 'coming-soon' && (
-                          <Badge variant="secondary" className="bg-blue-500/20 text-blue-200 border-blue-300/30 backdrop-blur-sm text-[10px] px-1.5 py-0">
+                          <Badge variant="secondary" className="bg-info text-info-foreground border-info-foreground/25 text-[10px] px-1.5 py-0">
                             Coming Soon
                           </Badge>
                         )}
@@ -1479,10 +1479,10 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                             variant="secondary"
                             className={`${
                               project.publishStatus === 'published'
-                                ? 'bg-green-500/20 text-green-300'
+                                ? 'bg-success/20 text-success'
                                 : project.publishStatus === 'beta-testing'
-                                ? 'bg-orange-500/20 text-orange-300'
-                                : 'bg-yellow-500/20 text-yellow-300'
+                                ? 'bg-warning-soft/20 text-warning-soft'
+                                : 'bg-warning-soft/20 text-warning-soft'
                             } backdrop-blur-sm text-[10px] px-1.5 py-0`}
                           >
                             {project.publishStatus}

@@ -63,12 +63,12 @@ export const PricingSection: React.FC = () => {
                 <AppIconTile
                   icon={ListTodo}
                   label="Task & Project Manager"
-                  tileClassName="bg-gradient-to-br from-sky-500 to-blue-700"
+                  tileClassName="bg-gradient-to-br from-info to-info"
                 />
                 <AppIconTile
                   icon={House}
                   label="Home Maintenance"
-                  tileClassName="bg-gradient-to-br from-emerald-500 to-teal-700"
+                  tileClassName="bg-gradient-to-br from-success to-success"
                 />
               </div>
               <p className="flex-1 text-center text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
@@ -81,7 +81,7 @@ export const PricingSection: React.FC = () => {
           </Card>
 
           {/* $15 / yr — Risk Radar */}
-          <Card className="flex flex-col border-2 border-amber-500/40 shadow-sm transition-shadow hover:shadow-md">
+          <Card className="flex flex-col border-2 border-warning-soft/40 shadow-sm transition-shadow hover:shadow-md">
             <CardHeader className="space-y-1 pb-2 pt-6 text-center">
               <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Risk Radar</p>
               <div className="pt-1">
@@ -94,13 +94,13 @@ export const PricingSection: React.FC = () => {
                 <AppIconTile
                   icon={Shield}
                   label="Risk Radar"
-                  tileClassName="bg-gradient-to-br from-amber-500 to-orange-700"
+                  tileClassName="bg-gradient-to-br from-warning-soft to-warning-soft"
                 />
               </div>
               <p className="flex-1 text-center text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
                 Managing risk is the key to a successful project - get the core app for just $15.
               </p>
-              <Button variant="outline" className="w-full border-amber-500/50 hover:bg-amber-500/10" onClick={() => navigate('/auth?mode=signup')}>
+              <Button variant="outline" className="w-full border-warning-soft/40 hover:bg-warning-soft/10" onClick={() => navigate('/auth?mode=signup')}>
                 Choose Risk Radar
               </Button>
             </CardContent>
@@ -123,7 +123,7 @@ export const PricingSection: React.FC = () => {
                 <AppIconTile
                   icon={FolderKanban}
                   label="Projects"
-                  tileClassName="bg-gradient-to-br from-violet-600 to-indigo-800"
+                  tileClassName="bg-gradient-to-br from-category-3 to-category-1"
                 />
               </div>
               <p className="flex-1 text-center text-sm leading-relaxed text-muted-foreground sm:text-[15px]">

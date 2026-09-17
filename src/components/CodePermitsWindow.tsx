@@ -249,11 +249,11 @@ export function CodePermitsWindow({ open, onOpenChange }: CodePermitsWindowProps
       >
         
         {/* Beta Banner */}
-        <div className="bg-gradient-to-r from-orange-100 to-yellow-100 border-b border-orange-200 p-3">
+        <div className="bg-gradient-to-r from-warning-soft/15 to-warning-soft/15 border-b border-warning-soft/40 p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Badge className="bg-orange-500 text-white">BETA</Badge>
-              <span className="text-sm font-medium text-orange-800">
+              <Badge className="bg-warning-soft text-warning-soft-foreground">BETA</Badge>
+              <span className="text-sm font-medium text-warning-soft">
                 Feature under development - Hit the ? icon in upper right to give us feedback!
               </span>
             </div>

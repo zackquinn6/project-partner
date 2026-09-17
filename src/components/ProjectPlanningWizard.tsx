@@ -794,7 +794,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         <Button
           type="button"
           disabled={!allWorkflowStepsComplete && wizardSteps.some((s) => s.toolId != null)}
-          className={cn(primaryButtonClass, 'bg-green-600 hover:bg-green-700')}
+          className={cn(primaryButtonClass, 'bg-success hover:bg-success')}
           onClick={async () => {
             if (!allWorkflowStepsComplete && wizardSteps.some((s) => s.toolId != null)) return;
             if (!isScopeComplete) {
@@ -953,11 +953,11 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                         ${visitable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
                         ${
                           wizardPhase === 'confirm'
-                            ? 'border-green-500 bg-green-500 text-white'
+                            ? 'border-success/40 bg-success text-success-foreground'
                             : index === currentStep
                               ? 'border-primary bg-primary text-primary-foreground'
                               : isStepCompleted(index)
-                                ? 'border-green-500 bg-green-500 text-white'
+                                ? 'border-success/40 bg-success text-success-foreground'
                                 : 'border-muted-foreground bg-background'
                         }
                       `}
@@ -1051,11 +1051,11 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                             ${visitable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}
                             ${
                               wizardPhase === 'confirm'
-                                ? 'border-green-500 bg-green-500 text-white'
+                                ? 'border-success/40 bg-success text-success-foreground'
                                 : index === currentStep
                                   ? 'border-primary bg-primary text-primary-foreground'
                                   : isStepCompleted(index)
-                                    ? 'border-green-500 bg-green-500 text-white'
+                                    ? 'border-success/40 bg-success text-success-foreground'
                                     : 'border-muted-foreground bg-background'
                             }
                           `}
@@ -1069,11 +1069,11 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
                         <p
                           className={`mt-1 w-full text-center text-[9px] font-medium leading-[1.15] md:text-xs line-clamp-3 break-words ${
                             wizardPhase === 'confirm'
-                              ? 'text-green-700 dark:text-green-400'
+                              ? 'text-success'
                               : index === currentStep
                                 ? 'text-primary'
                                 : isStepCompleted(index)
-                                  ? 'text-green-700 dark:text-green-400'
+                                  ? 'text-success'
                                   : 'text-muted-foreground'
                           }`}
                         >

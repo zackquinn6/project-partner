@@ -99,7 +99,7 @@ export function PhaseCompletionPopup({
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
+            <CheckCircle className="w-5 h-5 text-success" />
             Complete Phase: {phase.name}
           </DialogTitle>
           <DialogDescription>
@@ -109,27 +109,27 @@ export function PhaseCompletionPopup({
 
         <div className="space-y-4">
           {incompleteOutputs.length === 0 ? (
-            <Card className="border-green-200 bg-green-50">
+            <Card className="border-success/40 bg-success/10">
               <CardContent className="pt-6">
-                <div className="flex items-center gap-2 text-green-700">
+                <div className="flex items-center gap-2 text-success">
                   <CheckCircle className="w-5 h-5" />
                   <span className="font-medium">All outputs completed!</span>
                 </div>
-                <p className="text-sm text-green-600 mt-1">
+                <p className="text-sm text-success mt-1">
                   You can now mark this phase as complete.
                 </p>
               </CardContent>
             </Card>
           ) : (
-            <Card className="border-amber-200 bg-amber-50">
+            <Card className="border-warning-soft/40 bg-warning-soft/10">
               <CardContent className="pt-6">
-                <div className="flex items-center gap-2 text-amber-700 mb-2">
+                <div className="flex items-center gap-2 text-warning-soft mb-2">
                   <AlertTriangle className="w-5 h-5" />
                   <span className="font-medium">
                     {incompleteOutputs.length} output{incompleteOutputs.length !== 1 ? 's' : ''} remaining
                   </span>
                 </div>
-                <p className="text-sm text-amber-600">
+                <p className="text-sm text-warning-soft">
                   Complete all outputs below to finish this phase.
                 </p>
               </CardContent>
@@ -185,7 +185,7 @@ export function PhaseCompletionPopup({
                                  output.name.toLowerCase().includes('order') ||
                                  output.description?.toLowerCase().includes('shopping') ||
                                  output.description?.toLowerCase().includes('order')) && (
-                                 <p className="text-xs text-blue-600">
+                                 <p className="text-xs text-info">
                                    This output will be automatically marked complete when you order all required tools and materials in the shopping window.
                                  </p>
                                )}
@@ -208,7 +208,7 @@ export function PhaseCompletionPopup({
           <Button 
             onClick={handleCompletePhase}
             disabled={!allOutputsComplete}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-success hover:bg-success"
           >
             <CheckCircle className="w-4 h-4 mr-2" />
             Complete Phase

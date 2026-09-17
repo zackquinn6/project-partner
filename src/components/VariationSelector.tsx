@@ -447,12 +447,12 @@ export function VariationSelector({
 
             {/* Variation Match Status */}
             {matchingVariation && (
-              <div className="mt-3 p-2 bg-green-50 rounded border border-green-200">
-                <div className="text-sm text-green-800">
+              <div className="mt-3 p-2 bg-success/10 rounded border border-success/40">
+                <div className="text-sm text-success">
                   ✓ Matches existing variation: <strong>{matchingVariation.name}</strong>
                 </div>
                 {matchingVariation.sku && (
-                  <div className="text-xs text-green-600">SKU: {matchingVariation.sku}</div>
+                  <div className="text-xs text-success">SKU: {matchingVariation.sku}</div>
                 )}
               </div>
             )}

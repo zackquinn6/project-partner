@@ -490,13 +490,13 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
                     </thead>
                     <tbody>
                       <tr>
-                        <td className="px-0.5 py-0.5 font-bold tabular-nums text-red-700 dark:text-red-400">
+                        <td className="px-0.5 py-0.5 font-bold tabular-nums text-destructive-soft">
                           {col.metrics?.high ?? '–'}
                         </td>
-                        <td className="px-0.5 py-0.5 font-bold tabular-nums text-orange-700 dark:text-orange-400">
+                        <td className="px-0.5 py-0.5 font-bold tabular-nums text-warning-soft">
                           {col.metrics?.medium ?? '–'}
                         </td>
-                        <td className="px-0.5 py-0.5 font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                        <td className="px-0.5 py-0.5 font-bold tabular-nums text-success">
                           {col.metrics?.low ?? '–'}
                         </td>
                       </tr>
@@ -584,13 +584,13 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
               </span>
             </div>
             <div className="mt-1 flex flex-wrap gap-x-2 text-[11px] font-semibold tabular-nums leading-none">
-              <span className="text-red-700 dark:text-red-400">
+              <span className="text-destructive-soft">
                 H {loading ? '…' : (projectPfmeaTotals?.high ?? '–')}
               </span>
-              <span className="text-orange-700 dark:text-orange-400">
+              <span className="text-warning-soft">
                 M {loading ? '…' : (projectPfmeaTotals?.medium ?? '–')}
               </span>
-              <span className="text-emerald-700 dark:text-emerald-600">
+              <span className="text-success">
                 L {loading ? '…' : (projectPfmeaTotals?.low ?? '–')}
               </span>
               {projectPfmeaTotals && projectPfmeaTotals.unscoredFailureModeCount > 0 ? (
@@ -651,11 +651,11 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
                   </span>
                 </div>
                 <div className="tabular-nums">
-                  <span className="font-semibold text-red-700 dark:text-red-400">H{riskRadarSummary.severityHigh}</span>
+                  <span className="font-semibold text-destructive-soft">H{riskRadarSummary.severityHigh}</span>
                   <span className="text-muted-foreground"> </span>
-                  <span className="font-semibold text-orange-700 dark:text-orange-400">M{riskRadarSummary.severityMedium}</span>
+                  <span className="font-semibold text-warning-soft">M{riskRadarSummary.severityMedium}</span>
                   <span className="text-muted-foreground"> </span>
-                  <span className="font-semibold text-emerald-700 dark:text-emerald-600">L{riskRadarSummary.severityLow}</span>
+                  <span className="font-semibold text-success">L{riskRadarSummary.severityLow}</span>
                   <span className="text-muted-foreground"> </span>
                   <span className="font-semibold text-muted-foreground">∅{riskRadarSummary.severityUnset}</span>
                 </div>

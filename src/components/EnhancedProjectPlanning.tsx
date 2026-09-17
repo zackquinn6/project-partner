@@ -51,7 +51,7 @@ export const EnhancedProjectPlanning: React.FC<EnhancedProjectPlanningProps> = (
           <CardTitle className="flex items-center gap-2">
             <Calculator className="w-5 h-5 text-primary" />
             Enhanced Project Planning
-            {isCompleted && <CheckCircle className="w-5 h-5 text-green-500" />}
+            {isCompleted && <CheckCircle className="w-5 h-5 text-success" />}
           </CardTitle>
         </CardHeader>
         
@@ -61,7 +61,7 @@ export const EnhancedProjectPlanning: React.FC<EnhancedProjectPlanningProps> = (
               <TabsTrigger value="sizing" className="flex items-center gap-2">
                 <Calculator className="w-4 h-4" />
                 Work Scope
-                {sizingComplete && <CheckCircle className="w-3 h-3 text-green-500" />}
+                {sizingComplete && <CheckCircle className="w-3 h-3 text-success" />}
               </TabsTrigger>
               <TabsTrigger value="estimation" className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
@@ -70,7 +70,7 @@ export const EnhancedProjectPlanning: React.FC<EnhancedProjectPlanningProps> = (
               <TabsTrigger value="calendar" className="flex items-center gap-2">
                 <CalendarIcon className="w-4 h-4" />
                 Project Scheduling
-                {calendarPlanningComplete && <CheckCircle className="w-3 h-3 text-green-500" />}
+                {calendarPlanningComplete && <CheckCircle className="w-3 h-3 text-success" />}
               </TabsTrigger>
             </TabsList>
             
@@ -121,9 +121,9 @@ export const EnhancedProjectPlanning: React.FC<EnhancedProjectPlanningProps> = (
                         size="sm"
                         onClick={() => setSelectedScenario(scenario)}
                         className={
-                          scenario === 'low' ? 'border-green-300 text-green-700' :
-                          scenario === 'medium' ? 'border-blue-300 text-blue-700' :
-                          'border-red-300 text-red-700'
+                          scenario === 'low' ? 'border-success/40 text-success' :
+                          scenario === 'medium' ? 'border-info/40 text-info' :
+                          'border-destructive-soft/40 text-destructive-soft'
                         }
                       >
                         {scenario === 'low' ? 'Best Case' : 

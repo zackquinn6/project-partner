@@ -174,15 +174,15 @@ export const PasswordSecurityManager: React.FC = () => {
             </div>
           </div>
           
-          {passwordData.newPassword && passwordData.confirmPassword && <Alert className={`py-2 ${passwordData.newPassword === passwordData.confirmPassword ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}>
+          {passwordData.newPassword && passwordData.confirmPassword && <Alert className={`py-2 ${passwordData.newPassword === passwordData.confirmPassword ? 'border-success/40 bg-success/10' : 'border-destructive-soft/40 bg-destructive-soft/10'}`}>
               {passwordData.newPassword === passwordData.confirmPassword ? <>
-                  <CheckCircle className="w-3 h-3 text-green-600" />
-                  <AlertDescription className="text-green-700 text-xs">
+                  <CheckCircle className="w-3 h-3 text-success" />
+                  <AlertDescription className="text-success text-xs">
                     Passwords match
                   </AlertDescription>
                 </> : <>
-                  <AlertTriangle className="w-3 h-3 text-red-600" />
-                  <AlertDescription className="text-red-700 text-xs">
+                  <AlertTriangle className="w-3 h-3 text-destructive-soft" />
+                  <AlertDescription className="text-destructive-soft text-xs">
                     Passwords do not match
                   </AlertDescription>
                 </>}

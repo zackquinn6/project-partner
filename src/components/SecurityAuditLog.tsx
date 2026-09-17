@@ -94,8 +94,8 @@ export const SecurityAuditLog: React.FC = () => {
 
   const getActionIcon = (action: string) => {
     switch (action) {
-      case 'add': return <UserPlus className="h-4 w-4 text-green-500" />;
-      case 'remove': return <UserMinus className="h-4 w-4 text-red-500" />;
+      case 'add': return <UserPlus className="h-4 w-4 text-success" />;
+      case 'remove': return <UserMinus className="h-4 w-4 text-destructive-soft" />;
       default: return <Shield className="h-4 w-4" />;
     }
   };

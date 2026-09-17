@@ -300,12 +300,12 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
 
               {/* Add Custom Work Button */}
               {onAddCustomWork && (
-                <Card className="border-sky-200 bg-sky-50/80 dark:border-sky-800 dark:bg-sky-950/40">
+                <Card className="border-info/40 bg-info/10">
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1">
-                        <h4 className="font-semibold text-sm text-sky-950 dark:text-sky-100">Add Custom Work</h4>
-                        <p className="text-xs text-sky-800 dark:text-sky-200/90 mt-0.5">
+                        <h4 className="font-semibold text-sm text-info">Add Custom Work</h4>
+                        <p className="text-xs text-info mt-0.5">
                           Use this when you can&apos;t find work content in our catalog
                         </p>
                       </div>
@@ -316,7 +316,7 @@ export const PhaseBrowser: React.FC<PhaseBrowserProps> = ({
                         }}
                         variant="outline"
                         size="sm"
-                        className="border-sky-300 text-sky-900 hover:bg-sky-100 dark:border-sky-600 dark:text-sky-100 dark:hover:bg-sky-900/50"
+                        className="border-info/40 text-info hover:bg-info/15"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         Create Custom

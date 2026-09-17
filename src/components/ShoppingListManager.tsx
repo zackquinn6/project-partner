@@ -114,12 +114,12 @@ export function ShoppingListManager() {
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) {
-      return <ChevronDown className="h-3 w-3 text-white opacity-30" />;
+      return <ChevronDown className="h-3 w-3 text-info-foreground opacity-30" />;
     }
     return sortDirection === 'asc' ? (
-      <ChevronUp className="h-3 w-3 text-white" />
+      <ChevronUp className="h-3 w-3 text-info-foreground" />
     ) : (
-      <ChevronDown className="h-3 w-3 text-white" />
+      <ChevronDown className="h-3 w-3 text-info-foreground" />
     );
   };
 
@@ -141,29 +141,29 @@ export function ShoppingListManager() {
       <div className="border-x-0 flex-1 overflow-hidden rounded-none border border-border/60 md:rounded-lg md:border-x">
         <div className="h-full max-h-[min(600px,70vh)] overflow-auto md:max-h-none">
           <Table>
-            <TableHeader className="sticky top-0 z-10 bg-sky-600/80 text-white [&_th]:px-2 [&_th]:py-2 [&_th]:md:px-4 [&_th]:md:py-3">
-              <TableRow className="border-sky-500/50">
-                <TableHead className="w-14 text-xs text-white">
+            <TableHeader className="sticky top-0 z-10 bg-info/80 text-info-foreground [&_th]:px-2 [&_th]:py-2 [&_th]:md:px-4 [&_th]:md:py-3">
+              <TableRow className="border-info/40">
+                <TableHead className="w-14 text-xs text-info-foreground">
                   <span className="sr-only">Shopped</span>
                 </TableHead>
-                <TableHead className="min-w-0 text-xs text-white md:min-w-[200px]">
+                <TableHead className="min-w-0 text-xs text-info-foreground md:min-w-[200px]">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleSort('material_name')}
-                    className="h-6 px-1 text-xs font-medium text-white hover:bg-white/20 hover:text-white md:px-2"
+                    className="h-6 px-1 text-xs font-medium text-info-foreground hover:bg-card/20 hover:text-info-foreground md:px-2"
                   >
                     Material <SortIcon field="material_name" />
                   </Button>
                 </TableHead>
-                <TableHead className="w-20 text-xs font-medium text-white md:w-24">Qty</TableHead>
+                <TableHead className="w-20 text-xs font-medium text-info-foreground md:w-24">Qty</TableHead>
                 {!isMobile && (
-                  <TableHead className="min-w-0 text-xs text-white md:min-w-[200px]">
+                  <TableHead className="min-w-0 text-xs text-info-foreground md:min-w-[200px]">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort('task_title')}
-                      className="h-6 px-1 text-xs font-medium text-white hover:bg-white/20 hover:text-white md:px-2"
+                      className="h-6 px-1 text-xs font-medium text-info-foreground hover:bg-card/20 hover:text-info-foreground md:px-2"
                     >
                       Task <SortIcon field="task_title" />
                     </Button>

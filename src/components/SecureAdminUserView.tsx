@@ -164,13 +164,13 @@ export const SecureAdminUserView: React.FC<SecureAdminUserViewProps> = ({ userId
   return (
     <div className="space-y-6">
       {/* Access Controls */}
-      <Card className="border-amber-200 bg-amber-50">
+      <Card className="border-warning-soft/40 bg-warning-soft/10">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-amber-600" />
-            <CardTitle className="text-amber-800">Secure Admin Access</CardTitle>
+            <Shield className="h-5 w-5 text-warning-soft" />
+            <CardTitle className="text-warning-soft">Secure Admin Access</CardTitle>
           </div>
-          <CardDescription className="text-amber-700">
+          <CardDescription className="text-warning-soft">
             All access to sensitive user data is logged and monitored. Provide justification for data access.
           </CardDescription>
         </CardHeader>
@@ -327,11 +327,11 @@ export const SecureAdminUserView: React.FC<SecureAdminUserViewProps> = ({ userId
       )}
 
       {/* Security Notice */}
-      <Card className="border-red-200 bg-red-50">
+      <Card className="border-destructive-soft/40 bg-destructive-soft/10">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
-            <div className="text-red-800">
+            <AlertTriangle className="h-5 w-5 text-destructive-soft mt-0.5" />
+            <div className="text-destructive-soft">
               <strong>Security Notice:</strong> All access to user data is logged with timestamps, 
               IP addresses, and justifications. This access is subject to audit and review by 
               security teams. Misuse of admin privileges may result in account suspension.

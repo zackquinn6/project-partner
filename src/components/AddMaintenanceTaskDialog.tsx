@@ -438,7 +438,7 @@ export function AddMaintenanceTaskDialog({
                                 className="h-8 w-8 shrink-0"
                                 title="Add to plan"
                               >
-                                <Plus className="h-4 w-4 text-blue-600" />
+                                <Plus className="h-4 w-4 text-info" />
                               </Button>
                             </div>
                           </CardHeader>
@@ -467,7 +467,7 @@ export function AddMaintenanceTaskDialog({
               )}
               {templates.length > 0 && templatesNotYetAdded.length === 0 && (
                 <div className="text-center py-10 rounded-lg border border-primary/20 bg-primary/5">
-                  <CheckCircle2 className="h-12 w-12 mx-auto text-emerald-600 mb-4" />
+                  <CheckCircle2 className="h-12 w-12 mx-auto text-success mb-4" />
                   <h3 className="text-lg font-medium mb-2">You've added them all</h3>
                   <p className="text-muted-foreground text-sm">All available templates are on your plan. Add a custom task or check back for new templates.</p>
                 </div>

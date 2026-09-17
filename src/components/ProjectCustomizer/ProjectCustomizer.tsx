@@ -1077,7 +1077,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
       className={cn(
         'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base font-bold',
         complete
-          ? 'bg-green-600 text-white'
+          ? 'bg-success text-success-foreground'
           : 'bg-primary text-primary-foreground'
       )}
       aria-label={complete ? `Step ${step} complete` : `Step ${step}`}
@@ -1188,7 +1188,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                           type="button"
                           size="sm"
                           onClick={() => void handleUseDefaultHome()}
-                          className="h-9 bg-green-600 px-3 text-xs text-white hover:bg-green-700"
+                          className="h-9 bg-success px-3 text-xs text-success-foreground hover:bg-success"
                         >
                           Use Default Home and Continue
                         </Button>
@@ -1222,7 +1222,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                   />
                 </AccordionTrigger>
                 <AccordionContent className="border-t bg-muted/10 px-4 pb-4 pt-4 md:px-5">
-                  <Card className="bg-blue-50 border-blue-200">
+                  <Card className="bg-info/10 border-info/40">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
                         <div className="flex-1">
@@ -1244,7 +1244,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                               type="button"
                               size="sm"
                               onClick={() => void handleUseOneDefaultRoom()}
-                              className="bg-green-600 text-xs text-white hover:bg-green-700"
+                              className="bg-success text-xs text-success-foreground hover:bg-success"
                             >
                               Use (1) Default Room and Continue
                             </Button>
@@ -1287,20 +1287,20 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                           <div
                             key={decision.id}
                             className={`space-y-2 border-b border-border/60 pb-4 last:border-0 last:pb-0 ${
-                              isAnswered ? 'rounded-lg border border-green-300 bg-green-50/40 px-3 pt-3' : ''
+                              isAnswered ? 'rounded-lg border border-success/40 bg-success/10 px-3 pt-3' : ''
                             }`}
                           >
                             <div className="flex items-start gap-2">
                               {isAnswered ? (
-                                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" aria-hidden />
+                                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" aria-hidden />
                               ) : (
-                                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-orange-500" aria-hidden />
+                                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-warning-soft" aria-hidden />
                               )}
                               <div className="min-w-0 flex-1">
                                 <div className="mb-2 flex flex-wrap items-center gap-2">
                                   <Label className="text-sm font-medium">{decision.label}</Label>
                                   {isAnswered ? (
-                                    <Badge variant="secondary" className="bg-green-100 text-xs text-green-800">
+                                    <Badge variant="secondary" className="bg-success/15 text-xs text-success">
                                       Done
                                     </Badge>
                                   ) : (
@@ -1475,7 +1475,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                             type="button"
                             size="sm"
                             onClick={() => void handleSaveCustomization()}
-                            className="flex-1 bg-green-600 text-xs text-white hover:bg-green-700 sm:flex-none"
+                            className="flex-1 bg-success text-xs text-success-foreground hover:bg-success sm:flex-none"
                           >
                             Continue with no Custom Work
                           </Button>
@@ -1523,7 +1523,7 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
                                 <h4 className="font-medium text-sm">{phase.name}</h4>
                                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{phase.description}</p>
                               </div>
-                              <Badge variant="secondary" className="bg-orange-100 text-orange-800 self-start sm:self-center">
+                              <Badge variant="secondary" className="bg-warning-soft/15 text-warning-soft self-start sm:self-center">
                                 Custom
                               </Badge>
                             </div>

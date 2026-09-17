@@ -110,6 +110,11 @@ import {
   REGISTER_RISK_UNSCORED_MESSAGE,
   registerRiskPriority,
 } from '@/utils/registerRiskScoring';
+import {
+  currentRiskLevelBadgeClass,
+  riskFocusSeveritySelectItemClass,
+  riskFocusSeveritySelectTriggerClass,
+} from '@/utils/riskSeverityStyles';
 
 const RISK_FOCUS_PROGRESS_STOPS = [0, 25, 50, 75, 100] as const;
 
@@ -426,49 +431,15 @@ function isUserAddedRisk(risk: Risk): boolean {
   return !risk.from_standard_foundation && !risk.template_risk_id && !risk.is_template_risk;
 }
 
-function currentRiskLevelBadgeClass(level: 'low' | 'medium' | 'high') {
-  switch (level) {
-    case 'high':
-      return 'bg-red-100 text-red-800 border-red-300';
-    case 'low':
-      return 'bg-emerald-100 text-emerald-800 border-emerald-300';
-    default:
-      return 'bg-amber-100 text-amber-900 border-amber-300';
-  }
-}
-
-/** Select trigger styling for “What’s the new status?” severity (red / yellow / green). */
-function riskFocusSeveritySelectTriggerClass(level: 'low' | 'medium' | 'high'): string {
-  switch (level) {
-    case 'high':
-      return 'border-red-300 bg-red-50/90 text-red-900 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200';
-    case 'low':
-      return 'border-emerald-300 bg-emerald-50/90 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200';
-    default:
-      return 'border-amber-300 bg-amber-50/90 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200';
-  }
-}
-
-function riskFocusSeveritySelectItemClass(level: 'high' | 'medium' | 'low'): string {
-  switch (level) {
-    case 'high':
-      return 'text-red-800 focus:bg-red-50 focus:text-red-900 dark:text-red-300 dark:focus:bg-red-950/50 dark:focus:text-red-200';
-    case 'low':
-      return 'text-emerald-800 focus:bg-emerald-50 focus:text-emerald-900 dark:text-emerald-300 dark:focus:bg-emerald-950/40 dark:focus:text-emerald-200';
-    default:
-      return 'text-amber-900 focus:bg-amber-50 focus:text-amber-950 dark:text-amber-300 dark:focus:bg-amber-950/40 dark:focus:text-amber-200';
-  }
-}
-
 /** Light colour for a component's worst priority. Grey is "nothing scored", not "clear". */
 function riskComponentLightClass(ap: ActionPriority | null): string {
   switch (ap) {
     case 'H':
-      return 'bg-red-500 ring-red-500/30';
+      return 'bg-destructive-soft ring-destructive-soft';
     case 'M':
-      return 'bg-amber-500 ring-amber-500/30';
+      return 'bg-warning-soft ring-warning-soft';
     case 'L':
-      return 'bg-emerald-500 ring-emerald-500/30';
+      return 'bg-success ring-success';
     default:
       return 'bg-muted-foreground/40 ring-muted-foreground/15';
   }
@@ -477,11 +448,11 @@ function riskComponentLightClass(ap: ActionPriority | null): string {
 function riskComponentTileClass(ap: ActionPriority | null): string {
   switch (ap) {
     case 'H':
-      return 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/40';
+      return 'border-destructive-soft/40 bg-destructive-soft/10';
     case 'M':
-      return 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40';
+      return 'border-warning-soft/40 bg-warning-soft/10';
     case 'L':
-      return 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30';
+      return 'border-success/40 bg-success/10';
     default:
       return 'border-border bg-background';
   }
@@ -525,82 +496,89 @@ function RiskComponentOverview({
   };
 
   return (
-    <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-      {RISK_DIMENSIONS.map((dimension) => {
-        const rollup = rollups[dimension];
-        const ap = rollup.worstActionPriority;
-        const label = ap && table ? actionPriorityLabel(table, ap).label : null;
-        const description = ap && table ? actionPriorityLabel(table, ap).description : null;
-        const score = worstRpn[dimension];
+    <TooltipProvider>
+      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+        {RISK_DIMENSIONS.map((dimension) => {
+          const rollup = rollups[dimension];
+          const ap = rollup.worstActionPriority;
+          const label = ap && table ? actionPriorityLabel(table, ap).label : null;
+          const description = ap && table ? actionPriorityLabel(table, ap).description : null;
+          const score = worstRpn[dimension];
 
-        const body = (
-          <>
-            <div className="flex items-center gap-1.5">
-              <span
-                className={cn('h-2.5 w-2.5 shrink-0 rounded-full ring-2', riskComponentLightClass(ap))}
-                aria-hidden
-              />
-              <span className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {RISK_COMPONENT_CONSUMER_LABELS[dimension]}
-              </span>
-            </div>
-            <div className="truncate text-xs font-semibold">
-              {label ?? (rollup.totalCount === 0 ? 'Nothing recorded' : 'Not scored')}
-            </div>
-            <div className="text-[10px] tabular-nums text-muted-foreground">
-              {score != null ? `${score} / 1000` : 'No score'}
-            </div>
-            <div className="text-[10px] text-muted-foreground">
-              {rollup.highCount > 0
-                ? `${rollup.highCount} to act on`
-                : rollup.unscoredCount > 0
-                  ? `${rollup.unscoredCount} unscored`
-                  : `${rollup.totalCount} tracked`}
-            </div>
-          </>
-        );
+          const body = (
+            <>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={cn('h-2.5 w-2.5 shrink-0 rounded-full ring-2', riskComponentLightClass(ap))}
+                  aria-hidden
+                />
+                <span className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {RISK_COMPONENT_CONSUMER_LABELS[dimension]}
+                </span>
+              </div>
+              <div className="truncate text-xs font-semibold">
+                {label ?? (rollup.totalCount === 0 ? 'Nothing recorded' : 'Not scored')}
+              </div>
+              <div className="text-[10px] tabular-nums text-muted-foreground">
+                {score != null ? `${score} / 1000` : 'No score'}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                {rollup.highCount > 0
+                  ? `${rollup.highCount} to act on`
+                  : rollup.unscoredCount > 0
+                    ? `${rollup.unscoredCount} unscored`
+                    : `${rollup.totalCount} tracked`}
+              </div>
+            </>
+          );
 
-        const tileClass = cn('min-w-0 rounded-md border px-2 py-1.5 text-left', riskComponentTileClass(ap));
+          const tileClass = cn(
+            'min-w-0 rounded-md border px-2 py-1.5 text-left',
+            riskComponentTileClass(ap)
+          );
 
-        return (
-          <Tooltip key={dimension}>
-            <TooltipTrigger asChild>
-              {projectRunId ? (
-                <button
-                  type="button"
-                  onClick={() => openDashboard(dimension)}
-                  onDoubleClick={() => openDashboard(dimension)}
-                  className={cn(
-                    tileClass,
-                    'transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:brightness-110'
-                  )}
-                  aria-label={`${RISK_COMPONENT_CONSUMER_LABELS[dimension]} risk: open dashboard`}
-                >
-                  {body}
-                </button>
-              ) : (
-                <div className={tileClass}>{body}</div>
-              )}
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-xs">
-              <p className="text-xs font-medium">
-                {RISK_COMPONENT_CONSUMER_LABELS[dimension]}: {RISK_COMPONENT_CONSUMER_STAKES[dimension]}
-              </p>
-              {description ? <p className="mt-1 text-xs">{description}</p> : null}
-              <p className="mt-1 text-xs text-muted-foreground">
-                {rollup.highCount} act now, {rollup.mediumCount} safeguard, {rollup.lowCount} covered
-                {rollup.unscoredCount > 0 ? `, ${rollup.unscoredCount} unscored` : ''}
-              </p>
-              {score != null ? (
-                <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-                  Worst line scores {score} out of 1000
+          return (
+            <Tooltip key={dimension}>
+              <TooltipTrigger asChild>
+                {projectRunId ? (
+                  <button
+                    type="button"
+                    onClick={() => openDashboard(dimension)}
+                    onDoubleClick={() => openDashboard(dimension)}
+                    className={cn(
+                      tileClass,
+                      'transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:brightness-110'
+                    )}
+                    aria-label={`${RISK_COMPONENT_CONSUMER_LABELS[dimension]} risk: open dashboard`}
+                  >
+                    {body}
+                  </button>
+                ) : (
+                  <div className={tileClass}>{body}</div>
+                )}
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs">
+                <p className="text-xs font-medium">
+                  {RISK_COMPONENT_CONSUMER_LABELS[dimension]}:{' '}
+                  {RISK_COMPONENT_CONSUMER_STAKES[dimension]}
                 </p>
-              ) : null}
-            </TooltipContent>
-          </Tooltip>
-        );
-      })}
-    </div>
+                {description ? <p className="mt-1 text-xs">{description}</p> : null}
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {rollup.highCount} act now, {rollup.mediumCount} safeguard, {rollup.lowCount}{' '}
+                  covered
+                  {rollup.unscoredCount > 0 ? `, ${rollup.unscoredCount} unscored` : ''}
+                </p>
+                {score != null ? (
+                  <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                    Worst line scores {score} out of 1000
+                  </p>
+                ) : null}
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </div>
+    </TooltipProvider>
   );
 }
 
@@ -622,8 +600,8 @@ function RiskFocusDashboard({
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 py-2 md:px-4">
       {!hideMotivationalHero ? (
-        <div className="mb-3 rounded-xl border border-slate-700/80 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 px-4 py-3 text-center shadow-sm">
-          <div className="text-base font-bold leading-tight text-blue-50 md:text-lg">
+        <div className="mb-3 rounded-xl border border-border gradient-primary px-4 py-3 text-center shadow-sm">
+          <div className="text-base font-bold leading-tight text-primary-foreground md:text-lg">
             You don’t need perfection - each step you take makes success more likely.
           </div>
         </div>
@@ -657,13 +635,13 @@ function RiskFocusDashboard({
                     <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                       Med
                     </span>
-                    <span className="text-base font-bold tabular-nums text-amber-600 sm:text-lg">{medium}</span>
+                    <span className="text-base font-bold tabular-nums text-warning-soft sm:text-lg">{medium}</span>
                   </div>
                   <div className="flex flex-row items-baseline gap-1.5 border-l border-foreground/20 pl-2 dark:border-foreground/30 sm:gap-2 sm:pl-3">
                     <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                       Low
                     </span>
-                    <span className="text-base font-bold tabular-nums text-emerald-600 sm:text-lg">{low}</span>
+                    <span className="text-base font-bold tabular-nums text-success sm:text-lg">{low}</span>
                   </div>
                   <div
                     className="mx-0.5 h-6 w-px shrink-0 self-center bg-foreground/45 dark:bg-foreground/55 sm:mx-1.5"
@@ -1800,17 +1778,17 @@ export function RiskManagementWindow({
     
     const riskScore = Math.max(likelihoodScore, scheduleScore, budgetScore);
     
-    if (riskScore >= 3) return 'bg-red-100 text-red-800 border-red-300';
-    if (riskScore >= 2) return 'bg-orange-100 text-orange-800 border-orange-300';
-    return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+    if (riskScore >= 3) return 'bg-destructive-soft/15 text-destructive-soft border-destructive-soft/40';
+    if (riskScore >= 2) return 'bg-warning-soft/15 text-warning-soft border-warning-soft/40';
+    return 'bg-warning-soft/15 text-warning-soft border-warning-soft/40';
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'closed': return 'bg-green-100 text-green-800';
-      case 'mitigated': return 'bg-blue-100 text-blue-800';
-      case 'monitoring': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'closed': return 'bg-success/15 text-success';
+      case 'mitigated': return 'bg-info/15 text-info';
+      case 'monitoring': return 'bg-warning-soft/15 text-warning-soft';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -2237,7 +2215,7 @@ export function RiskManagementWindow({
                 </div>
               ) : null}
               {mode === 'template' && registerClassificationGaps ? (
-                <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                <div className="mb-3 rounded-md border border-warning-soft/40 bg-warning-soft/10 px-3 py-2 text-xs text-warning-soft">
                   {registerClassificationGaps}
                 </div>
               ) : null}
@@ -2837,7 +2815,7 @@ export function RiskManagementWindow({
                                 </SelectContent>
                               </Select>
                             ) : (
-                              <p className="mt-2 text-xs text-amber-800">
+                              <p className="mt-2 text-xs text-warning-soft">
                                 {`This step has no ${RISK_ITEM_KIND_LABELS[formData.implicated_item_kind].toLowerCase()} to point at.`}
                               </p>
                             )}

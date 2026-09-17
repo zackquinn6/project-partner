@@ -176,7 +176,7 @@ export function TaskCompletionDialog({
         <DialogContent className="max-w-md z-[101]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-600" />
+            <CheckCircle className="h-5 w-5 text-success" />
             Complete Task
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">Log this task and add optional notes or a photo.</p>
@@ -266,7 +266,7 @@ export function TaskCompletionDialog({
             <Button 
               onClick={handleComplete}
               disabled={loading}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-success hover:bg-success text-success-foreground"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               {loading ? 'Completing...' : 'Mark Complete'}

@@ -73,23 +73,23 @@ type QualityTierPreference = typeof QUALITY_TIER_OPTIONS[number]['value'];
 const SHOPPING_SITES: ShoppingSite[] = [{
   name: "Lowe's",
   url: "https://lowes.com",
-  color: "bg-blue-600 hover:bg-blue-700"
+  color: "bg-info hover:bg-info"
 }, {
   name: "Floor & Decor",
   url: "https://flooranddecor.com",
-  color: "bg-orange-600 hover:bg-orange-700"
+  color: "bg-warning-soft hover:bg-warning-soft"
 }, {
   name: "Wayfair",
   url: "https://wayfair.com",
-  color: "bg-purple-600 hover:bg-purple-700"
+  color: "bg-category-3 hover:bg-category-3"
 }, {
   name: "Amazon",
   url: "https://amazon.com",
-  color: "bg-yellow-600 hover:bg-yellow-700"
+  color: "bg-warning-soft hover:bg-warning-soft"
 }, {
   name: "Toolio.us",
   url: "https://toolio.us",
-  color: "bg-green-600 hover:bg-green-700"
+  color: "bg-success hover:bg-success"
 }];
 export function OrderingWindow({
   open,
@@ -696,7 +696,7 @@ export function OrderingWindow({
                                 ) : null}
                               </div>
                               {needDate?.startDate ? (
-                                <p className="mt-1 text-xs text-blue-700">
+                                <p className="mt-1 text-xs text-info">
                                   Needed by {format(needDate.startDate, 'MM/dd/yyyy')}
                                 </p>
                               ) : null}
@@ -822,7 +822,7 @@ export function OrderingWindow({
                               <p className="text-xs text-muted-foreground mt-2 ml-7">
                                 {material.description}
                               </p>
-                              {needDate && needDate.startDate && <div className="flex items-center gap-2 mt-2 ml-7 text-xs text-blue-700">
+                              {needDate && needDate.startDate && <div className="flex items-center gap-2 mt-2 ml-7 text-xs text-info">
                                   <Calendar className="h-3 w-3" />
                                   <span>Needed by: {format(needDate.startDate, 'MM/dd/yyyy')}</span>
                                 </div>}
@@ -872,7 +872,7 @@ export function OrderingWindow({
                               <p className="text-xs text-muted-foreground mt-2 ml-7">
                                 {tool.description}
                               </p>
-                              {needDate && needDate.startDate && needDate.endDate && <div className="flex items-center gap-2 mt-2 ml-7 text-xs text-blue-700">
+                              {needDate && needDate.startDate && needDate.endDate && <div className="flex items-center gap-2 mt-2 ml-7 text-xs text-info">
                                   <Calendar className="h-3 w-3" />
                                   <span>
                                     Need between {format(needDate.startDate, 'MM/dd/yyyy')} and {format(needDate.endDate, 'MM/dd/yyyy')}

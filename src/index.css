@@ -47,6 +47,23 @@
   --warning-soft-foreground: 24 14% 18%;
   --destructive-soft: 0 72% 48%;
   --destructive-soft-foreground: 0 0% 100%;
+  --info: 212 88% 45%;
+  --info-foreground: 0 0% 100%;
+
+  /* Taxonomy hues: tool categories, decision types, flowchart node types, worksheet column bands.
+     These carry no status meaning, so they must not borrow the status tokens above. */
+  --category-1: 212 82% 44%;
+  --category-1-foreground: 0 0% 100%;
+  --category-2: 158 62% 34%;
+  --category-2-foreground: 0 0% 100%;
+  --category-3: 268 66% 52%;
+  --category-3-foreground: 0 0% 100%;
+  --category-4: 28 88% 42%;
+  --category-4-foreground: 0 0% 100%;
+  --category-5: 328 68% 46%;
+  --category-5-foreground: 0 0% 100%;
+  --category-6: 190 72% 34%;
+  --category-6-foreground: 0 0% 100%;
 
   --border: 32 18% 88%;
   --input: 36 20% 93%;
@@ -128,12 +145,27 @@
     --destructive: 0 75% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 50% 42%;
-    --success-foreground: 0 0% 100%;
-    --warning-soft: 38 85% 52%;
-    --warning-soft-foreground: 40 25% 96%;
-    --destructive-soft: 0 70% 55%;
-    --destructive-soft-foreground: 0 0% 100%;
+    --success: 142 58% 52%;
+    --success-foreground: 24 14% 9%;
+    --warning-soft: 38 92% 60%;
+    --warning-soft-foreground: 24 14% 9%;
+    --destructive-soft: 0 78% 62%;
+    --destructive-soft-foreground: 24 14% 9%;
+    --info: 212 92% 66%;
+    --info-foreground: 24 14% 9%;
+
+    --category-1: 212 88% 68%;
+    --category-1-foreground: 24 14% 9%;
+    --category-2: 158 62% 56%;
+    --category-2-foreground: 24 14% 9%;
+    --category-3: 268 80% 74%;
+    --category-3-foreground: 24 14% 9%;
+    --category-4: 30 92% 62%;
+    --category-4-foreground: 24 14% 9%;
+    --category-5: 328 80% 70%;
+    --category-5-foreground: 24 14% 9%;
+    --category-6: 190 76% 58%;
+    --category-6-foreground: 24 14% 9%;
 
     --border: 24 12% 20%;
     --input: 24 12% 17%;
@@ -203,137 +235,130 @@
   }
 }
 
-/* Workflow Theme Styles */
-.dark-theme {
-  --workflow-text: 0 0% 100%;
-  --workflow-bg: 24 14% 9%;
-  --workflow-card-bg: 24 12% 12%;
-  --workflow-border: 24 12% 20%;
-  color: hsl(var(--workflow-text));
-  background-color: hsl(var(--workflow-bg));
+/* Color schemes reassign the real accent tokens on <html>, so every Tailwind primary/ring/accent
+   utility in the app recolors without per-element overrides. :root[data-color-scheme] outranks
+   .dark on specificity, and the .dark pairings lift lightness for legibility on dark surfaces. */
+:root[data-color-scheme="default"] {
+  --primary: 14 100% 58%;
+  --primary-variant: 16 92% 48%;
+  --primary-light: 14 86% 64%;
+  --ring: 14 100% 58%;
+  --sidebar-primary: 14 100% 58%;
+  --sidebar-ring: 14 100% 58%;
+  --gradient-primary: linear-gradient(135deg, hsl(14 95% 52%) 0%, hsl(18 88% 56%) 45%, hsl(24 90% 52%) 100%);
+  --gradient-accent: linear-gradient(135deg, hsl(14 100% 58%) 0%, hsl(18 88% 56%) 100%);
 }
 
-.light-theme {
-  --workflow-text: 24 12% 9%;
-  --workflow-bg: 40 28% 97%;
-  --workflow-card-bg: 0 0% 100%;
-  --workflow-border: 32 18% 88%;
-  color: hsl(var(--workflow-text));
-  background-color: hsl(var(--workflow-bg));
+:root.dark[data-color-scheme="default"] {
+  --primary: 14 100% 62%;
+  --primary-variant: 14 90% 52%;
+  --primary-light: 14 75% 68%;
+  --ring: 14 100% 62%;
+  --sidebar-primary: 14 100% 62%;
+  --sidebar-ring: 14 100% 62%;
 }
 
-/* Color Scheme Overrides */
-[data-color-scheme="blue"] {
-  --workflow-primary: 217 91% 60%;
-  --workflow-secondary: 217 91% 95%;
-  --workflow-accent: 217 91% 98%;
+:root[data-color-scheme="blue"] {
+  --primary: 217 91% 60%;
+  --primary-variant: 217 91% 50%;
+  --primary-light: 217 91% 72%;
+  --ring: 217 91% 60%;
+  --sidebar-primary: 217 91% 60%;
+  --sidebar-ring: 217 91% 60%;
+  --gradient-primary: linear-gradient(135deg, hsl(217 91% 52%) 0%, hsl(212 90% 58%) 45%, hsl(224 84% 60%) 100%);
+  --gradient-accent: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(224 84% 62%) 100%);
 }
 
-[data-color-scheme="green"] {
-  --workflow-primary: 142 76% 36%;
-  --workflow-secondary: 142 76% 95%;
-  --workflow-accent: 142 76% 98%;
+:root.dark[data-color-scheme="blue"] {
+  --primary: 217 91% 70%;
+  --primary-variant: 217 91% 60%;
+  --primary-light: 217 85% 80%;
+  --ring: 217 91% 70%;
+  --sidebar-primary: 217 91% 70%;
+  --sidebar-ring: 217 91% 70%;
 }
 
-[data-color-scheme="purple"] {
-  --workflow-primary: 262 83% 58%;
-  --workflow-secondary: 262 83% 95%;
-  --workflow-accent: 262 83% 98%;
+:root[data-color-scheme="green"] {
+  --primary: 142 66% 36%;
+  --primary-variant: 142 70% 29%;
+  --primary-light: 142 55% 48%;
+  --ring: 142 66% 36%;
+  --sidebar-primary: 142 66% 36%;
+  --sidebar-ring: 142 66% 36%;
+  --gradient-primary: linear-gradient(135deg, hsl(142 70% 30%) 0%, hsl(150 62% 36%) 45%, hsl(160 60% 34%) 100%);
+  --gradient-accent: linear-gradient(135deg, hsl(142 66% 36%) 0%, hsl(158 60% 40%) 100%);
 }
 
-[data-color-scheme="orange"] {
-  --workflow-primary: 14 100% 58%;
-  --workflow-secondary: 36 30% 95%;
-  --workflow-accent: 40 35% 98%;
+:root.dark[data-color-scheme="green"] {
+  --primary: 142 66% 55%;
+  --primary-variant: 142 60% 45%;
+  --primary-light: 142 60% 68%;
+  --ring: 142 66% 55%;
+  --sidebar-primary: 142 66% 55%;
+  --sidebar-ring: 142 66% 55%;
 }
 
-[data-color-scheme="red"] {
-  --workflow-primary: 0 84% 60%;
-  --workflow-secondary: 0 84% 95%;
-  --workflow-accent: 0 84% 98%;
+:root[data-color-scheme="purple"] {
+  --primary: 262 74% 55%;
+  --primary-variant: 262 74% 46%;
+  --primary-light: 262 74% 68%;
+  --ring: 262 74% 55%;
+  --sidebar-primary: 262 74% 55%;
+  --sidebar-ring: 262 74% 55%;
+  --gradient-primary: linear-gradient(135deg, hsl(262 74% 48%) 0%, hsl(272 70% 55%) 45%, hsl(282 66% 55%) 100%);
+  --gradient-accent: linear-gradient(135deg, hsl(262 74% 55%) 0%, hsl(280 68% 58%) 100%);
 }
 
-[data-color-scheme="default"] {
-  --workflow-primary: 14 100% 58%;
-  --workflow-secondary: 38 22% 96%;
-  --workflow-accent: 40 28% 98%;
+:root.dark[data-color-scheme="purple"] {
+  --primary: 262 80% 70%;
+  --primary-variant: 262 74% 60%;
+  --primary-light: 262 80% 80%;
+  --ring: 262 80% 70%;
+  --sidebar-primary: 262 80% 70%;
+  --sidebar-ring: 262 80% 70%;
 }
 
-/* Dark mode color scheme adjustments for better visibility */
-main.flex-1.overflow-auto.dark-theme[data-color-scheme="default"] {
-  --workflow-primary: 14 100% 62%;
+:root[data-color-scheme="orange"] {
+  --primary: 26 92% 48%;
+  --primary-variant: 24 92% 40%;
+  --primary-light: 30 90% 58%;
+  --ring: 26 92% 48%;
+  --sidebar-primary: 26 92% 48%;
+  --sidebar-ring: 26 92% 48%;
+  --gradient-primary: linear-gradient(135deg, hsl(24 92% 44%) 0%, hsl(30 92% 50%) 45%, hsl(36 92% 50%) 100%);
+  --gradient-accent: linear-gradient(135deg, hsl(26 92% 48%) 0%, hsl(34 92% 52%) 100%);
 }
 
-main.flex-1.overflow-auto.dark-theme[data-color-scheme="blue"] {
-  --workflow-primary: 217 91% 70%;
+:root.dark[data-color-scheme="orange"] {
+  --primary: 30 95% 60%;
+  --primary-variant: 26 92% 52%;
+  --primary-light: 34 92% 70%;
+  --ring: 30 95% 60%;
+  --sidebar-primary: 30 95% 60%;
+  --sidebar-ring: 30 95% 60%;
 }
 
-main.flex-1.overflow-auto.dark-theme[data-color-scheme="green"] {
-  --workflow-primary: 142 76% 55%;
+:root[data-color-scheme="red"] {
+  --primary: 0 74% 52%;
+  --primary-variant: 0 74% 43%;
+  --primary-light: 0 74% 65%;
+  --ring: 0 74% 52%;
+  --sidebar-primary: 0 74% 52%;
+  --sidebar-ring: 0 74% 52%;
+  --gradient-primary: linear-gradient(135deg, hsl(0 74% 45%) 0%, hsl(6 72% 52%) 45%, hsl(352 70% 50%) 100%);
+  --gradient-accent: linear-gradient(135deg, hsl(0 74% 52%) 0%, hsl(8 72% 56%) 100%);
 }
 
-main.flex-1.overflow-auto.dark-theme[data-color-scheme="purple"] {
-  --workflow-primary: 262 83% 70%;
+:root.dark[data-color-scheme="red"] {
+  --primary: 0 84% 68%;
+  --primary-variant: 0 78% 58%;
+  --primary-light: 0 84% 78%;
+  --ring: 0 84% 68%;
+  --sidebar-primary: 0 84% 68%;
+  --sidebar-ring: 0 84% 68%;
 }
 
-main.flex-1.overflow-auto.dark-theme[data-color-scheme="orange"] {
-  --workflow-primary: 14 100% 62%;
-}
-
-main.flex-1.overflow-auto.dark-theme[data-color-scheme="red"] {
-  --workflow-primary: 0 84% 70%;
-}
-
-/* Apply color scheme to primary elements - only within workflow container */
-main.flex-1.overflow-auto[data-color-scheme] .text-primary,
-main.flex-1.overflow-auto[data-color-scheme] [class*="text-primary"] {
-  color: hsl(var(--workflow-primary)) !important;
-}
-
-main.flex-1.overflow-auto[data-color-scheme] .bg-primary,
-main.flex-1.overflow-auto[data-color-scheme] [class*="bg-primary"] {
-  background-color: hsl(var(--workflow-primary)) !important;
-}
-
-main.flex-1.overflow-auto[data-color-scheme] .border-primary,
-main.flex-1.overflow-auto[data-color-scheme] [class*="border-primary"] {
-  border-color: hsl(var(--workflow-primary)) !important;
-}
-
-/* Ensure color scheme applies to gradient and other primary elements */
-main.flex-1.overflow-auto[data-color-scheme] .gradient-primary {
-  background: linear-gradient(135deg, hsl(var(--workflow-primary)) 0%, hsl(var(--workflow-primary) / 0.8) 100%) !important;
-}
-
-/* Dark theme text color fix - only within workflow container */
-/* Base text should be white/grey on dark backgrounds */
-main.flex-1.overflow-auto.dark-theme {
-  color: hsl(0 0% 95%) !important;
-}
-
-main.flex-1.overflow-auto.dark-theme p,
-main.flex-1.overflow-auto.dark-theme span,
-main.flex-1.overflow-auto.dark-theme div,
-main.flex-1.overflow-auto.dark-theme h1,
-main.flex-1.overflow-auto.dark-theme h2,
-main.flex-1.overflow-auto.dark-theme h3,
-main.flex-1.overflow-auto.dark-theme h4,
-main.flex-1.overflow-auto.dark-theme h5,
-main.flex-1.overflow-auto.dark-theme h6,
-main.flex-1.overflow-auto.dark-theme label {
-  color: hsl(0 0% 95%) !important;
-}
-
-main.flex-1.overflow-auto.dark-theme .text-muted-foreground {
-  color: hsl(35 12% 68%) !important;
-}
-
-/* Primary text should use primary color but ensure visibility */
-main.flex-1.overflow-auto.dark-theme .text-primary {
-  color: hsl(var(--workflow-primary)) !important;
-}
-
-/* App icons: Toolio coral (matches marketing accent) */
+/* App icons: follow the active accent */
 .icon-container,
 .icon-container svg,
 .app-icon {
@@ -343,33 +368,6 @@ main.flex-1.overflow-auto.dark-theme .text-primary {
 .icon-container svg path,
 .app-icon path {
   stroke: hsl(var(--primary)) !important;
-}
-
-/* Ensure buttons have proper text color in dark mode */
-main.flex-1.overflow-auto.dark-theme button:not(.bg-primary):not(.text-primary) {
-  color: hsl(0 0% 95%) !important;
-}
-
-/* Cards and backgrounds should have dark backgrounds with light text */
-main.flex-1.overflow-auto.dark-theme [class*="card"],
-main.flex-1.overflow-auto.dark-theme [class*="Card"] {
-  background-color: hsl(24 12% 12%) !important;
-  color: hsl(0 0% 95%) !important;
-}
-
-/* Checkbox styling - ensure unchecked boxes are visible */
-main.flex-1.overflow-auto [role="checkbox"]:not([data-state="checked"]) {
-  background-color: transparent !important;
-  border-color: hsl(var(--workflow-primary) / 0.5) !important;
-}
-
-main.flex-1.overflow-auto.dark-theme [role="checkbox"]:not([data-state="checked"]) {
-  border-color: hsl(var(--workflow-primary) / 0.7) !important;
-}
-
-main.flex-1.overflow-auto [role="checkbox"][data-state="checked"] {
-  background-color: hsl(var(--workflow-primary)) !important;
-  border-color: hsl(var(--workflow-primary)) !important;
 }
 
 /* Gradient text */

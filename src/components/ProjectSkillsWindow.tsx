@@ -91,8 +91,8 @@ export function ProjectSkillsForm({
                   <Label className="text-xs text-muted-foreground">Skill Level</Label>
                   <div className="relative py-1.5">
                     <div className="absolute top-1/2 left-0 right-0 flex h-2 -translate-y-1/2 rounded-full overflow-hidden pointer-events-none">
-                      <div className="w-1/3 bg-green-500" />
-                      <div className="w-1/3 bg-blue-500" />
+                      <div className="w-1/3 bg-success" />
+                      <div className="w-1/3 bg-info" />
                       <div className="w-1/3 bg-black" />
                     </div>
                     <Slider

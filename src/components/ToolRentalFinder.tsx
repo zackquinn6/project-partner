@@ -385,25 +385,25 @@ export function ToolRentalFinder({ className }: ToolRentalFinderProps) {
   const getScaleRating = (rating: number, type: 'cost' | 'quality' | 'options') => {
     if (type === 'cost') {
       // For cost: Low is good (green), High is bad (red)
-      if (rating <= 2) return { text: 'Low', color: 'text-green-600 dark:text-green-400' };
-      if (rating <= 3) return { text: 'Med', color: 'text-yellow-600 dark:text-yellow-400' };
-      return { text: 'High', color: 'text-red-600 dark:text-red-400' };
+      if (rating <= 2) return { text: 'Low', color: 'text-success' };
+      if (rating <= 3) return { text: 'Med', color: 'text-warning-soft' };
+      return { text: 'High', color: 'text-destructive-soft' };
     } else {
       // For quality and options: Low is bad (red), High is good (green)
-      if (rating <= 2) return { text: 'Low', color: 'text-red-600 dark:text-red-400' };
-      if (rating <= 3) return { text: 'Med', color: 'text-yellow-600 dark:text-yellow-400' };
-      return { text: 'High', color: 'text-green-600 dark:text-green-400' };
+      if (rating <= 2) return { text: 'Low', color: 'text-destructive-soft' };
+      if (rating <= 3) return { text: 'Med', color: 'text-warning-soft' };
+      return { text: 'High', color: 'text-success' };
     }
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'rental_center': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'retailer': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'library': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-      case 'makerspace': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-      case 'rental_app': return 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+      case 'rental_center': return 'bg-info/15 text-info';
+      case 'retailer': return 'bg-success/15 text-success';
+      case 'library': return 'bg-category-3/15 text-category-3';
+      case 'makerspace': return 'bg-warning-soft/15 text-warning-soft';
+      case 'rental_app': return 'bg-category-5/15 text-category-5';
+      default: return 'bg-muted text-foreground';
     }
   };
 

@@ -17,17 +17,18 @@ interface AdminWorkflowEditorProps {
   onSave: (phases: Phase[]) => void;
 }
 
+/** `cssVar` is the same token as `color`, for places that need a raw colour value (inline borders). */
 const STEP_TYPES = [
-  { value: 'prime', label: 'Prime', color: 'bg-green-500', description: 'Fixed time estimates that do not scale' },
-  { value: 'scaled', label: 'Scaled', color: 'bg-blue-500', description: 'Time estimates scale according to project scaling unit' },
-  { value: 'quality_control_non_scaled', label: 'Quality Control – Non Scaled', color: 'bg-orange-500', description: 'Fixed QC steps that do not scale' },
-  { value: 'quality_control_scaled', label: 'Quality Control – Scaled', color: 'bg-purple-500', description: 'QC steps that scale according to project scaling unit' }
+  { value: 'prime', label: 'Prime', color: 'bg-success', cssVar: '--success', description: 'Fixed time estimates that do not scale' },
+  { value: 'scaled', label: 'Scaled', color: 'bg-info', cssVar: '--info', description: 'Time estimates scale according to project scaling unit' },
+  { value: 'quality_control_non_scaled', label: 'Quality Control – Non Scaled', color: 'bg-warning-soft', cssVar: '--warning-soft', description: 'Fixed QC steps that do not scale' },
+  { value: 'quality_control_scaled', label: 'Quality Control – Scaled', color: 'bg-category-3', cssVar: '--category-3', description: 'QC steps that scale according to project scaling unit' }
 ] as const;
 
 const FLOW_TYPES = [
-  { value: 'prime', label: 'Prime', color: 'bg-green-600', description: 'Main workflow path' },
-  { value: 'alternate', label: 'Alternate', color: 'bg-orange-500', description: 'Alternative path' },
-  { value: 'if-necessary', label: 'If Necessary', color: 'bg-gray-500', description: 'Conditional path' }
+  { value: 'prime', label: 'Prime', color: 'bg-success', description: 'Main workflow path' },
+  { value: 'alternate', label: 'Alternate', color: 'bg-warning-soft', description: 'Alternative path' },
+  { value: 'if-necessary', label: 'If Necessary', color: 'bg-muted-foreground', description: 'Conditional path' }
 ] as const;
 
 export const AdminWorkflowEditor: React.FC<AdminWorkflowEditorProps> = ({
@@ -115,11 +116,17 @@ export const AdminWorkflowEditor: React.FC<AdminWorkflowEditorProps> = ({
   };
 
   const getStepTypeColor = (stepType: string) => {
-    return STEP_TYPES.find(st => st.value === stepType)?.color || 'bg-gray-300';
+    return STEP_TYPES.find(st => st.value === stepType)?.color ?? 'bg-muted';
+  };
+
+  /** Raw colour for inline styling, read from the same STEP_TYPES entry as the class. */
+  const getStepTypeBorderColor = (stepType: string) => {
+    const cssVar = STEP_TYPES.find(st => st.value === stepType)?.cssVar;
+    return cssVar ? `hsl(var(${cssVar}))` : 'hsl(var(--border))';
   };
 
   const getFlowTypeColor = (flowType: string) => {
-    return FLOW_TYPES.find(ft => ft.value === flowType)?.color || 'bg-gray-300';
+    return FLOW_TYPES.find(ft => ft.value === flowType)?.color ?? 'bg-muted';
   };
 
   return (
@@ -188,7 +195,7 @@ export const AdminWorkflowEditor: React.FC<AdminWorkflowEditorProps> = ({
                     const isEditing = editingOperation?.phaseId === phase.id && editingOperation?.operationId === operation.id;
                     
                     return (
-                      <Card key={operation.id} className="border-l-4" style={{ borderLeftColor: getStepTypeColor(stepType).includes('green') ? '#22c55e' : getStepTypeColor(stepType).includes('blue') ? '#3b82f6' : '#f97316' }}>
+                      <Card key={operation.id} className="border-l-4" style={{ borderLeftColor: getStepTypeBorderColor(stepType) }}>
                         <CardHeader>
                           <div className="flex items-start justify-between">
                             <div className="flex-1">

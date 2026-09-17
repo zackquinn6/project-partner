@@ -760,7 +760,7 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
               <Button 
                 variant="outline" 
                 onClick={() => setExpertHelpOpen(true)}
-                className="w-full bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                className="w-full bg-warning-soft/10 border-warning-soft/40 text-warning-soft hover:bg-warning-soft/15"
               >
                 Expert Virtual Consults
               </Button>
@@ -797,7 +797,7 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                           <ChevronDown className="w-4 h-4" />
                         )}
                         <h4 className="font-semibold text-primary">{phase.name}</h4>
-                        {isPhaseComplete && <CheckCircle className="w-4 h-4 text-green-600" />}
+                        {isPhaseComplete && <CheckCircle className="w-4 h-4 text-success" />}
                         <span className="text-xs text-muted-foreground">
                           ({completedPhaseSteps.length}/{phaseSteps.length})
                         </span>
@@ -833,9 +833,9 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                                    key={step.id} 
                                    className={`ml-2 p-2 rounded text-sm cursor-pointer transition-fast ${
                                      step.id === currentStep?.id ? 'bg-primary/10 text-primary border border-primary/20' : 
-                                     isCompleted ? 'bg-green-50 text-green-700 border border-green-200' : 
-                                     isInProgress ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' :
-                                     hasUnmetPrerequisites ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                                     isCompleted ? 'bg-success/10 text-success border border-success/40' : 
+                                     isInProgress ? 'bg-warning-soft/10 text-warning-soft border border-warning-soft/40' :
+                                     hasUnmetPrerequisites ? 'bg-warning-soft/10 text-warning-soft border border-warning-soft/40' :
                                      'hover:bg-muted/50 border border-transparent hover:border-muted-foreground/20'
                                    }`} 
                                     onClick={() => {
@@ -869,25 +869,25 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                                  >
                                   <div className="flex items-center gap-2 justify-between">
                                     <div className="flex items-center gap-2">
-                                      {hasUnmetPrerequisites && !isCompleted && <Lock className="w-4 h-4 text-orange-500" />}
+                                      {hasUnmetPrerequisites && !isCompleted && <Lock className="w-4 h-4 text-warning-soft" />}
                                       {isCompleted && <CheckCircle className="w-4 h-4" />}
-                                      {isInProgress && <div className="w-4 h-4 rounded-full bg-yellow-400 border-2 border-yellow-600" />}
+                                      {isInProgress && <div className="w-4 h-4 rounded-full bg-warning-soft border-2 border-warning-soft/40" />}
                                       <span className="truncate">{step.step}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                       {step.workersNeeded && step.workersNeeded > 0 && (
-                                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-blue-100 text-blue-700 border-blue-300 flex items-center gap-1">
+                                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-info/15 text-info border-info/40 flex items-center gap-1">
                                           <Users className="w-2.5 h-2.5" />
                                           {step.workersNeeded}
                                         </Badge>
                                       )}
                                       {hasUnmetPrerequisites && !isCompleted && (
-                                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-orange-100 text-orange-700 border-orange-300">
+                                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-warning-soft/15 text-warning-soft border-warning-soft/40">
                                           Locked
                                         </Badge>
                                       )}
                                       {isInProgress && (
-                                        <span className="text-xs font-medium text-yellow-600">
+                                        <span className="text-xs font-medium text-warning-soft">
                                           {completionPercentage}%
                                         </span>
                                       )}
@@ -972,7 +972,7 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                       setOrderingWindowOpen(true);
                     }}
                     variant="outline"
-                    className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                    className="bg-success/10 border-success/40 text-success hover:bg-success/15"
                   >
                     <ShoppingCart className="w-4 h-4 mr-2" />
                     Debug Shop
@@ -987,11 +987,11 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
             <CardContent className="p-8">
               {/* Prerequisite Warning Banner */}
               {currentStep && !arePrerequisitesMet(currentStep) && !isAdminEditing && (
-                <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                <div className="mb-6 p-4 bg-warning-soft/10 border border-warning-soft/40 rounded-lg flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-warning-soft flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <h4 className="font-semibold text-orange-900 mb-1">Prerequisites Required</h4>
-                    <p className="text-sm text-orange-800">
+                    <h4 className="font-semibold text-warning-soft mb-1">Prerequisites Required</h4>
+                    <p className="text-sm text-warning-soft">
                       This step requires completion of previous operations before you can proceed. 
                       Complete the prerequisite steps first to unlock this content.
                     </p>
@@ -1039,10 +1039,10 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                         <AccordionTrigger className="text-base font-semibold py-3">
                           <div className="flex items-center gap-2">
                             <span>Materials Needed</span>
-                            <Badge variant={isAllCompleted ? "default" : "outline"} className={isAllCompleted ? "bg-green-500 text-white" : ""}>
+                            <Badge variant={isAllCompleted ? "default" : "outline"} className={isAllCompleted ? "bg-success text-success-foreground" : ""}>
                               {completedCount}/{totalCount}
                             </Badge>
-                            {isAllCompleted && <CheckCircle className="w-4 h-4 text-green-500" />}
+                            {isAllCompleted && <CheckCircle className="w-4 h-4 text-success" />}
                           </div>
                         </AccordionTrigger>
                         <AccordionContent>
@@ -1081,10 +1081,10 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                         <AccordionTrigger className="text-base font-semibold py-3">
                           <div className="flex items-center gap-2">
                             <span>Tools Required</span>
-                            <Badge variant={isAllCompleted ? "default" : "outline"} className={isAllCompleted ? "bg-green-500 text-white" : ""}>
+                            <Badge variant={isAllCompleted ? "default" : "outline"} className={isAllCompleted ? "bg-success text-success-foreground" : ""}>
                               {completedCount}/{totalCount}
                             </Badge>
-                            {isAllCompleted && <CheckCircle className="w-4 h-4 text-green-500" />}
+                            {isAllCompleted && <CheckCircle className="w-4 h-4 text-success" />}
                           </div>
                         </AccordionTrigger>
                         <AccordionContent>
@@ -1136,10 +1136,10 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                         <AccordionTrigger className="text-base font-semibold py-3">
                           <div className="flex items-center gap-2">
                             <span>Outputs</span>
-                            <Badge variant={isAllCompleted ? "default" : "outline"} className={isAllCompleted ? "bg-green-500 text-white" : ""}>
+                            <Badge variant={isAllCompleted ? "default" : "outline"} className={isAllCompleted ? "bg-success text-success-foreground" : ""}>
                               {completedCount}/{totalCount}
                             </Badge>
-                            {isAllCompleted && <CheckCircle className="w-4 h-4 text-green-500" />}
+                            {isAllCompleted && <CheckCircle className="w-4 h-4 text-success" />}
                           </div>
                         </AccordionTrigger>
                         <AccordionContent>
@@ -1204,7 +1204,7 @@ export default function EditableUserView({ onBackToAdmin, isAdminEditing = false
                       <Button
                         onClick={handleComplete}
                         disabled={!areAllOutputsCompleted(currentStep)}
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-success hover:bg-success"
                       >
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Complete Step

@@ -865,7 +865,7 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
                   <div className="grid grid-cols-3 gap-4 text-lg font-semibold">
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground mb-1">Low Estimate</div>
-                      <div className="text-green-600">{formatCurrency(total.low)}</div>
+                      <div className="text-success">{formatCurrency(total.low)}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground mb-1">Expected</div>
@@ -873,7 +873,7 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
                     </div>
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground mb-1">High Estimate</div>
-                      <div className="text-orange-600">{formatCurrency(total.high)}</div>
+                      <div className="text-warning-soft">{formatCurrency(total.high)}</div>
                     </div>
                    </div>
                  </div>
@@ -924,7 +924,7 @@ export function RapidProjectAssessment({ taskId, taskTitle, taskNotes, onClose }
                                  </div>
                                  <div className="h-2 bg-muted rounded-full overflow-hidden">
                                    <div 
-                                     className="h-full bg-orange-500/70 transition-all duration-300"
+                                     className="h-full bg-warning-soft/70 transition-all duration-300"
                                      style={{ width: `${barWidth}%` }}
                                    />
                                  </div>

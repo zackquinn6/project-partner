@@ -156,21 +156,21 @@ export const FeatureRoadmap: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'in-progress': return <Clock className="w-4 h-4 text-blue-600" />;
-      case 'planned': return <Calendar className="w-4 h-4 text-gray-600" />;
-      case 'cancelled': return <AlertCircle className="w-4 h-4 text-red-600" />;
-      default: return <Calendar className="w-4 h-4 text-gray-600" />;
+      case 'completed': return <CheckCircle className="w-4 h-4 text-success" />;
+      case 'in-progress': return <Clock className="w-4 h-4 text-info" />;
+      case 'planned': return <Calendar className="w-4 h-4 text-muted-foreground" />;
+      case 'cancelled': return <AlertCircle className="w-4 h-4 text-destructive-soft" />;
+      default: return <Calendar className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'critical': return 'border-l-red-500 bg-red-50';
-      case 'high': return 'border-l-orange-500 bg-orange-50';
-      case 'medium': return 'border-l-yellow-500 bg-yellow-50';
-      case 'low': return 'border-l-gray-500 bg-gray-50';
-      default: return 'border-l-gray-500 bg-gray-50';
+      case 'critical': return 'border-l-red-500 bg-destructive-soft/10';
+      case 'high': return 'border-l-orange-500 bg-warning-soft/10';
+      case 'medium': return 'border-l-yellow-500 bg-warning-soft/10';
+      case 'low': return 'border-l-gray-500 bg-muted';
+      default: return 'border-l-gray-500 bg-muted';
     }
   };
 

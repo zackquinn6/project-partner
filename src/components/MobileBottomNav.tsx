@@ -99,7 +99,7 @@ export function MobileBottomNav({ currentView, onViewChange, onQuickAction }: Mo
               <DropdownMenuContent 
                 align="end" 
                 side="top"
-                className="z-[9999] !bg-white dark:!bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl min-w-[200px] !opacity-100 mb-2"
+                className="z-[9999] bg-popover text-popover-foreground border border-border shadow-2xl min-w-[200px] !opacity-100 mb-2"
               >
                 <DropdownMenuItem onClick={() => setShowFeedback(true)}>
                   <MessageCircle className="h-4 w-4 mr-2" />

@@ -44,10 +44,10 @@ export function CompactOutputsTable({ outputs, onOutputsChange, onAddOutput, onE
 
   const getTypeColor = (type: Output['type']) => {
     switch (type) {
-      case 'major-aesthetics': return 'bg-blue-100 text-blue-800';
-      case 'performance-durability': return 'bg-green-100 text-green-800';
-      case 'safety': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'major-aesthetics': return 'bg-info/15 text-info';
+      case 'performance-durability': return 'bg-success/15 text-success';
+      case 'safety': return 'bg-destructive-soft/15 text-destructive-soft';
+      default: return 'bg-muted text-foreground';
     }
   };
 

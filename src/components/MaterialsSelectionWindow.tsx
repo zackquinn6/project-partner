@@ -220,12 +220,12 @@ export function MaterialsSelectionWindow({
               onCheckedChange={() => toggleHandler(item.id)}
               className="mt-1"
             />
-            <Icon className={`w-5 h-5 mt-0.5 ${item.isCompleted ? 'text-green-600' : 'text-primary'}`} />
+            <Icon className={`w-5 h-5 mt-0.5 ${item.isCompleted ? 'text-success' : 'text-primary'}`} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h4 className="font-medium text-sm truncate">{item.name}</h4>
                 {item.isCompleted && (
-                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
                 )}
               </div>
               
@@ -272,7 +272,7 @@ export function MaterialsSelectionWindow({
         }>
           <DialogHeader className={PLANNING_TOOL_WINDOW_HEADER_CLASSNAME}>
             <DialogTitle className={cn(PLANNING_TOOL_WINDOW_TITLE_CLASSNAME, 'flex items-center gap-2')}>
-              <AlertCircle className="h-5 w-5 shrink-0 text-orange-500" />
+              <AlertCircle className="h-5 w-5 shrink-0 text-warning-soft" />
               No Materials Found
             </DialogTitle>
             <PlanningToolWindowHeaderActions

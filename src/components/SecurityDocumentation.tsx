@@ -121,7 +121,7 @@ export const SecurityDocumentation: React.FC = () => {
         <CardContent className="space-y-4">
           <div className="space-y-3">
             <h4 className="font-semibold">Required Dashboard Configuration</h4>
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-md">
+            <div className="bg-warning-soft/10 p-3 rounded-md">
               <p className="text-sm">
                 <strong>Action Required:</strong> Configure the following in your Supabase dashboard:
               </p>

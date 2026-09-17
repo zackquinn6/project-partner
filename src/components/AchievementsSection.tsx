@@ -136,7 +136,7 @@ export function AchievementsSection() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-5 sm:space-y-6">
-      <section className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.14] via-background to-amber-500/[0.08] p-4 shadow-sm sm:p-5">
+      <section className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.14] via-background to-warning-soft/[0.08] p-4 shadow-sm sm:p-5">
         <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
         <div className="relative flex items-center gap-3.5 sm:gap-4">
           <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/25 sm:h-16 sm:w-16">

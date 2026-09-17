@@ -28,7 +28,7 @@ export function BetaProjectWarning({ projectName, open, onOpenChange, onAccept }
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-orange-600" />
+            <AlertTriangle className="w-5 h-5 text-warning-soft" />
             Beta Testing Project
           </DialogTitle>
           <DialogDescription>
@@ -39,7 +39,7 @@ export function BetaProjectWarning({ projectName, open, onOpenChange, onAccept }
         <div className="space-y-4">
           {/* Beta Badge */}
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200">
+            <Badge variant="secondary" className="bg-warning-soft/15 text-warning-soft border-warning-soft/40">
               <AlertTriangle className="w-3 h-3 mr-1" />
               BETA
             </Badge>
@@ -47,9 +47,9 @@ export function BetaProjectWarning({ projectName, open, onOpenChange, onAccept }
           </div>
 
           {/* Warning Alert */}
-          <Alert className="border-orange-200 bg-orange-50">
-            <AlertTriangle className="h-4 w-4 text-orange-600" />
-            <AlertDescription className="text-orange-800">
+          <Alert className="border-warning-soft/40 bg-warning-soft/10">
+            <AlertTriangle className="h-4 w-4 text-warning-soft" />
+            <AlertDescription className="text-warning-soft">
               <div className="space-y-3">
                 <div>
                   <strong>What this means:</strong> This workflow may contain incomplete steps, 
@@ -74,7 +74,7 @@ export function BetaProjectWarning({ projectName, open, onOpenChange, onAccept }
           <div className="flex justify-between gap-4">
             <Button
               variant="outline"
-              className="text-orange-700 border-orange-300 hover:bg-orange-100"
+              className="text-warning-soft border-warning-soft/40 hover:bg-warning-soft/15"
               onClick={handleReportIssue}
             >
               <Bug className="w-4 h-4 mr-2" />
@@ -90,7 +90,7 @@ export function BetaProjectWarning({ projectName, open, onOpenChange, onAccept }
               </Button>
               <Button
                 onClick={handleAccept}
-                className="bg-orange-600 hover:bg-orange-700 text-white"
+                className="bg-warning-soft hover:bg-warning-soft text-warning-soft-foreground"
               >
                 I Understand - Start Beta Test
               </Button>

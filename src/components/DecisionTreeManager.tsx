@@ -1925,23 +1925,23 @@ export const DecisionTreeManager: React.FC<DecisionTreeManagerProps> = ({
 
             <div className="mt-2 grid shrink-0 grid-cols-2 gap-2 rounded-lg bg-muted/30 p-2 sm:mt-4 sm:grid-cols-3 sm:gap-4 sm:p-4 lg:grid-cols-5">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded border-2 border-gray-400 bg-gray-100"></div>
+                <div className="w-4 h-4 rounded border-2 border-border bg-muted"></div>
                 <span className="text-sm">Standard Flow</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded border-2 border-amber-500 bg-amber-100"></div>
+                <div className="w-4 h-4 rounded border-2 border-warning-soft/40 bg-warning-soft/15"></div>
                 <span className="text-sm">If-Necessary</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded border-2 border-blue-500 bg-blue-100"></div>
+                <div className="w-4 h-4 rounded border-2 border-info/40 bg-info/15"></div>
                 <span className="text-sm">Alternate</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded border-2 border-purple-500 bg-purple-100"></div>
+                <div className="w-4 h-4 rounded border-2 border-category-3/40 bg-category-3/15"></div>
                 <span className="text-sm">Dependent</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded border-2 border-stone-600 bg-stone-200"></div>
+                <div className="w-4 h-4 rounded border-2 border-border bg-muted"></div>
                 <span className="text-sm">Blocked (incorporated phase)</span>
               </div>
             </div>

@@ -67,9 +67,9 @@ export function NotificationDropdown() {
                   >
                     <div className="flex gap-2">
                       {n.type === 'runtime_error' ? (
-                        <TriangleAlert className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                        <TriangleAlert className="h-4 w-4 text-destructive-soft shrink-0 mt-0.5" />
                       ) : n.type === 'issue_reported' ? (
-                        <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                        <AlertCircle className="h-4 w-4 text-warning-soft shrink-0 mt-0.5" />
                       ) : (
                         <Bell className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                       )}
@@ -79,7 +79,7 @@ export function NotificationDropdown() {
                           <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2">{n.body}</p>
                         )}
                         {getNotificationSupportCode(n.metadata) && (
-                          <p className="mt-1 text-[10px] font-medium text-red-600">
+                          <p className="mt-1 text-[10px] font-medium text-destructive-soft">
                             Error code: {getNotificationSupportCode(n.metadata)}
                           </p>
                         )}

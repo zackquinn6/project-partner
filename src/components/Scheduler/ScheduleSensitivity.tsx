@@ -200,9 +200,9 @@ export const ScheduleSensitivity: React.FC<ScheduleSensitivityProps> = ({
             {range > 0 && (
               <div
                 className={`absolute h-full ${
-                  lowValue < 0 && highValue < 0 ? 'bg-green-500' :
-                  lowValue >= 0 && highValue >= 0 ? 'bg-red-500' :
-                  'bg-gradient-to-r from-green-500 via-yellow-500 to-red-500'
+                  lowValue < 0 && highValue < 0 ? 'bg-success' :
+                  lowValue >= 0 && highValue >= 0 ? 'bg-destructive-soft' :
+                  'bg-gradient-to-r from-success via-warning-soft to-destructive-soft'
                 }`}
                 style={{
                   left: `${leftPercent}%`,
@@ -295,11 +295,11 @@ export const ScheduleSensitivity: React.FC<ScheduleSensitivityProps> = ({
                     {/* Legend */}
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 bg-green-500 rounded" />
+                        <div className="w-3 h-3 bg-success rounded" />
                         <span>Earlier completion</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 bg-red-500 rounded" />
+                        <div className="w-3 h-3 bg-destructive-soft rounded" />
                         <span>Later completion</span>
                       </div>
                     </div>

@@ -25,11 +25,11 @@ const OperationNode = ({ data }: { data: any }) => {
   const getNodeStyle = (flowType?: string) => {
     switch (flowType) {
       case 'prime':
-        return 'bg-blue-50 border-blue-500';
+        return 'bg-info/10 border-info/40';
       case 'alternate':
-        return 'bg-orange-50 border-orange-500';
+        return 'bg-warning-soft/10 border-warning-soft/40';
       case 'if-necessary':
-        return 'bg-gray-50 border-gray-500';
+        return 'bg-muted border-border';
       default:
         return 'bg-background border-border';
     }
@@ -65,10 +65,10 @@ const OperationNode = ({ data }: { data: any }) => {
 const DecisionNode = ({ data }: { data: any }) => {
   return (
     <div className="relative">
-      <div className="w-32 h-32 bg-yellow-50 border-4 border-yellow-500 transform rotate-45 flex items-center justify-center">
+      <div className="w-32 h-32 bg-warning-soft/10 border-4 border-warning-soft/40 transform rotate-45 flex items-center justify-center">
         <div className="transform -rotate-45 text-center">
-          <p className="text-xs font-bold text-yellow-900">Decision</p>
-          <p className="text-xs text-yellow-800 mt-1">{data.label}</p>
+          <p className="text-xs font-bold text-warning-soft">Decision</p>
+          <p className="text-xs text-warning-soft mt-1">{data.label}</p>
         </div>
       </div>
     </div>
@@ -290,19 +290,19 @@ export const AdminDecisionTreeVisual: React.FC<AdminDecisionTreeVisualProps> = (
       <div className="border-b bg-muted/30 p-3">
         <div className="flex items-center gap-6 text-xs">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-blue-500 rounded"></div>
+            <div className="w-3 h-3 bg-info rounded"></div>
             <span>Prime Path</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-orange-500 rounded"></div>
+            <div className="w-3 h-3 bg-warning-soft rounded"></div>
             <span>Alternate</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-gray-500 rounded"></div>
+            <div className="w-3 h-3 bg-muted-foreground rounded"></div>
             <span>If Necessary</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-yellow-500 rounded transform rotate-45"></div>
+            <div className="w-3 h-3 bg-warning-soft rounded transform rotate-45"></div>
             <span>Decision Point</span>
           </div>
         </div>

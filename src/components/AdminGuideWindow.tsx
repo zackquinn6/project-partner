@@ -390,7 +390,7 @@ export function AdminGuideWindow({ open, onOpenChange }: AdminGuideWindowProps) 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                           <h4 className="font-semibold mb-3 flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <CheckCircle className="w-4 h-4 text-success" />
                             Essential First Steps
                           </h4>
                           <ul className="space-y-2 text-sm text-muted-foreground">
@@ -414,7 +414,7 @@ export function AdminGuideWindow({ open, onOpenChange }: AdminGuideWindowProps) 
                         </div>
                         <div>
                           <h4 className="font-semibold mb-3 flex items-center gap-2">
-                            <RefreshCw className="w-4 h-4 text-blue-500" />
+                            <RefreshCw className="w-4 h-4 text-info" />
                             Regular Maintenance Tasks
                           </h4>
                           <ul className="space-y-2 text-sm text-muted-foreground">

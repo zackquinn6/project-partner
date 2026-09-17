@@ -55,7 +55,6 @@ import { PhotoUpload } from './PhotoUpload';
 import { NoteUpload } from './NoteUpload';
 import { NotesGallery } from './NotesGallery';
 import { PhotoGallery } from './PhotoGallery';
-import { WorkflowThemeSelector } from './WorkflowThemeSelector';
 import { ProjectCompletionPopup } from './ProjectCompletionPopup';
 import { ToolsMaterialsSection } from './ToolsMaterialsSection';
 import { ToolInstructionsPopup } from './ToolInstructionsPopup';
@@ -103,7 +102,6 @@ import { AfterActionReviewWindow } from './AfterActionReviewWindow';
 import { ProjectPerformanceWindow } from './ProjectPerformanceWindow';
 import { RiskManagementWindow } from './RiskManagementWindow';
 import { RiskDashboardWindow } from './RiskDashboardWindow';
-import { isRiskDimension, type RiskDimension } from '@/utils/riskDimensions';
 import { CommunicationPlanWindow } from './communication-plan/CommunicationPlanWindow';
 import { QualityCheckWindow } from './QualityCheckWindow';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
@@ -310,8 +308,11 @@ export default function UserView({
   const [aarProjectRun, setAarProjectRun] = useState<ProjectRun | null>(null);
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
   const [riskManagementPlanningPresentation, setRiskManagementPlanningPresentation] = useState(false);
+  /**
+   * App-grid launch only. The component lights inside Risk Radar carry a run id on their event,
+   * so Index owns that listener and this window never double-opens beside it.
+   */
   const [riskDashboardOpen, setRiskDashboardOpen] = useState(false);
-  const [riskDashboardDimension, setRiskDashboardDimension] = useState<RiskDimension | null>(null);
   const [projectPerformanceOpen, setProjectPerformanceOpen] = useState(false);
   const [communicationPlanOpen, setCommunicationPlanOpen] = useState(false);
   const [communicationPlanFromPlanningWizard, setCommunicationPlanFromPlanningWizard] = useState(false);
@@ -2393,7 +2394,6 @@ export default function UserView({
         setRiskManagementOpen(true);
         break;
       case 'risk-dashboard':
-        setRiskDashboardDimension(null);
         setRiskDashboardOpen(true);
         break;
       case 'risk-focus':
@@ -2640,10 +2640,10 @@ export default function UserView({
     switch (step.contentType) {
       case 'document':
         return <div className="space-y-4">
-            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="p-4 bg-warning-soft/10 border border-warning-soft/40 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
-                <ExternalLink className="w-5 h-5 text-orange-600" />
-                <span className="font-medium text-orange-800">External Resource</span>
+                <ExternalLink className="w-5 h-5 text-warning-soft" />
+                <span className="font-medium text-warning-soft">External Resource</span>
               </div>
               <div className="text-foreground break-all">
                 {rawContentStr}
@@ -3572,10 +3572,10 @@ export default function UserView({
 
           {/* Photo Gallery - Show in celebration step */}
           {currentStep && currentStep.id === 'celebrate-step' && currentProjectRun && (
-            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-card">
+            <Card className="bg-gradient-to-br from-info/10 to-info/15 border-info/40 shadow-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Camera className="w-5 h-5 text-blue-600" />
+                  <Camera className="w-5 h-5 text-info" />
                   Project Photos
                 </CardTitle>
               </CardHeader>
@@ -3726,11 +3726,11 @@ export default function UserView({
                             <span>Step Checklist</span>
                             <Badge
                               variant={isAllCompleted ? 'default' : 'outline'}
-                              className={isAllCompleted ? 'bg-green-500 text-white text-xs' : 'text-xs'}
+                              className={isAllCompleted ? 'bg-success text-success-foreground text-xs' : 'text-xs'}
                             >
                               {badgeText}
                             </Badge>
-                            {isAllCompleted && <CheckCircle className="w-4 h-4 text-green-500" />}
+                            {isAllCompleted && <CheckCircle className="w-4 h-4 text-success" />}
                           </div>
                         </AccordionTrigger>
                         <AccordionContent>
@@ -3745,7 +3745,7 @@ export default function UserView({
                               </>
                             )}
                             {qc.require_photos_per_step && (
-                              <p className="text-xs text-amber-900 dark:text-amber-100 bg-amber-500/10 border border-amber-500/30 rounded-md px-2 py-1.5 mt-2">
+                              <p className="text-xs text-warning-soft bg-warning-soft/10 border border-warning-soft/40 rounded-md px-2 py-1.5 mt-2">
                                 Quality Control: add at least one photo tagged to this step before marking it
                                 complete.
                               </p>
@@ -4450,19 +4450,15 @@ export default function UserView({
         />
       )}
 
-      {/* Risk Dashboard (opened from the Risk Radar component lights or the app grid) */}
-      {currentProjectRun && (
+      {/* Risk Dashboard (app grid). Mounted only while open so it reads nothing until asked. */}
+      {currentProjectRun && riskDashboardOpen && (
         <RiskDashboardWindow
           open={riskDashboardOpen}
-          onOpenChange={(open) => {
-            setRiskDashboardOpen(open);
-            if (!open) setRiskDashboardDimension(null);
-          }}
+          onOpenChange={setRiskDashboardOpen}
           projectRunId={currentProjectRun.id}
           projectDisplayName={
             currentProjectRun.customProjectName?.trim() || currentProjectRun.name?.trim() || null
           }
-          initialDimension={riskDashboardDimension}
         />
       )}
 

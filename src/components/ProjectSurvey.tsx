@@ -126,8 +126,8 @@ export const ProjectSurvey: React.FC<ProjectSurveyProps> = ({
                       onClick={() => handleSatisfactionRating(rating)}
                       className={`p-3 rounded-lg border-2 transition-all ${
                         surveyData.satisfaction === rating
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-info/40 bg-info/10'
+                          : 'border-border hover:border-border'
                       }`}
                     >
                       <div className="text-3xl mb-1">{getSatisfactionEmoji(rating)}</div>
@@ -138,7 +138,7 @@ export const ProjectSurvey: React.FC<ProjectSurveyProps> = ({
                 
                 {surveyData.satisfaction > 0 && (
                   <div className="text-center">
-                    <p className="text-lg font-medium text-blue-600">
+                    <p className="text-lg font-medium text-info">
                       {getSatisfactionLabel(surveyData.satisfaction)}
                     </p>
                   </div>
@@ -202,7 +202,7 @@ export const ProjectSurvey: React.FC<ProjectSurveyProps> = ({
             </Button>
             <Button 
               onClick={handleSubmit}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              className="flex-1 bg-info hover:bg-info"
               disabled={surveyData.satisfaction === 0 || isSubmitting}
             >
               <Send className="w-4 h-4 mr-2" />

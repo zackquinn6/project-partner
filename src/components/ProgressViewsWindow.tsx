@@ -52,11 +52,11 @@ function RiskCountStrip({ counts, compact }: { counts: PfmeaRiskCounts; compact?
       </span>
       <span className="text-border">·</span>
       <span className="tabular-nums">
-        <span className="font-medium text-amber-600 dark:text-amber-500">M</span> {counts.medium}
+        <span className="font-medium text-warning-soft">M</span> {counts.medium}
       </span>
       <span className="text-border">·</span>
       <span className="tabular-nums">
-        <span className="font-medium text-emerald-600 dark:text-emerald-500">L</span> {counts.low}
+        <span className="font-medium text-success">L</span> {counts.low}
       </span>
     </div>
   );
@@ -252,7 +252,7 @@ export function ProgressViewsWindow({
                         <div
                           className={`h-full transition-all ${
                             isComplete
-                              ? 'bg-green-500'
+                              ? 'bg-success'
                               : isCurrent
                                 ? 'bg-primary'
                                 : 'bg-muted-foreground/20'
@@ -263,7 +263,7 @@ export function ProgressViewsWindow({
                         />
                       </div>
                       {isComplete && (
-                        <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <CheckCircle className="h-4 w-4 text-success flex-shrink-0" />
                       )}
                       {onStepClick && (
                         <Button
@@ -328,7 +328,7 @@ export function ProgressViewsWindow({
                 <Card className="flex flex-col">
                   <CardHeader className="py-3 px-4 border-b">
                     <CardTitle className="text-sm font-medium flex items-center gap-1.5">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <CheckCircle className="h-4 w-4 text-success" />
                       Done ({kanbanColumns.done.length})
                     </CardTitle>
                   </CardHeader>

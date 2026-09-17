@@ -117,7 +117,7 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({
                 >
                   <Button 
                     size="lg"
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                    className="w-full bg-warning-soft hover:bg-warning-soft text-warning-soft-foreground shadow-lg hover:shadow-xl transition-all duration-200"
                   >
                     <span className="flex items-center justify-center gap-2">
                       Book a pro

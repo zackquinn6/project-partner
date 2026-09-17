@@ -437,13 +437,13 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
       )}
 
       {schedule?.professionalTasks && schedule.professionalTasks.length > 0 && (
-        <Alert className="border-orange-200 bg-orange-50">
-          <Users className="h-3 w-3 md:h-4 md:w-4 text-orange-600" />
+        <Alert className="border-warning-soft/40 bg-warning-soft/10">
+          <Users className="h-3 w-3 md:h-4 md:w-4 text-warning-soft" />
           <AlertDescription className="text-[10px] md:text-xs space-y-1">
-            <div className="font-semibold text-orange-900">Professional Tasks to be Completed:</div>
-            <div className="text-orange-800">These tasks require professional contractors and won't be assigned to your team.</div>
+            <div className="font-semibold text-warning-soft">Professional Tasks to be Completed:</div>
+            <div className="text-warning-soft">These tasks require professional contractors and won't be assigned to your team.</div>
             {schedule.professionalTasks.map((item: any, idx: number) => (
-              <div key={idx} className="flex justify-between items-center text-orange-900">
+              <div key={idx} className="flex justify-between items-center text-warning-soft">
                 <span>• {item.subtaskTitle || item.taskTitle}</span>
                 {item.dueDate && (
                   <span className="text-[9px] md:text-[10px] font-medium">
@@ -501,7 +501,7 @@ export function HomeTaskScheduler({ userId, homeId, activeTab }: HomeTaskSchedul
 
           <div className="border rounded-lg overflow-hidden">
             <div className="bg-muted px-2 md:px-3 py-1.5 md:py-2 text-[10px] md:text-xs font-semibold flex items-center gap-1.5">
-              <CheckCircle2 className="h-2.5 w-2.5 md:h-3 md:w-3 text-green-600" />
+              <CheckCircle2 className="h-2.5 w-2.5 md:h-3 md:w-3 text-success" />
               <span className="hidden md:inline">Optimized Schedule ({schedule.assignments.length} assignments)</span>
               <span className="md:hidden">Schedule ({schedule.assignments.length})</span>
             </div>

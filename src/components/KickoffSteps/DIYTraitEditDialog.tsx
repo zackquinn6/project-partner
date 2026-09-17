@@ -39,21 +39,21 @@ const SKILL_OPTIONS: TraitOption[] = [
     label: 'Newbie',
     description: 'Just getting started',
     Icon: Sparkles,
-    iconWrap: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
+    iconWrap: 'bg-success/15 text-success',
   },
   {
     value: 'confident',
     label: 'Confident',
     description: 'Done a few projects',
     Icon: Wrench,
-    iconWrap: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400',
+    iconWrap: 'bg-info/15 text-info',
   },
   {
     value: 'hero',
     label: 'Hero',
     description: 'Tackled big stuff',
     Icon: Hammer,
-    iconWrap: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400',
+    iconWrap: 'bg-warning-soft/15 text-warning-soft',
   },
 ];
 
@@ -63,21 +63,21 @@ const PHYSICAL_EFFORT_OPTIONS: TraitOption[] = [
     label: 'Light',
     description: 'Short sessions, light-duty only',
     Icon: Feather,
-    iconWrap: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
+    iconWrap: 'bg-success/15 text-success',
   },
   {
     value: 'medium',
     label: 'Medium',
     description: 'Half-day projects, moderate lifting',
     Icon: Dumbbell,
-    iconWrap: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400',
+    iconWrap: 'bg-info/15 text-info',
   },
   {
     value: 'heavy',
     label: 'Heavy',
     description: 'Full-day work, heavy lifting',
     Icon: Flame,
-    iconWrap: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400',
+    iconWrap: 'bg-warning-soft/15 text-warning-soft',
   },
 ];
 

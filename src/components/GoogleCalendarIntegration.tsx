@@ -275,19 +275,19 @@ export const GoogleCalendarIntegration: React.FC<CalendarIntegrationProps> = ({
                   <div className="space-y-4">
                     <ul className="space-y-2 text-sm">
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <CheckCircle2 className="h-4 w-4 text-success" />
                         Automatically schedule project phases and milestones
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <CheckCircle2 className="h-4 w-4 text-success" />
                         Set reminders for important project deadlines
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <CheckCircle2 className="h-4 w-4 text-success" />
                         Share project timeline with team members
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <CheckCircle2 className="h-4 w-4 text-success" />
                         Block time slots for focused project work
                       </li>
                     </ul>

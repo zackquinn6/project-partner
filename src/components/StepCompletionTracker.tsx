@@ -29,15 +29,15 @@ export const StepCompletionTracker: React.FC<StepCompletionTrackerProps> = ({
   };
 
   const getStatusColor = (percentage: number) => {
-    if (percentage === 100) return 'text-green-600';
-    if (percentage >= 50) return 'text-yellow-600';
-    return 'text-red-600';
+    if (percentage === 100) return 'text-success';
+    if (percentage >= 50) return 'text-warning-soft';
+    return 'text-destructive-soft';
   };
 
   const getStatusIcon = (percentage: number) => {
-    if (percentage === 100) return <CheckCircle className="w-5 h-5 text-green-600" />;
-    if (percentage >= 50) return <Clock className="w-5 h-5 text-yellow-600" />;
-    return <AlertCircle className="w-5 h-5 text-red-600" />;
+    if (percentage === 100) return <CheckCircle className="w-5 h-5 text-success" />;
+    if (percentage >= 50) return <Clock className="w-5 h-5 text-warning-soft" />;
+    return <AlertCircle className="w-5 h-5 text-destructive-soft" />;
   };
 
   return (
@@ -86,8 +86,8 @@ export const StepCompletionTracker: React.FC<StepCompletionTrackerProps> = ({
         </div>
 
         {selectedPercentage < 100 && (
-          <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+          <div className="p-3 bg-warning-soft/10 border border-warning-soft/40 rounded-md">
+            <p className="text-sm text-warning-soft">
               <AlertCircle className="w-4 h-4 inline mr-1" />
               Step will remain open until marked as 100% complete.
             </p>
@@ -100,7 +100,7 @@ export const StepCompletionTracker: React.FC<StepCompletionTrackerProps> = ({
           </Button>
           <Button 
             onClick={handleComplete} 
-            className={selectedPercentage === 100 ? 'bg-green-600 hover:bg-green-700' : ''}
+            className={selectedPercentage === 100 ? 'bg-success hover:bg-success' : ''}
           >
             {selectedPercentage === 100 ? (
               <>

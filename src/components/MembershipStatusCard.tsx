@@ -70,20 +70,20 @@ export const MembershipStatusCard: React.FC = () => {
 
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CheckCircle className="h-4 w-4 text-success" />
             <span>Home Maintenance</span>
           </div>
           <div className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CheckCircle className="h-4 w-4 text-success" />
             <span>Project & Task Manager</span>
           </div>
           <div className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CheckCircle className="h-4 w-4 text-success" />
             <span>My Tools</span>
           </div>
           <div className="flex items-center gap-2">
             {hasPremiumAccess ? (
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-success" />
             ) : (
               <div className="h-4 w-4 rounded-full border-2 border-muted" />
             )}
@@ -93,7 +93,7 @@ export const MembershipStatusCard: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             {hasPremiumAccess ? (
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-success" />
             ) : (
               <div className="h-4 w-4 rounded-full border-2 border-muted" />
             )}

@@ -62,7 +62,7 @@ export const MemoizedProjectCard = React.memo<MemoizedProjectCardProps>(({
             </div>
           </div>
           {(project as any).publishStatus === 'beta-testing' && (
-            <div className="flex items-center space-x-1 text-amber-600">
+            <div className="flex items-center space-x-1 text-warning-soft">
               <AlertTriangle className="w-4 h-4" />
               <span className="text-xs font-medium">BETA</span>
             </div>

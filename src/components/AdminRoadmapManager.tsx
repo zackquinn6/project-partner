@@ -166,11 +166,11 @@ export const AdminRoadmapManager: React.FC<AdminRoadmapManagerProps> = ({
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'in-progress': return <Clock className="w-4 h-4 text-blue-600" />;
-      case 'planned': return <Calendar className="w-4 h-4 text-gray-600" />;
-      case 'cancelled': return <AlertCircle className="w-4 h-4 text-red-600" />;
-      default: return <Calendar className="w-4 h-4 text-gray-600" />;
+      case 'completed': return <CheckCircle className="w-4 h-4 text-success" />;
+      case 'in-progress': return <Clock className="w-4 h-4 text-info" />;
+      case 'planned': return <Calendar className="w-4 h-4 text-muted-foreground" />;
+      case 'cancelled': return <AlertCircle className="w-4 h-4 text-destructive-soft" />;
+      default: return <Calendar className="w-4 h-4 text-muted-foreground" />;
     }
   };
 

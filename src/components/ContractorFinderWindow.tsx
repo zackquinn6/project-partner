@@ -25,11 +25,11 @@ export function ContractorFinderWindow({ open, onOpenChange }: ContractorFinderW
       >
           
           {/* Beta Banner */}
-          <div className="bg-gradient-to-r from-orange-100 to-yellow-100 border-b border-orange-200 p-3 flex-shrink-0">
+          <div className="bg-gradient-to-r from-warning-soft/15 to-warning-soft/15 border-b border-warning-soft/40 p-3 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Badge className="bg-orange-500 text-white">BETA</Badge>
-                <span className="text-sm font-medium text-orange-800">
+                <Badge className="bg-warning-soft text-warning-soft-foreground">BETA</Badge>
+                <span className="text-sm font-medium text-warning-soft">
                   Feature under development - Hit the ? icon in upper right to give us feedback!
                 </span>
               </div>
@@ -52,15 +52,15 @@ export function ContractorFinderWindow({ open, onOpenChange }: ContractorFinderW
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">
-                <CheckCircle className="h-5 w-5 text-green-500" />
+                <CheckCircle className="h-5 w-5 text-success" />
                 3 Ideal Channels for Finding Top-Tier Contractors
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <MessageCircle className="h-4 w-4 text-green-600" />
+                  <div className="flex-shrink-0 w-8 h-8 bg-success/15 rounded-full flex items-center justify-center">
+                    <MessageCircle className="h-4 w-4 text-success" />
                   </div>
                   <div>
                     <h4 className="font-semibold mb-2">Personal Referrals & Word of Mouth</h4>
@@ -73,8 +73,8 @@ export function ContractorFinderWindow({ open, onOpenChange }: ContractorFinderW
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Building className="h-4 w-4 text-blue-600" />
+                  <div className="flex-shrink-0 w-8 h-8 bg-info/15 rounded-full flex items-center justify-center">
+                    <Building className="h-4 w-4 text-info" />
                   </div>
                   <div>
                     <h4 className="font-semibold mb-2">Local Trade Associations & Guilds</h4>
@@ -87,8 +87,8 @@ export function ContractorFinderWindow({ open, onOpenChange }: ContractorFinderW
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Store className="h-4 w-4 text-purple-600" />
+                  <div className="flex-shrink-0 w-8 h-8 bg-category-3/15 rounded-full flex items-center justify-center">
+                    <Store className="h-4 w-4 text-category-3" />
                   </div>
                   <div>
                     <h4 className="font-semibold mb-2">Specialty Retailers & Supply Houses</h4>
@@ -110,15 +110,15 @@ export function ContractorFinderWindow({ open, onOpenChange }: ContractorFinderW
           </Card>
 
           {/* Why Not Section */}
-          <Card className="border-red-200 bg-red-50/50">
+          <Card className="border-destructive-soft/40 bg-destructive-soft/10">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl text-red-700">
+              <CardTitle className="flex items-center gap-2 text-xl text-destructive-soft">
                 <AlertTriangle className="h-5 w-5" />
                 Why Not Angi&apos;s List, Thumbtack, TaskRabbit, or Yelp?
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-red-800 space-y-3">
+              <div className="text-sm text-destructive-soft space-y-3">
                 <p>
                   These tech marketplaces are optimized for <strong>lead generation, not craftsmanship</strong>. They treat contractors like interchangeable commodities, charging them for leads and pushing volume over quality. The result?
                 </p>
@@ -140,15 +140,15 @@ export function ContractorFinderWindow({ open, onOpenChange }: ContractorFinderW
                 <h3 className="font-semibold text-lg">3 things to get right:</h3>
                 <div className="grid gap-3 text-sm text-muted-foreground">
                   <div className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
                     <span>Be an officer - license and registration (insurance)</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
                     <span>Get 3+ quotes - think twice on bottom price.</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
                     <span>Research - Know what you&apos;re shopping for. Reviews help - but be cautious of 1 and 5 stars.</span>
                   </div>
                 </div>

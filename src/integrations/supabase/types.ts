@@ -4618,6 +4618,7 @@ export type Database = {
       user_profiles: {
         Row: {
           avoid_projects: string[] | null
+          color_scheme: string
           created_at: string
           do_not_show_workflow_tutorial: boolean
           full_name: string | null
@@ -4636,12 +4637,14 @@ export type Database = {
           roles: string[]
           skill_level: string | null
           survey_completed_at: string | null
+          theme_mode: string
           time_zone: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           avoid_projects?: string[] | null
+          color_scheme?: string
           created_at?: string
           do_not_show_workflow_tutorial?: boolean
           full_name?: string | null
@@ -4660,12 +4663,14 @@ export type Database = {
           roles?: string[]
           skill_level?: string | null
           survey_completed_at?: string | null
+          theme_mode?: string
           time_zone?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           avoid_projects?: string[] | null
+          color_scheme?: string
           created_at?: string
           do_not_show_workflow_tutorial?: boolean
           full_name?: string | null
@@ -4684,6 +4689,7 @@ export type Database = {
           roles?: string[]
           skill_level?: string | null
           survey_completed_at?: string | null
+          theme_mode?: string
           time_zone?: string | null
           updated_at?: string
           user_id?: string

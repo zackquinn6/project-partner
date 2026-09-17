@@ -7,6 +7,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2, Plus, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  currentRiskLevelBadgeClass,
+  riskFocusSeveritySelectItemClass,
+  riskFocusSeveritySelectTriggerClass,
+} from '@/utils/riskSeverityStyles';
 
 export interface RiskRegisterListRisk {
   id: string;
@@ -60,39 +65,6 @@ function riskFocusLevelValue(risk: RiskRegisterListRisk): 'low' | 'medium' | 'hi
 
 function isUserAddedRisk(risk: RiskRegisterListRisk): boolean {
   return !risk.from_standard_foundation && !risk.template_risk_id && !risk.is_template_risk;
-}
-
-function currentRiskLevelBadgeClass(level: 'low' | 'medium' | 'high') {
-  switch (level) {
-    case 'high':
-      return 'bg-red-100 text-red-800 border-red-300';
-    case 'low':
-      return 'bg-emerald-100 text-emerald-800 border-emerald-300';
-    default:
-      return 'bg-amber-100 text-amber-900 border-amber-300';
-  }
-}
-
-function riskFocusSeveritySelectTriggerClass(level: 'low' | 'medium' | 'high'): string {
-  switch (level) {
-    case 'high':
-      return 'border-red-300 bg-red-50/90 text-red-900 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200';
-    case 'low':
-      return 'border-emerald-300 bg-emerald-50/90 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200';
-    default:
-      return 'border-amber-300 bg-amber-50/90 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200';
-  }
-}
-
-function riskFocusSeveritySelectItemClass(level: 'high' | 'medium' | 'low'): string {
-  switch (level) {
-    case 'high':
-      return 'text-red-800 focus:bg-red-50 focus:text-red-900 dark:text-red-300 dark:focus:bg-red-950/50 dark:focus:text-red-200';
-    case 'low':
-      return 'text-emerald-800 focus:bg-emerald-50 focus:text-emerald-900 dark:text-emerald-300 dark:focus:bg-emerald-950/40 dark:focus:text-emerald-200';
-    default:
-      return 'text-amber-900 focus:bg-amber-50 focus:text-amber-950 dark:text-amber-300 dark:focus:bg-amber-950/40 dark:focus:text-amber-200';
-  }
 }
 
 export type RiskRegisterListProps<T extends RiskRegisterListRisk = RiskRegisterListRisk> = {

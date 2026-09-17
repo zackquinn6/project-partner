@@ -379,7 +379,7 @@ export function VariationViewer({ open, onOpenChange, coreItemId, coreItemName, 
                                       <div className="text-xs text-muted-foreground">by {model.manufacturer}</div>
                                     )}
                                     {modelPricing ? (
-                                      <div className="text-sm font-medium text-green-600 mt-1">
+                                      <div className="text-sm font-medium text-success mt-1">
                                         Avg: ${modelPricing.averagePrice.toFixed(2)} ({modelPricing.retailerCount} retailer{modelPricing.retailerCount !== 1 ? 's' : ''})
                                       </div>
                                     ) : (

@@ -308,7 +308,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                         </DialogDescription>
                       </DialogHeader>
                       
-                      <Alert className="border-yellow-200 bg-yellow-50">
+                      <Alert className="border-warning-soft/40 bg-warning-soft/10">
                         <AlertTriangle className="w-4 h-4" />
                         <AlertDescription>
                           <strong>Warning:</strong> Custom phases are not covered by our success guarantee. 
@@ -383,18 +383,18 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                         {/* Drop Zone before each phase (only if allowed) */}
                         {canDropBefore && (
                           <div 
-                            className={`h-2 ${dropZoneIndex === index ? 'bg-blue-200 border-2 border-dashed border-blue-400' : 'border border-dashed border-muted-foreground/20'} rounded transition-all duration-200`}
+                            className={`h-2 ${dropZoneIndex === index ? 'bg-info/25 border-2 border-dashed border-info/40' : 'border border-dashed border-muted-foreground/20'} rounded transition-all duration-200`}
                             onDragOver={e => handleDragOver(e, index)}
                             onDrop={e => handleDrop(e, index)}
                           >
                             {dropZoneIndex === index && (
-                              <div className="text-xs text-blue-600 text-center py-1">Drop new phase here</div>
+                              <div className="text-xs text-info text-center py-1">Drop new phase here</div>
                             )}
                           </div>
                         )}
 
                         {/* Existing Phase */}
-                        <Card className={`border flex-shrink-0 ${isStandardPhase ? 'border-blue-200 bg-blue-50' : 'border-muted bg-muted/50'}`}>
+                        <Card className={`border flex-shrink-0 ${isStandardPhase ? 'border-info/40 bg-info/10' : 'border-muted bg-muted/50'}`}>
                           <CardContent className="p-2">
                             <div className="flex items-center gap-2">
                               <Badge variant={isStandardPhase ? "default" : "secondary"} className="text-xs">
@@ -402,7 +402,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                               </Badge>
                               <span className="font-medium text-sm truncate flex-1">{phase.name}</span>
                               {isStandardPhase && (
-                                <Badge variant="outline" className="text-xs border-blue-300 text-blue-700">
+                                <Badge variant="outline" className="text-xs border-info/40 text-info">
                                   Standard
                                 </Badge>
                               )}
@@ -421,12 +421,12 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                         {/* Drop Zone after each phase (only if allowed) */}
                         {canDropAfter && (
                           <div 
-                            className={`h-2 ${dropZoneIndex === index + 1 ? 'bg-blue-200 border-2 border-dashed border-blue-400' : 'border border-dashed border-muted-foreground/20'} rounded transition-all duration-200`}
+                            className={`h-2 ${dropZoneIndex === index + 1 ? 'bg-info/25 border-2 border-dashed border-info/40' : 'border border-dashed border-muted-foreground/20'} rounded transition-all duration-200`}
                             onDragOver={e => handleDragOver(e, index + 1)}
                             onDrop={e => handleDrop(e, index + 1)}
                           >
                             {dropZoneIndex === index + 1 && (
-                              <div className="text-xs text-blue-600 text-center py-1">Drop new phase here</div>
+                              <div className="text-xs text-info text-center py-1">Drop new phase here</div>
                             )}
                           </div>
                         )}
@@ -437,7 +437,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                   {/* Final drop zone at the end (before Close Project if it exists) */}
                   {currentProjectRun && (
                     <div 
-                      className={`h-3 ${dropZoneIndex === (currentProjectRun?.phases?.length || 0) ? 'bg-blue-200 border-2 border-dashed border-blue-400' : 'border border-dashed border-muted-foreground/30'} rounded transition-all duration-200`}
+                      className={`h-3 ${dropZoneIndex === (currentProjectRun?.phases?.length || 0) ? 'bg-info/25 border-2 border-dashed border-info/40' : 'border border-dashed border-muted-foreground/30'} rounded transition-all duration-200`}
                       onDragOver={e => {
                         const closeProjectIndex = currentProjectRun.phases.findIndex((p: any) => p.name === 'Close Project');
                         const targetIndex = closeProjectIndex >= 0 ? closeProjectIndex : currentProjectRun.phases.length;
@@ -453,7 +453,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                         const closeProjectIndex = currentProjectRun.phases.findIndex((p: any) => p.name === 'Close Project');
                         const targetIndex = closeProjectIndex >= 0 ? closeProjectIndex : currentProjectRun.phases.length;
                         return dropZoneIndex === targetIndex ? (
-                          <div className="text-xs text-blue-600 text-center py-2">Drop new phase here</div>
+                          <div className="text-xs text-info text-center py-2">Drop new phase here</div>
                         ) : (
                           <div className="text-xs text-muted-foreground text-center py-2">
                             {closeProjectIndex >= 0 ? 'Add phases before Close Project' : 'Add phases to the end'}
@@ -466,9 +466,9 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                   {/* Show selected/new phases that will be added */}
                   {selectedPhases.length > 0 && (
                     <div className="mt-3 pt-3 border-t">
-                      <h4 className="font-medium text-sm mb-2 text-green-700">New Phases to Add:</h4>
+                      <h4 className="font-medium text-sm mb-2 text-success">New Phases to Add:</h4>
                       {selectedPhases.map((phase, index) => (
-                        <Card key={phase.id} className="mb-2 border-green-200 bg-green-50 flex-shrink-0">
+                        <Card key={phase.id} className="mb-2 border-success/40 bg-success/10 flex-shrink-0">
                           <CardContent className="p-2">
                             <div className="flex items-start justify-between">
                               <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -477,7 +477,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                                   <h4 className="font-medium text-sm truncate">
                                     {phase.name}
                                     {phase.id.startsWith('manual-') && (
-                                      <Badge variant="outline" className="ml-2 text-xs border-yellow-300 text-yellow-700">
+                                      <Badge variant="outline" className="ml-2 text-xs border-warning-soft/40 text-warning-soft">
                                         Custom
                                       </Badge>
                                     )}
@@ -511,7 +511,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                 </div>
 
                 {hasManualPhases && (
-                  <Alert className="mt-3 border-yellow-200 bg-yellow-50 flex-shrink-0">
+                  <Alert className="mt-3 border-warning-soft/40 bg-warning-soft/10 flex-shrink-0">
                     <AlertTriangle className="w-4 h-4" />
                     <AlertDescription>
                       Your unplanned work includes custom phases. These are not covered by our success guarantee.
@@ -526,7 +526,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                   <Button 
                     onClick={handleAddUnplannedWork} 
                     disabled={selectedPhases.length === 0}
-                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    className="flex-1 bg-success hover:bg-success"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Unplanned Work

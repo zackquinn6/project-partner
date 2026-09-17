@@ -90,7 +90,7 @@ export function ProjectWorkflowOverviewPage({
         <Button
           type="button"
           size="lg"
-          className="w-full bg-green-600 text-white hover:bg-green-700 hover:text-white"
+          className="w-full bg-success text-success-foreground hover:bg-success hover:text-success-foreground"
           onClick={onOpenCurrentStep}
         >
           {`Open current step: ${currentIncompleteStepName}`}

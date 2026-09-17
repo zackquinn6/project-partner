@@ -47,9 +47,9 @@ export function PhaseRatingPopup({
   };
 
   const getRatingColor = (rating: number) => {
-    if (rating <= 2) return "text-red-500 hover:text-red-600";
-    if (rating === 3) return "text-yellow-500 hover:text-yellow-600";
-    return "text-green-500 hover:text-green-600";
+    if (rating <= 2) return "text-destructive-soft hover:text-destructive-soft";
+    if (rating === 3) return "text-warning-soft hover:text-warning-soft";
+    return "text-success hover:text-success";
   };
 
   return (
@@ -75,7 +75,7 @@ export function PhaseRatingPopup({
                     flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all
                     ${selectedRating === rating 
                       ? 'border-primary bg-primary/10' 
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-border hover:border-border'
                     }
                   `}
                 >
@@ -98,7 +98,7 @@ export function PhaseRatingPopup({
                 <Button 
                   variant="outline" 
                   onClick={handleReportIssue}
-                  className="w-full border-orange-200 text-orange-700 hover:bg-orange-50"
+                  className="w-full border-warning-soft/40 text-warning-soft hover:bg-warning-soft/10"
                 >
                   Report an Issue
                 </Button>

@@ -117,7 +117,7 @@ export const PostAuthLanding = () => {
       window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'));
       navigate('/', { state: { view: 'user' } });
     },
-    color: "bg-blue-600", // Projects: Blue
+    color: "bg-info", // Projects: Blue
     textColor: "text-white"
   }, {
     icon: Home,
@@ -126,13 +126,13 @@ export const PostAuthLanding = () => {
       const event = new CustomEvent('show-home-maintenance');
       window.dispatchEvent(event);
     },
-    color: "bg-green-600", // Home: Green
+    color: "bg-success", // Home: Green
     textColor: "text-white"
   }, {
     icon: ListChecks,
     title: "Project & Task Manager",
     action: () => setShowHomeTaskList(true),
-    color: "bg-green-500", // Home: Green
+    color: "bg-success", // Home: Green
     textColor: "text-white"
   }, {
     icon: Wrench,
@@ -141,7 +141,7 @@ export const PostAuthLanding = () => {
       const event = new CustomEvent('show-user-tools-materials');
       window.dispatchEvent(event);
     },
-    color: "bg-orange-600", // Tools: Orange
+    color: "bg-warning-soft", // Tools: Orange
     textColor: "text-white"
   }];
 
@@ -159,7 +159,7 @@ export const PostAuthLanding = () => {
                 }
                 navigate('/projects');
               },
-              color: 'bg-blue-700',
+              color: 'bg-info',
               textColor: 'text-white',
             },
           ]
@@ -168,14 +168,14 @@ export const PostAuthLanding = () => {
         icon: HelpCircle,
         title: 'Expert Help',
         action: () => setShowExpertHelp(true),
-        color: 'bg-purple-600',
+        color: 'bg-category-3',
         textColor: 'text-white',
       },
       {
         icon: Hammer,
         title: 'Tool Rental',
         action: () => setShowToolRentals(true),
-        color: 'bg-orange-500',
+        color: 'bg-warning-soft',
         textColor: 'text-white',
       },
     ],
@@ -190,7 +190,7 @@ export const PostAuthLanding = () => {
       const event = new CustomEvent('open-profile-manager');
       window.dispatchEvent(event);
     },
-    color: "bg-slate-600", // Profile: Gray
+    color: "bg-muted-foreground", // Profile: Gray
     textColor: "text-white"
   }, {
     icon: Home,
@@ -199,7 +199,7 @@ export const PostAuthLanding = () => {
       const event = new CustomEvent('show-home-manager');
       window.dispatchEvent(event);
     },
-    color: "bg-green-700", // Home: Green
+    color: "bg-success", // Home: Green
     textColor: "text-white"
   }];
   return <div className="min-h-screen bg-background pt-16 md:pt-20 pb-8 md:pb-12">      

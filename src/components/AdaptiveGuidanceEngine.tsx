@@ -387,12 +387,12 @@ export const AdaptiveGuidanceEngine: React.FC<AdaptiveGuidanceEngineProps> = ({
 
           {/* Safety Notes */}
           {adaptedInstructions.safetyNotes && (
-            <div className="border border-orange-200 bg-orange-50 rounded-lg p-4">
+            <div className="border border-warning-soft/40 bg-warning-soft/10 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="h-4 w-4 text-orange-600" />
-                <span className="font-medium text-orange-800">Safety Reminder</span>
+                <AlertCircle className="h-4 w-4 text-warning-soft" />
+                <span className="font-medium text-warning-soft">Safety Reminder</span>
               </div>
-              <p className="text-sm text-orange-700">
+              <p className="text-sm text-warning-soft">
                 Always wear appropriate safety equipment and work in a well-ventilated area.
               </p>
             </div>
@@ -400,15 +400,15 @@ export const AdaptiveGuidanceEngine: React.FC<AdaptiveGuidanceEngineProps> = ({
 
           {/* Tips */}
           {adaptedInstructions.tips && (
-            <div className="border border-blue-200 bg-blue-50 rounded-lg p-4">
+            <div className="border border-info/40 bg-info/10 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-4 w-4 text-blue-600" />
-                <span className="font-medium text-blue-800">Pro Tips</span>
+                <Zap className="h-4 w-4 text-info" />
+                <span className="font-medium text-info">Pro Tips</span>
               </div>
               <ul className="space-y-1">
                 {adaptedInstructions.tips.map((tip: string, index: number) => (
-                  <li key={index} className="text-sm text-blue-700 flex items-start gap-1">
-                    <span className="text-blue-600">•</span>
+                  <li key={index} className="text-sm text-info flex items-start gap-1">
+                    <span className="text-info">•</span>
                     {tip}
                   </li>
                 ))}
@@ -418,14 +418,14 @@ export const AdaptiveGuidanceEngine: React.FC<AdaptiveGuidanceEngineProps> = ({
 
           {/* Troubleshooting */}
           {adaptedInstructions.troubleshooting && (
-            <div className="border border-gray-200 rounded-lg p-4">
+            <div className="border border-border rounded-lg p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Settings className="h-4 w-4" />
                 <span className="font-medium">Troubleshooting</span>
               </div>
               <div className="space-y-3">
                 {adaptedInstructions.troubleshooting.map((item: any, index: number) => (
-                  <div key={index} className="border-l-2 border-gray-300 pl-3">
+                  <div key={index} className="border-l-2 border-border pl-3">
                     <div className="font-medium text-sm">{item.issue}</div>
                     <div className="text-sm text-muted-foreground">{item.solution}</div>
                   </div>
@@ -436,14 +436,14 @@ export const AdaptiveGuidanceEngine: React.FC<AdaptiveGuidanceEngineProps> = ({
 
           {/* Quality Checks */}
           {adaptedInstructions.qualityChecks && (
-            <div className="border border-green-200 bg-green-50 rounded-lg p-4">
+            <div className="border border-success/40 bg-success/10 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="font-medium text-green-800">Quality Checklist</span>
+                <CheckCircle className="h-4 w-4 text-success" />
+                <span className="font-medium text-success">Quality Checklist</span>
               </div>
               <ul className="space-y-1">
                 {adaptedInstructions.qualityChecks.map((check: string, index: number) => (
-                  <li key={index} className="text-sm text-green-700 flex items-center gap-2">
+                  <li key={index} className="text-sm text-success flex items-center gap-2">
                     <input type="checkbox" className="rounded" />
                     {check}
                   </li>

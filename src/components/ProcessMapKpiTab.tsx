@@ -342,7 +342,7 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
   };
 
   const kpiThClass =
-    'sticky top-0 z-20 bg-sky-600 px-2 py-2 text-left text-xs font-medium text-white border-b border-sky-700/60 shadow-[0_1px_0_0_rgba(0,0,0,0.08)] [&:not(:last-child)]:border-r [&:not(:last-child)]:border-white/25';
+    'sticky top-0 z-20 bg-info px-2 py-2 text-left text-xs font-medium text-info-foreground border-b border-info/40 shadow-[0_1px_0_0_rgba(0,0,0,0.08)] [&:not(:last-child)]:border-r [&:not(:last-child)]:border-white/25';
 
   const startKpiResize = (colKey: KpiColKey, e: React.PointerEvent) => {
     if (!e.isPrimary) return;
@@ -380,10 +380,10 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
       role="separator"
       aria-orientation="vertical"
       onPointerDown={(e) => startKpiResize(colKey, e)}
-      className="pointer-events-auto absolute right-0 top-0 z-50 flex h-full w-4 cursor-col-resize touch-none select-none items-stretch justify-end hover:bg-white/25"
+      className="pointer-events-auto absolute right-0 top-0 z-50 flex h-full w-4 cursor-col-resize touch-none select-none items-stretch justify-end hover:bg-card/25"
       title="Drag to resize column"
     >
-      <span className="h-full w-1.5 shrink-0 cursor-col-resize hover:bg-white/40" aria-hidden />
+      <span className="h-full w-1.5 shrink-0 cursor-col-resize hover:bg-card/40" aria-hidden />
     </span>
   );
 
@@ -451,7 +451,7 @@ export function ProcessMapKpiTab({ phases, isEditingStandardProject, onDataChang
           style={{ minWidth: `${kpiTableMinWidthPx}px` }}
         >
           <TableHeader className="[&_tr]:border-b-0">
-            <TableRow className="border-0 border-b border-sky-700/60 bg-sky-600 hover:bg-sky-600">
+            <TableRow className="border-0 border-b border-info/40 bg-info hover:bg-info">
               <TableHead
                 className={cn(kpiThClass, 'relative overflow-hidden')}
                 style={kpiColStyle('phase')}

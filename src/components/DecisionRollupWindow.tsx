@@ -184,26 +184,26 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
   const getStatusIcon = (status: DecisionItem['status']) => {
     switch (status) {
       case 'answered':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
+        return <CheckCircle className="w-4 h-4 text-success" />;
       case 'requires-attention':
-        return <AlertCircle className="w-4 h-4 text-yellow-600" />;
+        return <AlertCircle className="w-4 h-4 text-warning-soft" />;
       default:
-        return <Clock className="w-4 h-4 text-blue-600" />;
+        return <Clock className="w-4 h-4 text-info" />;
     }
   };
 
   const getStageColor = (stage: string) => {
     switch (stage) {
       case 'kickoff':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
+        return 'bg-category-1/15 text-category-1 border-category-1/40';
       case 'planning':
-        return 'bg-green-100 text-green-800 border-green-300';
+        return 'bg-category-2/15 text-category-2 border-category-2/40';
       case 'execution':
-        return 'bg-orange-100 text-orange-800 border-orange-300';
+        return 'bg-category-4/15 text-category-4 border-category-4/40';
       case 'completion':
-        return 'bg-purple-100 text-purple-800 border-purple-300';
+        return 'bg-category-3/15 text-category-3 border-category-3/40';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -252,8 +252,8 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
             >
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                    <HelpCircle className="w-6 h-6 text-blue-600" />
+                  <div className="w-12 h-12 rounded-full bg-info/15 flex items-center justify-center">
+                    <HelpCircle className="w-6 h-6 text-info" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg">New work needed</h3>
@@ -271,8 +271,8 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
             >
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  <div className="w-12 h-12 rounded-full bg-success/15 flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-success" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg">New materials needed</h3>
@@ -290,8 +290,8 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
             >
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-orange-600" />
+                  <div className="w-12 h-12 rounded-full bg-warning-soft/15 flex items-center justify-center">
+                    <Clock className="w-6 h-6 text-warning-soft" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg">Schedule update needed</h3>
@@ -344,11 +344,11 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
             <CardContent>
               <div className="flex items-center gap-6 text-sm">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <CheckCircle className="w-4 h-4 text-success" />
                   <span>Answered: {answeredCount}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-blue-600" />
+                  <Clock className="w-4 h-4 text-info" />
                   <span>Pending: {pendingCount}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -423,8 +423,8 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
                       </RadioGroup>
                       
                       {answers[decision.id] && (
-                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
-                          <p className="text-sm text-green-800">
+                        <div className="mt-3 p-3 bg-success/10 border border-success/40 rounded-md">
+                          <p className="text-sm text-success">
                             ✓ Selected: {decision.options.find(opt => opt.value === answers[decision.id])?.label}
                           </p>
                         </div>
@@ -440,7 +440,7 @@ export const DecisionRollupWindow: React.FC<DecisionRollupWindowProps> = ({
           <div className="flex justify-between items-center pt-4 border-t">
             <div className="text-sm text-muted-foreground">
               {mode === 'initial-plan' && pendingCount > 0 && (
-                <span className="text-orange-600 font-medium">
+                <span className="text-warning-soft font-medium">
                   {pendingCount} decision(s) still need to be answered
                 </span>
               )}

@@ -231,9 +231,9 @@ export const BetaScorecard: React.FC<BetaScorecardProps> = ({ demoMode = false }
               variant={scorecard.campaignPassed === true ? 'default' : 'outline'}
               className={
                 scorecard.campaignPassed === true
-                  ? 'bg-green-600 hover:bg-green-600'
+                  ? 'bg-success hover:bg-success'
                   : scorecard.campaignPassed === false
-                    ? 'border-orange-500 text-orange-700'
+                    ? 'border-warning-soft/40 text-warning-soft'
                     : ''
               }
             >
@@ -275,7 +275,7 @@ export const BetaScorecard: React.FC<BetaScorecardProps> = ({ demoMode = false }
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <MetricTile
-            icon={<Users className="h-5 w-5 text-blue-600" />}
+            icon={<Users className="h-5 w-5 text-info" />}
             label="Signups"
             value={scorecard.metrics.signups.toLocaleString()}
           />
@@ -285,21 +285,21 @@ export const BetaScorecard: React.FC<BetaScorecardProps> = ({ demoMode = false }
             value={scorecard.metrics.projectsStarted.toLocaleString()}
           />
           <MetricTile
-            icon={<Flag className="h-5 w-5 text-green-600" />}
+            icon={<Flag className="h-5 w-5 text-success" />}
             label="Finished"
             value={scorecard.metrics.projectsFinished.toLocaleString()}
           />
           <MetricTile
-            icon={<CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+            icon={<CheckCircle2 className="h-5 w-5 text-success" />}
             label="Completion"
             value={`${scorecard.metrics.completionRatePercent.toFixed(0)}%`}
           />
           <MetricTile
             icon={
               campaignId === 'C' ? (
-                <Repeat className="h-5 w-5 text-violet-600" />
+                <Repeat className="h-5 w-5 text-category-3" />
               ) : (
-                <Star className="h-5 w-5 text-yellow-500" />
+                <Star className="h-5 w-5 text-warning-soft" />
               )
             }
             label={campaignId === 'C' ? 'Repeat rate' : 'Success rate'}
@@ -330,7 +330,7 @@ export const BetaScorecard: React.FC<BetaScorecardProps> = ({ demoMode = false }
                       ? `${t.actual.toFixed(0)}% / ≥${t.target}%`
                       : `${Math.round(t.actual)} / ${t.target}`}
                     {t.met ? (
-                      <Badge className="ml-2 bg-green-600 hover:bg-green-600" variant="default">
+                      <Badge className="ml-2 bg-success hover:bg-success" variant="default">
                         Met
                       </Badge>
                     ) : (

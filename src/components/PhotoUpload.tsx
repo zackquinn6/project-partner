@@ -370,9 +370,9 @@ export function PhotoUpload({
 
             {/* Warning for personal photos */}
             {privacyLevel === 'personal' && (
-              <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5" />
-                <div className="text-xs text-yellow-800">
+              <div className="flex items-start gap-2 p-3 bg-warning-soft/10 border border-warning-soft/40 rounded-lg">
+                <AlertTriangle className="w-4 h-4 text-warning-soft mt-0.5" />
+                <div className="text-xs text-warning-soft">
                   Personal photos use encrypted storage and cannot be accessed by Project Partner staff, 
                   even for troubleshooting purposes.
                 </div>

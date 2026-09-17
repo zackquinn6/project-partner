@@ -516,8 +516,8 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
                       className={`
                         p-3 rounded-lg border cursor-pointer transition-all
                         ${isSelected 
-                          ? 'border-yellow-500 bg-yellow-50 shadow-md' 
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          ? 'border-warning-soft/40 bg-warning-soft/10 shadow-md' 
+                          : 'border-border hover:border-border hover:bg-muted'
                         }
                       `}
                     >
@@ -525,8 +525,8 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
                         <div className={`
                           w-5 h-5 rounded border-2 flex items-center justify-center
                           ${isSelected 
-                            ? 'border-yellow-500 bg-yellow-500' 
-                            : 'border-gray-300'
+                            ? 'border-warning-soft/40 bg-warning-soft' 
+                            : 'border-border'
                           }
                         `}>
                           {isSelected && <span className="text-white text-xs">✓</span>}
@@ -550,7 +550,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
                     {editedVariation.warning_flags.map((flagName) => {
                       const flag = availableWarnings.find(f => f.name === flagName);
                       return (
-                        <Badge key={flagName} variant="secondary" className="bg-yellow-100 text-yellow-800">
+                        <Badge key={flagName} variant="secondary" className="bg-warning-soft/15 text-warning-soft">
                           ⚠️ {flag?.name || flagName}
                         </Badge>
                       );
@@ -669,7 +669,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
                           <div className="font-medium">{model?.model_name}</div>
                           <div className="text-sm text-muted-foreground">{price.retailer}</div>
                           {price.price && (
-                            <div className="text-lg font-bold text-green-600">
+                            <div className="text-lg font-bold text-success">
                               ${price.price.toFixed(2)} {price.currency}
                             </div>
                           )}
@@ -679,7 +679,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
                             </Badge>
                           )}
                           {price.product_url && (
-                            <div className="text-xs text-blue-600 mt-1 truncate max-w-xs">
+                            <div className="text-xs text-info mt-1 truncate max-w-xs">
                               <a href={price.product_url} target="_blank" rel="noopener noreferrer">
                                 {price.product_url}
                               </a>

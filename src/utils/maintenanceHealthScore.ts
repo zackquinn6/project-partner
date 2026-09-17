@@ -48,7 +48,7 @@ export function getMaintenanceHealthScoreLabel(score: number): string {
 
 /** Tailwind text color class aligned with the health score label bands. */
 export function getMaintenanceHealthScoreColorClass(score: number): string {
-  if (score >= 80) return 'text-emerald-600';
-  if (score >= 60) return 'text-amber-500';
+  if (score >= 80) return 'text-success';
+  if (score >= 60) return 'text-warning-soft';
   return 'text-destructive';
 }

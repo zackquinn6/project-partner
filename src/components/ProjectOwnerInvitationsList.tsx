@@ -58,7 +58,7 @@ export const ProjectOwnerInvitationsList: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'accepted':
-        return <Badge variant="default" className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Accepted</Badge>;
+        return <Badge variant="default" className="bg-success"><CheckCircle className="w-3 h-3 mr-1" />Accepted</Badge>;
       case 'declined':
         return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Declined</Badge>;
       case 'expired':

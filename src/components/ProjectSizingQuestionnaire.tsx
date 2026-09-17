@@ -72,7 +72,7 @@ export const ProjectSizingQuestionnaire: React.FC<ProjectSizingQuestionnaireProp
         <div className="flex items-center gap-2">
           <Calculator className="w-5 h-5 text-primary" />
           <CardTitle>Project Sizing & Time Estimation</CardTitle>
-          {isCompleted && <CheckCircle className="w-5 h-5 text-green-500" />}
+          {isCompleted && <CheckCircle className="w-5 h-5 text-success" />}
         </div>
         <CardDescription>
           Help us provide accurate time estimates by telling us about your project scope and working capacity.

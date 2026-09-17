@@ -184,9 +184,9 @@ export const SimplifiedCustomWorkManager: React.FC<SimplifiedCustomWorkManagerPr
         <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
           <div className="space-y-4">
             {/* Warning */}
-            <Alert className="border-sky-200 bg-sky-50/80 dark:border-sky-800 dark:bg-sky-950/40">
-              <Info className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-              <AlertDescription className="text-sky-900 dark:text-sky-100 text-xs leading-relaxed">
+            <Alert className="border-info/40 bg-info/10">
+              <Info className="h-4 w-4 text-info" />
+              <AlertDescription className="text-info text-xs leading-relaxed">
                 Custom work won&apos;t have the workflow as created for other projects.
               </AlertDescription>
             </Alert>

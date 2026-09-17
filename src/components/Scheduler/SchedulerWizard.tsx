@@ -504,7 +504,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                       variant="outline"
                       size="sm"
                       onClick={onAssignWork}
-                      className="h-7 px-2 text-xs bg-blue-50/50 hover:bg-blue-100/70 text-blue-700 border-blue-200/50"
+                      className="h-7 px-2 text-xs bg-info/10 hover:bg-info/15 text-info border-info/40"
                     >
                       <Users className="w-3 h-3 mr-1" />
                       Assign Work
@@ -515,7 +515,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                       variant="outline"
                       size="sm"
                       onClick={onOpenRiskManager}
-                      className="h-7 px-2 text-xs bg-orange-50/50 hover:bg-orange-100/70 text-orange-700 border-orange-200/50"
+                      className="h-7 px-2 text-xs bg-warning-soft/10 hover:bg-warning-soft/15 text-warning-soft border-warning-soft/40"
                     >
                       <Shield className="w-3 h-3 mr-1" />
                       Risk Manager
@@ -526,7 +526,7 @@ export const SchedulerWizard: React.FC<SchedulerWizardProps> = ({
                       variant="outline"
                       size="sm"
                       onClick={onOpenSensitivity}
-                      className="h-7 px-2 text-xs bg-purple-50/50 hover:bg-purple-100/70 text-purple-700 border-purple-200/50"
+                      className="h-7 px-2 text-xs bg-category-3/10 hover:bg-category-3/15 text-category-3 border-category-3/40"
                     >
                       <TrendingUp className="w-3 h-3 mr-1" />
                       Schedule Sensitivity

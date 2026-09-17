@@ -362,7 +362,7 @@ const EditMaintenanceTaskForm: React.FC<EditMaintenanceTaskFormProps> = ({ task,
               onValueChange={([v]) =>
                 setForm(prev => ({ ...prev, progress_percentage: Math.round(Math.max(0, Math.min(9999, v ?? 0))) }))
               }
-              className="flex-1 [&_[data-radix-slider-track]]:bg-muted/60 [&_[data-radix-slider-range]]:bg-emerald-600 [&_[data-radix-slider-thumb]]:border-emerald-600"
+              className="flex-1 [&_[data-radix-slider-track]]:bg-muted/60 [&_[data-radix-slider-range]]:bg-success [&_[data-radix-slider-thumb]]:border-success/40"
             />
             <Input
               type="number"
@@ -671,7 +671,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
     }
   };
   const getProgressBarColor = (progress: number) =>
-    progress >= 100 ? 'bg-destructive' : progress >= 91 ? 'bg-amber-500' : 'bg-emerald-600';
+    progress >= 100 ? 'bg-destructive' : progress >= 91 ? 'bg-warning-soft' : 'bg-success';
   /** Positive = days overdue, negative = days until due, 0 = due today. */
   const getDaysRelativeToDue = (task: MaintenanceTask): number => {
     const dueDate = startOfDay(new Date(task.next_due));
@@ -988,7 +988,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                 className="shrink-0 p-0 h-8 w-8 md:h-8 md:w-auto md:px-3 md:py-2 text-xs font-semibold"
                 title="Setup Alerts"
               >
-                <Bell className="h-4 w-4 text-amber-500" />
+                <Bell className="h-4 w-4 text-warning-soft" />
                 <span className="hidden md:inline ml-1.5">Setup Alerts</span>
               </Button>
             </div>
@@ -1058,10 +1058,10 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                             disabled={!selectedHomeId}
                             variant="outline"
                             size="sm"
-                            className="h-8 min-h-8 py-1.5 px-2.5 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs font-semibold border-blue-600 bg-transparent text-blue-600 hover:bg-blue-50 hover:border-blue-600 md:border-blue-600 md:bg-blue-600 md:text-white md:hover:bg-blue-700 md:hover:border-blue-700 rounded-md flex items-center justify-center gap-1.5"
+                            className="h-8 min-h-8 py-1.5 px-2.5 md:h-8 md:w-auto md:min-h-0 md:px-3 md:py-2 shrink-0 text-xs font-semibold border-info/40 bg-transparent text-info hover:bg-info/10 hover:border-info/40 md:border-info/40 md:bg-info md:text-info-foreground md:hover:bg-info md:hover:border-info/40 rounded-md flex items-center justify-center gap-1.5"
                             title="Add Task"
                           >
-                            <Plus className="h-4 w-4 shrink-0 text-blue-600 md:text-primary" strokeWidth={2.5} aria-hidden />
+                            <Plus className="h-4 w-4 shrink-0 text-info md:text-primary" strokeWidth={2.5} aria-hidden />
                             <span className="md:hidden whitespace-nowrap">Add Task</span>
                             <span className="hidden md:inline">Add Tasks</span>
                           </Button>
@@ -1325,7 +1325,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                               onClick={(e) => { e.stopPropagation(); handleQuickLogComplete(task); }}
                                               disabled={quickLoggingTaskId === task.id}
                                               size="sm"
-                                              className="h-6 w-6 md:h-9 md:min-w-[44px] md:w-auto bg-green-600 hover:bg-green-700 text-white p-0 shrink-0 md:px-2"
+                                              className="h-6 w-6 md:h-9 md:min-w-[44px] md:w-auto bg-success hover:bg-success text-success-foreground p-0 shrink-0 md:px-2"
                                               title="Log complete for today"
                                             >
                                               <Check className="h-3 w-3 md:h-3.5 md:w-3.5" />
@@ -1334,7 +1334,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                               onClick={(e) => { e.stopPropagation(); handleTaskComplete(task); }}
                                               variant="ghost"
                                               size="sm"
-                                              className="h-6 w-6 md:h-8 md:w-auto md:min-h-[36px] text-muted-foreground hover:text-foreground md:bg-green-600 md:hover:bg-green-700 md:text-white md:px-2 shrink-0"
+                                              className="h-6 w-6 md:h-8 md:w-auto md:min-h-[36px] text-muted-foreground hover:text-foreground md:bg-success md:hover:bg-success md:text-success-foreground md:px-2 shrink-0"
                                               title="Log Complete (add date, notes, photo)"
                                             >
                                               <FileText className="h-3 w-3 md:hidden shrink-0" />
@@ -1369,7 +1369,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                     return (
                                       <Card
                                         key={task.id}
-                                        className="cursor-pointer hover:bg-muted/30 transition-colors border-border border-green-200 dark:border-green-900/40 bg-green-50/50 dark:bg-green-950/20"
+                                        className="cursor-pointer hover:bg-muted/30 transition-colors border-border border-success/40 bg-success/10"
                                         onTouchStart={handleTouchStart}
                                         onTouchMove={handleTouchMove}
                                         onTouchEnd={() => handleTouchEnd(task.id)}
@@ -1414,7 +1414,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                                   onClick={(e) => { e.stopPropagation(); handleQuickLogComplete(task); }}
                                                   disabled={quickLoggingTaskId === task.id}
                                                   size="sm"
-                                                  className="h-6 w-6 md:h-9 md:min-w-[44px] md:w-auto bg-green-600 hover:bg-green-700 text-white p-0 shrink-0 md:px-2"
+                                                  className="h-6 w-6 md:h-9 md:min-w-[44px] md:w-auto bg-success hover:bg-success text-success-foreground p-0 shrink-0 md:px-2"
                                                   title="Log complete for today"
                                                 >
                                                   <Check className="h-3 w-3 md:h-3.5 md:w-3.5" />
@@ -1423,7 +1423,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                                   onClick={(e) => { e.stopPropagation(); handleTaskComplete(task); }}
                                                   variant="ghost"
                                                   size="sm"
-                                                  className="h-6 w-6 md:h-8 md:w-auto md:min-h-[36px] text-muted-foreground hover:text-foreground md:bg-green-600 md:hover:bg-green-700 md:text-white md:px-2 shrink-0"
+                                                  className="h-6 w-6 md:h-8 md:w-auto md:min-h-[36px] text-muted-foreground hover:text-foreground md:bg-success md:hover:bg-success md:text-success-foreground md:px-2 shrink-0"
                                                   title="Log Complete (add date, notes, photo)"
                                                 >
                                                   <FileText className="h-3 w-3 md:hidden shrink-0" />
@@ -1502,7 +1502,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                               onClick={() => handleQuickLogComplete(task)}
                                               disabled={quickLoggingTaskId === task.id}
                                               size="sm"
-                                              className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs px-2 min-h-[36px]"
+                                              className="h-8 bg-success hover:bg-success text-success-foreground text-xs px-2 min-h-[36px]"
                                               title="Log complete for today"
                                             >
                                               <Check className="h-3.5 w-3.5" />
@@ -1510,7 +1510,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                             <Button
                                               onClick={() => handleTaskComplete(task)}
                                               size="sm"
-                                              className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs px-2 min-h-[36px]"
+                                              className="h-8 bg-success hover:bg-success text-success-foreground text-xs px-2 min-h-[36px]"
                                               title="Log Complete (add date, notes, photo)"
                                             >
                                               Log Complete
@@ -1543,7 +1543,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                       return (
                                         <tr
                                           key={task.id}
-                                          className="border-b border-border hover:bg-muted/30 transition-colors bg-green-50/50 dark:bg-green-950/20"
+                                          className="border-b border-border hover:bg-muted/30 transition-colors bg-success/10"
                                           onTouchStart={handleTouchStart}
                                           onTouchMove={handleTouchMove}
                                           onTouchEnd={() => handleTouchEnd(task.id)}
@@ -1579,7 +1579,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                                 onClick={() => handleQuickLogComplete(task)}
                                                 disabled={quickLoggingTaskId === task.id}
                                                 size="sm"
-                                                className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs px-2 min-h-[36px]"
+                                                className="h-8 bg-success hover:bg-success text-success-foreground text-xs px-2 min-h-[36px]"
                                                 title="Log complete for today"
                                               >
                                                 <Check className="h-3.5 w-3.5" />
@@ -1587,7 +1587,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
                                               <Button
                                                 onClick={() => handleTaskComplete(task)}
                                                 size="sm"
-                                                className="h-8 bg-green-600 hover:bg-green-700 text-white text-xs px-2 min-h-[36px]"
+                                                className="h-8 bg-success hover:bg-success text-success-foreground text-xs px-2 min-h-[36px]"
                                                 title="Log Complete (add date, notes, photo)"
                                               >
                                                 Log Complete
@@ -1695,7 +1695,7 @@ export const HomeMaintenanceWindow: React.FC<HomeMaintenanceWindowProps> = ({
         >
           <DialogHeader className="shrink-0 px-4 pt-4 pb-3 border-b border-border bg-background z-20">
             <DialogTitle className="flex items-center gap-2 text-sm md:text-base pr-8">
-              <Bell className="h-5 w-5 text-amber-500 shrink-0" />
+              <Bell className="h-5 w-5 text-warning-soft shrink-0" />
               Setup Alerts
             </DialogTitle>
           </DialogHeader>

@@ -233,7 +233,7 @@ export function MaintenanceNotifications({
   return <div className="space-y-4 md:space-y-6 text-xs md:text-sm">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="flex items-center gap-2 text-sm md:text-base font-semibold leading-snug md:leading-snug">
-          <Bell className="h-4 w-4 md:h-5 md:w-5 text-amber-500 shrink-0" />
+          <Bell className="h-4 w-4 md:h-5 md:w-5 text-warning-soft shrink-0" />
           Maintenance only works when it’s acted on. Turn on reminders so tasks surface naturally in the places you already check every day.
         </h3>
         <Button

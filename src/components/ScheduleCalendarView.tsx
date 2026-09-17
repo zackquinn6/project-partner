@@ -80,14 +80,14 @@ export function ScheduleCalendarView({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="
-          flex flex-col gap-0 overflow-hidden p-0
-          h-[min(92dvh,920px)] max-h-[92dvh] w-[calc(100vw-1.25rem)] max-w-[calc(100vw-1.25rem)]
-          rounded-2xl border shadow-xl
-          sm:h-[90vh] sm:max-h-[90vh] sm:w-[min(calc(100vw-2rem),1600px)] sm:max-w-[min(calc(100vw-2rem),1600px)]
-          md:max-w-none md:w-[min(calc(100vw-2rem),1920px)]
-          lg:w-[min(calc(100vw-3rem),1920px)]
-          [&>button]:hidden
-        "
+ flex flex-col gap-0 overflow-hidden p-0
+ h-[min(92dvh,920px)] max-h-[92dvh] w-[calc(100vw-1.25rem)] max-w-[calc(100vw-1.25rem)]
+ rounded-2xl border shadow-xl
+ sm:h-[90vh] sm:max-h-[90vh] sm:w-[min(calc(100vw-2rem),1600px)] sm:max-w-[min(calc(100vw-2rem),1600px)]
+ md:max-w-none md:w-[min(calc(100vw-2rem),1920px)]
+ lg:w-[min(calc(100vw-3rem),1920px)]
+ [&>button]:hidden
+"
       >
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <DialogHeader className="shrink-0 space-y-0 border-b bg-muted/20 px-4 py-4 sm:px-5 md:px-6">

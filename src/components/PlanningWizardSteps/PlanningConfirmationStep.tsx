@@ -235,12 +235,12 @@ export function PlanningConfirmationStep({
                     >
                       {tool.complete ? (
                         <CheckCircle
-                          className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400"
+                          className="h-4 w-4 shrink-0 text-success"
                           aria-hidden
                         />
                       ) : (
                         <Circle
-                          className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
+                          className="h-4 w-4 shrink-0 text-warning-soft"
                           aria-hidden
                         />
                       )}
@@ -253,7 +253,7 @@ export function PlanningConfirmationStep({
               </ul>
             )}
             {toolStatuses.length > 0 && !allComplete ? (
-              <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">
+              <p className="mt-2 text-xs text-warning-soft">
                 {incompleteCount} tool{incompleteCount === 1 ? '' : 's'} still incomplete. Finish them or remove them from
                 Planning Studio tools before starting.
               </p>

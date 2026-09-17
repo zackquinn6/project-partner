@@ -45,7 +45,7 @@ export class ProjectNavigationErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center p-6 space-y-4 text-center bg-background border border-border rounded-lg">
-          <AlertTriangle className="h-8 w-8 text-orange-500" />
+          <AlertTriangle className="h-8 w-8 text-warning-soft" />
           <div className="space-y-2">
             <h3 className="font-semibold text-foreground">Navigation Error</h3>
             <p className="text-sm text-muted-foreground max-w-sm">

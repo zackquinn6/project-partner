@@ -15,7 +15,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { WorkflowThemeSelector } from './WorkflowThemeSelector';
 import { WorkflowTutorial } from './WorkflowTutorial';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -519,10 +518,9 @@ export function WorkflowSidebar({
                         variant="default"
                         size="sm"
                         onClick={onKeysToSuccessClick}
-                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
-                        style={{ backgroundColor: 'rgba(168, 85, 247, 0.40)', color: 'black' }}
+                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1 bg-category-3 text-category-3-foreground hover:bg-category-3/85"
                       >
-                        <Key className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
+                        <Key className="h-3 w-3 shrink-0" />
                         <span className="truncate">Priorities</span>
                       </Button>
                       {isKickoffComplete && (
@@ -530,10 +528,9 @@ export function WorkflowSidebar({
                           variant="default"
                           size="sm"
                           onClick={onUnplannedWorkClick}
-                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
-                          style={{ backgroundColor: 'rgba(236, 72, 153, 0.40)', color: 'black' }}
+                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1 bg-category-5 text-category-5-foreground hover:bg-category-5/85"
                         >
-                          <Layers className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
+                          <Layers className="h-3 w-3 shrink-0" />
                           <span className="truncate">Course Correct</span>
                         </Button>
                       )}
@@ -545,20 +542,18 @@ export function WorkflowSidebar({
                           variant="default"
                           size="sm"
                           onClick={onNotesClick}
-                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
-                          style={{ backgroundColor: 'rgba(34, 197, 94, 0.40)', color: 'black' }}
+                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1 bg-category-2 text-category-2-foreground hover:bg-category-2/85"
                         >
-                          <FileText className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
+                          <FileText className="h-3 w-3 shrink-0" />
                           <span className="truncate">Notes</span>
                         </Button>
                         <Button
                           variant="default"
                           size="sm"
                           onClick={onPhotosClick}
-                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1"
-                          style={{ backgroundColor: 'rgba(251, 146, 60, 0.40)', color: 'black' }}
+                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1 bg-category-4 text-category-4-foreground hover:bg-category-4/85"
                         >
-                          <Image className="h-3 w-3 shrink-0" style={{ color: 'black' }} />
+                          <Image className="h-3 w-3 shrink-0" />
                           <span className="truncate">Photos</span>
                         </Button>
                       </div>
@@ -568,10 +563,9 @@ export function WorkflowSidebar({
                           variant="default"
                           size="sm"
                           onClick={onShowVideosClick}
-                          className="h-8 w-full min-w-0 justify-center px-2 text-[11px] font-medium flex items-center gap-1.5"
-                          style={{ backgroundColor: 'rgba(59, 130, 246, 0.45)', color: 'black' }}
+                          className="h-8 w-full min-w-0 justify-center px-2 text-[11px] font-medium flex items-center gap-1.5 bg-category-1 text-category-1-foreground hover:bg-category-1/85"
                         >
-                          <Video className="h-3.5 w-3.5 shrink-0" style={{ color: 'black' }} />
+                          <Video className="h-3.5 w-3.5 shrink-0" />
                           <span className="truncate">Show Videos</span>
                         </Button>
                       ) : null}
@@ -584,7 +578,7 @@ export function WorkflowSidebar({
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="relative h-7 w-full min-w-0 justify-center px-7 text-[11px] font-normal bg-sky-100 border-sky-300 text-sky-950 hover:bg-sky-200/80 hover:text-sky-950 dark:bg-sky-950/50 dark:border-sky-700 dark:text-sky-100 dark:hover:bg-sky-900/60"
+                          className="relative h-7 w-full min-w-0 justify-center px-7 text-[11px] font-normal bg-category-6/15 border-category-6/40 text-category-6 hover:bg-category-6/25 hover:text-category-6"
                         >
                           <span className="truncate text-center">More Project Tools</span>
                           <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 shrink-0 -translate-y-1/2 opacity-70" />
@@ -592,7 +586,7 @@ export function WorkflowSidebar({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="start"
-                        className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] max-w-[min(100%,14rem)] bg-sky-50 dark:bg-sky-950/40 border-sky-200/80 dark:border-sky-800"
+                        className="min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] max-w-[min(100%,14rem)] bg-popover border-category-6/30"
                       >
                         {/* Non–project-tool entries first, alphabetical: Partner Tools, Progress */}
                         {(expertSupportEnabled || (toolRentalsEnabled && onToolRentalsClick) || wasteRemovalEnabled) && (
@@ -601,7 +595,7 @@ export function WorkflowSidebar({
                               <Handshake className="h-3.5 w-3.5 shrink-0" />
                               Partner Tools
                             </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent className="min-w-[10rem] bg-sky-50 dark:bg-sky-950/40 border-sky-200/80 dark:border-sky-800">
+                            <DropdownMenuSubContent className="min-w-[10rem] bg-popover border-category-6/30">
                               {expertSupportEnabled && (
                                 <DropdownMenuItem
                                   className="text-xs gap-2 cursor-pointer"
@@ -639,7 +633,7 @@ export function WorkflowSidebar({
                           <BarChart3 className="h-3.5 w-3.5 shrink-0" />
                           Progress
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-sky-200/80 dark:bg-sky-800" />
+                        <DropdownMenuSeparator className="bg-category-6/30" />
                         {/* Project tools at bottom, alphabetical */}
                         <DropdownMenuItem
                           className="text-xs gap-2 cursor-pointer"
@@ -721,7 +715,7 @@ export function WorkflowSidebar({
                           return (
                             <AccordionItem key={topLevelKey} value={topLevelKey} className="border-none">
                               <AccordionTrigger 
-                                className="py-2 px-0 hover:no-underline text-sm font-semibold text-black"
+                                className="py-2 px-0 hover:no-underline text-sm font-semibold text-foreground"
                               >
                                 <span>{topLevelKey}</span>
                               </AccordionTrigger>
@@ -768,15 +762,15 @@ export function WorkflowSidebar({
                                         <AccordionTrigger 
                                           className={`py-2 px-0 hover:no-underline text-xs font-semibold ${
                                             isPhaseCompleted
-                                              ? 'text-black bg-green-50 border-green-200 rounded px-2'
+                                              ? 'text-success bg-success/12 border-success/35 rounded px-2'
                                               : isPhaseInProgress
-                                              ? 'text-black bg-yellow-50 border-yellow-200 rounded px-2'
-                                              : 'text-black'
+                                              ? 'text-warning-soft bg-warning-soft/15 border-warning-soft/40 rounded px-2'
+                                              : 'text-foreground'
                                           }`}
                                         >
                                           <span className="inline-flex items-center gap-1">
                                             {isPhaseCompleted && (
-                                              <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                              <CheckCircle className="w-3 h-3 text-success flex-shrink-0" />
                                             )}
                                             <span>{phase}</span>
                                           </span>
@@ -822,15 +816,15 @@ export function WorkflowSidebar({
                                                   <AccordionTrigger 
                                                     className={`py-1 px-0 hover:no-underline text-xs font-medium ${
                                                       isOperationCompleted
-                                                        ? 'text-black bg-green-50 border-green-200 rounded px-2'
+                                                        ? 'text-success bg-success/12 border-success/35 rounded px-2'
                                                         : isOperationInProgress
-                                                        ? 'text-black bg-yellow-50 border-yellow-200 rounded px-2'
-                                                        : 'text-black'
+                                                        ? 'text-warning-soft bg-warning-soft/15 border-warning-soft/40 rounded px-2'
+                                                        : 'text-foreground'
                                                     }`}
                                                   >
                                                     <span className="inline-flex items-center gap-1">
                                                       {isOperationCompleted && (
-                                                        <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                                        <CheckCircle className="w-3 h-3 text-success flex-shrink-0" />
                                                       )}
                                                       <span>{operation}</span>
                                                     </span>
@@ -847,12 +841,12 @@ export function WorkflowSidebar({
                                                             key={step.id} 
                                                             className={`p-2 rounded text-xs cursor-pointer transition-fast border ${
                                                               step.id === currentStep?.id 
-                                                                ? 'bg-primary/10 text-black border-primary/20' 
+                                                                ? 'bg-primary/10 text-foreground border-primary/20' 
                                                                 : isStepCompleted
-                                                                ? 'bg-green-50 text-black border-green-200' 
+                                                                ? 'bg-success/12 text-success border-success/35' 
                                                                 : isStepInProgress
-                                                                ? 'bg-yellow-50 text-black border-yellow-200'
-                                                                : 'text-black hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
+                                                                ? 'bg-warning-soft/15 text-warning-soft border-warning-soft/40'
+                                                                : 'text-foreground hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
                                                             }`} 
                                                             onClick={() => {
                                                               if (stepIndex >= 0 && isKickoffComplete) {
@@ -862,7 +856,7 @@ export function WorkflowSidebar({
                                                           >
                                                             <div className="flex items-center gap-1">
                                                               {isStepCompleted && (
-                                                                <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                                                <CheckCircle className="w-3 h-3 text-success flex-shrink-0" />
                                                               )}
                                                               <span className="truncate">{step.step}</span>
                                                             </div>
@@ -900,15 +894,15 @@ export function WorkflowSidebar({
                               <AccordionTrigger 
                                 className={`py-2 px-0 hover:no-underline text-sm font-semibold ${
                                   isPhaseCompleted
-                                    ? 'text-black bg-green-50 border-green-200 rounded px-2'
+                                    ? 'text-success bg-success/12 border-success/35 rounded px-2'
                                     : isPhaseInProgress
-                                    ? 'text-black bg-yellow-50 border-yellow-200 rounded px-2'
-                                    : 'text-black'
+                                    ? 'text-warning-soft bg-warning-soft/15 border-warning-soft/40 rounded px-2'
+                                    : 'text-foreground'
                                 }`}
                               >
                                 <span className="inline-flex items-center gap-1">
                                   {isPhaseCompleted && (
-                                    <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                    <CheckCircle className="w-3 h-3 text-success flex-shrink-0" />
                                   )}
                                   <span>{topLevelKey}</span>
                                 </span>
@@ -954,15 +948,15 @@ export function WorkflowSidebar({
                                         <AccordionTrigger 
                                           className={`py-1 px-0 hover:no-underline text-xs font-medium ${
                                             isOperationCompleted
-                                              ? 'text-black bg-green-50 border-green-200 rounded px-2'
+                                              ? 'text-success bg-success/12 border-success/35 rounded px-2'
                                               : isOperationInProgress
-                                              ? 'text-black bg-yellow-50 border-yellow-200 rounded px-2'
-                                              : 'text-black'
+                                              ? 'text-warning-soft bg-warning-soft/15 border-warning-soft/40 rounded px-2'
+                                              : 'text-foreground'
                                           }`}
                                         >
                                           <span className="inline-flex items-center gap-1">
                                             {isOperationCompleted && (
-                                              <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                              <CheckCircle className="w-3 h-3 text-success flex-shrink-0" />
                                             )}
                                             <span>{operation}</span>
                                           </span>
@@ -979,12 +973,12 @@ export function WorkflowSidebar({
                                                   key={step.id} 
                                                   className={`p-2 rounded text-xs cursor-pointer transition-fast border ${
                                                     step.id === currentStep?.id 
-                                                      ? 'bg-primary/10 text-black border-primary/20' 
+                                                      ? 'bg-primary/10 text-foreground border-primary/20' 
                                                       : isStepCompleted
-                                                      ? 'bg-green-50 text-black border-green-200' 
+                                                      ? 'bg-success/12 text-success border-success/35' 
                                                       : isStepInProgress
-                                                      ? 'bg-yellow-50 text-black border-yellow-200'
-                                                      : 'text-black hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
+                                                      ? 'bg-warning-soft/15 text-warning-soft border-warning-soft/40'
+                                                      : 'text-foreground hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
                                                   }`} 
                                                   onClick={() => {
                                                     if (stepIndex >= 0 && isKickoffComplete) {
@@ -994,7 +988,7 @@ export function WorkflowSidebar({
                                                 >
                                                   <div className="flex items-center gap-1">
                                                     {isStepCompleted && (
-                                                      <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                                      <CheckCircle className="w-3 h-3 text-success flex-shrink-0" />
                                                     )}
                                                     <span className="truncate">{step.step}</span>
                                                   </div>
@@ -1016,9 +1010,8 @@ export function WorkflowSidebar({
                   )}
                 </div>
 
-                {/* Theme, Step Types, and Tutorial Buttons - Fixed at bottom, outside scrollable section */}
+                {/* Step Types and Tutorial Buttons - Fixed at bottom, outside scrollable section */}
                 <div className="flex-shrink-0 pt-2 pb-2 border-t border-border mt-2 flex items-center justify-center gap-2">
-                  <WorkflowThemeSelector projectRunId={projectRunId} />
                   <TooltipProvider delayDuration={100}>
                     <Tooltip>
                       <TooltipTrigger asChild>

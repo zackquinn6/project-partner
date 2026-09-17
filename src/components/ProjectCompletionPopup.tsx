@@ -21,8 +21,8 @@ export const ProjectCompletionPopup: React.FC<ProjectCompletionPopupProps> = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex justify-center mb-4">
-            <div className="rounded-full bg-green-100 dark:bg-green-900 p-3">
-              <CheckCircle className="w-12 h-12 text-green-600 dark:text-green-400" />
+            <div className="rounded-full bg-success/15 p-3">
+              <CheckCircle className="w-12 h-12 text-success" />
             </div>
           </div>
           <DialogTitle className="text-center text-2xl">

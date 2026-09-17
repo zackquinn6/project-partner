@@ -83,7 +83,7 @@ export function ProjectPlanningCountdownBanner({
         <p
           className={cn(
             'font-mono text-sm font-semibold tabular-nums leading-none',
-            remainingMs === 0 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'
+            remainingMs === 0 ? 'text-warning-soft' : 'text-foreground'
           )}
         >
           {formatMmSs(remainingMs)}
@@ -100,7 +100,7 @@ export function ProjectPlanningCountdownBanner({
       aria-label={ariaLabel}
       className={cn(
         'flex flex-col gap-1 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4',
-        remainingMs === 0 && 'border-amber-500/50 bg-amber-500/10',
+        remainingMs === 0 && 'border-warning-soft/40 bg-warning-soft/10',
         className
       )}
     >
@@ -113,7 +113,7 @@ export function ProjectPlanningCountdownBanner({
       <p
         className={cn(
           'font-mono text-lg font-semibold tabular-nums sm:text-xl',
-          remainingMs === 0 ? 'text-amber-900 dark:text-amber-100' : 'text-primary'
+          remainingMs === 0 ? 'text-warning-soft' : 'text-primary'
         )}
       >
         {formatMmSs(remainingMs)}
