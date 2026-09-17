@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { reportUserFacingError } from "@/utils/errorReporting";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 const db: any = supabase;
@@ -312,11 +313,14 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
       cancelAdding();
       
           } catch (error: any) {
-      console.error('Error saving team member:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save team member",
-        variant: "destructive"
+      await reportUserFacingError({
+        source: 'project_schedule',
+        operation: 'save_team_member',
+        userId: user?.id,
+        error,
+        userMessage: 'This team member was not saved.',
+        notificationTitle: 'Team member not saved',
+        toastPresenter: 'ui-toast',
       });
     } finally {
       setIsLoading(false);
@@ -340,11 +344,14 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
         if (error) throw error;
 
               } catch (error: any) {
-        console.error('Error deleting team member:', error);
-        toast({
-          title: "Error",
-          description: error.message || "Failed to delete team member",
-          variant: "destructive"
+        await reportUserFacingError({
+          source: 'project_schedule',
+          operation: 'delete_team_member',
+          userId: user?.id,
+          error,
+          userMessage: 'This team member was not removed.',
+          notificationTitle: 'Team member not removed',
+          toastPresenter: 'ui-toast',
         });
         setIsLoading(false);
         return;
@@ -437,11 +444,14 @@ export function ProjectTeamAvailability({ teamMembers, onTeamMembersChange }: Pr
       cancelEditing();
       
           } catch (error: any) {
-      console.error('Error updating team member:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update team member",
-        variant: "destructive"
+      await reportUserFacingError({
+        source: 'project_schedule',
+        operation: 'update_team_member',
+        userId: user?.id,
+        error,
+        userMessage: 'Your changes to this team member were not saved.',
+        notificationTitle: 'Team member not updated',
+        toastPresenter: 'ui-toast',
       });
     } finally {
       setIsLoading(false);

@@ -71,6 +71,7 @@ import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 import { RiskRegisterList } from '@/components/RiskRegisterList';
 import { useSteppedAutoAdvance } from '@/hooks/useSteppedAutoAdvance';
 import { useRunRiskReevaluation } from '@/hooks/useRunRiskReevaluation';
+import { reportUserFacingError } from '@/utils/errorReporting';
 import { ProjectRiskRulesEditor } from '@/components/ProjectRiskRulesEditor';
 import { useActionPriorityTable } from '@/hooks/useActionPriorityTable';
 import { useOccurrenceDrivers } from '@/hooks/useOccurrenceDrivers';
@@ -1372,13 +1373,16 @@ export function RiskManagementWindow({
         setRisks(mappedRisks);
       }
     } catch (error: any) {
-      console.error('Error fetching risks:', error);
-      const code = error?.code || error?.message;
-      if (code === 'PGRST205') {
-        toast.error('Risk tracking table is missing. Please run the latest database migrations to create project_risks.');
-      } else {
-        toast.error('Failed to load risks');
-      }
+      await reportUserFacingError({
+        source: 'risk_radar',
+        operation: 'load_risks',
+        userId: user?.id,
+        projectId: projectId ?? null,
+        projectRunId: projectRunId ?? null,
+        error,
+        userMessage: 'Your risks could not be loaded.',
+        notificationTitle: 'Risks did not load',
+      });
     } finally {
       setLoading(false);
     }
@@ -2228,8 +2232,8 @@ export function RiskManagementWindow({
               ) : null}
               {riskReevaluation.error ? (
                 <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-                  These priorities were not refreshed for your profile, so they are the template's
-                  own numbers: {riskReevaluation.error}
+                  These priorities are the template's own numbers, not yours.{' '}
+                  {riskReevaluation.error}
                 </div>
               ) : null}
               {mode === 'template' && registerClassificationGaps ? (

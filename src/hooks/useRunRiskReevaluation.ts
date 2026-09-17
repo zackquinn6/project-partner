@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { reevaluateProjectRunRiskLogic } from '@/utils/applyProjectRiskLogic';
+import { useAuth } from '@/contexts/AuthContext';
+import { reportUserFacingError } from '@/utils/errorReporting';
 
 interface UseRunRiskReevaluationOptions {
   projectRunId: string | null | undefined;
@@ -11,7 +13,11 @@ interface UseRunRiskReevaluationOptions {
 
 export interface RunRiskReevaluationState {
   running: boolean;
-  /** Set when the rebuild failed, so the surface can say the numbers are stale. */
+  /**
+   * Plain-language sentence with a support code, set when the rebuild failed, so the surface
+   * can say the numbers are stale. The database's own wording stays in the console and on the
+   * error notification.
+   */
   error: string | null;
 }
 
@@ -30,9 +36,12 @@ export function useRunRiskReevaluation({
   enabled,
   onReevaluated,
 }: UseRunRiskReevaluationOptions): RunRiskReevaluationState {
+  const { user } = useAuth();
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lastRunRef = useRef<string | null>(null);
+  const userIdRef = useRef<string | null>(null);
+  userIdRef.current = user?.id ?? null;
   const callbackRef = useRef(onReevaluated);
   callbackRef.current = onReevaluated;
 
@@ -53,10 +62,22 @@ export function useRunRiskReevaluation({
         if (cancelled) return;
         callbackRef.current?.();
       })
-      .catch((err: unknown) => {
+      .catch(async (err: unknown) => {
         if (cancelled) return;
-        console.error('Risk re-evaluation failed:', err);
-        setError(err instanceof Error ? err.message : 'Risk re-evaluation failed');
+        const supportCode = await reportUserFacingError({
+          source: 'risk_radar',
+          operation: 'reevaluate_run_risk',
+          userId: userIdRef.current,
+          projectRunId,
+          error: err,
+          userMessage: 'Your risk priorities could not be refreshed for your profile.',
+          notificationTitle: 'Risk priorities not refreshed',
+          toastPresenter: 'none',
+        });
+        if (cancelled) return;
+        setError(
+          `Your risk priorities could not be refreshed for your profile. Error code: ${supportCode}`
+        );
       })
       .finally(() => {
         if (!cancelled) setRunning(false);

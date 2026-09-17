@@ -12,6 +12,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { isActionPriority, isRiskDimension, type ActionPriority, type RiskDimension } from '@/utils/riskDimensions';
+import { useAuth } from '@/contexts/AuthContext';
+import { reportUserFacingError } from '@/utils/errorReporting';
 
 type RunRiskRow = Database['public']['Tables']['project_run_risks']['Row'];
 type PfmeaScoringRow = Database['public']['Tables']['pfmea_scoring']['Row'];
@@ -150,6 +152,7 @@ export function useRunRiskDashboard(
   projectRunId: string | undefined,
   enabled: boolean
 ): RunRiskDashboardData {
+  const { user } = useAuth();
   const [risks, setRisks] = useState<DashboardRisk[]>([]);
   const [criteria, setCriteria] = useState<Map<string, ScoreMeaning>>(new Map());
   const [loading, setLoading] = useState(false);
@@ -190,14 +193,23 @@ export function useRunRiskDashboard(
       }
       setCriteria(index);
     } catch (err) {
-      console.error('Risk dashboard load failed:', err);
       setRisks([]);
       setCriteria(new Map());
-      setError(err instanceof Error ? err.message : 'Failed to load the risk dashboard');
+      const supportCode = await reportUserFacingError({
+        source: 'risk_dashboard',
+        operation: 'load_dashboard',
+        userId: user?.id,
+        projectRunId,
+        error: err,
+        userMessage: 'Your risk dashboard could not be loaded.',
+        notificationTitle: 'Risk dashboard did not load',
+        toastPresenter: 'none',
+      });
+      setError(`Your risk dashboard could not be loaded. Error code: ${supportCode}`);
     } finally {
       setLoading(false);
     }
-  }, [projectRunId]);
+  }, [projectRunId, user?.id]);
 
   useEffect(() => {
     if (!enabled) return;

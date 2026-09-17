@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, ChevronRight, Plus, Save } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { reportUserFacingError } from '@/utils/errorReporting';
 import type { ProjectRun } from '@/interfaces/ProjectRun';
 
 type AARRow = {
@@ -39,7 +40,7 @@ export function AfterActionReviewWindow({
   onOpenChange,
   projectRun,
 }: AfterActionReviewWindowProps) {
-  const { toast } = useToast();
+  const { user } = useAuth();
   const [rows, setRows] = useState<AARRow[]>([]);
   const [index, setIndex] = useState(0);
   const [intent, setIntent] = useState('');
@@ -63,10 +64,15 @@ export function AfterActionReviewWindow({
       .order('created_at', { ascending: true });
     setLoading(false);
     if (error) {
-      toast({
-        title: 'Could not load reviews',
-        description: error.message,
-        variant: 'destructive',
+      await reportUserFacingError({
+        source: 'after_action_review',
+        operation: 'load_reviews',
+        userId: user?.id,
+        projectRunId: projectRun.id,
+        error,
+        userMessage: 'Your reviews could not be loaded.',
+        notificationTitle: 'After action reviews did not load',
+        toastPresenter: 'ui-toast',
       });
       setRows([]);
       return;
@@ -77,7 +83,7 @@ export function AfterActionReviewWindow({
       if (list.length === 0) return 0;
       return Math.min(prev, list.length - 1);
     });
-  }, [projectRun?.id, toast]);
+  }, [projectRun?.id, user?.id]);
 
   useEffect(() => {
     if (!open || !projectRun?.id) return;
@@ -123,10 +129,15 @@ export function AfterActionReviewWindow({
       .eq('id', current.id);
     setSaving(false);
     if (error) {
-      toast({
-        title: 'Save failed',
-        description: error.message,
-        variant: 'destructive',
+      await reportUserFacingError({
+        source: 'after_action_review',
+        operation: 'save_review',
+        userId: user?.id,
+        projectRunId: projectRun.id,
+        error,
+        userMessage: 'Your review was not saved.',
+        notificationTitle: 'After action review save failed',
+        toastPresenter: 'ui-toast',
       });
       return;
     }
@@ -169,10 +180,15 @@ export function AfterActionReviewWindow({
       .single();
     setSaving(false);
     if (error || !data) {
-      toast({
-        title: 'Could not create review',
-        description: error?.message ?? 'Unknown error',
-        variant: 'destructive',
+      await reportUserFacingError({
+        source: 'after_action_review',
+        operation: 'create_review',
+        userId: user?.id,
+        projectRunId: projectRun.id,
+        error,
+        userMessage: 'A new review could not be started.',
+        notificationTitle: 'After action review not created',
+        toastPresenter: 'ui-toast',
       });
       return;
     }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   isActionPriority,
@@ -9,6 +9,8 @@ import {
 } from '@/utils/riskDimensions';
 import { fetchProjectRunKeyCharacteristics } from '@/utils/applyProjectRiskLogic';
 import type { KeyCharacteristicRow } from '@/utils/keyCharacteristics';
+import { useAuth } from '@/contexts/AuthContext';
+import { reportUserFacingError } from '@/utils/errorReporting';
 
 export interface StepRiskItem {
   id: string;
@@ -38,6 +40,7 @@ export interface StepRiskSummary {
 export interface RunStepRiskState {
   byStepId: Map<string, StepRiskSummary>;
   loading: boolean;
+  /** Plain-language sentence with a support code; the raw failure stays out of the workflow UI. */
   error: string | null;
   reload: () => void;
 }
@@ -57,10 +60,13 @@ function compareItems(a: StepRiskItem, b: StepRiskItem): number {
  * when it was written, so the execution UI shows it without touching a `pfmea_*` table.
  */
 export function useRunStepRisk(projectRunId: string | null | undefined): RunStepRiskState {
+  const { user } = useAuth();
   const [byStepId, setByStepId] = useState<Map<string, StepRiskSummary>>(new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const userIdRef = useRef<string | null>(null);
+  userIdRef.current = user?.id ?? null;
 
   const reload = useCallback(() => setReloadToken((token) => token + 1), []);
 
@@ -87,8 +93,18 @@ export function useRunStepRisk(projectRunId: string | null | undefined): RunStep
       if (cancelled) return;
 
       if (loadError) {
-        console.error('Step risk load failed:', loadError);
-        setError(loadError.message);
+        const supportCode = await reportUserFacingError({
+          source: 'risk_radar',
+          operation: 'load_step_risks',
+          userId: userIdRef.current,
+          projectRunId,
+          error: loadError,
+          userMessage: 'Step risk priorities could not be loaded.',
+          notificationTitle: 'Step risk priorities did not load',
+          toastPresenter: 'none',
+        });
+        if (cancelled) return;
+        setError(`Step risk priorities could not be loaded. Error code: ${supportCode}`);
         setByStepId(new Map());
         setLoading(false);
         return;
@@ -99,8 +115,18 @@ export function useRunStepRisk(projectRunId: string | null | undefined): RunStep
         keyCharacteristics = await fetchProjectRunKeyCharacteristics(projectRunId);
       } catch (err) {
         if (cancelled) return;
-        console.error('Key characteristic load failed:', err);
-        setError(err instanceof Error ? err.message : 'Key characteristics could not be read');
+        const supportCode = await reportUserFacingError({
+          source: 'risk_radar',
+          operation: 'load_step_key_characteristics',
+          userId: userIdRef.current,
+          projectRunId,
+          error: err,
+          userMessage: 'Step risk priorities could not be loaded.',
+          notificationTitle: 'Step risk priorities did not load',
+          toastPresenter: 'none',
+        });
+        if (cancelled) return;
+        setError(`Step risk priorities could not be loaded. Error code: ${supportCode}`);
         setByStepId(new Map());
         setLoading(false);
         return;

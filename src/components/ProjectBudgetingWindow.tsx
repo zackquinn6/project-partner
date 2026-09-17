@@ -22,6 +22,8 @@ import {
 } from '@/components/PlanningWizardSteps/planningToolWindowChrome';
 import { useToast } from '@/hooks/use-toast';
 import { useProject } from '@/contexts/ProjectContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { reportUserFacingError } from '@/utils/errorReporting';
 import { supabase } from '@/integrations/supabase/client';
 import { useSteppedAutoAdvance } from '@/hooks/useSteppedAutoAdvance';
 
@@ -56,6 +58,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
   onOpenChange,
 }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { currentProjectRun, updateProjectRun } = useProject();
   const [budgetItems, setBudgetItems] = useState<BudgetLineItem[]>([]);
   const [actualEntries, setActualEntries] = useState<ActualEntry[]>([]);
@@ -309,11 +312,15 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
       setBudgetGoal(asString);
       setBudgetingAccordionValue('advanced-budget');
           } catch (error) {
-      console.error('Error updating project budget:', error);
-      toast({
-        title: 'Failed to update project budget',
-        description: error instanceof Error ? error.message : 'Unknown error',
-        variant: 'destructive',
+      await reportUserFacingError({
+        source: 'project_budget',
+        operation: 'update_budget_goal',
+        userId: user?.id,
+        projectRunId: currentProjectRun.id,
+        error,
+        userMessage: 'Your budget goal was not saved.',
+        notificationTitle: 'Budget goal not saved',
+        toastPresenter: 'ui-toast',
       });
     }
   };
@@ -343,11 +350,15 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
       setBudgetItems(items);
       setActualEntries(entries);
     } catch (error) {
-      console.error('❌ Error saving budget data:', error);
-      toast({ 
-        title: 'Failed to save budget data', 
-        description: error instanceof Error ? error.message : 'Unknown error',
-        variant: 'destructive' 
+      await reportUserFacingError({
+        source: 'project_budget',
+        operation: 'save_budget_data',
+        userId: user?.id,
+        projectRunId: currentProjectRun.id,
+        error,
+        userMessage: 'Your budget was not saved.',
+        notificationTitle: 'Budget not saved',
+        toastPresenter: 'ui-toast',
       });
       throw error; // Re-throw so calling function knows save failed
     }
@@ -717,7 +728,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
                     <div className="mb-1 text-xs text-muted-foreground">Budgeted vs Goal</div>
                     <div
                       className={`text-lg font-semibold ${
-                        totalBudgeted > budgetNum ? 'text-red-600' : 'text-green-600'
+                        totalBudgeted > budgetNum ? 'text-destructive-soft' : 'text-success'
                       }`}
                     >
                       ${totalBudgeted.toFixed(2)} / ${budgetNum.toFixed(2)}
@@ -743,7 +754,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
                 </div>
                 <div>
                   <div className="text-xs md:text-sm text-muted-foreground">Variance</div>
-                  <div className={`text-xl md:text-2xl font-bold ${summaryVariance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={`text-xl md:text-2xl font-bold ${summaryVariance >= 0 ? 'text-success' : 'text-destructive-soft'}`}>
                     ${summaryVariance.toFixed(2)}
                   </div>
                 </div>
@@ -820,7 +831,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
                   )}
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <Label>Section/Phase <span className="text-red-500">*</span></Label>
+                      <Label>Section/Phase <span className="text-destructive-soft">*</span></Label>
                       <Select
                         value={newItemSection}
                         onValueChange={setNewItemSection}
@@ -842,7 +853,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
                       </Select>
                     </div>
                     <div>
-                      <Label>Item Description <span className="text-red-500">*</span></Label>
+                      <Label>Item Description <span className="text-destructive-soft">*</span></Label>
                       <Input
                         value={newItemName}
                         onChange={(e) => setNewItemName(e.target.value)}
@@ -853,7 +864,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
                   </div>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <Label>Budget Amount <span className="text-red-500">*</span></Label>
+                      <Label>Budget Amount <span className="text-destructive-soft">*</span></Label>
                       <Input
                         type="number"
                         value={newItemAmount}
@@ -880,7 +891,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
                   </div>
                   <div className="flex flex-col gap-2">
                     <p className="text-xs text-muted-foreground">
-                      <span className="text-red-500">*</span> Required fields
+                      <span className="text-destructive-soft">*</span> Required fields
                     </p>
                     <div className="flex flex-col gap-2 sm:flex-row">
                       {editingItem && (
@@ -1073,11 +1084,15 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
                           try {
                             await addActualEntry();
                           } catch (error) {
-                            console.error('❌ Error adding actual entry:', error);
-                            toast({
-                              title: 'Failed to record spend',
-                              description: error instanceof Error ? error.message : 'Unknown error',
-                              variant: 'destructive'
+                            await reportUserFacingError({
+                              source: 'project_budget',
+                              operation: 'record_spend',
+                              userId: user?.id,
+                              projectRunId: currentProjectRun?.id ?? null,
+                              error,
+                              userMessage: 'Your spend was not recorded.',
+                              notificationTitle: 'Spend not recorded',
+                              toastPresenter: 'ui-toast',
                             });
                           }
                         }}
@@ -1117,7 +1132,7 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
                                     <span className="hidden md:inline"> | </span>
                                     <span className="block md:inline">${amount.toFixed(2)}</span>
                                     {matchedItem && (
-                                      <span className="ml-2 text-blue-600 block md:inline">
+                                      <span className="ml-2 text-info block md:inline">
                                         (Matched to: {matchedItem.item || 'Unknown Item'})
                                       </span>
                                     )}

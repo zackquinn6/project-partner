@@ -18,6 +18,8 @@ import { Badge } from '@/components/ui/badge';
 import { Crosshair, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { reportUserFacingError } from '@/utils/errorReporting';
 import {
   PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
   PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME,
@@ -191,6 +193,7 @@ interface PfmeaActionItem {
 
 /** Mitigation work for a PFMEA line, which keeps its actions in pfmea_action_items. */
 function PfmeaActions({ failureModeId }: { failureModeId: string }) {
+  const { user } = useAuth();
   const [items, setItems] = useState<PfmeaActionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -203,13 +206,22 @@ function PfmeaActions({ failureModeId }: { failureModeId: string }) {
       .from('pfmea_action_items')
       .select('id, recommended_action, responsible_person, status, target_completion_date')
       .eq('failure_mode_id', failureModeId)
-      .then(({ data, error: queryError }) => {
+      .then(async ({ data, error: queryError }) => {
         if (!active) return;
         setLoading(false);
         if (queryError) {
-          console.error('PFMEA action items load failed:', queryError);
-          setError(queryError.message);
           setItems([]);
+          const supportCode = await reportUserFacingError({
+            source: 'risk_dashboard',
+            operation: 'load_risk_actions',
+            userId: user?.id,
+            error: queryError,
+            userMessage: 'Risk actions could not be loaded.',
+            notificationTitle: 'Risk actions did not load',
+            toastPresenter: 'none',
+          });
+          if (!active) return;
+          setError(`Risk actions could not be loaded. Error code: ${supportCode}`);
           return;
         }
         setItems(data ?? []);
@@ -217,7 +229,7 @@ function PfmeaActions({ failureModeId }: { failureModeId: string }) {
     return () => {
       active = false;
     };
-  }, [failureModeId]);
+  }, [failureModeId, user?.id]);
 
   if (loading) {
     return (

@@ -45,6 +45,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { reportUserFacingError } from '@/utils/errorReporting';
 import { useSteppedAutoAdvance } from '@/hooks/useSteppedAutoAdvance';
 import {
   TEMPLATE_KEYS,
@@ -603,11 +604,27 @@ export function CommunicationPlanWindow({
       },
     );
     if (error) {
-      toast.error(error.message || 'Send failed.');
+      await reportUserFacingError({
+        source: 'communication_plan',
+        operation: 'send_update_email',
+        userId: user?.id,
+        projectRunId: runId,
+        error,
+        userMessage: 'Your update was not emailed, so this stakeholder has not been told yet.',
+        notificationTitle: 'Update email not sent',
+      });
       return;
     }
     if (data && typeof data === 'object' && 'error' in data && data.error) {
-      toast.error(String(data.error));
+      await reportUserFacingError({
+        source: 'communication_plan',
+        operation: 'send_update_email',
+        userId: user?.id,
+        projectRunId: runId,
+        error: data.error,
+        userMessage: 'Your update was not emailed, so this stakeholder has not been told yet.',
+        notificationTitle: 'Update email not sent',
+      });
       return;
     }
         await loadAll();
@@ -868,9 +885,9 @@ export function CommunicationPlanWindow({
                                 </Card>
 
                                 {dueItems.length > 0 ? (
-                                  <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20">
+                                  <Card className="border-warning-soft/40 bg-warning-soft/10">
                                     <CardHeader>
-                                      <CardTitle className="text-base text-amber-900 dark:text-amber-100">
+                                      <CardTitle className="text-base text-warning-soft">
                                         Updates due
                                       </CardTitle>
                                       <CardDescription>
@@ -879,7 +896,7 @@ export function CommunicationPlanWindow({
                                     </CardHeader>
                                     <CardContent className="space-y-2 text-sm">
                                       {dueItems.map((item) => (
-                                        <div key={item.id} className="flex flex-col gap-0.5 rounded-lg border border-amber-200/70 bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div key={item.id} className="flex flex-col gap-0.5 rounded-lg border border-warning-soft/40 bg-background/70 p-3 sm:flex-row sm:items-center sm:justify-between">
                                           <span className="font-medium">{stakeholderName(item.stakeholder_id)}</span>
                                           <span className="text-muted-foreground">
                                             {item.next_due_at ? new Date(item.next_due_at).toLocaleString() : ''}

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { reportUserFacingError } from '@/utils/errorReporting';
 import { supabase } from '@/integrations/supabase/client';
 import { Camera, Upload, Loader2, CheckCircle, AlertTriangle, Wrench, Clock, DollarSign, AlertCircle, Sparkles, HelpCircle } from 'lucide-react';
 import { FeedbackDialog } from './FeedbackDialog';
@@ -149,11 +150,14 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
 
       
     } catch (error) {
-      console.error('Analysis error:', error);
-      toast({
-        title: "Analysis Failed",
-        description: error instanceof Error ? error.message : "Failed to analyze photos. Please try again.",
-        variant: "destructive",
+      await reportUserFacingError({
+        source: 'ai_repair',
+        operation: 'analyze_photos',
+        userId: user?.id,
+        error,
+        userMessage: 'Your photos could not be analyzed.',
+        notificationTitle: 'Photo analysis failed',
+        toastPresenter: 'ui-toast',
       });
     } finally {
       setIsAnalyzing(false);

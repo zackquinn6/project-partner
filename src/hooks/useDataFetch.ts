@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { reportUserFacingError } from '@/utils/errorReporting';
 
 interface UseDataFetchOptions<T> {
   table: string;
@@ -34,6 +35,7 @@ export function useDataFetch<T = any>({
   cacheKey,
   enabled = true // Add enabled parameter
 }: UseDataFetchOptions<T>): UseDataFetchResult<T> {
+  const { user } = useAuth();
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(enabled); // Only load if enabled
   const [error, setError] = useState<Error | null>(null);
@@ -87,7 +89,7 @@ export function useDataFetch<T = any>({
     }
 
     abortControllerRef.current = new AbortController();
-    // Background refetch: keep showing existing data — avoids app-wide "reset" when Project Management dispatches refetch-projects.
+    // Background refetch: keep showing existing data - avoids app-wide "reset" when Project Management dispatches refetch-projects.
     if (!silentRefresh || !hasRows) {
       setLoading(true);
     }
@@ -131,27 +133,21 @@ export function useDataFetch<T = any>({
 
         // Skip toast for transient preview/network failures (Tracking Prevention / CORS / 504).
         if (!err.message.includes('No rows') && !isNetworkFailure) {
-          let errorDescription = `Failed to load ${table}`;
-
-          if (err.message.includes('JWT')) {
-            errorDescription = 'Authentication expired. Please sign in again.';
-          } else if (err.message.includes('permission')) {
-            errorDescription = 'Access denied. You may not have permission to view this data.';
-          } else {
-            errorDescription = `${errorDescription}: ${err.message}`;
-          }
-
-          toast({
-            title: "Connection Error",
-            description: errorDescription,
-            variant: "destructive",
+          await reportUserFacingError({
+            source: 'data_fetch',
+            operation: `load_${table}`,
+            userId: user?.id,
+            error: err,
+            userMessage: 'Some of this page could not be loaded, so what you see may be incomplete.',
+            notificationTitle: 'Page data did not load',
+            toastPresenter: 'ui-toast',
           });
         }
       }
     } finally {
       setLoading(false);
     }
-  }, [table, select, JSON.stringify(filters), JSON.stringify(orderBy), cacheKey, transform, enabled, fetchParams]);
+  }, [table, select, JSON.stringify(filters), JSON.stringify(orderBy), cacheKey, transform, enabled, fetchParams, user?.id]);
 
   const refetch = useCallback(() => fetchData(false, { silent: true }), [fetchData]);
 

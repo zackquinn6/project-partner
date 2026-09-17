@@ -35,6 +35,7 @@ import { PhaseAssignment } from '@/components/PhaseAssignment';
 import { ProjectTeamAvailability } from '@/components/ProjectTeamAvailability';
 import { ProjectContractors } from '@/components/ProjectContractors';
 import { useAuth } from '@/contexts/AuthContext';
+import { reportUserFacingError } from '@/utils/errorReporting';
 import { useAiFeatureSettings } from '@/hooks/useAiFeatureSettings';
 import { ScheduleCalendarView } from '@/components/ScheduleCalendarView';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
@@ -1142,12 +1143,16 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         });
       }
     } catch (error) {
-      console.error('❌ Schedule generation error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      toast({
-        title: "Scheduling failed",
-        description: `Failed to compute schedule: ${errorMessage}. Please check your inputs and try again.`,
-        variant: "destructive"
+      await reportUserFacingError({
+        source: 'project_schedule',
+        operation: 'compute_schedule',
+        userId: user?.id,
+        projectId: projectRun?.projectId ?? null,
+        projectRunId: projectRun?.id ?? null,
+        error,
+        userMessage: 'Your schedule could not be computed, so the dates on screen are unchanged.',
+        notificationTitle: 'Schedule not computed',
+        toastPresenter: 'ui-toast',
       });
     } finally {
       setIsComputing(false);
@@ -1728,7 +1733,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                   <Button
                     variant="outline"
                     onClick={printToPDF}
-                    className="h-11 border-blue-200 bg-blue-50 text-xs text-blue-900 hover:bg-blue-100 hover:text-blue-950 md:h-10 md:text-sm"
+                    className="h-11 border-info/40 bg-info/10 text-xs text-info hover:bg-info/15 hover:text-info md:h-10 md:text-sm"
                   >
                     <Printer className="w-4 h-4 mr-1 md:mr-2" />
                     <span className="truncate">Print PDF Schedule</span>
@@ -1736,7 +1741,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                   <Button
                     variant="outline"
                     onClick={emailSchedule}
-                    className="h-11 border-emerald-200 bg-emerald-50 text-xs text-emerald-900 hover:bg-emerald-100 hover:text-emerald-950 md:h-10 md:text-sm"
+                    className="h-11 border-success/40 bg-success/10 text-xs text-success hover:bg-success/15 hover:text-success md:h-10 md:text-sm"
                   >
                     <Mail className="w-4 h-4 mr-1 md:mr-2" />
                     <span className="truncate">Email Schedule</span>
@@ -1945,17 +1950,17 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                   </CardHeader>
                   <CardContent className="pt-0">
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center p-3 rounded-lg bg-green-50 border border-green-200">
-                        <span className="text-green-700 font-medium text-sm">Low</span>
-                        <span className="font-mono text-green-800 font-semibold">{formatTime(projectTotals.low)}</span>
+                      <div className="flex justify-between items-center p-3 rounded-lg bg-success/10 border border-success/40">
+                        <span className="text-success font-medium text-sm">Low</span>
+                        <span className="font-mono text-success font-semibold">{formatTime(projectTotals.low)}</span>
                       </div>
-                      <div className="flex justify-between items-center p-3 rounded-lg bg-yellow-50 border border-yellow-200">
-                        <span className="text-yellow-700 font-medium text-sm">Medium</span>
-                        <span className="font-mono text-yellow-800 font-semibold">{formatTime(projectTotals.medium)}</span>
+                      <div className="flex justify-between items-center p-3 rounded-lg bg-warning-soft/10 border border-warning-soft/40">
+                        <span className="text-warning-soft font-medium text-sm">Medium</span>
+                        <span className="font-mono text-warning-soft font-semibold">{formatTime(projectTotals.medium)}</span>
                       </div>
-                      <div className="flex justify-between items-center p-3 rounded-lg bg-red-50 border border-red-200">
-                        <span className="text-red-700 font-medium text-sm">High</span>
-                        <span className="font-mono text-red-800 font-semibold">{formatTime(projectTotals.high)}</span>
+                      <div className="flex justify-between items-center p-3 rounded-lg bg-destructive-soft/10 border border-destructive-soft/40">
+                        <span className="text-destructive-soft font-medium text-sm">High</span>
+                        <span className="font-mono text-destructive-soft font-semibold">{formatTime(projectTotals.high)}</span>
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-3 text-center">
@@ -2270,12 +2275,17 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         contractors={aiContractorRoster}
         onContractorsChange={(next) => {
           setAiContractorRoster(next as (ContractorAvailabilityShape & { dbId?: string })[]);
-          void persistContractorAvailabilityPatches(next).catch((err) => {
-            console.error(err);
-            toast({
-              title: 'Contractor save failed',
-              description: err instanceof Error ? err.message : 'Could not save contractor availability',
-              variant: 'destructive',
+          void persistContractorAvailabilityPatches(next).catch(async (err) => {
+            await reportUserFacingError({
+              source: 'project_schedule',
+              operation: 'save_contractor_availability',
+              userId: user?.id,
+              projectId: projectRun?.projectId ?? null,
+              projectRunId: projectRun?.id ?? null,
+              error: err,
+              userMessage: 'Contractor availability was not saved.',
+              notificationTitle: 'Contractor availability not saved',
+              toastPresenter: 'ui-toast',
             });
           });
         }}

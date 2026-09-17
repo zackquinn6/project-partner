@@ -17,6 +17,7 @@ import {
   fetchOwnedToolsPhotoResolution,
 } from "@/utils/ownedToolsCatalogPhotos";
 import { useAuth } from "@/contexts/AuthContext";
+import { reportUserFacingError } from "@/utils/errorReporting";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { VariationViewer } from "./VariationViewer";
@@ -473,8 +474,14 @@ export function UserToolsEditor({ initialMode = 'library', onBackToLibrary, onSw
         .single();
 
       if (error) {
-        console.error('❌ Failed to save tool to user_tools:', error);
-        toast.error(error.message || 'Could not add tool to your library.');
+        await reportUserFacingError({
+          source: 'tool_shed',
+          operation: 'add_tool_to_library',
+          userId: user.id,
+          error,
+          userMessage: 'This tool was not added to your library.',
+          notificationTitle: 'Tool not added to library',
+        });
         return;
       }
 

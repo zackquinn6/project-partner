@@ -3,13 +3,16 @@ import {
   fetchActionPriorityTable,
   type ActionPriorityTable,
 } from '@/utils/actionPriorityTable';
+import { useAuth } from '@/contexts/AuthContext';
+import { reportUserFacingError } from '@/utils/errorReporting';
 
 interface UseActionPriorityTableResult {
   table: ActionPriorityTable | null;
   loading: boolean;
   /**
-   * Set when the table could not be loaded. Callers must show this rather than scoring
-   * without it: a priority produced without the table would be a guess.
+   * Plain-language sentence with a support code, set when the table could not be loaded.
+   * Callers must show this rather than scoring without it: a priority produced without the
+   * table would be a guess.
    */
   error: string | null;
   reload: () => Promise<void>;
@@ -20,6 +23,7 @@ interface UseActionPriorityTableResult {
  * Small, seeded, and rarely edited, so there is no pagination or invalidation here.
  */
 export function useActionPriorityTable(): UseActionPriorityTableResult {
+  const { user } = useAuth();
   const [table, setTable] = useState<ActionPriorityTable | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,13 +34,21 @@ export function useActionPriorityTable(): UseActionPriorityTableResult {
     try {
       setTable(await fetchActionPriorityTable());
     } catch (err) {
-      console.error('Action priority table load failed:', err);
       setTable(null);
-      setError(err instanceof Error ? err.message : 'Failed to load the action priority table');
+      const supportCode = await reportUserFacingError({
+        source: 'risk_radar',
+        operation: 'load_action_priority_table',
+        userId: user?.id,
+        error: err,
+        userMessage: 'Action priority guidance is unavailable right now.',
+        notificationTitle: 'Action priority guidance did not load',
+        toastPresenter: 'none',
+      });
+      setError(`Action priority guidance is unavailable right now. Error code: ${supportCode}`);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     void load();

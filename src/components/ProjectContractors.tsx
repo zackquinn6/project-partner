@@ -11,6 +11,7 @@ import { CalendarIcon, Edit2, Check, X, Clock, Plus, Trash2, Briefcase } from "l
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { reportUserFacingError } from "@/utils/errorReporting";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -258,11 +259,15 @@ export function ProjectContractors({ projectRunId, phases }: ProjectContractorsP
       cancelAdding();
       
           } catch (error: any) {
-      console.error('Error saving contractor:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save contractor",
-        variant: "destructive"
+      await reportUserFacingError({
+        source: 'project_schedule',
+        operation: 'save_contractor',
+        userId: user?.id,
+        projectRunId,
+        error,
+        userMessage: 'This contractor was not saved.',
+        notificationTitle: 'Contractor not saved',
+        toastPresenter: 'ui-toast',
       });
     } finally {
       setIsLoading(false);
@@ -291,11 +296,15 @@ export function ProjectContractors({ projectRunId, phases }: ProjectContractorsP
         if (error) throw error;
 
               } catch (error: any) {
-        console.error('Error deleting contractor:', error);
-        toast({
-          title: "Error",
-          description: error.message || "Failed to delete contractor",
-          variant: "destructive"
+        await reportUserFacingError({
+          source: 'project_schedule',
+          operation: 'delete_contractor',
+          userId: user?.id,
+          projectRunId,
+          error,
+          userMessage: 'This contractor was not removed.',
+          notificationTitle: 'Contractor not removed',
+          toastPresenter: 'ui-toast',
         });
         setIsLoading(false);
         return;
@@ -358,11 +367,15 @@ export function ProjectContractors({ projectRunId, phases }: ProjectContractorsP
       setAssignments([...assignments, newAssignment]);
       
           } catch (error: any) {
-      console.error('Error assigning contractor:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to assign contractor",
-        variant: "destructive"
+      await reportUserFacingError({
+        source: 'project_schedule',
+        operation: 'assign_contractor_phase',
+        userId: user?.id,
+        projectRunId,
+        error,
+        userMessage: 'This contractor was not assigned to the phase.',
+        notificationTitle: 'Contractor not assigned',
+        toastPresenter: 'ui-toast',
       });
     } finally {
       setIsLoading(false);
@@ -386,11 +399,15 @@ export function ProjectContractors({ projectRunId, phases }: ProjectContractorsP
       setAssignments(assignments.filter(a => a.id !== assignmentId));
       
           } catch (error: any) {
-      console.error('Error removing assignment:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove assignment",
-        variant: "destructive"
+      await reportUserFacingError({
+        source: 'project_schedule',
+        operation: 'unassign_contractor_phase',
+        userId: user?.id,
+        projectRunId,
+        error,
+        userMessage: 'This phase assignment was not removed.',
+        notificationTitle: 'Phase assignment not removed',
+        toastPresenter: 'ui-toast',
       });
     } finally {
       setIsLoading(false);

@@ -15,7 +15,8 @@ import {
 import { GitBranch } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { reportUserFacingError } from '@/utils/errorReporting';
 import type { ProjectRun } from '@/interfaces/ProjectRun';
 import { PLANNING_TOOLS } from '@/components/KickoffSteps/ProjectToolsStep';
 import type { PlanningScopeBaselineV1 } from '@/utils/planningChangeTracking';
@@ -39,7 +40,7 @@ function runDisplayName(run: ProjectRun): string {
 }
 
 function formatMaybeIso(iso: string | null | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   try {
     const d = parseISO(iso);
     if (Number.isNaN(d.getTime())) return iso;
@@ -71,7 +72,7 @@ export function ChangeManagementWindow({
   onOpenChange,
   projectRun,
 }: ChangeManagementWindowProps) {
-  const { toast } = useToast();
+  const { user } = useAuth();
   const [rows, setRows] = useState<ChangeRow[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -88,16 +89,21 @@ export function ChangeManagementWindow({
       .order('occurred_at', { ascending: false });
     setLoading(false);
     if (error) {
-      toast({
-        title: 'Could not load change log',
-        description: error.message,
-        variant: 'destructive',
+      await reportUserFacingError({
+        source: 'change_management',
+        operation: 'load_change_log',
+        userId: user?.id,
+        projectRunId: projectRun.id,
+        error,
+        userMessage: 'Your change log could not be loaded.',
+        notificationTitle: 'Change log did not load',
+        toastPresenter: 'ui-toast',
       });
       setRows([]);
       return;
     }
     setRows((data ?? []) as ChangeRow[]);
-  }, [projectRun?.id, toast]);
+  }, [projectRun?.id, user?.id]);
 
   useEffect(() => {
     if (!open || !projectRun?.id) return;

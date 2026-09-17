@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { reportUserFacingError } from '@/utils/errorReporting';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -125,8 +126,15 @@ export const ProjectImageManager = ({ projectId, onImageUpdated }: ProjectImageM
       }
 
     } catch (error: any) {
-      console.error('Upload error:', error);
-      toast.error(error.message || 'Failed to upload image');
+      await reportUserFacingError({
+        source: 'project_images',
+        operation: 'upload_project_image',
+        userId: user?.id,
+        projectId: projectId ?? null,
+        error,
+        userMessage: 'This image was not uploaded.',
+        notificationTitle: 'Project image not uploaded',
+      });
     } finally {
       setUploading(false);
     }
