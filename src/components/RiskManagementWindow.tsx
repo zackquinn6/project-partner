@@ -70,6 +70,31 @@ import { useProject } from '@/contexts/ProjectContext';
 import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 import { RiskRegisterList } from '@/components/RiskRegisterList';
 import { useSteppedAutoAdvance } from '@/hooks/useSteppedAutoAdvance';
+import { useRunRiskReevaluation } from '@/hooks/useRunRiskReevaluation';
+import { ProjectRiskRulesEditor } from '@/components/ProjectRiskRulesEditor';
+import { useActionPriorityTable } from '@/hooks/useActionPriorityTable';
+import { actionPriorityLabel } from '@/utils/actionPriorityTable';
+import {
+  RISK_COMPONENT_CONSUMER_LABELS,
+  RISK_COMPONENT_CONSUMER_STAKES,
+  rollupRiskComponents,
+} from '@/utils/riskProfileRollup';
+import {
+  REGISTER_RISK_DIMENSIONS,
+  RISK_DIMENSIONS,
+  RISK_DIMENSION_LABELS,
+  actionPriorityUrgency,
+  isActionPriority,
+  isRegisterRiskDimension,
+  isRiskDimension,
+  type ActionPriority,
+  type RegisterRiskDimension,
+  type RiskDimension,
+} from '@/utils/riskDimensions';
+import {
+  REGISTER_RISK_UNSCORED_MESSAGE,
+  registerRiskPriority,
+} from '@/utils/registerRiskScoring';
 
 const RISK_FOCUS_PROGRESS_STOPS = [0, 25, 50, 75, 100] as const;
 
@@ -126,6 +151,23 @@ interface Risk {
   /** Narrative “what happens if it does?” (DB `benefit`); migrated from former notes in `risk_description`. */
   benefit?: string | null;
   hidden_from_register?: boolean;
+  /**
+   * Risk component and the three scores that feed the shared Action Priority table. On a run
+   * this can be any of the four, because applied quality items land in the same list. Template
+   * authoring only offers the three the register owns; quality is authored in the PFMEA.
+   */
+  risk_dimension?: RiskDimension | null;
+  severity_score?: number | null;
+  occurrence_score?: number | null;
+  detection_score?: number | null;
+  operation_step_id?: string | null;
+  /** Priority from the seeded table, or null when the row is unclassified or unscored. */
+  action_priority?: ActionPriority | null;
+  rpn?: number | null;
+  /** Which layer this run row came from: the PFMEA, or the register. */
+  source?: 'pfmea' | 'register' | null;
+  /** A rule or a customization decision took this off the run. */
+  excluded_by_customization?: boolean | null;
 }
 
 function scheduleBudgetParts(risk: Risk): { schedule: string | null; budget: string | null } {
@@ -231,6 +273,37 @@ function currentRiskRegisterLevel(risk: Risk): 'low' | 'medium' | 'high' {
   return riskBaselineSeverity(risk);
 }
 
+const ACTION_PRIORITY_TO_TRIAGE_LEVEL: Record<ActionPriority, 'high' | 'medium' | 'low'> = {
+  H: 'high',
+  M: 'medium',
+  L: 'low',
+};
+
+/**
+ * Which triage pass a risk belongs to.
+ *
+ * Action Priority wins when the row has been scored, because it is the reading that accounts
+ * for how often the failure happens and whether the user would catch it. Rows authored before
+ * the components existed still carry a severity level, and that is what they are grouped by.
+ */
+function riskTriageLevel(risk: Risk): 'low' | 'medium' | 'high' {
+  if (risk.action_priority != null && isActionPriority(risk.action_priority)) {
+    return ACTION_PRIORITY_TO_TRIAGE_LEVEL[risk.action_priority];
+  }
+  return currentRiskRegisterLevel(risk);
+}
+
+/** Within one pass: worst priority first, then the bigger RPN, then alphabetical. */
+function compareRisksByPriority(a: Risk, b: Risk): number {
+  const apA = isActionPriority(a.action_priority) ? actionPriorityUrgency(a.action_priority) : 0;
+  const apB = isActionPriority(b.action_priority) ? actionPriorityUrgency(b.action_priority) : 0;
+  if (apA !== apB) return apB - apA;
+  const rpnA = a.rpn ?? 0;
+  const rpnB = b.rpn ?? 0;
+  if (rpnA !== rpnB) return rpnB - rpnA;
+  return (a.risk || '').localeCompare(b.risk || '', undefined, { sensitivity: 'base' });
+}
+
 type PlanningRiskStepKey = 'high' | 'medium' | 'low';
 
 const PLANNING_RISK_STEPS: {
@@ -241,12 +314,12 @@ const PLANNING_RISK_STEPS: {
   {
     key: 'high',
     title: 'Close out the high risks',
-    empty: 'No high risks right now — move on to medium risks.',
+    empty: 'No high risks right now - move on to medium risks.',
   },
   {
     key: 'medium',
     title: 'Med risks',
-    empty: 'No medium risks right now — keep reducing remaining risk.',
+    empty: 'No medium risks right now - keep reducing remaining risk.',
   },
   {
     key: 'low',
@@ -274,6 +347,47 @@ function severityFromMitigationProgress(
   }
   return 'low';
 }
+
+interface RiskFormData {
+  risk: string;
+  likelihood: 'low' | 'medium' | 'high';
+  severity: 'low' | 'medium' | 'high';
+  schedule_impact_days: number;
+  budget_impact_dollars: number;
+  mitigation: string;
+  mitigation_actions: { action: string; benefit?: string | null; completed?: boolean }[];
+  mitigation_effort_level: MitigationEffortLevel | null;
+  notes: string;
+  status: 'open' | 'mitigated' | 'closed' | 'monitoring';
+  /**
+   * Which component this risk belongs to, and its three scores on the shared scale. Null means
+   * the author has not classified or scored it, which is reported rather than assumed.
+   */
+  risk_dimension: RegisterRiskDimension | null;
+  severity_score: number | null;
+  occurrence_score: number | null;
+  detection_score: number | null;
+  /** Optional link to the step where the risk arises, so it can surface during execution. */
+  operation_step_id: string | null;
+}
+
+const EMPTY_RISK_FORM: RiskFormData = {
+  risk: '',
+  likelihood: 'medium',
+  severity: 'medium',
+  schedule_impact_days: 0,
+  budget_impact_dollars: 0,
+  mitigation: '',
+  mitigation_actions: [],
+  mitigation_effort_level: null,
+  notes: '',
+  status: 'open',
+  risk_dimension: null,
+  severity_score: null,
+  occurrence_score: null,
+  detection_score: null,
+  operation_step_id: null,
+};
 
 /** User-added run risks (not template / foundation copies). */
 function isUserAddedRisk(risk: Risk): boolean {
@@ -312,6 +426,81 @@ function riskFocusSeveritySelectItemClass(level: 'high' | 'medium' | 'low'): str
     default:
       return 'text-amber-900 focus:bg-amber-50 focus:text-amber-950 dark:text-amber-300 dark:focus:bg-amber-950/40 dark:focus:text-amber-200';
   }
+}
+
+/**
+ * One line per component: what its worst item demands, and how many items sit behind that.
+ * Four separate readings rather than one blended score, because a project can be safe and
+ * still be late, and the user acts on those differently.
+ */
+function RiskComponentOverview({ risks }: { risks: Risk[] }) {
+  const { table } = useActionPriorityTable();
+  const rollups = useMemo(
+    () =>
+      rollupRiskComponents(
+        risks.map((risk) => ({
+          risk_dimension: risk.risk_dimension ?? null,
+          action_priority: risk.action_priority ?? null,
+          excluded_by_customization: risk.excluded_by_customization ?? null,
+          hidden_from_register: risk.hidden_from_register ?? null,
+        }))
+      ),
+    [risks]
+  );
+
+  return (
+    <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+      {RISK_DIMENSIONS.map((dimension) => {
+        const rollup = rollups[dimension];
+        const ap = rollup.worstActionPriority;
+        const label = ap && table ? actionPriorityLabel(table, ap).label : null;
+        const description = ap && table ? actionPriorityLabel(table, ap).description : null;
+
+        return (
+          <Tooltip key={dimension}>
+            <TooltipTrigger asChild>
+              <div
+                className={cn(
+                  'min-w-0 rounded-md border px-2 py-1.5 text-left',
+                  ap === 'H'
+                    ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/40'
+                    : ap === 'M'
+                      ? 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40'
+                      : ap === 'L'
+                        ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30'
+                        : 'border-border bg-background'
+                )}
+              >
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {RISK_COMPONENT_CONSUMER_LABELS[dimension]}
+                </div>
+                <div className="truncate text-xs font-semibold">
+                  {label ?? (rollup.totalCount === 0 ? 'Nothing recorded' : 'Not scored')}
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {rollup.highCount > 0
+                    ? `${rollup.highCount} to act on`
+                    : rollup.unscoredCount > 0
+                      ? `${rollup.unscoredCount} unscored`
+                      : `${rollup.totalCount} tracked`}
+                </div>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-xs">
+              <p className="text-xs font-medium">
+                {RISK_COMPONENT_CONSUMER_LABELS[dimension]}: {RISK_COMPONENT_CONSUMER_STAKES[dimension]}
+              </p>
+              {description ? <p className="mt-1 text-xs">{description}</p> : null}
+              <p className="mt-1 text-xs text-muted-foreground">
+                {rollup.highCount} act now, {rollup.mediumCount} safeguard, {rollup.lowCount} covered
+                {rollup.unscoredCount > 0 ? `, ${rollup.unscoredCount} unscored` : ''}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
 }
 
 function RiskFocusDashboard({
@@ -391,6 +580,9 @@ function RiskFocusDashboard({
                 </div>
               ) : null}
             </Card>
+          </div>
+          <div className="mt-2 w-full">
+            <RiskComponentOverview risks={risks} />
           </div>
         </div>
       </div>
@@ -624,6 +816,9 @@ export function RiskManagementWindow({
   );
 
   const [planningRiskStep, setPlanningRiskStep] = useState<PlanningRiskStepKey>('high');
+  /** Which component the open triage pass is working through. */
+  const [planningRiskComponent, setPlanningRiskComponent] = useState<RiskDimension | 'all'>('all');
+  const [rulesEditorOpen, setRulesEditorOpen] = useState(false);
 
   useEffect(() => {
     if (open && usePlanningToolShell) {
@@ -656,18 +851,79 @@ export function RiskManagementWindow({
     []
   );
 
-  const [formData, setFormData] = useState({
-    risk: '',
-    likelihood: 'medium' as 'low' | 'medium' | 'high',
-    severity: 'medium' as 'low' | 'medium' | 'high',
-    schedule_impact_days: 0,
-    budget_impact_dollars: 0,
-    mitigation: '',
-    mitigation_actions: [] as { action: string; benefit?: string | null; completed?: boolean }[],
-    mitigation_effort_level: null as MitigationEffortLevel | null,
-    notes: '',
-    status: 'open' as 'open' | 'mitigated' | 'closed' | 'monitoring'
-  });
+  const [formData, setFormData] = useState<RiskFormData>(EMPTY_RISK_FORM);
+
+  const { table: actionPriorityTable } = useActionPriorityTable();
+
+  /** Live priority for the row being authored, so the author sees the effect of each score. */
+  const formDataPriority = useMemo(
+    () =>
+      registerRiskPriority(
+        {
+          riskDimension: formData.risk_dimension,
+          severityScore: formData.severity_score,
+          occurrenceScore: formData.occurrence_score,
+          detectionScore: formData.detection_score,
+        },
+        actionPriorityTable
+      ),
+    [
+      formData.risk_dimension,
+      formData.severity_score,
+      formData.occurrence_score,
+      formData.detection_score,
+      actionPriorityTable,
+    ]
+  );
+
+  /** Steps of the template being authored, for the optional step link on a register risk. */
+  const [templateSteps, setTemplateSteps] = useState<{ id: string; label: string }[]>([]);
+
+  useEffect(() => {
+    if (!open || mode !== 'template' || !templateProjectIdForRisks) {
+      setTemplateSteps([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await supabase
+        .from('project_phases')
+        .select(
+          'name, position_value, phase_operations(operation_name, display_order, operation_steps(id, step_title, display_order))'
+        )
+        .eq('project_id', templateProjectIdForRisks)
+        .order('position_value', { ascending: true });
+
+      if (cancelled) return;
+      if (error) {
+        console.error('Template step list load failed:', error);
+        setTemplateSteps([]);
+        return;
+      }
+
+      const steps: { id: string; label: string }[] = [];
+      for (const phase of data ?? []) {
+        const operations = [...(phase.phase_operations ?? [])].sort(
+          (a, b) => a.display_order - b.display_order
+        );
+        for (const operation of operations) {
+          const operationSteps = [...(operation.operation_steps ?? [])].sort(
+            (a, b) => a.display_order - b.display_order
+          );
+          for (const step of operationSteps) {
+            steps.push({
+              id: step.id,
+              label: `${phase.name} - ${operation.operation_name} - ${step.step_title}`,
+            });
+          }
+        }
+      }
+      setTemplateSteps(steps);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, mode, templateProjectIdForRisks]);
 
   const displayRisks = useMemo(() => {
     let list =
@@ -719,21 +975,44 @@ export function RiskManagementWindow({
   const planningRiskCounts = useMemo(() => {
     const counts = { high: 0, medium: 0, low: 0 };
     for (const risk of displayRisks) {
-      counts[currentRiskRegisterLevel(risk)] += 1;
+      counts[riskTriageLevel(risk)] += 1;
     }
     return counts;
   }, [displayRisks]);
 
+  /** Risks in the open pass, by component, so the walkthrough runs one component at a time. */
+  const passRisksByComponent = useMemo(() => {
+    const inPass = displayRisks.filter((r) => riskTriageLevel(r) === planningRiskStep);
+    const counts = {} as Record<RiskDimension, Risk[]>;
+    for (const dimension of RISK_DIMENSIONS) counts[dimension] = [];
+    for (const risk of inPass) {
+      if (risk.risk_dimension && isRiskDimension(risk.risk_dimension)) {
+        counts[risk.risk_dimension].push(risk);
+      }
+    }
+    return { inPass, byComponent: counts };
+  }, [displayRisks, planningRiskStep]);
+
   const listRisks = useMemo(() => {
     if (!usePlanningToolShell) return displayRisks;
-    return displayRisks.filter((r) => currentRiskRegisterLevel(r) === planningRiskStep);
-  }, [usePlanningToolShell, displayRisks, planningRiskStep]);
+    const source =
+      planningRiskComponent === 'all'
+        ? passRisksByComponent.inPass
+        : passRisksByComponent.byComponent[planningRiskComponent];
+    return [...source].sort(compareRisksByPriority);
+  }, [usePlanningToolShell, displayRisks, passRisksByComponent, planningRiskComponent]);
 
   const setPlanningRiskStepStable = useCallback((next: string) => {
     if (next === 'high' || next === 'medium' || next === 'low') {
       setPlanningRiskStep(next);
     }
   }, []);
+
+  // A new pass starts with everything in view, so a component filter from the previous pass
+  // cannot hide work.
+  useEffect(() => {
+    setPlanningRiskComponent('all');
+  }, [planningRiskStep]);
 
   useSteppedAutoAdvance({
     enabled: open && usePlanningToolShell,
@@ -756,6 +1035,16 @@ export function RiskManagementWindow({
       fetchRisks();
     }
   }, [open, projectId, projectRunId, mode]);
+
+  // Opening Risk Radar is one of the re-evaluation points: the user's tools, spaces, and
+  // history may have moved since this run's list was written.
+  const riskReevaluation = useRunRiskReevaluation({
+    projectRunId: mode === 'run' ? projectRunId : null,
+    enabled: open,
+    onReevaluated: () => {
+      void fetchRisks();
+    },
+  });
 
   const fetchRisks = async () => {
     if (!open) return;
@@ -845,7 +1134,12 @@ export function RiskManagementWindow({
           benefit: typeof risk.benefit === 'string' ? risk.benefit : null,
           status: 'open' as const,
           display_order: risk.display_order,
-          impact: risk.impact
+          impact: risk.impact,
+          risk_dimension: isRegisterRiskDimension(risk.risk_dimension) ? risk.risk_dimension : null,
+          severity_score: risk.severity_score ?? null,
+          occurrence_score: risk.occurrence_score ?? null,
+          detection_score: risk.detection_score ?? null,
+          operation_step_id: risk.operation_step_id ?? null,
         }));
         
         setRisks(mappedRisks);
@@ -886,6 +1180,15 @@ export function RiskManagementWindow({
           impact: risk.impact,
           hidden_from_register: risk.hidden_from_register === true,
           from_standard_foundation: risk.from_standard_foundation === true,
+          risk_dimension: isRiskDimension(risk.risk_dimension) ? risk.risk_dimension : null,
+          severity_score: risk.severity_score ?? null,
+          occurrence_score: risk.occurrence_score ?? null,
+          detection_score: risk.detection_score ?? null,
+          operation_step_id: risk.operation_step_id ?? null,
+          action_priority: isActionPriority(risk.action_priority) ? risk.action_priority : null,
+          rpn: risk.rpn ?? null,
+          source: risk.source === 'pfmea' || risk.source === 'register' ? risk.source : null,
+          excluded_by_customization: risk.excluded_by_customization === true,
         }));
         
         setRisks(mappedRisks);
@@ -940,6 +1243,11 @@ export function RiskManagementWindow({
                 ? formData.mitigation_actions
                 : null,
               mitigation_effort_level: formData.mitigation_effort_level,
+              risk_dimension: formData.risk_dimension,
+              severity_score: formData.severity_score,
+              occurrence_score: formData.occurrence_score,
+              detection_score: formData.detection_score,
+              operation_step_id: formData.operation_step_id,
             })
             .eq('id', editingRisk.id);
 
@@ -974,6 +1282,11 @@ export function RiskManagementWindow({
                 ? formData.mitigation_actions
                 : null,
               mitigation_effort_level: formData.mitigation_effort_level,
+              risk_dimension: formData.risk_dimension,
+              severity_score: formData.severity_score,
+              occurrence_score: formData.occurrence_score,
+              detection_score: formData.detection_score,
+              operation_step_id: formData.operation_step_id,
               display_order: nextOrder
             });
 
@@ -1048,18 +1361,7 @@ export function RiskManagementWindow({
 
       setShowAddForm(false);
       setEditingRisk(null);
-      setFormData({
-        risk: '',
-        likelihood: 'medium',
-        severity: 'medium',
-        schedule_impact_days: 0,
-        budget_impact_dollars: 0,
-        mitigation: '',
-        mitigation_actions: [],
-        mitigation_effort_level: null,
-        notes: '',
-        status: 'open'
-      });
+      setFormData(EMPTY_RISK_FORM);
       fetchRisks();
       
       // Notify scheduler that risks have been updated
@@ -1089,7 +1391,14 @@ export function RiskManagementWindow({
       mitigation_actions: risk.mitigation_actions ? [...risk.mitigation_actions] : [],
       mitigation_effort_level: risk.mitigation_effort_level ?? null,
       notes: narrative,
-      status: risk.status || 'open'
+      status: risk.status || 'open',
+      // The form authors register components only. A quality row reached the list from the
+      // PFMEA, so it has no register component to preselect.
+      risk_dimension: isRegisterRiskDimension(risk.risk_dimension) ? risk.risk_dimension : null,
+      severity_score: risk.severity_score ?? null,
+      occurrence_score: risk.occurrence_score ?? null,
+      detection_score: risk.detection_score ?? null,
+      operation_step_id: risk.operation_step_id ?? null,
     });
     setShowAddForm(true);
   };
@@ -1499,18 +1808,7 @@ export function RiskManagementWindow({
                           aria-label="Add risk"
                           onClick={() => {
                             setEditingRisk(null);
-                            setFormData({
-                              risk: '',
-                              likelihood: 'medium',
-                              severity: 'medium',
-                              schedule_impact_days: 0,
-                              budget_impact_dollars: 0,
-                              mitigation: '',
-                              mitigation_actions: [],
-                              mitigation_effort_level: null,
-                              notes: '',
-                              status: 'open'
-                            });
+                            setFormData(EMPTY_RISK_FORM);
                             setShowAddForm(true);
                           }}
                         >
@@ -1606,18 +1904,7 @@ export function RiskManagementWindow({
                           size="sm"
                           onClick={() => {
                             setEditingRisk(null);
-                            setFormData({
-                              risk: '',
-                              likelihood: 'medium',
-                              severity: 'medium',
-                              schedule_impact_days: 0,
-                              budget_impact_dollars: 0,
-                              mitigation: '',
-                              mitigation_actions: [],
-                              mitigation_effort_level: null,
-                              notes: '',
-                              status: 'open'
-                            });
+                            setFormData(EMPTY_RISK_FORM);
                             setShowAddForm(true);
                           }}
                           className="h-7 gap-1 px-3 text-xs font-medium"
@@ -1726,18 +2013,7 @@ export function RiskManagementWindow({
                         size="sm"
                         onClick={() => {
                           setEditingRisk(null);
-                          setFormData({
-                            risk: '',
-                            likelihood: 'medium',
-                            severity: 'medium',
-                            schedule_impact_days: 0,
-                            budget_impact_dollars: 0,
-                            mitigation: '',
-                            mitigation_actions: [],
-                            mitigation_effort_level: null,
-                            notes: '',
-                            status: 'open'
-                          });
+                          setFormData(EMPTY_RISK_FORM);
                           setShowAddForm(true);
                         }}
                         className="h-7 gap-1 px-3 text-xs font-medium"
@@ -1747,6 +2023,12 @@ export function RiskManagementWindow({
                       </Button>
                     ) : null}
                   </div>
+                </div>
+              ) : null}
+              {riskReevaluation.error ? (
+                <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                  These priorities were not refreshed for your profile, so they are the template's
+                  own numbers: {riskReevaluation.error}
                 </div>
               ) : null}
               {risks.length === 0 ? (
@@ -1792,7 +2074,35 @@ export function RiskManagementWindow({
                       </AccordionTrigger>
                       <AccordionContent className="pb-4">
                         {planningRiskStep === step.key ? (
-                          <RiskRegisterList
+                          <>
+                            <div className="mb-2 flex flex-wrap gap-1">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={planningRiskComponent === 'all' ? 'default' : 'outline'}
+                                className="h-7 px-2.5 text-xs"
+                                onClick={() => setPlanningRiskComponent('all')}
+                              >
+                                Everything ({passRisksByComponent.inPass.length})
+                              </Button>
+                              {RISK_DIMENSIONS.map((dimension) => {
+                                const count = passRisksByComponent.byComponent[dimension].length;
+                                if (count === 0) return null;
+                                return (
+                                  <Button
+                                    key={dimension}
+                                    type="button"
+                                    size="sm"
+                                    variant={planningRiskComponent === dimension ? 'default' : 'outline'}
+                                    className="h-7 px-2.5 text-xs"
+                                    onClick={() => setPlanningRiskComponent(dimension)}
+                                  >
+                                    {RISK_COMPONENT_CONSUMER_LABELS[dimension]} ({count})
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                            <RiskRegisterList
                             risksToShow={listRisks}
                             risksTotalCount={risks.length}
                             hideStandardRisks={hideStandardRisks}
@@ -1817,7 +2127,8 @@ export function RiskManagementWindow({
                             onMitigationActionTextBlur={handleMitigationActionTextBlur}
                             onAppendMitigationAction={handleAppendMitigationAction}
                             onUpdateCurrentRiskLevel={handleUpdateCurrentRiskLevel}
-                          />
+                            />
+                          </>
                         ) : null}
                       </AccordionContent>
                     </AccordionItem>
@@ -2047,6 +2358,160 @@ export function RiskManagementWindow({
                 </div>
               </div>
 
+              {mode === 'template' ? (
+                <div className="space-y-3 rounded-md border bg-muted/20 p-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Component and scores</p>
+                    <p className="text-xs text-muted-foreground">
+                      These feed the same priority table the quality analysis uses. Occurrence
+                      moves priority more than detection.
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="risk_dimension">Component</Label>
+                    <Select
+                      value={formData.risk_dimension ?? 'unset'}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          risk_dimension:
+                            value === 'unset' ? null : (value as RegisterRiskDimension),
+                        })
+                      }
+                    >
+                      <SelectTrigger id="risk_dimension" className="w-full max-w-md">
+                        <SelectValue placeholder="Not set" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unset">Not set</SelectItem>
+                        {REGISTER_RISK_DIMENSIONS.map((d) => (
+                          <SelectItem key={d} value={d}>
+                            {RISK_DIMENSION_LABELS[d]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    {(
+                      [
+                        ['severity_score', 'Severity', 'Consequence if it happens'],
+                        ['occurrence_score', 'Occurrence', 'How often it happens'],
+                        ['detection_score', 'Detection', 'Chance of noticing in time'],
+                      ] as const
+                    ).map(([field, label, hint]) => (
+                      <div key={field}>
+                        <Label htmlFor={field}>{label}</Label>
+                        <Select
+                          value={formData[field] == null ? 'unset' : String(formData[field])}
+                          onValueChange={(value) =>
+                            setFormData({
+                              ...formData,
+                              [field]: value === 'unset' ? null : parseInt(value, 10),
+                            })
+                          }
+                        >
+                          <SelectTrigger id={field}>
+                            <SelectValue placeholder="Not set" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unset">Not set</SelectItem>
+                            {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                              <SelectItem key={n} value={String(n)}>
+                                {n}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 border-t pt-3 text-sm">
+                    {formDataPriority.actionPriority != null ? (
+                      <>
+                        <span className="text-muted-foreground">Priority</span>
+                        <Badge
+                          variant="outline"
+                          className={currentRiskLevelBadgeClass(
+                            formDataPriority.actionPriority === 'H'
+                              ? 'high'
+                              : formDataPriority.actionPriority === 'M'
+                                ? 'medium'
+                                : 'low'
+                          )}
+                        >
+                          {actionPriorityTable
+                            ? actionPriorityLabel(actionPriorityTable, formDataPriority.actionPriority).label
+                            : formDataPriority.actionPriority}
+                        </Badge>
+                        {formDataPriority.rpn != null ? (
+                          <span className="text-xs text-muted-foreground">
+                            RPN {formDataPriority.rpn}
+                          </span>
+                        ) : null}
+                      </>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {formDataPriority.unscoredReason
+                          ? REGISTER_RISK_UNSCORED_MESSAGE[formDataPriority.unscoredReason]
+                          : 'Priority is unavailable until the scoring table loads.'}
+                      </span>
+                    )}
+                  </div>
+
+                  {editingRisk && templateProjectIdForRisks ? (
+                    <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-3 text-xs"
+                        onClick={() => setRulesEditorOpen(true)}
+                      >
+                        Personalization rules
+                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        Rules move occurrence and detection for the individual user, never
+                        severity.
+                      </span>
+                    </div>
+                  ) : null}
+
+                  <div>
+                    <Label htmlFor="operation_step_id">Step this arises on</Label>
+                    <Select
+                      value={formData.operation_step_id ?? 'unset'}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          operation_step_id: value === 'unset' ? null : value,
+                        })
+                      }
+                    >
+                      <SelectTrigger id="operation_step_id" className="w-full">
+                        <SelectValue placeholder="Whole project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unset">Whole project</SelectItem>
+                        {templateSteps.map((step) => (
+                          <SelectItem key={step.id} value={step.id}>
+                            {step.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      A linked risk appears while that step is being worked, not only during
+                      planning.
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
               <div className="space-y-3">
                 {workflowTemplateRiskRadar ? (
                   <div className="space-y-2">
@@ -2212,18 +2677,7 @@ export function RiskManagementWindow({
                   onClick={() => {
                     setShowAddForm(false);
                     setEditingRisk(null);
-                    setFormData({
-                      risk: '',
-                      likelihood: 'medium',
-                      severity: 'medium',
-                      schedule_impact_days: 0,
-                      budget_impact_dollars: 0,
-                      mitigation: '',
-                      mitigation_actions: [],
-                      mitigation_effort_level: null,
-                      notes: '',
-                      status: 'open'
-                    });
+                    setFormData(EMPTY_RISK_FORM);
                   }}
                 >
                   Cancel
@@ -2402,6 +2856,16 @@ export function RiskManagementWindow({
         ) : null}
       </SheetContent>
     </Sheet>
+    {mode === 'template' && editingRisk && templateProjectIdForRisks ? (
+      <ProjectRiskRulesEditor
+        open={rulesEditorOpen}
+        onOpenChange={setRulesEditorOpen}
+        projectId={templateProjectIdForRisks}
+        targetKind="template_risk"
+        targetId={editingRisk.id}
+        targetLabel={editingRisk.risk_title || editingRisk.risk || 'Template risk'}
+      />
+    ) : null}
     </>
   );
 }

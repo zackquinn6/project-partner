@@ -2167,6 +2167,56 @@ export type Database = {
           },
         ]
       }
+      pfmea_action_priority_rules: {
+        Row: {
+          action_priority: string
+          created_at: string
+          detection_max: number
+          detection_min: number
+          dimension: string
+          id: string
+          occurrence_max: number
+          occurrence_min: number
+          severity_max: number
+          severity_min: number
+          updated_at: string
+        }
+        Insert: {
+          action_priority: string
+          created_at?: string
+          detection_max: number
+          detection_min: number
+          dimension: string
+          id?: string
+          occurrence_max: number
+          occurrence_min: number
+          severity_max: number
+          severity_min: number
+          updated_at?: string
+        }
+        Update: {
+          action_priority?: string
+          created_at?: string
+          detection_max?: number
+          detection_min?: number
+          dimension?: string
+          id?: string
+          occurrence_max?: number
+          occurrence_min?: number
+          severity_max?: number
+          severity_min?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pfmea_action_priority_rules_action_priority_fkey"
+            columns: ["action_priority"]
+            isOneToOne: false
+            referencedRelation: "risk_action_priority_labels"
+            referencedColumns: ["action_priority"]
+          },
+        ]
+      }
       pfmea_controls: {
         Row: {
           cause_id: string | null
@@ -2222,8 +2272,8 @@ export type Database = {
           id: string
           operation_step_id: string
           project_id: string
-          requirement_output_id: string
-          severity_score: number
+          requirement_id: string
+          severity_score: number | null
           updated_at: string
         }
         Insert: {
@@ -2232,8 +2282,8 @@ export type Database = {
           id?: string
           operation_step_id: string
           project_id: string
-          requirement_output_id: string
-          severity_score?: number
+          requirement_id: string
+          severity_score?: number | null
           updated_at?: string
         }
         Update: {
@@ -2242,8 +2292,8 @@ export type Database = {
           id?: string
           operation_step_id?: string
           project_id?: string
-          requirement_output_id?: string
-          severity_score?: number
+          requirement_id?: string
+          severity_score?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -2261,6 +2311,13 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pfmea_failure_modes_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "pfmea_requirements"
+            referencedColumns: ["id"]
+          },
         ]
       }
       pfmea_potential_causes: {
@@ -2269,7 +2326,7 @@ export type Database = {
           created_at: string
           failure_mode_id: string
           id: string
-          occurrence_score: number
+          occurrence_score: number | null
           updated_at: string
         }
         Insert: {
@@ -2277,7 +2334,7 @@ export type Database = {
           created_at?: string
           failure_mode_id: string
           id?: string
-          occurrence_score?: number
+          occurrence_score?: number | null
           updated_at?: string
         }
         Update: {
@@ -2285,7 +2342,7 @@ export type Database = {
           created_at?: string
           failure_mode_id?: string
           id?: string
-          occurrence_score?: number
+          occurrence_score?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -2304,7 +2361,7 @@ export type Database = {
           effect_description: string
           failure_mode_id: string
           id: string
-          severity_score: number
+          severity_score: number | null
           updated_at: string
         }
         Insert: {
@@ -2312,7 +2369,7 @@ export type Database = {
           effect_description?: string
           failure_mode_id: string
           id?: string
-          severity_score?: number
+          severity_score?: number | null
           updated_at?: string
         }
         Update: {
@@ -2320,7 +2377,7 @@ export type Database = {
           effect_description?: string
           failure_mode_id?: string
           id?: string
-          severity_score?: number
+          severity_score?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -2333,12 +2390,61 @@ export type Database = {
           },
         ]
       }
+      pfmea_requirements: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          operation_step_id: string
+          output_id: string | null
+          project_id: string
+          requirement_text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          operation_step_id: string
+          output_id?: string | null
+          project_id: string
+          requirement_text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          operation_step_id?: string
+          output_id?: string | null
+          project_id?: string
+          requirement_text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pfmea_requirements_operation_step_id_fkey"
+            columns: ["operation_step_id"]
+            isOneToOne: false
+            referencedRelation: "operation_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pfmea_requirements_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pfmea_scoring: {
         Row: {
           cause_detection: string | null
           created_at: string
           criterion_type: string
           detection_method_guidance: string | null
+          dimension: string
           failure_mode_detection: string | null
           id: string
           mistake_proofing_requirement: string | null
@@ -2358,6 +2464,7 @@ export type Database = {
           created_at?: string
           criterion_type: string
           detection_method_guidance?: string | null
+          dimension: string
           failure_mode_detection?: string | null
           id?: string
           mistake_proofing_requirement?: string | null
@@ -2377,6 +2484,7 @@ export type Database = {
           created_at?: string
           criterion_type?: string
           detection_method_guidance?: string | null
+          dimension?: string
           failure_mode_detection?: string | null
           id?: string
           mistake_proofing_requirement?: string | null
@@ -2727,6 +2835,7 @@ export type Database = {
           budget_impact_high: number | null
           budget_impact_low: number | null
           created_at: string | null
+          detection_score: number | null
           display_order: number | null
           id: string
           impact: string | null
@@ -2735,13 +2844,17 @@ export type Database = {
           mitigation_cost: number | null
           mitigation_effort_level: string | null
           mitigation_strategy: string | null
+          occurrence_score: number | null
+          operation_step_id: string | null
           project_id: string
           recommendation: string | null
           risk_description: string | null
+          risk_dimension: string | null
           risk_title: string
           schedule_impact_high_days: number | null
           schedule_impact_low_days: number | null
           severity: string | null
+          severity_score: number | null
           updated_at: string | null
         }
         Insert: {
@@ -2749,6 +2862,7 @@ export type Database = {
           budget_impact_high?: number | null
           budget_impact_low?: number | null
           created_at?: string | null
+          detection_score?: number | null
           display_order?: number | null
           id?: string
           impact?: string | null
@@ -2757,13 +2871,17 @@ export type Database = {
           mitigation_cost?: number | null
           mitigation_effort_level?: string | null
           mitigation_strategy?: string | null
+          occurrence_score?: number | null
+          operation_step_id?: string | null
           project_id: string
           recommendation?: string | null
           risk_description?: string | null
+          risk_dimension?: string | null
           risk_title: string
           schedule_impact_high_days?: number | null
           schedule_impact_low_days?: number | null
           severity?: string | null
+          severity_score?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -2771,6 +2889,7 @@ export type Database = {
           budget_impact_high?: number | null
           budget_impact_low?: number | null
           created_at?: string | null
+          detection_score?: number | null
           display_order?: number | null
           id?: string
           impact?: string | null
@@ -2779,18 +2898,79 @@ export type Database = {
           mitigation_cost?: number | null
           mitigation_effort_level?: string | null
           mitigation_strategy?: string | null
+          occurrence_score?: number | null
+          operation_step_id?: string | null
           project_id?: string
           recommendation?: string | null
           risk_description?: string | null
+          risk_dimension?: string | null
           risk_title?: string
           schedule_impact_high_days?: number | null
           schedule_impact_low_days?: number | null
           severity?: string | null
+          severity_score?: number | null
           updated_at?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "project_risks_operation_step_id_fkey"
+            columns: ["operation_step_id"]
+            isOneToOne: false
+            referencedRelation: "operation_steps"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "project_risks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_risk_rules: {
+        Row: {
+          conditions: Json
+          created_at: string
+          delta: number | null
+          display_order: number
+          effect: string
+          id: string
+          project_id: string
+          rationale: string
+          target_id: string
+          target_kind: string
+          updated_at: string
+        }
+        Insert: {
+          conditions: Json
+          created_at?: string
+          delta?: number | null
+          display_order?: number
+          effect: string
+          id?: string
+          project_id: string
+          rationale: string
+          target_id: string
+          target_kind: string
+          updated_at?: string
+        }
+        Update: {
+          conditions?: Json
+          created_at?: string
+          delta?: number | null
+          display_order?: number
+          effect?: string
+          id?: string
+          project_id?: string
+          rationale?: string
+          target_id?: string
+          target_kind?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_risk_rules_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -2889,86 +3069,187 @@ export type Database = {
           },
         ]
       }
+      project_run_risk_profile: {
+        Row: {
+          computed_at: string
+          dimension: string
+          high_count: number
+          id: string
+          low_count: number
+          medium_count: number
+          project_run_id: string
+          unscored_count: number
+          worst_action_priority: string | null
+        }
+        Insert: {
+          computed_at?: string
+          dimension: string
+          high_count?: number
+          id?: string
+          low_count?: number
+          medium_count?: number
+          project_run_id: string
+          unscored_count?: number
+          worst_action_priority?: string | null
+        }
+        Update: {
+          computed_at?: string
+          dimension?: string
+          high_count?: number
+          id?: string
+          low_count?: number
+          medium_count?: number
+          project_run_id?: string
+          unscored_count?: number
+          worst_action_priority?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_risk_profile_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_run_risk_profile_worst_action_priority_fkey"
+            columns: ["worst_action_priority"]
+            isOneToOne: false
+            referencedRelation: "risk_action_priority_labels"
+            referencedColumns: ["action_priority"]
+          },
+        ]
+      }
       project_run_risks: {
         Row: {
+          action_priority: string | null
+          applied_rule_audit: Json | null
           benefit: string | null
           budget_impact_high: number | null
           budget_impact_low: number | null
           created_at: string | null
+          detection_score: number | null
           display_order: number | null
+          excluded_by_customization: boolean
           from_standard_foundation: boolean
           hidden_from_register: boolean
           id: string
           impact: string | null
+          is_spiked: boolean
           likelihood: string | null
           mitigation_actions: Json | null
           mitigation_cost: number | null
           mitigation_effort_level: string | null
           mitigation_strategy: string | null
+          occurrence_score: number | null
+          operation_step_id: string | null
           project_run_id: string
           recommendation: string | null
           risk_description: string | null
+          risk_dimension: string | null
           risk_title: string
+          rpn: number | null
           schedule_impact_high_days: number | null
           schedule_impact_low_days: number | null
           severity: string | null
+          severity_score: number | null
+          source: string | null
+          source_template_id: string | null
           status: string | null
           template_risk_id: string | null
           updated_at: string | null
         }
         Insert: {
+          action_priority?: string | null
+          applied_rule_audit?: Json | null
           benefit?: string | null
           budget_impact_high?: number | null
           budget_impact_low?: number | null
           created_at?: string | null
+          detection_score?: number | null
           display_order?: number | null
+          excluded_by_customization?: boolean
           from_standard_foundation?: boolean
           hidden_from_register?: boolean
           id?: string
           impact?: string | null
+          is_spiked?: boolean
           likelihood?: string | null
           mitigation_actions?: Json | null
           mitigation_cost?: number | null
           mitigation_effort_level?: string | null
           mitigation_strategy?: string | null
+          occurrence_score?: number | null
+          operation_step_id?: string | null
           project_run_id: string
           recommendation?: string | null
           risk_description?: string | null
+          risk_dimension?: string | null
           risk_title: string
+          rpn?: number | null
           schedule_impact_high_days?: number | null
           schedule_impact_low_days?: number | null
           severity?: string | null
+          severity_score?: number | null
+          source?: string | null
+          source_template_id?: string | null
           status?: string | null
           template_risk_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          action_priority?: string | null
+          applied_rule_audit?: Json | null
           benefit?: string | null
           budget_impact_high?: number | null
           budget_impact_low?: number | null
           created_at?: string | null
+          detection_score?: number | null
           display_order?: number | null
+          excluded_by_customization?: boolean
           from_standard_foundation?: boolean
           hidden_from_register?: boolean
           id?: string
           impact?: string | null
+          is_spiked?: boolean
           likelihood?: string | null
           mitigation_actions?: Json | null
           mitigation_cost?: number | null
           mitigation_effort_level?: string | null
           mitigation_strategy?: string | null
+          occurrence_score?: number | null
+          operation_step_id?: string | null
           project_run_id?: string
           recommendation?: string | null
           risk_description?: string | null
+          risk_dimension?: string | null
           risk_title?: string
+          rpn?: number | null
           schedule_impact_high_days?: number | null
           schedule_impact_low_days?: number | null
           severity?: string | null
+          severity_score?: number | null
+          source?: string | null
+          source_template_id?: string | null
           status?: string | null
           template_risk_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "project_run_risks_action_priority_fkey"
+            columns: ["action_priority"]
+            isOneToOne: false
+            referencedRelation: "risk_action_priority_labels"
+            referencedColumns: ["action_priority"]
+          },
+          {
+            foreignKeyName: "project_run_risks_operation_step_id_fkey"
+            columns: ["operation_step_id"]
+            isOneToOne: false
+            referencedRelation: "operation_steps"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_run_risks_project_run_id_fkey"
             columns: ["project_run_id"]
@@ -3384,6 +3665,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      risk_action_priority_labels: {
+        Row: {
+          action_priority: string
+          consumer_description: string
+          consumer_label: string
+          created_at: string
+          updated_at: string
+          urgency_rank: number
+        }
+        Insert: {
+          action_priority: string
+          consumer_description: string
+          consumer_label: string
+          created_at?: string
+          updated_at?: string
+          urgency_rank: number
+        }
+        Update: {
+          action_priority?: string
+          consumer_description?: string
+          consumer_label?: string
+          created_at?: string
+          updated_at?: string
+          urgency_rank?: number
+        }
+        Relationships: []
       }
       rework_events: {
         Row: {

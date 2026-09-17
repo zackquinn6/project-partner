@@ -18,11 +18,18 @@ import type { GeneralProjectChoicesMap } from '@/utils/generalProjectDecisions';
 import { filterSectionRowsForMicroDecisions } from '@/utils/microDecisionVisibility';
 import { responsiveTouchTargets } from '@/utils/responsive';
 import { formatEstimatedFinishDate } from '@/utils/estimatedFinishDate';
+import {
+  StepMustGetRightCallout,
+  StepRiskPriorityBadge,
+} from '@/components/StepRiskPriorityBadge';
+import type { StepRiskSummary } from '@/hooks/useRunStepRisk';
 
 interface MobileWorkflowViewProps {
   projectName: string;
   /** When set, step instructions load from project_run_step_instructions (immutable run snapshot). */
   projectRunId?: string | null;
+  /** Applied risk for the step on screen, from the run's risk list. */
+  currentStepRisk?: StepRiskSummary;
   currentStep: any;
   currentStepIndex: number;
   totalSteps: number;
@@ -73,6 +80,7 @@ interface MobileWorkflowViewProps {
 export function MobileWorkflowView({
   projectName,
   projectRunId,
+  currentStepRisk,
   currentStep,
   currentStepIndex,
   totalSteps,
@@ -118,6 +126,17 @@ export function MobileWorkflowView({
   const [isStepListOpen, setIsStepListOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['options', 'materials', 'tools', 'project-tools']));
   const stepRef = useRef<HTMLDivElement>(null);
+
+  // What is open when a step first appears follows its priority: a step that has to be right
+  // the first time opens with its detail in front of the user, a covered step stays compact.
+  useEffect(() => {
+    if (!currentStep?.id) return;
+    setExpandedSections(
+      currentStepRisk?.worstActionPriority === 'L'
+        ? new Set<string>()
+        : new Set(['options', 'materials', 'tools', 'project-tools'])
+    );
+  }, [currentStep?.id, currentStepRisk?.worstActionPriority]);
 
   // Fetch instructions based on level
   const { instruction, loading: instructionLoading } = useStepInstructions(
@@ -284,6 +303,7 @@ export function MobileWorkflowView({
                   <Badge variant="outline" className="text-[10px] sm:text-xs truncate">
                     {currentStep.phaseName}
                   </Badge>
+                  <StepRiskPriorityBadge summary={currentStepRisk} />
                 </div>
                 <Button
                   variant={isStepCompleted ? "outline" : "default"}
@@ -303,6 +323,7 @@ export function MobileWorkflowView({
               <CardTitle className="text-base sm:text-lg leading-tight mt-2">
                 {currentStep.step}
               </CardTitle>
+              <StepMustGetRightCallout summary={currentStepRisk} />
               {(onSomethingWrong || onAskAi || onPhotosClick) && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {onSomethingWrong ? (

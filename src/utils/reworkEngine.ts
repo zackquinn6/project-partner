@@ -1,6 +1,7 @@
 import { Phase, Operation, WorkflowStep } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { TemplateFamily } from '@/utils/templateFamilies';
+import type { RiskDimension } from '@/utils/riskDimensions';
 
 export type TriageType =
   | 'unclear_instructions'
@@ -311,6 +312,40 @@ export interface PersistReworkInput {
   comments: string;
   recoveryPlan: RecoveryPlan;
   status: 'open' | 'applied';
+}
+
+/** Narrows a stored `rework_events.triage_type` string back to the union. */
+export function isTriageType(value: unknown): value is TriageType {
+  return typeof value === 'string' && TRIAGE_OPTIONS.some((option) => option.type === value);
+}
+
+/**
+ * The risk component a reported problem counts against, so a report the user files becomes
+ * evidence on the same four components the risk profile is built from. The switch is
+ * exhaustive, so a new triage type cannot be added without deciding where its evidence lands.
+ */
+export function riskDimensionForTriageType(triageType: TriageType): RiskDimension {
+  switch (triageType) {
+    case 'unclear_instructions':
+    case 'defective_materials':
+    case 'mistake':
+    case 'qc_fail':
+      return 'quality';
+    case 'injury_near_miss':
+      return 'safety';
+    case 'missing_tools':
+    case 'tool_malfunction':
+    case 'missing_materials':
+    case 'partner_delay':
+    case 'weather_delay':
+      return 'schedule';
+    case 'unplanned_work':
+      return 'budget';
+    default: {
+      const _exhaustive: never = triageType;
+      return _exhaustive;
+    }
+  }
 }
 
 export function legacyIssueFlagsFromTriage(triageType: TriageType): Record<string, boolean> {

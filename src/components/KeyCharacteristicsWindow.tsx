@@ -8,15 +8,30 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, AlertTriangle, Star, Shield, HelpCircle } from "lucide-react";
 import { Operation, Output } from "@/interfaces/Project";
 import { KeyCharacteristicsExplainer } from "./KeyCharacteristicsExplainer";
+import { StepRiskPriorityBadge } from "@/components/StepRiskPriorityBadge";
+import type { StepRiskSummary } from "@/hooks/useRunStepRisk";
+import { RISK_COMPONENT_CONSUMER_LABELS } from "@/utils/riskProfileRollup";
 
 interface KeyCharacteristicsWindowProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   operations: Operation[];
   currentStepId?: string;
+  /**
+   * Applied risk per step for this run. Priorities come from the analysis rather than from
+   * whether an output happens to carry a type, so what is listed here is what the scoring says
+   * needs attention on this run.
+   */
+  stepRiskByStepId?: Map<string, StepRiskSummary>;
 }
 
-export function KeyCharacteristicsWindow({ open, onOpenChange, operations, currentStepId }: KeyCharacteristicsWindowProps) {
+export function KeyCharacteristicsWindow({
+  open,
+  onOpenChange,
+  operations,
+  currentStepId,
+  stepRiskByStepId,
+}: KeyCharacteristicsWindowProps) {
   const [selectedOperationIndex, setSelectedOperationIndex] = useState(0);
   const [showHelpPopup, setShowHelpPopup] = useState(false);
   const [showKCExplainer, setShowKCExplainer] = useState(false);
@@ -45,20 +60,38 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
 
   const getCurrentOperation = () => operations[selectedOperationIndex];
   
-  const getCriticalOutputs = (operation: Operation) => {
-    const criticalOutputs: { step: string; outputs: Output[] }[] = [];
-    
-    operation.steps.forEach(step => {
-      // Handle case where outputs might be undefined or null
-      if (step.outputs && Array.isArray(step.outputs)) {
-        const critical = step.outputs.filter(output => output.type !== 'none');
-        if (critical.length > 0) {
-          criticalOutputs.push({ step: step.step, outputs: critical });
-        }
-      }
+  /**
+   * Steps this operation has to get right, worst priority first.
+   *
+   * A step earns a place here by having applied risk at Medium or High, not by having an output
+   * with a type set. The old signal listed every typed output whether or not the analysis said
+   * it was a concern, which made the list too long to act on.
+   */
+  const getPrioritySteps = (operation: Operation) => {
+    const rows: {
+      step: string;
+      stepId: string;
+      summary: StepRiskSummary;
+      outputs: Output[];
+    }[] = [];
+
+    for (const step of operation.steps) {
+      const summary = stepRiskByStepId?.get(step.id);
+      if (!summary) continue;
+      if (summary.worstActionPriority !== 'H' && summary.worstActionPriority !== 'M') continue;
+
+      rows.push({
+        step: step.step,
+        stepId: step.id,
+        summary,
+        outputs: Array.isArray(step.outputs) ? step.outputs : [],
+      });
+    }
+
+    return rows.sort((a, b) => {
+      const rank = (summary: StepRiskSummary) => (summary.worstActionPriority === 'H' ? 2 : 1);
+      return rank(b.summary) - rank(a.summary) || b.summary.highCount - a.summary.highCount;
     });
-    
-    return criticalOutputs;
   };
 
   const getOutputIcon = (type: Output['type']) => {
@@ -98,7 +131,7 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
   if (operations.length === 0) return null;
 
   const currentOperation = getCurrentOperation();
-  const criticalOutputs = getCriticalOutputs(currentOperation);
+  const prioritySteps = getPrioritySteps(currentOperation);
 
   return (
     <>
@@ -171,19 +204,33 @@ export function KeyCharacteristicsWindow({ open, onOpenChange, operations, curre
 
           {/* 2-Column Tabular View */}
           <div className="flex-1 min-h-0 overflow-y-auto pb-4">
-            {criticalOutputs.length === 0 ? (
+            {prioritySteps.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p>No priorities found for this operation.</p>
-                <p className="text-sm mt-2">This operation may not have outputs marked as priorities.</p>
+                <p>Nothing in this operation scored high enough to single out.</p>
+                <p className="text-sm mt-2">
+                  The normal instructions cover it.
+                </p>
               </div>
             ) : (
               <div className="space-y-6">
-                {criticalOutputs.map((stepOutput, stepIndex) => (
+                {prioritySteps.map((stepOutput, stepIndex) => (
                   <div key={stepIndex} className="space-y-3 sm:space-y-4">
-                    <h4 className="font-medium text-sm sm:text-base border-b pb-2 sticky top-0 bg-background z-10">
-                      {stepOutput.step}
-                    </h4>
-                    
+                    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b bg-background pb-2">
+                      <h4 className="font-medium text-sm sm:text-base">{stepOutput.step}</h4>
+                      <StepRiskPriorityBadge summary={stepOutput.summary} />
+                    </div>
+
+                    <ul className="space-y-1.5">
+                      {stepOutput.summary.items.map((item) => (
+                        <li key={item.id} className="text-xs text-muted-foreground">
+                          <span className="font-medium text-foreground">
+                            {RISK_COMPONENT_CONSUMER_LABELS[item.dimension]}:
+                          </span>{' '}
+                          {item.description ?? item.title}
+                        </li>
+                      ))}
+                    </ul>
+
                     <div className="space-y-3">
                       {stepOutput.outputs.map((output, outputIndex) => (
                         <div key={outputIndex} className="grid grid-cols-1 lg:grid-cols-2 gap-4 border rounded-lg p-3 sm:p-4 hover:bg-muted/50 transition-colors">

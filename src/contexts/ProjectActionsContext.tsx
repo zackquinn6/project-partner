@@ -19,6 +19,7 @@ import {
 } from '@/utils/planningChangeTracking';
 import type { Json } from '@/integrations/supabase/types';
 import { getDefaultHomeIdForUser } from '@/utils/ensureDefaultHome';
+import { applyProjectRiskLogicToRun } from '@/utils/applyProjectRiskLogic';
 
 function parseCompletedStepsColumn(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -743,6 +744,10 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       try {
         const templateRootIdForRisks = await resolveTemplateRootIdForRisks(project.id);
         await syncFoundationAndTemplateRisksToProjectRun(data, templateRootIdForRisks);
+        // Stage 2 and 3: personalize the scores and translate the quality analysis into the
+        // run's risk list. Runs after the template sync, which must have put the register rows
+        // in place for the scoring to attach to.
+        await applyProjectRiskLogicToRun(data, templateRootIdForRisks);
       } catch (riskAssemblyError) {
         console.error('❌ Risk assembly failed; deleting created run for consistency:', riskAssemblyError);
         await supabase.from('project_runs').delete().eq('id', data);
@@ -826,6 +831,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         try {
           const templateRootIdForRisks = await resolveTemplateRootIdForRisks(projectRunData.projectId);
           await syncFoundationAndTemplateRisksToProjectRun(newProjectRunId, templateRootIdForRisks);
+          await applyProjectRiskLogicToRun(newProjectRunId, templateRootIdForRisks);
         } catch (riskAssemblyError) {
           console.error('❌ Risk assembly failed; deleting created run:', riskAssemblyError);
           await supabase.from('project_runs').delete().eq('id', newProjectRunId);

@@ -11,6 +11,7 @@ import {
   aggregatePfmeaMetrics,
   type PfmeaFailureModeLike,
 } from '@/utils/pfmeaRiskMetrics';
+import { useActionPriorityTable } from '@/hooks/useActionPriorityTable';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -174,6 +175,8 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
 
   const phases = useMemo(() => (isPhaseArray(phasesRaw) ? phasesRaw : []), [phasesRaw]);
 
+  const { table: actionPriorityTable } = useActionPriorityTable();
+
   const loadFailureModes = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -294,17 +297,24 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
 
   const aggregateForStepIds = useCallback(
     (stepIds: Set<string>) => {
+      if (!actionPriorityTable) return null;
       const list: PfmeaFailureModeLike[] = [];
       for (const sid of stepIds) {
         const fms = failureModesByStep.get(sid);
         if (fms) list.push(...fms);
       }
-      return aggregatePfmeaMetrics(list);
+      return aggregatePfmeaMetrics(list, actionPriorityTable, 'quality');
     },
-    [failureModesByStep]
+    [failureModesByStep, actionPriorityTable]
   );
 
-  const projectPfmeaTotals = useMemo(() => aggregatePfmeaMetrics(failureModes), [failureModes]);
+  const projectPfmeaTotals = useMemo(
+    () =>
+      actionPriorityTable
+        ? aggregatePfmeaMetrics(failureModes, actionPriorityTable, 'quality')
+        : null,
+    [failureModes, actionPriorityTable]
+  );
 
   const scalingLabel = formatScalingUnit(scalingUnit ?? undefined);
 
@@ -453,11 +463,15 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
               <div className="grid grid-cols-3 gap-1.5 text-center">
                 <div>
                   <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Max RPN</div>
-                  <div className="text-lg font-bold tabular-nums text-foreground">{col.metrics.maxRpn}</div>
+                  <div className="text-lg font-bold tabular-nums text-foreground">
+                    {col.metrics?.maxRpn ?? '–'}
+                  </div>
                 </div>
                 <div>
                   <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">PFMEA Risks</div>
-                  <div className="text-lg font-bold tabular-nums text-foreground">{col.metrics.lineCount}</div>
+                  <div className="text-lg font-bold tabular-nums text-foreground">
+                    {col.metrics?.lineCount ?? '–'}
+                  </div>
                 </div>
                 <div className="flex flex-col items-stretch justify-center">
                   <table className="w-full border-collapse text-center text-[10px]">
@@ -477,13 +491,13 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
                     <tbody>
                       <tr>
                         <td className="px-0.5 py-0.5 font-bold tabular-nums text-red-700 dark:text-red-400">
-                          {col.metrics.high}
+                          {col.metrics?.high ?? '–'}
                         </td>
                         <td className="px-0.5 py-0.5 font-bold tabular-nums text-orange-700 dark:text-orange-400">
-                          {col.metrics.medium}
+                          {col.metrics?.medium ?? '–'}
                         </td>
                         <td className="px-0.5 py-0.5 font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
-                          {col.metrics.low}
+                          {col.metrics?.low ?? '–'}
                         </td>
                       </tr>
                     </tbody>
@@ -557,18 +571,33 @@ export const ProjectVisualizer: React.FC<ProjectVisualizerProps> = ({
             <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0 font-mono text-[11px] tabular-nums leading-none">
               <span>
                 RPN{' '}
-                <span className="font-bold text-foreground">{loading ? '…' : projectPfmeaTotals.maxRpn}</span>
+                <span className="font-bold text-foreground">
+                  {loading ? '…' : (projectPfmeaTotals?.maxRpn ?? '–')}
+                </span>
               </span>
               <span className="text-muted-foreground/40">|</span>
               <span>
                 Lines{' '}
-                <span className="font-bold text-foreground">{loading ? '…' : projectPfmeaTotals.lineCount}</span>
+                <span className="font-bold text-foreground">
+                  {loading ? '…' : (projectPfmeaTotals?.lineCount ?? '–')}
+                </span>
               </span>
             </div>
             <div className="mt-1 flex flex-wrap gap-x-2 text-[11px] font-semibold tabular-nums leading-none">
-              <span className="text-red-700 dark:text-red-400">H {loading ? '…' : projectPfmeaTotals.high}</span>
-              <span className="text-orange-700 dark:text-orange-400">M {loading ? '…' : projectPfmeaTotals.medium}</span>
-              <span className="text-emerald-700 dark:text-emerald-600">L {loading ? '…' : projectPfmeaTotals.low}</span>
+              <span className="text-red-700 dark:text-red-400">
+                H {loading ? '…' : (projectPfmeaTotals?.high ?? '–')}
+              </span>
+              <span className="text-orange-700 dark:text-orange-400">
+                M {loading ? '…' : (projectPfmeaTotals?.medium ?? '–')}
+              </span>
+              <span className="text-emerald-700 dark:text-emerald-600">
+                L {loading ? '…' : (projectPfmeaTotals?.low ?? '–')}
+              </span>
+              {projectPfmeaTotals && projectPfmeaTotals.unscoredFailureModeCount > 0 ? (
+                <span className="text-muted-foreground">
+                  Unscored {projectPfmeaTotals.unscoredFailureModeCount}
+                </span>
+              ) : null}
             </div>
           </div>
 

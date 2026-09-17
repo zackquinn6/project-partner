@@ -37,6 +37,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, FileText, Info, Plus, Scale, Target, Trash2 } from 'lucide-react';
 import { PfmeaScoringCriteriaDialog } from '@/components/PfmeaScoringCriteriaDialog';
+import { ProjectRiskRulesEditor } from '@/components/ProjectRiskRulesEditor';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Output, StepInput } from '@/interfaces/Project';
@@ -46,6 +47,36 @@ import {
   serializeProcessVariablesForDb,
   type WorkflowStepProcessVariableRow,
 } from '@/utils/processVariablesUtils';
+import {
+  aggregatePfmeaMetrics,
+  calculateActionPriority,
+  calculateRPN,
+  maxPfmeaSeverityForFailureMode,
+  minPfmeaDetectionScoreForFailureMode,
+  preventionCoverageForFailureMode,
+} from '@/utils/pfmeaRiskMetrics';
+import { detectionControlIssuesForStep } from '@/utils/detectionControlValidation';
+import {
+  newOutputId,
+  parseAuthorableOutputs,
+  syncPfmeaRequirementsForProject,
+} from '@/utils/pfmeaRequirementSync';
+import { useActionPriorityTable } from '@/hooks/useActionPriorityTable';
+import {
+  actionPriorityLabel,
+  type ActionPriorityTable,
+} from '@/utils/actionPriorityTable';
+import {
+  RISK_DIMENSIONS,
+  RISK_DIMENSION_LABELS,
+  actionPriorityUrgency,
+  type ActionPriority,
+} from '@/utils/riskDimensions';
+import {
+  loadStepRiskEvidence,
+  stepsNeedingOccurrenceReview,
+  type StepOccurrenceComparison,
+} from '@/utils/riskEvidence';
 
 // Database types for PFMEA
 interface DatabaseProject {
@@ -56,7 +87,7 @@ interface DatabaseProject {
   [key: string]: any;
 }
 
-/** Catalog project used for PFMEA (requirements are derived from operation_steps.outputs). */
+/** Catalog project whose PFMEA is being authored. */
 interface PfmeaTemplateContext {
   project_id: string;
   name: string;
@@ -64,6 +95,10 @@ interface PfmeaTemplateContext {
   publish_status?: 'draft' | 'beta-testing' | 'published' | 'archived' | string | null;
 }
 
+/**
+ * A row of pfmea_requirements plus its place in the workflow. `id` is a real primary key, so
+ * a failure mode's link survives outputs being reordered on the step.
+ */
 interface PFMEARequirement {
   id: string;
   project_id: string;
@@ -71,7 +106,7 @@ interface PFMEARequirement {
   phase_operation_id: string;
   operation_step_id: string;
   requirement_text: string;
-  output_reference: { output_id: string | null; output_index: number };
+  output_id: string | null;
   display_order: number;
   project_phases?: {
     id: string;
@@ -94,9 +129,10 @@ interface PFMEAFailureMode {
   id: string;
   project_id: string;
   operation_step_id: string;
-  requirement_output_id: string;
+  requirement_id: string;
   failure_mode: string;
-  severity_score: number;
+  /** Null until authored. An unscored line is reported as unscored, not scored as maximum. */
+  severity_score: number | null;
   pfmea_potential_effects: PFMEAPotentialEffect[];
   pfmea_potential_causes: PFMEAPotentialCause[];
   pfmea_controls: PFMEAControl[];
@@ -107,14 +143,14 @@ interface PFMEAPotentialEffect {
   id: string;
   failure_mode_id: string;
   effect_description: string;
-  severity_score: number;
+  severity_score: number | null;
 }
 
 interface PFMEAPotentialCause {
   id: string;
   failure_mode_id: string;
   cause_description: string;
-  occurrence_score: number;
+  occurrence_score: number | null;
 }
 
 interface PFMEAControl {
@@ -226,25 +262,6 @@ function getPotentialCauseSubtext(failureMode: PFMEAFailureMode, cause: PFMEAPot
   const causes = failureMode.pfmea_potential_causes ?? [];
   if (causes.length === 0) return '—';
   return causes.map((c) => c.cause_description).join(' · ');
-}
-
-/** Highest severity from listed effects; if none, use failure mode row severity (explicit DB field). */
-function maxPfmeaSeverityForFailureMode(fm: PFMEAFailureMode): number {
-  if (fm.pfmea_potential_effects.length > 0) {
-    return Math.max(...fm.pfmea_potential_effects.map((e) => e.severity_score));
-  }
-  return fm.severity_score;
-}
-
-/**
- * Lowest detection score for the failure mode row when every listed detection control has a score; otherwise null
- * (D column shows em dash). Matches PFMEA practice: row D is the best (minimum) D among controls.
- */
-function minPfmeaDetectionScoreForFailureMode(fm: PFMEAFailureMode): number | null {
-  const detection = fm.pfmea_controls.filter((c) => c.control_type === 'detection');
-  if (detection.length === 0) return null;
-  if (detection.some((c) => c.detection_score == null)) return null;
-  return Math.min(...detection.map((c) => c.detection_score!));
 }
 
 type PfmeaNavColumn =
@@ -369,29 +386,6 @@ function requirementStepName(r: PFMEARequirement): string {
   return r.operation_steps?.step_title ?? '—';
 }
 
-function parseStepOutputs(raw: unknown): Output[] {
-  if (!Array.isArray(raw)) return [];
-  const valid: Output[] = [];
-  for (const item of raw) {
-    if (!item || typeof item !== 'object') continue;
-    const output = item as Partial<Output>;
-    if (typeof output.name !== 'string') continue;
-    const trimmedName = output.name.trim();
-    if (!trimmedName) continue;
-    valid.push({
-      ...output,
-      name: trimmedName,
-    } as Output);
-  }
-  return valid;
-}
-
-function requirementOutputKey(requirement: PFMEARequirement): string {
-  const outputId = requirement.output_reference.output_id;
-  if (outputId) return outputId;
-  return `index:${requirement.output_reference.output_index}`;
-}
-
 function phasePositionSortKey(phase: PFMEARequirement['project_phases']): number {
   if (!phase) return Number.MAX_SAFE_INTEGER;
   if (phase.position_rule === 'last') return Number.MAX_SAFE_INTEGER - 1;
@@ -405,6 +399,16 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   const [projects, setProjects] = useState<DatabaseProject[]>([]);
   const [requirements, setRequirements] = useState<PFMEARequirement[]>([]);
   const [failureModes, setFailureModes] = useState<PFMEAFailureMode[]>([]);
+  /**
+   * Requirements whose output no longer exists on the step. Surfaced rather than deleted,
+   * because deleting one cascades to its authored failure modes.
+   */
+  const [orphanedRequirementIds, setOrphanedRequirementIds] = useState<string[]>([]);
+  const {
+    table: actionPriorityTable,
+    loading: actionPriorityLoading,
+    error: actionPriorityError,
+  } = useActionPriorityTable();
   const [workflowStepPvByStepId, setWorkflowStepPvByStepId] = useState<
     Record<string, WorkflowStepProcessVariableRow[]>
   >({});
@@ -503,6 +507,11 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
   const fetchPfmeaDetails = useCallback(async (templateProjectId: string) => {
     try {
+      // Reconcile requirement rows with the step outputs before reading, so an output added
+      // or renamed in the Process Map shows up here without a separate manual step.
+      const syncResult = await syncPfmeaRequirementsForProject(templateProjectId);
+      setOrphanedRequirementIds(syncResult.orphanedRequirementIds);
+
       const { data: phaseRows, error: phaseError } = await supabase
         .from('project_phases')
         .select(
@@ -530,67 +539,63 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
       if (phaseError) throw phaseError;
 
-      const rows: PFMEARequirement[] = [];
-      const sortedPhases = [...(phaseRows ?? [])].sort((a, b) => {
-        const aKey =
-          a.position_rule === 'last'
-            ? Number.MAX_SAFE_INTEGER - 1
-            : a.position_rule === 'nth' && typeof a.position_value === 'number'
-              ? a.position_value
-              : Number.MAX_SAFE_INTEGER;
-        const bKey =
-          b.position_rule === 'last'
-            ? Number.MAX_SAFE_INTEGER - 1
-            : b.position_rule === 'nth' && typeof b.position_value === 'number'
-              ? b.position_value
-              : Number.MAX_SAFE_INTEGER;
-        return aKey - bKey;
-      });
-      for (const phase of sortedPhases) {
-        const operations = Array.isArray(phase.phase_operations) ? [...phase.phase_operations] : [];
-        operations.sort((a, b) => (a.display_order ?? Number.MAX_SAFE_INTEGER) - (b.display_order ?? Number.MAX_SAFE_INTEGER));
-        for (const operation of operations) {
-          const steps = Array.isArray(operation.operation_steps) ? [...operation.operation_steps] : [];
-          steps.sort((a, b) => (a.display_order ?? Number.MAX_SAFE_INTEGER) - (b.display_order ?? Number.MAX_SAFE_INTEGER));
-          for (const step of steps) {
-            const outputs = parseStepOutputs(step.outputs);
-            for (let outputIndex = 0; outputIndex < outputs.length; outputIndex += 1) {
-              const output = outputs[outputIndex];
-              rows.push({
-                id: `${step.id}::${output.id ?? `index:${outputIndex}`}`,
-                project_id: templateProjectId,
-                project_phase_id: phase.id,
-                phase_operation_id: operation.id,
-                operation_step_id: step.id,
-                requirement_text: output.name,
-                output_reference: {
-                  output_id: output.id ?? null,
-                  output_index: outputIndex,
-                },
-                display_order: outputIndex,
-                project_phases: {
-                  id: phase.id,
-                  name: phase.name,
-                  position_rule: phase.position_rule,
-                  position_value: phase.position_value,
-                },
-                phase_operations: {
-                  id: operation.id,
-                  operation_name: operation.operation_name,
-                  display_order: operation.display_order,
-                },
-                operation_steps: {
-                  id: step.id,
-                  step_title: step.step_title,
-                  display_order: step.display_order,
-                  description: step.description,
-                  outputs: step.outputs,
-                  process_variables: (step as { process_variables?: unknown }).process_variables,
-                },
-              });
-            }
+      const { data: requirementRows, error: requirementError } = await supabase
+        .from('pfmea_requirements')
+        .select('id, project_id, operation_step_id, output_id, requirement_text, display_order')
+        .eq('project_id', templateProjectId);
+
+      if (requirementError) throw requirementError;
+
+      // Index the workflow so each requirement row can carry its phase, operation, and step.
+      const stepContextById = new Map<
+        string,
+        Pick<PFMEARequirement, 'project_phase_id' | 'phase_operation_id' | 'project_phases' | 'phase_operations' | 'operation_steps'>
+      >();
+      for (const phase of phaseRows ?? []) {
+        for (const operation of phase.phase_operations ?? []) {
+          for (const step of operation.operation_steps ?? []) {
+            stepContextById.set(step.id, {
+              project_phase_id: phase.id,
+              phase_operation_id: operation.id,
+              project_phases: {
+                id: phase.id,
+                name: phase.name,
+                position_rule: phase.position_rule,
+                position_value: phase.position_value,
+              },
+              phase_operations: {
+                id: operation.id,
+                operation_name: operation.operation_name,
+                display_order: operation.display_order,
+              },
+              operation_steps: {
+                id: step.id,
+                step_title: step.step_title,
+                display_order: step.display_order,
+                description: step.description,
+                outputs: step.outputs,
+                process_variables: (step as { process_variables?: unknown }).process_variables,
+              },
+            });
           }
         }
+      }
+
+      const rows: PFMEARequirement[] = [];
+      for (const row of requirementRows ?? []) {
+        const context = stepContextById.get(row.operation_step_id);
+        // A requirement whose step is gone cannot be placed in the grid. The sync above
+        // reports it as orphaned rather than silently inventing a position for it.
+        if (!context) continue;
+        rows.push({
+          id: row.id,
+          project_id: row.project_id,
+          operation_step_id: row.operation_step_id,
+          requirement_text: row.requirement_text,
+          output_id: row.output_id,
+          display_order: row.display_order,
+          ...context,
+        });
       }
       setRequirements(rows);
 
@@ -663,8 +668,12 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       .eq('id', failureModeId)
       .single();
     if (fmErr || !fmRow) return;
-    const next =
-      effs && effs.length > 0 ? Math.max(...effs.map((r) => r.severity_score)) : fmRow.severity_score;
+    // Mirror the highest authored effect severity onto the failure mode. Effects that have not
+    // been scored yet do not participate, and if none are scored the row keeps its own value.
+    const scoredEffects = (effs ?? [])
+      .map((r) => r.severity_score)
+      .filter((score): score is number => score != null);
+    const next = scoredEffects.length > 0 ? Math.max(...scoredEffects) : fmRow.severity_score;
     if (next === fmRow.severity_score) return;
     const { error: upErr } = await supabase
       .from('pfmea_failure_modes')
@@ -732,15 +741,13 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     }
     if (pfmeaLineDeleteTarget.kind === 'requirement_output') {
       const req = pfmeaLineDeleteTarget.requirement;
-      const outputKey = requirementOutputKey(req);
       setPfmeaDeletePending(true);
       try {
-        const { error: fmErr } = await supabase
-          .from('pfmea_failure_modes')
-          .delete()
-          .eq('operation_step_id', req.operation_step_id)
-          .eq('requirement_output_id', outputKey);
-        if (fmErr) throw fmErr;
+        // Remove the output from the step first. If this fails the requirement row survives
+        // and the next sync leaves everything as it was.
+        if (!req.output_id) {
+          throw new Error('This requirement is not linked to an output on the step');
+        }
 
         const { data: stepRow, error: stepErr } = await supabase
           .from('operation_steps')
@@ -749,24 +756,24 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           .single();
         if (stepErr) throw stepErr;
 
-        const outputs = parseStepOutputs(stepRow?.outputs);
-        const ref = req.output_reference;
-        let next: Output[];
-        if (ref.output_id) {
-          next = outputs.filter((o) => String(o.id) !== String(ref.output_id));
-        } else {
-          const idx = ref.output_index;
-          if (idx < 0 || idx >= outputs.length) {
-            throw new Error('Output index out of range for this step');
-          }
-          next = outputs.filter((_, i) => i !== idx);
-        }
+        const rawOutputs = Array.isArray(stepRow?.outputs) ? (stepRow.outputs as unknown[]) : [];
+        const next = rawOutputs.filter((item) => {
+          if (!item || typeof item !== 'object') return true;
+          return String((item as Partial<Output>).id ?? '') !== req.output_id;
+        });
 
         const { error: upErr } = await supabase
           .from('operation_steps')
           .update({ outputs: next as unknown as Json })
           .eq('id', req.operation_step_id);
         if (upErr) throw upErr;
+
+        // Deleting the requirement cascades to its failure modes and everything under them.
+        const { error: reqErr } = await supabase
+          .from('pfmea_requirements')
+          .delete()
+          .eq('id', req.id);
+        if (reqErr) throw reqErr;
 
         await fetchPfmeaDetails(selectedPfmeaProject.project_id);
                 setPfmeaLineDeleteTarget(null);
@@ -878,14 +885,15 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       return;
     }
     try {
+      // No severity is set here. A new failure mode has not been analyzed, and seeding a
+      // middle score would make it indistinguishable from one an author actually rated.
       const { error } = await supabase
         .from('pfmea_failure_modes')
         .insert({
           project_id: requirement.project_id,
           operation_step_id: requirement.operation_step_id,
-          requirement_output_id: requirementOutputKey(requirement),
+          requirement_id: requirement.id,
           failure_mode: 'New Failure Mode',
-          severity_score: 5
         });
 
       if (error) throw error;
@@ -899,73 +907,71 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     }
   };
 
-  const calculateRPN = (failureMode: PFMEAFailureMode, cause: PFMEAPotentialCause | null): number => {
-    const severity = maxPfmeaSeverityForFailureMode(failureMode);
-    const occurrence = cause?.occurrence_score ?? 10;
-    const rowD = minPfmeaDetectionScoreForFailureMode(failureMode);
-    const minDetection = rowD != null ? rowD : 10;
+  /**
+   * Priority comes from the seeded action priority table, so it is not recomputed here.
+   * Null means the line is not fully scored, which the grid shows as unscored rather than
+   * as Low.
+   */
+  const actionPriorityFor = useCallback(
+    (failureMode: PFMEAFailureMode): ActionPriority | null => {
+      if (!actionPriorityTable) return null;
+      return calculateActionPriority(failureMode, actionPriorityTable, 'quality');
+    },
+    [actionPriorityTable]
+  );
 
-    return Math.round(severity * occurrence * minDetection);
-  };
+  /** Null until the action priority table has loaded. Counts are never shown without it. */
+  const pfmeaMetrics = useMemo(
+    () =>
+      actionPriorityTable
+        ? aggregatePfmeaMetrics(failureModes, actionPriorityTable, 'quality')
+        : null,
+    [failureModes, actionPriorityTable]
+  );
 
-  // AIAG-VDA Action Priority (AP): High / Medium / Low based on the S/O/D decision table.
-  const calculateActionPriority = (failureMode: PFMEAFailureMode): 'H' | 'M' | 'L' => {
-    const s = Math.round(maxPfmeaSeverityForFailureMode(failureMode));
+  /** Steps where reported problems disagree with the authored occurrence. Null while loading. */
+  const [evidenceReviewSteps, setEvidenceReviewSteps] = useState<
+    StepOccurrenceComparison[] | null
+  >(null);
 
-    const avgOccurrence = failureMode.pfmea_potential_causes.length > 0
-      ? failureMode.pfmea_potential_causes.reduce((sum, c) => sum + c.occurrence_score, 0) / failureMode.pfmea_potential_causes.length
-      : 10;
-    const o = Math.round(avgOccurrence);
+  /** The failure mode whose personalization rules are open, if any. */
+  const [rulesEditorTarget, setRulesEditorTarget] = useState<{ id: string; label: string } | null>(
+    null
+  );
 
-    const rowD = minPfmeaDetectionScoreForFailureMode(failureMode);
-    const d = rowD != null ? rowD : 10;
+  const evidenceProjectId = selectedPfmeaProject?.project_id ?? null;
 
-    // Severity bands
-    if (s >= 9) {
-      // O: 8-10 => H, 6-7 => H, 4-5 => (D=1 -> M else H), 2-3 => (D>=7 -> H, D>=5 -> M, else L), O=1 => L
-      if (o >= 8) return 'H';
-      if (o >= 6) return 'H';
-      if (o >= 4) return d === 1 ? 'M' : 'H';
-      if (o >= 2) return d >= 7 ? 'H' : d >= 5 ? 'M' : 'L';
-      return 'L';
+  useEffect(() => {
+    if (!evidenceProjectId) {
+      setEvidenceReviewSteps(null);
+      return;
     }
+    let cancelled = false;
+    void loadStepRiskEvidence(evidenceProjectId)
+      .then((evidence) => {
+        if (!cancelled) setEvidenceReviewSteps(stepsNeedingOccurrenceReview(evidence));
+      })
+      .catch((err: unknown) => {
+        console.error('Risk evidence load failed:', err);
+        if (!cancelled) setEvidenceReviewSteps([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [evidenceProjectId]);
 
-    if (s >= 7) {
-      // O: 8-10 => H, 6-7 => (D=1 -> M else H), 4-5 => (D>=7 -> H else M), 2-3 => (D>=5 -> M else L), O=1 => L
-      if (o >= 8) return 'H';
-      if (o >= 6) return d === 1 ? 'M' : 'H';
-      if (o >= 4) return d >= 7 ? 'H' : 'M';
-      if (o >= 2) return d >= 5 ? 'M' : 'L';
-      return 'L';
-    }
-
-    if (s >= 4) {
-      // O: 8-10 => (D>=5 -> H else M), 6-7 => (D=1 -> L else M), 4-5 => (D>=7 -> M else L), 2-3 => L, O=1 => L
-      if (o >= 8) return d >= 5 ? 'H' : 'M';
-      if (o >= 6) return d === 1 ? 'L' : 'M';
-      if (o >= 4) return d >= 7 ? 'M' : 'L';
-      return 'L';
-    }
-
-    if (s >= 2) {
-      // O: 8-10 => (D>=5 -> M else L), else => L
-      if (o >= 8) return d >= 5 ? 'M' : 'L';
-      return 'L';
-    }
-
-    return 'L';
-  };
-
-  const getActionPriorityRowClass = (ap: 'H' | 'M' | 'L'): string => {
+  const getActionPriorityRowClass = (ap: ActionPriority | null): string => {
     if (ap === 'H') return 'bg-red-50';
     if (ap === 'M') return 'bg-orange-50';
-    return 'bg-green-50';
+    if (ap === 'L') return 'bg-green-50';
+    return '';
   };
 
-  const getActionPriorityBadgeClasses = (ap: 'H' | 'M' | 'L'): string => {
+  const getActionPriorityBadgeClasses = (ap: ActionPriority | null): string => {
     if (ap === 'H') return 'border-red-500 text-red-700';
     if (ap === 'M') return 'border-orange-500 text-orange-700';
-    return 'border-green-500 text-green-700';
+    if (ap === 'L') return 'border-green-500 text-green-700';
+    return 'border-muted-foreground/40 text-muted-foreground';
   };
 
   const getAllActionItems = () => {
@@ -1298,7 +1304,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     [pfmeaIsEditable, selectedPfmeaProject, fetchPfmeaDetails]
   );
 
-  /** When a failure mode has no causes yet, RPN/AP still assume O=10; creating a cause from this cell persists O. */
+  /** Creating the cause from the occurrence cell is what gives the line an occurrence at all. */
   const createCauseWithOccurrence = useCallback(
     async (failureModeId: string, score: string) => {
       if (!pfmeaIsEditable) return;
@@ -1384,30 +1390,41 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     [pfmeaIsEditable, selectedPfmeaProject, fetchPfmeaDetails]
   );
 
+  /**
+   * A null score renders as a visible blank marker, not an empty cell, so an author can tell
+   * "nobody has scored this" apart from "the column does not apply here".
+   */
   const renderScoreCell = (
     value: number | null,
     onChange?: (value: string) => void
   ) => {
-    if (value == null) return '';
     if (!onChange || !pfmeaIsEditable) {
       return (
-        <div className="flex h-full min-h-8 w-full items-center justify-center text-sm font-bold tabular-nums text-foreground">
-          {value}
+        <div
+          className={cn(
+            'flex h-full min-h-8 w-full items-center justify-center text-sm font-bold tabular-nums',
+            value == null ? 'text-muted-foreground' : 'text-foreground'
+          )}
+          title={value == null ? 'Not scored' : undefined}
+        >
+          {value ?? '–'}
         </div>
       );
     }
     return (
-      <Select value={String(value)} onValueChange={onChange}>
+      <Select value={value == null ? undefined : String(value)} onValueChange={onChange}>
         <SelectTrigger
           className={cn(
-            'box-border h-full min-h-8 w-full min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 text-center text-sm font-bold tabular-nums text-foreground shadow-none',
+            'box-border h-full min-h-8 w-full min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 text-center text-sm font-bold tabular-nums shadow-none',
             'flex items-center justify-center ring-0 ring-offset-0 focus:ring-2 focus:ring-ring focus:ring-offset-0 focus-visible:rounded-none',
-            'hover:bg-muted/40 data-[state=open]:bg-muted/40 [&_svg]:hidden'
+            'hover:bg-muted/40 data-[state=open]:bg-muted/40 [&_svg]:hidden',
+            value == null ? 'text-muted-foreground' : 'text-foreground'
           )}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
+          title={value == null ? 'Not scored' : undefined}
         >
-          <SelectValue />
+          <SelectValue placeholder="–" />
         </SelectTrigger>
         <SelectContent>
           {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
@@ -1426,12 +1443,13 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       return;
     }
     try {
+      // Unscored on creation. The author sets severity from the rubric; a seeded 5 would look
+      // like a rated consequence.
       const { error } = await supabase
         .from('pfmea_potential_effects')
         .insert({
           failure_mode_id: failureModeId,
           effect_description: 'New potential effect',
-          severity_score: 5
         });
 
       if (error) throw error;
@@ -1455,7 +1473,6 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         .insert({
           failure_mode_id: failureModeId,
           cause_description: 'New potential cause',
-          occurrence_score: 5
         });
 
       if (error) throw error;
@@ -1484,7 +1501,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
           cause_id: controlType === 'prevention' ? causeId ?? null : null,
           control_type: controlType,
           control_description: `New ${controlType} control`,
-          detection_score: controlType === 'detection' ? 5 : null
+          detection_score: null,
         });
 
       if (error) throw error;
@@ -1566,7 +1583,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       const next: Output[] = [
         ...outputs,
         {
-          id: `output-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          id: newOutputId(),
           name,
           description: '',
           type: 'none',
@@ -1666,6 +1683,28 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     fetchPfmeaDetails,
   ]);
 
+  /**
+   * The step's outputs keyed by id, used to check whether a detection score has anything
+   * behind it. Built once per requirement set rather than per rendered row.
+   */
+  const outputsByStepId = useMemo(() => {
+    const byStep = new Map<string, Map<string, Output>>();
+    for (const requirement of requirements) {
+      if (byStep.has(requirement.operation_step_id)) continue;
+      const byId = new Map<string, Output>();
+      for (const output of parseAuthorableOutputs(requirement.operation_steps?.outputs)) {
+        if (typeof output.id === 'string' && output.id !== '') byId.set(output.id, output);
+      }
+      byStep.set(requirement.operation_step_id, byId);
+    }
+    return byStep;
+  }, [requirements]);
+
+  const outputsByIdForStep = useCallback(
+    (stepId: string): Map<string, Output> => outputsByStepId.get(stepId) ?? new Map<string, Output>(),
+    [outputsByStepId]
+  );
+
   type PfmeaFlatRow = {
     requirement: PFMEARequirement;
     failureMode: PFMEAFailureMode | null;
@@ -1675,12 +1714,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
   const pfmeaFlatRows: PfmeaFlatRow[] = useMemo(() => {
     const out: PfmeaFlatRow[] = [];
     for (const requirement of requirements) {
-      const outputKey = requirementOutputKey(requirement);
-      const reqFms = failureModes.filter(
-        (fm) =>
-          fm.operation_step_id === requirement.operation_step_id &&
-          fm.requirement_output_id === outputKey
-      );
+      const reqFms = failureModes.filter((fm) => fm.requirement_id === requirement.id);
       if (reqFms.length === 0) {
         out.push({ requirement, failureMode: null, cause: null });
         continue;
@@ -1714,16 +1748,20 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     const stepOrder = (r: PfmeaFlatRow) => r.requirement.operation_steps?.display_order;
     const reqOrderInStep = (r: PfmeaFlatRow) => r.requirement.display_order;
     const fm = (r: PfmeaFlatRow) => r.failureMode?.failure_mode ?? '';
-    const maxS = (r: PfmeaFlatRow) => (r.failureMode ? maxPfmeaSeverityForFailureMode(r.failureMode) : -1);
+    // Unscored sorts below every scored value rather than being treated as a zero score.
+    const UNSCORED_SORT = -1;
+    const maxS = (r: PfmeaFlatRow) =>
+      (r.failureMode ? maxPfmeaSeverityForFailureMode(r.failureMode) : null) ?? UNSCORED_SORT;
     const causeDesc = (r: PfmeaFlatRow) => r.cause?.cause_description ?? '';
-    const occ = (r: PfmeaFlatRow) => (r.cause ? r.cause.occurrence_score : -1);
-    const det = (r: PfmeaFlatRow) => {
-      if (!r.failureMode) return -1;
-      const m = minPfmeaDetectionScoreForFailureMode(r.failureMode);
-      return m != null ? m : -1;
+    const occ = (r: PfmeaFlatRow) => r.cause?.occurrence_score ?? UNSCORED_SORT;
+    const det = (r: PfmeaFlatRow) =>
+      (r.failureMode ? minPfmeaDetectionScoreForFailureMode(r.failureMode) : null) ?? UNSCORED_SORT;
+    const rpn = (r: PfmeaFlatRow) =>
+      (r.failureMode ? calculateRPN(r.failureMode, r.cause) : null) ?? UNSCORED_SORT;
+    const apRank = (r: PfmeaFlatRow) => {
+      const value = r.failureMode ? actionPriorityFor(r.failureMode) : null;
+      return value == null ? UNSCORED_SORT : actionPriorityUrgency(value);
     };
-    const rpn = (r: PfmeaFlatRow) => (r.failureMode ? calculateRPN(r.failureMode, r.cause) : -1);
-    const ap = (r: PfmeaFlatRow) => (r.failureMode ? calculateActionPriority(r.failureMode) : 'L');
 
     const defaultComparator = (a: PfmeaFlatRow, b: PfmeaFlatRow) => {
       // Primary: Process Map flow order (NOT alphabetical).
@@ -1781,7 +1819,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
         case 'rpn':
           return dirFactor * (rpn(a) - rpn(b));
         case 'ap':
-          return dirFactor * cmpText(ap(a), ap(b));
+          return dirFactor * (apRank(a) - apRank(b));
         case 'prevention_controls':
         case 'detection_controls':
         case 'recommended_actions':
@@ -1793,7 +1831,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
     });
 
     return rows;
-  }, [pfmeaFlatRows, pfmeaSort]);
+  }, [pfmeaFlatRows, pfmeaSort, actionPriorityFor]);
 
   useEffect(() => {
     setGridFocus((f) => ({
@@ -2282,6 +2320,19 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
       <>
       <Card>
         <CardContent className="min-w-0 p-0">
+          {actionPriorityError ? (
+            <div className="border-b border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              Action priority is unavailable: {actionPriorityError}
+            </div>
+          ) : null}
+          {orphanedRequirementIds.length > 0 ? (
+            <div className="border-b border-amber-500/40 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              {orphanedRequirementIds.length} requirement
+              {orphanedRequirementIds.length === 1 ? '' : 's'} point at an output that no longer
+              exists on its step. Their failure modes are still stored. Remove them from the
+              Requirements column, or restore the output in Process Map.
+            </div>
+          ) : null}
           <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-muted-foreground border-b bg-muted/20">
             <div className="min-w-0">
               <span className="font-semibold text-foreground">
@@ -2553,8 +2604,8 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                 {sortedPfmeaRows.map((entry, rowIndex) => {
                   const { requirement, failureMode, cause } = entry;
 
-                  const ap = failureMode ? calculateActionPriority(failureMode) : 'L';
-                  const apColorClass = failureMode ? getActionPriorityRowClass(ap) : '';
+                  const ap = failureMode ? actionPriorityFor(failureMode) : null;
+                  const apColorClass = getActionPriorityRowClass(ap);
                   const rpn = failureMode ? calculateRPN(failureMode, cause) : null;
 
                   const rowMinDetection = failureMode ? minPfmeaDetectionScoreForFailureMode(failureMode) : null;
@@ -2565,6 +2616,20 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       : [];
 
                   const detectionControls = failureMode ? failureMode.pfmea_controls.filter((c) => c.control_type === 'detection') : [];
+
+                  // Prevention gap and unbacked detection are the two authoring problems the
+                  // retuned priority table cares about most, so they are flagged on the row.
+                  const preventionCoverage = failureMode ? preventionCoverageForFailureMode(failureMode) : null;
+                  const unbackedDetectionControlIds = new Set(
+                    failureMode
+                      ? detectionControlIssuesForStep({
+                          controls: failureMode.pfmea_controls,
+                          outputById: outputsByIdForStep(requirement.operation_step_id),
+                          requirementOutputId: requirement.output_id,
+                          requirementText: requirement.requirement_text,
+                        }).map((issue) => issue.controlId)
+                      : []
+                  );
 
                   return (
                     <TableRow
@@ -2677,6 +2742,12 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                 })}
                               </div>
                             </div>
+                            {preventionCoverage?.isDetectionOnly ? (
+                              <p className="px-1.5 pb-1 text-xs text-amber-800">
+                                Only detection controls. Priority stays High until a prevention
+                                control is added to a cause.
+                              </p>
+                            ) : null}
                             {gridFocus.rowIndex === rowIndex && gridFocus.col === 'failure_mode' ? (
                               <div className={pfmeaCellToolbar}>
                                 <Button
@@ -2693,6 +2764,23 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                 >
                                   <Plus className="h-3 w-3 shrink-0" />
                                   Add Failure Mode
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={!pfmeaIsEditable}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setRulesEditorTarget({
+                                      id: failureMode.id,
+                                      label: failureMode.failure_mode,
+                                    });
+                                  }}
+                                  className={pfmeaCellToolbarAdd}
+                                >
+                                  Rules
                                 </Button>
                                 {!isPfmeaCellEditing(rowIndex, failureMode.id, 'failure_mode')
                                   ? pfmeaTrashButton(
@@ -2988,7 +3076,10 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                 </div>
                               ))
                             ) : cause ? (
-                              <div className="text-sm text-muted-foreground italic">No prevention controls</div>
+                              <div className="px-1 py-1 text-sm text-amber-800">
+                                Nothing prevents this cause, so the only defence is noticing the
+                                failure afterward.
+                              </div>
                             ) : (
                               <div className="text-sm text-muted-foreground italic">Select a cause</div>
                             )}
@@ -3033,8 +3124,10 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                             cause ? (
                               renderScoreCell(cause.occurrence_score, (value) => void updateCauseOccurrence(cause.id, value))
                             ) : (
+                              // No cause yet, so there is no occurrence to show. Picking a score
+                              // here creates the cause that carries it.
                               renderScoreCell(
-                                10,
+                                null,
                                 pfmeaIsEditable ? (value) => void createCauseWithOccurrence(failureMode.id, value) : undefined
                               )
                             )
@@ -3091,6 +3184,13 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                                         )
                                       : null}
                                   </div>
+                                  {unbackedDetectionControlIds.has(control.id) ? (
+                                    <p className="w-full text-xs text-amber-800">
+                                      This score assumes a check the step does not describe. Add
+                                      quality checks, allowances, or a reference specification to
+                                      the output first.
+                                    </p>
+                                  ) : null}
                                 </div>
                               ))}
                             </div>
@@ -3165,9 +3265,27 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                       >
                         <div className="flex min-h-8 w-full items-center justify-center px-1">
                           {failureMode ? (
-                            <Badge variant={ap === 'H' ? 'destructive' : ap === 'M' ? 'default' : 'secondary'} className="text-xs">
-                              {ap}
-                            </Badge>
+                            ap != null ? (
+                              <Badge
+                                variant={ap === 'H' ? 'destructive' : ap === 'M' ? 'default' : 'secondary'}
+                                className="text-xs"
+                                title={
+                                  actionPriorityTable
+                                    ? actionPriorityLabel(actionPriorityTable, ap).description
+                                    : undefined
+                                }
+                              >
+                                {ap}
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="outline"
+                                className="border-dashed text-xs font-normal text-muted-foreground"
+                                title="Severity, occurrence, and detection must all be set before this line can be prioritized."
+                              >
+                                Not scored
+                              </Badge>
+                            )
                           ) : null}
                         </div>
                       </TableCell>
@@ -3664,6 +3782,19 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
 
       <PfmeaScoringCriteriaDialog open={pfmeaScoringCriteriaOpen} onOpenChange={setPfmeaScoringCriteriaOpen} />
 
+      {rulesEditorTarget && evidenceProjectId ? (
+        <ProjectRiskRulesEditor
+          open
+          onOpenChange={(next) => {
+            if (!next) setRulesEditorTarget(null);
+          }}
+          projectId={evidenceProjectId}
+          targetKind="pfmea_failure_mode"
+          targetId={rulesEditorTarget.id}
+          targetLabel={rulesEditorTarget.label}
+        />
+      ) : null}
+
       <Dialog
         open={addOutputDialogStepId !== null}
         onOpenChange={(open) => {
@@ -3837,7 +3968,7 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                         <span className="font-medium">High Priority (AP = H)</span>
                       </div>
                       <div className="text-2xl font-bold text-red-600">
-                        {failureModes.filter(fm => calculateActionPriority(fm) === 'H').length}
+                        {pfmeaMetrics ? pfmeaMetrics.high : '—'}
                       </div>
                     </div>
                     <div className="bg-purple-50 p-4 rounded-lg">
@@ -3864,21 +3995,97 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                   <CardTitle>Action Priority Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {[
-                      { label: 'High (H)', color: 'bg-red-500', count: failureModes.filter(fm => calculateActionPriority(fm) === 'H').length },
-                      { label: 'Medium (M)', color: 'bg-orange-500', count: failureModes.filter(fm => calculateActionPriority(fm) === 'M').length },
-                      { label: 'Low (L)', color: 'bg-green-500', count: failureModes.filter(fm => calculateActionPriority(fm) === 'L').length }
-                    ].map(item => (
-                      <div key={item.label} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-                          <span className="text-sm">{item.label}</span>
+                  {actionPriorityError ? (
+                    <p className="text-sm text-destructive">{actionPriorityError}</p>
+                  ) : !pfmeaMetrics ? (
+                    <p className="text-sm text-muted-foreground">Loading…</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {[
+                        { label: 'High (H)', color: 'bg-red-500', count: pfmeaMetrics.high },
+                        { label: 'Medium (M)', color: 'bg-orange-500', count: pfmeaMetrics.medium },
+                        { label: 'Low (L)', color: 'bg-green-500', count: pfmeaMetrics.low },
+                        {
+                          label: 'Not scored',
+                          color: 'bg-muted-foreground/40',
+                          count: pfmeaMetrics.unscoredFailureModeCount,
+                        },
+                      ].map((item) => (
+                        <div key={item.label} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
+                            <span className="text-sm">{item.label}</span>
+                          </div>
+                          <span className="font-bold">{item.count}</span>
                         </div>
-                        <span className="font-bold">{item.count}</span>
+                      ))}
+                      <div className="border-t pt-3 text-sm text-muted-foreground">
+                        {pfmeaMetrics.preventionGapCount > 0 ? (
+                          <p>
+                            {pfmeaMetrics.preventionGapCount} failure mode
+                            {pfmeaMetrics.preventionGapCount === 1 ? '' : 's'} rely on catching the
+                            defect rather than preventing it.
+                          </p>
+                        ) : (
+                          <p>Every failure mode has a prevention control on each cause.</p>
+                        )}
+                        {pfmeaMetrics.unscoredLineCount > 0 ? (
+                          <p className="mt-1">
+                            {pfmeaMetrics.unscoredLineCount} of {pfmeaMetrics.lineCount} lines are
+                            missing a severity, occurrence, or detection score.
+                          </p>
+                        ) : null}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>What users actually reported</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {evidenceReviewSteps === null ? (
+                    <p className="text-sm text-muted-foreground">Loading reported problems...</p>
+                  ) : evidenceReviewSteps.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No reported problem contradicts the occurrence scores on this template.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        These steps were reported as problems by real users. The occurrence scores
+                        behind them say otherwise, so one of the two is wrong.
+                      </p>
+                      {evidenceReviewSteps.map((step) => (
+                        <div key={step.operationStepId} className="rounded-md border p-3 text-sm">
+                          <div className="font-medium">
+                            {step.stepTitle ?? 'Step no longer in this template'}
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {step.reworkTotal} problem{step.reworkTotal === 1 ? '' : 's'} and{' '}
+                            {step.stallCount} stall{step.stallCount === 1 ? '' : 's'} from{' '}
+                            {step.reporterCount} user{step.reporterCount === 1 ? '' : 's'}.{' '}
+                            {step.reportedButUnscored
+                              ? 'No occurrence has been scored on this step.'
+                              : 'The lowest authored occurrence here is 1, which claims it does not happen.'}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            By component:{' '}
+                            {RISK_DIMENSIONS.filter(
+                              (dimension) => step.reworkByDimension[dimension] > 0
+                            )
+                              .map(
+                                (dimension) =>
+                                  `${RISK_DIMENSION_LABELS[dimension]} ${step.reworkByDimension[dimension]}`
+                              )
+                              .join(', ') || 'not classified'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -3924,18 +4131,21 @@ export const PFMEAManagement: React.FC<PFMEAManagementProps> = ({ projectId, ref
                             const bSt = actionItemDisplayFields(b).status;
                             if (aSt === 'complete' && bSt !== 'complete') return 1;
                             if (aSt !== 'complete' && bSt === 'complete') return -1;
-                            const apA = calculateActionPriority(a.failureMode);
-                            const apB = calculateActionPriority(b.failureMode);
-                            const rankA = apA === 'H' ? 3 : apA === 'M' ? 2 : 1;
-                            const rankB = apB === 'H' ? 3 : apB === 'M' ? 2 : 1;
+                            // Highest priority first, then RPN as the tie-break inside a
+                            // priority class. Unscored items sort last: they cannot claim a
+                            // place in the queue until someone scores them.
+                            const apA = actionPriorityFor(a.failureMode);
+                            const apB = actionPriorityFor(b.failureMode);
+                            const rankA = apA == null ? 0 : actionPriorityUrgency(apA);
+                            const rankB = apB == null ? 0 : actionPriorityUrgency(apB);
                             if (rankB !== rankA) return rankB - rankA;
-                            const rpnA = calculateRPN(a.failureMode, null);
-                            const rpnB = calculateRPN(b.failureMode, null);
+                            const rpnA = calculateRPN(a.failureMode, null) ?? -1;
+                            const rpnB = calculateRPN(b.failureMode, null) ?? -1;
                             return rpnB - rpnA;
                           })
                           .map((actionItem) => {
                             const rpn = calculateRPN(actionItem.failureMode, null);
-                            const ap = calculateActionPriority(actionItem.failureMode);
+                            const ap = actionPriorityFor(actionItem.failureMode);
                             const fields = actionItemDisplayFields(actionItem);
                             const dueOverdue =
                               fields.dueYmd &&

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useEnhancedAchievements } from '@/hooks/useEnhancedAchievements';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { reevaluateProjectRunRiskLogic } from '@/utils/applyProjectRiskLogic';
 
 interface ProjectCompletionHandlerProps {
   projectRunId?: string;
@@ -89,6 +90,14 @@ export function ProjectCompletionHandler({
           );
 
           await checkAndUnlockAchievements(projectRun);
+
+          // The run that just finished is now history. Re-evaluating here means the behavioral
+          // signals it produced are folded in before the user starts anything else.
+          try {
+            await reevaluateProjectRunRiskLogic(projectRunId);
+          } catch (riskError) {
+            console.error('Risk re-evaluation after completion failed:', riskError);
+          }
         }
       }
     };

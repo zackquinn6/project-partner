@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import {
@@ -12,6 +12,11 @@ import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/compon
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+  RISK_DIMENSIONS,
+  RISK_DIMENSION_LABELS,
+  type RiskDimension,
+} from '@/utils/riskDimensions';
 
 type PfmeaScoringRow = Database['public']['Tables']['pfmea_scoring']['Row'];
 
@@ -29,17 +34,37 @@ function ScoringTableScroll({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Each component has its own severity anchors: safety on injury and code, schedule on days
+ * lost, budget on dollars against planned spend, quality on the original scale. Occurrence and
+ * detection guidance is component-specific too, because the same score means different things
+ * for a delay than for a defect.
+ */
+const DIMENSION_NOTE: Record<RiskDimension, string> = {
+  quality: 'Severity is the consequence of missing the requirement on the finished work.',
+  safety: 'Severity 9 and 10 mean injury or a code violation, so those never fall off the list.',
+  schedule: 'Severity is days lost against the window committed to for the step.',
+  budget: 'Severity is the overrun against planned spend.',
+};
+
+const TAB_PANEL_CLASS =
+  'col-start-1 row-start-2 mt-0 flex min-h-0 w-full min-w-0 flex-col overflow-hidden focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0';
+
 export interface PfmeaScoringCriteriaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Opens on this component's rubric. Quality is the PFMEA's own scale. */
+  initialDimension?: RiskDimension;
 }
 
 export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProps> = ({
   open,
   onOpenChange,
+  initialDimension = 'quality',
 }) => {
   const [rows, setRows] = useState<PfmeaScoringRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [dimension, setDimension] = useState<RiskDimension>(initialDimension);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -59,10 +84,23 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
   }, []);
 
   useEffect(() => {
-    if (open) void load();
-  }, [open, load]);
+    if (open) {
+      setDimension(initialDimension);
+      void load();
+    }
+  }, [open, load, initialDimension]);
 
-  const byType = (t: string) => rows.filter((r) => r.criterion_type === t).sort((a, b) => a.score - b.score);
+  const byType = useMemo(
+    () => (t: string) =>
+      rows
+        .filter((r) => r.criterion_type === t && r.dimension === dimension)
+        .sort((a, b) => a.score - b.score),
+    [rows, dimension]
+  );
+
+  const severityRows = byType('severity');
+  const occurrenceRows = byType('occurrence');
+  const detectionRows = byType('detection');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -82,9 +120,31 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
           </Button>
         </div>
 
+        <div className="flex shrink-0 flex-col gap-2 border-b px-4 pb-3 pt-3 sm:px-6">
+          <div className="flex flex-wrap gap-1">
+            {RISK_DIMENSIONS.map((d) => (
+              <Button
+                key={d}
+                type="button"
+                size="sm"
+                variant={d === dimension ? 'default' : 'outline'}
+                className="h-7 px-3 text-xs"
+                onClick={() => setDimension(d)}
+              >
+                {RISK_DIMENSION_LABELS[d]}
+              </Button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">{DIMENSION_NOTE[dimension]}</p>
+        </div>
+
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-3 sm:px-6">
           {loading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : severityRows.length === 0 && occurrenceRows.length === 0 && detectionRows.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No {RISK_DIMENSION_LABELS[dimension].toLowerCase()} rubric has been seeded yet.
+            </p>
           ) : (
             <Tabs
               defaultValue="severity"
@@ -102,10 +162,7 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent
-                value="severity"
-                className="col-start-1 row-start-2 mt-0 flex min-h-0 w-full min-w-0 flex-col overflow-hidden focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-              >
+              <TabsContent value="severity" className={TAB_PANEL_CLASS}>
                 <ScoringTableScroll>
                   <table className="w-max min-w-full border-separate border-spacing-0 caption-bottom text-sm">
                     <TableHeader className="[&_tr]:border-b-0">
@@ -118,7 +175,7 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {byType('severity').map((r) => (
+                      {severityRows.map((r) => (
                         <TableRow key={r.id}>
                           <TableCell className={cell}>{r.process_effects}</TableCell>
                           <TableCell className={cell}>{r.process_examples}</TableCell>
@@ -134,10 +191,11 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
                 </ScoringTableScroll>
               </TabsContent>
 
-              <TabsContent
-                value="occurrence"
-                className="col-start-1 row-start-2 mt-0 flex min-h-0 w-full min-w-0 flex-col overflow-hidden focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-              >
+              <TabsContent value="occurrence" className={TAB_PANEL_CLASS}>
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Occurrence carries more weight than detection, so moving a score here changes
+                  priority more than adding another check.
+                </p>
                 <ScoringTableScroll>
                   <table className="w-max min-w-full border-separate border-spacing-0 caption-bottom text-sm">
                     <TableHeader className="[&_tr]:border-b-0">
@@ -151,7 +209,7 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {byType('occurrence').map((r) => (
+                      {occurrenceRows.map((r) => (
                         <TableRow key={r.id}>
                           <TableCell className={cell}>{r.occurrence_time_scale}</TableCell>
                           <TableCell className={cell}>{r.occurrence_frequency_scale}</TableCell>
@@ -168,10 +226,11 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
                 </ScoringTableScroll>
               </TabsContent>
 
-              <TabsContent
-                value="detection"
-                className="col-start-1 row-start-2 mt-0 flex min-h-0 w-full min-w-0 flex-col overflow-hidden focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-              >
+              <TabsContent value="detection" className={TAB_PANEL_CLASS}>
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Detection only changes priority when occurrence is 1 to 3, and it can never
+                  improve priority by more than one level.
+                </p>
                 <ScoringTableScroll>
                   <table className="w-max min-w-full border-separate border-spacing-0 caption-bottom text-sm">
                     <TableHeader className="[&_tr]:border-b-0">
@@ -184,7 +243,7 @@ export const PfmeaScoringCriteriaDialog: React.FC<PfmeaScoringCriteriaDialogProp
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {byType('detection').map((r) => (
+                      {detectionRows.map((r) => (
                         <TableRow key={r.id}>
                           <TableCell className={cell}>{r.failure_mode_detection}</TableCell>
                           <TableCell className={cell}>{r.cause_detection}</TableCell>

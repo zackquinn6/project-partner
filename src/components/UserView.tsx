@@ -71,6 +71,11 @@ import { MultiContentRenderer } from './MultiContentRenderer';
 import { CompactAppsSection } from './CompactAppsSection';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useStepInstructions } from '@/hooks/useStepInstructions';
+import { useRunStepRisk } from '@/hooks/useRunStepRisk';
+import {
+  StepMustGetRightCallout,
+  StepRiskPriorityBadge,
+} from '@/components/StepRiskPriorityBadge';
 import { ToolRentalsWindow } from './ToolRentalsWindow';
 import { HomeManager } from './HomeManager';
 import { 
@@ -1398,6 +1403,10 @@ export default function UserView({
   }, [resetToListing, forceListingMode, showProfile, currentProjectRun, projectRunId, viewMode, onProjectSelected]);
   
   const currentStep = allSteps[currentStepIndex];
+
+  /** Applied risk per step for this run, so priority shows at the moment of work. */
+  const { byStepId: stepRiskByStepId } = useRunStepRisk(currentProjectRun?.id);
+  const currentStepRisk = currentStep?.id ? stepRiskByStepId.get(currentStep.id) : undefined;
 
   useEffect(() => {
     if (!currentProjectRun || !currentStep) {
@@ -3358,6 +3367,7 @@ export default function UserView({
         <MobileWorkflowView
           projectName={activeProject?.name || 'Project'}
           projectRunId={currentProjectRun?.id}
+          currentStepRisk={currentStepRisk}
           currentStep={currentStep}
           currentStepIndex={currentStepIndex}
           totalSteps={allSteps.length}
@@ -3506,12 +3516,14 @@ export default function UserView({
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <CardTitle className="text-xl" data-tutorial="step-name">{currentStep?.step}</CardTitle>
+                    <StepRiskPriorityBadge summary={currentStepRisk} />
                   </div>
                   {currentStep?.description && <CardDescription className="text-sm">
                     {currentStep.description}
                   </CardDescription>}
+                  <StepMustGetRightCallout summary={currentStepRisk} />
                 </div>
 
               </div>
@@ -4319,6 +4331,7 @@ export default function UserView({
           onOpenChange={setKeyCharacteristicsOpen}
           operations={activeProject.phases?.filter(phase => phase.name !== 'Kickoff').flatMap(phase => phase.operations) || []}
           currentStepId={currentStep?.id}
+          stepRiskByStepId={stepRiskByStepId}
         />
       )}
 

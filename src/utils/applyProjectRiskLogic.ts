@@ -1,0 +1,519 @@
+/**
+ * Stage 3: writing the applied risk list for one run.
+ *
+ * This is where the three layers meet. Stage 1 is what the template authored: PFMEA failure
+ * modes for quality, register risks for safety, schedule, and budget. Stage 2 is the rules
+ * that move occurrence and detection for this particular user. Stage 3 is the result, written
+ * to `project_run_risks` in plain language.
+ *
+ * Two invariants hold on every re-evaluation:
+ *
+ * 1. A row the user created is never touched. Those rows have no `template_risk_id` and no
+ *    `source`, which is what distinguishes them from derived rows.
+ * 2. Only the baseline scoring columns are rewritten. Mitigation progress, notes, and a
+ *    `hidden_from_register` choice belong to the user and survive re-evaluation.
+ */
+
+import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
+import { fetchActionPriorityTable } from '@/utils/actionPriorityTable';
+import {
+  maxPfmeaSeverityForFailureMode,
+  minPfmeaDetectionScoreForFailureMode,
+} from '@/utils/pfmeaRiskMetrics';
+import {
+  evaluateProjectRiskLogic,
+  loadProjectRiskRules,
+  type AppliedRiskItem,
+  type ProjectRiskRule,
+  type RiskLogicItem,
+} from '@/utils/projectRiskLogic';
+import { resolveRiskSignals } from '@/utils/riskSignals';
+import {
+  RISK_DIMENSIONS,
+  isRegisterRiskDimension,
+  isActionPriority,
+  type RiskDimension,
+} from '@/utils/riskDimensions';
+import { rollupRiskComponents, type RiskComponentRollup } from '@/utils/riskProfileRollup';
+
+/** Plain-language text for one applied quality item, built at write time. */
+interface QualityTranslation {
+  title: string;
+  description: string;
+}
+
+const TITLE_MAX_LENGTH = 160;
+
+function trimToLength(text: string, max: number): string {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  return clean.length <= max ? clean : `${clean.slice(0, max - 3).trimEnd()}...`;
+}
+
+function sentence(text: string): string {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (clean === '') return '';
+  return /[.!?]$/.test(clean) ? clean : `${clean}.`;
+}
+
+/**
+ * Turns a PFMEA line into something a DIYer reads without knowing what a failure mode is.
+ * Translation happens here, on write, so no consumer of the risk list ever joins to a
+ * `pfmea_*` table and those tables keep their admin-only policies.
+ */
+function translateQualityItem(input: {
+  failureMode: string;
+  requirementText: string;
+  stepTitle: string | null;
+  effectDescriptions: readonly string[];
+  rationales: readonly string[];
+}): QualityTranslation {
+  const { failureMode, requirementText, stepTitle, effectDescriptions, rationales } = input;
+
+  const title = stepTitle
+    ? trimToLength(`${stepTitle}: ${failureMode}`, TITLE_MAX_LENGTH)
+    : trimToLength(failureMode, TITLE_MAX_LENGTH);
+
+  const parts: string[] = [sentence(`This step has to end up ${requirementText}`)];
+  if (effectDescriptions.length > 0) {
+    parts.push(sentence(`Get it wrong and ${effectDescriptions.join(', ')}`));
+  }
+  for (const rationale of rationales) {
+    parts.push(sentence(rationale));
+  }
+
+  return { title, description: parts.filter((part) => part !== '').join(' ') };
+}
+
+interface Stage1Load {
+  items: RiskLogicItem[];
+  /** Per failure mode, the text needed to write the applied row. */
+  qualityContext: Map<
+    string,
+    { failureMode: string; requirementText: string; stepTitle: string | null; effectDescriptions: string[] }
+  >;
+  /** Register items keep their authored title, so only the template risk id is needed. */
+  registerTitleById: Map<string, string>;
+  operationStepIds: string[];
+}
+
+/** Worst occurrence across the causes that have been scored, or null when none have been. */
+function worstOccurrence(causes: readonly { occurrence_score: number | null }[]): number | null {
+  const scored = causes
+    .map((cause) => cause.occurrence_score)
+    .filter((score): score is number => score != null);
+  return scored.length > 0 ? Math.max(...scored) : null;
+}
+
+async function loadStage1(
+  pfmeaProjectId: string,
+  templateRootIdForRisks: string
+): Promise<Stage1Load> {
+  const [failureModeResult, requirementResult, registerResult] = await Promise.all([
+    supabase
+      .from('pfmea_failure_modes')
+      .select(
+        'id, failure_mode, operation_step_id, requirement_id, severity_score, pfmea_potential_effects(effect_description, severity_score), pfmea_potential_causes(id, occurrence_score), pfmea_controls(control_type, cause_id, detection_score)'
+      )
+      .eq('project_id', pfmeaProjectId),
+    supabase
+      .from('pfmea_requirements')
+      .select('id, requirement_text')
+      .eq('project_id', pfmeaProjectId),
+    supabase
+      .from('project_risks')
+      .select(
+        'id, risk_title, risk_dimension, severity_score, occurrence_score, detection_score, operation_step_id'
+      )
+      .eq('project_id', templateRootIdForRisks),
+  ]);
+
+  for (const [label, result] of [
+    ['pfmea_failure_modes', failureModeResult],
+    ['pfmea_requirements', requirementResult],
+    ['project_risks', registerResult],
+  ] as const) {
+    if (result.error) {
+      throw new Error(`Applied risk list could not read ${label}: ${result.error.message}`);
+    }
+  }
+
+  const failureModes = failureModeResult.data ?? [];
+  const requirementTextById = new Map(
+    (requirementResult.data ?? []).map((row) => [row.id, row.requirement_text])
+  );
+
+  const stepIds = Array.from(
+    new Set([
+      ...failureModes.map((fm) => fm.operation_step_id),
+      ...(registerResult.data ?? [])
+        .map((risk) => risk.operation_step_id)
+        .filter((id): id is string => typeof id === 'string'),
+    ])
+  );
+
+  const stepTitleById = new Map<string, string>();
+  if (stepIds.length > 0) {
+    const { data, error } = await supabase
+      .from('operation_steps')
+      .select('id, step_title')
+      .in('id', stepIds);
+    if (error) {
+      throw new Error(`Applied risk list could not read operation_steps: ${error.message}`);
+    }
+    for (const step of data ?? []) {
+      stepTitleById.set(step.id, step.step_title);
+    }
+  }
+
+  const items: RiskLogicItem[] = [];
+  const qualityContext: Stage1Load['qualityContext'] = new Map();
+
+  for (const fm of failureModes) {
+    const requirementText = requirementTextById.get(fm.requirement_id);
+    if (requirementText === undefined) {
+      throw new Error(
+        `Failure mode ${fm.id} points at requirement ${fm.requirement_id}, which does not exist.`
+      );
+    }
+
+    items.push({
+      targetKind: 'pfmea_failure_mode',
+      targetId: fm.id,
+      dimension: 'quality',
+      operationStepId: fm.operation_step_id,
+      severityScore: maxPfmeaSeverityForFailureMode({
+        id: fm.id,
+        operation_step_id: fm.operation_step_id,
+        severity_score: fm.severity_score,
+        pfmea_potential_effects: fm.pfmea_potential_effects ?? [],
+        pfmea_potential_causes: fm.pfmea_potential_causes ?? [],
+        pfmea_controls: fm.pfmea_controls ?? [],
+      }),
+      occurrenceScore: worstOccurrence(fm.pfmea_potential_causes ?? []),
+      detectionScore: minPfmeaDetectionScoreForFailureMode({
+        id: fm.id,
+        operation_step_id: fm.operation_step_id,
+        severity_score: fm.severity_score,
+        pfmea_potential_effects: fm.pfmea_potential_effects ?? [],
+        pfmea_potential_causes: fm.pfmea_potential_causes ?? [],
+        pfmea_controls: fm.pfmea_controls ?? [],
+      }),
+    });
+
+    qualityContext.set(fm.id, {
+      failureMode: fm.failure_mode,
+      requirementText,
+      stepTitle: stepTitleById.get(fm.operation_step_id) ?? null,
+      effectDescriptions: (fm.pfmea_potential_effects ?? [])
+        .map((effect) => effect.effect_description)
+        .filter((text): text is string => typeof text === 'string' && text.trim() !== ''),
+    });
+  }
+
+  const registerTitleById = new Map<string, string>();
+  for (const risk of registerResult.data ?? []) {
+    // A register risk with no component was authored before the four components existed. It
+    // still reaches the run through the existing sync; it just has no priority to apply.
+    if (!isRegisterRiskDimension(risk.risk_dimension)) continue;
+
+    registerTitleById.set(risk.id, risk.risk_title);
+    items.push({
+      targetKind: 'template_risk',
+      targetId: risk.id,
+      dimension: risk.risk_dimension,
+      operationStepId: risk.operation_step_id ?? null,
+      severityScore: risk.severity_score ?? null,
+      occurrenceScore: risk.occurrence_score ?? null,
+      detectionScore: risk.detection_score ?? null,
+    });
+  }
+
+  return { items, qualityContext, registerTitleById, operationStepIds: stepIds };
+}
+
+function auditJson(item: AppliedRiskItem): Json {
+  return JSON.parse(
+    JSON.stringify({
+      evaluatedAt: new Date().toISOString(),
+      baselineOccurrence: item.occurrenceScore,
+      baselineDetection: item.detectionScore,
+      rules: item.audit,
+    })
+  ) as Json;
+}
+
+/** The columns Stage 3 owns. Everything else on the row belongs to the user. */
+function appliedScoringFields(item: AppliedRiskItem) {
+  return {
+    risk_dimension: item.dimension,
+    operation_step_id: item.operationStepId,
+    severity_score: item.severityScore,
+    occurrence_score: item.appliedOccurrenceScore,
+    detection_score: item.appliedDetectionScore,
+    action_priority: item.actionPriority,
+    rpn: item.rpn,
+    excluded_by_customization: !item.included,
+    applied_rule_audit: auditJson(item),
+  };
+}
+
+/**
+ * Rebuilds the applied risk list for a run and its per-component profile.
+ *
+ * Throws on any failure. The caller at run creation deletes the run when this throws, because
+ * a run whose risk list is half written would show the user a safer project than they have.
+ */
+export async function applyProjectRiskLogicToRun(
+  projectRunId: string,
+  templateRootIdForRisks: string
+): Promise<void> {
+  const { data: run, error: runError } = await supabase
+    .from('project_runs')
+    .select('id, user_id, project_id')
+    .eq('id', projectRunId)
+    .maybeSingle();
+
+  if (runError) {
+    throw new Error(`Applied risk list could not read the run: ${runError.message}`);
+  }
+  if (!run) {
+    throw new Error(`Project run ${projectRunId} not found for risk evaluation.`);
+  }
+  if (!run.project_id) {
+    throw new Error(`Project run ${projectRunId} has no template, so its risk cannot be applied.`);
+  }
+
+  const stage1 = await loadStage1(run.project_id, templateRootIdForRisks);
+  if (stage1.items.length === 0) {
+    // Nothing scored anywhere in this template. The profile still gets rebuilt so a stale
+    // rollup from an earlier evaluation cannot linger.
+    await recomputeProjectRunRiskProfile(projectRunId);
+    return;
+  }
+
+  const [actionPriorityTable, signals, rootRules, versionRules] = await Promise.all([
+    fetchActionPriorityTable(),
+    resolveRiskSignals({
+      userId: run.user_id,
+      projectRunId,
+      templateProjectId: templateRootIdForRisks,
+      operationStepIds: stage1.operationStepIds,
+    }),
+    loadProjectRiskRules(templateRootIdForRisks),
+    run.project_id === templateRootIdForRisks
+      ? Promise.resolve<ProjectRiskRule[]>([])
+      : loadProjectRiskRules(run.project_id),
+  ]);
+
+  const applied = evaluateProjectRiskLogic({
+    items: stage1.items,
+    rules: [...rootRules, ...versionRules],
+    signals,
+    actionPriorityTable,
+  });
+
+  for (const item of applied) {
+    if (item.targetKind === 'pfmea_failure_mode') {
+      await writeQualityRow(projectRunId, item, stage1);
+      continue;
+    }
+    await writeRegisterRow(projectRunId, item);
+  }
+
+  await recomputeProjectRunRiskProfile(projectRunId);
+}
+
+/**
+ * Re-evaluates a run when the caller only has the run id.
+ *
+ * Stage 2 is not a one-shot at run creation: the user's tools, spaces, and history change, so
+ * the picture is rebuilt when they open a risk surface and after a run completes, which is what
+ * makes the next run start from what actually happened on this one.
+ */
+export async function reevaluateProjectRunRiskLogic(projectRunId: string): Promise<void> {
+  const { data: run, error: runError } = await supabase
+    .from('project_runs')
+    .select('project_id')
+    .eq('id', projectRunId)
+    .maybeSingle();
+
+  if (runError) {
+    throw new Error(`Risk re-evaluation could not read the run: ${runError.message}`);
+  }
+  if (!run?.project_id) {
+    throw new Error(`Project run ${projectRunId} has no template to re-evaluate against.`);
+  }
+
+  const { data: project, error: projectError } = await supabase
+    .from('projects')
+    .select('id, parent_project_id')
+    .eq('id', run.project_id)
+    .maybeSingle();
+
+  if (projectError) {
+    throw new Error(`Risk re-evaluation could not read the template: ${projectError.message}`);
+  }
+  if (!project) {
+    throw new Error(`Template ${run.project_id} not found for risk re-evaluation.`);
+  }
+
+  // Register risks live on the root template; revisions point at it through parent_project_id.
+  const templateRootIdForRisks = project.parent_project_id ?? project.id;
+  await applyProjectRiskLogicToRun(projectRunId, templateRootIdForRisks);
+}
+
+async function writeQualityRow(
+  projectRunId: string,
+  item: AppliedRiskItem,
+  stage1: Stage1Load
+): Promise<void> {
+  const context = stage1.qualityContext.get(item.targetId);
+  if (!context) {
+    throw new Error(`No requirement text was loaded for failure mode ${item.targetId}.`);
+  }
+
+  const translation = translateQualityItem({
+    failureMode: context.failureMode,
+    requirementText: context.requirementText,
+    stepTitle: context.stepTitle,
+    effectDescriptions: context.effectDescriptions,
+    rationales: item.rationales,
+  });
+
+  const { data: existing, error: existingError } = await supabase
+    .from('project_run_risks')
+    .select('id')
+    .eq('project_run_id', projectRunId)
+    .eq('source', 'pfmea')
+    .eq('source_template_id', item.targetId)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(`Applied risk list could not read the run's risks: ${existingError.message}`);
+  }
+
+  if (existing) {
+    const { error } = await supabase
+      .from('project_run_risks')
+      .update({
+        risk_title: translation.title,
+        risk_description: translation.description,
+        ...appliedScoringFields(item),
+      })
+      .eq('id', existing.id);
+    if (error) {
+      throw new Error(`Applied risk list could not update a quality risk: ${error.message}`);
+    }
+    return;
+  }
+
+  const { error } = await supabase.from('project_run_risks').insert({
+    project_run_id: projectRunId,
+    source: 'pfmea',
+    source_template_id: item.targetId,
+    risk_title: translation.title,
+    risk_description: translation.description,
+    ...appliedScoringFields(item),
+  });
+  if (error) {
+    throw new Error(`Applied risk list could not add a quality risk: ${error.message}`);
+  }
+}
+
+/**
+ * A register risk already reached the run through the template sync, so this only lays the
+ * scoring on top of the row that is there.
+ */
+async function writeRegisterRow(projectRunId: string, item: AppliedRiskItem): Promise<void> {
+  const { data, error } = await supabase
+    .from('project_run_risks')
+    .update({ source: 'register', source_template_id: item.targetId, ...appliedScoringFields(item) })
+    .eq('project_run_id', projectRunId)
+    .eq('template_risk_id', item.targetId)
+    .select('id');
+
+  if (error) {
+    throw new Error(`Applied risk list could not score a register risk: ${error.message}`);
+  }
+  if (!data || data.length === 0) {
+    throw new Error(
+      `Template risk ${item.targetId} is scored but has no row on run ${projectRunId}. ` +
+        'The template risk sync must run before risk logic is applied.'
+    );
+  }
+}
+
+export type RunRiskComponentProfile = RiskComponentRollup;
+
+/**
+ * Rebuilds the per-component rollup from whatever is currently on the run, so mitigation
+ * progress and hidden steps are reflected without re-running the rules.
+ *
+ * Unscored items are counted separately rather than being treated as Low, so "no Highs" means
+ * the analysis says so, not that nobody scored it.
+ */
+export async function recomputeProjectRunRiskProfile(
+  projectRunId: string
+): Promise<RunRiskComponentProfile[]> {
+  const { data, error } = await supabase
+    .from('project_run_risks')
+    .select('risk_dimension, action_priority, excluded_by_customization, hidden_from_register')
+    .eq('project_run_id', projectRunId);
+
+  if (error) {
+    throw new Error(`Run risk profile could not read the run's risks: ${error.message}`);
+  }
+
+  const rollups = rollupRiskComponents(data ?? []);
+  const rows = RISK_DIMENSIONS.map((dimension) => rollups[dimension]);
+
+  const { error: upsertError } = await supabase.from('project_run_risk_profile').upsert(
+    rows.map((profile) => ({
+      project_run_id: projectRunId,
+      dimension: profile.dimension,
+      worst_action_priority: profile.worstActionPriority,
+      high_count: profile.highCount,
+      medium_count: profile.mediumCount,
+      low_count: profile.lowCount,
+      unscored_count: profile.unscoredCount,
+      computed_at: new Date().toISOString(),
+    })),
+    { onConflict: 'project_run_id,dimension' }
+  );
+
+  if (upsertError) {
+    throw new Error(`Run risk profile could not be saved: ${upsertError.message}`);
+  }
+
+  return rows;
+}
+
+export async function fetchProjectRunRiskProfile(
+  projectRunId: string
+): Promise<RunRiskComponentProfile[]> {
+  const { data, error } = await supabase
+    .from('project_run_risk_profile')
+    .select('dimension, worst_action_priority, high_count, medium_count, low_count, unscored_count')
+    .eq('project_run_id', projectRunId);
+
+  if (error) {
+    throw new Error(`Run risk profile could not be read: ${error.message}`);
+  }
+
+  return (data ?? [])
+    .filter((row): row is typeof row & { dimension: RiskDimension } =>
+      (RISK_DIMENSIONS as readonly string[]).includes(row.dimension)
+    )
+    .map((row) => ({
+      dimension: row.dimension,
+      worstActionPriority: isActionPriority(row.worst_action_priority)
+        ? row.worst_action_priority
+        : null,
+      highCount: row.high_count,
+      mediumCount: row.medium_count,
+      lowCount: row.low_count,
+      unscoredCount: row.unscored_count,
+      totalCount: row.high_count + row.medium_count + row.low_count + row.unscored_count,
+    }));
+}

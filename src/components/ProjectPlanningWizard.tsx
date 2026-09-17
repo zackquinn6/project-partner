@@ -13,6 +13,7 @@ import {
 import { ChevronLeft, ChevronRight, Check, CheckCircle, Settings2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useProject } from '@/contexts/ProjectContext';
+import { useRunRiskReevaluation } from '@/hooks/useRunRiskReevaluation';
 import { PLANNING_TOOLS, PLANNING_TOOLS_DISPLAY_ORDER, normalizePlanningToolsSelection } from './KickoffSteps/ProjectToolsStep';
 import type { PlanningToolId } from './KickoffSteps/ProjectToolsStep';
 import { CustomizationStep } from './PlanningWizardSteps/CustomizationStep';
@@ -86,6 +87,11 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
 }) => {
   const { currentProjectRun, updateProjectRun } = useProject();
   const { partnerAppsEnabled, expertSupportEnabled, toolRentalsEnabled, wasteRemovalEnabled } = usePartnerAppSettings();
+  // Planning happens against personalized risk, so the applied list is rebuilt on open.
+  useRunRiskReevaluation({
+    projectRunId: currentProjectRun?.id,
+    enabled: open,
+  });
   const validToolIds = useMemo(() => new Set(PLANNING_TOOLS.map(t => t.id)), []);
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
