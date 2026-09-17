@@ -1,6 +1,7 @@
 import type { Project } from '@/interfaces/Project';
 import type { ProjectRun } from '@/interfaces/ProjectRun';
 import { parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
+import { parseQualityGoalColumn } from '@/utils/qualityGoal';
 
 function parseJsonField<T>(value: unknown, fieldLabel: string): T | undefined {
   if (value === null || value === undefined) return undefined;
@@ -116,6 +117,7 @@ export function projectRunFromSupabaseRow(freshRun: Record<string, unknown>): Pr
         : freshRun.initial_sizing != null
           ? (JSON.stringify(freshRun.initial_sizing) as ProjectRun['initial_sizing'])
           : undefined,
+    initial_quality_goal: parseQualityGoalColumn(freshRun.initial_quality_goal),
     progress_reporting_style: freshRun.progress_reporting_style
       ? (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
       : undefined,

@@ -335,7 +335,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       // Merge completions from DB + context + local UI so a stale snapshot cannot drop prior steps
       const { data: freshRun, error: fetchError } = await supabase
         .from('project_runs')
-        .select('completed_steps, initial_budget, initial_timeline, initial_sizing')
+        .select('completed_steps, initial_budget, initial_timeline, initial_sizing, initial_quality_goal')
         .eq('id', currentProjectRun.id)
         .single();
 
@@ -382,6 +382,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       const preservedBudget = freshRun?.initial_budget ?? (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
       const preservedTimeline = freshRun?.initial_timeline ?? (currentProjectRun as any)?.initial_timeline ?? (currentProjectRun as any)?.initialTimeline ?? null;
       const preservedSizing = freshRun?.initial_sizing ?? (currentProjectRun as any)?.initial_sizing ?? (currentProjectRun as any)?.initialSizing ?? null;
+      const preservedQualityGoal =
+        freshRun?.initial_quality_goal ??
+        (currentProjectRun as any)?.initial_quality_goal ??
+        null;
 
       // Step 4: persist planning tools the user sees (parent state can be [] until ProjectToolsStep syncs).
       const existingDecisions = parseCustomizationDecisions(currentProjectRun.customization_decisions);
@@ -418,10 +422,11 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
           totalStepsForProgress > 0
             ? Math.round((newCompletedSteps.length / totalStepsForProgress) * 100)
             : currentProjectRun.progress,
-        // CRITICAL: Always include initial_budget, initial_timeline, initial_sizing (even if null)
+        // CRITICAL: Always include initial_budget, initial_timeline, initial_sizing, initial_quality_goal (even if null)
         initial_budget: preservedBudget,
         initial_timeline: preservedTimeline,
         initial_sizing: preservedSizing,
+        initial_quality_goal: preservedQualityGoal,
         ...(customization_decisions !== undefined && { customization_decisions }),
         updatedAt: new Date()
       };

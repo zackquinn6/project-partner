@@ -14,6 +14,12 @@ import { toast } from 'sonner';
 import { HomeManager } from '../HomeManager';
 import { useProjectData } from '@/contexts/ProjectDataContext';
 import { reportUserFacingError } from '@/utils/errorReporting';
+import { Slider } from '@/components/ui/slider';
+import {
+  QUALITY_GOAL_OPTIONS,
+  type QualityGoal,
+  parseQualityGoalColumn,
+} from '@/utils/qualityGoal';
 
 interface ProjectProfileStepProps {
   onComplete: () => void;
@@ -137,7 +143,8 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     customProjectName: '',
     initialSizing: '',
     initialTimeline: '',
-    initialBudget: ''
+    initialBudget: '',
+    initialQualityGoal: 'great' as QualityGoal,
   });
   const [loading, setLoading] = useState(true);
   const [showHomeManager, setShowHomeManager] = useState(false);
@@ -268,6 +275,9 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       const runSizing = String((currentProjectRun as any).initial_sizing ?? '').trim();
       const runBudget = String((currentProjectRun as any).initial_budget ?? '').trim();
       const runTimeline = (currentProjectRun as any).initial_timeline;
+      const runQualityGoal = parseQualityGoalColumn(
+        (currentProjectRun as any).initial_quality_goal
+      );
 
       const typicalSizing =
         templateEconomicsLoaded &&
@@ -291,6 +301,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         initialSizing: runSizing || typicalSizing,
         initialTimeline: runTimeline || defaultDateString,
         initialBudget: runBudget || typicalBudget,
+        initialQualityGoal: runQualityGoal ?? 'great',
       });
 
       if (currentProjectRun.home_id) {
@@ -524,6 +535,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         initial_timeline: projectForm.initialTimeline || null,
         initial_budget: finalBudgetValue,
         initial_sizing: finalSizingValue,  // NOW safe to save because space records exist
+        initial_quality_goal: projectForm.initialQualityGoal,
         updated_at: new Date().toISOString()
       };
       
@@ -531,7 +543,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         .from('project_runs')
         .update(mainUpdateData)
         .eq('id', currentProjectRun.id)
-        .select('id, initial_budget, custom_project_name, initial_timeline, initial_sizing');
+        .select('id, initial_budget, custom_project_name, initial_timeline, initial_sizing, initial_quality_goal');
 
       if (mainError) {
         console.error('❌ ProjectProfileStep: Error saving to project_runs:', mainError);
@@ -541,7 +553,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       // CRITICAL: Final verification - fetch the saved values from database
       const { data: verificationData, error: verificationError } = await supabase
         .from('project_runs')
-        .select('initial_budget, initial_timeline, initial_sizing')
+        .select('initial_budget, initial_timeline, initial_sizing, initial_quality_goal')
         .eq('id', currentProjectRun.id)
         .single();
       
@@ -604,6 +616,12 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         if (verificationData.initial_sizing !== finalSizingValue) {
           console.error('❌ initial_sizing mismatch:', { expected: finalSizingValue, actual: verificationData.initial_sizing });
         }
+        if (verificationData.initial_quality_goal !== projectForm.initialQualityGoal) {
+          console.error('❌ initial_quality_goal mismatch:', {
+            expected: projectForm.initialQualityGoal,
+            actual: verificationData.initial_quality_goal,
+          });
+        }
       } else if (verificationError) {
         console.error('❌ ProjectProfileStep: Error verifying saved values:', verificationError);
       }
@@ -616,6 +634,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         initial_budget: finalBudgetValue,
         initial_timeline: projectForm.initialTimeline || null,
         initial_sizing: finalSizingValue,
+        initial_quality_goal: projectForm.initialQualityGoal,
         updatedAt: new Date()
       };
       
@@ -672,6 +691,11 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
   const scalingLabel = getScalingUnitShortLabel(scalingUnit, itemType, templateProject as any);
   const selectedHome = homes.find((h) => h.id === selectedHomeId) ?? homes[0] ?? null;
+  const qualityGoalIndex = QUALITY_GOAL_OPTIONS.findIndex(
+    (option) => option.value === projectForm.initialQualityGoal
+  );
+  const selectedQualityGoal =
+    QUALITY_GOAL_OPTIONS[Math.max(qualityGoalIndex, 0)] ?? QUALITY_GOAL_OPTIONS[1];
 
   const timelineRelativeLabel = (() => {
     if (!projectForm.initialTimeline?.trim()) return null;
@@ -970,6 +994,34 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-lg border bg-card p-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-medium leading-none">Quality</p>
+              <Badge variant="secondary" className="text-xs">
+                {selectedQualityGoal.label}
+              </Badge>
+            </div>
+            <Slider
+              value={[Math.max(qualityGoalIndex, 0)]}
+              min={0}
+              max={QUALITY_GOAL_OPTIONS.length - 1}
+              step={1}
+              onValueChange={(value) => {
+                const nextGoal = QUALITY_GOAL_OPTIONS[value[0] ?? 0];
+                if (!nextGoal || nextGoal.value === projectForm.initialQualityGoal) return;
+                setProjectForm((prev) => ({
+                  ...prev,
+                  initialQualityGoal: nextGoal.value,
+                }));
+              }}
+            />
+            <div className="grid grid-cols-3 gap-1 text-[11px] leading-tight text-muted-foreground">
+              <span className="text-left">{QUALITY_GOAL_OPTIONS[0].label}</span>
+              <span className="text-center">{QUALITY_GOAL_OPTIONS[1].label}</span>
+              <span className="text-right">{QUALITY_GOAL_OPTIONS[2].label}</span>
             </div>
           </div>
         </CardContent>

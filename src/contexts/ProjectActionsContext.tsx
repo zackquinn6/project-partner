@@ -1062,6 +1062,10 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     const initialBudgetKey = (projectRun as any).initial_budget !== undefined ? String((projectRun as any).initial_budget) : 'undefined';
     const initialTimelineKey = (projectRun as any).initial_timeline !== undefined ? String((projectRun as any).initial_timeline) : 'undefined';
     const initialSizingKey = (projectRun as any).initial_sizing !== undefined ? String((projectRun as any).initial_sizing) : 'undefined';
+    const initialQualityGoalKey =
+      (projectRun as any).initial_quality_goal !== undefined
+        ? String((projectRun as any).initial_quality_goal)
+        : 'undefined';
 
     // Include fields that can change independently (e.g. schedule_optimization_method)
     const scheduleOptimizationMethodKey = JSON.stringify((projectRun as any).schedule_optimization_method);
@@ -1096,6 +1100,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       initialBudgetKey,
       initialTimelineKey,
       initialSizingKey,
+      initialQualityGoalKey,
       scheduleOptimizationMethodKey,
       qualityControlSettingsKey,
       instructionLevelPreferenceKey,
@@ -1121,7 +1126,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     const safeProgress = Math.round(projectRun.progress ?? 0);
     const updatedProjectRun = { ...projectRun, progress: safeProgress };
     
-    // CRITICAL: Ensure initial_budget, initial_timeline, initial_sizing are preserved
+    // CRITICAL: Ensure initial_budget, initial_timeline, initial_sizing, initial_quality_goal are preserved
     // These come from the database as snake_case but need to be in the context object
     if ((projectRun as any).initial_budget !== undefined) {
       (updatedProjectRun as any).initial_budget = (projectRun as any).initial_budget;
@@ -1131,6 +1136,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     }
     if ((projectRun as any).initial_sizing !== undefined) {
       (updatedProjectRun as any).initial_sizing = (projectRun as any).initial_sizing;
+    }
+    if ((projectRun as any).initial_quality_goal !== undefined) {
+      (updatedProjectRun as any).initial_quality_goal = (projectRun as any).initial_quality_goal;
     }
     
     const updatedProjectRuns = projectRuns.map(run => run.id === projectRun.id ? updatedProjectRun : run);
@@ -1148,6 +1156,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     const isInitialBudgetUpdate = (projectRun as any).initial_budget !== undefined;
     const isInitialTimelineUpdate = (projectRun as any).initial_timeline !== undefined;
     const isInitialSizingUpdate = (projectRun as any).initial_sizing !== undefined;
+    const isInitialQualityGoalUpdate = (projectRun as any).initial_quality_goal !== undefined;
     // Check if this is a kickoff completion update (status changing to 'in-progress' with kickoff steps completed)
     const incomingKickoffComplete = isKickoffPhaseComplete(projectRun.completedSteps || []);
     const previousKickoffComplete = isKickoffPhaseComplete(currentProjectRun?.completedSteps || []);
@@ -1184,6 +1193,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       isInitialBudgetUpdate ||
       isInitialTimelineUpdate ||
       isInitialSizingUpdate ||
+      isInitialQualityGoalUpdate ||
       isKickoffCompletion ||
       isKickoffStepProgressUpdate ||
       isQualityControlSettingsUpdate ||
@@ -1228,6 +1238,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         let preservedBudget = (projectRun as any).initial_budget;
         let preservedTimeline = (projectRun as any).initial_timeline;
         let preservedSizing = (projectRun as any).initial_sizing;
+        let preservedQualityGoal = (projectRun as any).initial_quality_goal;
 
         let preservedProgressReportingStyle = (projectRun as any).progress_reporting_style;
         let preservedScheduleOptimizationMethod = (projectRun as any).schedule_optimization_method;
@@ -1241,7 +1252,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           const { data: currentRun, error: fetchError } = await supabase
             .from('project_runs')
             .select(
-              'completed_steps, initial_budget, initial_timeline, initial_sizing, progress_reporting_style, schedule_optimization_method, quality_control_settings'
+              'completed_steps, initial_budget, initial_timeline, initial_sizing, initial_quality_goal, progress_reporting_style, schedule_optimization_method, quality_control_settings'
             )
             .eq('id', projectRun.id)
             .single();
@@ -1259,6 +1270,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             }
             if (preservedSizing === undefined) {
               preservedSizing = currentRun.initial_sizing;
+            }
+            if (preservedQualityGoal === undefined) {
+              preservedQualityGoal = currentRun.initial_quality_goal;
             }
 
             if (preservedProgressReportingStyle === undefined) {
@@ -1361,6 +1375,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           initial_budget: preservedBudget !== undefined ? preservedBudget : null,
           initial_timeline: preservedTimeline !== undefined ? preservedTimeline : null,
           initial_sizing: preservedSizing !== undefined ? preservedSizing : null,
+          initial_quality_goal: preservedQualityGoal !== undefined ? preservedQualityGoal : null,
           updated_at: new Date().toISOString(),
           ...(projectRun.planningCompletedAt != null
             ? {
@@ -1602,10 +1617,11 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           progress_reporting_style: freshRun.progress_reporting_style
             ? (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
             : undefined,
-          // CRITICAL: Include initial_budget, initial_timeline, initial_sizing from database
+          // CRITICAL: Include initial_budget, initial_timeline, initial_sizing, initial_quality_goal from database
           initial_budget: freshRun.initial_budget || null,
           initial_timeline: freshRun.initial_timeline || null,
           initial_sizing: (freshRun.initial_sizing as any) || null,
+          initial_quality_goal: freshRun.initial_quality_goal || null,
           quality_control_settings: parseQualityControlSettingsColumn(freshRun.quality_control_settings),
           planningCompletedAt: freshRun.planning_completed_at
             ? new Date(freshRun.planning_completed_at)

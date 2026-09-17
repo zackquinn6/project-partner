@@ -3494,6 +3494,7 @@ export type Database = {
           home_id: string | null
           id: string
           initial_budget: string | null
+          initial_quality_goal: string | null
           initial_sizing: Json | null
           initial_timeline: string | null
           instruction_level_preference: string | null
@@ -3547,6 +3548,7 @@ export type Database = {
           home_id?: string | null
           id?: string
           initial_budget?: string | null
+          initial_quality_goal?: string | null
           initial_sizing?: Json | null
           initial_timeline?: string | null
           instruction_level_preference?: string | null
@@ -3600,6 +3602,7 @@ export type Database = {
           home_id?: string | null
           id?: string
           initial_budget?: string | null
+          initial_quality_goal?: string | null
           initial_sizing?: Json | null
           initial_timeline?: string | null
           instruction_level_preference?: string | null

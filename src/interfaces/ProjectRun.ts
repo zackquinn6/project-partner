@@ -14,7 +14,7 @@ import type { QualityControlSettings } from '@/utils/qualityControlSettings';
  * - category, effort_level, skill_level, estimated_time, scaling_unit
  * - budget_data, phase_ratings, issue_reports, time_tracking (JSONB)
  * - customization_decisions (JSONB), instruction_level_preference
- * - initial_budget, initial_timeline, initial_sizing
+ * - initial_budget, initial_timeline, initial_sizing, initial_quality_goal
  * - progress_reporting_style, schedule_optimization_method
  * - schedule_events, project_photos, shopping_checklist_data (JSONB)
  * - quality_control_settings (JSONB): per-run QC rules
@@ -280,6 +280,8 @@ export interface ProjectRun {
   initial_budget?: string;
   initial_timeline?: string; // ISO date string
   initial_sizing?: string; // Initial project size entered at kickoff
+  /** Kickoff Goals quality target: good | great | professional */
+  initial_quality_goal?: 'good' | 'great' | 'professional';
   /** Scheduler absolute deadline; seeded once from initial_timeline + 30 days */
   latest_acceptable_date?: string;
   schedule_optimization_method?: 'single-piece-flow' | 'batch-flow'; // Workflow navigation method: single-piece-flow (default) processes one space at a time through custom phases; batch-flow processes all spaces through one phase before moving to the next

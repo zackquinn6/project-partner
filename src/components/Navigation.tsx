@@ -291,6 +291,7 @@ export default function Navigation({
       initial_budget: freshRun.initial_budget,
       initial_timeline: freshRun.initial_timeline,
       initial_sizing: freshRun.initial_sizing as any,
+      initial_quality_goal: freshRun.initial_quality_goal as any,
       progress_reporting_style: freshRun.progress_reporting_style
         ? (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
         : undefined,

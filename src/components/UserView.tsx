@@ -1274,6 +1274,7 @@ export default function UserView({
               initial_budget: freshRun.initial_budget,
               initial_timeline: freshRun.initial_timeline,
               initial_sizing: freshRun.initial_sizing as any,
+              initial_quality_goal: freshRun.initial_quality_goal as any,
               progress_reporting_style: freshRun.progress_reporting_style
                 ? (freshRun.progress_reporting_style as 'linear' | 'exponential' | 'time-based')
                 : undefined,
@@ -3031,18 +3032,19 @@ export default function UserView({
                 kickoffRating
               ];
               
-              // CRITICAL: Fetch initial_budget, initial_timeline, initial_sizing from database
+              // CRITICAL: Fetch initial_budget, initial_timeline, initial_sizing, initial_quality_goal from database
               // These values were saved in ProjectProfileStep and must not be lost
               // Fetch from database to ensure we have the latest saved values
               let preservedBudget: string | null = null;
               let preservedTimeline: string | null = null;
               let preservedSizing: string | null = null;
+              let preservedQualityGoal: string | null = null;
               
               if (currentProjectRun?.id) {
                 try {
                   const { data: budgetData, error: budgetError } = await supabase
                     .from('project_runs')
-                    .select('initial_budget, initial_timeline, initial_sizing')
+                    .select('initial_budget, initial_timeline, initial_sizing, initial_quality_goal')
                     .eq('id', currentProjectRun.id)
                     .single();
                   
@@ -3050,11 +3052,13 @@ export default function UserView({
                     preservedBudget = budgetData.initial_budget || null;
                     preservedTimeline = budgetData.initial_timeline || null;
                     preservedSizing = (budgetData.initial_sizing as any) || null;
+                    preservedQualityGoal = budgetData.initial_quality_goal || null;
                   } else {
                     // Fallback to context if database fetch fails
                     preservedBudget = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
                     preservedTimeline = (currentProjectRun as any)?.initial_timeline ?? (currentProjectRun as any)?.initialTimeline ?? null;
                     preservedSizing = (currentProjectRun as any)?.initial_sizing ?? (currentProjectRun as any)?.initialSizing ?? null;
+                    preservedQualityGoal = (currentProjectRun as any)?.initial_quality_goal ?? null;
                   }
                 } catch (error) {
                   console.error('Error fetching budget fields from database:', error);
@@ -3062,6 +3066,7 @@ export default function UserView({
                   preservedBudget = (currentProjectRun as any)?.initial_budget ?? (currentProjectRun as any)?.initialBudget ?? null;
                   preservedTimeline = (currentProjectRun as any)?.initial_timeline ?? (currentProjectRun as any)?.initialTimeline ?? null;
                   preservedSizing = (currentProjectRun as any)?.initial_sizing ?? (currentProjectRun as any)?.initialSizing ?? null;
+                  preservedQualityGoal = (currentProjectRun as any)?.initial_quality_goal ?? null;
                 }
               }
               
@@ -3089,10 +3094,11 @@ export default function UserView({
                 ...(persist?.customization_decisions !== undefined
                   ? { customization_decisions: persist.customization_decisions }
                   : {}),
-                // CRITICAL: Explicitly preserve initial_budget, initial_timeline, initial_sizing
+                // CRITICAL: Explicitly preserve initial_budget, initial_timeline, initial_sizing, initial_quality_goal
                 ...(preservedBudget !== null && { initial_budget: preservedBudget }),
                 ...(preservedTimeline !== null && { initial_timeline: preservedTimeline }),
                 ...(preservedSizing !== null && { initial_sizing: preservedSizing }),
+                ...(preservedQualityGoal !== null && { initial_quality_goal: preservedQualityGoal }),
                 progress: progressAfterKickoff,
                 updatedAt: new Date()
               };
