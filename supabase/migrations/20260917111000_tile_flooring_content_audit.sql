@@ -72,7 +72,12 @@ BEGIN
     WHERE pp.project_id = v_project_id
       AND pp.is_standard IS NOT TRUE AND pp.is_linked IS NOT TRUE
       AND pp.source_phase_id IS NULL AND pp.source_project_id IS NULL
-    ORDER BY pp.display_order, po.display_order, os.display_order
+    ORDER BY
+      CASE WHEN pp.position_rule = 'last' THEN 1 ELSE 0 END,
+      pp.position_value NULLS LAST,
+      pp.created_at,
+      po.display_order,
+      os.display_order
   LOOP
     IF v_row.levels_n <> 3 THEN
       v_gaps := array_append(v_gaps, format('%s: %s of 3 instruction levels', v_row.step_title, v_row.levels_n));
