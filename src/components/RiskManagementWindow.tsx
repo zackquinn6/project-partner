@@ -1892,7 +1892,7 @@ export function RiskManagementWindow({
                           Project progress
                         </span>
                         <p className="text-[11px] leading-snug text-muted-foreground">
-                          The chance of issues goes down as projects progress
+                          Risk falls as you get further into the project
                         </p>
                         {progressEditable ? (
                           <>
@@ -1991,7 +1991,7 @@ export function RiskManagementWindow({
                           Project progress
                         </span>
                         <p className="text-[11px] leading-snug text-muted-foreground">
-                          The chance of issues goes down as projects progress
+                          Risk falls as you get further into the project
                         </p>
                         {progressEditable ? (
                           <>
@@ -2093,7 +2093,7 @@ export function RiskManagementWindow({
                         Project progress
                       </span>
                       <p className="text-[11px] leading-snug text-muted-foreground">
-                        The chance of issues goes down as projects progress
+                        Risk falls as you get further into the project
                       </p>
                       {progressEditable ? (
                         <>
