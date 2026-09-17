@@ -35,23 +35,15 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({
   const canEscalate = !loading && hasProjectsTier;
 
   return (
-    <div className={`fixed inset-0 z-[60] ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
-      {isOpen && (
-        <div
-          className="absolute inset-0 bg-background/60 backdrop-blur-md"
-          onClick={onClose}
-        />
-      )}
-      <ScrollableDialog
-        open={isOpen}
-        onOpenChange={(open) => {
-          if (!open) onClose();
-        }}
-        title="Expert Support"
-        description="Premium escalate — book a human expert when AI help is not enough"
-        planningToolHeader
-        className="relative z-[61] h-[100dvh] max-h-[100dvh] w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:w-[90vw] md:max-w-[min(90vw,calc(100vw-2rem))]"
-      >
+    <ScrollableDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title="Expert Support"
+      description="Premium escalate - book a human expert when AI help is not enough"
+      planningToolHeader
+    >
       <div className="relative space-y-6">
         <PlanningToolContextBanner projectRun={currentProjectRun} flush />
         <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-center">
@@ -71,7 +63,7 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({
               className="mx-auto w-48 h-auto mb-4"
             />
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              In-step AI help is the default for Project Partner. Use this when you want a live video session with a pro — included with the Projects plan.
+              In-step AI help is the default for Project Partner. Use this when you want a live video session with a pro - included with the Projects plan.
             </p>
             {escalateContext?.stepTitle || (escalateContext?.recentMessages?.length ?? 0) > 0 ? (
               <div className="mt-4 text-left max-w-md mx-auto rounded-lg border bg-muted/40 p-3 space-y-2">
@@ -142,13 +134,12 @@ export const ExpertHelpWindow: React.FC<ExpertHelpWindowProps> = ({
               )}
               
               <p className="text-xs text-muted-foreground">
-                Projects plan • Human guidance when you need it
+                Projects plan - Human guidance when you need it
               </p>
             </CardContent>
           </Card>
         </div>
       </div>
     </ScrollableDialog>
-    </div>
   );
 };

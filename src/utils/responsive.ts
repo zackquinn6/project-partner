@@ -28,6 +28,23 @@ export const belowAppHeaderDialogClasses =
  */
 export const belowAppHeaderOverlayClasses = "md:top-16";
 
+/**
+ * Desktop: center a floating window in the region below the app header so the top edge
+ * and box-shadow clear the nav. Mobile callers keep their own full-bleed classes.
+ * Math: header is 4rem, so vertical center of the remaining viewport is 50dvh + 2rem.
+ */
+export const belowAppHeaderCenteredPositionClasses =
+  "md:left-1/2 md:top-[calc(50dvh+2rem)] md:right-auto md:bottom-auto md:-translate-x-1/2 md:-translate-y-1/2";
+
+/** Desktop size for ~90% planning / feature windows that must clear the header. */
+export const belowAppHeaderCenteredSizeClasses =
+  "md:w-[90vw] md:max-w-[min(90vw,calc(100vw-2rem))] md:h-[min(90vh,calc(100dvh-5rem))] md:max-h-[calc(100dvh-5rem)]";
+
+export const belowAppHeaderCenteredWindowClasses = [
+  belowAppHeaderCenteredPositionClasses,
+  belowAppHeaderCenteredSizeClasses,
+].join(" ");
+
 // Responsive class generators
 export const responsiveDialogClasses = {
   // Small modal - confirmations, simple forms
@@ -37,10 +54,10 @@ export const responsiveDialogClasses = {
   modalMd: "max-w-[95vw] max-h-[95vh] md:max-w-2xl md:max-h-[85vh]",
   
   // Standard Window - matches Project & Task Manager design (90% screen on desktop, full on mobile)
-  standardWindow: "w-full h-screen max-w-full max-h-full md:w-[90vw] md:h-[90vh] md:max-w-[90vw] md:max-h-[90vh]",
+  standardWindow: "w-full h-screen max-w-full max-h-full md:w-[90vw] md:h-[min(90vh,calc(100dvh-5rem))] md:max-w-[min(90vw,calc(100vw-2rem))] md:max-h-[calc(100dvh-5rem)]",
   
   // Large content - main feature windows (90% screen utilization)
-  contentLarge: "w-full h-full max-w-[100vw] max-h-[100vh] md:w-[90vw] md:h-[90vh] md:max-w-[90vw] md:max-h-[90vh]",
+  contentLarge: "w-full h-full max-w-[100vw] max-h-[100vh] md:w-[90vw] md:h-[min(90vh,calc(100dvh-5rem))] md:max-w-[min(90vw,calc(100vw-2rem))] md:max-h-[calc(100dvh-5rem)]",
   
   // Full experience - immersive full-screen (clears desktop app header)
   contentFull: "w-full h-full max-w-[100vw] max-h-[100vh] md:max-h-[calc(100dvh-4rem)]",

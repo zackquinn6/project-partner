@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Dialog, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import {
+  belowAppHeaderCenteredWindowClasses,
+} from '@/utils/responsive';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -679,7 +682,8 @@ export function CommunicationPlanWindow({
           <DialogPrimitive.Content
             className={cn(
               'fixed z-50 rounded-lg border bg-background p-6 shadow-lg',
-              'inset-4 flex max-h-[calc(100dvh-2rem)] flex-col overflow-auto md:inset-auto md:left-1/2 md:top-1/2 md:max-h-[90vh] md:w-[90vw] md:max-w-[90vw] md:-translate-x-1/2 md:-translate-y-1/2',
+              'inset-4 flex max-h-[calc(100dvh-2rem)] flex-col overflow-auto md:inset-auto',
+              belowAppHeaderCenteredWindowClasses,
             )}
           >
             <DialogHeader className={PLANNING_TOOL_WINDOW_HEADER_CLASSNAME}>
@@ -710,7 +714,8 @@ export function CommunicationPlanWindow({
             'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
             'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
             'inset-0 h-[100dvh] w-full max-h-[100dvh] max-w-full rounded-none',
-            'md:inset-auto md:left-[50%] md:top-[50%] md:h-[90vh] md:max-h-[90vh] md:w-[90vw] md:max-w-[90vw] md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-lg',
+            'md:inset-auto md:rounded-lg',
+            belowAppHeaderCenteredWindowClasses,
           )}
         >
           <DialogHeader className={cn(PLANNING_TOOL_WINDOW_HEADER_CLASSNAME, 'shrink-0')}>
@@ -725,7 +730,7 @@ export function CommunicationPlanWindow({
                 Communication Plan
               </DialogTitle>
               <p className={PLANNING_TOOL_WINDOW_SUBTITLE_CLASSNAME}>
-                Keep the right people in the loop — without replacing your group chat.
+                Keep the right people in the loop - without replacing your group chat.
               </p>
             </div>
             <PlanningToolWindowHeaderActions

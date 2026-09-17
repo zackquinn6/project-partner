@@ -268,7 +268,7 @@ export function MaterialsSelectionWindow({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className={isMobile 
           ? "w-full h-full max-w-full max-h-full rounded-none border-0 p-0 [&>button]:hidden" 
-          : "flex h-[90vh] max-h-[90vh] w-[90vw] max-w-[90vw] flex-col overflow-hidden p-0 [&>button]:hidden"
+          : "flex h-[min(90vh,calc(100dvh-5rem))] max-h-[calc(100dvh-5rem)] w-[90vw] max-w-[min(90vw,calc(100vw-2rem))] flex-col overflow-hidden p-0 [&>button]:hidden"
         }>
           <DialogHeader className={PLANNING_TOOL_WINDOW_HEADER_CLASSNAME}>
             <DialogTitle className={cn(PLANNING_TOOL_WINDOW_TITLE_CLASSNAME, 'flex items-center gap-2')}>
@@ -306,7 +306,7 @@ export function MaterialsSelectionWindow({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={isMobile 
         ? "w-full h-full max-w-full max-h-full rounded-none border-0 p-0 [&>button]:hidden flex flex-col" 
-        : "max-w-[90vw] w-[90vw] max-h-[90vh] h-[90vh] p-0 [&>button]:hidden flex flex-col"
+        : "max-w-[min(90vw,calc(100vw-2rem))] w-[90vw] max-h-[calc(100dvh-5rem)] h-[min(90vh,calc(100dvh-5rem))] p-0 [&>button]:hidden flex flex-col"
       }>
         <DialogHeader className={cn(PLANNING_TOOL_WINDOW_HEADER_CLASSNAME, 'flex-shrink-0')}>
           <div className="min-w-0 flex-1 space-y-1">

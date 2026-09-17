@@ -598,7 +598,7 @@ export function RiskDashboardWindow({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex h-screen max-h-full w-full max-w-full flex-col gap-0 overflow-hidden p-0 [&>button]:hidden md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg">
+        <DialogContent className="flex h-screen max-h-full w-full max-w-full flex-col gap-0 overflow-hidden p-0 [&>button]:hidden md:h-[min(90vh,calc(100dvh-5rem))] md:max-h-[calc(100dvh-5rem)] md:max-w-[min(90vw,calc(100vw-2rem))] md:rounded-lg">
           <DialogHeader className={PLANNING_TOOL_WINDOW_HEADER_CLASSNAME}>
             <div className="min-w-0">
               <DialogTitle className={cn(PLANNING_TOOL_WINDOW_TITLE_CLASSNAME, 'flex items-center gap-2')}>

@@ -1,6 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Dialog, DialogHeader, DialogTitle, DialogPortal } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import {
+  belowAppHeaderCenteredWindowClasses,
+  belowAppHeaderOverlayClasses,
+} from '@/utils/responsive';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, ChevronRight, Plus, Save } from 'lucide-react';
@@ -235,7 +239,10 @@ export function AfterActionReviewWindow({
       <DialogPortal>
         {open && (
           <div
-            className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-md transition-opacity duration-200"
+            className={cn(
+              'fixed inset-0 z-[90] bg-black/60 backdrop-blur-md transition-opacity duration-200',
+              belowAppHeaderOverlayClasses
+            )}
             style={{ opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none' }}
             aria-hidden="true"
           />
@@ -245,7 +252,8 @@ export function AfterActionReviewWindow({
           onClick={(e) => e.stopPropagation()}
           className={cn(
             'fixed inset-0 z-[91] flex flex-col overflow-hidden bg-background',
-            'md:left-1/2 md:top-1/2 md:h-[90vh] md:max-h-[90vh] md:w-[90vw] md:max-w-[90vw] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-lg md:border md:shadow-lg'
+            belowAppHeaderCenteredWindowClasses,
+            'md:rounded-lg md:border md:shadow-lg'
           )}
         >
           <DialogHeader className="shrink-0 border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6">

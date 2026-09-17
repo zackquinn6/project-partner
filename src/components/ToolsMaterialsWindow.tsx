@@ -19,7 +19,7 @@ export function ToolsMaterialsWindow({ open, onOpenChange }: ToolsMaterialsWindo
   if (loading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex h-screen max-h-full w-full max-w-full min-h-0 flex-col overflow-hidden p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
+        <DialogContent className="flex h-screen max-h-full w-full max-w-full min-h-0 flex-col overflow-hidden p-0 md:h-[min(90vh,calc(100dvh-5rem))] md:max-h-[calc(100dvh-5rem)] md:max-w-[min(90vw,calc(100vw-2rem))] md:rounded-lg [&>button]:hidden">
           <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex items-center justify-between gap-2">
               <DialogTitle className="text-lg md:text-xl font-bold">Loading...</DialogTitle>
@@ -43,7 +43,7 @@ export function ToolsMaterialsWindow({ open, onOpenChange }: ToolsMaterialsWindo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-screen max-h-full w-full max-w-full min-h-0 flex-col overflow-hidden p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
+      <DialogContent className="flex h-screen max-h-full w-full max-w-full min-h-0 flex-col overflow-hidden p-0 md:h-[min(90vh,calc(100dvh-5rem))] md:max-h-[calc(100dvh-5rem)] md:max-w-[min(90vw,calc(100vw-2rem))] md:rounded-lg [&>button]:hidden">
         <DialogHeader className="px-2 md:px-4 py-1.5 md:py-2 border-b flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center justify-between gap-2">
             <DialogTitle className="text-lg md:text-xl font-bold">

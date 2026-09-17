@@ -9,6 +9,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { ProjectVisualizer } from '@/components/ProjectVisualizer';
 import { cn } from '@/lib/utils';
+import {
+  belowAppHeaderCenteredWindowClasses,
+  belowAppHeaderOverlayClasses,
+} from '@/utils/responsive';
 
 interface ProjectVisualizerDialogProps {
   open: boolean;
@@ -71,7 +75,10 @@ export function ProjectVisualizerDialog({
         <DialogPortal>
           {open ? (
             <div
-              className="fixed inset-0 z-[90] md:top-16 bg-black/60 backdrop-blur-md transition-opacity duration-200"
+              className={cn(
+                'fixed inset-0 z-[90] bg-black/60 backdrop-blur-md transition-opacity duration-200',
+                belowAppHeaderOverlayClasses
+              )}
               aria-hidden="true"
             />
           ) : null}
@@ -80,8 +87,7 @@ export function ProjectVisualizerDialog({
             onClick={(e) => e.stopPropagation()}
             className={cn(
               'fixed inset-0 z-[91] flex min-h-0 flex-col overflow-hidden bg-background p-0 shadow-lg',
-              'md:left-1/2 md:top-1/2 md:right-auto md:bottom-auto md:-translate-x-1/2 md:-translate-y-1/2',
-              'md:h-[90vh] md:max-h-[min(90vh,calc(100vh-2rem))] md:w-[90vw] md:max-w-[min(90vw,calc(100vw-2rem))]',
+              belowAppHeaderCenteredWindowClasses,
               'md:rounded-lg md:border'
             )}
           >

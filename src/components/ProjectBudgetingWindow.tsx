@@ -2,6 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
+import {
+  belowAppHeaderCenteredWindowClasses,
+  belowAppHeaderOverlayClasses,
+} from '@/utils/responsive';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -637,7 +641,10 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
         {/* Radix UI doesn't automatically manage overlay state when modal={false} */}
         {open && (
           <div 
-            className="bg-black/60 backdrop-blur-md fixed inset-0 z-[90] transition-opacity duration-200"
+            className={cn(
+              "bg-black/60 backdrop-blur-md fixed inset-0 z-[90] transition-opacity duration-200",
+              belowAppHeaderOverlayClasses
+            )}
             style={{ 
               opacity: open ? 1 : 0,
               pointerEvents: open ? 'auto' : 'none'
@@ -649,12 +656,9 @@ export const ProjectBudgetingWindow: React.FC<ProjectBudgetingWindowProps> = ({
           {...({ 'data-dialog-content': true } as any)}
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            // Mobile: Full screen
-            "fixed inset-0 z-[91]",
-            // Desktop: Centered with 90% viewport
-            "md:fixed md:left-1/2 md:top-1/2 md:right-auto md:bottom-auto md:-translate-x-1/2 md:-translate-y-1/2",
-            "md:w-[90vw] md:max-w-[90vw] md:h-[90vh] md:max-h-[90vh]",
-            "md:max-w-[calc(100vw-2rem)] md:max-h-[calc(100vh-2rem)]",
+            // Mobile: Full screen. Desktop: center below the app header.
+            "fixed inset-0 z-[91] md:fixed",
+            belowAppHeaderCenteredWindowClasses,
             "bg-background md:border md:rounded-lg shadow-lg",
             "flex flex-col overflow-hidden"
           )}

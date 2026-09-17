@@ -20,21 +20,13 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
   };
 
   return (
-    <div className={`fixed inset-0 z-[60] ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
-      {isOpen && (
-        <div
-          className="absolute inset-0 bg-background/60 backdrop-blur-md"
-          onClick={onClose}
-        />
-      )}
-      <ScrollableDialog
-        open={isOpen}
-        onOpenChange={onClose}
-        title="Tool Rental"
-        description="Find rentals and plan tool access for your project"
-        planningToolHeader
-        className="relative z-[61] h-[100dvh] max-h-[100dvh] w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:w-[90vw] md:max-w-[min(90vw,calc(100vw-2rem))]"
-      >
+    <ScrollableDialog
+      open={isOpen}
+      onOpenChange={onClose}
+      title="Tool Rental"
+      description="Find rentals and plan tool access for your project"
+      planningToolHeader
+    >
       <PlanningToolContextBanner projectRun={currentProjectRun} flush className="mb-4" />
       <div className="flex items-center justify-between mb-6">
         <Button 
@@ -170,6 +162,5 @@ export const ToolRentalsWindow = ({ isOpen, onClose }: ToolRentalsWindowProps) =
         </Tabs>
       </div>
     </ScrollableDialog>
-    </div>
   );
 };

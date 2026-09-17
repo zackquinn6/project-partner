@@ -2,7 +2,11 @@ import * as React from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogPortal, DialogOverlay } from "@/components/ui/dialog"
 import { ScrollableDialog } from "@/components/ScrollableDialog"
 import { cn } from "@/lib/utils"
-import { responsiveDialogClasses } from "@/utils/responsive"
+import {
+  belowAppHeaderCenteredWindowClasses,
+  belowAppHeaderOverlayClasses,
+  responsiveDialogClasses,
+} from "@/utils/responsive"
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { PlanningToolWindowHeaderActions } from "@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions"
@@ -97,20 +101,20 @@ export function ResponsiveDialog({
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogPortal>
-          <DialogOverlay className="z-50" />
+          <DialogOverlay className={cn("z-50", belowAppHeaderOverlayClasses)} />
           <DialogPrimitive.Content
             className={cn(
               // Mobile: Full screen fixed positioning
               "fixed inset-0 z-50",
-              // Desktop: Centered with 90% viewport
-              "md:left-[50%] md:top-[50%] md:inset-auto md:translate-x-[-50%] md:translate-y-[-50%]",
+              // Desktop: center below the app header
+              "md:inset-auto",
+              belowAppHeaderCenteredWindowClasses,
               "bg-background md:border shadow-lg md:rounded-lg",
               "duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out",
               "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
               "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
               "data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]",
               "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
-              sizeClasses[size],
               paddingClasses[size],
               "overflow-hidden flex flex-col",
               className

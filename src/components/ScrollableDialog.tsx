@@ -9,6 +9,10 @@ import {
   PLANNING_TOOL_WINDOW_HEADER_CLASSNAME,
   PLANNING_TOOL_WINDOW_TITLE_CLASSNAME,
 } from "@/components/PlanningWizardSteps/planningToolWindowChrome"
+import {
+  belowAppHeaderCenteredWindowClasses,
+  belowAppHeaderOverlayClasses,
+} from "@/utils/responsive"
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden"
 
 interface ScrollableDialogProps {
@@ -78,7 +82,10 @@ export function ScrollableDialog({
         {/* Radix does not manage overlay visibility when modal={false}; render manually */}
         {open && (
           <div
-            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm md:top-16"
+            className={cn(
+              "fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm",
+              belowAppHeaderOverlayClasses
+            )}
             style={{ pointerEvents: 'auto' }}
             aria-hidden="true"
             onClick={() => onOpenChange(false)}
@@ -88,12 +95,9 @@ export function ScrollableDialog({
           data-dialog-content
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            // Mobile: Full screen
-            "fixed inset-0 z-[101]",
-            // Desktop: center in the region below the app header so the window is not cut off
-            "md:fixed md:left-1/2 md:top-[calc(50dvh+2rem)] md:right-auto md:bottom-auto md:-translate-x-1/2 md:-translate-y-1/2",
-            "md:w-[90vw] md:max-w-[min(90vw,calc(100vw-2rem))]",
-            "md:h-[min(90vh,calc(100dvh-5rem))] md:max-h-[calc(100dvh-5rem)]",
+            // Mobile: Full screen. Desktop: center below the app header.
+            "fixed inset-0 z-[101] md:fixed",
+            belowAppHeaderCenteredWindowClasses,
             "bg-background md:border md:rounded-lg shadow-lg",
             "flex flex-col",
             className

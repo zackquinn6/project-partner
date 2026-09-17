@@ -272,20 +272,16 @@ export function ProjectHelpChatWindow({
   const earlierThreads = threads.filter((t) => t.project_run_id !== projectRunId);
 
   return (
-    <div className={`fixed inset-0 z-[60] ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
-      {isOpen && (
-        <div className="absolute inset-0 bg-background/60 backdrop-blur-md" onClick={onClose} />
-      )}
-      <ScrollableDialog
-        open={isOpen}
-        onOpenChange={(open) => {
-          if (!open) onClose();
-        }}
-        title="Ask AI — Project Help"
-        description={`Scoped to ${family} · ${usage.remaining}/${usage.messageCap || HELP_MESSAGE_CAP} messages left (7-day window)`}
-        planningToolHeader
-        className="relative z-[61] h-[100dvh] max-h-[100dvh] w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:w-[min(960px,90vw)]"
-      >
+    <ScrollableDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title="Ask AI - Project Help"
+      description={`Scoped to ${family} · ${usage.remaining}/${usage.messageCap || HELP_MESSAGE_CAP} messages left (7-day window)`}
+      planningToolHeader
+      className="md:w-[min(960px,90vw)] md:max-w-[min(960px,90vw)]"
+    >
         <div className="flex flex-col gap-4 min-h-[60vh]">
           {!canChat && !membershipLoading ? (
             <Alert>
@@ -499,6 +495,5 @@ export function ProjectHelpChatWindow({
           </div>
         </div>
       </ScrollableDialog>
-    </div>
   );
 }

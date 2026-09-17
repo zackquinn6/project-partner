@@ -23,6 +23,10 @@ import { ProjectRun } from '@/interfaces/ProjectRun';
 import { isStepCompleted } from '@/utils/projectUtils';
 import { cn } from '@/lib/utils';
 import {
+  belowAppHeaderCenteredWindowClasses,
+  belowAppHeaderOverlayClasses,
+} from '@/utils/responsive';
+import {
   mergeQualityControlSettings,
   isOutputInQualityScope,
   type QualityControlSettings
@@ -353,7 +357,10 @@ export function QualityCheckWindow({
       <DialogPortal>
         {open && (
           <div
-            className="bg-black/60 backdrop-blur-md fixed inset-0 z-[90] transition-opacity duration-200"
+            className={cn(
+              'bg-black/60 backdrop-blur-md fixed inset-0 z-[90] transition-opacity duration-200',
+              belowAppHeaderOverlayClasses
+            )}
             aria-hidden="true"
           />
         )}
@@ -361,10 +368,8 @@ export function QualityCheckWindow({
           data-dialog-content
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            'fixed inset-0 z-[91]',
-            'md:left-1/2 md:top-1/2 md:right-auto md:bottom-auto md:-translate-x-1/2 md:-translate-y-1/2',
-            'md:w-[90vw] md:max-w-[90vw] md:h-[90vh] md:max-h-[90vh]',
-            'md:max-w-[calc(100vw-2rem)] md:max-h-[calc(100vh-2rem)]',
+            'fixed inset-0 z-[91] md:fixed',
+            belowAppHeaderCenteredWindowClasses,
             'bg-background md:border md:rounded-lg shadow-lg',
             'flex flex-col overflow-hidden'
           )}

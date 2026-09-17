@@ -69,6 +69,10 @@ import {
 } from '@/components/PlanningWizardSteps/planningToolWindowChrome';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+  belowAppHeaderCenteredWindowClasses,
+  belowAppHeaderOverlayClasses,
+} from '@/utils/responsive';
 import { useProject } from '@/contexts/ProjectContext';
 import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
 import { RiskRegisterList } from '@/components/RiskRegisterList';
@@ -2316,7 +2320,10 @@ export function RiskManagementWindow({
         <DialogPortal>
           {open ? (
             <div
-              className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-md transition-opacity duration-200"
+              className={cn(
+                'fixed inset-0 z-[90] bg-black/60 backdrop-blur-md transition-opacity duration-200',
+                belowAppHeaderOverlayClasses
+              )}
               aria-hidden="true"
             />
           ) : null}
@@ -2325,8 +2332,7 @@ export function RiskManagementWindow({
             onClick={(e) => e.stopPropagation()}
             className={cn(
               'fixed inset-0 z-[91] flex flex-col overflow-hidden bg-background p-0 shadow-lg',
-              'md:left-1/2 md:top-1/2 md:right-auto md:bottom-auto md:-translate-x-1/2 md:-translate-y-1/2',
-              'md:h-[90vh] md:max-h-[min(90vh,calc(100vh-2rem))] md:w-[90vw] md:max-w-[min(90vw,calc(100vw-2rem))]',
+              belowAppHeaderCenteredWindowClasses,
               'md:rounded-lg md:border'
             )}
           >
@@ -2341,7 +2347,7 @@ export function RiskManagementWindow({
               ? cn(
                   'gap-0 !inset-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-none !translate-x-0 !translate-y-0 flex-col overflow-hidden rounded-none border-0 p-0 shadow-none sm:max-w-none md:!top-16 md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)] md:!max-w-none md:rounded-none md:p-0 [&>button]:hidden'
                 )
-              : 'h-screen max-h-full w-full max-w-full md:h-[90vh] md:max-h-[90vh] md:max-w-[90vw] md:rounded-lg'
+              : 'h-screen max-h-full w-full max-w-full md:h-[min(90vh,calc(100dvh-5rem))] md:max-h-[calc(100dvh-5rem)] md:max-w-[min(90vw,calc(100vw-2rem))] md:rounded-lg'
           )}
         >
           {mainContents}

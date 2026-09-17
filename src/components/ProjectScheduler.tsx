@@ -1591,7 +1591,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[90vh] max-h-[90vh] w-[90vw] max-w-[90vw] flex-col gap-0 overflow-hidden p-0 md:max-w-none [&>button]:hidden">
+      <DialogContent className="flex h-[90vh] max-h-[90vh] w-[90vw] max-w-[90vw] flex-col gap-0 overflow-hidden p-0 md:h-[min(90vh,calc(100dvh-5rem))] md:max-h-[calc(100dvh-5rem)] md:max-w-none [&>button]:hidden">
         <DialogHeader className={cn(PLANNING_TOOL_WINDOW_HEADER_CLASSNAME, 'flex-shrink-0')}>
           <div className="flex min-w-0 flex-1 items-start gap-3">
             <div className="shrink-0 rounded-lg bg-primary/10 p-2">
@@ -2193,7 +2193,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
     {/* Add Contractor Scheduling Dialog */}
     <Dialog open={showContractors} onOpenChange={setShowContractors}>
-      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
+      <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[min(90vw,calc(100vw-2rem))] md:h-[min(90vh,calc(100dvh-5rem))] md:max-h-[calc(100dvh-5rem)] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">
         <DialogHeader className={cn(PLANNING_TOOL_WINDOW_HEADER_CLASSNAME, 'flex-shrink-0')}>
           <DialogTitle className={PLANNING_TOOL_WINDOW_TITLE_CLASSNAME}>
             Add contractor scheduling
