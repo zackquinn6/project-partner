@@ -445,23 +445,32 @@ function riskComponentLightClass(ap: ActionPriority | null): string {
   }
 }
 
+/** Cell tint for a component, so the four readings sit in one row without four boxes. */
 function riskComponentTileClass(ap: ActionPriority | null): string {
   switch (ap) {
     case 'H':
-      return 'border-destructive-soft/40 bg-destructive-soft/10';
+      return 'bg-destructive-soft/10';
     case 'M':
-      return 'border-warning-soft/40 bg-warning-soft/10';
+      return 'bg-warning-soft/10';
     case 'L':
-      return 'border-success/40 bg-success/10';
+      return 'bg-success/10';
     default:
-      return 'border-border bg-background';
+      return 'bg-transparent';
   }
 }
 
+/** Safety leads: it is the only component whose worst case is not recoverable. */
+const RISK_COMPONENT_OVERVIEW_ORDER: readonly RiskDimension[] = [
+  'safety',
+  'quality',
+  'schedule',
+  'budget',
+];
+
 /**
- * One light per component: what its worst item demands, the worst line's score out of 1000,
- * and how many items sit behind that. Four separate readings rather than one blended score,
- * because a project can be safe and still be late, and the user acts on those differently.
+ * One light per component, with the worst line's score out of 1000. Four separate readings
+ * rather than one blended score, because a project can be safe and still be late, and the
+ * user acts on those differently. The counts behind each light are in its tooltip.
  *
  * Each light opens the Risk Dashboard on that component.
  */
@@ -497,43 +506,30 @@ function RiskComponentOverview({
 
   return (
     <TooltipProvider>
-      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-        {RISK_DIMENSIONS.map((dimension) => {
+      <div className="grid grid-cols-4 divide-x divide-border/60">
+        {RISK_COMPONENT_OVERVIEW_ORDER.map((dimension) => {
           const rollup = rollups[dimension];
           const ap = rollup.worstActionPriority;
-          const label = ap && table ? actionPriorityLabel(table, ap).label : null;
           const description = ap && table ? actionPriorityLabel(table, ap).description : null;
           const score = worstRpn[dimension];
 
           const body = (
             <>
-              <div className="flex items-center gap-1.5">
-                <span
-                  className={cn('h-2.5 w-2.5 shrink-0 rounded-full ring-2', riskComponentLightClass(ap))}
-                  aria-hidden
-                />
-                <span className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {RISK_COMPONENT_CONSUMER_LABELS[dimension]}
-                </span>
-              </div>
-              <div className="truncate text-xs font-semibold">
-                {label ?? (rollup.totalCount === 0 ? 'Nothing recorded' : 'Not scored')}
-              </div>
-              <div className="text-[10px] tabular-nums text-muted-foreground">
-                {score != null ? `${score} / 1000` : 'No score'}
-              </div>
-              <div className="text-[10px] text-muted-foreground">
-                {rollup.highCount > 0
-                  ? `${rollup.highCount} to act on`
-                  : rollup.unscoredCount > 0
-                    ? `${rollup.unscoredCount} unscored`
-                    : `${rollup.totalCount} tracked`}
-              </div>
+              <span
+                className={cn('h-2 w-2 shrink-0 rounded-full ring-2', riskComponentLightClass(ap))}
+                aria-hidden
+              />
+              <span className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {RISK_COMPONENT_CONSUMER_LABELS[dimension]}
+              </span>
+              <span className="shrink-0 text-[11px] font-bold tabular-nums">
+                {score != null ? score : <span className="font-medium text-muted-foreground">-</span>}
+              </span>
             </>
           );
 
           const tileClass = cn(
-            'min-w-0 rounded-md border px-2 py-1.5 text-left',
+            'flex min-w-0 items-center justify-center gap-1.5 px-1.5 py-1',
             riskComponentTileClass(ap)
           );
 
@@ -568,11 +564,11 @@ function RiskComponentOverview({
                   covered
                   {rollup.unscoredCount > 0 ? `, ${rollup.unscoredCount} unscored` : ''}
                 </p>
-                {score != null ? (
-                  <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-                    Worst line scores {score} out of 1000
-                  </p>
-                ) : null}
+                <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                  {score != null
+                    ? `Worst line scores ${score} out of 1000`
+                    : 'No line here carries a score yet'}
+                </p>
               </TooltipContent>
             </Tooltip>
           );
