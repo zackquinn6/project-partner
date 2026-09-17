@@ -2209,9 +2209,17 @@ export function RiskManagementWindow({
                     <AccordionItem
                       key={step.key}
                       value={step.key}
-                      className="rounded-lg border bg-card px-4 data-[state=open]:flex data-[state=open]:min-h-0 data-[state=open]:flex-1 data-[state=open]:flex-col"
+                      className={cn(
+                        'rounded-lg border bg-card px-4',
+                        'data-[state=open]:flex data-[state=open]:min-h-0 data-[state=open]:flex-1 data-[state=open]:flex-col data-[state=open]:overflow-hidden',
+                        'data-[state=open]:[&>:first-child]:shrink-0',
+                        // Radix Content is the direct child after the header; make it fill and scroll.
+                        'data-[state=open]:[&>[data-state=open]]:flex data-[state=open]:[&>[data-state=open]]:min-h-0 data-[state=open]:[&>[data-state=open]]:flex-1 data-[state=open]:[&>[data-state=open]]:flex-col data-[state=open]:[&>[data-state=open]]:overflow-hidden',
+                        // Height animation sets an explicit pixel height and blocks flex scroll.
+                        'data-[state=open]:[&>[data-state=open]]:animate-none'
+                      )}
                     >
-                      <AccordionTrigger className="py-4 hover:no-underline">
+                      <AccordionTrigger className="shrink-0 py-4 hover:no-underline">
                         <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                             {index + 1}
@@ -2225,10 +2233,10 @@ export function RiskManagementWindow({
                           </div>
                         </div>
                       </AccordionTrigger>
-                      <AccordionContent className="pb-4">
+                      <AccordionContent className="flex min-h-0 flex-1 flex-col overflow-hidden pb-3">
                         {planningRiskStep === step.key ? (
-                          <>
-                            <div className="mb-2 flex flex-wrap gap-1">
+                          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                            <div className="mb-2 flex shrink-0 flex-wrap gap-1">
                               <Button
                                 type="button"
                                 size="sm"
@@ -2255,33 +2263,35 @@ export function RiskManagementWindow({
                                 );
                               })}
                             </div>
-                            <RiskRegisterList
-                            risksToShow={listRisks}
-                            risksTotalCount={risks.length}
-                            hideStandardRisks={hideStandardRisks}
-                            usePlanningToolShell={usePlanningToolShell}
-                            planningStepEmptyMessage={step.empty}
-                            riskFocusRun={riskFocusRun}
-                            riskFocusEasyMode={riskFocusEasyMode}
-                            readOnly={readOnly}
-                            mode={mode}
-                            variant={variant}
-                            friendlyRiskRadarRegisterUi={friendlyRiskRadarRegisterUi}
-                            advancedMode={advancedMode}
-                            wfTableAdvanced={wfTableAdvanced}
-                            wfTableFriendly={wfTableFriendly}
-                            getRiskLevelColor={getRiskLevelColor}
-                            getStatusColor={getStatusColor}
-                            onOpenDetails={setDetailsRisk}
-                            onEditRisk={handleEditRisk}
-                            onDeleteRisk={handleDeleteRisk}
-                            onUpdateStatus={handleUpdateStatus}
-                            onMitigationActionCompletedToggle={handleMitigationActionCompletedToggle}
-                            onMitigationActionTextBlur={handleMitigationActionTextBlur}
-                            onAppendMitigationAction={handleAppendMitigationAction}
-                            onUpdateCurrentRiskLevel={handleUpdateCurrentRiskLevel}
-                            />
-                          </>
+                            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                              <RiskRegisterList
+                                risksToShow={listRisks}
+                                risksTotalCount={risks.length}
+                                hideStandardRisks={hideStandardRisks}
+                                usePlanningToolShell={usePlanningToolShell}
+                                planningStepEmptyMessage={step.empty}
+                                riskFocusRun={riskFocusRun}
+                                riskFocusEasyMode={riskFocusEasyMode}
+                                readOnly={readOnly}
+                                mode={mode}
+                                variant={variant}
+                                friendlyRiskRadarRegisterUi={friendlyRiskRadarRegisterUi}
+                                advancedMode={advancedMode}
+                                wfTableAdvanced={wfTableAdvanced}
+                                wfTableFriendly={wfTableFriendly}
+                                getRiskLevelColor={getRiskLevelColor}
+                                getStatusColor={getStatusColor}
+                                onOpenDetails={setDetailsRisk}
+                                onEditRisk={handleEditRisk}
+                                onDeleteRisk={handleDeleteRisk}
+                                onUpdateStatus={handleUpdateStatus}
+                                onMitigationActionCompletedToggle={handleMitigationActionCompletedToggle}
+                                onMitigationActionTextBlur={handleMitigationActionTextBlur}
+                                onAppendMitigationAction={handleAppendMitigationAction}
+                                onUpdateCurrentRiskLevel={handleUpdateCurrentRiskLevel}
+                              />
+                            </div>
+                          </div>
                         ) : null}
                       </AccordionContent>
                     </AccordionItem>
