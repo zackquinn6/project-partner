@@ -581,13 +581,10 @@ function RiskComponentOverview({
 function RiskFocusDashboard({
   risks,
   projectDisplayName,
-  hideMotivationalHero = false,
   projectRunId,
 }: {
   risks: Risk[];
   projectDisplayName?: string | null;
-  /** When opened from Planning Studio, collapse motivational strip under shared header. */
-  hideMotivationalHero?: boolean;
   /** Run whose dashboard the component lights open. Absent on the template view. */
   projectRunId?: string;
 }) {
@@ -595,13 +592,11 @@ function RiskFocusDashboard({
   const name = projectDisplayName?.trim() || null;
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 py-2 md:px-4">
-      {!hideMotivationalHero ? (
-        <div className="mb-3 rounded-xl border border-border gradient-primary px-4 py-3 text-center shadow-sm">
-          <div className="text-base font-bold leading-tight text-primary-foreground md:text-lg">
-            You don’t need perfection - each step you take makes success more likely.
-          </div>
+      <div className="mb-3 rounded-xl border border-slate-700/80 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 px-4 py-3 text-center shadow-sm">
+        <div className="text-base font-bold leading-tight text-blue-50 md:text-lg">
+          Go as far as you can - Every step makes the finish line more likely
         </div>
-      ) : null}
+      </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div className="min-w-0 sm:max-w-[38%] sm:flex-1">
           <PlanningToolContextBanner
@@ -1853,7 +1848,6 @@ export function RiskManagementWindow({
         {variant === 'risk-focus' && mode === 'run' ? (
           <RiskFocusDashboard
             risks={displayRisks}
-            hideMotivationalHero={planningWizardToolPresentation}
             projectRunId={projectRunId}
             projectDisplayName={
               riskFocusRunForProgress
