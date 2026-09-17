@@ -53,6 +53,9 @@ import {
   ArrowDownWideNarrow,
   ChevronDown,
   ListOrdered,
+  CalendarDays,
+  CircleDollarSign,
+  BadgeCheck,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -635,7 +638,7 @@ function RiskFocusDashboard({
   const sectionHeaderClass =
     'mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
   const sectionShellClass =
-    'rounded-lg border border-border bg-card p-3 shadow-sm';
+    'flex min-w-0 flex-1 flex-col rounded-lg border border-border bg-card p-3 shadow-sm';
 
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 py-2 md:px-4">
@@ -651,131 +654,149 @@ function RiskFocusDashboard({
           className="pb-0"
         />
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch sm:gap-3">
-        <div className="flex min-w-0 flex-col gap-3 sm:max-w-[38%] sm:flex-1">
-          {showProgress && projectRun ? (
-            <div className={sectionShellClass}>
-              <div className={sectionHeaderClass}>Current project progress</div>
-              <p className="mb-2 text-[11px] leading-snug text-muted-foreground">
-                Risk falls as you get further into the project
-              </p>
-              {progressEditable ? (
-                <Select
-                  disabled={readOnly}
-                  value={riskFocusProgressSelectValue(projectRun.progress)}
-                  onValueChange={(value) => {
-                    const progress = Number.parseInt(value, 10);
-                    if (
-                      !Number.isFinite(progress) ||
-                      !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
-                    ) {
-                      return;
-                    }
-                    onProgressChange?.(progress);
-                  }}
-                >
-                  <SelectTrigger
-                    className="mb-2 h-8 w-full text-xs"
-                    aria-label="Current project progress"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">0%</SelectItem>
-                    <SelectItem value="25">25%</SelectItem>
-                    <SelectItem value="50">50%</SelectItem>
-                    <SelectItem value="75">75%</SelectItem>
-                    <SelectItem value="100">Complete</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : null}
-              <div
-                className="flex min-w-0 items-center gap-3"
-                role="status"
-                aria-label={`Current project progress ${riskFocusProgressBarPercent(projectRun.progress)}%`}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:items-stretch">
+        {showProgress && projectRun ? (
+          <div className={sectionShellClass}>
+            <div className={sectionHeaderClass}>Current project progress</div>
+            <p className="mb-2 text-[11px] leading-snug text-muted-foreground">
+              Risk falls as you get further into the project
+            </p>
+            {progressEditable ? (
+              <Select
+                disabled={readOnly}
+                value={riskFocusProgressSelectValue(projectRun.progress)}
+                onValueChange={(value) => {
+                  const progress = Number.parseInt(value, 10);
+                  if (
+                    !Number.isFinite(progress) ||
+                    !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
+                  ) {
+                    return;
+                  }
+                  onProgressChange?.(progress);
+                }}
               >
-                <Progress
-                  value={riskFocusProgressBarPercent(projectRun.progress)}
-                  className="h-3 min-w-0 flex-1"
-                />
-                <span className="shrink-0 text-base font-semibold tabular-nums text-foreground">
-                  {riskFocusProgressBarPercent(projectRun.progress)}%
-                </span>
-              </div>
+                <SelectTrigger
+                  className="mb-2 h-8 w-full text-xs"
+                  aria-label="Current project progress"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">0%</SelectItem>
+                  <SelectItem value="25">25%</SelectItem>
+                  <SelectItem value="50">50%</SelectItem>
+                  <SelectItem value="75">75%</SelectItem>
+                  <SelectItem value="100">Complete</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : null}
+            <div
+              className="mt-auto flex min-w-0 items-center gap-3"
+              role="status"
+              aria-label={`Current project progress ${riskFocusProgressBarPercent(projectRun.progress)}%`}
+            >
+              <Progress
+                value={riskFocusProgressBarPercent(projectRun.progress)}
+                className="h-3 min-w-0 flex-1"
+              />
+              <span className="shrink-0 text-base font-semibold tabular-nums text-foreground">
+                {riskFocusProgressBarPercent(projectRun.progress)}%
+              </span>
             </div>
-          ) : null}
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-3 sm:max-w-[62%]">
-          {showGoals ? (
-            <div className={sectionShellClass}>
-              <div className={sectionHeaderClass}>Project goals</div>
-              <div className="flex flex-wrap gap-1.5">
-                <div className="rounded-md border border-border/60 bg-background px-2.5 py-1.5">
-                  <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          </div>
+        ) : null}
+
+        {showGoals ? (
+          <div className={sectionShellClass}>
+            <div className={sectionHeaderClass}>Project goals</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              <div className="flex items-start gap-2 rounded-md border border-success/40 bg-success/10 px-2 py-1.5">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-success/20 text-success">
+                  <Shield className="h-3.5 w-3.5" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-[10px] font-medium uppercase tracking-wide text-success">
                     Safety
                   </div>
                   <div className="text-xs font-semibold text-foreground">0 injuries</div>
                 </div>
-                <div className="rounded-md border border-border/60 bg-background px-2.5 py-1.5">
-                  <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              </div>
+              <div className="flex items-start gap-2 rounded-md border border-info/40 bg-info/10 px-2 py-1.5">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-info/20 text-info">
+                  <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-[10px] font-medium uppercase tracking-wide text-info">
                     Schedule
                   </div>
-                  <div className="text-xs font-semibold text-foreground">
+                  <div className="text-xs font-semibold leading-snug text-foreground">
                     {scheduleLabel ? `Finish by ${scheduleLabel}` : '-'}
                   </div>
                 </div>
-                <div className="rounded-md border border-border/60 bg-background px-2.5 py-1.5">
-                  <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              </div>
+              <div className="flex items-start gap-2 rounded-md border border-warning-soft/40 bg-warning-soft/10 px-2 py-1.5">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-warning-soft/20 text-warning-soft">
+                  <CircleDollarSign className="h-3.5 w-3.5" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-[10px] font-medium uppercase tracking-wide text-warning-soft">
                     Budget
                   </div>
                   <div className="text-xs font-semibold tabular-nums text-foreground">
                     {budgetLabel ?? '-'}
                   </div>
                 </div>
-                <div className="rounded-md border border-border/60 bg-background px-2.5 py-1.5">
-                  <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              </div>
+              <div className="flex items-start gap-2 rounded-md border border-category-3/40 bg-category-3/10 px-2 py-1.5">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-category-3/20 text-category-3">
+                  <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-[10px] font-medium uppercase tracking-wide text-category-3">
                     Quality
                   </div>
                   <div className="text-xs font-semibold text-foreground">{qualityLabel ?? '-'}</div>
                 </div>
               </div>
             </div>
-          ) : null}
-          <div className={sectionShellClass}>
-            <div className={cn(sectionHeaderClass, 'text-center')}>Current risk summary</div>
-            <div className="flex flex-row flex-wrap items-center justify-center gap-x-3 gap-y-0.5 px-1 py-1 sm:gap-x-5">
-              <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  High
-                </span>
-                <span className="text-base font-bold tabular-nums text-destructive sm:text-lg">{high}</span>
-              </div>
-              <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Med
-                </span>
-                <span className="text-base font-bold tabular-nums text-warning-soft sm:text-lg">{medium}</span>
-              </div>
-              <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Low
-                </span>
-                <span className="text-base font-bold tabular-nums text-success sm:text-lg">{low}</span>
-              </div>
-              {unset > 0 ? (
-                <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Not set
-                  </span>
-                  <span className="text-base font-bold tabular-nums text-muted-foreground sm:text-lg">
-                    {unset}
-                  </span>
-                </div>
-              ) : null}
+          </div>
+        ) : null}
+
+        <div className={sectionShellClass}>
+          <div className={cn(sectionHeaderClass, 'text-center')}>Current risk summary</div>
+          <div className="flex flex-row flex-wrap items-center justify-center gap-x-3 gap-y-0.5 px-1 py-1 sm:gap-x-5">
+            <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                High
+              </span>
+              <span className="text-base font-bold tabular-nums text-destructive sm:text-lg">{high}</span>
             </div>
-            <div className="mt-2 border-t border-border/60 pt-2">
-              <RiskComponentOverview risks={risks} projectRunId={projectRunId} />
+            <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Med
+              </span>
+              <span className="text-base font-bold tabular-nums text-warning-soft sm:text-lg">{medium}</span>
             </div>
+            <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Low
+              </span>
+              <span className="text-base font-bold tabular-nums text-success sm:text-lg">{low}</span>
+            </div>
+            {unset > 0 ? (
+              <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Not set
+                </span>
+                <span className="text-base font-bold tabular-nums text-muted-foreground sm:text-lg">
+                  {unset}
+                </span>
+              </div>
+            ) : null}
+          </div>
+          <div className="mt-2 border-t border-border/60 pt-2">
+            <RiskComponentOverview risks={risks} projectRunId={projectRunId} />
           </div>
         </div>
       </div>
