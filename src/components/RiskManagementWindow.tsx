@@ -115,6 +115,9 @@ import {
   riskFocusSeveritySelectItemClass,
   riskFocusSeveritySelectTriggerClass,
 } from '@/utils/riskSeverityStyles';
+import { QUALITY_GOAL_OPTIONS, isQualityGoal } from '@/utils/qualityGoal';
+import type { ProjectRun } from '@/interfaces/ProjectRun';
+import { format } from 'date-fns';
 
 const RISK_FOCUS_PROGRESS_STOPS = [0, 25, 50, 75, 100] as const;
 
@@ -139,6 +142,45 @@ function riskFocusProgressSelectValue(progress: number | null | undefined): stri
 function riskFocusProgressBarPercent(progress: number | null | undefined): number {
   if (progress == null || !Number.isFinite(progress)) return 0;
   return Math.round(Math.min(100, Math.max(0, progress)));
+}
+
+/** Kickoff scaling_unit short label for sizing beside progress. */
+function riskRadarScalingUnitShortLabel(scalingUnit: string | null | undefined): string {
+  const normalized = scalingUnit?.toLowerCase().trim() || '';
+  if (normalized === 'per square feet' || normalized === 'per square foot') return 'sq ft';
+  if (normalized === 'per 10x10 room') return 'rooms';
+  if (normalized === 'per linear feet' || normalized === 'per linear foot') return 'linear ft';
+  if (normalized === 'per cubic yard') return 'cu yd';
+  if (normalized === 'per item') return 'per item';
+  return scalingUnit?.trim() || '';
+}
+
+function riskRadarGoalDateLabel(value: string | null | undefined): string | null {
+  const raw = value?.trim();
+  if (!raw) return null;
+  const dateOnly = raw.length >= 10 ? raw.slice(0, 10) : raw;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) return null;
+  const d = new Date(`${dateOnly}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return format(d, 'MMMM dd, yyyy');
+}
+
+function riskRadarBudgetLabel(value: string | null | undefined): string | null {
+  const raw = value?.trim();
+  if (!raw) return null;
+  return raw.includes('$') ? raw : `$${raw}`;
+}
+
+function riskRadarQualityLabel(value: string | null | undefined): string | null {
+  if (!isQualityGoal(value)) return null;
+  return QUALITY_GOAL_OPTIONS.find((o) => o.value === value)?.label ?? null;
+}
+
+function riskRadarSizingLabel(run: ProjectRun): string | null {
+  const size = run.initial_sizing?.trim();
+  if (!size) return null;
+  const unit = riskRadarScalingUnitShortLabel(run.scalingUnit);
+  return unit ? `${size} ${unit}` : size;
 }
 
 interface Risk {
@@ -582,14 +624,33 @@ function RiskFocusDashboard({
   risks,
   projectDisplayName,
   projectRunId,
+  projectRun,
+  showProgress,
+  progressEditable,
+  readOnly,
+  onProgressChange,
 }: {
   risks: Risk[];
   projectDisplayName?: string | null;
   /** Run whose dashboard the component lights open. Absent on the template view. */
   projectRunId?: string;
+  /** Personalized run for progress and goals. Absent on the template view. */
+  projectRun?: ProjectRun | null;
+  showProgress?: boolean;
+  progressEditable?: boolean;
+  readOnly?: boolean;
+  onProgressChange?: (progress: number) => void;
 }) {
   const { high, medium, low, unset } = riskFocusSeverityCounts(risks);
   const name = projectDisplayName?.trim() || null;
+  const showGoals = Boolean(projectRun);
+  const sizingLabel = projectRun ? riskRadarSizingLabel(projectRun) : null;
+  const scheduleLabel = projectRun ? riskRadarGoalDateLabel(projectRun.initial_timeline) : null;
+  const budgetLabel = projectRun ? riskRadarBudgetLabel(projectRun.initial_budget) : null;
+  const qualityLabel = projectRun
+    ? riskRadarQualityLabel(projectRun.initial_quality_goal)
+    : null;
+
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 py-2 md:px-4">
       <div className="mb-3 rounded-xl border border-slate-700/80 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 px-4 py-3 text-center shadow-sm">
@@ -598,12 +659,79 @@ function RiskFocusDashboard({
         </div>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-        <div className="min-w-0 sm:max-w-[38%] sm:flex-1">
+        <div className="flex min-w-0 flex-col gap-2 sm:max-w-[38%] sm:flex-1">
           <PlanningToolContextBanner
             projectName={name}
             flush
             className="pb-0"
           />
+          {showProgress && projectRun ? (
+            <div className="flex w-full flex-col gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Project progress
+              </span>
+              <p className="text-[11px] leading-snug text-muted-foreground">
+                Risk falls as you get further into the project
+              </p>
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                {progressEditable ? (
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <Select
+                      disabled={readOnly}
+                      value={riskFocusProgressSelectValue(projectRun.progress)}
+                      onValueChange={(value) => {
+                        const progress = Number.parseInt(value, 10);
+                        if (
+                          !Number.isFinite(progress) ||
+                          !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
+                        ) {
+                          return;
+                        }
+                        onProgressChange?.(progress);
+                      }}
+                    >
+                      <SelectTrigger
+                        className="h-8 w-full max-w-[200px] text-xs"
+                        aria-label="Project progress"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">0%</SelectItem>
+                        <SelectItem value="25">25%</SelectItem>
+                        <SelectItem value="50">50%</SelectItem>
+                        <SelectItem value="75">75%</SelectItem>
+                        <SelectItem value="100">Complete</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Progress
+                      value={riskFocusProgressBarPercent(projectRun.progress)}
+                      className="h-1.5 max-w-[200px]"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="flex min-w-0 flex-1 flex-col gap-1"
+                    role="status"
+                    aria-label={`Project progress ${riskFocusProgressBarPercent(projectRun.progress)}%`}
+                  >
+                    <div className="flex max-w-[200px] items-center justify-end text-xs tabular-nums font-medium text-foreground">
+                      {riskFocusProgressBarPercent(projectRun.progress)}%
+                    </div>
+                    <Progress
+                      value={riskFocusProgressBarPercent(projectRun.progress)}
+                      className="h-1.5 max-w-[200px]"
+                    />
+                  </div>
+                )}
+                {sizingLabel ? (
+                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {sizingLabel}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
         </div>
         <div className="flex min-w-0 flex-1 flex-col items-center sm:max-w-[58%]">
           <div className="mb-1 w-full text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -650,6 +778,43 @@ function RiskFocusDashboard({
           </div>
         </div>
       </div>
+      {showGoals ? (
+        <div className="mt-3 flex flex-col gap-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Goals
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            <div className="rounded-md border border-border/60 bg-background/80 px-2.5 py-1.5">
+              <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Safety
+              </div>
+              <div className="text-xs font-semibold text-foreground">0 injuries</div>
+            </div>
+            <div className="rounded-md border border-border/60 bg-background/80 px-2.5 py-1.5">
+              <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Schedule
+              </div>
+              <div className="text-xs font-semibold text-foreground">
+                {scheduleLabel ? `Finish by ${scheduleLabel}` : '-'}
+              </div>
+            </div>
+            <div className="rounded-md border border-border/60 bg-background/80 px-2.5 py-1.5">
+              <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Budget
+              </div>
+              <div className="text-xs font-semibold tabular-nums text-foreground">
+                {budgetLabel ?? '-'}
+              </div>
+            </div>
+            <div className="rounded-md border border-border/60 bg-background/80 px-2.5 py-1.5">
+              <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Quality
+              </div>
+              <div className="text-xs font-semibold text-foreground">{qualityLabel ?? '-'}</div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1856,6 +2021,14 @@ export function RiskManagementWindow({
                   null
                 : null
             }
+            projectRun={riskFocusRunForProgress ?? null}
+            showProgress={showRiskFocusProgressRow}
+            progressEditable={progressEditable}
+            readOnly={readOnly}
+            onProgressChange={(progress) => {
+              if (!riskFocusRunForProgress) return;
+              void updateProjectRun({ ...riskFocusRunForProgress, progress });
+            }}
           />
         ) : workflowTemplateRiskRadar ? (
           <RiskFocusDashboard
@@ -1879,73 +2052,10 @@ export function RiskManagementWindow({
           ) : (
             <div className="flex min-h-0 flex-1 flex-col gap-3">
               {riskFocusRun &&
-              (showRiskFocusProgressRow ||
-                showAddRiskRow ||
-                showRiskFocusHiddenToggle ||
-                risks.length > 0) ? (
+              (showAddRiskRow || showRiskFocusHiddenToggle || risks.length > 0) ? (
                 <>
                   {/* Risk Radar mobile: compact stacked controls */}
                   <div className="flex w-full shrink-0 flex-col gap-2 md:hidden">
-                    {showRiskFocusProgressRow && riskFocusRunForProgress ? (
-                      <div className="flex w-full flex-col gap-1">
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          Project progress
-                        </span>
-                        <p className="text-[11px] leading-snug text-muted-foreground">
-                          Risk falls as you get further into the project
-                        </p>
-                        {progressEditable ? (
-                          <>
-                            <Select
-                              disabled={readOnly}
-                              value={riskFocusProgressSelectValue(riskFocusRunForProgress.progress)}
-                              onValueChange={(value) => {
-                                const progress = Number.parseInt(value, 10);
-                                if (
-                                  !Number.isFinite(progress) ||
-                                  !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
-                                ) {
-                                  return;
-                                }
-                                void updateProjectRun({ ...riskFocusRunForProgress, progress });
-                              }}
-                            >
-                              <SelectTrigger
-                                className="h-8 w-full text-xs"
-                                aria-label="Project progress"
-                              >
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="0">0%</SelectItem>
-                                <SelectItem value="25">25%</SelectItem>
-                                <SelectItem value="50">50%</SelectItem>
-                                <SelectItem value="75">75%</SelectItem>
-                                <SelectItem value="100">Complete</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Progress
-                              value={riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}
-                              className="h-1.5"
-                            />
-                          </>
-                        ) : (
-                          <div
-                            className="flex min-w-0 flex-col gap-1 rounded-lg border bg-background px-2.5 py-2"
-                            role="status"
-                            aria-label={`Project progress ${riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%`}
-                          >
-                            <div className="flex items-center justify-end text-xs tabular-nums font-medium text-foreground">
-                              {riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%
-                            </div>
-                            <Progress
-                              value={riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}
-                              className="h-1.5"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ) : null}
                     <div className="flex w-full flex-wrap items-center gap-2">
                       {risks.length > 0 && riskFocusRun ? (
                         <RiskRadarRegisterPrimarySortMenu
@@ -1985,66 +2095,6 @@ export function RiskManagementWindow({
 
                   {/* Risk Radar desktop toolbar */}
                   <div className="hidden w-full shrink-0 flex-col gap-2 md:flex sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-                    {showRiskFocusProgressRow && riskFocusRunForProgress ? (
-                      <div className="flex min-w-0 max-w-md flex-col gap-1">
-                        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          Project progress
-                        </span>
-                        <p className="text-[11px] leading-snug text-muted-foreground">
-                          Risk falls as you get further into the project
-                        </p>
-                        {progressEditable ? (
-                          <>
-                            <Select
-                              disabled={readOnly}
-                              value={riskFocusProgressSelectValue(riskFocusRunForProgress.progress)}
-                              onValueChange={(value) => {
-                                const progress = Number.parseInt(value, 10);
-                                if (
-                                  !Number.isFinite(progress) ||
-                                  !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
-                                ) {
-                                  return;
-                                }
-                                void updateProjectRun({ ...riskFocusRunForProgress, progress });
-                              }}
-                            >
-                              <SelectTrigger
-                                className="h-7 w-full max-w-[200px] text-xs"
-                                aria-label="Project progress"
-                              >
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="0">0%</SelectItem>
-                                <SelectItem value="25">25%</SelectItem>
-                                <SelectItem value="50">50%</SelectItem>
-                                <SelectItem value="75">75%</SelectItem>
-                                <SelectItem value="100">Complete</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Progress
-                              value={riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}
-                              className="h-1.5 max-w-[200px]"
-                            />
-                          </>
-                        ) : (
-                          <div
-                            className="flex min-w-0 max-w-md flex-col gap-1 sm:min-w-[200px]"
-                            role="status"
-                            aria-label={`Project progress ${riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%`}
-                          >
-                            <div className="flex items-center justify-end text-xs tabular-nums text-foreground">
-                              {riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%
-                            </div>
-                            <Progress
-                              value={riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}
-                              className="h-2"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ) : null}
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:ml-auto">
                       {risks.length > 0 && riskFocusRun ? (
                         <RiskRadarRegisterPrimarySortMenu
@@ -2080,73 +2130,13 @@ export function RiskManagementWindow({
                     </div>
                   </div>
                 </>
-              ) : showRiskFocusProgressRow || showAddRiskRow || showRiskFocusHiddenToggle ? (
+              ) : showAddRiskRow || showRiskFocusHiddenToggle ? (
                 <div
                   className={cn(
                     'flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between',
                     useRiskRadarChrome ? 'gap-1.5 sm:gap-2' : 'gap-2'
                   )}
                 >
-                  {showRiskFocusProgressRow && riskFocusRunForProgress ? (
-                    <div className="flex min-w-0 max-w-md flex-col gap-1">
-                      <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Project progress
-                      </span>
-                      <p className="text-[11px] leading-snug text-muted-foreground">
-                        Risk falls as you get further into the project
-                      </p>
-                      {progressEditable ? (
-                        <>
-                          <Select
-                            disabled={readOnly}
-                            value={riskFocusProgressSelectValue(riskFocusRunForProgress.progress)}
-                            onValueChange={(value) => {
-                              const progress = Number.parseInt(value, 10);
-                              if (
-                                !Number.isFinite(progress) ||
-                                !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
-                              ) {
-                                return;
-                              }
-                              void updateProjectRun({ ...riskFocusRunForProgress, progress });
-                            }}
-                          >
-                            <SelectTrigger
-                              className="h-7 w-full max-w-[200px] text-xs"
-                              aria-label="Project progress"
-                            >
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="0">0%</SelectItem>
-                              <SelectItem value="25">25%</SelectItem>
-                              <SelectItem value="50">50%</SelectItem>
-                              <SelectItem value="75">75%</SelectItem>
-                              <SelectItem value="100">Complete</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Progress
-                            value={riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}
-                            className="h-1.5 max-w-[200px]"
-                          />
-                        </>
-                      ) : (
-                        <div
-                          className="flex min-w-0 w-full max-w-md flex-col gap-1"
-                          role="status"
-                          aria-label={`Project progress ${riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%`}
-                        >
-                          <div className="flex items-center justify-end text-xs tabular-nums text-foreground">
-                            {riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}%
-                          </div>
-                          <Progress
-                            value={riskFocusProgressBarPercent(riskFocusRunForProgress.progress)}
-                            className="h-2"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ) : null}
                   <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">
                     {workflowTemplateRiskRadar && displayRisks.length > 0 ? (
                       <RiskRadarListSortMenu
