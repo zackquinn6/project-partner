@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, Layers, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, Shield, DollarSign, ShoppingCart, ClipboardCheck, ClipboardList, Handshake, Crosshair, Trash2, Eye, Video } from "lucide-react";
+import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, Shield, DollarSign, ShoppingCart, ClipboardCheck, ClipboardList, Handshake, Crosshair, Trash2, Eye, Video } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
@@ -43,7 +43,7 @@ interface WorkflowSidebarProps {
   onUnplannedWorkClick: () => void;
   onKeysToSuccessClick: () => void;
   onPhotosClick: () => void;
-  /** When set (e.g. post-kickoff), shows “Show Videos” next to Photos. */
+  /** When set (e.g. post-kickoff), shows “Guide Videos” next to Photos. */
   onShowVideosClick?: () => void;
   onNotesClick: () => void;
   onViewScheduleClick: () => void;
@@ -512,13 +512,13 @@ export function WorkflowSidebar({
                   {/* Project Tools: primary buttons + more in menu (Experts/Tool Rentals follow admin app_settings toggles) */}
                     <div className="space-y-1.5 min-w-0" data-tutorial="project-tools">
                     <div className="text-xs font-semibold text-muted-foreground">Project Tools</div>
-                    {/* Priorities, Course Correct */}
+                    {/* Priorities, Course Correct - Course Correct is wider so the label fits without an icon */}
                     <div className="flex items-center gap-1.5 min-w-0">
                       <Button
                         variant="default"
                         size="sm"
                         onClick={onKeysToSuccessClick}
-                        className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1 bg-category-3 text-category-3-foreground hover:bg-category-3/85"
+                        className="h-7 px-2 text-[11px] flex-[1] min-w-0 flex items-center justify-center gap-1 bg-category-3 text-category-3-foreground hover:bg-category-3/85"
                       >
                         <Key className="h-3 w-3 shrink-0" />
                         <span className="truncate">Priorities</span>
@@ -528,21 +528,20 @@ export function WorkflowSidebar({
                           variant="default"
                           size="sm"
                           onClick={onUnplannedWorkClick}
-                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1 bg-category-5 text-category-5-foreground hover:bg-category-5/85"
+                          className="h-7 px-2 text-[11px] flex-[1.35] min-w-0 flex items-center justify-center bg-category-5 text-category-5-foreground hover:bg-category-5/85"
                         >
-                          <Layers className="h-3 w-3 shrink-0" />
-                          <span className="truncate">Course Correct</span>
+                          <span className="whitespace-nowrap">Course Correct</span>
                         </Button>
                       )}
                     </div>
-                    {/* Notes, Photos, Videos */}
+                    {/* Notes, Photos, Videos - Photos is wider so the label fits */}
                     <div className="flex flex-col gap-1.5 min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <Button
                           variant="default"
                           size="sm"
                           onClick={onNotesClick}
-                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1 bg-category-2 text-category-2-foreground hover:bg-category-2/85"
+                          className="h-7 px-2 text-[11px] flex-[1] min-w-0 flex items-center justify-center gap-1 bg-category-2 text-category-2-foreground hover:bg-category-2/85"
                         >
                           <FileText className="h-3 w-3 shrink-0" />
                           <span className="truncate">Notes</span>
@@ -551,10 +550,10 @@ export function WorkflowSidebar({
                           variant="default"
                           size="sm"
                           onClick={onPhotosClick}
-                          className="h-7 px-2 text-[11px] flex-1 min-w-0 flex items-center justify-center gap-1 bg-category-4 text-category-4-foreground hover:bg-category-4/85"
+                          className="h-7 px-2 text-[11px] flex-[1.35] min-w-0 flex items-center justify-center gap-1 bg-category-4 text-category-4-foreground hover:bg-category-4/85"
                         >
                           <Image className="h-3 w-3 shrink-0" />
-                          <span className="truncate">Photos</span>
+                          <span className="whitespace-nowrap">Photos</span>
                         </Button>
                       </div>
                       {onShowVideosClick ? (
@@ -566,7 +565,7 @@ export function WorkflowSidebar({
                           className="h-8 w-full min-w-0 justify-center px-2 text-[11px] font-medium flex items-center gap-1.5 bg-category-1 text-category-1-foreground hover:bg-category-1/85"
                         >
                           <Video className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate">Show Videos</span>
+                          <span className="truncate">Guide Videos</span>
                         </Button>
                       ) : null}
                     </div>

@@ -667,7 +667,7 @@ export function MobileWorkflowView({
                         onClick={onShowVideosClick}
                       >
                         <Video className="h-4 w-4 shrink-0" />
-                        Show Videos
+                        Guide Videos
                       </Button>
                     ) : null}
                     <Button variant="outline" size="sm" className="justify-start min-h-11 h-11 text-xs" onClick={() => window.dispatchEvent(new CustomEvent('openProjectScheduler'))}>
