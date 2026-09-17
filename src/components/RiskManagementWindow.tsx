@@ -343,7 +343,7 @@ const PLANNING_RISK_STEPS: {
   },
   {
     key: 'medium',
-    title: 'Med risks',
+    title: 'Work the medium risks',
     empty: 'No medium risks right now - keep reducing remaining risk.',
   },
   {
