@@ -18,7 +18,6 @@ import { Slider } from '@/components/ui/slider';
 import {
   QUALITY_GOAL_OPTIONS,
   DEFAULT_QUALITY_GOAL,
-  type QualityGoal,
   parseQualityGoalColumn,
 } from '@/utils/qualityGoal';
 
