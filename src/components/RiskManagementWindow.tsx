@@ -2209,14 +2209,15 @@ export function RiskManagementWindow({
                       className={cn(
                         'rounded-lg border bg-card px-4',
                         'data-[state=open]:flex data-[state=open]:min-h-0 data-[state=open]:flex-1 data-[state=open]:flex-col data-[state=open]:overflow-hidden',
-                        'data-[state=open]:[&>:first-child]:shrink-0',
-                        // Radix Content is the direct child after the header; make it fill and scroll.
-                        'data-[state=open]:[&>[data-state=open]]:flex data-[state=open]:[&>[data-state=open]]:min-h-0 data-[state=open]:[&>[data-state=open]]:flex-1 data-[state=open]:[&>[data-state=open]]:flex-col data-[state=open]:[&>[data-state=open]]:overflow-hidden',
-                        // Height animation sets an explicit pixel height and blocks flex scroll.
-                        'data-[state=open]:[&>[data-state=open]]:animate-none'
+                        // Keep the title row content-sized so it cannot eat the table viewport.
+                        'data-[state=open]:[&>:first-child]:flex-none',
+                        // Radix Content root: fill leftover height and host the scroll region.
+                        'data-[state=open]:[&>[data-state=open]]:flex data-[state=open]:[&>[data-state=open]]:min-h-0 data-[state=open]:[&>[data-state=open]]:flex-1 data-[state=open]:[&>[data-state=open]]:flex-col data-[state=open]:[&>[data-state=open]]:overflow-hidden data-[state=open]:[&>[data-state=open]]:animate-none data-[state=open]:[&>[data-state=open]]:!h-auto',
+                        // Inner padding wrapper from AccordionContent must also fill.
+                        'data-[state=open]:[&>[data-state=open]>div]:flex data-[state=open]:[&>[data-state=open]>div]:h-full data-[state=open]:[&>[data-state=open]>div]:min-h-0 data-[state=open]:[&>[data-state=open]>div]:flex-1 data-[state=open]:[&>[data-state=open]>div]:flex-col data-[state=open]:[&>[data-state=open]>div]:overflow-hidden data-[state=open]:[&>[data-state=open]>div]:pb-3 data-[state=open]:[&>[data-state=open]>div]:pt-0'
                       )}
                     >
-                      <AccordionTrigger className="shrink-0 py-4 hover:no-underline">
+                      <AccordionTrigger className="shrink-0 grow-0 py-2.5 hover:no-underline">
                         <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                             {index + 1}
@@ -2230,9 +2231,9 @@ export function RiskManagementWindow({
                           </div>
                         </div>
                       </AccordionTrigger>
-                      <AccordionContent className="flex min-h-0 flex-1 flex-col overflow-hidden pb-3">
+                      <AccordionContent className="!pb-0 !pt-0">
                         {planningRiskStep === step.key ? (
-                          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                          <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
                             <div className="mb-2 flex shrink-0 flex-wrap gap-1">
                               <Button
                                 type="button"
