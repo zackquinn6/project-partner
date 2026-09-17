@@ -375,30 +375,30 @@ export function MobileOptimizedHome() {
           </h2>
           <div className="grid grid-cols-2 gap-3">
             <Card
-              className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-success via-success to-success shadow-sm cursor-pointer transition-opacity hover:opacity-90"
+              className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-[hsl(161_90%_12%/0.9)] via-[hsl(161_90%_11%)] to-[hsl(161_90%_10%/0.95)] shadow-sm cursor-pointer transition-opacity hover:opacity-90"
               onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}
             >
-              <div className="absolute inset-x-0 -top-6 h-10 bg-gradient-to-b from-success to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 -top-6 h-10 bg-gradient-to-b from-success/30 to-transparent pointer-events-none" />
               <CardContent className="relative p-3 text-left space-y-1">
-                <p className="text-[11px] uppercase tracking-wide text-success-foreground">
+                <p className="text-[11px] uppercase tracking-wide text-success/80">
                   Open tasks
                 </p>
-                <p className="text-xl font-semibold text-success-foreground">
+                <p className="text-xl font-semibold text-[hsl(138_80%_95%)]">
                   {stats.openTasks ?? 0}
                 </p>
               </CardContent>
             </Card>
 
             <Card
-              className="relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-info via-info to-info shadow-sm cursor-pointer transition-opacity hover:opacity-90"
+              className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-[hsl(201_90%_14%/0.9)] via-[hsl(201_90%_12%)] to-[hsl(201_90%_11%/0.95)] shadow-sm cursor-pointer transition-opacity hover:opacity-90"
               onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}
             >
-              <div className="absolute inset-x-0 -top-6 h-10 bg-gradient-to-b from-info to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 -top-6 h-10 bg-gradient-to-b from-info/30 to-transparent pointer-events-none" />
               <CardContent className="relative p-3 text-left space-y-1">
-                <p className="text-[11px] uppercase tracking-wide text-info-foreground">
+                <p className="text-[11px] uppercase tracking-wide text-info/80">
                   Maintenance due soon
                 </p>
-                <p className="text-xl font-semibold text-info-foreground">
+                <p className="text-xl font-semibold text-[hsl(204_100%_95%)]">
                   {stats.maintenanceDueSoon ?? 0}
                 </p>
               </CardContent>
