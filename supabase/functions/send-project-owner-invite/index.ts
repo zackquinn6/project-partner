@@ -81,8 +81,21 @@ serve(async (req) => {
       .single()
 
     const projectName = (project as { name?: string } | null)?.name ?? 'Project'
-    const origin = req.headers.get('origin') || Deno.env.get('PUBLIC_APP_URL') || 'https://app.toolio.com'
+    // Never trust the caller-supplied Origin for a link we email out.
+    // Only known application origins are allowed; anything else falls back.
+    const ALLOWED_ORIGINS = [
+      Deno.env.get('PUBLIC_APP_URL') ?? '',
+      'https://toolio.us',
+      'https://projectpartner.toolio.us',
+      'https://project-partner-prime.lovable.app',
+      'http://localhost:8080',
+    ].filter(Boolean)
+    const requestOrigin = (req.headers.get('origin') ?? '').replace(/\/+$/, '')
+    const origin = ALLOWED_ORIGINS.includes(requestOrigin)
+      ? requestOrigin
+      : (Deno.env.get('PUBLIC_APP_URL') || 'https://projectpartner.toolio.us')
     const acceptUrl = `${origin}/accept-project-owner?token=${encodeURIComponent(invitation.invitation_token)}`
+
 
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
     if (RESEND_API_KEY) {
