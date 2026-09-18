@@ -836,7 +836,7 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     const primary = stepDone ? (
       <button
         type="button"
-        onClick={handleContinueFromSticky}
+        onClick={handleNext}
         className="flex h-14 min-h-14 max-h-14 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl border border-success/30 bg-success/10 px-3 text-sm font-semibold leading-none text-success"
       >
         <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
