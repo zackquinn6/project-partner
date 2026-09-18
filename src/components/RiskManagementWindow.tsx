@@ -702,9 +702,9 @@ function RiskFocusDashboard({
   const worstRpn = useMemo(() => worstRpnByComponent(rollupRows), [rollupRows]);
 
   const sectionHeaderClass =
-    'mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
+    'mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground';
   const sectionShellClass =
-    'flex min-w-0 flex-col rounded-lg border border-border bg-card p-2.5 shadow-sm';
+    'flex min-w-0 flex-col rounded-md border border-border bg-card px-2 py-1.5 shadow-sm';
 
   const goalLightProps = (dimension: RiskDimension) => {
     const rollup = rollups[dimension];
@@ -720,32 +720,39 @@ function RiskFocusDashboard({
     };
   };
 
+  const goalStatusFooter = (dimension: RiskDimension) => (
+    <div className="mt-auto flex min-h-[1.125rem] items-center gap-1 pt-1">
+      <span className="text-[9px] font-medium leading-none text-muted-foreground">Risk Status:</span>
+      <GoalRiskLight {...goalLightProps(dimension)} />
+    </div>
+  );
+
   return (
-    <div className="shrink-0 border-b bg-muted/30 px-3 py-2 md:px-4">
+    <div className="shrink-0 border-b bg-muted/30 px-3 py-1.5 md:px-4">
       <div
         className={cn(
-          'rounded-xl border border-slate-700/80 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 px-4 py-3 text-center shadow-sm',
-          collapseChrome ? 'mb-0' : 'mb-3'
+          'rounded-lg border border-slate-700/80 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 px-3 py-2 text-center shadow-sm',
+          collapseChrome ? 'mb-0' : 'mb-1.5'
         )}
       >
-        <div className="text-base font-bold leading-tight text-blue-50 md:text-lg">
+        <div className="text-sm font-bold leading-tight text-blue-50 md:text-base">
           Go as far as you can - Every step makes the finish line more likely
         </div>
       </div>
       {!collapseChrome ? (
         <>
-          <div className="mb-3">
+          <div className="mb-1.5">
             <PlanningToolContextBanner
               projectName={name}
               flush
               className="pb-0"
             />
           </div>
-          <div className="grid grid-cols-1 gap-2.5 md:grid-cols-[minmax(0,0.7fr)_minmax(0,1.5fr)_minmax(0,1.2fr)] md:items-stretch">
+          <div className="grid grid-cols-1 gap-1.5 md:grid-cols-[minmax(8.5rem,0.5fr)_minmax(0,2.2fr)_minmax(9.5rem,0.65fr)] md:items-start">
             {showProgress && projectRun ? (
               <div className={sectionShellClass}>
                 <div className={sectionHeaderClass}>Current project progress</div>
-                <p className="mb-1.5 text-[11px] leading-snug text-muted-foreground">
+                <p className="mb-1 text-[10px] leading-snug text-muted-foreground">
                   Risk falls as you get further into the project
                 </p>
                 {progressEditable ? (
@@ -764,7 +771,7 @@ function RiskFocusDashboard({
                     }}
                   >
                     <SelectTrigger
-                      className="mb-1.5 h-7 w-full text-xs"
+                      className="mb-1 h-6 w-full text-[11px]"
                       aria-label="Current project progress"
                     >
                       <SelectValue />
@@ -779,15 +786,15 @@ function RiskFocusDashboard({
                   </Select>
                 ) : null}
                 <div
-                  className="mt-auto flex min-w-0 items-center gap-2"
+                  className="flex min-w-0 items-center gap-1.5"
                   role="status"
                   aria-label={`Current project progress ${riskFocusProgressBarPercent(projectRun.progress)}%`}
                 >
                   <Progress
                     value={riskFocusProgressBarPercent(projectRun.progress)}
-                    className="h-3 min-w-0 flex-1"
+                    className="h-2 min-w-0 flex-1"
                   />
-                  <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+                  <span className="shrink-0 text-xs font-semibold tabular-nums text-foreground">
                     {riskFocusProgressBarPercent(projectRun.progress)}%
                   </span>
                 </div>
@@ -798,137 +805,130 @@ function RiskFocusDashboard({
               <div className={sectionShellClass}>
                 <div className={sectionHeaderClass}>Project goals</div>
                 <TooltipProvider>
-                  <div className="flex min-w-0 flex-nowrap gap-1.5 overflow-x-auto">
-                    <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-success/40 bg-success/10 px-2 py-1.5">
-                      <div className="flex items-start gap-1.5">
-                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-success/20 text-success">
-                          <Shield className="h-3 w-3" aria-hidden />
+                  <div className="grid min-w-0 grid-cols-2 gap-1 sm:grid-cols-4">
+                    <div className="flex min-w-0 flex-col rounded border border-success/40 bg-success/10 px-1.5 py-1">
+                      <div className="flex items-start gap-1">
+                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded bg-success/20 text-success">
+                          <Shield className="h-2.5 w-2.5" aria-hidden />
                         </span>
                         <div className="min-w-0">
-                          <div className="text-[10px] font-medium uppercase tracking-wide text-success">
+                          <div className="text-[9px] font-medium uppercase tracking-wide text-success">
                             Safety
                           </div>
-                          <div className="text-xs font-semibold leading-tight text-foreground">
+                          <div className="text-[11px] font-semibold leading-tight text-foreground">
                             0 injuries
                           </div>
                         </div>
                       </div>
-                      <GoalRiskLight {...goalLightProps('safety')} className="self-start" />
+                      {goalStatusFooter('safety')}
                     </div>
-                    <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-info/40 bg-info/10 px-2 py-1.5">
-                      <div className="flex items-start gap-1.5">
-                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-info/20 text-info">
-                          <CalendarDays className="h-3 w-3" aria-hidden />
+                    <div className="flex min-w-0 flex-col rounded border border-info/40 bg-info/10 px-1.5 py-1">
+                      <div className="flex items-start gap-1">
+                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded bg-info/20 text-info">
+                          <CalendarDays className="h-2.5 w-2.5" aria-hidden />
                         </span>
                         <div className="min-w-0">
-                          <div className="text-[10px] font-medium uppercase tracking-wide text-info">
+                          <div className="text-[9px] font-medium uppercase tracking-wide text-info">
                             Schedule
                           </div>
-                          <div className="break-words text-xs font-semibold leading-tight text-foreground">
+                          <div className="break-words text-[11px] font-semibold leading-tight text-foreground">
                             {scheduleLabel ? `By ${scheduleLabel}` : '-'}
                           </div>
                         </div>
                       </div>
-                      <GoalRiskLight {...goalLightProps('schedule')} className="self-start" />
+                      {goalStatusFooter('schedule')}
                     </div>
-                    <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-warning-soft/40 bg-warning-soft/10 px-2 py-1.5">
-                      <div className="flex items-start gap-1.5">
-                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-warning-soft/20 text-warning-soft">
-                          <CircleDollarSign className="h-3 w-3" aria-hidden />
+                    <div className="flex min-w-0 flex-col rounded border border-warning-soft/40 bg-warning-soft/10 px-1.5 py-1">
+                      <div className="flex items-start gap-1">
+                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded bg-warning-soft/20 text-warning-soft">
+                          <CircleDollarSign className="h-2.5 w-2.5" aria-hidden />
                         </span>
                         <div className="min-w-0">
-                          <div className="text-[10px] font-medium uppercase tracking-wide text-warning-soft">
+                          <div className="text-[9px] font-medium uppercase tracking-wide text-warning-soft">
                             Budget
                           </div>
-                          <div className="text-xs font-semibold tabular-nums leading-tight text-foreground">
+                          <div className="text-[11px] font-semibold tabular-nums leading-tight text-foreground">
                             {budgetLabel ?? '-'}
                           </div>
                         </div>
                       </div>
-                      <GoalRiskLight {...goalLightProps('budget')} className="self-start" />
+                      {goalStatusFooter('budget')}
                     </div>
-                    <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-category-3/40 bg-category-3/10 px-2 py-1.5">
-                      <div className="flex items-start gap-1.5">
-                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-category-3/20 text-category-3">
-                          <BadgeCheck className="h-3 w-3" aria-hidden />
+                    <div className="flex min-w-0 flex-col rounded border border-category-3/40 bg-category-3/10 px-1.5 py-1">
+                      <div className="flex items-start gap-1">
+                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded bg-category-3/20 text-category-3">
+                          <BadgeCheck className="h-2.5 w-2.5" aria-hidden />
                         </span>
-                        <div className="min-w-0">
-                          <div className="text-[10px] font-medium uppercase tracking-wide text-category-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[9px] font-medium uppercase tracking-wide text-category-3">
                             Quality
                           </div>
                           {qualityGoal ? (
                             <div
-                              className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5 text-[10px] leading-tight"
+                              className="mt-0.5 grid grid-cols-3 gap-x-0.5 text-[9px] leading-tight"
                               aria-label={`Quality goal ${QUALITY_GOAL_OPTIONS.find((o) => o.value === qualityGoal)?.label}`}
                             >
-                              {QUALITY_GOAL_OPTIONS.map((option, index) => {
+                              {QUALITY_GOAL_OPTIONS.map((option) => {
                                 const selected = option.value === qualityGoal;
                                 return (
-                                  <span key={option.value} className="inline-flex items-baseline gap-x-1">
-                                    {index > 0 ? (
-                                      <span className="text-muted-foreground/30" aria-hidden>
-                                        ·
-                                      </span>
-                                    ) : null}
-                                    <span
-                                      className={
-                                        selected
-                                          ? 'font-semibold text-category-3'
-                                          : 'font-normal text-muted-foreground/40'
-                                      }
-                                    >
-                                      {option.label}
-                                    </span>
+                                  <span
+                                    key={option.value}
+                                    className={cn(
+                                      'min-w-0 text-center',
+                                      selected
+                                        ? 'font-semibold text-category-3'
+                                        : 'font-normal text-muted-foreground/50 line-through'
+                                    )}
+                                  >
+                                    {option.label}
                                   </span>
                                 );
                               })}
                             </div>
                           ) : (
-                            <div className="text-xs font-semibold leading-tight text-foreground">-</div>
+                            <div className="text-[11px] font-semibold leading-tight text-foreground">-</div>
                           )}
                         </div>
                       </div>
-                      <GoalRiskLight {...goalLightProps('quality')} className="self-start" />
+                      {goalStatusFooter('quality')}
                     </div>
                   </div>
                 </TooltipProvider>
               </div>
             ) : null}
 
-            <div className={sectionShellClass}>
+            <div className={cn(sectionShellClass, 'justify-center')}>
               <div className={cn(sectionHeaderClass, 'text-center')}>Current risk summary</div>
-              <div className="flex flex-row flex-wrap items-center justify-center gap-x-3 gap-y-0.5 px-1 py-0.5 sm:gap-x-5">
-                <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <div className="flex flex-row flex-wrap items-baseline justify-center gap-x-2.5 gap-y-0 px-0.5">
+                <div className="flex flex-row items-baseline gap-1">
+                  <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
                     High
                   </span>
-                  <span className="text-base font-bold tabular-nums text-destructive sm:text-lg">{high}</span>
+                  <span className="text-sm font-bold tabular-nums text-destructive">{high}</span>
                 </div>
-                <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                <div className="flex flex-row items-baseline gap-1">
+                  <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
                     Med
                   </span>
-                  <span className="text-base font-bold tabular-nums text-warning-soft sm:text-lg">{medium}</span>
+                  <span className="text-sm font-bold tabular-nums text-warning-soft">{medium}</span>
                 </div>
-                <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                <div className="flex flex-row items-baseline gap-1">
+                  <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
                     Low
                   </span>
-                  <span className="text-base font-bold tabular-nums text-success sm:text-lg">{low}</span>
+                  <span className="text-sm font-bold tabular-nums text-success">{low}</span>
                 </div>
                 {unset > 0 ? (
-                  <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-                    <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  <div className="flex flex-row items-baseline gap-1">
+                    <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
                       Not set
                     </span>
-                    <span className="text-base font-bold tabular-nums text-muted-foreground sm:text-lg">
-                      {unset}
-                    </span>
+                    <span className="text-sm font-bold tabular-nums text-muted-foreground">{unset}</span>
                   </div>
                 ) : null}
               </div>
               {!showGoals ? (
-                <div className="mt-1.5 border-t border-border/60 pt-1.5">
+                <div className="mt-1 border-t border-border/60 pt-1">
                   <RiskComponentOverview risks={risks} projectRunId={projectRunId} />
                 </div>
               ) : null}
