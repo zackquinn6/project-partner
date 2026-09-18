@@ -125,6 +125,12 @@ import {
 import { QUALITY_GOAL_OPTIONS, isQualityGoal } from '@/utils/qualityGoal';
 import type { ProjectRun } from '@/interfaces/ProjectRun';
 import { format } from 'date-fns';
+import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
+import {
+  normalizePlanningToolsSelection,
+  type PlanningToolId,
+} from '@/components/KickoffSteps/ProjectToolsStep';
+import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 
 const RISK_FOCUS_PROGRESS_STOPS = [0, 25, 50, 75, 100] as const;
 
@@ -165,6 +171,26 @@ function riskRadarBudgetLabel(value: string | null | undefined): string | null {
   const raw = value?.trim();
   if (!raw) return null;
   return raw.includes('$') ? raw : `$${raw}`;
+}
+
+function dateInputFromTimeline(value: string | null | undefined): string {
+  const raw = value?.trim();
+  if (!raw) return '';
+  const dateOnly = raw.length >= 10 ? raw.slice(0, 10) : raw;
+  return /^\d{4}-\d{2}-\d{2}$/.test(dateOnly) ? dateOnly : '';
+}
+
+function budgetInputFromGoal(value: string | null | undefined): string {
+  const raw = value?.trim();
+  if (!raw) return '';
+  return raw.replace(/^\$\s*/, '').trim();
+}
+
+function selectedPlanningToolIds(projectRun: ProjectRun): string[] {
+  const decisions = parseCustomizationDecisions(projectRun.customization_decisions);
+  const tools = decisions.selected_planning_tools;
+  if (!Array.isArray(tools)) return [];
+  return tools.filter((t): t is string => typeof t === 'string' && t.length > 0);
 }
 
 /** Latest end from schedule_events when the Schedule tool has produced a plan. */
@@ -795,6 +821,21 @@ function RiskFocusDashboard({
   onProgressChange?: (progress: number) => void;
   collapseChrome?: boolean;
 }) {
+  const { updateProjectRun } = useProject();
+  const {
+    partnerAppsEnabled,
+    expertSupportEnabled,
+    toolRentalsEnabled,
+    wasteRemovalEnabled,
+  } = usePartnerAppSettings();
+
+  const [safetyGoalOpen, setSafetyGoalOpen] = useState(false);
+  const [scheduleGoalOpen, setScheduleGoalOpen] = useState(false);
+  const [budgetGoalOpen, setBudgetGoalOpen] = useState(false);
+  const [draftGoalDate, setDraftGoalDate] = useState('');
+  const [draftGoalBudget, setDraftGoalBudget] = useState('');
+  const [goalActionBusy, setGoalActionBusy] = useState(false);
+
   const { high, medium, low } = riskFocusSeverityCounts(risks);
   const name = projectDisplayName?.trim() || null;
   const showGoals = Boolean(projectRun);
@@ -809,6 +850,105 @@ function RiskFocusDashboard({
   const qualityGoal = projectRun && isQualityGoal(projectRun.initial_quality_goal)
     ? projectRun.initial_quality_goal
     : null;
+
+  const planningTools = projectRun ? selectedPlanningToolIds(projectRun) : [];
+  const hasScheduleTool = planningTools.includes('schedule');
+  const hasBudgetTool = planningTools.includes('budget');
+  const goalsEditable = Boolean(projectRun) && !readOnly;
+
+  const openScheduleGoal = () => {
+    if (!projectRun || readOnly) return;
+    setDraftGoalDate(dateInputFromTimeline(projectRun.initial_timeline));
+    setScheduleGoalOpen(true);
+  };
+
+  const openBudgetGoal = () => {
+    if (!projectRun || readOnly) return;
+    setDraftGoalBudget(budgetInputFromGoal(projectRun.initial_budget));
+    setBudgetGoalOpen(true);
+  };
+
+  const persistPlanningToolAndOpen = async (
+    toolId: 'schedule' | 'budget',
+    openEvent: 'open-project-scheduler' | 'open-project-budgeting',
+    extras?: { initial_timeline?: string; initial_budget?: string }
+  ) => {
+    if (!projectRun) return;
+    setGoalActionBusy(true);
+    try {
+      const decisions = parseCustomizationDecisions(projectRun.customization_decisions);
+      const currentTools = selectedPlanningToolIds(projectRun);
+      const withTool = currentTools.includes(toolId) ? currentTools : [...currentTools, toolId];
+      const nextTools = normalizePlanningToolsSelection(
+        withTool as PlanningToolId[],
+        partnerAppsEnabled,
+        expertSupportEnabled,
+        toolRentalsEnabled,
+        wasteRemovalEnabled
+      );
+      await updateProjectRun({
+        ...projectRun,
+        ...(extras?.initial_timeline !== undefined
+          ? { initial_timeline: extras.initial_timeline || undefined }
+          : {}),
+        ...(extras?.initial_budget !== undefined
+          ? { initial_budget: extras.initial_budget || undefined }
+          : {}),
+        customization_decisions: {
+          ...decisions,
+          selected_planning_tools: nextTools,
+        } as ProjectRun['customization_decisions'],
+        updatedAt: new Date(),
+      });
+      window.dispatchEvent(new CustomEvent(openEvent));
+    } catch (error) {
+      toast.error(
+        toolId === 'schedule'
+          ? 'Could not open Schedule.'
+          : 'Could not open Budget.'
+      );
+      console.error(error);
+    } finally {
+      setGoalActionBusy(false);
+    }
+  };
+
+  const saveScheduleGoalDate = async () => {
+    if (!projectRun) return;
+    setGoalActionBusy(true);
+    try {
+      await updateProjectRun({
+        ...projectRun,
+        initial_timeline: draftGoalDate || undefined,
+        updatedAt: new Date(),
+      });
+      toast.success('Goal finish date saved.');
+    } catch (error) {
+      toast.error('Could not save the goal finish date.');
+      console.error(error);
+    } finally {
+      setGoalActionBusy(false);
+    }
+  };
+
+  const saveBudgetGoalAmount = async () => {
+    if (!projectRun) return;
+    setGoalActionBusy(true);
+    try {
+      const cleaned = draftGoalBudget.trim();
+      await updateProjectRun({
+        ...projectRun,
+        initial_budget: cleaned || undefined,
+        updatedAt: new Date(),
+      });
+      toast.success('Goal budget saved.');
+    } catch (error) {
+      toast.error('Could not save the goal budget.');
+      console.error(error);
+    } finally {
+      setGoalActionBusy(false);
+    }
+  };
 
   const rollupRows = useMemo(() => riskRollupRowsFromRisks(risks), [risks]);
   const rollups = useMemo(() => rollupRiskComponents(rollupRows), [rollupRows]);
@@ -825,6 +965,10 @@ function RiskFocusDashboard({
   /** Shared outline height so Safety/Schedule/Budget match the Quality Good/Great/Professional row. */
   const goalMetricShellClass =
     'mt-1 flex h-9 w-full shrink-0 items-center justify-center overflow-hidden rounded-md border border-border px-1';
+  const goalMetricButtonClass = cn(
+    goalMetricShellClass,
+    'transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+  );
   const goalMetricClass =
     'min-w-0 break-words text-center font-display text-xs font-semibold leading-tight text-foreground sm:text-sm sm:leading-none';
 
@@ -958,9 +1102,20 @@ function RiskFocusDashboard({
                         'Safety',
                         'bg-success/15 text-success'
                       )}
-                      <div className={goalMetricShellClass}>
-                        <div className={goalMetricClass}>0 injuries</div>
-                      </div>
+                      {goalsEditable ? (
+                        <button
+                          type="button"
+                          className={goalMetricButtonClass}
+                          onClick={() => setSafetyGoalOpen(true)}
+                          aria-label="Why safety stays at 0 injuries"
+                        >
+                          <div className={goalMetricClass}>0 injuries</div>
+                        </button>
+                      ) : (
+                        <div className={goalMetricShellClass}>
+                          <div className={goalMetricClass}>0 injuries</div>
+                        </div>
+                      )}
                       {goalStatusFooter('safety')}
                     </div>
                     <div className={cn(goalTileClass, 'border-l-[3px] border-l-info')}>
@@ -969,11 +1124,24 @@ function RiskFocusDashboard({
                         'Schedule',
                         'bg-info/15 text-info'
                       )}
-                      <div className={goalMetricShellClass}>
-                        <div className={goalMetricClass}>
-                          {scheduleLabel ? `By ${scheduleLabel}` : '-'}
+                      {goalsEditable ? (
+                        <button
+                          type="button"
+                          className={goalMetricButtonClass}
+                          onClick={openScheduleGoal}
+                          aria-label="Change schedule goal or open Schedule"
+                        >
+                          <div className={goalMetricClass}>
+                            {scheduleLabel ? `By ${scheduleLabel}` : '-'}
+                          </div>
+                        </button>
+                      ) : (
+                        <div className={goalMetricShellClass}>
+                          <div className={goalMetricClass}>
+                            {scheduleLabel ? `By ${scheduleLabel}` : '-'}
+                          </div>
                         </div>
-                      </div>
+                      )}
                       {goalStatusFooter('schedule')}
                     </div>
                     <div className={cn(goalTileClass, 'border-l-[3px] border-l-warning-soft')}>
@@ -982,11 +1150,24 @@ function RiskFocusDashboard({
                         'Budget',
                         'bg-warning-soft/15 text-warning-soft'
                       )}
-                      <div className={goalMetricShellClass}>
-                        <div className={cn(goalMetricClass, 'tabular-nums')}>
-                          {budgetLabel ?? '-'}
+                      {goalsEditable ? (
+                        <button
+                          type="button"
+                          className={goalMetricButtonClass}
+                          onClick={openBudgetGoal}
+                          aria-label="Change budget goal or open Budget"
+                        >
+                          <div className={cn(goalMetricClass, 'tabular-nums')}>
+                            {budgetLabel ?? '-'}
+                          </div>
+                        </button>
+                      ) : (
+                        <div className={goalMetricShellClass}>
+                          <div className={cn(goalMetricClass, 'tabular-nums')}>
+                            {budgetLabel ?? '-'}
+                          </div>
                         </div>
-                      </div>
+                      )}
                       {goalStatusFooter('budget')}
                     </div>
                     <div className={cn(goalTileClass, 'border-l-[3px] border-l-category-3 px-1')}>
@@ -1081,6 +1262,161 @@ function RiskFocusDashboard({
           </div>
         </>
       ) : null}
+
+      <Dialog open={safetyGoalOpen} onOpenChange={setSafetyGoalOpen}>
+        <DialogContent
+          overlayClassName="z-[200]"
+          className="z-[200] max-w-md border bg-background shadow-xl"
+        >
+          <DialogHeader>
+            <DialogTitle>Safety stays at zero</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+            <p>
+              This goal is locked at <span className="font-medium text-foreground">0 injuries</span>.
+              You can push a finish date or a budget - you cannot trade your body for either one.
+            </p>
+            <p>
+              A cut or a fall can stop the project cold, and any injury is something you will be sure
+              to regret. Keep yourself able to finish the work and enjoy the result.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={() => setSafetyGoalOpen(false)}>
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={scheduleGoalOpen} onOpenChange={setScheduleGoalOpen}>
+        <DialogContent
+          overlayClassName="z-[200]"
+          className="z-[200] max-w-md border bg-background shadow-xl"
+        >
+          <DialogHeader>
+            <DialogTitle>Schedule goal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {!hasScheduleTool ? (
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Schedule is not in this project&apos;s Planning Studio tools yet. Add it to plan dates
+                in detail, or set a simple goal finish date below.
+              </p>
+            ) : (
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Set a goal finish date here, or open Schedule for a full plan.
+              </p>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="risk-radar-goal-date">Goal finish date</Label>
+              <Input
+                id="risk-radar-goal-date"
+                type="date"
+                value={draftGoalDate}
+                onChange={(e) => setDraftGoalDate(e.target.value)}
+                disabled={goalActionBusy}
+              />
+              <p className="text-xs text-muted-foreground">
+                This is your target date - not the calculated end from Schedule.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={goalActionBusy}
+              onClick={() => void saveScheduleGoalDate()}
+            >
+              Save date
+            </Button>
+            <Button
+              type="button"
+              disabled={goalActionBusy}
+              onClick={() => {
+                void (async () => {
+                  await persistPlanningToolAndOpen('schedule', 'open-project-scheduler', {
+                    initial_timeline: draftGoalDate,
+                  });
+                  setScheduleGoalOpen(false);
+                })();
+              }}
+            >
+              {hasScheduleTool ? 'Open Schedule' : 'Add Schedule and open'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={budgetGoalOpen} onOpenChange={setBudgetGoalOpen}>
+        <DialogContent
+          overlayClassName="z-[200]"
+          className="z-[200] max-w-md border bg-background shadow-xl"
+        >
+          <DialogHeader>
+            <DialogTitle>Budget goal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {!hasBudgetTool ? (
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Budget is not in this project&apos;s Planning Studio tools yet. Add it to build a full
+                cost plan, or set a simple spending goal below.
+              </p>
+            ) : (
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Set a spending goal here, or open Budget for a full cost plan.
+              </p>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="risk-radar-goal-budget">Goal budget</Label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  $
+                </span>
+                <Input
+                  id="risk-radar-goal-budget"
+                  type="text"
+                  inputMode="decimal"
+                  className="pl-7"
+                  placeholder="0"
+                  value={draftGoalBudget}
+                  onChange={(e) => setDraftGoalBudget(e.target.value)}
+                  disabled={goalActionBusy}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                This is your target spend - not the calculated total from Budget line items.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={goalActionBusy}
+              onClick={() => void saveBudgetGoalAmount()}
+            >
+              Save budget
+            </Button>
+            <Button
+              type="button"
+              disabled={goalActionBusy}
+              onClick={() => {
+                void (async () => {
+                  const cleaned = draftGoalBudget.trim();
+                  await persistPlanningToolAndOpen('budget', 'open-project-budgeting', {
+                    initial_budget: cleaned,
+                  });
+                  setBudgetGoalOpen(false);
+                })();
+              }}
+            >
+              {hasBudgetTool ? 'Open Budget' : 'Add Budget and open'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
