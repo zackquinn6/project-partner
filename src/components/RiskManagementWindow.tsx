@@ -82,7 +82,7 @@ import { reportUserFacingError } from '@/utils/errorReporting';
 import { ProjectRiskRulesEditor } from '@/components/ProjectRiskRulesEditor';
 import { useActionPriorityTable } from '@/hooks/useActionPriorityTable';
 import { useOccurrenceDrivers } from '@/hooks/useOccurrenceDrivers';
-import { actionPriorityLabel } from '@/utils/actionPriorityTable';
+import { actionPriorityLabel, type ActionPriorityTable } from '@/utils/actionPriorityTable';
 import {
   PREVENTION_STRENGTHS,
   PREVENTION_STRENGTH_LABELS,
@@ -476,6 +476,34 @@ function riskComponentLightClass(ap: ActionPriority | null): string {
   }
 }
 
+/** Marker for goal-tile status: filled by priority, outlined when nothing is scored. */
+function goalRiskStatusMarkerClass(ap: ActionPriority | null): string {
+  if (ap == null) {
+    return 'border border-muted-foreground/50 bg-transparent';
+  }
+  return cn('ring-2', riskComponentLightClass(ap));
+}
+
+/**
+ * Visible status wording for goal tiles. Prefers action-priority table labels when loaded;
+ * falls back to short display copy only when labels are unavailable (never invents a score).
+ */
+function resolveGoalRiskStatusText(
+  ap: ActionPriority | null,
+  table: ActionPriorityTable | null | undefined
+): string {
+  if (ap == null) return 'Not assessed';
+  if (table) return actionPriorityLabel(table, ap).label;
+  switch (ap) {
+    case 'H':
+      return 'Act now';
+    case 'M':
+      return 'Safeguard';
+    case 'L':
+      return 'Covered';
+  }
+}
+
 /** Cell tint for a component, so the four readings sit in one row without four boxes. */
 function riskComponentTileClass(ap: ActionPriority | null): string {
   switch (ap) {
@@ -529,6 +557,7 @@ function GoalRiskLight({
   score,
   projectRunId,
   className,
+  variant = 'dot',
 }: {
   dimension: RiskDimension;
   worstActionPriority: ActionPriority | null;
@@ -539,6 +568,8 @@ function GoalRiskLight({
   score: number | null;
   projectRunId?: string;
   className?: string;
+  /** `dot` for compact overview; `status` shows marker + plain-language status on goal tiles. */
+  variant?: 'dot' | 'status';
 }) {
   const { table } = useActionPriorityTable();
   const description =
@@ -546,16 +577,36 @@ function GoalRiskLight({
       ? actionPriorityLabel(table, worstActionPriority).description
       : null;
   const label = RISK_COMPONENT_CONSUMER_LABELS[dimension];
+  const statusText = resolveGoalRiskStatusText(worstActionPriority, table);
 
   const light = (
     <span
       className={cn(
-        'h-2 w-2 shrink-0 rounded-full ring-2',
-        riskComponentLightClass(worstActionPriority)
+        'h-2 w-2 shrink-0 rounded-full',
+        variant === 'status'
+          ? goalRiskStatusMarkerClass(worstActionPriority)
+          : cn('ring-2', riskComponentLightClass(worstActionPriority))
       )}
       aria-hidden
     />
   );
+
+  const body =
+    variant === 'status' ? (
+      <span className="inline-flex min-w-0 items-center gap-1.5">
+        {light}
+        <span className="min-w-0 truncate text-[11px] font-semibold leading-none text-foreground">
+          {statusText}
+        </span>
+      </span>
+    ) : (
+      light
+    );
+
+  const ariaLabel =
+    variant === 'status'
+      ? `${label} risk status: ${statusText}`
+      : `${label} risk: open dashboard`;
 
   return (
     <Tooltip>
@@ -566,16 +617,23 @@ function GoalRiskLight({
             onClick={() => openRiskComponentDashboard(projectRunId, dimension)}
             onDoubleClick={() => openRiskComponentDashboard(projectRunId, dimension)}
             className={cn(
-              'inline-flex items-center justify-center rounded-sm p-0.5 transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:brightness-110',
+              'inline-flex min-h-7 min-w-0 max-w-full items-center rounded-sm px-1 py-0.5 transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:brightness-110',
+              variant === 'dot' && 'justify-center p-0.5',
               className
             )}
-            aria-label={`${label} risk: open dashboard`}
+            aria-label={ariaLabel}
           >
-            {light}
+            {body}
           </button>
         ) : (
-          <span className={cn('inline-flex items-center justify-center p-0.5', className)}>
-            {light}
+          <span
+            className={cn(
+              'inline-flex min-w-0 max-w-full items-center',
+              variant === 'dot' ? 'justify-center p-0.5' : 'px-1 py-0.5',
+              className
+            )}
+          >
+            {body}
           </span>
         )}
       </TooltipTrigger>
@@ -700,9 +758,14 @@ function RiskFocusDashboard({
   const worstRpn = useMemo(() => worstRpnByComponent(rollupRows), [rollupRows]);
 
   const sectionHeaderClass =
-    'mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
+    'mb-1 font-display text-xs font-semibold leading-4 text-muted-foreground';
   const sectionShellClass =
-    'flex h-full min-w-0 flex-col rounded-md border border-border bg-card px-2 py-1.5 shadow-sm';
+    'flex h-full min-w-0 flex-col rounded-md border border-border bg-card px-2.5 py-2';
+  const goalTileClass =
+    'flex min-h-0 min-w-0 flex-col rounded-md border border-border bg-card px-1.5 py-1';
+  const goalLabelClass = 'text-[11px] font-medium leading-none text-muted-foreground';
+  const goalMetricClass =
+    'mt-0.5 min-w-0 break-words font-display text-sm font-semibold leading-[18px] text-foreground';
 
   const goalLightProps = (dimension: RiskDimension) => {
     const rollup = rollups[dimension];
@@ -719,11 +782,14 @@ function RiskFocusDashboard({
   };
 
   const goalStatusFooter = (dimension: RiskDimension) => (
-    <div className="mt-auto flex min-h-[1.25rem] items-center gap-1.5 pt-1">
-      <span className="text-[10px] font-medium leading-none text-muted-foreground">Risk Status:</span>
-      <GoalRiskLight {...goalLightProps(dimension)} />
+    <div className="mt-auto flex min-h-7 items-center pt-1">
+      <GoalRiskLight {...goalLightProps(dimension)} variant="status" />
     </div>
   );
+
+  const qualityMetricLabel = qualityGoal
+    ? QUALITY_GOAL_OPTIONS.find((o) => o.value === qualityGoal)?.label
+    : null;
 
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 py-1.5 md:px-4">
@@ -750,7 +816,7 @@ function RiskFocusDashboard({
             {showProgress && projectRun ? (
               <div className={sectionShellClass}>
                 <div className={sectionHeaderClass}>Current project progress</div>
-                <p className="mb-1.5 text-xs leading-snug text-muted-foreground">
+                <p className="mb-1 max-w-[14rem] text-[11px] leading-4 text-muted-foreground">
                   Risk falls as you get further into the project
                 </p>
                 {progressEditable ? (
@@ -769,7 +835,7 @@ function RiskFocusDashboard({
                     }}
                   >
                     <SelectTrigger
-                      className="mb-1.5 h-7 w-full text-xs"
+                      className="mb-1.5 h-7 w-full text-xs text-muted-foreground"
                       aria-label="Current project progress"
                     >
                       <SelectValue />
@@ -790,9 +856,9 @@ function RiskFocusDashboard({
                 >
                   <Progress
                     value={riskFocusProgressBarPercent(projectRun.progress)}
-                    className="h-2.5 min-w-0 flex-1"
+                    className="h-2 min-w-0 flex-1 border border-border bg-muted shadow-none"
                   />
-                  <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+                  <span className="w-11 shrink-0 text-right font-display text-lg font-bold tabular-nums leading-none text-foreground">
                     {riskFocusProgressBarPercent(projectRun.progress)}%
                   </span>
                 </div>
@@ -804,88 +870,63 @@ function RiskFocusDashboard({
                 <div className={sectionHeaderClass}>Project goals</div>
                 <TooltipProvider>
                   <div className="grid min-w-0 flex-1 grid-cols-2 gap-1 sm:grid-cols-4">
-                    <div className="flex min-w-0 flex-col rounded border border-success/40 bg-success/10 px-1.5 py-1">
-                      <div className="flex items-start gap-1.5">
-                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-success/20 text-success">
-                          <Shield className="h-3 w-3" aria-hidden />
+                    <div className={cn(goalTileClass, 'border-l-[3px] border-l-success')}>
+                      <div className="flex min-w-0 items-start gap-1.5">
+                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-success/15 text-success">
+                          <Shield className="h-3.5 w-3.5" aria-hidden />
                         </span>
-                        <div className="min-w-0">
-                          <div className="text-[10px] font-medium uppercase tracking-wide text-success">
-                            Safety
-                          </div>
-                          <div className="text-xs font-semibold leading-tight text-foreground">
-                            0 injuries
-                          </div>
+                        <div className="min-w-0 flex-1">
+                          <div className={goalLabelClass}>Safety</div>
+                          <div className={goalMetricClass}>0 injuries</div>
                         </div>
                       </div>
                       {goalStatusFooter('safety')}
                     </div>
-                    <div className="flex min-w-0 flex-col rounded border border-info/40 bg-info/10 px-1.5 py-1">
-                      <div className="flex items-start gap-1.5">
-                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-info/20 text-info">
-                          <CalendarDays className="h-3 w-3" aria-hidden />
+                    <div className={cn(goalTileClass, 'border-l-[3px] border-l-info')}>
+                      <div className="flex min-w-0 items-start gap-1.5">
+                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-info/15 text-info">
+                          <CalendarDays className="h-3.5 w-3.5" aria-hidden />
                         </span>
-                        <div className="min-w-0">
-                          <div className="text-[10px] font-medium uppercase tracking-wide text-info">
-                            Schedule
-                          </div>
-                          <div className="break-words text-xs font-semibold leading-tight text-foreground">
+                        <div className="min-w-0 flex-1">
+                          <div className={goalLabelClass}>Schedule</div>
+                          <div className={goalMetricClass}>
                             {scheduleLabel ? `By ${scheduleLabel}` : '-'}
                           </div>
                         </div>
                       </div>
                       {goalStatusFooter('schedule')}
                     </div>
-                    <div className="flex min-w-0 flex-col rounded border border-warning-soft/40 bg-warning-soft/10 px-1.5 py-1">
-                      <div className="flex items-start gap-1.5">
-                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-warning-soft/20 text-warning-soft">
-                          <CircleDollarSign className="h-3 w-3" aria-hidden />
+                    <div className={cn(goalTileClass, 'border-l-[3px] border-l-warning-soft')}>
+                      <div className="flex min-w-0 items-start gap-1.5">
+                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-warning-soft/15 text-warning-soft">
+                          <CircleDollarSign className="h-3.5 w-3.5" aria-hidden />
                         </span>
-                        <div className="min-w-0">
-                          <div className="text-[10px] font-medium uppercase tracking-wide text-warning-soft">
-                            Budget
-                          </div>
-                          <div className="text-xs font-semibold tabular-nums leading-tight text-foreground">
+                        <div className="min-w-0 flex-1">
+                          <div className={goalLabelClass}>Budget</div>
+                          <div className={cn(goalMetricClass, 'tabular-nums')}>
                             {budgetLabel ?? '-'}
                           </div>
                         </div>
                       </div>
                       {goalStatusFooter('budget')}
                     </div>
-                    <div className="flex min-w-0 flex-col rounded border border-category-3/40 bg-category-3/10 px-1.5 py-1">
-                      <div className="flex items-start gap-1.5">
-                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-category-3/20 text-category-3">
-                          <BadgeCheck className="h-3 w-3" aria-hidden />
+                    <div className={cn(goalTileClass, 'border-l-[3px] border-l-category-3')}>
+                      <div className="flex min-w-0 items-start gap-1.5">
+                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-category-3/15 text-category-3">
+                          <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <div className="text-[10px] font-medium uppercase tracking-wide text-category-3">
-                            Quality
+                          <div className={goalLabelClass}>Quality</div>
+                          <div
+                            className={goalMetricClass}
+                            aria-label={
+                              qualityMetricLabel
+                                ? `Quality goal ${qualityMetricLabel}`
+                                : undefined
+                            }
+                          >
+                            {qualityMetricLabel ?? '-'}
                           </div>
-                          {qualityGoal ? (
-                            <div
-                              className="mt-0.5 grid grid-cols-3 gap-x-0.5 text-[10px] leading-tight"
-                              aria-label={`Quality goal ${QUALITY_GOAL_OPTIONS.find((o) => o.value === qualityGoal)?.label}`}
-                            >
-                              {QUALITY_GOAL_OPTIONS.map((option) => {
-                                const selected = option.value === qualityGoal;
-                                return (
-                                  <span
-                                    key={option.value}
-                                    className={cn(
-                                      'min-w-0 text-center',
-                                      selected
-                                        ? 'font-semibold text-category-3'
-                                        : 'font-normal text-muted-foreground/50 line-through'
-                                    )}
-                                  >
-                                    {option.label}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <div className="text-xs font-semibold leading-tight text-foreground">-</div>
-                          )}
                         </div>
                       </div>
                       {goalStatusFooter('quality')}
@@ -896,25 +937,42 @@ function RiskFocusDashboard({
             ) : null}
 
             <div className={sectionShellClass}>
-              <div className={cn(sectionHeaderClass, 'text-center')}>Current risk summary</div>
-              <div className="mt-auto flex flex-row flex-wrap items-baseline justify-center gap-x-3 gap-y-1 px-0.5 pb-0.5">
-                <div className="flex flex-row items-baseline gap-1.5">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    High
-                  </span>
-                  <span className="text-base font-bold tabular-nums text-destructive">{high}</span>
-                </div>
-                <div className="flex flex-row items-baseline gap-1.5">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Med
-                  </span>
-                  <span className="text-base font-bold tabular-nums text-warning-soft">{medium}</span>
-                </div>
-                <div className="flex flex-row items-baseline gap-1.5">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Low
-                  </span>
-                  <span className="text-base font-bold tabular-nums text-success">{low}</span>
+              <div className={sectionHeaderClass}>Current risk summary</div>
+              <div className="mt-auto flex min-h-0 flex-1 items-center">
+                <div className="grid w-full grid-cols-3 divide-x divide-border">
+                  <div className="flex flex-col items-center justify-center gap-0.5 px-1 py-0.5">
+                    <div className="flex items-center gap-1">
+                      <span
+                        className="h-1.5 w-1.5 shrink-0 rounded-full bg-destructive-soft"
+                        aria-hidden
+                      />
+                      <span className="font-display text-xl font-bold tabular-nums leading-[22px] text-destructive-soft">
+                        {high}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-medium text-muted-foreground">High</span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center gap-0.5 px-1 py-0.5">
+                    <div className="flex items-center gap-1">
+                      <span
+                        className="h-1.5 w-1.5 shrink-0 rounded-full bg-warning-soft"
+                        aria-hidden
+                      />
+                      <span className="font-display text-xl font-bold tabular-nums leading-[22px] text-warning-soft-foreground">
+                        {medium}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-medium text-muted-foreground">Medium</span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center gap-0.5 px-1 py-0.5">
+                    <div className="flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success" aria-hidden />
+                      <span className="font-display text-xl font-bold tabular-nums leading-[22px] text-success">
+                        {low}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-medium text-muted-foreground">Low</span>
+                  </div>
                 </div>
               </div>
               {!showGoals ? (
