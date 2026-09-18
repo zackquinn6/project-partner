@@ -64,7 +64,8 @@ type IndexLocationState = {
 
 function initialCurrentViewFromLocation(state: unknown): 'home' | 'admin' | 'user' | 'editWorkflow' {
   const v = (state as IndexLocationState)?.view;
-  if (v === 'admin' || v === 'user' || v === 'editWorkflow') return v;
+  // Do not trust history.state for admin; only handleAdminAccess may enter that view.
+  if (v === 'user' || v === 'editWorkflow') return v;
   return 'home';
 }
 
@@ -262,7 +263,12 @@ const Index = () => {
       }
     }
     if (location.state?.view) {
-      setCurrentView(location.state.view);
+      const nextView = location.state.view as 'home' | 'admin' | 'user' | 'editWorkflow';
+      if (nextView === 'admin' && !showAdminPanel) {
+        setCurrentView('home');
+      } else if (nextView === 'admin' || nextView === 'user' || nextView === 'editWorkflow' || nextView === 'home') {
+        setCurrentView(nextView);
+      }
 
       // Opening a specific project (e.g. from catalog) → go to kickoff, not dashboard
       if (location.state.projectRunId) {
@@ -286,7 +292,7 @@ const Index = () => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state, location.pathname, isMobile, setCurrentProjectRun, setCurrentProject, navigate]);
+  }, [location.state, location.pathname, isMobile, setCurrentProjectRun, setCurrentProject, navigate, showAdminPanel]);
 
   // When project runs arrive after navigation (or refetch), sync current run from history without re-driving view from stale state.
   useEffect(() => {
@@ -305,7 +311,12 @@ const Index = () => {
     if (isPageReload()) return;
     // Only handle state changes once per location change
     if (location.state?.view && !hasHandledInitialState) {
-      setCurrentView(location.state.view);
+      const nextView = location.state.view as 'home' | 'admin' | 'user' | 'editWorkflow';
+      if (nextView === 'admin' && !showAdminPanel) {
+        setCurrentView('home');
+      } else if (nextView === 'admin' || nextView === 'user' || nextView === 'editWorkflow' || nextView === 'home') {
+        setCurrentView(nextView);
+      }
       
       // Handle mobile view state
       if (location.state.mobileView && isMobile) {
@@ -318,7 +329,7 @@ const Index = () => {
       }
       setHasHandledInitialState(true);
     }
-  }, [location.state, hasHandledInitialState]);
+  }, [location.state, hasHandledInitialState, isMobile, showAdminPanel]);
 
   // Reset handled state when location changes
   useEffect(() => {
@@ -583,6 +594,14 @@ const Index = () => {
       toast.error('Access denied. Admin or Project Owner role required.');
     }
   };
+
+  // Never leave currentView on admin when the user lacks the role (e.g. forged history.state).
+  useEffect(() => {
+    if (currentView === 'admin' && !showAdminPanel) {
+      setCurrentView('home');
+      navigate('/', { replace: true, state: { view: 'home' } });
+    }
+  }, [currentView, showAdminPanel, navigate]);
 
   useEffect(() => {
     const onMobileAdmin = () => {

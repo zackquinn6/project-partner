@@ -18,7 +18,6 @@ import Index from "./pages/Index";
 import ProjectCatalogPage from "./pages/ProjectCatalog";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import ImportTileContent from "./pages/ImportTileContent";
 import ApplyProjectOwner from "./pages/ApplyProjectOwner";
 import AcceptProjectOwnerInvite from "./pages/AcceptProjectOwnerInvite";
 import { Toaster } from "@/components/ui/toaster";
@@ -47,7 +46,6 @@ const App: React.FC = () => {
                         <Route path="/" element={<Index />} />
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/projects" element={<ProjectCatalogPage />} />
-                        <Route path="/import-tile-content" element={<ImportTileContent />} />
                         <Route path="/apply-project-owner" element={<ApplyProjectOwner />} />
                         <Route path="/accept-project-owner" element={<AcceptProjectOwnerInvite />} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -59,12 +59,11 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (error) {
         console.error('Rate limit check error:', error);
-        // Gracefully degrade - if rate limit check fails (e.g., function doesn't exist),
-        // allow the login attempt and let client-side rate limiting handle it
-        console.log('Allowing login - client-side rate limiting will be used as fallback');
+        // Fail closed: if the rate-limit backend is unavailable, deny rather than
+        // silently disabling brute-force protection.
         return new Response(
-          JSON.stringify({ allowed: true, fallback: true }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ allowed: false, error: 'Rate limit unavailable' }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 

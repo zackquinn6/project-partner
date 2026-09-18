@@ -156,27 +156,28 @@ async function persistAdminErrorNotification({
   retryable?: boolean;
 }): Promise<void> {
   // Users see the failure in-app (toast / inline). Only admins get a notifications-pane entry.
-  const { error } = await supabase.rpc('notifications_notify_admins', {
-    p_type: 'runtime_error',
-    p_title: notificationTitle ?? 'App function error',
-    p_body:
-      notificationBody ??
-      `${userMessage} Error code: ${supportCode}`,
-    p_metadata: {
-      error_code: supportCode,
-      source,
-      operation,
-      retryable: retryable === true,
-      affected_user_id: userId ?? null,
-      project_id: projectId ?? null,
-      project_run_id: projectRunId ?? null,
-      step_id: stepId ?? null,
-      error_name: serializedError.name ?? null,
-      error_message: serializedError.message,
-      error_code_raw: serializedError.code ?? null,
-      error_details: serializedError.details ?? null,
-      error_hint: serializedError.hint ?? null,
-      error_stack: serializedError.stack ?? null,
+  const { error } = await supabase.functions.invoke('report-runtime-error', {
+    body: {
+      type: 'runtime_error',
+      title: notificationTitle ?? 'App function error',
+      body:
+        notificationBody ??
+        `${userMessage} Error code: ${supportCode}`,
+      metadata: {
+        error_code: supportCode,
+        source,
+        operation,
+        retryable: retryable === true,
+        affected_user_id: userId ?? null,
+        project_id: projectId ?? null,
+        project_run_id: projectRunId ?? null,
+        step_id: stepId ?? null,
+        error_name: serializedError.name ?? null,
+        error_message: serializedError.message,
+        error_code_raw: serializedError.code ?? null,
+        error_details: serializedError.details ?? null,
+        error_hint: serializedError.hint ?? null,
+      },
     },
   });
 

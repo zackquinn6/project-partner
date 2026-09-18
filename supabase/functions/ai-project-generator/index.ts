@@ -2,6 +2,11 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { verifyAuth, getRequiredSecret } from "../_shared/auth.ts";
 import { sanitizeInput } from "../_shared/validation.ts";
+import {
+  assertUserRateLimit,
+  createServiceClient,
+  hasPaidEntitlement,
+} from "../_shared/entitlement.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,13 +49,44 @@ serve(async (req) => {
   try {
     // Verify authentication
     const user = await verifyAuth(req);
+
+    const admin = createServiceClient();
+    const entitled = await hasPaidEntitlement(admin, user.id);
+    if (!entitled) {
+      return new Response(
+        JSON.stringify({
+          error: "AI project generation requires an active membership or trial.",
+        }),
+        {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const { allowed } = await assertUserRateLimit(
+      admin,
+      user.id,
+      "ai-project-generator",
+      20,
+      60,
+    );
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Try again later." }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
     
     // Get API key
     const OPENAI_API_KEY = getRequiredSecret('OPENAI_API_KEY');
     
     const request: ProjectGenerationRequest = await req.json();
     
-    console.log('Generating project:', request.projectName, 'Category:', request.category, 'Model:', request.aiModel || 'gpt-4o-mini');
+    console.log('Generating project for authenticated user');
 
     // Fetch existing tools and materials from database
     // Note: This would require database access - for now, we'll pass empty arrays

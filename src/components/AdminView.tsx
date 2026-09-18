@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectOwner } from '@/hooks/useProjectOwner';
 import { UnifiedProjectManagement } from '@/components/UnifiedProjectManagement';
@@ -23,6 +24,7 @@ import {
   MapPin,
   Grid3x3,
   GraduationCap,
+  Loader2,
   type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -185,9 +187,12 @@ function AdminAppIconTile({
 }
 
 export const AdminView: React.FC = () => {
-  const { isAdmin } = useUserRole();
-  const { hasProjectOwnerRole } = useProjectOwner();
+  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { hasProjectOwnerRole, loading: ownerLoading } = useProjectOwner();
+  const navigate = useNavigate();
   const isProjectOwnerOnly = hasProjectOwnerRole && !isAdmin;
+  const canAccessAdmin = isAdmin || hasProjectOwnerRole;
+  const accessLoading = roleLoading || ownerLoading;
 
   const [enhancedProjectManagementOpen, setEnhancedProjectManagementOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
@@ -209,6 +214,26 @@ export const AdminView: React.FC = () => {
       setEnhancedProjectManagementOpen(true);
     }
   }, [isProjectOwnerOnly]);
+
+  useEffect(() => {
+    if (accessLoading) return;
+    if (!canAccessAdmin) {
+      toast.error('Access denied. Admin or Project Owner role required.');
+      navigate('/', { replace: true, state: { view: 'home' } });
+    }
+  }, [accessLoading, canAccessAdmin, navigate]);
+
+  if (accessLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!canAccessAdmin) {
+    return null;
+  }
 
   if (currentView === 'process-map') {
     return <StructureManager onBack={() => setCurrentView('admin')} />;
@@ -291,7 +316,7 @@ export const AdminView: React.FC = () => {
       id: 'skill-assessments',
       requireFullAdmin: true,
       title: 'Project Skill Assessments',
-      description: 'Configure per–project-type skill checks and view how users rate themselves',
+      description: 'Configure per-project-type skill checks and view how users rate themselves',
       actionLabel: 'Learn more',
       icon: GraduationCap,
       onOpen: () => setProjectSkillAssessmentsOpen(true),
@@ -300,7 +325,7 @@ export const AdminView: React.FC = () => {
   ];
 
   const visibleLaunchers = launcherItems.filter(
-    (item) => !item.requireFullAdmin || !isProjectOwnerOnly
+    (item) => isAdmin || (!item.requireFullAdmin && hasProjectOwnerRole)
   );
 
   return (
@@ -481,7 +506,7 @@ export const AdminView: React.FC = () => {
             </DialogHeader>
             <p className="text-sm text-muted-foreground leading-relaxed">
               For each project type, you will be able to create assessments for users to determine their
-              skill levels—including experience, formal training, and technical knowledge. User responses
+              skill levels - including experience, formal training, and technical knowledge. User responses
               will map to beginner, intermediate, or advanced tiers per project template and will be stored
               on their profile (in addition to their general DIY skill level). Until then, the product
               defaults everyone to beginner for each project type.

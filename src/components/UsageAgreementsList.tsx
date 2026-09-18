@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Shield, Calendar, User, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { getSignedStorageUrl } from '@/utils/privateStorageUrls';
 
 interface UsageAgreementRow {
   id: string;
@@ -12,6 +13,7 @@ interface UsageAgreementRow {
   agreement_type: string;
   pdf_storage_path: string | null;
   full_name: string;
+  pdfSignedUrl?: string | null;
 }
 
 export const UsageAgreementsList: React.FC = () => {
@@ -27,15 +29,25 @@ export const UsageAgreementsList: React.FC = () => {
         .order('agreed_at', { ascending: false });
 
       if (error) throw error;
-      const rows = (data ?? []).map((row: any) => ({
-        id: row.id as string,
-        user_id: row.user_id as string,
-        agreed_at: row.agreed_at as string,
-        created_at: row.created_at as string,
-        agreement_type: (row.agreement_type as string) ?? 'liability',
-        pdf_storage_path: row.pdf_storage_path ?? null,
-        full_name: (row.full_name as string) ?? '',
-      })) as UsageAgreementRow[];
+      const rows = await Promise.all(
+        ((data ?? []) as unknown as Array<Record<string, unknown>>).map(async (row) => {
+          const pdf_storage_path =
+            typeof row.pdf_storage_path === 'string' ? row.pdf_storage_path : null;
+          const pdfSignedUrl = pdf_storage_path
+            ? await getSignedStorageUrl(pdf_storage_path, 'liability-pdfs', 3600)
+            : null;
+          return {
+            id: row.id as string,
+            user_id: row.user_id as string,
+            agreed_at: row.agreed_at as string,
+            created_at: row.created_at as string,
+            agreement_type: (row.agreement_type as string) ?? 'liability',
+            pdf_storage_path,
+            full_name: (row.full_name as string) ?? '',
+            pdfSignedUrl,
+          } as UsageAgreementRow;
+        }),
+      );
       setList(rows);
     } catch (e) {
       console.error('Error fetching usage agreements:', e);
@@ -100,9 +112,9 @@ export const UsageAgreementsList: React.FC = () => {
                 <span className="text-xs text-muted-foreground">
                   Recorded: {new Date(row.created_at).toLocaleString()}
                 </span>
-                {row.pdf_storage_path && (
+                {row.pdfSignedUrl && (
                   <a
-                    href={supabase.storage.from('liability-pdfs').getPublicUrl(row.pdf_storage_path).data.publicUrl}
+                    href={row.pdfSignedUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary hover:underline text-xs"

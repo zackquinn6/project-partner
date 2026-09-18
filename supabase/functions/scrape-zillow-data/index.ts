@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
+import { verifyAdmin } from '../_shared/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,23 +24,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Get authenticated user
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-
-    if (authError || !user) {
-      throw new Error('Unauthorized');
-    }
+    await verifyAdmin(req);
 
     const { address } = await req.json();
 
@@ -48,13 +32,13 @@ Deno.serve(async (req) => {
       throw new Error('Address is required');
     }
 
-    console.log('Searching Zillow for address:', address);
+    console.log('Admin Zillow scrape requested');
 
     // Construct Zillow search URL
     const searchQuery = encodeURIComponent(address);
     const zillowSearchUrl = `https://www.zillow.com/homes/${searchQuery}_rb/`;
 
-    console.log('Zillow search URL:', zillowSearchUrl);
+    console.log('Zillow search URL prepared');
 
     // Fetch Zillow search results page with enhanced headers
     const response = await fetch(zillowSearchUrl, {

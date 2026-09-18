@@ -148,15 +148,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const LOGIN_TIMEOUT_MESSAGE = 'Login failed. Try again later.';
 
     const runSignIn = async (): Promise<{ error: any }> => {
-      // Primary path: server rate-limit gate. Deny only on an explicit allowed=false response.
-      const { data: rateLimitResult } = await supabase.functions.invoke('auth-rate-limit', {
+      // Primary path: server rate-limit gate. Deny on explicit allowed=false or transport failure.
+      const { data: rateLimitResult, error: rateLimitError } = await supabase.functions.invoke('auth-rate-limit', {
         body: {
           email: sanitizedEmail,
           action: 'check',
         },
       });
 
-      if (rateLimitResult?.allowed === false) {
+      if (rateLimitError || rateLimitResult?.allowed === false) {
         await logSecurityViolation(
           'rate_limit_exceeded',
           `Authentication rate limit exceeded for ${sanitizedEmail}`,

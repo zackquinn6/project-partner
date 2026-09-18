@@ -46,7 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Additional sanitization for message content
     const sanitizedMessage = sanitizeInput(validatedData.message);
 
-    console.log(`Sending feedback from ${validatedData.userEmail} - Category: ${validatedData.category}`);
+    console.log(`Sending feedback - Category: ${validatedData.category}`);
 
     // Send feedback email to support
     const emailResponse = await resend.emails.send({

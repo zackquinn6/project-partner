@@ -22,7 +22,10 @@ const corsHeaders = {
 };
 
 /** Inbound contact form messages from the app (authenticated users only). */
-const CONTACT_INBOX = "zackquinn6@gmail.com";
+const CONTACT_INBOX = Deno.env.get("CONTACT_INBOX") ?? Deno.env.get("SUPPORT_INBOX");
+if (!CONTACT_INBOX) {
+  console.error("CONTACT_INBOX / SUPPORT_INBOX is not configured");
+}
 
 /** Fixed subject line (not collected from the client). */
 const MAIL_SUBJECT_LABEL = "User Message";
@@ -56,6 +59,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     const RESEND_API_KEY = getRequiredSecret("RESEND_API_KEY");
     const resend = new Resend(RESEND_API_KEY);
+
+    if (!CONTACT_INBOX) {
+      console.error("CONTACT_INBOX is not configured");
+      return new Response(JSON.stringify({ error: "Service configuration error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
 
     const raw = await req.json();
     const validatedData = requestSchema.parse({

@@ -5176,6 +5176,7 @@ export type Database = {
         | { Args: never; Returns: boolean }
         | { Args: { check_user_id: string }; Returns: boolean }
       is_caller_admin: { Args: never; Returns: boolean }
+      redeem_coupon_increment: { Args: { p_coupon_id: string }; Returns: boolean }
       latest_published_in_family: {
         Args: { p_any_project_id: string }
         Returns: string

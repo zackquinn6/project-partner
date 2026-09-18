@@ -3,6 +3,11 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { verifyAuth, getRequiredSecret } from "../_shared/auth.ts";
 import { sanitizeInput } from "../_shared/validation.ts";
+import {
+  assertUserRateLimit,
+  createServiceClient,
+  hasPaidEntitlement,
+} from "../_shared/entitlement.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -75,6 +80,37 @@ serve(async (req) => {
   try {
     // Verify authentication
     const user = await verifyAuth(req);
+
+    const admin = createServiceClient();
+    const entitled = await hasPaidEntitlement(admin, user.id);
+    if (!entitled) {
+      return new Response(
+        JSON.stringify({
+          error: "AI repair analysis requires an active membership or trial.",
+        }),
+        {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const { allowed } = await assertUserRateLimit(
+      admin,
+      user.id,
+      "ai-repair-analysis",
+      30,
+      60,
+    );
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Try again later." }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
     
     // Get API key with proper error handling
     const GOOGLE_GEMINI_API_KEY = getRequiredSecret('GOOGLE_GEMINI_API_KEY');
@@ -138,10 +174,11 @@ Please analyze these home repair photos. ${sanitizedDescription ? `Additional co
 
     console.log('Sending request to Google Gemini with', validatedData.photos.length, 'photos');
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GOOGLE_GEMINI_API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-goog-api-key': GOOGLE_GEMINI_API_KEY,
       },
       body: JSON.stringify({
         contents: [{

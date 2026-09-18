@@ -1,130 +1,71 @@
 import React, { useEffect } from 'react';
 
 /**
- * Security Headers Provider - Implements comprehensive web security headers
- * 
- * SECURITY ARCHITECTURE NOTES:
- * - Implements Content Security Policy (CSP) to prevent XSS attacks
- * - Sets X-Content-Type-Options to prevent MIME type sniffing
- * - Implements Referrer Policy to control referrer information leakage
- * - Sets Permissions Policy to restrict dangerous browser APIs
- * - Does not set X-Frame-Options via <meta> (browsers ignore it; use HTTP headers)
- * 
- * LOVABLE COMPATIBILITY:
- * - Avoid client-side frame-blocking metas so the Lovable editor iframe can embed the app
- * - In production, set frame-ancestors / X-Frame-Options via HTTP response headers
+ * Client-side defense-in-depth meta tags.
+ *
+ * Authoritative production headers live in `public/_headers` (and must also be
+ * configured on hosts that ignore that file, e.g. Lovable CDN). Meta tags cannot
+ * set frame-ancestors, HSTS, or X-Frame-Options reliably - do not treat this
+ * provider as a substitute for HTTP response headers.
  */
 export const SecurityHeadersProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
-    // Set security headers via meta tags for client-side applications
     const setSecurityMeta = () => {
-      // Content Security Policy - Primary defense against XSS
       const cspMeta = document.createElement('meta');
       cspMeta.httpEquiv = 'Content-Security-Policy';
       cspMeta.content = [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.googletagmanager.com",
+        // unsafe-inline remains for Vite/React; prefer host CSP without unsafe-eval in production.
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.googletagmanager.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "img-src 'self' data: https: blob:",
         "font-src 'self' data: https://fonts.gstatic.com",
-        "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://api.open-meteo.com",
-        // frame-ancestors is ignored in <meta> CSP; set via HTTP headers in production.
+        "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.open-meteo.com",
         "base-uri 'self'",
         "form-action 'self'",
-        "upgrade-insecure-requests", // Force HTTPS
-        "block-all-mixed-content", // Block mixed HTTP/HTTPS content
-        // "require-trusted-types-for 'script'" // Commented out - React doesn't support Trusted Types yet
+        "upgrade-insecure-requests",
       ].join('; ');
-      
-      // Prevent MIME type sniffing attacks
+
       const noSniffMeta = document.createElement('meta');
       noSniffMeta.httpEquiv = 'X-Content-Type-Options';
       noSniffMeta.content = 'nosniff';
 
-      // Never set X-Frame-Options via <meta> — browsers reject it and warn in the console.
-      // Remove any leftover meta from older builds.
       document.querySelectorAll('meta[http-equiv="X-Frame-Options"]').forEach((el) => el.remove());
-      
-      // Referrer Policy - Control information leakage to third parties
+      document.querySelectorAll('meta[http-equiv="Strict-Transport-Security"]').forEach((el) => el.remove());
+      document.querySelectorAll('meta[http-equiv="Cross-Origin-Embedder-Policy"]').forEach((el) => el.remove());
+      document.querySelectorAll('meta[http-equiv="Cross-Origin-Opener-Policy"]').forEach((el) => el.remove());
+
       const referrerMeta = document.createElement('meta');
       referrerMeta.name = 'referrer';
       referrerMeta.content = 'strict-origin-when-cross-origin';
-      
-      // Permissions Policy - Restrict dangerous browser APIs
+
       const permissionsMeta = document.createElement('meta');
       permissionsMeta.httpEquiv = 'Permissions-Policy';
-      permissionsMeta.content = 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), autoplay=(), encrypted-media=(), fullscreen=(), picture-in-picture=()';
-      
-      // Additional security headers for enhanced protection
-      const strictTransportMeta = document.createElement('meta');
-      strictTransportMeta.httpEquiv = 'Strict-Transport-Security';
-      strictTransportMeta.content = 'max-age=31536000; includeSubDomains; preload';
-      
-      // Cross-Origin policies disabled for React compatibility
-      // These policies can trigger Trusted Types enforcement which React doesn't support yet
-      // Enable in production environments that have proper Trusted Types polyfills
-      const isDevelopment = window.location.hostname.includes('lovable') || 
-                           window.location.hostname === 'localhost' ||
-                           import.meta.env?.DEV;
-      
-      let crossOriginMeta: HTMLMetaElement | null = null;
-      let crossOriginOpenerMeta: HTMLMetaElement | null = null;
-      
-      if (!isDevelopment) {
-        crossOriginMeta = document.createElement('meta');
-        crossOriginMeta.httpEquiv = 'Cross-Origin-Embedder-Policy';
-        crossOriginMeta.content = 'require-corp';
-        
-        crossOriginOpenerMeta = document.createElement('meta');
-        crossOriginOpenerMeta.httpEquiv = 'Cross-Origin-Opener-Policy';
-        crossOriginOpenerMeta.content = 'same-origin';
-      }
-      
-      // Check if meta tags already exist before adding (prevent duplicates)
+      permissionsMeta.content =
+        'geolocation=(), microphone=(), camera=(), payment=(), usb=(), autoplay=(), encrypted-media=(), fullscreen=(), picture-in-picture=()';
+
       const existingCSP = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
       if (!existingCSP) {
         document.head.appendChild(cspMeta);
       }
-      
+
       const existingNoSniff = document.querySelector('meta[http-equiv="X-Content-Type-Options"]');
       if (!existingNoSniff) {
         document.head.appendChild(noSniffMeta);
       }
-      
+
       const existingReferrer = document.querySelector('meta[name="referrer"]');
       if (!existingReferrer) {
         document.head.appendChild(referrerMeta);
       }
-      
+
       const existingPermissions = document.querySelector('meta[http-equiv="Permissions-Policy"]');
       if (!existingPermissions) {
         document.head.appendChild(permissionsMeta);
       }
-      
-      // Add additional security headers
-      const existingHSTS = document.querySelector('meta[http-equiv="Strict-Transport-Security"]');
-      if (!existingHSTS && location.protocol === 'https:') {
-        document.head.appendChild(strictTransportMeta);
-      }
-      
-      // Only add Cross-Origin policies in production environments
-      if (!isDevelopment && crossOriginMeta && crossOriginOpenerMeta) {
-        const existingCOEP = document.querySelector('meta[http-equiv="Cross-Origin-Embedder-Policy"]');
-        if (!existingCOEP) {
-          document.head.appendChild(crossOriginMeta);
-        }
-        
-        const existingCOOP = document.querySelector('meta[http-equiv="Cross-Origin-Opener-Policy"]');
-        if (!existingCOOP) {
-          document.head.appendChild(crossOriginOpenerMeta);
-        }
-      }
     };
 
-    // Apply security headers on component mount
     setSecurityMeta();
-    
-    // Security headers are static and don't need cleanup
   }, []);
 
   return <>{children}</>;

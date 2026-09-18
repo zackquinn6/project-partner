@@ -1,6 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { verifyAuth } from "../_shared/auth.ts";
+import {
+  assertUserRateLimit,
+  createServiceClient,
+  hasPaidEntitlement,
+} from "../_shared/entitlement.ts";
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
@@ -48,7 +53,38 @@ serve(async (req) => {
   }
 
   try {
-    await verifyAuth(req);
+    const user = await verifyAuth(req);
+
+    const admin = createServiceClient();
+    const entitled = await hasPaidEntitlement(admin, user.id);
+    if (!entitled) {
+      return new Response(
+        JSON.stringify({
+          error: "Process improvement analysis requires an active membership or trial.",
+        }),
+        {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const { allowed } = await assertUserRateLimit(
+      admin,
+      user.id,
+      "process-improvement-analysis",
+      15,
+      60,
+    );
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Try again later." }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
 
     if (!openAIApiKey) {
       console.error('OpenAI API key not configured');
@@ -59,7 +95,7 @@ serve(async (req) => {
     }
 
     const { project }: ProcessImprovementRequest = await req.json();
-    console.log('Analyzing project:', project.name, 'Category:', project.category);
+    console.log('Analyzing project for authenticated user');
 
     // Generate web search queries based on project type and current workflow
     const searchQueries = generateSearchQueries(project);

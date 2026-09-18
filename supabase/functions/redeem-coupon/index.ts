@@ -19,18 +19,31 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    if (userError || !userData.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const user = userData.user;
-    if (!user) throw new Error("User not authenticated");
 
     const { code } = await req.json();
-    if (!code) throw new Error("Coupon code required");
+    if (!code || typeof code !== "string") {
+      return new Response(JSON.stringify({ error: "Coupon code required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    // Find coupon
     const { data: coupon, error: couponError } = await supabaseClient
       .from('coupon_codes')
       .select('*')
@@ -39,29 +52,31 @@ serve(async (req) => {
       .single();
 
     if (couponError || !coupon) {
-      throw new Error("Invalid or expired coupon code");
+      return new Response(JSON.stringify({ error: "Invalid or expired coupon code" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Check if already redeemed
     const { data: existing } = await supabaseClient
       .from('coupon_redemptions')
       .select('id')
       .eq('user_id', user.id)
       .eq('coupon_id', coupon.id)
-      .single();
+      .maybeSingle();
 
     if (existing) {
-      throw new Error("You have already redeemed this coupon");
+      return new Response(JSON.stringify({ error: "You have already redeemed this coupon" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Check max uses
-    if (coupon.max_uses && coupon.times_used >= coupon.max_uses) {
-      throw new Error("This coupon has reached its maximum redemptions");
-    }
-
-    // Check expiry
     if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
-      throw new Error("This coupon has expired");
+      return new Response(JSON.stringify({ error: "This coupon has expired" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const { data: membershipData } = await supabaseClient
@@ -71,35 +86,57 @@ serve(async (req) => {
       .maybeSingle();
 
     if (!membershipData || membershipData.trial_end_date == null) {
-      throw new Error("No trial found for user");
+      return new Response(JSON.stringify({ error: "No trial found for user" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: incremented, error: incrementError } = await supabaseClient.rpc(
+      'redeem_coupon_increment',
+      { p_coupon_id: coupon.id },
+    );
+
+    if (incrementError || incremented !== true) {
+      return new Response(
+        JSON.stringify({ error: "This coupon has reached its maximum redemptions" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const currentEndDate = new Date(membershipData.trial_end_date);
-    const extendedDays = (membershipData.trial_extended_days ?? 0) + coupon.trial_extension_days;
-    const newEndDate = new Date(currentEndDate.getTime() + coupon.trial_extension_days * 24 * 60 * 60 * 1000);
+    const extendedDays =
+      (membershipData.trial_extended_by ?? 0) + coupon.trial_extension_days;
+    const newEndDate = new Date(
+      currentEndDate.getTime() + coupon.trial_extension_days * 24 * 60 * 60 * 1000,
+    );
 
     await supabaseClient
       .from('membership_status')
       .update({
         trial_end_date: newEndDate.toISOString(),
-        trial_extended_days: extendedDays,
+        trial_extended_by: extendedDays,
         updated_at: new Date().toISOString(),
       })
       .eq('user_id', user.id);
 
-    // Record redemption
-    await supabaseClient
+    const { error: redemptionError } = await supabaseClient
       .from('coupon_redemptions')
       .insert({
         user_id: user.id,
         coupon_id: coupon.id,
       });
 
-    // Increment times_used
-    await supabaseClient
-      .from('coupon_codes')
-      .update({ times_used: coupon.times_used + 1 })
-      .eq('id', coupon.id);
+    if (redemptionError) {
+      console.error('coupon redemption insert failed', redemptionError.message);
+      return new Response(JSON.stringify({ error: "Unable to redeem coupon" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(
       JSON.stringify({
@@ -110,8 +147,9 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
+    console.error('redeem-coupon error', error instanceof Error ? error.message : String(error));
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Unable to redeem coupon" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }

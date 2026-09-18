@@ -261,8 +261,8 @@ View in User Management → Membership tab:
 - Verify `trial_tracking` insert
 
 **Subscription not activating**
-- Confirm webhook received
-- Check `check-subscription` logs
+- Confirm `stripe-webhook` received a signed Stripe event (`STRIPE_WEBHOOK_SECRET`)
+- `check-subscription` is a UX refresh only; membership source of truth is webhook-driven `membership_status`
 - Verify Stripe customer email
 
 **Email not sending**

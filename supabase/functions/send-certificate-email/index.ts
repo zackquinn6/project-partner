@@ -38,7 +38,8 @@ const handler = async (req: Request): Promise<Response> => {
       to_email.length > 254 ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to_email) ||
       !certificate_data ||
-      typeof certificate_data.image_data !== "string"
+      typeof certificate_data.image_data !== "string" ||
+      certificate_data.image_data.length > 6_000_000
     ) {
       return new Response(JSON.stringify({ error: "Invalid request" }), {
         status: 400,
@@ -174,9 +175,9 @@ const handler = async (req: Request): Promise<Response> => {
       ]
     });
 
-    console.log("Certificate email sent successfully:", emailResponse);
+    console.log("Certificate email sent successfully");
 
-    return new Response(JSON.stringify(emailResponse), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
