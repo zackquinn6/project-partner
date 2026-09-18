@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, Shield, DollarSign, ShoppingCart, ClipboardCheck, ClipboardList, Handshake, Crosshair, Trash2, Eye, Video } from "lucide-react";
+import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, ChevronLeft, Shield, DollarSign, ShoppingCart, ClipboardCheck, ClipboardList, Handshake, Crosshair, Trash2, Eye, Video } from "lucide-react";
 import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import { AppReference } from '@/interfaces/Project';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, useSidebar } from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -87,7 +87,8 @@ export function WorkflowSidebar({
   const { user } = useAuth();
   const { expertSupportEnabled, toolRentalsEnabled, wasteRemovalEnabled } = usePartnerAppSettings();
   const {
-    state
+    state,
+    toggleSidebar,
   } = useSidebar();
   const collapsed = state === "collapsed";
   
@@ -420,10 +421,21 @@ export function WorkflowSidebar({
   }, [inProgressOperation]);
   
   
-  return <Sidebar collapsible="icon">
-      <SidebarTrigger className="m-2 self-end" />
-      
-      <SidebarContent className="pt-4 flex flex-col h-full overflow-hidden">
+  return <Sidebar collapsible="offcanvas">
+      <div className="flex justify-end px-2 pt-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 shrink-0 text-foreground"
+          onClick={toggleSidebar}
+          aria-label="Hide navigation"
+          aria-expanded={!collapsed}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      </div>
+      <SidebarContent className="pt-2 flex flex-col h-full overflow-hidden">
         <SidebarGroup className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <SidebarGroupLabel className="px-4 text-sm font-semibold flex-shrink-0" data-tutorial="project-name">
             <button
@@ -759,12 +771,12 @@ export function WorkflowSidebar({
                                     return (
                                       <AccordionItem key={phaseKey} value={phaseKey} className="border-none ml-2">
                                         <AccordionTrigger 
-                                          className={`py-2 px-0 hover:no-underline text-xs font-semibold ${
+                                          className={`py-2 px-0 hover:no-underline text-xs font-semibold text-foreground ${
                                             isPhaseCompleted
-                                              ? 'text-success bg-success/12 border-success/35 rounded px-2'
+                                              ? 'bg-success/12 border-success/35 rounded px-2'
                                               : isPhaseInProgress
-                                              ? 'text-warning-soft bg-warning-soft/15 border-warning-soft/40 rounded px-2'
-                                              : 'text-foreground'
+                                              ? 'bg-warning-soft/15 border-warning-soft/40 rounded px-2'
+                                              : ''
                                           }`}
                                         >
                                           <span className="inline-flex items-center gap-1">
@@ -813,12 +825,12 @@ export function WorkflowSidebar({
                                                   className="border-none ml-2"
                                                 >
                                                   <AccordionTrigger 
-                                                    className={`py-1 px-0 hover:no-underline text-xs font-medium ${
+                                                    className={`py-1 px-0 hover:no-underline text-xs font-medium text-foreground ${
                                                       isOperationCompleted
-                                                        ? 'text-success bg-success/12 border-success/35 rounded px-2'
+                                                        ? 'bg-success/12 border-success/35 rounded px-2'
                                                         : isOperationInProgress
-                                                        ? 'text-warning-soft bg-warning-soft/15 border-warning-soft/40 rounded px-2'
-                                                        : 'text-foreground'
+                                                        ? 'bg-warning-soft/15 border-warning-soft/40 rounded px-2'
+                                                        : ''
                                                     }`}
                                                   >
                                                     <span className="inline-flex items-center gap-1">
@@ -838,14 +850,14 @@ export function WorkflowSidebar({
                                                         return (
                                                           <div 
                                                             key={step.id} 
-                                                            className={`p-2 rounded text-xs cursor-pointer transition-fast border ${
+                                                            className={`p-2 rounded text-xs cursor-pointer transition-fast border text-foreground ${
                                                               step.id === currentStep?.id 
-                                                                ? 'bg-primary/10 text-foreground border-primary/20' 
+                                                                ? 'bg-primary/10 border-primary/20' 
                                                                 : isStepCompleted
-                                                                ? 'bg-success/12 text-success border-success/35' 
+                                                                ? 'bg-success/12 border-success/35' 
                                                                 : isStepInProgress
-                                                                ? 'bg-warning-soft/15 text-warning-soft border-warning-soft/40'
-                                                                : 'text-foreground hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
+                                                                ? 'bg-warning-soft/15 border-warning-soft/40'
+                                                                : 'hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
                                                             }`} 
                                                             onClick={() => {
                                                               if (stepIndex >= 0 && isKickoffComplete) {
@@ -891,12 +903,12 @@ export function WorkflowSidebar({
                           return (
                             <AccordionItem key={topLevelKey} value={topLevelKey} className="border-none">
                               <AccordionTrigger 
-                                className={`py-2 px-0 hover:no-underline text-sm font-semibold ${
+                                className={`py-2 px-0 hover:no-underline text-sm font-semibold text-foreground ${
                                   isPhaseCompleted
-                                    ? 'text-success bg-success/12 border-success/35 rounded px-2'
+                                    ? 'bg-success/12 border-success/35 rounded px-2'
                                     : isPhaseInProgress
-                                    ? 'text-warning-soft bg-warning-soft/15 border-warning-soft/40 rounded px-2'
-                                    : 'text-foreground'
+                                    ? 'bg-warning-soft/15 border-warning-soft/40 rounded px-2'
+                                    : ''
                                 }`}
                               >
                                 <span className="inline-flex items-center gap-1">
@@ -945,12 +957,12 @@ export function WorkflowSidebar({
                                         className="border-none ml-2"
                                       >
                                         <AccordionTrigger 
-                                          className={`py-1 px-0 hover:no-underline text-xs font-medium ${
+                                          className={`py-1 px-0 hover:no-underline text-xs font-medium text-foreground ${
                                             isOperationCompleted
-                                              ? 'text-success bg-success/12 border-success/35 rounded px-2'
+                                              ? 'bg-success/12 border-success/35 rounded px-2'
                                               : isOperationInProgress
-                                              ? 'text-warning-soft bg-warning-soft/15 border-warning-soft/40 rounded px-2'
-                                              : 'text-foreground'
+                                              ? 'bg-warning-soft/15 border-warning-soft/40 rounded px-2'
+                                              : ''
                                           }`}
                                         >
                                           <span className="inline-flex items-center gap-1">
@@ -970,14 +982,14 @@ export function WorkflowSidebar({
                                               return (
                                                 <div 
                                                   key={step.id} 
-                                                  className={`p-2 rounded text-xs cursor-pointer transition-fast border ${
+                                                  className={`p-2 rounded text-xs cursor-pointer transition-fast border text-foreground ${
                                                     step.id === currentStep?.id 
-                                                      ? 'bg-primary/10 text-foreground border-primary/20' 
+                                                      ? 'bg-primary/10 border-primary/20' 
                                                       : isStepCompleted
-                                                      ? 'bg-success/12 text-success border-success/35' 
+                                                      ? 'bg-success/12 border-success/35' 
                                                       : isStepInProgress
-                                                      ? 'bg-warning-soft/15 text-warning-soft border-warning-soft/40'
-                                                      : 'text-foreground hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
+                                                      ? 'bg-warning-soft/15 border-warning-soft/40'
+                                                      : 'hover:bg-muted/50 border-transparent hover:border-muted-foreground/20'
                                                   }`} 
                                                   onClick={() => {
                                                     if (stepIndex >= 0 && isKickoffComplete) {

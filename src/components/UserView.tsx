@@ -12,7 +12,7 @@ import { getStepIndicator } from './FlowTypeLegend';
 import { WorkflowSidebar } from './WorkflowSidebar';
 import {
   SidebarProvider,
-  SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useProject } from '@/contexts/ProjectContext';
@@ -151,6 +151,42 @@ function markPlanningStudioPending(runId: string | undefined | null) {
 
 function clearPlanningStudioPending(runId: string | undefined | null) {
   if (runId) pendingPlanningStudioByRunId.delete(runId);
+}
+
+function WorkflowNavCollapseToggle({
+  visibleWhen,
+}: {
+  visibleWhen?: "collapsed" | "expanded";
+}) {
+  const { state, toggleSidebar } = useSidebar();
+  const collapsed = state === "collapsed";
+
+  if (visibleWhen === "collapsed" && !collapsed) return null;
+  if (visibleWhen === "expanded" && collapsed) return null;
+
+  const button = (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 shrink-0 text-foreground"
+      onClick={toggleSidebar}
+      aria-label={collapsed ? "Show navigation" : "Hide navigation"}
+      aria-expanded={!collapsed}
+    >
+      {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+    </Button>
+  );
+
+  if (visibleWhen === "collapsed") {
+    return (
+      <div className="sticky top-0 z-20 w-fit bg-background/90 backdrop-blur-sm pl-2 pt-2 pb-1">
+        {button}
+      </div>
+    );
+  }
+
+  return button;
 }
 
 interface UserViewProps {
@@ -3461,7 +3497,7 @@ export default function UserView({
         />
       ) : (
         /* Desktop Workflow View */
-        <SidebarProvider>
+        <SidebarProvider defaultOpen>
           <div className="min-h-screen flex w-full">
           <WorkflowSidebar
             allSteps={allSteps}
@@ -3514,6 +3550,7 @@ export default function UserView({
           />
 
           <main className="flex-1 overflow-auto">
+            <WorkflowNavCollapseToggle visibleWhen="collapsed" />
             <div className="w-full px-6 py-8">
               {workflowMainView === 'overview' ? (
                 <ProjectWorkflowOverviewPage
