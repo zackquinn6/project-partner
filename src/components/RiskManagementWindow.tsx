@@ -932,17 +932,17 @@ function RiskFocusDashboard({
                   </Select>
                 ) : null}
                 <div
-                  className="mt-auto flex min-w-0 items-center gap-2"
+                  className="mt-auto flex min-w-0 flex-col gap-1.5"
                   role="status"
                   aria-label={`Current project progress ${riskFocusProgressBarPercent(projectRun.progress)}%`}
                 >
-                  <Progress
-                    value={riskFocusProgressBarPercent(projectRun.progress)}
-                    className="h-2 min-w-0 flex-1 border border-border bg-muted shadow-none"
-                  />
-                  <span className="w-11 shrink-0 text-right font-display text-lg font-bold tabular-nums leading-none text-foreground">
+                  <span className="text-center font-display text-2xl font-bold tabular-nums leading-none text-foreground">
                     {riskFocusProgressBarPercent(projectRun.progress)}%
                   </span>
+                  <Progress
+                    value={riskFocusProgressBarPercent(projectRun.progress)}
+                    className="h-2 w-full border border-border bg-muted shadow-none"
+                  />
                 </div>
               </div>
             ) : null}
