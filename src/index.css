@@ -2,52 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design system aligned with https://www.toolio.us (coral CTA #ff6b3d, warm sand, near-black type).
+/* Industrial performance system: graphite + signal orange, Sora/Manrope.
    All colors MUST be HSL components for hsl(var(--token)).
+   :root = light industrial paper; .dark = graphite instrument (app default).
 */
 
 @layer base {
 /* Enhanced responsive spacing system for mobile and desktop optimization */
 :root {
-  /* Toolio.us marketing palette: coral CTA (#ff6b3d), warm sand, near-black type */
-  --background: 40 28% 97%;
-  --foreground: 24 12% 9%;
+  /* Light industrial paper (Appearance → Light) */
+  --background: 210 12% 97%;
+  --foreground: 210 12% 12%;
 
   --card: 0 0% 100%;
-  --card-foreground: 24 12% 9%;
+  --card-foreground: 210 12% 12%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 24 12% 9%;
+  --popover-foreground: 210 12% 12%;
 
-  /* Primary actions match toolio.us accent CTAs (Salient accent-color) */
-  --primary: 14 100% 58%;
+  /* Signal orange, darkened for contrast on white */
+  --primary: 16 90% 46%;
   --primary-foreground: 0 0% 100%;
-  --primary-variant: 16 92% 48%;
-  --primary-light: 14 86% 64%;
+  --primary-variant: 16 90% 40%;
+  --primary-light: 16 86% 56%;
 
-  /* Warm neutrals (header #f8f8f8, sand #e6d9bd family) */
-  --secondary: 38 22% 96%;
-  --secondary-foreground: 24 14% 18%;
+  --secondary: 210 10% 94%;
+  --secondary-foreground: 210 12% 16%;
 
-  --muted: 36 24% 94%;
-  --muted-foreground: 24 10% 42%;
+  --muted: 210 10% 94%;
+  --muted-foreground: 210 8% 42%;
 
-  /* Highlights / scribbles (#f2682e, #f27954) */
-  --accent: 18 88% 56%;
+  --accent: 16 90% 46%;
   --accent-foreground: 0 0% 100%;
-  --accent-light: 14 86% 64%;
+  --accent-light: 16 86% 56%;
 
-  --destructive: 0 80% 55%;
+  --destructive: 0 80% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  /* Semantic status (Kickoff completion, fit verdicts) */
-  --success: 142 55% 38%;
+  /* Semantic status */
+  --success: 142 55% 36%;
   --success-foreground: 0 0% 100%;
-  --warning-soft: 38 92% 50%;
-  --warning-soft-foreground: 24 14% 18%;
-  --destructive-soft: 0 72% 48%;
+  --warning-soft: 38 92% 46%;
+  --warning-soft-foreground: 210 12% 12%;
+  --destructive-soft: 0 72% 46%;
   --destructive-soft-foreground: 0 0% 100%;
-  --info: 212 88% 45%;
+  --info: 212 88% 42%;
   --info-foreground: 0 0% 100%;
 
   /* Taxonomy hues: tool categories, decision types, flowchart node types, worksheet column bands.
@@ -65,14 +64,13 @@
   --category-6: 190 72% 34%;
   --category-6-foreground: 0 0% 100%;
 
-  --border: 32 18% 88%;
-  --input: 36 20% 93%;
-  --ring: 14 100% 58%;
+  --border: 210 10% 88%;
+  --input: 210 10% 92%;
+  --ring: 16 90% 46%;
 
-  /* Hero-style: warm sand → coral (toolio.us radial hero) */
-  --gradient-primary: linear-gradient(135deg, hsl(14 95% 52%) 0%, hsl(18 88% 56%) 45%, hsl(24 90% 52%) 100%);
-  --gradient-hero: linear-gradient(165deg, hsl(38 42% 90%) 0%, hsl(14 100% 62%) 72%, hsl(16 92% 52%) 100%);
-  --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(40 30% 98%) 100%);
+  --gradient-primary: linear-gradient(135deg, hsl(16 90% 42%) 0%, hsl(16 90% 50%) 100%);
+  --gradient-hero: linear-gradient(165deg, hsl(210 12% 94%) 0%, hsl(210 12% 97%) 100%);
+  --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(210 12% 98%) 100%);
 
   /* Responsive spacing system */
   --spacing-mobile-xs: 0.25rem;   /* 4px mobile, for very tight spacing */
@@ -90,32 +88,32 @@
   /* Touch target optimization */
   --touch-target-minimum: 44px;   /* iOS/Android minimum */
   --mouse-target-minimum: 32px;   /* Desktop minimum */
-    --gradient-subtle: linear-gradient(135deg, hsl(42 32% 98%) 0%, hsl(36 24% 95%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(14 100% 58%) 0%, hsl(18 88% 56%) 100%);
+    --gradient-subtle: linear-gradient(135deg, hsl(210 12% 97%) 0%, hsl(210 10% 95%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(16 90% 46%) 0%, hsl(16 86% 54%) 100%);
     
-    --shadow-elegant: 0 20px 40px -12px hsl(14 80% 40% / 0.22);
-    --shadow-card: 0 8px 30px -8px hsl(24 20% 20% / 0.1);
-    --shadow-soft: 0 4px 20px -4px hsl(30 25% 50% / 0.08);
-    --shadow-accent: 0 12px 35px -10px hsl(14 100% 58% / 0.28);
-    --shadow-float: 0 5px 15px -3px hsl(24 15% 25% / 0.09);
+    --shadow-elegant: 0 20px 40px -12px hsl(210 20% 20% / 0.14);
+    --shadow-card: 0 8px 30px -8px hsl(210 20% 20% / 0.08);
+    --shadow-soft: 0 4px 20px -4px hsl(210 15% 30% / 0.06);
+    --shadow-accent: 0 12px 35px -10px hsl(16 90% 46% / 0.22);
+    --shadow-float: 0 5px 15px -3px hsl(210 15% 25% / 0.08);
     
     /* Smooth micro-interactions */
     --transition-smooth: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     --transition-fast: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --sidebar-background: 40 24% 96%;
-    --sidebar-foreground: 24 14% 18%;
-    --sidebar-primary: 14 100% 58%;
+    --sidebar-background: 210 12% 96%;
+    --sidebar-foreground: 210 12% 16%;
+    --sidebar-primary: 16 90% 46%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 36 22% 92%;
-    --sidebar-accent-foreground: 24 14% 18%;
-    --sidebar-border: 32 18% 88%;
-    --sidebar-ring: 14 100% 58%;
+    --sidebar-accent: 210 10% 92%;
+    --sidebar-accent-foreground: 210 12% 16%;
+    --sidebar-border: 210 10% 88%;
+    --sidebar-ring: 16 90% 46%;
 
-    /* Achievements instrument panel - scoped surface system (#171A1D / #2A2F34 / #F45B22 / #F2F4F5) */
+    /* Achievements instrument panel - scoped surface system (aligned with dark industrial) */
     --achievement-surface: 210 12% 10%;
     --achievement-surface-raised: 207 11% 18%;
     --achievement-accent: 16 90% 55%;
@@ -128,80 +126,81 @@
   }
 
   .dark {
-    /* Warm charcoal (not cool navy) + Toolio coral */
-    --background: 24 14% 9%;
-    --foreground: 40 25% 96%;
+    /* Graphite instrument panel (app default) */
+    --background: 210 12% 10%;
+    --foreground: 200 12% 96%;
 
-    --card: 24 12% 12%;
-    --card-foreground: 40 25% 96%;
+    --card: 210 10% 13%;
+    --card-foreground: 200 12% 96%;
 
-    --popover: 24 12% 12%;
-    --popover-foreground: 40 25% 96%;
+    --popover: 210 10% 15%;
+    --popover-foreground: 200 12% 96%;
 
-    --primary: 14 100% 58%;
-    --primary-foreground: 0 0% 100%;
-    --primary-variant: 14 90% 52%;
-    --primary-light: 14 75% 68%;
+    --primary: 16 90% 55%;
+    --primary-foreground: 200 12% 96%;
+    --primary-variant: 16 90% 48%;
+    --primary-light: 16 86% 64%;
 
-    --secondary: 24 10% 16%;
-    --secondary-foreground: 40 20% 92%;
+    --secondary: 210 9% 16%;
+    --secondary-foreground: 200 12% 92%;
 
-    --muted: 24 12% 15%;
-    --muted-foreground: 35 12% 65%;
+    --muted: 210 9% 17%;
+    --muted-foreground: 205 8% 62%;
 
-    --accent: 18 88% 58%;
-    --accent-foreground: 24 14% 9%;
-    --accent-light: 14 80% 70%;
+    --accent: 16 90% 55%;
+    --accent-foreground: 200 12% 96%;
+    --accent-light: 16 80% 66%;
 
-    --destructive: 0 75% 50%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 200 12% 96%;
 
+    /* Lifted-lightness status for graphite contrast; taxonomy hues stay hue-identical */
     --success: 142 58% 52%;
-    --success-foreground: 24 14% 9%;
+    --success-foreground: 210 12% 10%;
     --warning-soft: 38 92% 60%;
-    --warning-soft-foreground: 24 14% 9%;
+    --warning-soft-foreground: 210 12% 10%;
     --destructive-soft: 0 78% 62%;
-    --destructive-soft-foreground: 24 14% 9%;
+    --destructive-soft-foreground: 210 12% 10%;
     --info: 212 92% 66%;
-    --info-foreground: 24 14% 9%;
+    --info-foreground: 210 12% 10%;
 
     --category-1: 212 88% 68%;
-    --category-1-foreground: 24 14% 9%;
+    --category-1-foreground: 210 12% 10%;
     --category-2: 158 62% 56%;
-    --category-2-foreground: 24 14% 9%;
+    --category-2-foreground: 210 12% 10%;
     --category-3: 268 80% 74%;
-    --category-3-foreground: 24 14% 9%;
+    --category-3-foreground: 210 12% 10%;
     --category-4: 30 92% 62%;
-    --category-4-foreground: 24 14% 9%;
+    --category-4-foreground: 210 12% 10%;
     --category-5: 328 80% 70%;
-    --category-5-foreground: 24 14% 9%;
+    --category-5-foreground: 210 12% 10%;
     --category-6: 190 76% 58%;
-    --category-6-foreground: 24 14% 9%;
+    --category-6-foreground: 210 12% 10%;
 
-    --border: 24 12% 20%;
-    --input: 24 12% 17%;
-    --ring: 14 100% 58%;
+    --border: 210 8% 22%;
+    --input: 210 9% 18%;
+    --ring: 16 90% 55%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(14 95% 52%) 0%, hsl(18 85% 50%) 50%, hsl(14 100% 58%) 100%);
-    --gradient-hero: linear-gradient(165deg, hsl(24 14% 11%) 0%, hsl(24 12% 14%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(24 12% 12%) 0%, hsl(24 10% 14%) 100%);
-    --gradient-subtle: linear-gradient(135deg, hsl(24 14% 9%) 0%, hsl(24 12% 12%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(14 100% 58%) 0%, hsl(18 88% 56%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(16 90% 48%) 0%, hsl(16 90% 55%) 100%);
+    --gradient-hero: linear-gradient(165deg, hsl(210 12% 10%) 0%, hsl(210 10% 13%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(210 10% 13%) 0%, hsl(210 9% 15%) 100%);
+    --gradient-subtle: linear-gradient(135deg, hsl(210 12% 10%) 0%, hsl(210 10% 12%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(16 90% 55%) 0%, hsl(16 86% 58%) 100%);
     
     --shadow-elegant: 0 20px 40px -12px hsl(0 0% 0% / 0.45);
     --shadow-card: 0 8px 30px -8px hsl(0 0% 0% / 0.28);
     --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.18);
-    --shadow-accent: 0 12px 35px -10px hsl(14 100% 58% / 0.35);
+    --shadow-accent: 0 12px 35px -10px hsl(16 90% 55% / 0.3);
     --shadow-float: 0 5px 15px -3px hsl(0 0% 0% / 0.22);
     
-    --sidebar-background: 24 12% 11%;
-    --sidebar-foreground: 40 22% 92%;
-    --sidebar-primary: 14 100% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 24 10% 16%;
-    --sidebar-accent-foreground: 40 22% 92%;
-    --sidebar-border: 24 12% 20%;
-    --sidebar-ring: 14 100% 58%;
+    --sidebar-background: 210 12% 11%;
+    --sidebar-foreground: 200 12% 92%;
+    --sidebar-primary: 16 90% 55%;
+    --sidebar-primary-foreground: 200 12% 96%;
+    --sidebar-accent: 210 9% 16%;
+    --sidebar-accent-foreground: 200 12% 92%;
+    --sidebar-border: 210 8% 22%;
+    --sidebar-ring: 16 90% 55%;
   }
 }
 
@@ -212,9 +211,9 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    background: var(--gradient-subtle);
+    background-color: hsl(var(--background));
     min-height: 100vh;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     font-feature-settings: "liga" 1, "kern" 1;
     letter-spacing: -0.01em;
   }
@@ -250,23 +249,23 @@
    utility in the app recolors without per-element overrides. :root[data-color-scheme] outranks
    .dark on specificity, and the .dark pairings lift lightness for legibility on dark surfaces. */
 :root[data-color-scheme="default"] {
-  --primary: 14 100% 58%;
-  --primary-variant: 16 92% 48%;
-  --primary-light: 14 86% 64%;
-  --ring: 14 100% 58%;
-  --sidebar-primary: 14 100% 58%;
-  --sidebar-ring: 14 100% 58%;
-  --gradient-primary: linear-gradient(135deg, hsl(14 95% 52%) 0%, hsl(18 88% 56%) 45%, hsl(24 90% 52%) 100%);
-  --gradient-accent: linear-gradient(135deg, hsl(14 100% 58%) 0%, hsl(18 88% 56%) 100%);
+  --primary: 16 90% 46%;
+  --primary-variant: 16 90% 40%;
+  --primary-light: 16 86% 56%;
+  --ring: 16 90% 46%;
+  --sidebar-primary: 16 90% 46%;
+  --sidebar-ring: 16 90% 46%;
+  --gradient-primary: linear-gradient(135deg, hsl(16 90% 42%) 0%, hsl(16 90% 50%) 100%);
+  --gradient-accent: linear-gradient(135deg, hsl(16 90% 46%) 0%, hsl(16 86% 54%) 100%);
 }
 
 :root.dark[data-color-scheme="default"] {
-  --primary: 14 100% 62%;
-  --primary-variant: 14 90% 52%;
-  --primary-light: 14 75% 68%;
-  --ring: 14 100% 62%;
-  --sidebar-primary: 14 100% 62%;
-  --sidebar-ring: 14 100% 62%;
+  --primary: 16 90% 55%;
+  --primary-variant: 16 90% 48%;
+  --primary-light: 16 86% 64%;
+  --ring: 16 90% 55%;
+  --sidebar-primary: 16 90% 55%;
+  --sidebar-ring: 16 90% 55%;
 }
 
 :root[data-color-scheme="blue"] {
@@ -417,7 +416,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-family: 'Sora', 'Manrope', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     @apply font-bold;
     letter-spacing: -0.02em;
     line-height: 1.2;

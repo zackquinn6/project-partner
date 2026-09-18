@@ -529,7 +529,7 @@ export function VariationEditor({ open, onOpenChange, variation, onSave }: Varia
                             : 'border-border'
                           }
                         `}>
-                          {isSelected && <span className="text-white text-xs">✓</span>}
+                          {isSelected && <span className="text-primary-foreground text-xs">✓</span>}
                         </div>
                         <div className="flex-1">
                           <div className="font-medium capitalize">{flag.name}</div>

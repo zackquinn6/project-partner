@@ -962,7 +962,7 @@ export default function DIYSurveyPopup({
               <Button variant="outline" onClick={handleEdit}>
                 Edit Profile
               </Button>
-              <Button onClick={handleNext} className="gradient-primary text-white">
+              <Button onClick={handleNext} className="gradient-primary text-primary-foreground">
                 Looks Good!
               </Button>
             </div>
@@ -1401,7 +1401,7 @@ export default function DIYSurveyPopup({
                   onClick={() => void handleNext()}
                   disabled={!canProceed() || isSubmitting}
                   size="sm"
-                  className="flex items-center space-x-2 gradient-primary text-white md:h-10"
+                  className="flex items-center space-x-2 gradient-primary text-primary-foreground md:h-10"
                 >
                   <span>
                     {isSubmitting ? 'Saving...' : (

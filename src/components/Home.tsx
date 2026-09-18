@@ -204,14 +204,14 @@ export default function Home({
                       <button
                         type="button"
                         onClick={() => window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'))}
-                        className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-[hsl(222_47%_20%/0.95)] via-[hsl(222_47%_17%)] to-[hsl(222_47%_15%)] px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning-soft/50"
+                        className="relative overflow-hidden rounded-lg border border-border bg-card px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-colors hover:border-warning-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning-soft/50"
                       >
-                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-warning-soft/30 to-transparent pointer-events-none" />
-                        <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
-                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-white md:whitespace-nowrap">
+                        <div className="absolute inset-x-0 top-0 h-1 bg-warning-soft pointer-events-none" />
+                        <div className="relative flex h-full flex-col items-center gap-0.5 pt-1 text-center">
+                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-muted-foreground md:whitespace-nowrap">
                             Active projects
                           </span>
-                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-white">
+                          <span className="mt-auto font-display text-2xl md:text-[1.7rem] font-semibold leading-none text-foreground tabular-nums">
                             {stats.activeProjects ?? 0}
                           </span>
                         </div>
@@ -229,14 +229,14 @@ export default function Home({
                       <button
                         type="button"
                         onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}
-                        className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-[hsl(161_55%_22%/0.95)] via-[hsl(161_55%_18%)] to-[hsl(161_55%_16%)] px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50"
+                        className="relative overflow-hidden rounded-lg border border-border bg-card px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-colors hover:border-success/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50"
                       >
-                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-success/30 to-transparent pointer-events-none" />
-                        <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
-                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-white md:whitespace-nowrap">
+                        <div className="absolute inset-x-0 top-0 h-1 bg-success pointer-events-none" />
+                        <div className="relative flex h-full flex-col items-center gap-0.5 pt-1 text-center">
+                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-muted-foreground md:whitespace-nowrap">
                             Open tasks
                           </span>
-                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-white">
+                          <span className="mt-auto font-display text-2xl md:text-[1.7rem] font-semibold leading-none text-foreground tabular-nums">
                             {stats.openTasks ?? 0}
                           </span>
                         </div>
@@ -254,14 +254,14 @@ export default function Home({
                       <button
                         type="button"
                         onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}
-                        className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-[hsl(201_70%_24%/0.95)] via-[hsl(201_70%_20%)] to-[hsl(201_70%_17%)] px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info/50"
+                        className="relative overflow-hidden rounded-lg border border-border bg-card px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-colors hover:border-info/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info/50"
                       >
-                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-info/30 to-transparent pointer-events-none" />
-                        <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
-                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-white md:whitespace-nowrap">
+                        <div className="absolute inset-x-0 top-0 h-1 bg-info pointer-events-none" />
+                        <div className="relative flex h-full flex-col items-center gap-0.5 pt-1 text-center">
+                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-muted-foreground md:whitespace-nowrap">
                             Maintenance due soon
                           </span>
-                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-white">
+                          <span className="mt-auto font-display text-2xl md:text-[1.7rem] font-semibold leading-none text-foreground tabular-nums">
                             {stats.maintenanceDueSoon ?? 0}
                           </span>
                         </div>
@@ -279,14 +279,14 @@ export default function Home({
                       <button
                         type="button"
                         onClick={() => window.dispatchEvent(new CustomEvent('force-project-dashboard-listing'))}
-                        className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-[hsl(263_50%_26%/0.95)] via-[hsl(263_50%_22%)] to-[hsl(263_50%_18%)] px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-category-3/50"
+                        className="relative overflow-hidden rounded-lg border border-border bg-card px-1.5 py-1.5 md:px-2 md:py-2 shadow-sm cursor-pointer transition-colors hover:border-category-3/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-category-3/50"
                       >
-                        <div className="absolute inset-x-0 -top-6 h-12 bg-gradient-to-b from-category-3/30 to-transparent pointer-events-none" />
-                        <div className="relative flex h-full flex-col items-center gap-0.5 text-center">
-                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-white md:whitespace-nowrap">
+                        <div className="absolute inset-x-0 top-0 h-1 bg-category-3 pointer-events-none" />
+                        <div className="relative flex h-full flex-col items-center gap-0.5 pt-1 text-center">
+                          <span className="flex min-h-[1.25rem] items-center justify-center text-[11px] uppercase tracking-wide text-muted-foreground md:whitespace-nowrap">
                             Projects completed
                           </span>
-                          <span className="mt-auto text-2xl md:text-[1.7rem] font-semibold leading-none text-white">
+                          <span className="mt-auto font-display text-2xl md:text-[1.7rem] font-semibold leading-none text-foreground tabular-nums">
                             {stats.completedProjects ?? 0}
                           </span>
                         </div>
@@ -308,7 +308,7 @@ export default function Home({
               <div className="col-span-3 mb-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button onClick={() => { navigate('/projects'); }} variant="default" className="w-full h-14 sm:h-16 text-base sm:text-lg font-semibold border border-[#5c0000] bg-[#800000] text-white shadow-card hover:bg-[#6d0000] hover:text-white hover:shadow-elegant">
+                    <Button onClick={() => { navigate('/projects'); }} variant="default" className="w-full h-14 sm:h-16 text-base sm:text-lg font-semibold shadow-card hover:shadow-elegant">
                       <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 mr-2.5 shrink-0" />
                       Explore New Projects
                     </Button>

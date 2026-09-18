@@ -107,7 +107,7 @@ function RiskFocusProjectCard({
               <img src={thumbUrl} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-primary to-warning-soft flex items-center justify-center">
-                <IconComponent className="w-5 h-5 text-white" />
+                <IconComponent className="w-5 h-5 text-primary-foreground" />
               </div>
             )}
           </div>
@@ -139,7 +139,7 @@ function RiskFocusProjectCard({
           >
             <div className="absolute inset-0 bg-black/20" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <IconComponent className="w-8 h-8 text-white/80" />
+              <IconComponent className="w-8 h-8 text-primary-foreground/80" />
             </div>
           </div>
           {gridUrl ? (

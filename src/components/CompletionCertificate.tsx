@@ -277,7 +277,7 @@ export const CompletionCertificate: React.FC<CompletionCertificateProps> = ({
         </div>
 
         <div className="flex justify-center mt-6">
-          <Button onClick={handleDownload} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={handleDownload}>
             <Download className="w-4 h-4 mr-2" />
             Download Certificate
           </Button>

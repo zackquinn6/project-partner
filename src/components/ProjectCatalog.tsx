@@ -1206,11 +1206,11 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                             />
                           ) : (
                             <div className="absolute inset-0 bg-gradient-to-br from-primary to-warning-soft flex items-center justify-center">
-                              <IconComponent className="w-8 h-8 text-white/90" />
+                              <IconComponent className="w-8 h-8 text-primary-foreground/90" />
                             </div>
                           )}
                           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
-                            <h3 className="text-xs font-semibold text-white line-clamp-2 leading-tight">
+                            <h3 className="text-xs font-semibold text-primary-foreground line-clamp-2 leading-tight">
                               {project.name}
                             </h3>
                           </div>
@@ -1349,7 +1349,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-primary to-warning-soft flex items-center justify-center">
-                            <IconComponent className="w-5 h-5 text-white" />
+                            <IconComponent className="w-5 h-5 text-primary-foreground" />
                           </div>
                         )}
                       </div>
@@ -1419,7 +1419,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
                       >
                         <div className="absolute inset-0 bg-black/20" />
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <IconComponent className="w-8 h-8 text-white/80" />
+                          <IconComponent className="w-8 h-8 text-primary-foreground/80" />
                         </div>
                       </div>
                       

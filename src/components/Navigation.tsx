@@ -352,7 +352,7 @@ export default function Navigation({
               <TooltipProvider delayDuration={150}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="inline-flex cursor-help items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-r from-warning-soft to-warning-soft px-3 py-1.5 text-xs font-semibold text-white shadow-md ring-1 ring-white/20 pointer-events-auto">
+                    <span className="inline-flex cursor-help items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-r from-warning-soft to-warning-soft px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-md ring-1 ring-primary-foreground/20 pointer-events-auto">
                       Beta Release
                     </span>
                   </TooltipTrigger>

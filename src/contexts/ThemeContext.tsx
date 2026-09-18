@@ -34,24 +34,26 @@ function isColorScheme(value: unknown): value is ColorScheme {
   return typeof value === 'string' && (COLOR_SCHEMES as string[]).includes(value);
 }
 
+function applyGuestTheme() {
+  const root = document.documentElement;
+  root.classList.add('dark');
+  root.removeAttribute('data-color-scheme');
+}
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [themeMode, setThemeModeState] = useState<ThemeMode | null>(null);
   const [colorScheme, setColorSchemeState] = useState<ColorScheme | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Signed-out and guest sessions have no profile to read, so the document carries no theme
-  // attributes at all and the :root palette applies.
+  // Signed-out and guest sessions have no profile; graphite dark is the product default.
   useEffect(() => {
     if (user?.id) return;
 
     setThemeModeState(null);
     setColorSchemeState(null);
     setLoading(false);
-
-    const root = document.documentElement;
-    root.classList.remove('dark');
-    root.removeAttribute('data-color-scheme');
+    applyGuestTheme();
   }, [user?.id]);
 
   useEffect(() => {

@@ -30,7 +30,7 @@ function AppIconTile({
           tileClassName
         )}
       >
-        <Icon className="h-6 w-6 text-white sm:h-7 sm:w-7" strokeWidth={1.65} aria-hidden />
+        <Icon className="h-6 w-6 text-primary-foreground sm:h-7 sm:w-7" strokeWidth={1.65} aria-hidden />
       </div>
       <span className="text-center text-[11px] font-semibold leading-snug tracking-tight text-foreground sm:text-xs">
         {label}

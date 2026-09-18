@@ -375,30 +375,30 @@ export function MobileOptimizedHome() {
           </h2>
           <div className="grid grid-cols-2 gap-3">
             <Card
-              className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-[hsl(161_55%_22%/0.95)] via-[hsl(161_55%_18%)] to-[hsl(161_55%_16%)] shadow-sm cursor-pointer transition-opacity hover:opacity-90"
+              className="relative overflow-hidden rounded-lg border border-border bg-card shadow-sm cursor-pointer transition-colors hover:border-success/50"
               onClick={() => window.dispatchEvent(new CustomEvent('show-home-task-list'))}
             >
-              <div className="absolute inset-x-0 -top-6 h-10 bg-gradient-to-b from-success/30 to-transparent pointer-events-none" />
-              <CardContent className="relative p-3 text-left space-y-1">
-                <p className="text-[11px] uppercase tracking-wide text-white">
+              <div className="absolute inset-x-0 top-0 h-1 bg-success pointer-events-none" />
+              <CardContent className="relative p-3 pt-4 text-left space-y-1">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                   Open tasks
                 </p>
-                <p className="text-xl font-semibold text-white">
+                <p className="font-display text-xl font-semibold text-foreground tabular-nums">
                   {stats.openTasks ?? 0}
                 </p>
               </CardContent>
             </Card>
 
             <Card
-              className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-[hsl(201_70%_24%/0.95)] via-[hsl(201_70%_20%)] to-[hsl(201_70%_17%)] shadow-sm cursor-pointer transition-opacity hover:opacity-90"
+              className="relative overflow-hidden rounded-lg border border-border bg-card shadow-sm cursor-pointer transition-colors hover:border-info/50"
               onClick={() => window.dispatchEvent(new CustomEvent('show-home-maintenance'))}
             >
-              <div className="absolute inset-x-0 -top-6 h-10 bg-gradient-to-b from-info/30 to-transparent pointer-events-none" />
-              <CardContent className="relative p-3 text-left space-y-1">
-                <p className="text-[11px] uppercase tracking-wide text-white">
+              <div className="absolute inset-x-0 top-0 h-1 bg-info pointer-events-none" />
+              <CardContent className="relative p-3 pt-4 text-left space-y-1">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                   Maintenance due soon
                 </p>
-                <p className="text-xl font-semibold text-white">
+                <p className="font-display text-xl font-semibold text-foreground tabular-nums">
                   {stats.maintenanceDueSoon ?? 0}
                 </p>
               </CardContent>
@@ -416,7 +416,7 @@ export function MobileOptimizedHome() {
               navigate('/projects');
             }}
             variant="default"
-            className="mb-3 w-full h-14 text-base font-semibold border border-[#5c0000] bg-[#800000] text-white shadow-card hover:bg-[#6d0000] hover:text-white hover:shadow-elegant"
+            className="mb-3 w-full h-14 text-base font-semibold shadow-card hover:shadow-elegant"
           >
             <BookOpen className="w-5 h-5 mr-2.5" />
             Explore New Projects

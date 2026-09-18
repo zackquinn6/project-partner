@@ -224,7 +224,7 @@ export function AIRepairWindow({ open, onOpenChange }: AIRepairWindowProps) {
                 <div className="bg-gradient-to-r from-warning-soft/10 to-success/10 border border-warning-soft/40 p-4 m-4 rounded-xl shadow-sm">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-full bg-gradient-to-r from-warning-soft to-success">
-                      <Sparkles className="w-4 h-4 text-white" />
+                      <Sparkles className="w-4 h-4 text-primary-foreground" />
                     </div>
                     <div className="flex-1">
                       <h4 className="font-bold text-foreground mb-1">Free Trial During Launch</h4>

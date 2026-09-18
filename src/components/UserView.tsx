@@ -3887,7 +3887,7 @@ export default function UserView({
                             setScaledProgressDialogOpen(true);
                           }}
                           size="sm"
-                          className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth text-xs"
+                          className="gradient-primary text-primary-foreground shadow-elegant hover:shadow-lg transition-smooth text-xs"
                         >
                           <CheckCircle className="w-4 h-4 mr-2" />
                           <span className="text-xs">Report Progress</span>
@@ -3896,7 +3896,7 @@ export default function UserView({
                         <Button 
                           onClick={handleStepComplete} 
                           size="sm"
-                          className="gradient-primary text-white shadow-elegant hover:shadow-lg transition-smooth text-xs"
+                          className="gradient-primary text-primary-foreground shadow-elegant hover:shadow-lg transition-smooth text-xs"
                           data-tutorial="mark-complete"
                         >
                           <CheckCircle className="w-4 h-4 mr-2" />
