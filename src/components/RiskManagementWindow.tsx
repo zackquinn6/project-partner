@@ -822,10 +822,11 @@ function RiskFocusDashboard({
     'flex h-full min-h-0 min-w-0 flex-col items-center rounded-md border border-border bg-card px-1.5 py-1 text-center';
   const goalLabelClass =
     'font-display text-xs font-bold leading-tight text-foreground sm:text-sm';
+  /** Shared outline height so Safety/Schedule/Budget match the Quality Good/Great/Professional row. */
   const goalMetricShellClass =
-    'mt-1 flex w-full min-w-0 items-center justify-center overflow-hidden rounded-md border border-border px-1 py-1';
+    'mt-1 flex h-9 w-full shrink-0 items-center justify-center overflow-hidden rounded-md border border-border px-1';
   const goalMetricClass =
-    'min-w-0 break-words font-display text-sm font-semibold leading-none text-foreground';
+    'min-w-0 break-words text-center font-display text-xs font-semibold leading-tight text-foreground sm:text-sm sm:leading-none';
 
   const goalLightProps = (dimension: RiskDimension) => {
     const rollup = rollups[dimension];
@@ -842,7 +843,7 @@ function RiskFocusDashboard({
   };
 
   const goalStatusFooter = (dimension: RiskDimension) => (
-    <div className="mt-auto flex w-full min-w-0 items-center justify-center gap-1 pt-1">
+    <div className="mt-auto flex h-5 w-full shrink-0 items-center justify-center gap-1 pt-1">
       <span className="shrink-0 text-[11px] font-medium leading-none text-muted-foreground">
         Risk:
       </span>
@@ -855,7 +856,7 @@ function RiskFocusDashboard({
     label: string,
     iconToneClass: string
   ) => (
-    <div className="flex min-w-0 items-center justify-center gap-1">
+    <div className="flex h-5 w-full shrink-0 items-center justify-center gap-1">
       <span
         className={cn(
           'flex h-5 w-5 shrink-0 items-center justify-center rounded',
@@ -996,7 +997,7 @@ function RiskFocusDashboard({
                       )}
                       {qualityGoal ? (
                         <div
-                          className="mt-1 grid w-full grid-cols-3 overflow-hidden rounded-md border border-border"
+                          className={cn(goalMetricShellClass, 'grid grid-cols-3 gap-0 p-0')}
                           role="list"
                           aria-label={`Quality target ${qualityMetricLabel}. Options: Good, Great, Professional`}
                         >
@@ -1008,11 +1009,11 @@ function RiskFocusDashboard({
                                 role="listitem"
                                 aria-current={selected ? 'true' : undefined}
                                 className={cn(
-                                  'flex min-w-0 items-center justify-center px-0.5 py-1 text-center leading-none',
+                                  'flex h-full min-w-0 items-center justify-center px-0.5 text-center text-[11px] leading-none',
                                   index > 0 && 'border-l border-border',
                                   selected
-                                    ? 'bg-category-3/15 font-display text-[12px] font-semibold text-category-3'
-                                    : 'bg-muted/40 text-[10px] font-medium text-muted-foreground'
+                                    ? 'bg-category-3/15 font-display font-semibold text-category-3'
+                                    : 'bg-muted/40 font-medium text-muted-foreground'
                                 )}
                               >
                                 {option.label}
