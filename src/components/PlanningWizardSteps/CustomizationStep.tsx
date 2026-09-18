@@ -44,7 +44,7 @@ export const CustomizationStep: React.FC<CustomizationStepProps> = ({
             <div className={PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME}>
               <div className={PLANNING_WIZARD_STEP_BUTTON_WRAP_CLASSNAME}>
                 <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
-                  Pick the home and spaces you are working on, then the options that apply to this run
+                  Make the decisions that customize your project
                 </p>
                 <PlanningToolOpenCardButton toolId="scope" onClick={handleOpenCustomizer} />
               </div>
