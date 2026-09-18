@@ -7,10 +7,9 @@ DECLARE
   v_phase_prep uuid;
   v_phase_install uuid;
   v_phase_grout uuid;
-  v_op_membrane uuid;
-  v_op_backer uuid;
   v_op_install uuid;
   v_op_grout uuid;
+  v_op_count integer;
   v_updated int;
   v_linked record;
   v_missing_sources text[] := ARRAY[]::text[];
@@ -59,20 +58,21 @@ BEGIN
       v_phase_prep, v_phase_install, v_phase_grout;
   END IF;
 
-  SELECT id INTO v_op_membrane FROM public.phase_operations
-  WHERE phase_id = v_phase_prep AND lower(btrim(operation_name)) = 'install uncoupling membrane';
-  SELECT id INTO v_op_backer FROM public.phase_operations
-  WHERE phase_id = v_phase_prep AND lower(btrim(operation_name)) = 'install cement backer board';
-  SELECT id INTO v_op_install FROM public.phase_operations
-  WHERE phase_id = v_phase_install AND lower(btrim(operation_name)) = 'install floor tile';
-  SELECT id INTO v_op_grout FROM public.phase_operations
-  WHERE phase_id = v_phase_grout AND lower(btrim(operation_name)) = 'grout and cure';
-
-  IF v_op_membrane IS NULL OR v_op_backer IS NULL OR v_op_install IS NULL OR v_op_grout IS NULL THEN
-    RAISE EXCEPTION
-      'Tile operations did not resolve (membrane=%, backer=%, install=%, grout=%).',
-      v_op_membrane, v_op_backer, v_op_install, v_op_grout;
+  -- Prepare subfloor ops were renamed to product names; do not match by operation_name.
+  -- Quality gating only touches Install and Grout & Finish (one op each).
+  SELECT count(*)::integer INTO v_op_count
+  FROM public.phase_operations WHERE phase_id = v_phase_install;
+  IF v_op_count <> 1 THEN
+    RAISE EXCEPTION 'Install phase holds % operations, expected exactly 1.', v_op_count;
   END IF;
+  SELECT id INTO v_op_install FROM public.phase_operations WHERE phase_id = v_phase_install;
+
+  SELECT count(*)::integer INTO v_op_count
+  FROM public.phase_operations WHERE phase_id = v_phase_grout;
+  IF v_op_count <> 1 THEN
+    RAISE EXCEPTION 'Grout & Finish phase holds % operations, expected exactly 1.', v_op_count;
+  END IF;
+  SELECT id INTO v_op_grout FROM public.phase_operations WHERE phase_id = v_phase_grout;
 
   -- ---------------------------------------------------------------------------
   -- Three quality level rows (descriptions first; placeholder images for UI test)
