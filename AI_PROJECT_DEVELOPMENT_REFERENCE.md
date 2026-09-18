@@ -2,7 +2,7 @@
 
 **Use when:** admin asks to complete **Step 1–10** of project development for a named template (`project_id`), says **follow ai dev guide** / **ref ai dev guide** (or similar), asks to **build out** the content for a named project, or asks to research/add/update **home maintenance** `maintenance_templates` (§G).
 
-**"Ref ai dev guide and build out project X" is a complete instruction.** It means: run §H end to end for that template - owned phases only, full completeness audit, every required component, migrations under `supabase/migrations/`, commit and push. Do not ask which steps, which phases, or which deliverable format; §H already answers all three.
+**"Ref ai dev guide and build out project X" is a complete instruction.** It means: run §H end to end for that template - owned phases only, full completeness audit, every required component, draft per-step SQL then ship one bundle under `supabase/migrations/` (§H.5), commit and push. Do not ask which steps, which phases, or which deliverable format; §H already answers all three.
 
 **Sources of truth:**
 - **Shared product rules** (structure limits, publishing checklist, instruction levels, cross-cutting product meaning): `src/utils/projectPlanningStandard.ts` - generated block below. Human Planning Guide in admin Project Management reads the same module.
@@ -80,12 +80,14 @@ Adding rows to the shared `public.tools` and `public.materials` catalogs is **no
 
 ### H.5 Deliverable
 
-- **Default deliverable is migration SQL** under `supabase/migrations/`, one file per guide step per project slug, idempotent, runnable as-is, `RAISE` on missing prerequisites (§A).
-- Rebuild the phases cache after any structure change (§A).
-- **Verify row counts in the migration itself.** Author against a `VALUES` list keyed by step title, then `GET DIAGNOSTICS` and `RAISE` when the update count does not match the number of owned steps. A title typo otherwise leaves a silent hole.
-- **Close with a content audit migration** that asserts the completeness definition per owned step (three instruction levels, outputs, tools, materials array, process variables, time estimates, structure metadata) and raises with the full gap list. Enforce only what the build out owns; report gaps outside it with `RAISE NOTICE` instead of failing the deploy.
-- Commit and push. Commit body lists what each migration covers.
-- Final report: the H.2 matrix after the change, anything intentionally left out, and gaps observed in standard or adopted phases.
+**Author separately, ship as one file.**
+
+1. **During development:** write one SQL file per guide step (and the content audit) under `supabase/migrations/` so each step can be applied and debugged on its own. Filename while drafting: `YYYYMMDDHHMMSS_<slug>_step<N>[_qualifier].sql` (plus `_content_audit.sql`). Keep blocks idempotent and `RAISE` on missing prerequisites (§A).
+2. **Before commit / push:** concatenate those step files **in H.3 order** (structure → instructions → outputs → tools → materials → process variables → time → risks → PFMEA → quality goals → catalog copy → audit) into **one** ship migration for that build-out: `YYYYMMDDHHMMSS_<slug>_<scope>_bundle.sql`. Delete the per-step draft files from `supabase/migrations/` in the same commit so only the bundle remains. Schema-only migrations (new tables/columns) stay separate from content bundles.
+3. The ship file must stay runnable as-is: stable UUIDs, `ON CONFLICT` where appropriate, in-migration row-count checks (`GET DIAGNOSTICS` + `RAISE` on mismatch), and a closing content audit that asserts completeness per owned step (three instruction levels, outputs, tools, materials array, process variables, time estimates, structure metadata). Enforce only what the build out owns; report gaps outside it with `RAISE NOTICE`.
+4. Rebuild the phases cache after any structure change (§A).
+5. Commit and push the **bundle** (not the draft step files). Commit body lists which guide steps the bundle covers.
+6. Final report: the H.2 matrix after the change, anything intentionally left out, and gaps observed in standard or adopted phases.
 
 ---
 
@@ -248,7 +250,7 @@ Call the **`_internal`** function from migrations. The un-suffixed `rebuild_phas
 - **The rebuild emits only** `id`, `name`, `description`, `flowType`, `steps`, `isStandard` per operation. Decision copy (`userPrompt`, `decisionDetailedSummary`, `optionImageUrl`, `optionDetailedDescription`) lives in `projects.scheduling_prerequisites.__decision_tree_config__` and is merged onto operations at read time, so a rebuild dropping those keys from the cache is expected and not data loss.
 - **Migration SQL:** Runnable as-is; **RAISE** when prerequisites missing; **idempotent** stable UUIDs + `ON CONFLICT` where appropriate (e.g. `(step_id, instruction_level)` for `step_instructions`).
 - **UUID literals:** Last group after final hyphen = **exactly 12 hex digits** or PostgreSQL raises `22P02`.
-- **One SQL file per step** (1–10) per project slug—never two “Step N” files; extra templates → another `DO $$ … $$` block in the **same** file. Filename: `YYYY_MM_DD_migration_<slug>_step<N>[_qualifier].sql`—**no** `project_id` in the name.
+- **Draft vs ship (§H.5):** During authoring, one SQL file per guide step per project slug so steps can be applied and fixed independently. Before commit, concatenate those files in H.3 order into **one** `<slug>_<scope>_bundle.sql` and remove the per-step drafts from `supabase/migrations/`. Never leave two competing Step N ship files for the same slug/scope; extra templates in one build-out → another `DO $$ … $$` block in the **same** bundle. Filename: `YYYYMMDDHHMMSS_<slug>_…` - **no** `project_id` in the name.
 - **Same template across steps:** Steps **3–9** use the same `v_project_id` and the same **`operation_steps.id`** values from **Step 1**. **Step 2** touches only **`step_instructions`**. **Step 10** touches only **`projects`** (`description`, `project_challenges`).
 - **Steps 5–6 bootstrap:** Insert missing **`public.tools`** / **`public.materials`** by `name` when absent (every NOT NULL / constrained column—tool **`category`** ∈ `PPE`, `Hand Tool`, `Power Tool`, `Other`). Step **6** repeats the **same tools** list as step 5. Step **7** = **no** tool/material catalog inserts.
 - After bootstrap, resolve library IDs or **RAISE**—no orphan JSON with fake ids.
@@ -800,6 +802,7 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-18 | §H.5 / §A: author one SQL file per guide step during development, then concatenate into a single `<slug>_<scope>_bundle.sql` before commit; delete per-step drafts in the same commit. Schema migrations stay separate from content bundles | Tile quality-gated build out shipped as many step files; ship surface should be one applyable file |
 | 2026-09-18 | Tile Flooring: quality-gated Professional steps (leveling clips, final finish inspection) fully enriched (instructions through PFMEA) plus content audit expecting ≥19 owned steps | Quality goals migration added process steps that still needed Steps 2-9 content |
 | 2026-09-18 | Step 11 quality goals: `project_quality_levels` + `operation_steps.min_quality_goal`; planning standard v1.3.0 ladder (outcome + process); §H audit/order updated | Quality goal must change run path and show per-project impacts including adopted phase sources |
 | 2026-09-17 | §A: migrations must call `rebuild_phases_json_from_project_phases_internal` (the un-suffixed wrapper is auth-gated and raises `Not authorized`); operations are resolved through their phase, never by `operation_name`; shared temp tables need a `DROP TABLE IF EXISTS` guard; noted that decision copy survives a rebuild through `__decision_tree_config__` | A state audit of the live tile flooring template found both traps in already-authored migrations: the gated rebuild would have failed the run, and the two Prepare subfloor alternates had been renamed by a later copy migration so every name match resolved nothing |
