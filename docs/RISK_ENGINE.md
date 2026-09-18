@@ -540,9 +540,15 @@ reported problem to the component it counted against.
 | `project_run_risk_profile` | Stage 3 per-component rollup |
 | `project_run_key_characteristics` | Stage 3 KC register, one row per item per source risk |
 
-RLS: the `pfmea_*`, rule, and lookup tables are readable by authenticated users and writable by
-project editors or admins. `project_run_risk_profile` and `project_run_key_characteristics` are
-scoped to the owner of the run through `project_runs.user_id`.
+RLS: Stage 1 / Stage 2 authoring (`project_risks`, `project_risk_rules`, `pfmea_*`) is
+readable by authenticated callers for the Standard Project Foundation, published and
+beta-testing catalog templates (and their revisions), plus owners, co-owners, and admins.
+Writable only by project editors or admins. Lookup tables (`pfmea_action_priority_rules`,
+`risk_action_priority_labels`, `risk_occurrence_drivers`) stay readable by authenticated
+users. `project_run_risk_profile` and `project_run_key_characteristics` are scoped to the
+owner of the run through `project_runs.user_id`. Read access for run assembly is gated by
+`can_caller_read_template_risk_authoring`, which is granted to `authenticated` (unlike
+`can_caller_edit_project`, whose EXECUTE is revoked from members).
 
 ## 9. Gaps and known problems
 
@@ -572,12 +578,10 @@ the four-component strip below it comes from `action_priority`. They can disagre
 run. The triage walkthrough prefers `action_priority` and falls back to the legacy field, so
 the fallback path is still live.
 
-**Title-collision dedupe can fail a run.** The template sync deduplicates foundation and
-template risks by case-insensitive title, foundation first. If a template register risk has the
-same title as a foundation risk, it is dropped from the run, and if that template risk is
-scored, `writeRegisterRow` throws "is scored but has no row", which at run creation deletes the
-run. The failure is loud rather than silent, but it is triggered by an authoring collision the
-author gets no warning about.
+**Title-collision dedupe prefers the template register.** The template sync still
+deduplicates by case-insensitive title, but template rows win over foundation rows with the
+same title. That keeps scored Stage 1 register risks on the run so `writeRegisterRow` can
+attach Action Priority. Foundation-only duplicates among themselves are still collapsed.
 
 **Old default scores are indistinguishable from real ones.** The `severity_score: 5` insert
 default and the occurrence fallbacks are gone, so new incomplete lines read as unscored.

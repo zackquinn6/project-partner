@@ -19,6 +19,30 @@ type ErrorReportContext = {
   toastPresenter?: ToastPresenter;
 };
 
+/** Thrown after `reportUserFacingError` so outer catch blocks skip a second admin notification. */
+export class ReportedUserFacingError extends Error {
+  readonly alreadyReported = true as const;
+  readonly supportCode: string;
+  readonly cause: unknown;
+
+  constructor(supportCode: string, message: string, cause?: unknown) {
+    super(message);
+    this.name = 'ReportedUserFacingError';
+    this.supportCode = supportCode;
+    this.cause = cause;
+  }
+}
+
+export function isAlreadyReportedError(error: unknown): boolean {
+  return (
+    error instanceof ReportedUserFacingError ||
+    (typeof error === 'object' &&
+      error !== null &&
+      'alreadyReported' in error &&
+      (error as { alreadyReported?: unknown }).alreadyReported === true)
+  );
+}
+
 type SerializedError = {
   name?: string;
   message: string;
@@ -179,6 +203,12 @@ export async function reportUserFacingError({
   notificationBody,
   toastPresenter = 'sonner',
 }: ErrorReportContext): Promise<string> {
+  if (isAlreadyReportedError(error)) {
+    return error instanceof ReportedUserFacingError
+      ? error.supportCode
+      : buildSupportCode(source, operation);
+  }
+
   const supportCode = buildSupportCode(source, operation);
   const serializedError = serializeError(error);
 
@@ -202,6 +232,14 @@ export async function reportUserFacingError({
   });
 
   return supportCode;
+}
+
+/** Report once, then throw a tagged error so callers do not re-report the same failure. */
+export async function reportAndThrowUserFacingError(
+  context: ErrorReportContext
+): Promise<never> {
+  const supportCode = await reportUserFacingError(context);
+  throw new ReportedUserFacingError(supportCode, context.userMessage, context.error);
 }
 
 export function getNotificationSupportCode(

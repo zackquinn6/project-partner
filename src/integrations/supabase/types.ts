@@ -4937,6 +4937,10 @@ export type Database = {
         Args: { p_project_id: string }
         Returns: boolean
       }
+      can_caller_read_template_risk_authoring: {
+        Args: { p_project_id: string }
+        Returns: boolean
+      }
       can_manage_tool_variation_catalog: { Args: never; Returns: boolean }
       check_rate_limit: {
         Args: {

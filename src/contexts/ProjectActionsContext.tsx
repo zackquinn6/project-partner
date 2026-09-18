@@ -12,7 +12,11 @@ import { isKickoffPhaseComplete, KICKOFF_UI_STEP_IDS } from '@/utils/projectUtil
 import { useOptimizedState } from '@/hooks/useOptimizedState';
 import { mergeQualityControlSettings, parseQualityControlSettingsColumn } from '@/utils/qualityControlSettings';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
-import { reportUserFacingError } from '@/utils/errorReporting';
+import {
+  isAlreadyReportedError,
+  reportAndThrowUserFacingError,
+  reportUserFacingError,
+} from '@/utils/errorReporting';
 import {
   buildPlanningScopeBaseline,
   collectPlanningToolChangeSummaries,
@@ -220,9 +224,6 @@ async function upsertProjectRunRiskRow(row: ProjectRunRiskInsertRow): Promise<vo
   throw insertError;
 }
 
-const RISK_ASSEMBLY_ACCESS_MESSAGE =
-  'Cannot contact database to access risks. Contact administrator';
-
 /** Root template id for `project_risks` (revision rows use `parent_project_id` when set). */
 async function resolveTemplateRootIdForRisks(projectId: string): Promise<string> {
   const { data, error } = await supabase
@@ -236,21 +237,37 @@ async function resolveTemplateRootIdForRisks(projectId: string): Promise<string>
   return parent && parent.length > 0 ? parent : data.id;
 }
 
+function normalizeRiskTitleKey(risk: { risk_title?: unknown }): string | null {
+  const title = typeof risk?.risk_title === 'string' ? risk.risk_title.trim() : '';
+  return title.length > 0 ? title.toLowerCase() : null;
+}
+
 /**
  * Merge Standard Project Foundation `project_risks` + template `project_risks` onto `project_run_risks`.
- * Same rules as Risk Radar / createProjectRun — must run for catalog starts (`addProjectRun`) too.
+ * Same rules as Risk Radar / createProjectRun - must run for catalog starts (`addProjectRun`) too.
+ *
+ * Template register rows win title collisions over foundation rows so scored Stage 1 risks are
+ * never dropped before `writeRegisterRow` attaches Action Priority.
  */
 async function syncFoundationAndTemplateRisksToProjectRun(
   projectRunId: string,
   templateRootIdForRisks: string
 ): Promise<void> {
-  const { data: standardProject, error: standardProjectError } = await supabase
+  const { data: standardProjects, error: standardProjectError } = await supabase
     .from('projects')
     .select('id')
-    .eq('is_standard', true)
-    .single();
+    .eq('is_standard', true);
 
   if (standardProjectError) throw standardProjectError;
+  if (!standardProjects || standardProjects.length === 0) {
+    throw new Error('Standard project foundation not found (is_standard = true).');
+  }
+  if (standardProjects.length > 1) {
+    throw new Error(
+      `Expected exactly one Standard Project Foundation, found ${standardProjects.length}.`
+    );
+  }
+  const standardProject = standardProjects[0];
   if (!standardProject?.id) {
     throw new Error('Standard project foundation not found (is_standard = true).');
   }
@@ -281,24 +298,42 @@ async function syncFoundationAndTemplateRisksToProjectRun(
       .map((r: { id?: unknown }) => (r?.id != null && String(r.id).length > 0 ? String(r.id) : null))
       .filter((id): id is string => id != null)
   );
-  const sourceRisksOrdered = [...foundationRisks, ...projectRisks];
 
-  if (sourceRisksOrdered.length === 0) {
-    throw new Error(RISK_ASSEMBLY_ACCESS_MESSAGE);
+  if (foundationRisks.length === 0 && projectRisks.length === 0) {
+    throw new Error(
+      'No foundation or template risks were readable for this project. ' +
+        'Catalog and foundation project_risks must be selectable by the member starting the run.'
+    );
   }
 
-  const seenNormalizedTitles = new Set<string>();
-  const mergedForInsert = sourceRisksOrdered.filter((risk: any) => {
-    const title = typeof risk?.risk_title === 'string' ? risk.risk_title.trim() : '';
-    if (!title) return false;
-    const key = title.toLowerCase();
-    if (seenNormalizedTitles.has(key)) return false;
-    seenNormalizedTitles.add(key);
-    return true;
-  });
+  const templateTitles = new Set<string>();
+  const dedupedTemplateRisks: any[] = [];
+  for (const risk of projectRisks) {
+    const key = normalizeRiskTitleKey(risk);
+    if (key == null) continue;
+    if (templateTitles.has(key)) continue;
+    templateTitles.add(key);
+    dedupedTemplateRisks.push(risk);
+  }
+
+  const foundationTitles = new Set<string>();
+  const dedupedFoundationRisks: any[] = [];
+  for (const risk of foundationRisks) {
+    const key = normalizeRiskTitleKey(risk);
+    if (key == null) continue;
+    if (templateTitles.has(key)) continue;
+    if (foundationTitles.has(key)) continue;
+    foundationTitles.add(key);
+    dedupedFoundationRisks.push(risk);
+  }
+
+  const mergedForInsert = [...dedupedFoundationRisks, ...dedupedTemplateRisks];
 
   if (mergedForInsert.length === 0) {
-    throw new Error(RISK_ASSEMBLY_ACCESS_MESSAGE);
+    throw new Error(
+      'Foundation and template risks had no usable titles after merge. ' +
+        'Every project_risks row needs a non-empty risk_title.'
+    );
   }
 
   const insertRows: ProjectRunRiskInsertRow[] = mergedForInsert.map((risk: any, idx: number) => {
@@ -779,7 +814,17 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       } catch (riskAssemblyError) {
         console.error('❌ Risk assembly failed; deleting created run for consistency:', riskAssemblyError);
         await supabase.from('project_runs').delete().eq('id', data);
-        throw new Error(RISK_ASSEMBLY_ACCESS_MESSAGE);
+        await reportAndThrowUserFacingError({
+          source: 'project_actions',
+          operation: 'assemble_project_run_risks',
+          userId: user.id,
+          projectId: project.id,
+          projectRunId: data,
+          error: riskAssemblyError,
+          userMessage: 'Could not build the risk list for this project.',
+          notificationTitle: 'Project risk assembly failed',
+          toastPresenter: 'ui-toast',
+        });
       }
 
       // Update additional fields that the function doesn't handle
@@ -808,16 +853,18 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       await refetchProjectRuns();
       return data || null;
     } catch (error) {
-      await reportUserFacingError({
-        source: 'project_actions',
-        operation: 'create_project_run',
-        userId: user.id,
-        projectId: project.id,
-        error,
-        userMessage: 'Failed to create project run.',
-        notificationTitle: 'Project run creation failed',
-        toastPresenter: 'ui-toast',
-      });
+      if (!isAlreadyReportedError(error)) {
+        await reportUserFacingError({
+          source: 'project_actions',
+          operation: 'create_project_run',
+          userId: user.id,
+          projectId: project.id,
+          error,
+          userMessage: 'Failed to create project run.',
+          notificationTitle: 'Project run creation failed',
+          toastPresenter: 'ui-toast',
+        });
+      }
       return null;
     }
   }, [user, refetchProjectRuns]);
@@ -863,18 +910,17 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         } catch (riskAssemblyError) {
           console.error('❌ Risk assembly failed; deleting created run:', riskAssemblyError);
           await supabase.from('project_runs').delete().eq('id', newProjectRunId);
-          await reportUserFacingError({
+          await reportAndThrowUserFacingError({
             source: 'project_actions',
             operation: 'assemble_project_run_risks',
             userId: user.id,
             projectId: projectRunData.projectId,
             projectRunId: newProjectRunId,
             error: riskAssemblyError,
-            userMessage: RISK_ASSEMBLY_ACCESS_MESSAGE,
+            userMessage: 'Could not build the risk list for this project.',
             notificationTitle: 'Project risk assembly failed',
             toastPresenter: 'ui-toast',
           });
-          throw riskAssemblyError;
         }
       }
 
@@ -943,16 +989,18 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       };
       queueMicrotask(notifySuccess);
     } catch (error) {
-      await reportUserFacingError({
-        source: 'project_actions',
-        operation: 'add_project_run',
-        userId: user.id,
-        projectId: projectRunData.projectId,
-        error,
-        userMessage: 'Failed to add project run.',
-        notificationTitle: 'Project run start failed',
-        toastPresenter: 'ui-toast',
-      });
+      if (!isAlreadyReportedError(error)) {
+        await reportUserFacingError({
+          source: 'project_actions',
+          operation: 'add_project_run',
+          userId: user.id,
+          projectId: projectRunData.projectId,
+          error,
+          userMessage: 'Failed to add project run.',
+          notificationTitle: 'Project run start failed',
+          toastPresenter: 'ui-toast',
+        });
+      }
       // Re-throw error so caller can handle it
       throw error;
     }

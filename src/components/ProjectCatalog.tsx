@@ -43,7 +43,10 @@ import {
   resolveCatalogCoverUrl,
 } from '@/utils/catalogCoverImage';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
-import { reportUserFacingError } from '@/utils/errorReporting';
+import {
+  isAlreadyReportedError,
+  reportUserFacingError,
+} from '@/utils/errorReporting';
 import { toast } from 'sonner';
 interface ProjectTemplate {
   id: string;
@@ -760,6 +763,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
         // Handle error from addProjectRun
         clearTimeout(resetTimeout);
         setIsCreatingNewProject(false);
+        if (isAlreadyReportedError(error)) return;
         void reportUserFacingError({
           source: 'project_catalog',
           operation: 'start_project_run_from_catalog',
