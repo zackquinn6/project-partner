@@ -783,7 +783,10 @@ function RiskFocusDashboard({
   };
 
   const goalStatusFooter = (dimension: RiskDimension) => (
-    <div className="mt-auto flex min-h-7 items-center pt-1">
+    <div className="mt-auto flex min-h-7 items-center gap-1.5 pt-1">
+      <span className="shrink-0 text-[11px] font-medium leading-none text-muted-foreground">
+        Risk Assessment:
+      </span>
       <GoalRiskLight {...goalLightProps(dimension)} variant="status" />
     </div>
   );
@@ -912,39 +915,41 @@ function RiskFocusDashboard({
                       {goalStatusFooter('budget')}
                     </div>
                     <div className={cn(goalTileClass, 'border-l-[3px] border-l-category-3')}>
-                      <div className="flex min-w-0 items-start gap-1.5">
-                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-category-3/15 text-category-3">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-category-3/15 text-category-3">
                           <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
                         </span>
-                        <div className="min-w-0 flex-1">
-                          <div className={goalLabelClass}>Quality</div>
-                          {qualityGoal ? (
-                            <div
-                              className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5"
-                              aria-label={`Quality goal ${qualityMetricLabel}`}
-                            >
-                              {QUALITY_GOAL_OPTIONS.map((option) => {
-                                const selected = option.value === qualityGoal;
-                                return (
-                                  <span
-                                    key={option.value}
-                                    className={cn(
-                                      'shrink-0',
-                                      selected
-                                        ? 'rounded-full border border-category-3 px-1.5 py-0.5 font-display text-sm font-semibold leading-none text-category-3'
-                                        : 'px-0.5 text-[11px] font-medium leading-none text-muted-foreground'
-                                    )}
-                                  >
-                                    {option.label}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <div className={goalMetricClass}>-</div>
-                          )}
-                        </div>
+                        <div className={goalLabelClass}>Quality</div>
                       </div>
+                      {qualityGoal ? (
+                        <div
+                          className="mt-1 grid grid-cols-3 overflow-hidden rounded-md border border-border"
+                          role="list"
+                          aria-label={`Quality target ${qualityMetricLabel}. Options: Good, Great, Professional`}
+                        >
+                          {QUALITY_GOAL_OPTIONS.map((option, index) => {
+                            const selected = option.value === qualityGoal;
+                            return (
+                              <span
+                                key={option.value}
+                                role="listitem"
+                                aria-current={selected ? 'true' : undefined}
+                                className={cn(
+                                  'flex min-w-0 items-center justify-center px-0.5 py-1 text-center leading-none',
+                                  index > 0 && 'border-l border-border',
+                                  selected
+                                    ? 'bg-category-3/15 font-display text-[12px] font-semibold text-category-3'
+                                    : 'bg-muted/40 text-[10px] font-medium text-muted-foreground'
+                                )}
+                              >
+                                {option.label}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className={goalMetricClass}>-</div>
+                      )}
                       {goalStatusFooter('quality')}
                     </div>
                   </div>
