@@ -111,14 +111,10 @@ function RiskFocusProjectCard({
               </div>
             )}
           </div>
-          <div className="flex-1 min-w-0 px-3 py-1.5 flex flex-col justify-center gap-0.5">
-            <h3 className="font-semibold text-sm leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+          <div className="flex-1 min-w-0 px-3 py-1.5 flex flex-col justify-center">
+            <h3 className="font-semibold text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors">
               {project.name}
             </h3>
-            <p className="text-[11px] text-muted-foreground line-clamp-1">
-              {(project as { difficulty?: string }).difficulty || 'Beginner'}
-              {project.estimatedTime ? ` · ${project.estimatedTime}` : ''}
-            </p>
           </div>
         </div>
         {starting ? <OpeningOverlay projectName={project.name} /> : null}
