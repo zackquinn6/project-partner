@@ -648,11 +648,14 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
     }
 
     try {
+      // Same home resolution as catalog `addProjectRun` so Risk Radar starts do not omit home_id.
+      const resolvedHomeId = homeId || (await getDefaultHomeIdForUser(user.id));
+
       const { data, error } = await supabase.rpc('create_project_run_snapshot', {
         p_project_id: project.id,
         p_user_id: user.id,
         p_run_name: customName || project.name,
-        p_home_id: homeId || null,
+        p_home_id: resolvedHomeId,
         p_start_date: new Date().toISOString(),
         p_plan_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
       });
