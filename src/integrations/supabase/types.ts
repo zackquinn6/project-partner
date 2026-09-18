@@ -3304,6 +3304,60 @@ export type Database = {
           },
         ]
       }
+      project_run_quality_levels: {
+        Row: {
+          created_at: string
+          example_image_urls: Json
+          id: string
+          outcome_summary: string
+          process_summary: string
+          project_run_id: string
+          quality_level: string
+          source_project_id: string
+          source_project_name: string
+          vs_lower_summary: string | null
+        }
+        Insert: {
+          created_at?: string
+          example_image_urls?: Json
+          id?: string
+          outcome_summary: string
+          process_summary: string
+          project_run_id: string
+          quality_level: string
+          source_project_id: string
+          source_project_name: string
+          vs_lower_summary?: string | null
+        }
+        Update: {
+          created_at?: string
+          example_image_urls?: Json
+          id?: string
+          outcome_summary?: string
+          process_summary?: string
+          project_run_id?: string
+          quality_level?: string
+          source_project_id?: string
+          source_project_name?: string
+          vs_lower_summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_quality_levels_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_run_quality_levels_source_project_id_fkey"
+            columns: ["source_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_run_risk_profile: {
         Row: {
           computed_at: string
@@ -5070,6 +5124,10 @@ export type Database = {
       copy_draft_revision_workflow_internal: {
         Args: { p_source_project_id: string; p_target_project_id: string }
         Returns: string
+      }
+      copy_project_quality_levels_to_run: {
+        Args: { p_run_id: string }
+        Returns: number
       }
       copy_template_risks_to_project_run: {
         Args: { p_project_run_id: string; p_template_project_id: string }
