@@ -78,7 +78,7 @@ export function PhotoUpload({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [photoName, setPhotoName] = useState('');
   const [caption, setCaption] = useState('');
-  const [privacyLevel, setPrivacyLevel] = useState<'personal' | 'project_partner' | 'public'>('project_partner');
+  const [privacyLevel, setPrivacyLevel] = useState<'personal' | 'public'>('personal');
   const [selectedStepId, setSelectedStepId] = useState<string>(initialStepId || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -186,7 +186,7 @@ export function PhotoUpload({
       setPreviewUrl(null);
       setPhotoName('');
       setCaption('');
-      setPrivacyLevel('project_partner');
+      setPrivacyLevel('personal');
       setSelectedStepId(initialStepId || '');
       setOpen(false);
       
@@ -206,7 +206,7 @@ export function PhotoUpload({
     setPreviewUrl(null);
     setPhotoName('');
     setCaption('');
-    setPrivacyLevel('project_partner');
+    setPrivacyLevel('personal');
     setSelectedStepId(initialStepId || '');
     setOpen(false);
   };
@@ -228,10 +228,12 @@ export function PhotoUpload({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Upload Progress Photo</DialogTitle>
-            <DialogDescription>
-              {initialStepName ? `Add a photo for: ${initialStepName}` : 'Add a photo to your project'}
-            </DialogDescription>
+            <DialogTitle>Upload Project Photos</DialogTitle>
+            {initialStepName ? (
+              <DialogDescription>
+                {`Add a photo for: ${initialStepName}`}
+              </DialogDescription>
+            ) : null}
           </DialogHeader>
 
           <div className="space-y-4">
@@ -261,8 +263,7 @@ export function PhotoUpload({
             )}
             {/* File Upload Area */}
             <div>
-              <Label>Photo (Max 5MB)</Label>
-              <div className="mt-2">
+              <div>
                 {previewUrl ? (
                   <div className="relative">
                     <img 
@@ -344,36 +345,26 @@ export function PhotoUpload({
 
             {/* Privacy Level */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs text-muted-foreground">Privacy</Label>
-                <span className="text-[11px] text-muted-foreground">Defaults to Project Partner</span>
-              </div>
+              <Label className="text-xs text-muted-foreground">Privacy</Label>
               <Select
                 value={privacyLevel}
-                onValueChange={(value) => setPrivacyLevel(value as 'personal' | 'project_partner' | 'public')}
+                onValueChange={(value) => setPrivacyLevel(value as 'personal' | 'public')}
               >
                 <SelectTrigger className="h-9 text-xs bg-muted/40 border border-muted-foreground/30">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="text-xs">
-                  <SelectItem value="project_partner">
-                    Project Partner (Recommended)
-                  </SelectItem>
-                  <SelectItem value="personal">Personal (Only Me)</SelectItem>
-                  <SelectItem value="public">Public (Shareable)</SelectItem>
+                  <SelectItem value="personal">Private</SelectItem>
+                  <SelectItem value="public">Public</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground">
-                Adjust only if you need extra privacy or plan to share publicly.
-              </p>
             </div>
 
-            {/* Warning for personal photos */}
             {privacyLevel === 'personal' && (
               <div className="flex items-start gap-2 p-3 bg-warning-soft/10 border border-warning-soft/40 rounded-lg">
                 <AlertTriangle className="w-4 h-4 text-warning-soft mt-0.5" />
                 <div className="text-xs text-warning-soft">
-                  Personal photos use encrypted storage and cannot be accessed by Project Partner staff, 
+                  Private photos use encrypted storage and cannot be accessed by Project Partner staff,
                   even for troubleshooting purposes.
                 </div>
               </div>
