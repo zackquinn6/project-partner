@@ -1,8 +1,8 @@
 # AI Project Development Reference (DB-first)
 
-**Use when:** admin asks to complete **Step 1–10** of project development for a named template (`project_id`), says **follow ai dev guide** / **ref ai dev guide** (or similar), asks to **build out** the content for a named project, or asks to research/add/update **home maintenance** `maintenance_templates` (§G).
+**Use when:** admin asks to complete **Step 1-10** of project development for a named template (`project_id`), says **follow ai dev guide** / **ref ai dev guide** (or similar), asks to **build out** the content for a named project or for **standard phases / Standard Foundation**, or asks to research/add/update **home maintenance** `maintenance_templates` (§G).
 
-**"Ref ai dev guide and build out project X" is a complete instruction.** It means: run §H end to end for that template - owned phases only, full completeness audit, every required component, draft per-step SQL then ship one bundle under `supabase/migrations/` (§H.5), commit and push. Do not ask which steps, which phases, or which deliverable format; §H already answers all three.
+**"Ref ai dev guide and build out project X" / "Build out content for project X ref ai dev guide" is a complete instruction.** It means: run §H end to end for that template - owned phases only (unless the user explicitly named Standard Foundation / standard phases - see H.1), full completeness audit, every required component, draft per-step SQL then ship one bundle under `supabase/migrations/` (§H.5), **commit and push**, and **name the migration path(s) in the final report**. Do not ask which steps, which phases, or which deliverable format; §H already answers all three.
 
 **Sources of truth:**
 - **Shared product rules** (structure limits, publishing checklist, instruction levels, cross-cutting product meaning): `src/utils/projectPlanningStandard.ts` - generated block below. Human Planning Guide in admin Project Management reads the same module.
@@ -21,20 +21,20 @@
 
 ## H) Build out a project (end-to-end protocol)
 
-**Trigger:** "Ref ai dev guide and build out project X", "build out the content for X", "complete project X". No further scoping questions are needed.
+**Trigger:** "Ref ai dev guide and build out project X", "Build out content for project X ref ai dev guide", "build out the content for X", "complete project X", or the same phrasing aimed at **standard phases / Standard Foundation**. No further scoping questions are needed.
 
 ### H.1 Scope: owned phases only
 
 | Phase kind | How to detect on `project_phases` | Treatment |
 | ---------- | --------------------------------- | --------- |
 | **Owned** | `is_standard IS NOT TRUE` **and** `is_linked IS NOT TRUE` **and** `source_phase_id IS NULL` **and** `source_project_id IS NULL` | **In scope.** Author operations, steps, instructions, and all enrichments here. |
-| **Standard foundation** | `is_standard = true` (Kickoff, Plan, Ordering, Close style phases) | **Out of scope.** Read for context only. Never edit its phases, operations, steps, `step_instructions`, or enrichments during a project build out. |
+| **Standard foundation** | `is_standard = true` (Kickoff, Plan, Ordering, Close style phases) | **Out of scope on a catalog project build out.** Read for context only. Never edit foundation content while building a non-standard template. **Exception:** when the user explicitly asks to review/build out **standard phases** or **Standard Foundation**, author on the foundation project (`projects.is_standard = true` root) - those phases are in scope there. |
 | **Linked / adopted from another template** | `is_linked = true` or `source_project_id` / `source_phase_id` set | **Out of scope.** Owned by the source template; edits there would change every project that adopted it. |
 
 - Build the owned-phase list **from these columns**, never from phase names.
 - Never add, rename, reorder, or delete phases during a build out. If owned phases cannot carry the scope, **report it and stop** (Step 1 rule).
-- Gaps found inside a standard or adopted phase go in the final report as a note naming the source template. Do not patch them in this project.
-- `allow_content_edit = true` on a step inside a standard phase is **not** an invitation to author it here; it only unlocks admin editing.
+- Gaps found inside a standard or adopted phase go in the final report as a note naming the source template. Do not patch them in this project (unless this request is the foundation exception above).
+- `allow_content_edit = true` on a step inside a standard phase is **not** an invitation to author it on a host template; it only unlocks admin editing.
 
 ### H.2 Audit before authoring
 
@@ -86,15 +86,15 @@ Adding rows to the shared `public.tools` and `public.materials` catalogs is **no
 2. **Before commit / push:** concatenate those step files **in H.3 order** (structure → instructions → outputs → tools → materials → process variables → time → risks → PFMEA → quality goals → catalog copy → audit) into **one** ship migration for that build-out: `YYYYMMDDHHMMSS_<slug>_<scope>_bundle.sql`. Delete the per-step draft files from `supabase/migrations/` in the same commit so only the bundle remains. Schema-only migrations (new tables/columns) stay separate from content bundles.
 3. The ship file must stay runnable as-is: stable UUIDs, `ON CONFLICT` where appropriate, in-migration row-count checks (`GET DIAGNOSTICS` + `RAISE` on mismatch), and a closing content audit that asserts completeness per owned step (three instruction levels, outputs, tools, materials array, process variables, time estimates, structure metadata). Enforce only what the build out owns; report gaps outside it with `RAISE NOTICE`.
 4. Rebuild the phases cache after any structure change (§A).
-5. Commit and push the **bundle** (not the draft step files). Commit body lists which guide steps the bundle covers.
-6. Final report: the H.2 matrix after the change, anything intentionally left out, and gaps observed in standard or adopted phases.
+5. Commit and push the **bundle** (not the draft step files). Commit body lists which guide steps the bundle covers. Push is part of the instruction whenever the user asked to build out content ref this guide - do not stop at a local-only commit unless push is impossible (then report the blocker and the local commit SHA).
+6. Final report **must** name the ship migration path(s) under `supabase/migrations/` so the user can apply them, plus the H.2 matrix after the change, anything intentionally left out, and gaps observed in standard or adopted phases (or, for a foundation build out, gaps left intentionally such as Step 11 quality goals).
 
 ---
 
 <!-- PLANNING_STANDARD:BEGIN -->
 ## Shared product planning standard (generated)
 
-**Version:** `1.3.0` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
+**Version:** `1.4.0` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
 
 Do not hand-edit this block. Change the TypeScript module, then run `npm run sync:planning-standard`. Authoring/SQL field catalogs remain in §A / §B below.
 
@@ -117,6 +117,17 @@ Do not hand-edit this block. Change the TypeScript module, then run `npm run syn
 - Levels: `beginner`, `intermediate`, `advanced`
 - Every target step needs three instruction rows: beginner, intermediate, and advanced. Write level-appropriate detail; users see the level that matches their experience.
 
+### Content axes (instruction, quality, customization)
+
+| Axis | Values | Effect |
+| ---- | ------ | ------ |
+| **Instruction detail** (`instruction`) | beginner / intermediate / advanced | Same steps; different prose depth (and media) via step_instructions rows. |
+| **Quality goal** (`quality`) | good / great / professional | Different process path: include or exclude steps and operations via min_quality_goal; outcome/process narrative via project_quality_levels (snapshotted onto the run). |
+| **Customization** (`customization`) | prime / alternate / if-necessary (+ micro-decisions) | Branching choices. Do not overload if-necessary for quality ladder gating. |
+
+- Axes are orthogonal. A beginner can run a Professional quality path (harder process with more scaffolding). Write all three instruction levels on quality-gated steps too.
+- Do not confuse quality goal Professional (finish / process ladder) with catalog or step skill_level Professional (who the work is sized for). Use clear labels: Quality goal vs Skill level.
+
 ### Quality goals (Good / Great / Professional)
 
 | Level | Outcome | Process |
@@ -125,7 +136,7 @@ Do not hand-edit this block. Change the TypeScript module, then run `npm run syn
 | **Great** (`great`) | Strong DIY finish; tighter tolerances and cleaner detailing. | Core path plus standard best-practice steps. Default for new runs. |
 | **Professional** (`professional`) | Near-trade finish; strictest tolerances and presentation. | Great path plus extra prep and finish steps (sanding, leveling systems, seal always, extra QC, etc.). |
 
-- Every catalog template that ships quality goals authors three project_quality_levels rows (outcome + process). Relative vs_lower_summary is required on great and professional. Process differences are real operation_steps with min_quality_goal, not prose alone. Quality-impact content is authored on the owning project only; adopted or linked phases display their source project rows without copying.
+- Every catalog template that ships quality goals authors three project_quality_levels rows (outcome + process). Relative vs_lower_summary is required on great and professional. Process differences are real operation_steps (and phase_operations when a whole op is gated) with min_quality_goal, not prose alone. Quality-impact content is authored on the owning project only; adopted or linked phases display their source project rows without copying onto the host. At run create, copy contributing rows into project_run_quality_levels so impact copy stays frozen with the run.
 
 ### Project structure
 
@@ -235,7 +246,9 @@ Phases & operations = project management. Steps = instructions. Actions = micro 
 - **Step instruction sections** (`step-instruction-sections`): Background/Need-to-Know is valuable domain context (why it matters, timing, complexity, how the app helps) - not a restatement of what the step is. Instructions are numbered sequential actions only; do not number explanatory status or completion notes as their own steps - put that in Background or fold it into an adjacent action. Error-Recovery uses full-sentence context so the user can diagnose quickly (e.g. "If your list is missing something, finish your plan").
 - **Owned vs standard and adopted phases** (`owned-vs-adopted-phases`): A project only owns the phases authored on it. Standard foundation phases and phases linked or adopted from another template are read-only inside this project: their phases, operations, steps, instructions, and enrichments are edited in the source template instead. Project content work covers owned phases only; gaps found in a standard or adopted phase get reported to the owner of that template, not patched locally.
 - **Content completeness per step** (`content-completeness`): A project is content complete when every step in every owned phase satisfies the step requirements above: three instruction levels, outputs, tools, materials, process variables, time estimates, quality checks, and failure modes where relevant. Partial coverage is a gap list, not a finished project, so audit every owned step rather than the ones most recently touched.
-- **Quality goals (Good / Great / Professional)** (`quality-goals`): Good, Great, and Professional are both outcome and process. Author three project_quality_levels rows per owning template. Gate extra process with operation_steps.min_quality_goal (null = all levels; great = Great+Professional; professional = Professional only). Do not overload if-necessary for quality gating. Adopted phases keep quality-impact content on the source project and display it on the host without copying. Mid-run goal changes reshape incomplete forward steps only; completed steps stay complete; Quality Control uses the current goal as the expected level.
+- **Quality goals (Good / Great / Professional)** (`quality-goals`): Good, Great, and Professional are both outcome and process. Author three project_quality_levels rows per owning template. Gate extra process with operation_steps.min_quality_goal and phase_operations.min_quality_goal when a whole operation is quality-gated (null = all levels; great = Great+Professional; professional = Professional only). Do not overload if-necessary for quality gating. Adopted phases keep quality-impact content on the source project; runs snapshot contributing rows into project_run_quality_levels at create. Mid-run goal changes reshape incomplete forward steps and ops only; completed steps stay complete; Quality Control uses the current goal as the expected level.
+- **Content axes (instruction, quality, customization)** (`content-axes`): Axes are orthogonal. A beginner can run a Professional quality path (harder process with more scaffolding). Write all three instruction levels on quality-gated steps too.
+- **Professional naming (quality vs skill)** (`professional-naming`): Do not confuse quality goal Professional (finish / process ladder) with catalog or step skill_level Professional (who the work is sized for). Use clear labels: Quality goal vs Skill level.
 <!-- PLANNING_STANDARD:END -->
 
 ---
@@ -802,6 +815,8 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-18 | §H trigger/H.1/H.5: "Build out content for project X ref ai dev guide" requires commit, push, and naming migration path(s); explicit exception to author Standard Foundation when user asks for standard phases | Build-out requests must leave applyable migrations and push; foundation content was previously blocked by the catalog-only scope rule |
+| 2026-09-18 | Planning standard v1.4.0: three content axes (instruction / quality / customization), Professional naming vs skill_level; op-level min_quality_goal wired; project_run_quality_levels snapshot at run create | Dual-axis assessment follow-up |
 | 2026-09-18 | §H.5 / §A: author one SQL file per guide step during development, then concatenate into a single `<slug>_<scope>_bundle.sql` before commit; delete per-step drafts in the same commit. Schema migrations stay separate from content bundles | Tile quality-gated build out shipped as many step files; ship surface should be one applyable file |
 | 2026-09-18 | Tile Flooring: quality-gated Professional steps (leveling clips, final finish inspection) fully enriched (instructions through PFMEA) plus content audit expecting ≥19 owned steps | Quality goals migration added process steps that still needed Steps 2-9 content |
 | 2026-09-18 | Step 11 quality goals: `project_quality_levels` + `operation_steps.min_quality_goal`; planning standard v1.3.0 ladder (outcome + process); §H audit/order updated | Quality goal must change run path and show per-project impacts including adopted phase sources |

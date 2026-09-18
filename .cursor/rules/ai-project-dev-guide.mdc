@@ -2,11 +2,12 @@
 description: >-
   Follow when the user says "follow ai dev guide" / "ref ai dev guide" (or
   similar); asks to build out, develop, or complete the content for a named
-  catalog project template (Steps 1-10, risks, PFMEA, schedule prereqs,
-  related phases); or asks to review/research/add/update home maintenance
-  tasks, maintenance_templates, or DIY maintenance catalog industry cadences.
-  Read and obey AI_PROJECT_DEVELOPMENT_REFERENCE.md (§H for project build
-  outs, §G for home maintenance) and shared product rules in
+  catalog project template or for standard phases / Standard Foundation
+  (Steps 1-10, risks, PFMEA, schedule prereqs, related phases); or asks to
+  review/research/add/update home maintenance tasks, maintenance_templates,
+  or DIY maintenance catalog industry cadences. Read and obey
+  AI_PROJECT_DEVELOPMENT_REFERENCE.md (§H for project build outs, §G for
+  home maintenance) and shared product rules in
   src/utils/projectPlanningStandard.ts.
 alwaysApply: false
 ---
@@ -14,8 +15,8 @@ alwaysApply: false
 # AI project development guide
 
 1. **Read first:** open and follow repo-root `AI_PROJECT_DEVELOPMENT_REFERENCE.md` end-to-end for the request. Treat the generated `<!-- PLANNING_STANDARD:* -->` block and `src/utils/projectPlanningStandard.ts` as the SoT for shared product meaning (structure limits, publishing checklist, instruction levels, cross-cutting rules). Treat §A / §B field catalogs as the SoT for SQL/authoring columns.
-2. **Build out a project (§H):** "ref ai dev guide and build out project X" is a complete instruction - run §H end to end without asking which steps, phases, or deliverable. Owned phases only (standard and linked/adopted phases are read-only), audit every owned step, author in §H.3 order, bootstrap the shared tools/materials library as needed. **Draft** one SQL file per guide step while developing; **before commit**, concatenate into one `<slug>_<scope>_bundle.sql`, delete the per-step drafts, then commit and push (§H.5).
-3. **Field catalogs in §B / §D–§F are required** for project catalog work — use the listed columns/JSON keys; verify names against `src/integrations/supabase/types.ts` and `src/interfaces/Project.ts` before writing SQL or content.
+2. **Build out a project (§H):** phrases like "ref ai dev guide and build out project X" or "Build out content for project X ref ai dev guide" are a **complete** instruction - run §H end to end without asking which steps, phases, or deliverable. Owned phases only on catalog templates (standard and linked/adopted phases are read-only there). When the user explicitly asks to build out **standard phases** / **Standard Foundation**, author on the foundation project instead (H.1 exception). Audit every in-scope step, author in §H.3 order, bootstrap the shared tools/materials library as needed. **Draft** one SQL file per guide step while developing; **before commit**, concatenate into one `<slug>_<scope>_bundle.sql`, delete the per-step drafts, then **commit, push, and name the migration path(s) in the final report** (§H.5). Missing the push or the migration handoff is an incomplete build out.
+3. **Field catalogs in §B / §D–§F are required** for project catalog work - use the listed columns/JSON keys; verify names against `src/integrations/supabase/types.ts` and `src/interfaces/Project.ts` before writing SQL or content.
 4. **Home maintenance (§G):** when the request is about `maintenance_templates` / home maintenance task lists, follow **§G** (schema/UI fit, criticality levels, industry research protocol, system gating, idempotent SQL). Research standards before changing frequencies or guidance.
 5. **Continuous improvement:**
    - If a **shared product** rule changes (structure, checklist, instruction levels, cross-cutting meaning), update `src/utils/projectPlanningStandard.ts`, then run `npm run sync:planning-standard` (and confirm with `npm run check:planning-standard`). Do not hand-edit the marker block in the markdown.
