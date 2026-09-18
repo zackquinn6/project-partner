@@ -122,9 +122,21 @@ serve(async (req) => {
         continue;
       }
 
-      const assignments = Array.isArray(notification.assignments)
+      const assignments = (Array.isArray(notification.assignments)
         ? notification.assignments.slice(0, MAX_ASSIGNMENTS)
-        : [];
+        : []
+      ).filter(a => {
+        const task = String(a?.taskTitle ?? '').trim().toLowerCase();
+        if (!task || !allowedTaskTitles.has(task)) return false;
+        const sub = String(a?.subtaskTitle ?? '').trim().toLowerCase();
+        return !sub || allowedSubtaskTitles.has(sub);
+      });
+
+      if (assignments.length === 0) {
+        skipped++;
+        console.warn('Blocked assignment notification with content outside the caller\'s own tasks');
+        continue;
+      }
 
       const assignmentsList = assignments
         .map(a => {
@@ -135,6 +147,7 @@ serve(async (req) => {
             : `<li>${taskTitle}</li>`;
         })
         .join('');
+
 
       const personName = escapeHtml(clamp(notification?.personName, 120)) || 'there';
       const senderEmail = escapeHtml(clamp(user.email ?? '', 254)) || 'your project manager';
