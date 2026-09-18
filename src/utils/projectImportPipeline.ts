@@ -1351,14 +1351,31 @@ export async function importGeneratedProject(
 
       // Insert new non-duplicate risks into relational table
       if (newRisks.length > 0) {
-        const risksToInsert = newRisks.map(risk => ({
-          project_id: projectId,
-          risk_title: risk.risk,
-          likelihood: (risk.likelihood || 'medium') as 'low' | 'medium' | 'high',
-          impact: (risk.impact || 'medium') as string,
-          mitigation_strategy: risk.mitigation || null,
-          display_order: nextDisplayOrder++,
-        }));
+        const risksToInsert = newRisks.map(risk => {
+          const likelihoodRaw =
+            typeof risk.likelihood === 'string' ? risk.likelihood.trim().toLowerCase() : '';
+          const severitySource =
+            (risk as { severity?: string }).severity ?? risk.impact;
+          const severityRaw =
+            typeof severitySource === 'string' ? severitySource.trim().toLowerCase() : '';
+          const likelihood: 'low' | 'medium' | 'high' =
+            likelihoodRaw === 'low' || likelihoodRaw === 'medium' || likelihoodRaw === 'high'
+              ? likelihoodRaw
+              : 'medium';
+          const severity: 'low' | 'medium' | 'high' =
+            severityRaw === 'low' || severityRaw === 'medium' || severityRaw === 'high'
+              ? severityRaw
+              : 'medium';
+          return {
+            project_id: projectId,
+            risk_title: risk.risk,
+            likelihood,
+            severity,
+            impact: severity,
+            mitigation_strategy: risk.mitigation || null,
+            display_order: nextDisplayOrder++,
+          };
+        });
 
         const { error: risksError } = await db
           .from('project_risks')

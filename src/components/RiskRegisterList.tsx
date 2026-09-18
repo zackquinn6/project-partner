@@ -17,7 +17,7 @@ export interface RiskRegisterListRisk {
   id: string;
   risk: string;
   likelihood: 'low' | 'medium' | 'high';
-  severity?: 'low' | 'medium' | 'high' | null;
+  severity: 'low' | 'medium' | 'high';
   schedule_impact_days: number | null;
   budget_impact_dollars: number | null;
   mitigation: string | null;
@@ -294,11 +294,7 @@ export function RiskRegisterList<T extends RiskRegisterListRisk>({
                                     <div className="grid grid-cols-3 gap-3">
                                       <div>
                                         <div className="text-xs text-muted-foreground mb-1">Overall Severity</div>
-                                        {risk.severity ? (
-                                          <Badge variant="outline">{risk.severity}</Badge>
-                                        ) : (
-                                          <span className="text-muted-foreground">—</span>
-                                        )}
+                                        <Badge variant="outline">{risk.severity}</Badge>
                                       </div>
                                       <div>
                                         <div className="text-xs text-muted-foreground mb-1">Budget Risk</div>
@@ -330,11 +326,7 @@ export function RiskRegisterList<T extends RiskRegisterListRisk>({
                                   <div className="grid grid-cols-2 gap-3">
                                     <div>
                                       <div className="text-xs text-muted-foreground mb-1">Severity</div>
-                                      {risk.severity ? (
-                                        <Badge variant="outline">{risk.severity}</Badge>
-                                      ) : (
-                                        <span className="text-muted-foreground">—</span>
-                                      )}
+                                      <Badge variant="outline">{risk.severity}</Badge>
                                     </div>
                                     <div>
                                       <div className="text-xs text-muted-foreground mb-1">Risk level</div>
@@ -751,11 +743,7 @@ export function RiskRegisterList<T extends RiskRegisterListRisk>({
                                 ) : null}
                                 {advancedMode ? (
                                   <TableCell>
-                                    {risk.severity ? (
-                                      <Badge variant="outline">{risk.severity}</Badge>
-                                    ) : (
-                                      <span className="text-muted-foreground">—</span>
-                                    )}
+                                    <Badge variant="outline">{risk.severity}</Badge>
                                   </TableCell>
                                 ) : null}
                                 {advancedMode ? (
@@ -780,11 +768,7 @@ export function RiskRegisterList<T extends RiskRegisterListRisk>({
                             ) : wfTableAdvanced ? (
                               <>
                                 <TableCell>
-                                  {risk.severity ? (
-                                    <Badge variant="outline">{risk.severity}</Badge>
-                                  ) : (
-                                    <span className="text-muted-foreground">—</span>
-                                  )}
+                                  <Badge variant="outline">{risk.severity}</Badge>
                                 </TableCell>
                                 <TableCell className="tabular-nums">
                                   {risk.schedule_impact_days != null ? (

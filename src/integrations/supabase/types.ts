@@ -2918,7 +2918,7 @@ export type Database = {
           implicated_item_kind:
             | Database["public"]["Enums"]["risk_item_kind"]
             | null
-          likelihood: string | null
+          likelihood: string
           mitigation_actions: Json | null
           mitigation_cost: number | null
           mitigation_effort_level: string | null
@@ -2934,7 +2934,7 @@ export type Database = {
           risk_title: string
           schedule_impact_high_days: number | null
           schedule_impact_low_days: number | null
-          severity: string | null
+          severity: string
           severity_score: number | null
           updated_at: string | null
         }
@@ -2951,7 +2951,7 @@ export type Database = {
           implicated_item_kind?:
             | Database["public"]["Enums"]["risk_item_kind"]
             | null
-          likelihood?: string | null
+          likelihood?: string
           mitigation_actions?: Json | null
           mitigation_cost?: number | null
           mitigation_effort_level?: string | null
@@ -2967,7 +2967,7 @@ export type Database = {
           risk_title: string
           schedule_impact_high_days?: number | null
           schedule_impact_low_days?: number | null
-          severity?: string | null
+          severity?: string
           severity_score?: number | null
           updated_at?: string | null
         }
@@ -2984,7 +2984,7 @@ export type Database = {
           implicated_item_kind?:
             | Database["public"]["Enums"]["risk_item_kind"]
             | null
-          likelihood?: string | null
+          likelihood?: string
           mitigation_actions?: Json | null
           mitigation_cost?: number | null
           mitigation_effort_level?: string | null
@@ -3000,7 +3000,7 @@ export type Database = {
           risk_title?: string
           schedule_impact_high_days?: number | null
           schedule_impact_low_days?: number | null
-          severity?: string | null
+          severity?: string
           severity_score?: number | null
           updated_at?: string | null
         }
@@ -3267,7 +3267,7 @@ export type Database = {
           id: string
           impact: string | null
           is_spiked: boolean
-          likelihood: string | null
+          likelihood: string
           mitigation_actions: Json | null
           mitigation_cost: number | null
           mitigation_effort_level: string | null
@@ -3282,7 +3282,7 @@ export type Database = {
           rpn: number | null
           schedule_impact_high_days: number | null
           schedule_impact_low_days: number | null
-          severity: string | null
+          severity: string
           severity_score: number | null
           source: string | null
           source_template_id: string | null
@@ -3305,7 +3305,7 @@ export type Database = {
           id?: string
           impact?: string | null
           is_spiked?: boolean
-          likelihood?: string | null
+          likelihood?: string
           mitigation_actions?: Json | null
           mitigation_cost?: number | null
           mitigation_effort_level?: string | null
@@ -3320,7 +3320,7 @@ export type Database = {
           rpn?: number | null
           schedule_impact_high_days?: number | null
           schedule_impact_low_days?: number | null
-          severity?: string | null
+          severity?: string
           severity_score?: number | null
           source?: string | null
           source_template_id?: string | null
@@ -3343,7 +3343,7 @@ export type Database = {
           id?: string
           impact?: string | null
           is_spiked?: boolean
-          likelihood?: string | null
+          likelihood?: string
           mitigation_actions?: Json | null
           mitigation_cost?: number | null
           mitigation_effort_level?: string | null
@@ -3358,7 +3358,7 @@ export type Database = {
           rpn?: number | null
           schedule_impact_high_days?: number | null
           schedule_impact_low_days?: number | null
-          severity?: string | null
+          severity?: string
           severity_score?: number | null
           source?: string | null
           source_template_id?: string | null

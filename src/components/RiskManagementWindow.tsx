@@ -173,7 +173,7 @@ interface Risk {
   risk_title?: string; // Database field
   risk_description?: string; // Database field
   likelihood: 'low' | 'medium' | 'high';
-  severity?: 'low' | 'medium' | 'high' | null;
+  severity: 'low' | 'medium' | 'high';
   schedule_impact_days: number | null; // Maps to schedule_impact_low_days or schedule_impact_high_days
   schedule_impact_low_days?: number | null; // Database field
   schedule_impact_high_days?: number | null; // Database field
@@ -306,22 +306,27 @@ function riskFocusSeverityCounts(risks: Risk[]) {
 }
 
 function riskFocusLevelValue(risk: Risk): 'low' | 'medium' | 'high' {
-  const s = risk.severity?.toLowerCase();
-  if (s === 'high' || s === 'low' || s === 'medium') return s;
+  return registerRiskLevelOrMedium(risk.severity);
+}
+
+/** Assessed register level: invalid or missing values become medium. */
+function registerRiskLevelOrMedium(value: unknown): 'low' | 'medium' | 'high' {
+  const raw = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (raw === 'low' || raw === 'medium' || raw === 'high') return raw;
   return 'medium';
 }
 
 /** Inherent starting level before mitigation (uses likelihood when available). */
 function riskBaselineSeverity(risk: Risk): 'low' | 'medium' | 'high' {
-  const l = (risk.likelihood || '').toLowerCase();
-  if (l === 'high' || l === 'medium' || l === 'low') return l;
+  const raw = typeof risk.likelihood === 'string' ? risk.likelihood.trim().toLowerCase() : '';
+  if (raw === 'low' || raw === 'medium' || raw === 'high') return raw;
   return riskFocusLevelValue(risk);
 }
 
 /** Current register level: stored severity, else starting/baseline (likelihood). */
 function currentRiskRegisterLevel(risk: Risk): 'low' | 'medium' | 'high' {
-  const sev = (risk.severity || '').toLowerCase();
-  if (sev === 'high' || sev === 'medium' || sev === 'low') return sev;
+  const raw = typeof risk.severity === 'string' ? risk.severity.trim().toLowerCase() : '';
+  if (raw === 'low' || raw === 'medium' || raw === 'high') return raw;
   return riskBaselineSeverity(risk);
 }
 
@@ -1584,8 +1589,8 @@ export function RiskManagementWindow({
           risk: risk.risk_title || '',
           risk_title: risk.risk_title,
           risk_description: risk.risk_description,
-          likelihood: risk.likelihood,
-          severity: risk.severity,
+          likelihood: registerRiskLevelOrMedium(risk.likelihood),
+          severity: registerRiskLevelOrMedium(risk.severity),
           schedule_impact_days: risk.schedule_impact_high_days || risk.schedule_impact_low_days || null,
           schedule_impact_low_days: risk.schedule_impact_low_days,
           schedule_impact_high_days: risk.schedule_impact_high_days,
@@ -1631,8 +1636,8 @@ export function RiskManagementWindow({
           risk: risk.risk_title || '',
           risk_title: risk.risk_title,
           risk_description: risk.risk_description,
-          likelihood: risk.likelihood,
-          severity: risk.severity,
+          likelihood: registerRiskLevelOrMedium(risk.likelihood),
+          severity: registerRiskLevelOrMedium(risk.severity),
           schedule_impact_days: risk.schedule_impact_high_days || risk.schedule_impact_low_days || null,
           schedule_impact_low_days: risk.schedule_impact_low_days,
           schedule_impact_high_days: risk.schedule_impact_high_days,
@@ -1692,6 +1697,9 @@ export function RiskManagementWindow({
       return;
     }
 
+    const likelihood = registerRiskLevelOrMedium(formData.likelihood);
+    const severity = registerRiskLevelOrMedium(formData.severity);
+
     try {
       if (mode === 'template' && projectId) {
         if (!templateProjectIdForRisks) {
@@ -1722,8 +1730,8 @@ export function RiskManagementWindow({
               risk_title: formData.risk.trim(),
               risk_description: null,
               benefit: formData.notes.trim() || null,
-              likelihood: formData.likelihood,
-              severity: formData.severity,
+              likelihood,
+              severity,
               schedule_impact_low_days: formData.schedule_impact_days || null,
               schedule_impact_high_days: formData.schedule_impact_days || null,
               budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
@@ -1762,8 +1770,8 @@ export function RiskManagementWindow({
               risk_title: formData.risk.trim(),
               risk_description: null,
               benefit: formData.notes.trim() || null,
-              likelihood: formData.likelihood,
-              severity: formData.severity,
+              likelihood,
+              severity,
               schedule_impact_low_days: formData.schedule_impact_days || null,
               schedule_impact_high_days: formData.schedule_impact_days || null,
               budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
@@ -1790,8 +1798,8 @@ export function RiskManagementWindow({
               risk_title: formData.risk.trim(),
               risk_description: null,
               benefit: formData.notes.trim() || null,
-              likelihood: formData.likelihood,
-              severity: formData.severity,
+              likelihood,
+              severity,
               schedule_impact_low_days: formData.schedule_impact_days || null,
               schedule_impact_high_days: formData.schedule_impact_days || null,
               budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
@@ -1830,8 +1838,8 @@ export function RiskManagementWindow({
               risk_title: formData.risk.trim(),
               risk_description: null,
               benefit: formData.notes.trim() || null,
-              likelihood: formData.likelihood,
-              severity: formData.severity,
+              likelihood,
+              severity,
               schedule_impact_low_days: formData.schedule_impact_days || null,
               schedule_impact_high_days: formData.schedule_impact_days || null,
               budget_impact_low: formData.budget_impact_dollars ? Math.round(formData.budget_impact_dollars) : null,
@@ -1874,8 +1882,8 @@ export function RiskManagementWindow({
       '';
     setFormData({
       risk: risk.risk || risk.risk_title || '',
-      likelihood: risk.likelihood,
-      severity: risk.severity || 'medium',
+      likelihood: registerRiskLevelOrMedium(risk.likelihood),
+      severity: registerRiskLevelOrMedium(risk.severity),
       schedule_impact_days: risk.schedule_impact_days || risk.schedule_impact_high_days || risk.schedule_impact_low_days || 0,
       budget_impact_dollars: risk.budget_impact_dollars || risk.budget_impact_high || risk.budget_impact_low || 0,
       mitigation: risk.mitigation || risk.mitigation_strategy || '',

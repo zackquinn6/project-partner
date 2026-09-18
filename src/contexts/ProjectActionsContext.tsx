@@ -137,8 +137,8 @@ type ProjectRunRiskInsertRow = {
   from_standard_foundation: boolean;
   risk_title: string;
   risk_description: string | null;
-  likelihood: string | null;
-  severity: string | null;
+  likelihood: string;
+  severity: string;
   schedule_impact_low_days: number | null;
   schedule_impact_high_days: number | null;
   budget_impact_low: number | null;
