@@ -819,7 +819,7 @@ function RiskFocusDashboard({
   const sectionShellClass =
     'flex h-full min-w-0 flex-col rounded-md border border-border bg-card px-2.5 py-2';
   const goalTileClass =
-    'flex min-h-0 min-w-0 flex-col items-center rounded-md border border-border bg-card px-1.5 py-1 text-center';
+    'flex h-full min-h-0 min-w-0 flex-col items-center rounded-md border border-border bg-card px-1.5 py-1 text-center';
   const goalLabelClass =
     'font-display text-xs font-bold leading-tight text-foreground sm:text-sm';
   const goalMetricShellClass =
@@ -842,7 +842,7 @@ function RiskFocusDashboard({
   };
 
   const goalStatusFooter = (dimension: RiskDimension) => (
-    <div className="mt-1 flex w-full min-w-0 items-center justify-center gap-1">
+    <div className="mt-auto flex w-full min-w-0 items-center justify-center gap-1 pt-1">
       <span className="shrink-0 text-[11px] font-medium leading-none text-muted-foreground">
         Risk:
       </span>
@@ -950,7 +950,7 @@ function RiskFocusDashboard({
               <div className={sectionShellClass}>
                 <div className={sectionHeaderClass}>Project Goals</div>
                 <TooltipProvider>
-                  <div className="grid min-w-0 grid-cols-2 content-start items-start gap-1 sm:grid-cols-4">
+                  <div className="grid min-w-0 grid-cols-2 items-stretch gap-1 sm:grid-cols-4">
                     <div className={cn(goalTileClass, 'border-l-[3px] border-l-success')}>
                       {goalTitleRow(
                         <Shield className="h-3 w-3" aria-hidden />,
@@ -996,7 +996,7 @@ function RiskFocusDashboard({
                       )}
                       {qualityGoal ? (
                         <div
-                          className="mt-1 w-full grid grid-cols-3 overflow-hidden rounded-md border border-border"
+                          className="mt-1 grid w-full grid-cols-3 overflow-hidden rounded-md border border-border"
                           role="list"
                           aria-label={`Quality target ${qualityMetricLabel}. Options: Good, Great, Professional`}
                         >
