@@ -1,182 +1,177 @@
-# Risk Radar summary cards refinement
+# Achievements window UI refinement
 
 ## Goal
-Refine the three compact dashboard areas shown in Risk Radar — **Current project progress**, **Project goals**, and **Current risk summary** — into one cohesive, modern metrics strip.
+Transform the existing achievements window into a modern performance-badge dashboard inspired by Garmin’s clarity and density, using the selected **industrial performance tactical** direction.
 
-The overall footprint, three-column proportions, goal content, and dashboard behavior will remain the same. This is a focused visual hierarchy, typography, color, and fit improvement rather than a structural redesign.
+This is a presentation-only refinement. Existing achievement definitions, filters, progress calculations, XP, levels, unlock behavior, and recent-unlock data remain unchanged.
 
 ## Current UI findings
 
-- The strip uses the intended compact proportions, but most labels are only 10–12px, making key information feel secondary and difficult to scan.
-- The four goal tiles each use a different full-surface tint. Together they create a rainbow effect that competes with the actual risk severity colors.
-- The goal values do not read as the primary metrics because labels, icons, values, and quality options are all similarly small.
-- The quality tile attempts to fit all three quality levels and strike out two of them. This is visually noisy and squeezes the selected goal.
-- “Risk Status” is followed only by a colored dot. The meaning depends on color recognition or opening a tooltip.
-- The risk summary leaves excess space above its numbers, while its counts are too small for the strongest roll-up metric on the row.
-- Uppercase labels with expanded letter spacing add visual noise at this scale and reduce readability.
-- Some surfaces and borders are too similar in contrast, so the three dashboard areas do not have a crisp visual hierarchy.
+- The level summary reads as a promotional banner rather than a performance instrument because of its soft gradient, glow, and oversized orange tile.
+- The dialog repeats “Achievements” in both its top bar and summary panel, weakening hierarchy.
+- The total completed count is small and visually detached from level progress.
+- Filter pills are visually soft and consume more height than needed for a dense dashboard.
+- Locked cards are low contrast throughout, making names, descriptions, icons, and progress equally subdued.
+- Achievement names, category labels, descriptions, counts, and percentages lack a consistent vertical grid across cards.
+- The Peak marker appears beside the title, which makes long names wrap prematurely.
+- Progress bars are too subtle to scan quickly, especially across a two-column list.
+- The current pale presentation does not communicate the selected rugged, technical “shop performance” character.
 
-## Proposed visual direction
+## Selected visual direction
 
-Use a **quiet workshop-instrument-panel** treatment: warm neutral surfaces, precise typography, restrained status color, compact spacing, and highly legible numbers. Color will communicate meaning only where it helps — icons, status markers, progress, and severity counts — rather than tinting every large surface.
+Use a compact **industrial performance tactical** surface: dark graphite, crisp dividers, signal orange for active progress, pale high-contrast text, and precise typography.
 
-### Shared dashboard treatment
+### Locked visual system
 
-- Keep the current single-row desktop grid and approximately the same proportions:
-  - Progress: 15%
-  - Goals: 66%
-  - Risk summary: 19%
-- Keep the current overall dashboard height; improve fit by reorganizing content inside each area rather than making the row taller.
-- Use one shared card treatment across all three areas:
-  - `bg-card`
-  - quiet `border-border`
-  - minimal or no shadow inside this dense dashboard region
-  - consistent 6–8px corner radius
-  - 10–12px internal padding depending on available width
-- Use Manrope/display type for section titles and prominent metrics; retain Inter/sans for supporting labels.
-- Remove expanded letter spacing. Use weight, size, and color for hierarchy instead.
-- Align all three section titles to the left and on the same baseline.
-- Use semantic theme tokens only, retaining correct contrast in both light and dark modes.
+- Main graphite: `#171A1D`, implemented as a dedicated semantic token.
+- Raised graphite: `#2A2F34`, implemented as a dedicated semantic token.
+- Signal orange: `#F45B22`, mapped through the achievements accent token.
+- Primary text: `#F2F4F5`, mapped through the achievements foreground token.
+- Supporting text and dividers use derived semantic tokens with verified contrast.
+- Sora for every title, achievement name, level, XP figure, count, and percentage.
+- Manrope for descriptions, categories, filters, and supporting labels.
+- No gradients, glows, blurred decoration, blue/cyan/lime accents, or invented colors.
+- No oversized pill shapes, nested cards, or decorative shadows.
+- Corner radii stay crisp at 6–8px.
 
-## 1. Current project progress
+These values will be added as scoped semantic tokens rather than hardcoded inside the component, preserving the app’s broader theme system.
 
-### Layout
+## Window frame
 
-- Preserve the existing title, helper sentence, progress bar, percentage, and optional progress selector.
-- Keep the helper sentence directly below the title, but tighten its width and line height so it reads as supporting context rather than competing body copy.
-- Place the progress bar and percentage on a stable bottom row with the percentage given a fixed-width, right-aligned metric area.
-- If the progress selector is shown, keep it compact and visually subordinate to the progress metric.
+- Keep the existing full-screen mobile and large desktop dialog behavior.
+- Convert the desktop dialog into one graphite instrument panel with a thin border and restrained 8px radius.
+- Remove the visible duplicate title from the dialog bar; retain the accessible dialog title.
+- Place the close control in a compact top-right utility strip with a clear focus state and minimum touch target.
+- Keep the achievement content’s current maximum reading width and scroll behavior.
 
-### Typography and sizing
+## 1. Performance summary
 
-- Section title: 12px Manrope, semibold, sentence case, 16px line height.
-- Helper text: 11–12px Inter, regular, `text-muted-foreground`, 15–16px line height.
-- Percentage: 18px Manrope, bold, tabular numerals.
-- Progress bar: 7–8px high, with a quiet neutral track and primary/coral fill.
-
-### Color
-
-- Use the standard neutral card surface; do not tint the whole card.
-- Keep the Toolio primary coral for progress fill only, making the 2% state visible without overpowering the row.
-- Increase track contrast slightly so very early progress remains visible.
-
-## 2. Project goals
-
-### Tile structure
-
-Keep four equal-width tiles in the same row: Safety, Schedule, Budget, Quality. Each tile will use the same internal structure:
+### Structure
 
 ```text
-[icon]  Goal label
-        Primary metric
+[LEVEL RING]  ACHIEVEMENTS / level progress     0 / 27
+              176 XP · 224 XP to Level 3        completed
 
-● Status description
+              ━━━━━━━━━ level progress ━━━━━━━
 ```
 
-- Use a neutral card surface for all four goal tiles.
-- Replace the four full colored backgrounds with a slim semantic accent and a softly tinted icon container.
-- Keep equal tile heights and fixed internal rows so dates, currency, and status text cannot shift the layout.
-- Use compact truncation or controlled wrapping for unusually long dates and values, never font sizes below the legibility floor.
+- Replace the orange level tile with a compact circular level gauge.
+- The gauge uses a neutral track and orange progress arc based on the existing level-progress value.
+- Center **LVL** over the current level number; both remain readable without relying on color.
+- Use **Achievements** as the main title, not the prototype’s invented “Performance Achievements.”
+- Show current XP and XP remaining on one stable supporting line.
+- Give the unlocked total a fixed right-hand metric column with “Completed” beneath it.
+- Keep one horizontal level-progress bar under the summary row for precise progress reading; do not add new metrics.
 
-### Typography and sizing
+### Type and sizing
 
-- Goal label: 11px Inter, medium, sentence case.
-- Primary metric: 14–15px Manrope, semibold, 18px line height, tabular numerals for dates and currency.
-- Status description: 11px Inter, semibold for the status term.
-- Icon container: 22–24px square; icon: 13–14px.
+- Main title: Sora, 22–24px, 700 weight.
+- Level number: Sora, 28px, 700 weight.
+- XP figure: Sora, 13–14px, 700 weight, signal orange.
+- Remaining XP: Manrope, 13px, medium, supporting foreground.
+- Completed count: Sora, 28–32px, 700 weight, tabular numerals.
+- Metric labels: Manrope, 10–11px, 600 weight, uppercase, normal letter spacing.
 
-### Color strategy
+### Color and fit
 
-Use restrained domain accents for the goal identity, while reserving red/amber/green for risk status:
+- Flat main graphite surface with a raised graphite metric area only where separation is needed.
+- Orange is limited to the gauge, current XP, and progress fill.
+- The completed count uses pale foreground, not low-opacity decorative text.
+- At narrow widths, the completed metric moves below the level details without shrinking text.
 
-- Safety: success-toned icon/accent
-- Schedule: info-toned icon/accent
-- Budget: warning-toned icon/accent
-- Quality: category-3-toned icon/accent
-- Tile surfaces remain neutral in every case.
+## 2. Category controls
 
-This separates **what the goal is** from **how risky it currently is**.
+- Place filters on a dedicated dark utility row separated by hairline borders.
+- Keep all seven existing filters and horizontal scrolling on narrow screens.
+- Change the controls from large soft pills to compact 6px-radius segmented buttons.
+- Active filter: signal-orange surface, high-contrast foreground, and clear selected state.
+- Inactive filters: transparent/raised graphite surface with supporting text and a visible border.
+- Use Manrope at 11–12px semibold; avoid wide tracking.
+- Preserve keyboard navigation, focus rings, and minimum 40–44px touch targets on mobile.
 
-### Quality fitting
+## 3. Achievement cards
 
-- Show the selected quality target as the primary metric, such as **Great**.
-- Remove the struck-through unselected options from the compact dashboard tile; those choices belong in editing controls, not the summary state.
-- Preserve the selected quality value and its underlying behavior.
+### Shared card grid
 
-### Visible risk-status descriptions
+- Preserve the existing two-column desktop and single-column mobile layout.
+- Use raised graphite cards against the main graphite canvas with a thin neutral border.
+- Fix each card’s internal layout into three stable rows so adjacent cards align:
+  1. Icon, title, category/status
+  2. Description
+  3. Progress reading and bar
+- Use 16–18px internal spacing and a 14–16px gap between cards.
+- Remove generic shadows; use a slight border-color change on hover/focus.
 
-Replace the dot-only footer with a status marker plus plain-language text:
+### Icon and title block
 
-- High / `H`: red marker + **Act now**
-- Medium / `M`: amber marker + **Safeguard**
-- Low / `L`: green marker + **Covered**
-- No scored risks: neutral outlined marker + **Not assessed**
+- Use a 44–48px square icon well with 6px radius.
+- Locked icon: visible muted foreground, not near-invisible opacity.
+- In-progress icon: signal orange on a restrained orange-tinted token surface.
+- Unlocked icon: signal orange plus the existing check state and visible “Unlocked” text where space permits.
+- Achievement name: Sora, 15–16px, 650–700 weight, pale foreground, 20px line height.
+- Category: Manrope, 11px, medium, supporting foreground.
+- Move the Peak marker to the card’s top-right metadata position so it does not interrupt the title.
+- Render category and Peak markers as compact squared tags with text; status never relies on color alone.
 
-The row will be announced accessibly as, for example, “Safety risk status: Act now.” Existing tooltips can remain for detailed counts and explanations, but the core status will no longer require hovering or color interpretation.
+### Description
 
-The text should come from the existing action-priority labels when available so dashboard language stays aligned with the rest of Risk Radar. A safe display fallback will cover loading or unavailable label data without inventing a risk score.
+- Manrope, 12–13px, regular, 18px line height.
+- Increase contrast from the current muted gray while keeping it subordinate to the title.
+- Reserve consistent description height for two lines; clamp longer copy cleanly.
 
-## 3. Current risk summary
+### Progress readout
 
-### Layout
+- Present the count as `0 / 3 completed` rather than a bare fraction.
+- Count and percentage use Sora with tabular numerals at 11–12px semibold.
+- Place count left and percentage right on a fixed baseline.
+- Increase progress track height to 4–5px with a clearly visible graphite track.
+- Use signal orange for measurable progress and a neutral track at zero.
+- Unlocked achievements show a complete orange bar and unlock date without changing the underlying data.
+- Keep continuous bars rather than the prototype’s arbitrary four segments, because targets vary across achievements.
 
-- Left-align the section title to match the other two cards.
-- Replace the loose inline group with three equal metric cells: High, Medium, Low.
-- Vertically center the cells in the available card height and use subtle dividers between them.
-- Keep the same three counts and severity labels; no new metric or calculation is introduced.
+## 4. Achievement states
 
-### Typography and sizing
+- **Locked, no progress:** pale title, muted icon and description, explicit `0 / target completed`, neutral progress track.
+- **In progress:** orange icon treatment and progress fill; percentage and count remain readable text.
+- **Unlocked:** orange border accent, check icon plus “Unlocked,” completed bar, and existing date.
+- **Peak:** slim orange-accented border and visible Peak tag; do not use glow.
+- **Recent unlocks:** preserve the existing section when data exists, but restyle it as a compact horizontal “Recently unlocked” rail using the same card language.
 
-- Count: 20px Manrope, bold, tabular numerals, 22px line height.
-- Severity label: 11px Inter, medium, sentence case.
-- Put the count first visually, with the label immediately below or beside it depending on the final fit at the existing width.
+## 5. Motion and interaction
 
-### Color
-
-- Keep the overall card neutral.
-- Use semantic color only on the count and a small severity marker:
-  - High: `destructive-soft`
-  - Medium: `warning-soft`
-  - Low: `success`
-- Keep labels in the normal foreground or muted foreground instead of coloring the whole metric area.
-- Ensure the amber “Medium” state meets contrast requirements in both themes; use the darker semantic foreground treatment where needed rather than changing it to orange arbitrarily.
+- Use restrained 160–220ms transitions for filter selection, border emphasis, progress fill, and icon state.
+- Cards may lift by at most 1px on pointer hover; no glow or dramatic scale.
+- Respect `prefers-reduced-motion` by removing translation and using immediate/short color changes.
+- Keep the window scroll position stable while changing filters.
 
 ## Responsive behavior
 
-- Preserve the current desktop one-row dashboard at the screenshot width.
-- At medium widths, retain the same three dashboard areas but allow goal values to wrap within their fixed tiles.
-- At narrow widths, stack the three main areas as the existing grid already does; keep the four goal tiles in two columns before collapsing further.
-- Maintain stable heights and minimum widths so text does not overlap, truncate important metrics, or force horizontal scrolling.
-- Use tabular numerals for percentages, money, and risk counts to prevent visual shifting as values change.
-
-## Accessibility and interaction
-
-- Status is communicated by text plus color, never color alone.
-- Preserve the existing clickable risk-status control and dashboard-opening behavior.
-- Expand the status control’s usable target without visually enlarging the marker.
-- Keep keyboard focus rings visible and token-based.
-- Preserve existing tooltips as secondary detail, including risk counts and score context.
-- Respect light and dark themes with semantic tokens; no hardcoded color values or raw color utility classes.
+- Desktop: two achievement columns, full summary row, completed metric aligned right.
+- Tablet: two columns where cards retain a usable minimum width; otherwise switch to one column.
+- Mobile: one column, summary wraps deliberately, filters scroll horizontally, and all controls meet touch sizing.
+- Long names such as “Quarter-Century Shop” must wrap without colliding with Peak or category tags.
+- No dynamic viewport-based type scaling; all type remains within defined responsive steps.
 
 ## Technical implementation
 
-- Refine `RiskFocusDashboard` and the shared goal-status presentation in `RiskManagementWindow.tsx`.
-- Centralize the visible status label resolution so all four goal tiles use the same wording and loading fallback.
-- Reuse the existing action-priority table, component rollups, semantic status tokens, and click handlers; do not change scoring, counts, permissions, persistence, or project data.
-- Keep styles local to the existing dashboard composition unless a genuinely reusable status helper is warranted.
+- Refine `AchievementsSection` and `AchievementsFullDialog` only.
+- Add scoped achievement-surface tokens in the global theme and expose them through the Tailwind theme configuration.
+- Add Sora to the existing document font loading and map it to an achievements-specific display family; use the project’s existing Manrope family for labels and body copy.
+- Reuse the existing Button, Badge, Progress, icon map, filters, calculations, and loading state.
+- Replace decorative gradient/glow styles with the selected flat semantic surfaces.
+- Keep every existing data path and achievement criterion untouched.
 
 ## Verification
 
-- Compare the updated dashboard against the supplied screenshot at the same wide aspect ratio.
-- Confirm long project dates, four-digit budgets, every quality target, zero values, and multi-digit risk counts fit cleanly.
-- Verify High, Medium, Low, and unscored statuses each show the correct visible description and color.
-- Check light and dark themes.
-- Check desktop and narrow layouts for clipping, overlap, wrapping, and stable card heights.
-- Confirm each risk status still opens the correct component dashboard and tooltips remain readable.
-- Run the project’s type check and relevant UI verification after implementation.
+- Compare the result at the screenshot’s wide layout and at mobile width.
+- Verify all seven filters, empty/zero progress, partial progress, unlocked state, Peak state, and recent unlocks.
+- Check long names and descriptions for clipping or collisions.
+- Confirm the close control, filter focus states, screen-reader labels, and color-independent status text.
+- Confirm graphite/orange contrast and typography in the rendered window.
+- Run the project type check and relevant frontend validation.
 
-## Out of scope
+## Explicitly out of scope
 
-- No changes to the surrounding Risk Radar header, motivational banner, project-name banner, risk table, scoring model, or data.
-- No increase to the general dashboard footprint.
-- No new charts, totals, cards, or metrics.
+- No new efficiency, streak, sync, trend, social, history, completion-estimate, or premium-status metrics from the prototype.
+- No changes to XP formulas, levels, unlock criteria, achievement catalog, persistence, notifications, or data fetching.
+- No redesign of surrounding profile or project screens.
