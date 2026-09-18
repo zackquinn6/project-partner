@@ -82,7 +82,7 @@ import { reportUserFacingError } from '@/utils/errorReporting';
 import { ProjectRiskRulesEditor } from '@/components/ProjectRiskRulesEditor';
 import { useActionPriorityTable } from '@/hooks/useActionPriorityTable';
 import { useOccurrenceDrivers } from '@/hooks/useOccurrenceDrivers';
-import { actionPriorityLabel, type ActionPriorityTable } from '@/utils/actionPriorityTable';
+import { actionPriorityLabel } from '@/utils/actionPriorityTable';
 import {
   PREVENTION_STRENGTHS,
   PREVENTION_STRENGTH_LABELS,
@@ -485,15 +485,11 @@ function goalRiskStatusMarkerClass(ap: ActionPriority | null): string {
 }
 
 /**
- * Visible status wording for goal tiles. Prefers action-priority table labels when loaded;
- * falls back to short display copy only when labels are unavailable (never invents a score).
+ * Visible status wording for goal-tile rollups. Uses short component-level copy rather than
+ * action-priority table labels (those refer to scored steps, not overall goal risk).
  */
-function resolveGoalRiskStatusText(
-  ap: ActionPriority | null,
-  table: ActionPriorityTable | null | undefined
-): string {
+function resolveGoalRiskStatusText(ap: ActionPriority | null): string {
   if (ap == null) return 'Not assessed';
-  if (table) return actionPriorityLabel(table, ap).label;
   switch (ap) {
     case 'H':
       return 'Act now';
@@ -577,7 +573,7 @@ function GoalRiskLight({
       ? actionPriorityLabel(table, worstActionPriority).description
       : null;
   const label = RISK_COMPONENT_CONSUMER_LABELS[dimension];
-  const statusText = resolveGoalRiskStatusText(worstActionPriority, table);
+  const statusText = resolveGoalRiskStatusText(worstActionPriority);
 
   const light = (
     <span
@@ -917,16 +913,31 @@ function RiskFocusDashboard({
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className={goalLabelClass}>Quality</div>
-                          <div
-                            className={goalMetricClass}
-                            aria-label={
-                              qualityMetricLabel
-                                ? `Quality goal ${qualityMetricLabel}`
-                                : undefined
-                            }
-                          >
-                            {qualityMetricLabel ?? '-'}
-                          </div>
+                          {qualityGoal ? (
+                            <div
+                              className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5"
+                              aria-label={`Quality goal ${qualityMetricLabel}`}
+                            >
+                              {QUALITY_GOAL_OPTIONS.map((option) => {
+                                const selected = option.value === qualityGoal;
+                                return (
+                                  <span
+                                    key={option.value}
+                                    className={cn(
+                                      'shrink-0',
+                                      selected
+                                        ? 'rounded-full border border-category-3 px-1.5 py-0.5 font-display text-sm font-semibold leading-none text-category-3'
+                                        : 'px-0.5 text-[11px] font-medium leading-none text-muted-foreground'
+                                    )}
+                                  >
+                                    {option.label}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className={goalMetricClass}>-</div>
+                          )}
                         </div>
                       </div>
                       {goalStatusFooter('quality')}
