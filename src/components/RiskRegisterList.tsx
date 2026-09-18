@@ -88,20 +88,29 @@ function EasyModeLikelihoodSeverity({
   labelClassName?: string;
 }) {
   const severity = currentSeverityLevel(risk);
+  const badgeWidthClass = 'min-w-[4.75rem] justify-center';
   return (
-    <div className={cn('flex flex-wrap items-center gap-2', className)}>
+    <div
+      className={cn(
+        'grid w-fit grid-cols-[auto_minmax(4.75rem,auto)] items-center gap-x-2 gap-y-1',
+        className
+      )}
+    >
       <span className={cn('text-muted-foreground', labelClassName)}>Likelihood:</span>
       <Badge
-        className={getRiskLevelColor(
-          risk.likelihood,
-          risk.schedule_impact_days,
-          risk.budget_impact_dollars
+        className={cn(
+          getRiskLevelColor(
+            risk.likelihood,
+            risk.schedule_impact_days,
+            risk.budget_impact_dollars
+          ),
+          badgeWidthClass
         )}
       >
         {risk.likelihood}
       </Badge>
-      <span className={cn('text-muted-foreground', labelClassName)}>Severity:</span>
-      <Badge className={currentRiskLevelBadgeClass(severity)}>{severity}</Badge>
+      <span className={cn('text-muted-foreground', labelClassName)}>Impact:</span>
+      <Badge className={cn(currentRiskLevelBadgeClass(severity), badgeWidthClass)}>{severity}</Badge>
     </div>
   );
 }
