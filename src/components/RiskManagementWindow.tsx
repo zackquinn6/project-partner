@@ -167,6 +167,56 @@ function riskRadarBudgetLabel(value: string | null | undefined): string | null {
   return raw.includes('$') ? raw : `$${raw}`;
 }
 
+/** Latest end from schedule_events when the Schedule tool has produced a plan. */
+function riskRadarPlannedScheduleLabel(projectRun: ProjectRun): string | null {
+  const events = projectRun.schedule_events?.events;
+  if (!Array.isArray(events) || events.length === 0) return null;
+
+  const endDates = events
+    .map((event: { date?: string; duration?: number; endTime?: string }) => {
+      if (event.date) {
+        const d = new Date(event.date);
+        if (typeof event.duration === 'number' && !Number.isNaN(event.duration)) {
+          d.setMinutes(d.getMinutes() + event.duration);
+        }
+        return d;
+      }
+      if (event.endTime) return new Date(event.endTime);
+      return null;
+    })
+    .filter((d): d is Date => d !== null && !Number.isNaN(d.getTime()));
+
+  if (endDates.length === 0) return null;
+  const latest = endDates.reduce((acc, d) => (d > acc ? d : acc));
+  return format(latest, 'MMM d, yyyy');
+}
+
+/** Sum of budget line items when the Budget tool has produced a plan. */
+function riskRadarPlannedBudgetLabel(projectRun: ProjectRun): string | null {
+  const items = projectRun.budget_data?.lineItems;
+  if (!Array.isArray(items) || items.length === 0) return null;
+
+  let sum = 0;
+  let hasAmount = false;
+  for (const item of items) {
+    if (!item) continue;
+    const amount =
+      typeof item.budgetedAmount === 'number'
+        ? item.budgetedAmount
+        : Number.parseFloat(String(item.budgetedAmount ?? ''));
+    if (Number.isNaN(amount)) continue;
+    sum += amount;
+    hasAmount = true;
+  }
+  if (!hasAmount) return null;
+
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(sum);
+}
+
 interface Risk {
   id: string;
   risk: string; // Maps to risk_title in DB
@@ -748,8 +798,14 @@ function RiskFocusDashboard({
   const { high, medium, low } = riskFocusSeverityCounts(risks);
   const name = projectDisplayName?.trim() || null;
   const showGoals = Boolean(projectRun);
-  const scheduleLabel = projectRun ? riskRadarGoalDateLabel(projectRun.initial_timeline) : null;
-  const budgetLabel = projectRun ? riskRadarBudgetLabel(projectRun.initial_budget) : null;
+  const scheduleLabel = projectRun
+    ? riskRadarPlannedScheduleLabel(projectRun) ??
+      riskRadarGoalDateLabel(projectRun.initial_timeline)
+    : null;
+  const budgetLabel = projectRun
+    ? riskRadarPlannedBudgetLabel(projectRun) ??
+      riskRadarBudgetLabel(projectRun.initial_budget)
+    : null;
   const qualityGoal = projectRun && isQualityGoal(projectRun.initial_quality_goal)
     ? projectRun.initial_quality_goal
     : null;
