@@ -65,6 +65,47 @@ function riskFocusLevelValue(risk: RiskRegisterListRisk): 'low' | 'medium' | 'hi
   return 'medium';
 }
 
+/** Current severity for display: stored severity, else inherent likelihood. */
+function currentSeverityLevel(risk: RiskRegisterListRisk): 'low' | 'medium' | 'high' {
+  const s = risk.severity?.toLowerCase();
+  if (s === 'high' || s === 'medium' || s === 'low') return s;
+  return risk.likelihood;
+}
+
+function EasyModeLikelihoodSeverity({
+  risk,
+  getRiskLevelColor,
+  className,
+  labelClassName,
+}: {
+  risk: RiskRegisterListRisk;
+  getRiskLevelColor: (
+    likelihood: string,
+    scheduleImpact: number | null,
+    budgetImpact: number | null
+  ) => string;
+  className?: string;
+  labelClassName?: string;
+}) {
+  const severity = currentSeverityLevel(risk);
+  return (
+    <div className={cn('flex flex-wrap items-center gap-2', className)}>
+      <span className={cn('text-muted-foreground', labelClassName)}>Likelihood:</span>
+      <Badge
+        className={getRiskLevelColor(
+          risk.likelihood,
+          risk.schedule_impact_days,
+          risk.budget_impact_dollars
+        )}
+      >
+        {risk.likelihood}
+      </Badge>
+      <span className={cn('text-muted-foreground', labelClassName)}>Severity:</span>
+      <Badge className={currentRiskLevelBadgeClass(severity)}>{severity}</Badge>
+    </div>
+  );
+}
+
 /** True only for run risks the user created (no template link and no applied Stage 3 source). */
 function isUserAddedRisk(risk: RiskRegisterListRisk): boolean {
   return (
@@ -195,18 +236,12 @@ export function RiskRegisterList<T extends RiskRegisterListRisk>({
                                   ) : null}
                                 </div>
                                 {riskFocusEasyMode ? (
-                                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">Likelihood:</span>
-                                    <Badge
-                                      className={getRiskLevelColor(
-                                        risk.likelihood,
-                                        risk.schedule_impact_days,
-                                        risk.budget_impact_dollars
-                                      )}
-                                    >
-                                      {risk.likelihood}
-                                    </Badge>
-                                  </div>
+                                  <EasyModeLikelihoodSeverity
+                                    risk={risk}
+                                    getRiskLevelColor={getRiskLevelColor}
+                                    className="mt-1.5"
+                                    labelClassName="text-xs"
+                                  />
                                 ) : null}
                               </div>
                               {!readOnly && !riskFocusRun ? (
@@ -691,18 +726,11 @@ export function RiskRegisterList<T extends RiskRegisterListRisk>({
                                   ) : null}
                                 </div>
                                 {riskFocusEasyMode ? (
-                                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                                    <span className="text-muted-foreground">Likelihood:</span>
-                                    <Badge
-                                      className={getRiskLevelColor(
-                                        risk.likelihood,
-                                        risk.schedule_impact_days,
-                                        risk.budget_impact_dollars
-                                      )}
-                                    >
-                                      {risk.likelihood}
-                                    </Badge>
-                                  </div>
+                                  <EasyModeLikelihoodSeverity
+                                    risk={risk}
+                                    getRiskLevelColor={getRiskLevelColor}
+                                    className="text-sm"
+                                  />
                                 ) : null}
                               </div>
                             </TableCell>
