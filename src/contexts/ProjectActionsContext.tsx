@@ -54,6 +54,32 @@ function optionalDbTextForRiskCopy(value: unknown): string | null {
   throw new Error('Risk row text field has unsupported type for copy');
 }
 
+/** Every run risk must carry a register level; missing/invalid values become medium. */
+function riskLevelTextOrMedium(value: unknown): 'low' | 'medium' | 'high' {
+  const raw = optionalDbTextForRiskCopy(value);
+  if (raw == null) return 'medium';
+  const s = raw.toLowerCase();
+  if (s === 'low' || s === 'medium' || s === 'high') return s;
+  return 'medium';
+}
+
+/** Repair rows that still lack likelihood/severity after sync or scoring. */
+async function fillMissingRunRiskLevels(projectRunId: string): Promise<void> {
+  const { error: severityError } = await supabase
+    .from('project_run_risks')
+    .update({ severity: 'medium' })
+    .eq('project_run_id', projectRunId)
+    .is('severity', null);
+  if (severityError) throw severityError;
+
+  const { error: likelihoodError } = await supabase
+    .from('project_run_risks')
+    .update({ likelihood: 'medium' })
+    .eq('project_run_id', projectRunId)
+    .is('likelihood', null);
+  if (likelihoodError) throw likelihoodError;
+}
+
 function numberOrNullForRunRisk(value: unknown, field: string): number | null {
   if (value == null || value === '') return null;
   if (typeof value === 'number') {
@@ -292,8 +318,8 @@ async function syncFoundationAndTemplateRisksToProjectRun(
       from_standard_foundation: fromStandardFoundation,
       risk_title: risk.risk_title.trim(),
       risk_description: optionalDbTextForRiskCopy(risk.risk_description),
-      likelihood: optionalDbTextForRiskCopy(risk.likelihood),
-      severity: optionalDbTextForRiskCopy(risk.severity),
+      likelihood: riskLevelTextOrMedium(risk.likelihood),
+      severity: riskLevelTextOrMedium(risk.severity),
       schedule_impact_low_days: numberOrNullForRunRisk(risk.schedule_impact_low_days, 'schedule_impact_low_days'),
       schedule_impact_high_days: numberOrNullForRunRisk(
         risk.schedule_impact_high_days,
@@ -355,6 +381,8 @@ async function syncFoundationAndTemplateRisksToProjectRun(
       )
     );
   }
+
+  await fillMissingRunRiskLevels(projectRunId);
 }
 
 async function applyRiskFocusSessionToRun(runId: string): Promise<void> {

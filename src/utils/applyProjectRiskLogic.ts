@@ -341,6 +341,27 @@ function appliedScoringFields(item: AppliedRiskItem) {
   };
 }
 
+/** Repair rows that still lack likelihood/severity after scoring writes. */
+async function fillMissingRunRiskLevels(projectRunId: string): Promise<void> {
+  const { error: severityError } = await supabase
+    .from('project_run_risks')
+    .update({ severity: 'medium' })
+    .eq('project_run_id', projectRunId)
+    .is('severity', null);
+  if (severityError) {
+    throw new Error(`Applied risk list could not default missing severity: ${severityError.message}`);
+  }
+
+  const { error: likelihoodError } = await supabase
+    .from('project_run_risks')
+    .update({ likelihood: 'medium' })
+    .eq('project_run_id', projectRunId)
+    .is('likelihood', null);
+  if (likelihoodError) {
+    throw new Error(`Applied risk list could not default missing likelihood: ${likelihoodError.message}`);
+  }
+}
+
 /**
  * Rebuilds the applied risk list for a run and its per-component profile.
  *
@@ -371,6 +392,7 @@ export async function applyProjectRiskLogicToRun(
   if (stage1.items.length === 0) {
     // Nothing scored anywhere in this template. The profile and the KC register still get
     // rebuilt so a stale result from an earlier evaluation cannot linger.
+    await fillMissingRunRiskLevels(projectRunId);
     await recomputeProjectRunRiskProfile(projectRunId);
     await clearProjectRunKeyCharacteristics(projectRunId);
     return;
@@ -405,6 +427,7 @@ export async function applyProjectRiskLogicToRun(
     await writeRegisterRow(projectRunId, item);
   }
 
+  await fillMissingRunRiskLevels(projectRunId);
   await recomputeProjectRunRiskProfile(projectRunId);
   await recomputeProjectRunKeyCharacteristics(projectRunId, stage1, actionPriorityTable);
 }
@@ -499,6 +522,8 @@ async function writeQualityRow(
     source_template_id: item.targetId,
     risk_title: translation.title,
     risk_description: translation.description,
+    likelihood: 'medium',
+    severity: 'medium',
     ...appliedScoringFields(item),
   });
   if (error) {
