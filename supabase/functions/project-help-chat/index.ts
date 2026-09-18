@@ -116,7 +116,51 @@ function extractStepContext(
   return "";
 }
 
+// deno-lint-ignore no-explicit-any
+async function hasHelpEntitlement(admin: any, userId: string): Promise<boolean> {
+  try {
+    const { data: betaSetting } = await admin
+      .from("app_settings")
+      .select("setting_value")
+      .eq("setting_key", "beta_mode")
+      .maybeSingle();
+    if ((betaSetting?.setting_value as { enabled?: boolean } | null)?.enabled === true) {
+      return true;
+    }
+
+    const { data: profile } = await admin
+      .from("user_profiles")
+      .select("roles")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const roles = Array.isArray(profile?.roles) ? profile.roles : [];
+    if (roles.includes("admin")) return true;
+
+    const { data: membership } = await admin
+      .from("membership_status")
+      .select("member_status, membership_end_date, trial_end_date")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!membership) return false;
+
+    const now = Date.now();
+    const membershipActive =
+      membership.member_status === true &&
+      (!membership.membership_end_date ||
+        new Date(membership.membership_end_date).getTime() >= now);
+    const trialActive =
+      !!membership.trial_end_date &&
+      new Date(membership.trial_end_date).getTime() > now;
+
+    return membershipActive || trialActive;
+  } catch (error) {
+    console.error("entitlement check failed", error);
+    return false;
+  }
+}
+
 serve(async (req) => {
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -130,6 +174,24 @@ serve(async (req) => {
     const admin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
+
+    // Server-side entitlement: only paying members, active trials, admins,
+    // or everyone while public beta is switched on may use the paid AI help.
+    const entitled = await hasHelpEntitlement(admin, user.id);
+    if (!entitled) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "AI help is part of a paid plan. Start a trial or upgrade to use project help.",
+        }),
+        {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+
 
     const body = await req.json();
     const input = requestSchema.parse(body);
