@@ -951,7 +951,7 @@ function RiskFocusDashboard({
               <div className={sectionShellClass}>
                 <div className={sectionHeaderClass}>Project Goals</div>
                 <TooltipProvider>
-                  <div className="grid min-w-0 grid-cols-2 items-stretch gap-1 sm:grid-cols-[minmax(0,0.96fr)_minmax(0,0.96fr)_minmax(0,0.96fr)_minmax(0,1.12fr)]">
+                  <div className="grid min-w-0 grid-cols-2 items-stretch gap-1 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,1.3fr)]">
                     <div className={cn(goalTileClass, 'border-l-[3px] border-l-success')}>
                       {goalTitleRow(
                         <Shield className="h-3 w-3" aria-hidden />,
@@ -989,7 +989,7 @@ function RiskFocusDashboard({
                       </div>
                       {goalStatusFooter('budget')}
                     </div>
-                    <div className={cn(goalTileClass, 'border-l-[3px] border-l-category-3')}>
+                    <div className={cn(goalTileClass, 'border-l-[3px] border-l-category-3 px-1')}>
                       {goalTitleRow(
                         <BadgeCheck className="h-3 w-3" aria-hidden />,
                         'Quality',
@@ -997,7 +997,10 @@ function RiskFocusDashboard({
                       )}
                       {qualityGoal ? (
                         <div
-                          className={cn(goalMetricShellClass, 'grid grid-cols-3 gap-0 p-0')}
+                          className={cn(
+                            goalMetricShellClass,
+                            'grid grid-cols-[minmax(0,0.85fr)_minmax(0,0.9fr)_minmax(0,1.45fr)] gap-0 p-0'
+                          )}
                           role="list"
                           aria-label={`Quality target ${qualityMetricLabel}. Options: Good, Great, Professional`}
                         >
@@ -1009,7 +1012,7 @@ function RiskFocusDashboard({
                                 role="listitem"
                                 aria-current={selected ? 'true' : undefined}
                                 className={cn(
-                                  'flex h-full min-w-0 items-center justify-center px-0.5 text-center text-[11px] leading-none',
+                                  'flex h-full min-w-0 items-center justify-center px-0 text-center text-[10px] leading-none tracking-tight whitespace-nowrap',
                                   index > 0 && 'border-l border-border',
                                   selected
                                     ? 'bg-category-3/15 font-display font-semibold text-category-3'
