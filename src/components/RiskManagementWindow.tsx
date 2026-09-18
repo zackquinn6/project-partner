@@ -668,6 +668,8 @@ function RiskFocusDashboard({
   progressEditable,
   readOnly,
   onProgressChange,
+  /** When true, hide name banner through progress/goals/summary to free space for the triage table. */
+  collapseChrome = false,
 }: {
   risks: Risk[];
   projectDisplayName?: string | null;
@@ -679,6 +681,7 @@ function RiskFocusDashboard({
   progressEditable?: boolean;
   readOnly?: boolean;
   onProgressChange?: (progress: number) => void;
+  collapseChrome?: boolean;
 }) {
   const { high, medium, low, unset } = riskFocusSeverityCounts(risks);
   const name = projectDisplayName?.trim() || null;
@@ -714,211 +717,220 @@ function RiskFocusDashboard({
 
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 py-2 md:px-4">
-      <div className="mb-3 rounded-xl border border-slate-700/80 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 px-4 py-3 text-center shadow-sm">
+      <div
+        className={cn(
+          'rounded-xl border border-slate-700/80 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 px-4 py-3 text-center shadow-sm',
+          collapseChrome ? 'mb-0' : 'mb-3'
+        )}
+      >
         <div className="text-base font-bold leading-tight text-blue-50 md:text-lg">
           Go as far as you can - Every step makes the finish line more likely
         </div>
       </div>
-      <div className="mb-3">
-        <PlanningToolContextBanner
-          projectName={name}
-          flush
-          className="pb-0"
-        />
-      </div>
-      <div className="grid grid-cols-1 gap-2.5 md:grid-cols-[minmax(0,0.7fr)_minmax(0,1.5fr)_minmax(0,1.2fr)] md:items-stretch">
-        {showProgress && projectRun ? (
-          <div className={sectionShellClass}>
-            <div className={sectionHeaderClass}>Current project progress</div>
-            <p className="mb-1.5 text-[11px] leading-snug text-muted-foreground">
-              Risk falls as you get further into the project
-            </p>
-            {progressEditable ? (
-              <Select
-                disabled={readOnly}
-                value={riskFocusProgressSelectValue(projectRun.progress)}
-                onValueChange={(value) => {
-                  const progress = Number.parseInt(value, 10);
-                  if (
-                    !Number.isFinite(progress) ||
-                    !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
-                  ) {
-                    return;
-                  }
-                  onProgressChange?.(progress);
-                }}
-              >
-                <SelectTrigger
-                  className="mb-1.5 h-7 w-full text-xs"
-                  aria-label="Current project progress"
+      {!collapseChrome ? (
+        <>
+          <div className="mb-3">
+            <PlanningToolContextBanner
+              projectName={name}
+              flush
+              className="pb-0"
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-2.5 md:grid-cols-[minmax(0,0.7fr)_minmax(0,1.5fr)_minmax(0,1.2fr)] md:items-stretch">
+            {showProgress && projectRun ? (
+              <div className={sectionShellClass}>
+                <div className={sectionHeaderClass}>Current project progress</div>
+                <p className="mb-1.5 text-[11px] leading-snug text-muted-foreground">
+                  Risk falls as you get further into the project
+                </p>
+                {progressEditable ? (
+                  <Select
+                    disabled={readOnly}
+                    value={riskFocusProgressSelectValue(projectRun.progress)}
+                    onValueChange={(value) => {
+                      const progress = Number.parseInt(value, 10);
+                      if (
+                        !Number.isFinite(progress) ||
+                        !(RISK_FOCUS_PROGRESS_STOPS as readonly number[]).includes(progress)
+                      ) {
+                        return;
+                      }
+                      onProgressChange?.(progress);
+                    }}
+                  >
+                    <SelectTrigger
+                      className="mb-1.5 h-7 w-full text-xs"
+                      aria-label="Current project progress"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">0%</SelectItem>
+                      <SelectItem value="25">25%</SelectItem>
+                      <SelectItem value="50">50%</SelectItem>
+                      <SelectItem value="75">75%</SelectItem>
+                      <SelectItem value="100">Complete</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : null}
+                <div
+                  className="mt-auto flex min-w-0 items-center gap-2"
+                  role="status"
+                  aria-label={`Current project progress ${riskFocusProgressBarPercent(projectRun.progress)}%`}
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">0%</SelectItem>
-                  <SelectItem value="25">25%</SelectItem>
-                  <SelectItem value="50">50%</SelectItem>
-                  <SelectItem value="75">75%</SelectItem>
-                  <SelectItem value="100">Complete</SelectItem>
-                </SelectContent>
-              </Select>
+                  <Progress
+                    value={riskFocusProgressBarPercent(projectRun.progress)}
+                    className="h-3 min-w-0 flex-1"
+                  />
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+                    {riskFocusProgressBarPercent(projectRun.progress)}%
+                  </span>
+                </div>
+              </div>
             ) : null}
-            <div
-              className="mt-auto flex min-w-0 items-center gap-2"
-              role="status"
-              aria-label={`Current project progress ${riskFocusProgressBarPercent(projectRun.progress)}%`}
-            >
-              <Progress
-                value={riskFocusProgressBarPercent(projectRun.progress)}
-                className="h-3 min-w-0 flex-1"
-              />
-              <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
-                {riskFocusProgressBarPercent(projectRun.progress)}%
-              </span>
-            </div>
-          </div>
-        ) : null}
 
-        {showGoals ? (
-          <div className={sectionShellClass}>
-            <div className={sectionHeaderClass}>Project goals</div>
-            <TooltipProvider>
-              <div className="flex min-w-0 flex-nowrap gap-1.5 overflow-x-auto">
-                <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-success/40 bg-success/10 px-2 py-1.5">
-                  <div className="flex items-start gap-1.5">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-success/20 text-success">
-                      <Shield className="h-3 w-3" aria-hidden />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-medium uppercase tracking-wide text-success">
-                        Safety
-                      </div>
-                      <div className="text-xs font-semibold leading-tight text-foreground">
-                        0 injuries
-                      </div>
-                    </div>
-                  </div>
-                  <GoalRiskLight {...goalLightProps('safety')} className="self-start" />
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-info/40 bg-info/10 px-2 py-1.5">
-                  <div className="flex items-start gap-1.5">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-info/20 text-info">
-                      <CalendarDays className="h-3 w-3" aria-hidden />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-medium uppercase tracking-wide text-info">
-                        Schedule
-                      </div>
-                      <div className="break-words text-xs font-semibold leading-tight text-foreground">
-                        {scheduleLabel ? `By ${scheduleLabel}` : '-'}
-                      </div>
-                    </div>
-                  </div>
-                  <GoalRiskLight {...goalLightProps('schedule')} className="self-start" />
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-warning-soft/40 bg-warning-soft/10 px-2 py-1.5">
-                  <div className="flex items-start gap-1.5">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-warning-soft/20 text-warning-soft">
-                      <CircleDollarSign className="h-3 w-3" aria-hidden />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-medium uppercase tracking-wide text-warning-soft">
-                        Budget
-                      </div>
-                      <div className="text-xs font-semibold tabular-nums leading-tight text-foreground">
-                        {budgetLabel ?? '-'}
-                      </div>
-                    </div>
-                  </div>
-                  <GoalRiskLight {...goalLightProps('budget')} className="self-start" />
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-category-3/40 bg-category-3/10 px-2 py-1.5">
-                  <div className="flex items-start gap-1.5">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-category-3/20 text-category-3">
-                      <BadgeCheck className="h-3 w-3" aria-hidden />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-medium uppercase tracking-wide text-category-3">
-                        Quality
-                      </div>
-                      {qualityGoal ? (
-                        <div
-                          className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5 text-[10px] leading-tight"
-                          aria-label={`Quality goal ${QUALITY_GOAL_OPTIONS.find((o) => o.value === qualityGoal)?.label}`}
-                        >
-                          {QUALITY_GOAL_OPTIONS.map((option, index) => {
-                            const selected = option.value === qualityGoal;
-                            return (
-                              <span key={option.value} className="inline-flex items-baseline gap-x-1">
-                                {index > 0 ? (
-                                  <span className="text-muted-foreground/30" aria-hidden>
-                                    ·
-                                  </span>
-                                ) : null}
-                                <span
-                                  className={
-                                    selected
-                                      ? 'font-semibold text-category-3'
-                                      : 'font-normal text-muted-foreground/40'
-                                  }
-                                >
-                                  {option.label}
-                                </span>
-                              </span>
-                            );
-                          })}
+            {showGoals ? (
+              <div className={sectionShellClass}>
+                <div className={sectionHeaderClass}>Project goals</div>
+                <TooltipProvider>
+                  <div className="flex min-w-0 flex-nowrap gap-1.5 overflow-x-auto">
+                    <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-success/40 bg-success/10 px-2 py-1.5">
+                      <div className="flex items-start gap-1.5">
+                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-success/20 text-success">
+                          <Shield className="h-3 w-3" aria-hidden />
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-medium uppercase tracking-wide text-success">
+                            Safety
+                          </div>
+                          <div className="text-xs font-semibold leading-tight text-foreground">
+                            0 injuries
+                          </div>
                         </div>
-                      ) : (
-                        <div className="text-xs font-semibold leading-tight text-foreground">-</div>
-                      )}
+                      </div>
+                      <GoalRiskLight {...goalLightProps('safety')} className="self-start" />
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-info/40 bg-info/10 px-2 py-1.5">
+                      <div className="flex items-start gap-1.5">
+                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-info/20 text-info">
+                          <CalendarDays className="h-3 w-3" aria-hidden />
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-medium uppercase tracking-wide text-info">
+                            Schedule
+                          </div>
+                          <div className="break-words text-xs font-semibold leading-tight text-foreground">
+                            {scheduleLabel ? `By ${scheduleLabel}` : '-'}
+                          </div>
+                        </div>
+                      </div>
+                      <GoalRiskLight {...goalLightProps('schedule')} className="self-start" />
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-warning-soft/40 bg-warning-soft/10 px-2 py-1.5">
+                      <div className="flex items-start gap-1.5">
+                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-warning-soft/20 text-warning-soft">
+                          <CircleDollarSign className="h-3 w-3" aria-hidden />
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-medium uppercase tracking-wide text-warning-soft">
+                            Budget
+                          </div>
+                          <div className="text-xs font-semibold tabular-nums leading-tight text-foreground">
+                            {budgetLabel ?? '-'}
+                          </div>
+                        </div>
+                      </div>
+                      <GoalRiskLight {...goalLightProps('budget')} className="self-start" />
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-category-3/40 bg-category-3/10 px-2 py-1.5">
+                      <div className="flex items-start gap-1.5">
+                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-category-3/20 text-category-3">
+                          <BadgeCheck className="h-3 w-3" aria-hidden />
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-medium uppercase tracking-wide text-category-3">
+                            Quality
+                          </div>
+                          {qualityGoal ? (
+                            <div
+                              className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5 text-[10px] leading-tight"
+                              aria-label={`Quality goal ${QUALITY_GOAL_OPTIONS.find((o) => o.value === qualityGoal)?.label}`}
+                            >
+                              {QUALITY_GOAL_OPTIONS.map((option, index) => {
+                                const selected = option.value === qualityGoal;
+                                return (
+                                  <span key={option.value} className="inline-flex items-baseline gap-x-1">
+                                    {index > 0 ? (
+                                      <span className="text-muted-foreground/30" aria-hidden>
+                                        ·
+                                      </span>
+                                    ) : null}
+                                    <span
+                                      className={
+                                        selected
+                                          ? 'font-semibold text-category-3'
+                                          : 'font-normal text-muted-foreground/40'
+                                      }
+                                    >
+                                      {option.label}
+                                    </span>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="text-xs font-semibold leading-tight text-foreground">-</div>
+                          )}
+                        </div>
+                      </div>
+                      <GoalRiskLight {...goalLightProps('quality')} className="self-start" />
                     </div>
                   </div>
-                  <GoalRiskLight {...goalLightProps('quality')} className="self-start" />
-                </div>
-              </div>
-            </TooltipProvider>
-          </div>
-        ) : null}
-
-        <div className={sectionShellClass}>
-          <div className={cn(sectionHeaderClass, 'text-center')}>Current risk summary</div>
-          <div className="flex flex-row flex-wrap items-center justify-center gap-x-3 gap-y-0.5 px-1 py-0.5 sm:gap-x-5">
-            <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                High
-              </span>
-              <span className="text-base font-bold tabular-nums text-destructive sm:text-lg">{high}</span>
-            </div>
-            <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                Med
-              </span>
-              <span className="text-base font-bold tabular-nums text-warning-soft sm:text-lg">{medium}</span>
-            </div>
-            <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                Low
-              </span>
-              <span className="text-base font-bold tabular-nums text-success sm:text-lg">{low}</span>
-            </div>
-            {unset > 0 ? (
-              <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
-                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Not set
-                </span>
-                <span className="text-base font-bold tabular-nums text-muted-foreground sm:text-lg">
-                  {unset}
-                </span>
+                </TooltipProvider>
               </div>
             ) : null}
-          </div>
-          {!showGoals ? (
-            <div className="mt-1.5 border-t border-border/60 pt-1.5">
-              <RiskComponentOverview risks={risks} projectRunId={projectRunId} />
+
+            <div className={sectionShellClass}>
+              <div className={cn(sectionHeaderClass, 'text-center')}>Current risk summary</div>
+              <div className="flex flex-row flex-wrap items-center justify-center gap-x-3 gap-y-0.5 px-1 py-0.5 sm:gap-x-5">
+                <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    High
+                  </span>
+                  <span className="text-base font-bold tabular-nums text-destructive sm:text-lg">{high}</span>
+                </div>
+                <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Med
+                  </span>
+                  <span className="text-base font-bold tabular-nums text-warning-soft sm:text-lg">{medium}</span>
+                </div>
+                <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Low
+                  </span>
+                  <span className="text-base font-bold tabular-nums text-success sm:text-lg">{low}</span>
+                </div>
+                {unset > 0 ? (
+                  <div className="flex flex-row items-baseline gap-1.5 sm:gap-2">
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Not set
+                    </span>
+                    <span className="text-base font-bold tabular-nums text-muted-foreground sm:text-lg">
+                      {unset}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+              {!showGoals ? (
+                <div className="mt-1.5 border-t border-border/60 pt-1.5">
+                  <RiskComponentOverview risks={risks} projectRunId={projectRunId} />
+                </div>
+              ) : null}
             </div>
-          ) : null}
-        </div>
-      </div>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }
@@ -2114,6 +2126,7 @@ export function RiskManagementWindow({
             showProgress={showRiskFocusProgressRow}
             progressEditable={progressEditable}
             readOnly={readOnly}
+            collapseChrome={usePlanningToolShell && planningRiskStep !== ''}
             onProgressChange={(progress) => {
               if (!riskFocusRunForProgress) return;
               void updateProjectRun({ ...riskFocusRunForProgress, progress });
@@ -2303,15 +2316,15 @@ export function RiskManagementWindow({
                       key={step.key}
                       value={step.key}
                       className={cn(
-                        // Closed rows stay full width; open pane fills leftover height.
                         'w-full min-w-0 shrink-0 self-stretch rounded-lg border bg-card px-4',
-                        'data-[state=open]:flex data-[state=open]:min-h-0 data-[state=open]:flex-1 data-[state=open]:flex-col data-[state=open]:overflow-hidden',
-                        'data-[state=open]:[&>:first-child]:flex-none',
-                        'data-[state=open]:[&>[data-state=open]]:flex data-[state=open]:[&>[data-state=open]]:min-h-0 data-[state=open]:[&>[data-state=open]]:flex-1 data-[state=open]:[&>[data-state=open]]:flex-col data-[state=open]:[&>[data-state=open]]:overflow-hidden data-[state=open]:[&>[data-state=open]]:animate-none data-[state=open]:[&>[data-state=open]]:!h-auto',
-                        'data-[state=open]:[&>[data-state=open]>div]:flex data-[state=open]:[&>[data-state=open]>div]:h-full data-[state=open]:[&>[data-state=open]>div]:min-h-0 data-[state=open]:[&>[data-state=open]>div]:flex-1 data-[state=open]:[&>[data-state=open]>div]:flex-col data-[state=open]:[&>[data-state=open]>div]:overflow-hidden data-[state=open]:[&>[data-state=open]>div]:pb-3 data-[state=open]:[&>[data-state=open]>div]:pt-0'
+                        // Open pane fills leftover height; header stays content-sized at the top.
+                        'data-[state=open]:flex data-[state=open]:min-h-0 data-[state=open]:flex-1 data-[state=open]:flex-col data-[state=open]:justify-start data-[state=open]:overflow-hidden',
+                        '[&[data-state=open]>h3]:!flex-none [&[data-state=open]>h3]:!grow-0 [&[data-state=open]>h3]:!shrink-0 [&[data-state=open]>h3]:!basis-auto',
+                        '[&[data-state=open]>[role=region]]:flex [&[data-state=open]>[role=region]]:min-h-0 [&[data-state=open]>[role=region]]:flex-1 [&[data-state=open]>[role=region]]:flex-col [&[data-state=open]>[role=region]]:overflow-hidden [&[data-state=open]>[role=region]]:animate-none [&[data-state=open]>[role=region]]:!h-auto',
+                        '[&[data-state=open]>[role=region]>div]:flex [&[data-state=open]>[role=region]>div]:h-full [&[data-state=open]>[role=region]>div]:min-h-0 [&[data-state=open]>[role=region]>div]:flex-1 [&[data-state=open]>[role=region]>div]:flex-col [&[data-state=open]>[role=region]>div]:overflow-hidden [&[data-state=open]>[role=region]>div]:pb-3 [&[data-state=open]>[role=region]>div]:pt-0'
                       )}
                     >
-                      <AccordionTrigger className="py-3 hover:no-underline">
+                      <AccordionTrigger className="shrink-0 items-center py-3 hover:no-underline">
                         <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                             {index + 1}
