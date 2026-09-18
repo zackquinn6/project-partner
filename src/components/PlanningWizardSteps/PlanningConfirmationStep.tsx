@@ -186,6 +186,8 @@ export function PlanningConfirmationStep({
 
   const incompleteCount = toolStatuses.filter((t) => !t.complete).length;
   const allComplete = toolStatuses.length > 0 && incompleteCount === 0;
+  const scheduleToolSelected = selectedTools.includes('schedule');
+  const budgetToolSelected = selectedTools.includes('budget');
   const originalTimelineLabel = formatTimelineDate(initialTimeline);
   const scheduledTimelineLabel = formatTimelineDate(scheduledTimelineEnd);
   const originalBudgetLabel =
@@ -196,8 +198,10 @@ export function PlanningConfirmationStep({
       : null;
   const hasReflectComparison =
     originalTimelineLabel !== null ||
-    scheduledTimelineLabel !== null ||
     originalBudgetLabel !== null ||
+    scheduleToolSelected ||
+    budgetToolSelected ||
+    scheduledTimelineLabel !== null ||
     calculatedBudgetLabel !== null;
 
   return (
@@ -272,7 +276,7 @@ export function PlanningConfirmationStep({
               <div className="space-y-3">
                 <div className="grid gap-2 text-sm sm:grid-cols-2">
                   <div className="rounded-md border bg-muted/30 px-3 py-2">
-                    <p className="text-muted-foreground">Original timeline</p>
+                    <p className="text-muted-foreground">Goal Timeline</p>
                     <p className="font-medium text-foreground">
                       {originalTimelineLabel ?? (
                         <span className="font-normal text-muted-foreground">Not set at kickoff</span>
@@ -282,15 +286,19 @@ export function PlanningConfirmationStep({
                   <div className="rounded-md border bg-muted/30 px-3 py-2">
                     <p className="text-muted-foreground">Scheduled timeline</p>
                     <p className="font-medium text-foreground">
-                      {scheduledTimelineLabel ?? (
-                        <span className="font-normal text-muted-foreground">Not scheduled yet</span>
+                      {!scheduleToolSelected ? (
+                        <span className="font-normal text-muted-foreground">N/A</span>
+                      ) : (
+                        scheduledTimelineLabel ?? (
+                          <span className="font-normal text-muted-foreground">Not scheduled yet</span>
+                        )
                       )}
                     </p>
                   </div>
                 </div>
                 <div className="grid gap-2 text-sm sm:grid-cols-2">
                   <div className="rounded-md border bg-muted/30 px-3 py-2">
-                    <p className="text-muted-foreground">Original budget</p>
+                    <p className="text-muted-foreground">Goal Budget</p>
                     <p className="font-medium text-foreground">
                       {originalBudgetLabel ?? (
                         <span className="font-normal text-muted-foreground">Not set at kickoff</span>
@@ -300,8 +308,12 @@ export function PlanningConfirmationStep({
                   <div className="rounded-md border bg-muted/30 px-3 py-2">
                     <p className="text-muted-foreground">Calculated Budget</p>
                     <p className="font-medium text-foreground">
-                      {calculatedBudgetLabel ?? (
-                        <span className="font-normal text-muted-foreground">No budget line items yet</span>
+                      {!budgetToolSelected ? (
+                        <span className="font-normal text-muted-foreground">N/A</span>
+                      ) : (
+                        calculatedBudgetLabel ?? (
+                          <span className="font-normal text-muted-foreground">No budget line items yet</span>
+                        )
                       )}
                     </p>
                   </div>
