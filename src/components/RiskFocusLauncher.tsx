@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  AlertTriangle,
   Crosshair,
   Hammer,
   Home,
@@ -17,7 +16,6 @@ import { Project } from '@/interfaces/Project';
 import { useProject } from '@/contexts/ProjectContext';
 import { useMembership } from '@/contexts/MembershipContext';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BetaProjectWarning } from '@/components/BetaProjectWarning';
 import {
@@ -64,6 +62,19 @@ function sortCatalogTemplates(projects: Project[]): Project[] {
   });
 }
 
+function OpeningOverlay({ projectName }: { projectName: string }) {
+  return (
+    <div
+      className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-background/80 backdrop-blur-[1px]"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <p className="text-sm font-medium text-foreground px-3 text-center">Opening {projectName}…</p>
+    </div>
+  );
+}
+
 function RiskFocusProjectCard({
   project,
   onSelect,
@@ -80,19 +91,15 @@ function RiskFocusProjectCard({
   const imageUrl = getProjectCoverUrl(project as Parameters<typeof getProjectCoverUrl>[0]);
   const thumbUrl = imageUrl ? resolveCatalogCoverUrl(imageUrl, 'thumb') : undefined;
   const gridUrl = imageUrl ? resolveCatalogCoverUrl(imageUrl, 'grid') : undefined;
-  const publishStatus = getProjectCatalogPublishStatus(project);
-  const visibility = getProjectCatalogVisibility(project);
-  const isBeta = publishStatus === 'beta-testing';
-  const isComingSoon = visibility === 'coming-soon';
 
   return (
-    <div className="lg:w-[calc((100%-2rem)/3)] lg:max-w-[calc((100%-2rem)/3)] lg:shrink-0">
+    <div className="relative lg:w-[calc((100%-2rem)/3)] lg:max-w-[calc((100%-2rem)/3)] lg:shrink-0">
       {/* Compact row below lg */}
       <button
         type="button"
         disabled={disabled}
         onClick={() => onSelect(project)}
-        className="lg:hidden w-full group hover:bg-muted/40 transition-colors cursor-pointer border rounded-lg bg-card overflow-hidden h-16 text-left disabled:opacity-60 disabled:pointer-events-none"
+        className="lg:hidden relative w-full group hover:bg-muted/40 transition-colors cursor-pointer border rounded-lg bg-card overflow-hidden h-16 text-left disabled:opacity-60 disabled:pointer-events-none"
       >
         <div className="flex items-stretch h-full min-h-0">
           <div className="flex-shrink-0 w-14 h-16 self-stretch overflow-hidden bg-muted">
@@ -105,30 +112,16 @@ function RiskFocusProjectCard({
             )}
           </div>
           <div className="flex-1 min-w-0 px-3 py-1.5 flex flex-col justify-center gap-0.5">
-            <div className="flex items-center gap-2 min-w-0">
-              <h3 className="font-semibold text-sm leading-tight line-clamp-1 group-hover:text-primary transition-colors min-w-0 flex-1">
-                {project.name}
-              </h3>
-              <div className="flex items-center gap-1 shrink-0">
-                {starting ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : null}
-                {isBeta ? (
-                  <Badge variant="secondary" className="bg-warning-soft/15 text-warning-soft text-[10px] px-1 py-0">
-                    BETA
-                  </Badge>
-                ) : null}
-                {isComingSoon ? (
-                  <Badge variant="secondary" className="bg-info/15 text-info text-[10px] px-1 py-0">
-                    Soon
-                  </Badge>
-                ) : null}
-              </div>
-            </div>
+            <h3 className="font-semibold text-sm leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+              {project.name}
+            </h3>
             <p className="text-[11px] text-muted-foreground line-clamp-1">
               {(project as { difficulty?: string }).difficulty || 'Beginner'}
               {project.estimatedTime ? ` · ${project.estimatedTime}` : ''}
             </p>
           </div>
         </div>
+        {starting ? <OpeningOverlay projectName={project.name} /> : null}
       </button>
 
       {/* Photo card from lg up */}
@@ -136,7 +129,7 @@ function RiskFocusProjectCard({
         type="button"
         disabled={disabled}
         onClick={() => onSelect(project)}
-        className="hidden lg:flex lg:flex-col lg:h-full lg:aspect-[4/3] w-full group hover:shadow-xl transition-all duration-300 cursor-pointer rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden text-left disabled:opacity-60 disabled:pointer-events-none"
+        className="hidden lg:flex relative lg:flex-col lg:h-full lg:aspect-[4/3] w-full group hover:shadow-xl transition-all duration-300 cursor-pointer rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden text-left disabled:opacity-60 disabled:pointer-events-none"
       >
         <div className="flex-shrink-0 px-3 pt-2.5 pb-1.5 bg-card border-b border-border">
           <h3 className="text-sm font-semibold group-hover:text-primary transition-colors line-clamp-2 text-center">
@@ -178,28 +171,8 @@ function RiskFocusProjectCard({
           {gridUrl ? (
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" style={{ zIndex: 3 }} />
           ) : null}
-          <div className="absolute top-2 right-2 flex gap-1 items-center" style={{ zIndex: 4 }}>
-            {starting ? (
-              <span className="rounded-full bg-background/90 p-1 shadow-sm">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-foreground" />
-              </span>
-            ) : null}
-            {isBeta ? (
-              <Badge
-                variant="secondary"
-                className="bg-warning-soft text-warning-soft-foreground border-warning-soft-foreground/25 text-[10px] px-1.5 py-0"
-              >
-                <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
-                BETA
-              </Badge>
-            ) : null}
-            {isComingSoon ? (
-              <Badge variant="secondary" className="bg-info text-info-foreground border-info-foreground/25 text-[10px] px-1.5 py-0">
-                Soon
-              </Badge>
-            ) : null}
-          </div>
         </div>
+        {starting ? <OpeningOverlay projectName={project.name} /> : null}
       </button>
     </div>
   );
@@ -286,6 +259,7 @@ function RiskFocusStartControls({
         <div className="py-10 text-center text-sm text-muted-foreground">No projects available.</div>
       ) : (
         <>
+          <h2 className="text-sm font-semibold text-foreground mb-3">Choose a project</h2>
           <div className="space-y-2 lg:flex lg:flex-wrap lg:justify-center lg:gap-4 lg:space-y-0">
             {visibleTemplates.map((project) => (
               <RiskFocusProjectCard
