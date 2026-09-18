@@ -1325,7 +1325,7 @@ export default function EditWorkflowView({
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [pendingContentChanges, setPendingContentChanges] = useState<ContentSection[] | null>(null);
   const [pendingContentLevel, setPendingContentLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaveRef = useRef<Date>(new Date());
   const pendingContentRef = useRef<{
     stepId: string | null;

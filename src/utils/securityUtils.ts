@@ -39,7 +39,7 @@ export const recordAuthAttempt = (email: string): void => {
  */
 export class SecurityMaintenance {
   private static instance: SecurityMaintenance;
-  private cleanupInterval: NodeJS.Timeout | null = null;
+  private cleanupInterval: ReturnType<typeof setTimeout> | null = null;
 
   static getInstance(): SecurityMaintenance {
     if (!SecurityMaintenance.instance) {

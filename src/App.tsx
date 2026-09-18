@@ -41,12 +41,7 @@ const App: React.FC = () => {
                   <ProjectDataProvider>
                     <ProjectActionsProvider>
                       <ProjectProvider>
-                    <BrowserRouter
-                      future={{
-                        v7_startTransition: true,
-                        v7_relativeSplatPath: true,
-                      }}
-                    >
+                    <BrowserRouter>
                       <OutageBanner />
                       <Routes>
                         <Route path="/" element={<Index />} />

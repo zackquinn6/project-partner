@@ -157,14 +157,14 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
         const ownedToolsRaw = Array.isArray(profileData.owned_tools) ? profileData.owned_tools : [];
         let ownedTools = ownedToolsRaw as ProfileData['owned_tools'];
         try {
-          const coreIds = collectOwnedToolCoreIds(ownedToolsRaw);
+          const coreIds = collectOwnedToolCoreIds(ownedToolsRaw as unknown as Parameters<typeof collectOwnedToolCoreIds>[0]);
           if (coreIds.length > 0) {
             const { corePhotoById, variationsByCore } = await fetchOwnedToolsPhotoResolution(
               supabase,
               coreIds
             );
             ownedTools = enrichOwnedToolsWithCatalogPhotos(
-              ownedToolsRaw,
+              ownedToolsRaw as unknown as Parameters<typeof enrichOwnedToolsWithCatalogPhotos>[0],
               corePhotoById,
               variationsByCore
             );

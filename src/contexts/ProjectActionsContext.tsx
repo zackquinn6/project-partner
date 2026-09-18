@@ -449,7 +449,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
 
   // Refs to track update state and implement debouncing
   const updateInProgressRef = useRef(false);
-  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastUpdateRef = useRef<string>('');
 
   const addProject = useCallback(async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
@@ -1621,7 +1621,7 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           initial_budget: freshRun.initial_budget || null,
           initial_timeline: freshRun.initial_timeline || null,
           initial_sizing: (freshRun.initial_sizing as any) || null,
-          initial_quality_goal: freshRun.initial_quality_goal || null,
+          initial_quality_goal: (freshRun.initial_quality_goal as 'good' | 'great' | 'professional' | null) || null,
           quality_control_settings: parseQualityControlSettingsColumn(freshRun.quality_control_settings),
           planningCompletedAt: freshRun.planning_completed_at
             ? new Date(freshRun.planning_completed_at)

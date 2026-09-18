@@ -14,7 +14,7 @@ export function useOptimizedState<T>(
 ) {
   const { debounceMs = 0, enableBatching = false } = options;
   const [state, setState] = useState<T>(initialState);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const batchRef = useRef<T | null>(null);
 
   const setOptimizedState = useCallback((newState: T | ((prev: T) => T)) => {
