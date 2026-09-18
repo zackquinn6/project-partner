@@ -158,18 +158,13 @@ function riskRadarGoalDateLabel(value: string | null | undefined): string | null
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) return null;
   const d = new Date(`${dateOnly}T12:00:00`);
   if (Number.isNaN(d.getTime())) return null;
-  return format(d, 'MMMM dd, yyyy');
+  return format(d, 'MMM d, yyyy');
 }
 
 function riskRadarBudgetLabel(value: string | null | undefined): string | null {
   const raw = value?.trim();
   if (!raw) return null;
   return raw.includes('$') ? raw : `$${raw}`;
-}
-
-function riskRadarQualityLabel(value: string | null | undefined): string | null {
-  if (!isQualityGoal(value)) return null;
-  return QUALITY_GOAL_OPTIONS.find((o) => o.value === value)?.label ?? null;
 }
 
 interface Risk {
@@ -500,6 +495,106 @@ const RISK_COMPONENT_OVERVIEW_ORDER: readonly RiskDimension[] = [
   'budget',
 ];
 
+function openRiskComponentDashboard(projectRunId: string | undefined, dimension: RiskDimension) {
+  if (!projectRunId) return;
+  window.dispatchEvent(
+    new CustomEvent('open-risk-dashboard', { detail: { projectRunId, dimension } })
+  );
+}
+
+function riskRollupRowsFromRisks(risks: Risk[]) {
+  return risks.map((risk) => ({
+    risk_dimension: risk.risk_dimension ?? null,
+    action_priority: risk.action_priority ?? null,
+    excluded_by_customization: risk.excluded_by_customization ?? null,
+    hidden_from_register: risk.hidden_from_register ?? null,
+    rpn: risk.rpn ?? null,
+  }));
+}
+
+/**
+ * Status light for one risk component: opens the dashboard and explains stakes in a tooltip.
+ * Used under Project goals chips and in the template overview strip.
+ */
+function GoalRiskLight({
+  dimension,
+  worstActionPriority,
+  highCount,
+  mediumCount,
+  lowCount,
+  unscoredCount,
+  score,
+  projectRunId,
+  className,
+}: {
+  dimension: RiskDimension;
+  worstActionPriority: ActionPriority | null;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+  unscoredCount: number;
+  score: number | null;
+  projectRunId?: string;
+  className?: string;
+}) {
+  const { table } = useActionPriorityTable();
+  const description =
+    worstActionPriority && table
+      ? actionPriorityLabel(table, worstActionPriority).description
+      : null;
+  const label = RISK_COMPONENT_CONSUMER_LABELS[dimension];
+
+  const light = (
+    <span
+      className={cn(
+        'h-2 w-2 shrink-0 rounded-full ring-2',
+        riskComponentLightClass(worstActionPriority)
+      )}
+      aria-hidden
+    />
+  );
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {projectRunId ? (
+          <button
+            type="button"
+            onClick={() => openRiskComponentDashboard(projectRunId, dimension)}
+            onDoubleClick={() => openRiskComponentDashboard(projectRunId, dimension)}
+            className={cn(
+              'inline-flex items-center justify-center rounded-sm p-0.5 transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:brightness-110',
+              className
+            )}
+            aria-label={`${label} risk: open dashboard`}
+          >
+            {light}
+          </button>
+        ) : (
+          <span className={cn('inline-flex items-center justify-center p-0.5', className)}>
+            {light}
+          </span>
+        )}
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="max-w-xs">
+        <p className="text-xs font-medium">
+          {label}: {RISK_COMPONENT_CONSUMER_STAKES[dimension]}
+        </p>
+        {description ? <p className="mt-1 text-xs">{description}</p> : null}
+        <p className="mt-1 text-xs text-muted-foreground">
+          {highCount} act now, {mediumCount} safeguard, {lowCount} covered
+          {unscoredCount > 0 ? `, ${unscoredCount} unscored` : ''}
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+          {score != null
+            ? `Worst line scores ${score} out of 1000`
+            : 'No line here carries a score yet'}
+        </p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 /**
  * One light per component, with the worst line's score out of 1000. Four separate readings
  * rather than one blended score, because a project can be safe and still be late, and the
@@ -515,27 +610,9 @@ function RiskComponentOverview({
   /** Absent on the template view, which has no run to open a dashboard for. */
   projectRunId?: string;
 }) {
-  const { table } = useActionPriorityTable();
-  const rollupRows = useMemo(
-    () =>
-      risks.map((risk) => ({
-        risk_dimension: risk.risk_dimension ?? null,
-        action_priority: risk.action_priority ?? null,
-        excluded_by_customization: risk.excluded_by_customization ?? null,
-        hidden_from_register: risk.hidden_from_register ?? null,
-        rpn: risk.rpn ?? null,
-      })),
-    [risks]
-  );
+  const rollupRows = useMemo(() => riskRollupRowsFromRisks(risks), [risks]);
   const rollups = useMemo(() => rollupRiskComponents(rollupRows), [rollupRows]);
   const worstRpn = useMemo(() => worstRpnByComponent(rollupRows), [rollupRows]);
-
-  const openDashboard = (dimension: RiskDimension) => {
-    if (!projectRunId) return;
-    window.dispatchEvent(
-      new CustomEvent('open-risk-dashboard', { detail: { projectRunId, dimension } })
-    );
-  };
 
   return (
     <TooltipProvider>
@@ -543,14 +620,19 @@ function RiskComponentOverview({
         {RISK_COMPONENT_OVERVIEW_ORDER.map((dimension) => {
           const rollup = rollups[dimension];
           const ap = rollup.worstActionPriority;
-          const description = ap && table ? actionPriorityLabel(table, ap).description : null;
           const score = worstRpn[dimension];
 
           const body = (
             <>
-              <span
-                className={cn('h-2 w-2 shrink-0 rounded-full ring-2', riskComponentLightClass(ap))}
-                aria-hidden
+              <GoalRiskLight
+                dimension={dimension}
+                worstActionPriority={ap}
+                highCount={rollup.highCount}
+                mediumCount={rollup.mediumCount}
+                lowCount={rollup.lowCount}
+                unscoredCount={rollup.unscoredCount}
+                score={score}
+                projectRunId={projectRunId}
               />
               <span className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {RISK_COMPONENT_CONSUMER_LABELS[dimension]}
@@ -567,43 +649,9 @@ function RiskComponentOverview({
           );
 
           return (
-            <Tooltip key={dimension}>
-              <TooltipTrigger asChild>
-                {projectRunId ? (
-                  <button
-                    type="button"
-                    onClick={() => openDashboard(dimension)}
-                    onDoubleClick={() => openDashboard(dimension)}
-                    className={cn(
-                      tileClass,
-                      'transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:brightness-110'
-                    )}
-                    aria-label={`${RISK_COMPONENT_CONSUMER_LABELS[dimension]} risk: open dashboard`}
-                  >
-                    {body}
-                  </button>
-                ) : (
-                  <div className={tileClass}>{body}</div>
-                )}
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs">
-                <p className="text-xs font-medium">
-                  {RISK_COMPONENT_CONSUMER_LABELS[dimension]}:{' '}
-                  {RISK_COMPONENT_CONSUMER_STAKES[dimension]}
-                </p>
-                {description ? <p className="mt-1 text-xs">{description}</p> : null}
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {rollup.highCount} act now, {rollup.mediumCount} safeguard, {rollup.lowCount}{' '}
-                  covered
-                  {rollup.unscoredCount > 0 ? `, ${rollup.unscoredCount} unscored` : ''}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-                  {score != null
-                    ? `Worst line scores ${score} out of 1000`
-                    : 'No line here carries a score yet'}
-                </p>
-              </TooltipContent>
-            </Tooltip>
+            <div key={dimension} className={tileClass}>
+              {body}
+            </div>
           );
         })}
       </div>
@@ -637,14 +685,32 @@ function RiskFocusDashboard({
   const showGoals = Boolean(projectRun);
   const scheduleLabel = projectRun ? riskRadarGoalDateLabel(projectRun.initial_timeline) : null;
   const budgetLabel = projectRun ? riskRadarBudgetLabel(projectRun.initial_budget) : null;
-  const qualityLabel = projectRun
-    ? riskRadarQualityLabel(projectRun.initial_quality_goal)
+  const qualityGoal = projectRun && isQualityGoal(projectRun.initial_quality_goal)
+    ? projectRun.initial_quality_goal
     : null;
+
+  const rollupRows = useMemo(() => riskRollupRowsFromRisks(risks), [risks]);
+  const rollups = useMemo(() => rollupRiskComponents(rollupRows), [rollupRows]);
+  const worstRpn = useMemo(() => worstRpnByComponent(rollupRows), [rollupRows]);
 
   const sectionHeaderClass =
     'mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
   const sectionShellClass =
     'flex min-w-0 flex-col rounded-lg border border-border bg-card p-2.5 shadow-sm';
+
+  const goalLightProps = (dimension: RiskDimension) => {
+    const rollup = rollups[dimension];
+    return {
+      dimension,
+      worstActionPriority: rollup.worstActionPriority,
+      highCount: rollup.highCount,
+      mediumCount: rollup.mediumCount,
+      lowCount: rollup.lowCount,
+      unscoredCount: rollup.unscoredCount,
+      score: worstRpn[dimension],
+      projectRunId,
+    };
+  };
 
   return (
     <div className="shrink-0 border-b bg-muted/30 px-3 py-2 md:px-4">
@@ -716,58 +782,101 @@ function RiskFocusDashboard({
         {showGoals ? (
           <div className={sectionShellClass}>
             <div className={sectionHeaderClass}>Project goals</div>
-            <div className="flex min-w-0 flex-nowrap gap-1.5 overflow-x-auto">
-              <div className="flex min-w-0 flex-1 items-start gap-1.5 rounded-md border border-success/40 bg-success/10 px-2 py-1.5">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-success/20 text-success">
-                  <Shield className="h-3 w-3" aria-hidden />
-                </span>
-                <div className="min-w-0">
-                  <div className="text-[10px] font-medium uppercase tracking-wide text-success">
-                    Safety
+            <TooltipProvider>
+              <div className="flex min-w-0 flex-nowrap gap-1.5 overflow-x-auto">
+                <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-success/40 bg-success/10 px-2 py-1.5">
+                  <div className="flex items-start gap-1.5">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-success/20 text-success">
+                      <Shield className="h-3 w-3" aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-medium uppercase tracking-wide text-success">
+                        Safety
+                      </div>
+                      <div className="text-xs font-semibold leading-tight text-foreground">
+                        0 injuries
+                      </div>
+                    </div>
                   </div>
-                  <div className="truncate text-xs font-semibold text-foreground">0 injuries</div>
+                  <GoalRiskLight {...goalLightProps('safety')} className="self-start" />
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-info/40 bg-info/10 px-2 py-1.5">
+                  <div className="flex items-start gap-1.5">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-info/20 text-info">
+                      <CalendarDays className="h-3 w-3" aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-medium uppercase tracking-wide text-info">
+                        Schedule
+                      </div>
+                      <div className="break-words text-xs font-semibold leading-tight text-foreground">
+                        {scheduleLabel ? `By ${scheduleLabel}` : '-'}
+                      </div>
+                    </div>
+                  </div>
+                  <GoalRiskLight {...goalLightProps('schedule')} className="self-start" />
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-warning-soft/40 bg-warning-soft/10 px-2 py-1.5">
+                  <div className="flex items-start gap-1.5">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-warning-soft/20 text-warning-soft">
+                      <CircleDollarSign className="h-3 w-3" aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-medium uppercase tracking-wide text-warning-soft">
+                        Budget
+                      </div>
+                      <div className="text-xs font-semibold tabular-nums leading-tight text-foreground">
+                        {budgetLabel ?? '-'}
+                      </div>
+                    </div>
+                  </div>
+                  <GoalRiskLight {...goalLightProps('budget')} className="self-start" />
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-1 rounded-md border border-category-3/40 bg-category-3/10 px-2 py-1.5">
+                  <div className="flex items-start gap-1.5">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-category-3/20 text-category-3">
+                      <BadgeCheck className="h-3 w-3" aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-medium uppercase tracking-wide text-category-3">
+                        Quality
+                      </div>
+                      {qualityGoal ? (
+                        <div
+                          className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5 text-[10px] leading-tight"
+                          aria-label={`Quality goal ${QUALITY_GOAL_OPTIONS.find((o) => o.value === qualityGoal)?.label}`}
+                        >
+                          {QUALITY_GOAL_OPTIONS.map((option, index) => {
+                            const selected = option.value === qualityGoal;
+                            return (
+                              <span key={option.value} className="inline-flex items-baseline gap-x-1">
+                                {index > 0 ? (
+                                  <span className="text-muted-foreground/30" aria-hidden>
+                                    ·
+                                  </span>
+                                ) : null}
+                                <span
+                                  className={
+                                    selected
+                                      ? 'font-semibold text-category-3'
+                                      : 'font-normal text-muted-foreground/40'
+                                  }
+                                >
+                                  {option.label}
+                                </span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-xs font-semibold leading-tight text-foreground">-</div>
+                      )}
+                    </div>
+                  </div>
+                  <GoalRiskLight {...goalLightProps('quality')} className="self-start" />
                 </div>
               </div>
-              <div className="flex min-w-0 flex-1 items-start gap-1.5 rounded-md border border-info/40 bg-info/10 px-2 py-1.5">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-info/20 text-info">
-                  <CalendarDays className="h-3 w-3" aria-hidden />
-                </span>
-                <div className="min-w-0">
-                  <div className="text-[10px] font-medium uppercase tracking-wide text-info">
-                    Schedule
-                  </div>
-                  <div className="truncate text-xs font-semibold leading-snug text-foreground">
-                    {scheduleLabel ? `Finish by ${scheduleLabel}` : '-'}
-                  </div>
-                </div>
-              </div>
-              <div className="flex min-w-0 flex-1 items-start gap-1.5 rounded-md border border-warning-soft/40 bg-warning-soft/10 px-2 py-1.5">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-warning-soft/20 text-warning-soft">
-                  <CircleDollarSign className="h-3 w-3" aria-hidden />
-                </span>
-                <div className="min-w-0">
-                  <div className="text-[10px] font-medium uppercase tracking-wide text-warning-soft">
-                    Budget
-                  </div>
-                  <div className="truncate text-xs font-semibold tabular-nums text-foreground">
-                    {budgetLabel ?? '-'}
-                  </div>
-                </div>
-              </div>
-              <div className="flex min-w-0 flex-1 items-start gap-1.5 rounded-md border border-category-3/40 bg-category-3/10 px-2 py-1.5">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-category-3/20 text-category-3">
-                  <BadgeCheck className="h-3 w-3" aria-hidden />
-                </span>
-                <div className="min-w-0">
-                  <div className="text-[10px] font-medium uppercase tracking-wide text-category-3">
-                    Quality
-                  </div>
-                  <div className="truncate text-xs font-semibold text-foreground">
-                    {qualityLabel ?? '-'}
-                  </div>
-                </div>
-              </div>
-            </div>
+            </TooltipProvider>
           </div>
         ) : null}
 
@@ -803,9 +912,11 @@ function RiskFocusDashboard({
               </div>
             ) : null}
           </div>
-          <div className="mt-1.5 border-t border-border/60 pt-1.5">
-            <RiskComponentOverview risks={risks} projectRunId={projectRunId} />
-          </div>
+          {!showGoals ? (
+            <div className="mt-1.5 border-t border-border/60 pt-1.5">
+              <RiskComponentOverview risks={risks} projectRunId={projectRunId} />
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
