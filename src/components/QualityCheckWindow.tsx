@@ -8,6 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   CheckCircle2,
   Target,
@@ -31,6 +32,13 @@ import {
   isOutputInQualityScope,
   type QualityControlSettings
 } from '@/utils/qualityControlSettings';
+import {
+  QUALITY_GOAL_OPTIONS,
+  DEFAULT_QUALITY_GOAL,
+  isQualityGoal,
+  parseQualityGoalColumn,
+  type QualityGoal,
+} from '@/utils/qualityGoal';
 import { toast } from 'sonner';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
 import { PlanningToolContextBanner } from '@/components/PlanningWizardSteps/PlanningToolContextBanner';
@@ -125,11 +133,21 @@ export function QualityCheckWindow({
 
   const [localRequirePhotos, setLocalRequirePhotos] = useState(settings.require_photos_per_step);
   const [localRequireAllOutputs, setLocalRequireAllOutputs] = useState(settings.require_all_outputs);
+  const [localQualityGoal, setLocalQualityGoal] = useState<QualityGoal>(
+    () => parseQualityGoalColumn(projectRun?.initial_quality_goal) ?? DEFAULT_QUALITY_GOAL
+  );
+  const [savingQualityGoal, setSavingQualityGoal] = useState(false);
 
   useEffect(() => {
     setLocalRequirePhotos(settings.require_photos_per_step);
     setLocalRequireAllOutputs(settings.require_all_outputs);
   }, [settings.require_photos_per_step, settings.require_all_outputs, projectRun?.id]);
+
+  useEffect(() => {
+    setLocalQualityGoal(
+      parseQualityGoalColumn(projectRun?.initial_quality_goal) ?? DEFAULT_QUALITY_GOAL
+    );
+  }, [projectRun?.id, projectRun?.initial_quality_goal]);
 
   useEffect(() => {
     if (open) {
@@ -185,6 +203,26 @@ export function QualityCheckWindow({
       require_photos_per_step: localRequirePhotos,
       require_all_outputs: requireAll
     });
+  };
+
+  const onQualityGoalChange = (value: string) => {
+    if (!isQualityGoal(value) || !projectRun) return;
+    const previous = localQualityGoal;
+    setLocalQualityGoal(value);
+    setSavingQualityGoal(true);
+    void updateProjectRun({
+      ...projectRun,
+      initial_quality_goal: value,
+      updatedAt: new Date(),
+    })
+      .catch((e) => {
+        console.error(e);
+        setLocalQualityGoal(previous);
+        toast.error('Failed to save quality goal');
+      })
+      .finally(() => {
+        setSavingQualityGoal(false);
+      });
   };
 
   const outputRows = useMemo<QualityOutputRow[]>(() => {
@@ -514,6 +552,42 @@ export function QualityCheckWindow({
                   Quality Control Settings
                 </AccordionTrigger>
                 <AccordionContent className="space-y-5 pb-4 pt-0">
+                    <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">Quality goal</Label>
+                        <p className="text-xs text-muted-foreground">
+                          How polished the finished work should look and feel.
+                        </p>
+                      </div>
+                      <RadioGroup
+                        value={localQualityGoal}
+                        onValueChange={onQualityGoalChange}
+                        disabled={savingQualityGoal || !projectRun}
+                        className="grid grid-cols-3 gap-2"
+                      >
+                        {QUALITY_GOAL_OPTIONS.map((option) => (
+                          <Label
+                            key={option.value}
+                            htmlFor={`qc-quality-goal-${option.value}`}
+                            className={cn(
+                              'flex cursor-pointer items-center justify-center rounded-md border px-2 py-2 text-sm font-medium transition-colors',
+                              localQualityGoal === option.value
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-border bg-background text-muted-foreground hover:bg-muted/40',
+                              (savingQualityGoal || !projectRun) && 'pointer-events-none opacity-60'
+                            )}
+                          >
+                            <RadioGroupItem
+                              value={option.value}
+                              id={`qc-quality-goal-${option.value}`}
+                              className="sr-only"
+                            />
+                            {option.label}
+                          </Label>
+                        ))}
+                      </RadioGroup>
+                    </div>
+
                     <div className="flex items-start gap-3 rounded-md border bg-muted/30 p-3">
                       <Checkbox
                         id="qc-require-photos"

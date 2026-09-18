@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -122,7 +123,13 @@ import {
   riskFocusSeveritySelectItemClass,
   riskFocusSeveritySelectTriggerClass,
 } from '@/utils/riskSeverityStyles';
-import { QUALITY_GOAL_OPTIONS, isQualityGoal } from '@/utils/qualityGoal';
+import {
+  QUALITY_GOAL_OPTIONS,
+  DEFAULT_QUALITY_GOAL,
+  isQualityGoal,
+  parseQualityGoalColumn,
+  type QualityGoal,
+} from '@/utils/qualityGoal';
 import type { ProjectRun } from '@/interfaces/ProjectRun';
 import { format } from 'date-fns';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
@@ -832,8 +839,10 @@ function RiskFocusDashboard({
   const [safetyGoalOpen, setSafetyGoalOpen] = useState(false);
   const [scheduleGoalOpen, setScheduleGoalOpen] = useState(false);
   const [budgetGoalOpen, setBudgetGoalOpen] = useState(false);
+  const [qualityGoalOpen, setQualityGoalOpen] = useState(false);
   const [draftGoalDate, setDraftGoalDate] = useState('');
   const [draftGoalBudget, setDraftGoalBudget] = useState('');
+  const [draftQualityGoal, setDraftQualityGoal] = useState<QualityGoal>(DEFAULT_QUALITY_GOAL);
   const [goalActionBusy, setGoalActionBusy] = useState(false);
 
   const { high, medium, low } = riskFocusSeverityCounts(risks);
@@ -847,13 +856,15 @@ function RiskFocusDashboard({
     ? riskRadarPlannedBudgetLabel(projectRun) ??
       riskRadarBudgetLabel(projectRun.initial_budget)
     : null;
-  const qualityGoal = projectRun && isQualityGoal(projectRun.initial_quality_goal)
-    ? projectRun.initial_quality_goal
-    : null;
+  const qualityGoal =
+    projectRun
+      ? parseQualityGoalColumn(projectRun.initial_quality_goal) ?? null
+      : null;
 
   const planningTools = projectRun ? selectedPlanningToolIds(projectRun) : [];
   const hasScheduleTool = planningTools.includes('schedule');
   const hasBudgetTool = planningTools.includes('budget');
+  const hasQualityTool = planningTools.includes('quality_control');
   const goalsEditable = Boolean(projectRun) && !readOnly;
 
   const openScheduleGoal = () => {
@@ -868,10 +879,24 @@ function RiskFocusDashboard({
     setBudgetGoalOpen(true);
   };
 
+  const openQualityGoal = () => {
+    if (!projectRun || readOnly) return;
+    setDraftQualityGoal(
+      parseQualityGoalColumn(projectRun.initial_quality_goal) ?? DEFAULT_QUALITY_GOAL
+    );
+    setQualityGoalOpen(true);
+  };
+
   const persistPlanningToolAndOpen = async (
-    toolId: 'schedule' | 'budget',
-    openEvent: 'open-project-scheduler' | 'open-project-budgeting',
-    extras?: { initial_timeline?: string; initial_budget?: string }
+    toolId: 'schedule' | 'budget' | 'quality_control',
+    open:
+      | { kind: 'event'; name: 'open-project-scheduler' | 'open-project-budgeting' }
+      | { kind: 'app'; actionKey: 'quality-check' },
+    extras?: {
+      initial_timeline?: string;
+      initial_budget?: string;
+      initial_quality_goal?: QualityGoal;
+    }
   ) => {
     if (!projectRun) return;
     setGoalActionBusy(true);
@@ -894,18 +919,29 @@ function RiskFocusDashboard({
         ...(extras?.initial_budget !== undefined
           ? { initial_budget: extras.initial_budget || undefined }
           : {}),
+        ...(extras?.initial_quality_goal !== undefined
+          ? { initial_quality_goal: extras.initial_quality_goal }
+          : {}),
         customization_decisions: {
           ...decisions,
           selected_planning_tools: nextTools,
         } as ProjectRun['customization_decisions'],
         updatedAt: new Date(),
       });
-      window.dispatchEvent(new CustomEvent(openEvent));
+      if (open.kind === 'event') {
+        window.dispatchEvent(new CustomEvent(open.name));
+      } else {
+        window.dispatchEvent(
+          new CustomEvent('open-app', { detail: { actionKey: open.actionKey } })
+        );
+      }
     } catch (error) {
       toast.error(
         toolId === 'schedule'
           ? 'Could not open Schedule.'
-          : 'Could not open Budget.'
+          : toolId === 'budget'
+            ? 'Could not open Budget.'
+            : 'Could not open Quality Control.'
       );
       console.error(error);
     } finally {
@@ -944,6 +980,24 @@ function RiskFocusDashboard({
       toast.success('Goal budget saved.');
     } catch (error) {
       toast.error('Could not save the goal budget.');
+      console.error(error);
+    } finally {
+      setGoalActionBusy(false);
+    }
+  };
+
+  const saveQualityGoalLevel = async () => {
+    if (!projectRun) return;
+    setGoalActionBusy(true);
+    try {
+      await updateProjectRun({
+        ...projectRun,
+        initial_quality_goal: draftQualityGoal,
+        updatedAt: new Date(),
+      });
+      toast.success('Quality goal saved.');
+    } catch (error) {
+      toast.error('Could not save the quality goal.');
       console.error(error);
     } finally {
       setGoalActionBusy(false);
@@ -1170,41 +1224,28 @@ function RiskFocusDashboard({
                       )}
                       {goalStatusFooter('budget')}
                     </div>
-                    <div className={cn(goalTileClass, 'border-l-[3px] border-l-category-3 px-1')}>
+                    <div className={cn(goalTileClass, 'border-l-[3px] border-l-category-3')}>
                       {goalTitleRow(
                         <BadgeCheck className="h-3 w-3" aria-hidden />,
                         'Quality',
                         'bg-category-3/15 text-category-3'
                       )}
-                      {qualityGoal ? (
-                        <div
-                          className={cn(goalMetricShellClass, 'grid grid-cols-3 gap-0 p-0')}
-                          role="list"
-                          aria-label={`Quality target ${qualityMetricLabel}. Options: Good, Great, Professional`}
+                      {goalsEditable ? (
+                        <button
+                          type="button"
+                          className={goalMetricButtonClass}
+                          onClick={openQualityGoal}
+                          aria-label="Change quality goal or open Quality Control"
                         >
-                          {QUALITY_GOAL_OPTIONS.map((option, index) => {
-                            const selected = option.value === qualityGoal;
-                            return (
-                              <span
-                                key={option.value}
-                                role="listitem"
-                                aria-current={selected ? 'true' : undefined}
-                                className={cn(
-                                  'flex h-full min-w-0 items-center justify-center px-0 text-center text-[10px] leading-none tracking-tight whitespace-nowrap',
-                                  index > 0 && 'border-l border-border',
-                                  selected
-                                    ? 'bg-category-3/15 font-display font-semibold text-category-3'
-                                    : 'bg-muted/40 font-medium text-muted-foreground'
-                                )}
-                              >
-                                {option.label}
-                              </span>
-                            );
-                          })}
-                        </div>
+                          <div className={goalMetricClass}>
+                            {qualityMetricLabel ?? '-'}
+                          </div>
+                        </button>
                       ) : (
                         <div className={goalMetricShellClass}>
-                          <div className={goalMetricClass}>-</div>
+                          <div className={goalMetricClass}>
+                            {qualityMetricLabel ?? '-'}
+                          </div>
                         </div>
                       )}
                       {goalStatusFooter('quality')}
@@ -1336,9 +1377,13 @@ function RiskFocusDashboard({
               disabled={goalActionBusy}
               onClick={() => {
                 void (async () => {
-                  await persistPlanningToolAndOpen('schedule', 'open-project-scheduler', {
-                    initial_timeline: draftGoalDate,
-                  });
+                  await persistPlanningToolAndOpen(
+                    'schedule',
+                    { kind: 'event', name: 'open-project-scheduler' },
+                    {
+                      initial_timeline: draftGoalDate,
+                    }
+                  );
                   setScheduleGoalOpen(false);
                 })();
               }}
@@ -1405,14 +1450,105 @@ function RiskFocusDashboard({
               onClick={() => {
                 void (async () => {
                   const cleaned = draftGoalBudget.trim();
-                  await persistPlanningToolAndOpen('budget', 'open-project-budgeting', {
-                    initial_budget: cleaned,
-                  });
+                  await persistPlanningToolAndOpen(
+                    'budget',
+                    { kind: 'event', name: 'open-project-budgeting' },
+                    {
+                      initial_budget: cleaned,
+                    }
+                  );
                   setBudgetGoalOpen(false);
                 })();
               }}
             >
               {hasBudgetTool ? 'Open Budget' : 'Add Budget and open'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={qualityGoalOpen} onOpenChange={setQualityGoalOpen}>
+        <DialogContent
+          overlayClassName="z-[200]"
+          className="z-[200] max-w-md border bg-background shadow-xl"
+        >
+          <DialogHeader>
+            <DialogTitle>Quality goal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {!hasQualityTool ? (
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Quality Control is not in this project&apos;s Planning Studio tools yet. Add it for
+                checklists and photos, or set the quality level below.
+              </p>
+            ) : (
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Set the quality level here, or open Quality Control for checklists and photos.
+              </p>
+            )}
+            <div className="space-y-2">
+              <Label>Quality level</Label>
+              <RadioGroup
+                value={draftQualityGoal}
+                onValueChange={(value) => {
+                  if (!isQualityGoal(value)) return;
+                  setDraftQualityGoal(value);
+                }}
+                disabled={goalActionBusy}
+                className="grid grid-cols-3 gap-2"
+              >
+                {QUALITY_GOAL_OPTIONS.map((option) => (
+                  <Label
+                    key={option.value}
+                    htmlFor={`risk-radar-quality-${option.value}`}
+                    className={cn(
+                      'flex cursor-pointer items-center justify-center rounded-md border px-2 py-2 text-sm font-medium transition-colors',
+                      draftQualityGoal === option.value
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-background text-muted-foreground hover:bg-muted/40',
+                      goalActionBusy && 'pointer-events-none opacity-60'
+                    )}
+                  >
+                    <RadioGroupItem
+                      value={option.value}
+                      id={`risk-radar-quality-${option.value}`}
+                      className="sr-only"
+                    />
+                    {option.label}
+                  </Label>
+                ))}
+              </RadioGroup>
+              <p className="text-xs text-muted-foreground">
+                How polished the finished work should look and feel.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={goalActionBusy}
+              onClick={() => void saveQualityGoalLevel()}
+            >
+              Save quality
+            </Button>
+            <Button
+              type="button"
+              disabled={goalActionBusy}
+              onClick={() => {
+                void (async () => {
+                  await persistPlanningToolAndOpen(
+                    'quality_control',
+                    { kind: 'app', actionKey: 'quality-check' },
+                    {
+                      initial_quality_goal: draftQualityGoal,
+                    }
+                  );
+                  setQualityGoalOpen(false);
+                })();
+              }}
+            >
+              {hasQualityTool ? 'Open Quality Control' : 'Add Quality Control and open'}
             </Button>
           </DialogFooter>
         </DialogContent>

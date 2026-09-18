@@ -14,11 +14,13 @@ import { toast } from 'sonner';
 import { HomeManager } from '../HomeManager';
 import { useProjectData } from '@/contexts/ProjectDataContext';
 import { reportUserFacingError } from '@/utils/errorReporting';
-import { Slider } from '@/components/ui/slider';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { cn } from '@/lib/utils';
 import {
   QUALITY_GOAL_OPTIONS,
   DEFAULT_QUALITY_GOAL,
   parseQualityGoalColumn,
+  isQualityGoal,
 } from '@/utils/qualityGoal';
 
 interface ProjectProfileStepProps {
@@ -691,11 +693,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
 
   const scalingLabel = getScalingUnitShortLabel(scalingUnit, itemType, templateProject as any);
   const selectedHome = homes.find((h) => h.id === selectedHomeId) ?? homes[0] ?? null;
-  const qualityGoalIndex = QUALITY_GOAL_OPTIONS.findIndex(
-    (option) => option.value === projectForm.initialQualityGoal
-  );
-  const selectedQualityGoal =
-    QUALITY_GOAL_OPTIONS[Math.max(qualityGoalIndex, 0)] ?? QUALITY_GOAL_OPTIONS[1];
 
   const timelineRelativeLabel = (() => {
     if (!projectForm.initialTimeline?.trim()) return null;
@@ -998,31 +995,38 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           </div>
 
           <div className="space-y-3 rounded-lg border bg-card p-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium leading-none">Quality</p>
-              <Badge variant="secondary" className="text-xs">
-                {selectedQualityGoal.label}
-              </Badge>
-            </div>
-            <Slider
-              value={[Math.max(qualityGoalIndex, 0)]}
-              min={0}
-              max={QUALITY_GOAL_OPTIONS.length - 1}
-              step={1}
+            <p className="text-sm font-medium leading-none">Quality goal</p>
+            <RadioGroup
+              value={projectForm.initialQualityGoal}
               onValueChange={(value) => {
-                const nextGoal = QUALITY_GOAL_OPTIONS[value[0] ?? 0];
-                if (!nextGoal || nextGoal.value === projectForm.initialQualityGoal) return;
+                if (!isQualityGoal(value)) return;
                 setProjectForm((prev) => ({
                   ...prev,
-                  initialQualityGoal: nextGoal.value,
+                  initialQualityGoal: value,
                 }));
               }}
-            />
-            <div className="grid grid-cols-3 gap-1 text-[11px] leading-tight text-muted-foreground">
-              <span className="text-left">{QUALITY_GOAL_OPTIONS[0].label}</span>
-              <span className="text-center">{QUALITY_GOAL_OPTIONS[1].label}</span>
-              <span className="text-right">{QUALITY_GOAL_OPTIONS[2].label}</span>
-            </div>
+              className="grid grid-cols-3 gap-2"
+            >
+              {QUALITY_GOAL_OPTIONS.map((option) => (
+                <Label
+                  key={option.value}
+                  htmlFor={`kickoff-quality-${option.value}`}
+                  className={cn(
+                    'flex cursor-pointer items-center justify-center gap-2 rounded-md border px-2 py-2 text-sm font-medium transition-colors',
+                    projectForm.initialQualityGoal === option.value
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-background text-muted-foreground hover:bg-muted/40'
+                  )}
+                >
+                  <RadioGroupItem
+                    value={option.value}
+                    id={`kickoff-quality-${option.value}`}
+                    className="sr-only"
+                  />
+                  {option.label}
+                </Label>
+              ))}
+            </RadioGroup>
           </div>
         </CardContent>
       </Card>
