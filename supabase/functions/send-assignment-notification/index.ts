@@ -75,6 +75,26 @@ serve(async (req) => {
       if (email) allowedRecipients.add(email.toLowerCase());
     }
 
+    // Only the caller's own task/subtask titles may appear in an outbound email,
+    // so the endpoint cannot be used to send arbitrary text to those contacts.
+    const [{ data: ownTasks }, { data: ownSubtasks }] = await Promise.all([
+      admin.from('home_tasks').select('title').eq('user_id', user.id),
+      admin.from('home_task_subtasks').select('title').eq('user_id', user.id),
+    ]);
+
+    const allowedTaskTitles = new Set<string>();
+    const allowedSubtaskTitles = new Set<string>();
+    for (const row of ownTasks ?? []) {
+      const title = (row as { title?: string | null }).title;
+      if (title) allowedTaskTitles.add(title.trim().toLowerCase());
+    }
+    for (const row of ownSubtasks ?? []) {
+      const title = (row as { title?: string | null }).title;
+      if (title) allowedSubtaskTitles.add(title.trim().toLowerCase());
+    }
+
+
+
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
     if (!RESEND_API_KEY) {
