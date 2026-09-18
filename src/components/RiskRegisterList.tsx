@@ -27,6 +27,8 @@ export interface RiskRegisterListRisk {
   is_template_risk?: boolean;
   template_risk_id?: string | null;
   from_standard_foundation?: boolean;
+  /** Applied Stage 3 origin (`pfmea` / `register`). Absent on true user-created rows. */
+  source?: 'pfmea' | 'register' | null;
   hidden_from_register?: boolean;
 }
 
@@ -63,8 +65,14 @@ function riskFocusLevelValue(risk: RiskRegisterListRisk): 'low' | 'medium' | 'hi
   return 'medium';
 }
 
+/** True only for run risks the user created (no template link and no applied Stage 3 source). */
 function isUserAddedRisk(risk: RiskRegisterListRisk): boolean {
-  return !risk.from_standard_foundation && !risk.template_risk_id && !risk.is_template_risk;
+  return (
+    !risk.from_standard_foundation &&
+    !risk.template_risk_id &&
+    !risk.is_template_risk &&
+    risk.source == null
+  );
 }
 
 export type RiskRegisterListProps<T extends RiskRegisterListRisk = RiskRegisterListRisk> = {

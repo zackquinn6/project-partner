@@ -454,9 +454,14 @@ const EMPTY_RISK_FORM: RiskFormData = {
   implicated_item_id: null,
 };
 
-/** User-added run risks (not template / foundation copies). */
+/** True only for run risks the user created (no template link and no applied Stage 3 source). */
 function isUserAddedRisk(risk: Risk): boolean {
-  return !risk.from_standard_foundation && !risk.template_risk_id && !risk.is_template_risk;
+  return (
+    !risk.from_standard_foundation &&
+    !risk.template_risk_id &&
+    !risk.is_template_risk &&
+    risk.source == null
+  );
 }
 
 /** Light colour for a component's worst priority. Grey is "nothing scored", not "clear". */
