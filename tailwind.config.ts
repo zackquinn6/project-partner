@@ -103,11 +103,26 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				achievement: {
+					surface: 'hsl(var(--achievement-surface))',
+					raised: 'hsl(var(--achievement-surface-raised))',
+					accent: 'hsl(var(--achievement-accent))',
+					'accent-foreground': 'hsl(var(--achievement-accent-foreground))',
+					'accent-soft': 'hsl(var(--achievement-accent-soft))',
+					foreground: 'hsl(var(--achievement-foreground))',
+					muted: 'hsl(var(--achievement-muted))',
+					border: 'hsl(var(--achievement-border))',
+					track: 'hsl(var(--achievement-track))'
 				}
 			},
 			fontFamily: {
 				sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
 				display: ['Manrope', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+				'achievement-display': ['Sora', 'Manrope', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+			},
+			transitionDuration: {
+				achievement: '180ms',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

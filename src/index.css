@@ -114,6 +114,17 @@
     --sidebar-accent-foreground: 24 14% 18%;
     --sidebar-border: 32 18% 88%;
     --sidebar-ring: 14 100% 58%;
+
+    /* Achievements instrument panel - scoped surface system (#171A1D / #2A2F34 / #F45B22 / #F2F4F5) */
+    --achievement-surface: 210 12% 10%;
+    --achievement-surface-raised: 207 11% 18%;
+    --achievement-accent: 16 90% 55%;
+    --achievement-accent-foreground: 200 13% 96%;
+    --achievement-foreground: 200 13% 95%;
+    --achievement-muted: 200 8% 68%;
+    --achievement-border: 210 10% 24%;
+    --achievement-track: 210 10% 22%;
+    --achievement-accent-soft: 16 45% 16%;
   }
 
   .dark {

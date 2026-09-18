@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEnhancedAchievements } from '@/hooks/useEnhancedAchievements';
 import {
@@ -6,7 +6,6 @@ import {
   achievementProgress,
   type AchievementShelf,
 } from '@/constants/achievementDefinitions';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -74,6 +73,68 @@ function isPeakAchievement(category: string, points: number): boolean {
   return category === 'peak' || points >= 180;
 }
 
+function LevelGauge({ level, progress }: { level: number; progress: number }) {
+  const size = 72;
+  const stroke = 4;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clamped = Math.min(100, Math.max(0, progress));
+  const offset = circumference - (clamped / 100) * circumference;
+
+  return (
+    <div
+      className="relative h-[72px] w-[72px] shrink-0"
+      role="img"
+      aria-label={`Level ${level}, ${Math.round(clamped)} percent to next level`}
+    >
+      <svg className="h-full w-full -rotate-90" viewBox={`0 0 ${size} ${size}`} aria-hidden>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          className="stroke-achievement-track"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          className="stroke-achievement-accent transition-[stroke-dashoffset] duration-achievement motion-reduce:transition-none"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+        <span className="font-display text-[10px] font-semibold uppercase text-achievement-muted">
+          LVL
+        </span>
+        <span className="font-achievement-display text-[28px] font-bold tabular-nums text-achievement-foreground">
+          {level}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function StatusTag({ children, peak = false }: { children: ReactNode; peak?: boolean }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex h-5 shrink-0 items-center rounded-[4px] border px-1.5 font-display text-[11px] font-medium',
+        peak
+          ? 'border-achievement-accent/50 bg-achievement-accent-soft text-achievement-accent'
+          : 'border-achievement-border bg-achievement-surface text-achievement-muted'
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
 export function AchievementsSection() {
   const { user } = useAuth();
   const {
@@ -118,55 +179,75 @@ export function AchievementsSection() {
 
   if (loading) {
     return (
-      <div className="space-y-4 animate-pulse" aria-busy="true" aria-label="Loading achievements">
-        <div className="h-24 rounded-2xl bg-muted" />
-        <div className="flex gap-2">
-          <div className="h-8 w-16 rounded-full bg-muted" />
-          <div className="h-8 w-16 rounded-full bg-muted" />
-          <div className="h-8 w-20 rounded-full bg-muted" />
+      <div
+        className="space-y-4 animate-pulse"
+        aria-busy="true"
+        aria-label="Loading achievements"
+      >
+        <div className="h-28 rounded-lg bg-achievement-raised" />
+        <div className="flex gap-2 border-y border-achievement-border py-2">
+          <div className="h-10 w-14 rounded-md bg-achievement-raised" />
+          <div className="h-10 w-16 rounded-md bg-achievement-raised" />
+          <div className="h-10 w-16 rounded-md bg-achievement-raised" />
         </div>
-        <div className="space-y-2">
-          <div className="h-20 rounded-xl bg-muted" />
-          <div className="h-20 rounded-xl bg-muted" />
-          <div className="h-20 rounded-xl bg-muted" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="h-36 rounded-lg bg-achievement-raised" />
+          <div className="h-36 rounded-lg bg-achievement-raised" />
+          <div className="h-36 rounded-lg bg-achievement-raised" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5 sm:space-y-6">
-      <section className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.14] via-background to-warning-soft/[0.08] p-4 shadow-sm sm:p-5">
-        <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
-        <div className="relative flex items-center gap-3.5 sm:gap-4">
-          <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/25 sm:h-16 sm:w-16">
-            <span className="text-[10px] font-medium uppercase tracking-wide opacity-80">Lvl</span>
-            <span className="text-xl font-bold leading-none sm:text-2xl">{level}</span>
+    <div className="mx-auto w-full max-w-3xl space-y-4 text-achievement-foreground sm:space-y-5">
+      <section className="rounded-lg border border-achievement-border bg-achievement-raised p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+          <div className="flex min-w-0 flex-1 items-start gap-3.5 sm:items-center sm:gap-4">
+            <LevelGauge level={level} progress={levelProgress} />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <h2 className="font-achievement-display text-[22px] font-bold leading-tight tracking-tight sm:text-2xl">
+                Achievements
+              </h2>
+              <p className="font-display text-[13px] leading-snug text-achievement-muted">
+                <span className="font-achievement-display text-[13px] font-bold tabular-nums text-achievement-accent sm:text-sm">
+                  {totalXP.toLocaleString()} XP
+                </span>
+                <span className="mx-1.5 text-achievement-border" aria-hidden>
+                  ·
+                </span>
+                <span className="font-medium tabular-nums">
+                  {xpToNext.toLocaleString()} XP to Level {level + 1}
+                </span>
+              </p>
+            </div>
           </div>
-          <div className="min-w-0 flex-1 space-y-2">
-            <div className="flex items-baseline justify-between gap-2">
-              <h2 className="truncate text-lg font-bold tracking-tight sm:text-xl">Achievements</h2>
-              <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
-                {unlockedCount}/{totalCount}
-              </span>
-            </div>
-            <Progress value={levelProgress} className="h-2" />
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-              <span className="tabular-nums font-medium text-foreground/80">
-                {totalXP.toLocaleString()} XP
-              </span>
-              <span className="tabular-nums">
-                {xpToNext.toLocaleString()} to level {level + 1}
-              </span>
-            </div>
+
+          <div className="shrink-0 self-end text-right sm:self-center sm:pl-2">
+            <p className="font-achievement-display text-[28px] font-bold leading-none tabular-nums sm:text-[32px]">
+              {unlockedCount}
+              <span className="text-achievement-muted"> / {totalCount}</span>
+            </p>
+            <p className="mt-1 font-display text-[10px] font-semibold uppercase text-achievement-muted sm:text-[11px]">
+              Completed
+            </p>
           </div>
         </div>
+
+        <Progress
+          value={levelProgress}
+          className="mt-4 h-[5px] rounded-sm border-0 bg-achievement-track shadow-none"
+          indicatorClassName="rounded-sm bg-achievement-accent transition-transform duration-achievement motion-reduce:transition-none"
+          aria-label="Level progress"
+        />
       </section>
 
       {recentUnlocks.length > 0 ? (
         <section className="space-y-2.5">
-          <h3 className="px-0.5 text-sm font-semibold text-foreground">Recent</h3>
-          <div className="-mx-1 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <h3 className="font-display text-[11px] font-semibold uppercase text-achievement-muted">
+            Recently unlocked
+          </h3>
+          <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {recentUnlocks.map((ua) => {
               const def = ua.achievement;
               if (!def) return null;
@@ -176,20 +257,19 @@ export function AchievementsSection() {
                 <div
                   key={ua.id}
                   className={cn(
-                    'w-[9.5rem] shrink-0 snap-start rounded-xl border bg-card p-3 sm:w-[10.5rem]',
-                    peak ? 'border-primary/50 bg-primary/[0.06] shadow-sm' : 'border-border/80'
+                    'w-[9.75rem] shrink-0 snap-start rounded-lg border bg-achievement-raised p-3.5 transition-[border-color,transform] duration-achievement motion-reduce:transition-colors sm:w-[10.5rem]',
+                    peak
+                      ? 'border-achievement-accent/55'
+                      : 'border-achievement-border hover:border-achievement-muted/50'
                   )}
                 >
-                  <div
-                    className={cn(
-                      'mb-2 inline-flex rounded-lg bg-primary/12 p-2 text-primary',
-                      peak && 'bg-primary/18'
-                    )}
-                  >
-                    <Icon className={cn('h-5 w-5', peak && 'h-6 w-6')} />
+                  <div className="mb-2.5 flex h-11 w-11 items-center justify-center rounded-md bg-achievement-accent-soft text-achievement-accent">
+                    <Icon className="h-5 w-5" aria-hidden />
                   </div>
-                  <p className="line-clamp-2 text-sm font-semibold leading-snug">{def.name}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="line-clamp-2 font-achievement-display text-[13px] font-bold leading-5 text-achievement-foreground">
+                    {def.name}
+                  </p>
+                  <p className="mt-1.5 font-display text-[11px] text-achievement-muted">
                     {new Date(ua.unlocked_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -199,8 +279,12 @@ export function AchievementsSection() {
         </section>
       ) : null}
 
-      <section className="space-y-3">
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <section className="space-y-4">
+        <div
+          role="toolbar"
+          aria-label="Achievement filters"
+          className="-mx-4 flex gap-2 overflow-x-auto border-y border-achievement-border bg-achievement-surface px-4 py-2 sm:-mx-5 sm:px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {SHELVES.map((shelf) => {
             const active = shelfFilter === shelf;
             return (
@@ -208,11 +292,15 @@ export function AchievementsSection() {
                 key={shelf}
                 type="button"
                 size="sm"
-                variant={active ? 'default' : 'outline'}
+                variant="ghost"
+                aria-pressed={active}
                 onClick={() => setShelfFilter(shelf)}
                 className={cn(
-                  'h-8 shrink-0 rounded-full px-3.5 text-xs font-medium',
-                  !active && 'border-border/70 bg-background/80'
+                  'h-10 min-h-[40px] shrink-0 rounded-md border px-3 font-display text-[11px] font-semibold transition-colors duration-achievement motion-reduce:transition-none sm:h-9 sm:min-h-[36px] sm:text-xs',
+                  'focus-visible:ring-2 focus-visible:ring-achievement-accent focus-visible:ring-offset-2 focus-visible:ring-offset-achievement-surface',
+                  active
+                    ? 'border-achievement-accent bg-achievement-accent text-achievement-accent-foreground hover:bg-achievement-accent hover:text-achievement-accent-foreground'
+                    : 'border-achievement-border bg-transparent text-achievement-muted hover:bg-achievement-raised hover:text-achievement-foreground'
                 )}
               >
                 {SHORT_SHELF_LABELS[shelf]}
@@ -221,7 +309,7 @@ export function AchievementsSection() {
           })}
         </div>
 
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-4">
           {filteredAchievements.map((achievement) => {
             const unlocked = unlockedIds.has(achievement.id);
             const Icon = iconMap[achievement.icon] || Trophy;
@@ -234,94 +322,108 @@ export function AchievementsSection() {
               completedProjects,
               progressStats
             );
-            const progressPct =
-              progress && progress.target > 0
+            const inProgress =
+              !unlocked && progress !== null && progress.current > 0 && progress.target > 0;
+            const progressPct = unlocked
+              ? 100
+              : progress && progress.target > 0
                 ? Math.min(100, (progress.current / progress.target) * 100)
                 : 0;
+            const progressCurrent =
+              unlocked && progress
+                ? progress.target
+                : progress
+                  ? Math.min(progress.current, progress.target)
+                  : null;
+            const progressTarget = progress?.target ?? null;
 
             return (
               <article
                 key={achievement.id}
                 className={cn(
-                  'flex gap-3 rounded-xl border p-3 transition-colors sm:p-3.5',
+                  'grid grid-rows-[auto_auto_auto] gap-3 rounded-lg border bg-achievement-raised p-4 transition-[border-color,transform] duration-achievement motion-reduce:transition-colors',
+                  'hover:-translate-y-px motion-reduce:hover:translate-y-0',
                   unlocked
                     ? peak
-                      ? 'border-primary/45 bg-primary/[0.07] shadow-sm'
-                      : 'border-primary/30 bg-card'
-                    : 'border-border/70 bg-muted/20'
+                      ? 'border-achievement-accent/60'
+                      : 'border-achievement-accent/45'
+                    : peak
+                      ? 'border-achievement-accent/35'
+                      : 'border-achievement-border hover:border-achievement-muted/45'
                 )}
               >
-                <div
-                  className={cn(
-                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12',
-                    unlocked
-                      ? 'bg-primary/12 text-primary'
-                      : 'bg-muted text-muted-foreground/70'
-                  )}
-                >
-                  <Icon
+                <div className="flex items-start gap-3">
+                  <div
                     className={cn(
-                      'h-5 w-5 sm:h-6 sm:w-6',
-                      peak && unlocked && 'h-6 w-6 sm:h-7 sm:w-7',
-                      !unlocked && 'opacity-55'
-                    )}
-                  />
-                </div>
-
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 space-y-0.5">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <h3
-                          className={cn(
-                            'text-sm font-semibold leading-snug',
-                            !unlocked && 'text-foreground/85'
-                          )}
-                        >
-                          {achievement.name}
-                        </h3>
-                        {peak ? (
-                          <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-medium">
-                            Peak
-                          </Badge>
-                        ) : null}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground sm:text-xs">
-                        {ACHIEVEMENT_SHELF_LABELS[achievement.category]}
-                      </p>
-                    </div>
-                    {unlocked ? (
-                      <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                        <Check className="h-3 w-3" strokeWidth={3} />
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <p
-                    className={cn(
-                      'text-xs leading-relaxed text-muted-foreground',
-                      unlocked ? 'line-clamp-2' : 'line-clamp-3'
+                      'flex h-11 w-11 shrink-0 items-center justify-center rounded-md transition-colors duration-achievement sm:h-12 sm:w-12',
+                      unlocked || inProgress
+                        ? 'bg-achievement-accent-soft text-achievement-accent'
+                        : 'bg-achievement-surface text-achievement-muted'
                     )}
                   >
-                    {achievement.description}
-                  </p>
+                    <Icon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
+                  </div>
 
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="min-w-0 font-achievement-display text-[15px] font-bold leading-5 text-achievement-foreground sm:text-base">
+                        {achievement.name}
+                      </h3>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        {peak ? <StatusTag peak>Peak</StatusTag> : null}
+                        {unlocked ? (
+                          <span className="inline-flex items-center gap-1 font-display text-[11px] font-semibold text-achievement-accent">
+                            <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+                            Unlocked
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <p className="mt-1.5">
+                      <StatusTag>{ACHIEVEMENT_SHELF_LABELS[achievement.category]}</StatusTag>
+                    </p>
+                  </div>
+                </div>
+
+                <p
+                  className={cn(
+                    'min-h-[36px] font-display text-xs leading-[18px] sm:text-[13px]',
+                    unlocked || inProgress
+                      ? 'line-clamp-2 text-achievement-muted'
+                      : 'line-clamp-2 text-achievement-muted/85'
+                  )}
+                >
+                  {achievement.description}
+                </p>
+
+                <div className="space-y-1.5">
                   {unlocked && userAchievement ? (
-                    <p className="text-[11px] font-medium text-primary/90">
+                    <p className="font-display text-[11px] font-medium text-achievement-muted">
                       {new Date(userAchievement.unlocked_at).toLocaleDateString()}
                     </p>
                   ) : null}
 
-                  {!unlocked && progress ? (
-                    <div className="space-y-1 pt-0.5">
-                      <div className="flex items-center justify-between text-[11px] tabular-nums text-muted-foreground">
-                        <span>
-                          {Math.min(progress.current, progress.target)}/{progress.target}
+                  {progressCurrent !== null && progressTarget !== null ? (
+                    <div className="flex items-baseline justify-between gap-2 font-achievement-display text-[11px] font-semibold tabular-nums sm:text-xs">
+                      <span className="text-achievement-foreground">
+                        {progressCurrent} / {progressTarget}{' '}
+                        <span className="font-display font-medium text-achievement-muted">
+                          completed
                         </span>
-                        <span>{Math.round(progressPct)}%</span>
-                      </div>
-                      <Progress value={progressPct} className="h-1.5" />
+                      </span>
+                      <span className="text-achievement-muted">{Math.round(progressPct)}%</span>
                     </div>
+                  ) : null}
+
+                  {unlocked || progress !== null ? (
+                    <Progress
+                      value={progressPct}
+                      className="h-[5px] rounded-sm border-0 bg-achievement-track shadow-none"
+                      indicatorClassName={cn(
+                        'rounded-sm transition-transform duration-achievement motion-reduce:transition-none',
+                        progressPct > 0 ? 'bg-achievement-accent' : 'bg-transparent'
+                      )}
+                    />
                   ) : null}
                 </div>
               </article>
