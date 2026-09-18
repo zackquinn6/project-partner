@@ -198,7 +198,7 @@ export function ProgressViewsWindow({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-full max-w-full flex-col overflow-hidden rounded-none p-0 md:h-[90vh] md:max-h-[90vh] md:max-w-[100vw] md:rounded-lg lg:w-[50vw] lg:max-w-[50vw] [&>button]:hidden">
+      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-full max-w-full flex-col overflow-hidden rounded-none p-0 md:h-[90vh] md:max-h-[90vh] md:w-[90vw] md:max-w-[90vw] md:rounded-lg [&>button]:hidden">
         <DialogTitle className="sr-only">Progress views</DialogTitle>
         <DialogDescription className="sr-only">
           Gantt, Kanban, and process map views of project progress
