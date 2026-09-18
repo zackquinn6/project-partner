@@ -8,9 +8,11 @@ import { FileText, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 
 type Mode = 'user' | 'admin';
+
+/** Reserved notes_data key for notes not tagged to a workflow step. */
+export const GENERAL_NOTES_STEP_ID = '__general__';
 
 type StepOption = {
   id: string;
@@ -58,7 +60,6 @@ export function NotesGallery({
 
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   const dirtyRef = useRef(false);
   const savingRef = useRef(false);
@@ -182,7 +183,6 @@ export function NotesGallery({
 
       setNotesData(nextNotesData);
       setDirty(false);
-      setLastSavedAt(new Date());
     } catch (err) {
       console.error('Error saving notes:', err);
       toast.error('Failed to save notes');
@@ -200,18 +200,18 @@ export function NotesGallery({
 
     setAvailableSteps([]);
     setNotesData({});
-    setSelectedStepId('');
+    setSelectedStepId(GENERAL_NOTES_STEP_ID);
     setDraft('');
     setDirty(false);
-    setLastSavedAt(null);
 
     const run = async () => {
       const steps = await fetchAvailableSteps();
       await fetchNotesData();
 
-      // Only apply initialStepId once steps are loaded (so we can ensure it exists).
       if (initialStepId && steps.some(s => s.id === initialStepId)) {
         setSelectedStepId(initialStepId);
+      } else {
+        setSelectedStepId(GENERAL_NOTES_STEP_ID);
       }
     };
 
@@ -295,11 +295,7 @@ export function NotesGallery({
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
               Saving...
             </DialogDescription>
-          ) : (
-            <DialogDescription className="text-xs text-muted-foreground mt-1">
-              Autosaves every 10 seconds and on close
-            </DialogDescription>
-          )}
+          ) : null}
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-2 md:px-4 py-3 md:py-4">
@@ -314,11 +310,12 @@ export function NotesGallery({
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="notes-step-select">Step</Label>
-                <Select value={selectedStepId} onValueChange={handleStepChange} disabled={!availableSteps.length || saving}>
+                <Select value={selectedStepId} onValueChange={handleStepChange} disabled={saving}>
                   <SelectTrigger id="notes-step-select">
                     <SelectValue placeholder="Select a step" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={GENERAL_NOTES_STEP_ID}>General</SelectItem>
                     {availableSteps.map(step => (
                       <SelectItem key={step.id} value={step.id}>
                         {getStepDisplayName(step)}
@@ -343,15 +340,11 @@ export function NotesGallery({
                     const baseline = notesDataRef.current[selectedStepId] ?? '';
                     setDirty(next !== baseline);
                   }}
-                  placeholder={selectedStepId ? 'Write your note here...' : 'Select a step to start writing...'}
+                  placeholder="Write your note here..."
                   rows={14}
                   className="resize-none"
                   disabled={!selectedStepId || saving}
                 />
-              </div>
-
-              <div className="text-xs text-muted-foreground">
-                {lastSavedAt ? `Last saved: ${format(lastSavedAt, 'MMM d, yyyy HH:mm')}` : 'Not saved yet'}
               </div>
             </div>
           )}

@@ -3484,8 +3484,7 @@ export default function UserView({
             setDecisionRollupOpen(true);
           }}
           onNotesClick={() => {
-            if (!currentStep?.id) return;
-            setNotesGalleryInitialStepId(currentStep.id);
+            setNotesGalleryInitialStepId('');
             setNotesGalleryOpen(true);
           }}
           onProgressViewsClick={() => setProgressViewsOpen(true)}
@@ -3533,8 +3532,7 @@ export default function UserView({
               isKickoffComplete && allSteps.length > 0 ? openWorkflowVideosGallery : undefined
             }
             onNotesClick={() => {
-              if (!currentStep?.id) return;
-              setNotesGalleryInitialStepId(currentStep.id);
+              setNotesGalleryInitialStepId('');
               setNotesGalleryOpen(true);
             }}
             onViewScheduleClick={() => {

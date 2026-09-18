@@ -194,16 +194,12 @@ export function NoteUpload({
               <FileText className="w-5 h-5" />
               Notes
             </DialogTitle>
-            <DialogDescription className="flex items-center gap-2">
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Autosaves every 10 seconds and on close'
-              )}
-            </DialogDescription>
+            {saving ? (
+              <DialogDescription className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </DialogDescription>
+            ) : null}
           </DialogHeader>
 
           <div className="space-y-4 py-4">
