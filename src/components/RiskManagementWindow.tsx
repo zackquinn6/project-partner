@@ -759,7 +759,7 @@ function RiskFocusDashboard({
   const worstRpn = useMemo(() => worstRpnByComponent(rollupRows), [rollupRows]);
 
   const sectionHeaderClass =
-    'mb-1 font-display text-xs font-semibold leading-4 text-muted-foreground';
+    'mb-1 text-center font-display text-sm font-bold leading-5 text-foreground';
   const sectionShellClass =
     'flex h-full min-w-0 flex-col rounded-md border border-border bg-card px-2.5 py-2';
   const goalTileClass =
