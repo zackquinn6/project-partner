@@ -1,10 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle, Settings, Sparkles, Info, HelpCircle, Calendar, MessageCircle, Key, FileText, Image, BarChart3, Wrench, BookOpen, TrendingUp, ChevronDown, ChevronLeft, Shield, DollarSign, ShoppingCart, ClipboardCheck, ClipboardList, Handshake, Crosshair, Trash2, Eye, Video } from "lucide-react";
-import { getStepIndicator, FlowTypeLegend } from './FlowTypeLegend';
+import { CheckCircle, Settings, Sparkles, Calendar, MessageCircle, Key, FileText, Image, BarChart3, Wrench, ChevronDown, ChevronLeft, Shield, DollarSign, ShoppingCart, ClipboardCheck, ClipboardList, Handshake, Crosshair, Trash2, Eye, Video } from "lucide-react";
 import * as LucideIcons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import { AppReference } from '@/interfaces/Project';
@@ -23,6 +17,11 @@ import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useProject } from '@/contexts/ProjectContext';
 import { formatEstimatedFinishDate } from '@/utils/estimatedFinishDate';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useState, useEffect, useMemo } from "react";
 interface WorkflowSidebarProps {
   allSteps: any[];
   currentStep: any;
@@ -128,7 +127,6 @@ export function WorkflowSidebar({
     return Icon;
   };
   
-  const [showStepTypesInfo, setShowStepTypesInfo] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showProgressReportingDialog, setShowProgressReportingDialog] = useState(false);
@@ -1020,96 +1018,10 @@ export function WorkflowSidebar({
                     </Accordion>
                   )}
                 </div>
-
-                {/* Step Types and Tutorial Buttons - Fixed at bottom, outside scrollable section */}
-                <div className="flex-shrink-0 pt-2 pb-2 border-t border-border mt-2 flex items-center justify-center gap-2">
-                  <TooltipProvider delayDuration={100}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setShowStepTypesInfo(true)}
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        >
-                          <Info className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">Step Types</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <TooltipProvider delayDuration={100}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                data-tutorial="help-button"
-                              >
-                                <HelpCircle className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56 z-[9999]">
-                              <DropdownMenuItem onClick={() => setShowTutorial(true)}>
-                                <Info className="h-4 w-4 mr-2" />
-                                Workflow Tutorial
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-feedback-dialog'))}>
-                                <MessageCircle className="h-4 w-4 mr-2" />
-                                Send Feedback
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-roadmap-window'))}>
-                                <TrendingUp className="h-4 w-4 mr-2" />
-                                App Roadmap
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-documentation-window'))}>
-                                <BookOpen className="h-4 w-4 mr-2" />
-                                Documentation
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-policies-window'))}>
-                                <FileText className="h-4 w-4 mr-2" />
-                                Policies
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('open-expert-help'))}>
-                                <MessageCircle className="h-4 w-4 mr-2" />
-                                Expert Help
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">Help & resources</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
               </div>}
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
-      {/* Step Types Info Dialog */}
-      <Dialog open={showStepTypesInfo} onOpenChange={setShowStepTypesInfo}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Step Types</DialogTitle>
-            <DialogDescription>
-              Configure step types and progress reporting style
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-6">
-            <FlowTypeLegend compact={false} showDescriptions={true} showOnlyStepTypes={true} />
-            
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Coming Soon Dialog */}
       <Dialog open={showComingSoon} onOpenChange={setShowComingSoon}>

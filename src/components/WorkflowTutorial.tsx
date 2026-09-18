@@ -126,13 +126,6 @@ const tutorialSteps: TutorialStep[] = [
     description: 'Found a problem or have feedback? Use this to report issues with the step instructions or project guidance.',
     targetSelector: '[data-tutorial="report-issue"]',
     position: 'top'
-  },
-  {
-    id: 'help-button',
-    title: 'Help Button',
-    description: 'Access feedback forms, view the product roadmap, and get additional support. Your feedback helps us improve!',
-    targetSelector: '[data-tutorial="help-button"]',
-    position: 'top'
   }
 ];
 
