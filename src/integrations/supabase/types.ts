@@ -5226,7 +5226,6 @@ export type Database = {
         | { Args: never; Returns: boolean }
         | { Args: { check_user_id: string }; Returns: boolean }
       is_caller_admin: { Args: never; Returns: boolean }
-      redeem_coupon_increment: { Args: { p_coupon_id: string }; Returns: boolean }
       latest_published_in_family: {
         Args: { p_any_project_id: string }
         Returns: string
@@ -5288,6 +5287,10 @@ export type Database = {
         Returns: Json
       }
       record_trial_notification_shown: { Args: never; Returns: undefined }
+      redeem_coupon_increment: {
+        Args: { p_coupon_id: string }
+        Returns: boolean
+      }
       remap_id_array_via_map: {
         Args: { p_arr: Json; p_id_map: Json }
         Returns: Json
