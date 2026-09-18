@@ -790,6 +790,17 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     ) : null;
 
     if (wizardPhase === 'confirm') {
+      const returnToPlanning = (
+        <Button
+          type="button"
+          variant="outline"
+          className={exitButtonClass}
+          onClick={() => goToPlanningStep(0)}
+        >
+          Return to Planning
+        </Button>
+      );
+
       const startProject = (
         <Button
           type="button"
@@ -811,13 +822,9 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
         </Button>
       );
 
-      if (!exitButton) {
-        return <div className="h-14 w-full shrink-0">{startProject}</div>;
-      }
-
       return (
         <div className="grid h-14 w-full grid-cols-[3fr_7fr] items-center gap-2">
-          {exitButton}
+          {returnToPlanning}
           <div className="min-w-0">{startProject}</div>
         </div>
       );
