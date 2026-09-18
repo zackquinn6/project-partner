@@ -736,7 +736,9 @@ export async function recomputeProjectRunKeyCharacteristics(
   const stepSources = await loadStepItemSources(stepIds);
 
   type KcInsert = Database['public']['Tables']['project_run_key_characteristics']['Insert'];
-  const inserts: KcInsert[] = [];
+  // Unique on (project_run_risk_id, item_kind, item_id): one failure mode can have several
+  // causes that all implicate the same item. The register keeps one row for that pairing.
+  const insertsByItemKey = new Map<string, KcInsert>();
 
   for (const row of appliedRows ?? []) {
     if (row.excluded_by_customization === true || row.hidden_from_register === true) continue;
@@ -780,7 +782,10 @@ export async function recomputeProjectRunKeyCharacteristics(
         );
       }
 
-      inserts.push({
+      const itemKey = `${row.id}:${itemKind}:${itemId ?? ''}`;
+      if (insertsByItemKey.has(itemKey)) continue;
+
+      insertsByItemKey.set(itemKey, {
         project_run_id: projectRunId,
         project_run_risk_id: row.id,
         operation_step_id: row.operation_step_id,
@@ -794,6 +799,8 @@ export async function recomputeProjectRunKeyCharacteristics(
       });
     }
   }
+
+  const inserts = Array.from(insertsByItemKey.values());
 
   // Delete then insert rather than upsert: a classification change can remove an item from the
   // register, and a leftover row would tell the user to watch something the analysis dropped.
