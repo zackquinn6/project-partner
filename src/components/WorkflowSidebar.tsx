@@ -518,6 +518,9 @@ export function WorkflowSidebar({
                       </SelectContent>
                     </Select>
                   </div>
+                  <p className="text-[10px] text-muted-foreground leading-snug pl-[3.25rem]">
+                    Applies to every step you open, including ones already marked complete.
+                  </p>
 
                   {/* Project Tools: primary buttons + more in menu (Experts/Tool Rentals follow admin app_settings toggles) */}
                     <div className="space-y-1.5 min-w-0" data-tutorial="project-tools">

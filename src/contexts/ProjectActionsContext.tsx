@@ -24,6 +24,7 @@ import {
 import type { Json } from '@/integrations/supabase/types';
 import { getDefaultHomeIdForUser } from '@/utils/ensureDefaultHome';
 import { applyProjectRiskLogicToRun } from '@/utils/applyProjectRiskLogic';
+import { copyQualityLevelsToProjectRun } from '@/utils/projectQualityLevels';
 
 function parseCompletedStepsColumn(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -830,6 +831,24 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         });
       }
 
+      try {
+        await copyQualityLevelsToProjectRun(data);
+      } catch (qualityCopyError) {
+        console.error('❌ Quality levels snapshot failed; deleting created run:', qualityCopyError);
+        await supabase.from('project_runs').delete().eq('id', data);
+        await reportAndThrowUserFacingError({
+          source: 'project_actions',
+          operation: 'copy_project_quality_levels_to_run',
+          userId: user.id,
+          projectId: project.id,
+          projectRunId: data,
+          error: qualityCopyError,
+          userMessage: 'Could not snapshot quality goals for this project.',
+          notificationTitle: 'Quality goal snapshot failed',
+          toastPresenter: 'ui-toast',
+        });
+      }
+
       // Update additional fields that the function doesn't handle
       if (customName || project.projectChallenges || project.scalingUnit || project.estimatedTimePerUnit) {
         await supabase
@@ -922,6 +941,24 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
             error: riskAssemblyError,
             userMessage: 'Could not build the risk list for this project.',
             notificationTitle: 'Project risk assembly failed',
+            toastPresenter: 'ui-toast',
+          });
+        }
+
+        try {
+          await copyQualityLevelsToProjectRun(newProjectRunId);
+        } catch (qualityCopyError) {
+          console.error('❌ Quality levels snapshot failed; deleting created run:', qualityCopyError);
+          await supabase.from('project_runs').delete().eq('id', newProjectRunId);
+          await reportAndThrowUserFacingError({
+            source: 'project_actions',
+            operation: 'copy_project_quality_levels_to_run',
+            userId: user.id,
+            projectId: projectRunData.projectId,
+            projectRunId: newProjectRunId,
+            error: qualityCopyError,
+            userMessage: 'Could not snapshot quality goals for this project.',
+            notificationTitle: 'Quality goal snapshot failed',
             toastPresenter: 'ui-toast',
           });
         }

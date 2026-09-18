@@ -12,6 +12,7 @@ import {
   PRODUCT_GUIDELINES,
   PUBLISHING_CHECKLIST,
   QUALITY_GOAL_LEVEL_STANDARD,
+  CONTENT_AXES_STANDARD,
   TOOLIO_PROJECT_STRUCTURE_STANDARD,
 } from '@/utils/projectPlanningStandard';
 
@@ -331,6 +332,20 @@ export function PlanningGuideWindow({ open, onOpenChange, initialTab }: Planning
                     ))}
                   </ul>
                   <p className="text-muted-foreground">{QUALITY_GOAL_LEVEL_STANDARD.authoringRule}</p>
+                </section>
+                <section>
+                  <h2 className="text-base font-semibold mb-2">
+                    Content axes (instruction, quality, customization)
+                  </h2>
+                  <p className="mb-2">{crossCuttingRule('content-axes')}</p>
+                  <ul className="list-disc pl-5 space-y-1 mb-2">
+                    {CONTENT_AXES_STANDARD.axes.map((axis) => (
+                      <li key={axis.id}>
+                        <strong>{axis.label}</strong> ({axis.values}) - {axis.effect}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-muted-foreground">{crossCuttingRule('professional-naming')}</p>
                 </section>
                 <section>
                   <h2 className="text-base font-semibold flex items-center gap-2 mb-2">

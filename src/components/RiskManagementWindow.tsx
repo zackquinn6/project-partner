@@ -1520,6 +1520,7 @@ function RiskFocusDashboard({
             <QualityGoalImpactPanel
               draftGoal={draftQualityGoal}
               hostProjectId={projectRun?.projectId}
+              projectRunId={projectRun?.id}
               phases={
                 (Array.isArray(projectRun?.phases) ? projectRun?.phases : []) as Phase[]
               }

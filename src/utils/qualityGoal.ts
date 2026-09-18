@@ -1,4 +1,4 @@
-import type { Phase, WorkflowStep } from '@/interfaces/Project';
+import type { Operation, Phase, WorkflowStep } from '@/interfaces/Project';
 
 export const QUALITY_GOAL_OPTIONS = [
   { value: 'good', label: 'Good' },
@@ -66,16 +66,45 @@ export function meetsMinQualityGoal(
   return qualityGoalRank(runGoal) >= qualityGoalRank(minQualityGoal);
 }
 
+type MinQualityCarrier = {
+  minQualityGoal?: string | null;
+  min_quality_goal?: string | null;
+};
+
 export function getStepMinQualityGoal(
-  step:
-    | Pick<WorkflowStep, 'minQualityGoal'>
-    | { minQualityGoal?: string | null; min_quality_goal?: string | null },
+  step: Pick<WorkflowStep, 'minQualityGoal'> | MinQualityCarrier,
 ): MinQualityGoal | null {
   const raw =
-    (step as { minQualityGoal?: string | null }).minQualityGoal ??
-    (step as { min_quality_goal?: string | null }).min_quality_goal;
+    (step as MinQualityCarrier).minQualityGoal ??
+    (step as MinQualityCarrier).min_quality_goal;
   if (isMinQualityGoal(raw)) return raw;
   return null;
+}
+
+export function getOperationMinQualityGoal(
+  op: Pick<Operation, 'minQualityGoal'> | MinQualityCarrier,
+): MinQualityGoal | null {
+  const raw =
+    (op as MinQualityCarrier).minQualityGoal ??
+    (op as MinQualityCarrier).min_quality_goal;
+  if (isMinQualityGoal(raw)) return raw;
+  return null;
+}
+
+function toCompletedSet(
+  completedStepIds: ReadonlySet<string> | readonly string[],
+): Set<string> {
+  return completedStepIds instanceof Set
+    ? completedStepIds
+    : new Set(completedStepIds);
+}
+
+function isStepIdCompleted(stepId: string, completed: Set<string>): boolean {
+  if (completed.has(stepId)) return true;
+  for (const key of completed) {
+    if (key.startsWith(`${stepId}:`)) return true;
+  }
+  return false;
 }
 
 /**
@@ -83,24 +112,28 @@ export function getStepMinQualityGoal(
  * or when it is already completed (mid-run goal changes must not hide finished work).
  */
 export function isStepVisibleForQualityGoal(
-  step: Pick<WorkflowStep, 'id' | 'minQualityGoal'>,
+  step: Pick<WorkflowStep, 'id' | 'minQualityGoal'> | (MinQualityCarrier & { id: string }),
   runGoal: QualityGoal,
   completedStepIds: ReadonlySet<string> | readonly string[],
 ): boolean {
-  const completed =
-    completedStepIds instanceof Set
-      ? completedStepIds
-      : new Set(completedStepIds);
-
-  if (completed.has(step.id)) return true;
-  for (const key of completed) {
-    if (key.startsWith(`${step.id}:`)) return true;
-  }
-
+  const completed = toCompletedSet(completedStepIds);
+  if (isStepIdCompleted(step.id, completed)) return true;
   return meetsMinQualityGoal(runGoal, getStepMinQualityGoal(step));
 }
 
-/** Filter phases for navigation/progress: keep completed gated steps; drop incomplete gated-out steps. */
+function operationHasCompletedStep(
+  op: Operation,
+  completed: Set<string>,
+): boolean {
+  return (op.steps || []).some((step) => isStepIdCompleted(step.id, completed));
+}
+
+/**
+ * Filter phases for navigation/progress.
+ * - Drop operations that fail the op-level gate unless they have completed steps.
+ * - Within kept ops, drop incomplete gated-out steps.
+ * - Drop phases that have no operations left after filtering.
+ */
 export function filterPhasesForQualityGoal(
   phases: Phase[] | null | undefined,
   runGoal: QualityGoal,
@@ -108,18 +141,32 @@ export function filterPhasesForQualityGoal(
 ): Phase[] {
   if (!phases?.length) return [];
 
-  return phases.map((phase) => ({
-    ...phase,
-    operations: (phase.operations || []).map((op) => ({
-      ...op,
-      steps: (op.steps || []).filter((step) =>
-        isStepVisibleForQualityGoal(step, runGoal, completedStepIds),
-      ),
-    })),
-  }));
+  const completed = toCompletedSet(completedStepIds);
+
+  return phases
+    .map((phase) => {
+      const operations = (phase.operations || [])
+        .filter((op) => {
+          if (operationHasCompletedStep(op, completed)) return true;
+          return meetsMinQualityGoal(runGoal, getOperationMinQualityGoal(op));
+        })
+        .map((op) => ({
+          ...op,
+          steps: (op.steps || []).filter((step) =>
+            isStepVisibleForQualityGoal(step, runGoal, completed),
+          ),
+        }))
+        .filter(
+          (op) =>
+            (op.steps || []).length > 0 || operationHasCompletedStep(op, completed),
+        );
+
+      return { ...phase, operations };
+    })
+    .filter((phase) => (phase.operations || []).length > 0);
 }
 
-/** Step titles that appear at `higher` but not at `lower` (Professional extras vs Great). */
+/** Step titles that appear at `higher` but not at `lower`. */
 export function gatedStepTitlesBetween(
   phases: Phase[] | null | undefined,
   lower: QualityGoal,
@@ -131,6 +178,10 @@ export function gatedStepTitlesBetween(
   const titles: string[] = [];
   for (const phase of phases) {
     for (const op of phase.operations || []) {
+      const opMin = getOperationMinQualityGoal(op);
+      if (!meetsMinQualityGoal(lower, opMin) && meetsMinQualityGoal(higher, opMin)) {
+        titles.push(`${op.name} (operation)`);
+      }
       for (const step of op.steps || []) {
         const min = getStepMinQualityGoal(step);
         if (!meetsMinQualityGoal(lower, min) && meetsMinQualityGoal(higher, min)) {

@@ -18,6 +18,8 @@ type QualityGoalImpactPanelProps = {
   draftGoal: QualityGoal;
   hostProjectId: string | null | undefined;
   phases: Phase[] | null | undefined;
+  /** When set, prefer frozen project_run_quality_levels over live catalog rows. */
+  projectRunId?: string | null;
   className?: string;
 };
 
@@ -25,6 +27,7 @@ export function QualityGoalImpactPanel({
   draftGoal,
   hostProjectId,
   phases,
+  projectRunId,
   className,
 }: QualityGoalImpactPanelProps) {
   const [bundles, setBundles] = useState<ProjectQualityLevelsBundle[]>([]);
@@ -36,14 +39,15 @@ export function QualityGoalImpactPanel({
     [hostProjectId, phases],
   );
 
-  const professionalExtraSteps = useMemo(() => {
-    if (draftGoal !== 'professional') return [];
-    return gatedStepTitlesBetween(phases, 'great', 'professional');
+  const extraStepsVsLower = useMemo(() => {
+    const lower = qualityGoalBelow(draftGoal);
+    if (!lower) return [];
+    return gatedStepTitlesBetween(phases, lower, draftGoal);
   }, [draftGoal, phases]);
 
   useEffect(() => {
     let cancelled = false;
-    if (projectIds.length === 0) {
+    if (projectIds.length === 0 && !projectRunId) {
       setBundles([]);
       setLoadError(null);
       return;
@@ -51,7 +55,7 @@ export function QualityGoalImpactPanel({
 
     setLoading(true);
     setLoadError(null);
-    void loadProjectQualityLevelBundles(projectIds)
+    void loadProjectQualityLevelBundles(projectIds, { projectRunId })
       .then((rows) => {
         if (!cancelled) setBundles(rows);
       })
@@ -69,7 +73,7 @@ export function QualityGoalImpactPanel({
     return () => {
       cancelled = true;
     };
-  }, [projectIds.join('|')]);
+  }, [projectIds.join('|'), projectRunId]);
 
   const lowerGoal = qualityGoalBelow(draftGoal);
   const draftLabel = qualityGoalLabel(draftGoal);
@@ -98,9 +102,7 @@ export function QualityGoalImpactPanel({
       {bundles.map((bundle) => {
         const level = levelForGoal(bundle, draftGoal);
         const lowerLevel = lowerGoal ? levelForGoal(bundle, lowerGoal) : undefined;
-        const missing =
-          !level &&
-          bundle.levels.length === 0;
+        const missing = !level && bundle.levels.length === 0;
 
         return (
           <div key={bundle.projectId} className="space-y-2 border-t border-border pt-3 first:border-t-0 first:pt-0">
@@ -167,13 +169,13 @@ export function QualityGoalImpactPanel({
         );
       })}
 
-      {draftGoal === 'professional' && professionalExtraSteps.length > 0 ? (
+      {lowerGoal && extraStepsVsLower.length > 0 ? (
         <div className="border-t border-border pt-3">
           <p className="text-xs font-medium text-muted-foreground">
-            Extra steps vs {qualityGoalLabel('great')}
+            Extra steps vs {qualityGoalLabel(lowerGoal)}
           </p>
           <ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
-            {professionalExtraSteps.map((title) => (
+            {extraStepsVsLower.map((title) => (
               <li key={title}>{title}</li>
             ))}
           </ul>

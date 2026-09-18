@@ -23,9 +23,16 @@ function parseExampleImageUrls(raw: unknown): string[] {
   return raw.filter((u): u is string => typeof u === 'string' && u.length > 0);
 }
 
+function sortLevels(levels: ProjectQualityLevelRow[]): ProjectQualityLevelRow[] {
+  const order = { good: 0, great: 1, professional: 2 };
+  return [...levels].sort(
+    (a, b) => order[a.quality_level] - order[b.quality_level],
+  );
+}
+
 /**
  * Host template id plus distinct source_project_id values from linked/adopted phases.
- * Quality-impact content is displayed from each source, never copied onto the host.
+ * Quality-impact content is displayed from each source, never copied onto the host template.
  */
 export function contributingQualityProjectIds(
   hostProjectId: string | null | undefined,
@@ -51,9 +58,82 @@ export function contributingQualityProjectIds(
   return ids;
 }
 
+/** Freeze catalog quality-impact rows onto a run (host + adopted sources). */
+export async function copyQualityLevelsToProjectRun(
+  projectRunId: string,
+): Promise<number> {
+  const { data, error } = await supabase.rpc(
+    'copy_project_quality_levels_to_run',
+    { p_run_id: projectRunId },
+  );
+  if (error) throw error;
+  return typeof data === 'number' ? data : 0;
+}
+
+async function loadBundlesFromRunSnapshot(
+  projectRunId: string,
+  preferredOrder: string[],
+): Promise<ProjectQualityLevelsBundle[] | null> {
+  const { data, error } = await supabase
+    .from('project_run_quality_levels')
+    .select(
+      'id, source_project_id, source_project_name, quality_level, outcome_summary, process_summary, vs_lower_summary, example_image_urls',
+    )
+    .eq('project_run_id', projectRunId);
+
+  if (error) throw error;
+  if (!data?.length) return null;
+
+  const levelsByProject = new Map<string, ProjectQualityLevelRow[]>();
+  const nameById = new Map<string, string>();
+
+  for (const row of data) {
+    const qualityLevel = row.quality_level;
+    if (
+      qualityLevel !== 'good' &&
+      qualityLevel !== 'great' &&
+      qualityLevel !== 'professional'
+    ) {
+      continue;
+    }
+    nameById.set(row.source_project_id, row.source_project_name);
+    const list = levelsByProject.get(row.source_project_id) || [];
+    list.push({
+      id: row.id,
+      project_id: row.source_project_id,
+      quality_level: qualityLevel,
+      outcome_summary: row.outcome_summary,
+      process_summary: row.process_summary,
+      vs_lower_summary: row.vs_lower_summary,
+      example_image_urls: parseExampleImageUrls(row.example_image_urls),
+    });
+    levelsByProject.set(row.source_project_id, list);
+  }
+
+  const orderedIds = [
+    ...preferredOrder.filter((id) => levelsByProject.has(id)),
+    ...[...levelsByProject.keys()].filter((id) => !preferredOrder.includes(id)),
+  ];
+
+  return orderedIds.map((id) => ({
+    projectId: id,
+    projectName: nameById.get(id) || id,
+    levels: sortLevels(levelsByProject.get(id) || []),
+  }));
+}
+
 export async function loadProjectQualityLevelBundles(
   projectIds: string[],
+  options?: { projectRunId?: string | null },
 ): Promise<ProjectQualityLevelsBundle[]> {
+  if (options?.projectRunId) {
+    const fromRun = await loadBundlesFromRunSnapshot(
+      options.projectRunId,
+      projectIds,
+    );
+    if (fromRun) return fromRun;
+  }
+
   if (projectIds.length === 0) return [];
 
   const { data: projects, error: projectsError } = await supabase
@@ -107,10 +187,7 @@ export async function loadProjectQualityLevelBundles(
   return projectIds.map((id) => ({
     projectId: id,
     projectName: nameById.get(id) || id,
-    levels: (levelsByProject.get(id) || []).sort((a, b) => {
-      const order = { good: 0, great: 1, professional: 2 };
-      return order[a.quality_level] - order[b.quality_level];
-    }),
+    levels: sortLevels(levelsByProject.get(id) || []),
   }));
 }
 
@@ -119,4 +196,22 @@ export function levelForGoal(
   goal: QualityGoal,
 ): ProjectQualityLevelRow | undefined {
   return bundle.levels.find((l) => l.quality_level === goal);
+}
+
+/** Outcome summaries for the goal across every contributing source that has a row. */
+export function expectedFinishSummariesForGoal(
+  bundles: ProjectQualityLevelsBundle[],
+  goal: QualityGoal,
+): { projectName: string; outcome_summary: string }[] {
+  const out: { projectName: string; outcome_summary: string }[] = [];
+  for (const bundle of bundles) {
+    const level = levelForGoal(bundle, goal);
+    if (level) {
+      out.push({
+        projectName: bundle.projectName,
+        outcome_summary: level.outcome_summary,
+      });
+    }
+  }
+  return out;
 }

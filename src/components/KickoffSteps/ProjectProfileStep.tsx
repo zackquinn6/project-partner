@@ -24,6 +24,43 @@ import {
 } from '@/utils/qualityGoal';
 import { QualityGoalImpactPanel } from '@/components/QualityGoalImpactPanel';
 import type { Phase } from '@/interfaces/Project';
+import {
+  instructionLevelFromProfileSkill,
+  type InstructionLevelPreference,
+} from '@/utils/instructionLevelFromProfile';
+
+const INSTRUCTION_LEVEL_OPTIONS: {
+  value: InstructionLevelPreference;
+  label: string;
+  preview: string;
+}[] = [
+  {
+    value: 'beginner',
+    label: 'Beginner',
+    preview: 'Same steps; more scaffolding and why-it-matters detail.',
+  },
+  {
+    value: 'intermediate',
+    label: 'Intermediate',
+    preview: 'Same steps; balanced guidance for a typical DIYer.',
+  },
+  {
+    value: 'advanced',
+    label: 'Advanced',
+    preview: 'Same steps; leaner copy for experienced users.',
+  },
+];
+
+const DEFAULT_INSTRUCTION_LEVEL: InstructionLevelPreference = 'intermediate';
+
+function parseInstructionLevelPreference(
+  raw: unknown,
+): InstructionLevelPreference | undefined {
+  if (raw === 'beginner' || raw === 'intermediate' || raw === 'advanced') {
+    return raw;
+  }
+  return undefined;
+}
 
 interface ProjectProfileStepProps {
   onComplete: () => void;
@@ -149,6 +186,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
     initialTimeline: '',
     initialBudget: '',
     initialQualityGoal: DEFAULT_QUALITY_GOAL,
+    instructionLevelPreference: DEFAULT_INSTRUCTION_LEVEL as InstructionLevelPreference,
   });
   const [loading, setLoading] = useState(true);
   const [showHomeManager, setShowHomeManager] = useState(false);
@@ -282,6 +320,9 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       const runQualityGoal = parseQualityGoalColumn(
         (currentProjectRun as any).initial_quality_goal
       );
+      const runInstructionLevel = parseInstructionLevelPreference(
+        (currentProjectRun as any).instruction_level_preference,
+      );
 
       const typicalSizing =
         templateEconomicsLoaded &&
@@ -300,13 +341,34 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             )
           : '';
 
-      setProjectForm({
-        customProjectName: currentProjectRun.customProjectName || currentProjectRun.name || '',
-        initialSizing: runSizing || typicalSizing,
-        initialTimeline: runTimeline || defaultDateString,
-        initialBudget: runBudget || typicalBudget,
-        initialQualityGoal: runQualityGoal ?? DEFAULT_QUALITY_GOAL,
-      });
+      const applyForm = (instructionLevel: InstructionLevelPreference) => {
+        setProjectForm({
+          customProjectName: currentProjectRun.customProjectName || currentProjectRun.name || '',
+          initialSizing: runSizing || typicalSizing,
+          initialTimeline: runTimeline || defaultDateString,
+          initialBudget: runBudget || typicalBudget,
+          initialQualityGoal: runQualityGoal ?? DEFAULT_QUALITY_GOAL,
+          instructionLevelPreference: instructionLevel,
+        });
+      };
+
+      if (runInstructionLevel) {
+        applyForm(runInstructionLevel);
+      } else if (user?.id) {
+        void supabase
+          .from('user_profiles')
+          .select('skill_level')
+          .eq('id', user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            applyForm(
+              instructionLevelFromProfileSkill(data?.skill_level) ??
+                DEFAULT_INSTRUCTION_LEVEL,
+            );
+          });
+      } else {
+        applyForm(DEFAULT_INSTRUCTION_LEVEL);
+      }
 
       if (currentProjectRun.home_id) {
         setSelectedHomeId(currentProjectRun.home_id);
@@ -540,6 +602,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         initial_budget: finalBudgetValue,
         initial_sizing: finalSizingValue,  // NOW safe to save because space records exist
         initial_quality_goal: projectForm.initialQualityGoal,
+        instruction_level_preference: projectForm.instructionLevelPreference,
         updated_at: new Date().toISOString()
       };
       
@@ -547,7 +610,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         .from('project_runs')
         .update(mainUpdateData)
         .eq('id', currentProjectRun.id)
-        .select('id, initial_budget, custom_project_name, initial_timeline, initial_sizing, initial_quality_goal');
+        .select('id, initial_budget, custom_project_name, initial_timeline, initial_sizing, initial_quality_goal, instruction_level_preference');
 
       if (mainError) {
         console.error('❌ ProjectProfileStep: Error saving to project_runs:', mainError);
@@ -557,7 +620,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       // CRITICAL: Final verification - fetch the saved values from database
       const { data: verificationData, error: verificationError } = await supabase
         .from('project_runs')
-        .select('initial_budget, initial_timeline, initial_sizing, initial_quality_goal')
+        .select('initial_budget, initial_timeline, initial_sizing, initial_quality_goal, instruction_level_preference')
         .eq('id', currentProjectRun.id)
         .single();
       
@@ -626,6 +689,15 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             actual: verificationData.initial_quality_goal,
           });
         }
+        if (
+          verificationData.instruction_level_preference !==
+          projectForm.instructionLevelPreference
+        ) {
+          console.error('❌ instruction_level_preference mismatch:', {
+            expected: projectForm.instructionLevelPreference,
+            actual: verificationData.instruction_level_preference,
+          });
+        }
       } else if (verificationError) {
         console.error('❌ ProjectProfileStep: Error verifying saved values:', verificationError);
       }
@@ -639,6 +711,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         initial_timeline: projectForm.initialTimeline || null,
         initial_sizing: finalSizingValue,
         initial_quality_goal: projectForm.initialQualityGoal,
+        instruction_level_preference: projectForm.instructionLevelPreference,
         updatedAt: new Date()
       };
       
@@ -997,6 +1070,54 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           </div>
 
           <div className="space-y-3 rounded-lg border bg-card p-3">
+            <p className="text-sm font-medium leading-none">Instruction detail</p>
+            <RadioGroup
+              value={projectForm.instructionLevelPreference}
+              onValueChange={(value) => {
+                if (
+                  value !== 'beginner' &&
+                  value !== 'intermediate' &&
+                  value !== 'advanced'
+                ) {
+                  return;
+                }
+                setProjectForm((prev) => ({
+                  ...prev,
+                  instructionLevelPreference: value,
+                }));
+              }}
+              className="grid grid-cols-3 gap-2"
+            >
+              {INSTRUCTION_LEVEL_OPTIONS.map((option) => (
+                <Label
+                  key={option.value}
+                  htmlFor={`kickoff-instruction-${option.value}`}
+                  className={cn(
+                    'flex cursor-pointer items-center justify-center gap-2 rounded-md border px-2 py-2 text-sm font-medium transition-colors',
+                    projectForm.instructionLevelPreference === option.value
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-background text-muted-foreground hover:bg-muted/40'
+                  )}
+                >
+                  <RadioGroupItem
+                    value={option.value}
+                    id={`kickoff-instruction-${option.value}`}
+                    className="sr-only"
+                  />
+                  {option.label}
+                </Label>
+              ))}
+            </RadioGroup>
+            <p className="text-xs text-muted-foreground">
+              {
+                INSTRUCTION_LEVEL_OPTIONS.find(
+                  (o) => o.value === projectForm.instructionLevelPreference,
+                )?.preview
+              }
+            </p>
+          </div>
+
+          <div className="space-y-3 rounded-lg border bg-card p-3">
             <p className="text-sm font-medium leading-none">Quality goal</p>
             <RadioGroup
               value={projectForm.initialQualityGoal}
@@ -1032,6 +1153,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             <QualityGoalImpactPanel
               draftGoal={projectForm.initialQualityGoal}
               hostProjectId={currentProjectRun?.projectId}
+              projectRunId={currentProjectRun?.id}
               phases={
                 (Array.isArray(currentProjectRun?.phases)
                   ? currentProjectRun?.phases

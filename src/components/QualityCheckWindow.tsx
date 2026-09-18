@@ -42,7 +42,7 @@ import {
 } from '@/utils/qualityGoal';
 import {
   contributingQualityProjectIds,
-  levelForGoal,
+  expectedFinishSummariesForGoal,
   loadProjectQualityLevelBundles,
   type ProjectQualityLevelsBundle,
 } from '@/utils/projectQualityLevels';
@@ -165,11 +165,11 @@ export function QualityCheckWindow({
     const hostId = projectRun?.projectId;
     const phases = (Array.isArray(projectRun?.phases) ? projectRun.phases : []) as Phase[];
     const ids = contributingQualityProjectIds(hostId, phases);
-    if (ids.length === 0) {
+    if (ids.length === 0 && !projectRun?.id) {
       setExpectedLevelBundles([]);
       return;
     }
-    void loadProjectQualityLevelBundles(ids)
+    void loadProjectQualityLevelBundles(ids, { projectRunId: projectRun?.id })
       .then((rows) => {
         if (!cancelled) setExpectedLevelBundles(rows);
       })
@@ -182,13 +182,10 @@ export function QualityCheckWindow({
     };
   }, [projectRun?.id, projectRun?.projectId, projectRun?.phases]);
 
-  const expectedQualityCopy = useMemo(() => {
-    const host = expectedLevelBundles[0];
-    if (!host) return null;
-    const level = levelForGoal(host, localQualityGoal);
-    if (!level) return null;
-    return level.outcome_summary;
-  }, [expectedLevelBundles, localQualityGoal]);
+  const expectedFinishRows = useMemo(
+    () => expectedFinishSummariesForGoal(expectedLevelBundles, localQualityGoal),
+    [expectedLevelBundles, localQualityGoal],
+  );
 
   useEffect(() => {
     if (open) {
@@ -596,10 +593,20 @@ export function QualityCheckWindow({
                     <div className="space-y-3 rounded-md border bg-muted/30 p-3">
                       <div className="space-y-1">
                         <Label className="text-sm font-medium">Quality goal</Label>
-                        {expectedQualityCopy ? (
-                          <p className="text-xs text-muted-foreground">
-                            Expected {qualityGoalLabel(localQualityGoal)} finish: {expectedQualityCopy}
-                          </p>
+                        {expectedFinishRows.length > 0 ? (
+                          <div className="space-y-1 text-xs text-muted-foreground">
+                            <p>Expected {qualityGoalLabel(localQualityGoal)} finish:</p>
+                            <ul className="list-disc space-y-1 pl-4">
+                              {expectedFinishRows.map((row) => (
+                                <li key={row.projectName}>
+                                  <span className="font-medium text-foreground/80">
+                                    {row.projectName}:
+                                  </span>{' '}
+                                  {row.outcome_summary}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         ) : null}
                       </div>
                       <RadioGroup

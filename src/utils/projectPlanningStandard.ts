@@ -16,7 +16,7 @@ export { TOOLIO_PROJECT_STRUCTURE_STANDARD };
 export type { ToolioProjectStructureStandard };
 
 /** Bump when shared product rules change; both surfaces must show the same value. */
-export const PLANNING_STANDARD_VERSION = '1.3.0';
+export const PLANNING_STANDARD_VERSION = '1.4.0';
 
 export const PLANNING_TOPIC_IDS = [
   'product-guidelines',
@@ -32,7 +32,42 @@ export const PLANNING_TOPIC_IDS = [
   'owned-vs-adopted-phases',
   'content-completeness',
   'quality-goals',
+  'content-axes',
+  'professional-naming',
 ] as const;
+
+/**
+ * Three orthogonal axes that change what a run shows.
+ * Instruction depth and quality path do not interact: Professional + beginner is allowed.
+ */
+export const CONTENT_AXES_STANDARD = {
+  axes: [
+    {
+      id: 'instruction',
+      label: 'Instruction detail',
+      values: 'beginner / intermediate / advanced',
+      effect: 'Same steps; different prose depth (and media) via step_instructions rows.',
+    },
+    {
+      id: 'quality',
+      label: 'Quality goal',
+      values: 'good / great / professional',
+      effect:
+        'Different process path: include or exclude steps and operations via min_quality_goal; outcome/process narrative via project_quality_levels (snapshotted onto the run).',
+    },
+    {
+      id: 'customization',
+      label: 'Customization',
+      values: 'prime / alternate / if-necessary (+ micro-decisions)',
+      effect:
+        'Branching choices. Do not overload if-necessary for quality ladder gating.',
+    },
+  ],
+  interactionRule:
+    'Axes are orthogonal. A beginner can run a Professional quality path (harder process with more scaffolding). Write all three instruction levels on quality-gated steps too.',
+  namingRule:
+    'Do not confuse quality goal Professional (finish / process ladder) with catalog or step skill_level Professional (who the work is sized for). Use clear labels: Quality goal vs Skill level.',
+} as const;
 
 /** Run quality goal ladder: outcome + process (kickoff / Risk Radar). */
 export const QUALITY_GOAL_LEVEL_STANDARD = {
@@ -61,7 +96,7 @@ export const QUALITY_GOAL_LEVEL_STANDARD = {
     },
   ],
   authoringRule:
-    'Every catalog template that ships quality goals authors three project_quality_levels rows (outcome + process). Relative vs_lower_summary is required on great and professional. Process differences are real operation_steps with min_quality_goal, not prose alone. Quality-impact content is authored on the owning project only; adopted or linked phases display their source project rows without copying.',
+    'Every catalog template that ships quality goals authors three project_quality_levels rows (outcome + process). Relative vs_lower_summary is required on great and professional. Process differences are real operation_steps (and phase_operations when a whole op is gated) with min_quality_goal, not prose alone. Quality-impact content is authored on the owning project only; adopted or linked phases display their source project rows without copying onto the host. At run create, copy contributing rows into project_run_quality_levels so impact copy stays frozen with the run.',
 } as const;
 
 export type PlanningTopicId = (typeof PLANNING_TOPIC_IDS)[number];
@@ -226,7 +261,17 @@ export const CROSS_CUTTING_RULES: CrossCuttingRule[] = [
     id: 'quality-goals',
     title: 'Quality goals (Good / Great / Professional)',
     rule:
-      'Good, Great, and Professional are both outcome and process. Author three project_quality_levels rows per owning template. Gate extra process with operation_steps.min_quality_goal (null = all levels; great = Great+Professional; professional = Professional only). Do not overload if-necessary for quality gating. Adopted phases keep quality-impact content on the source project and display it on the host without copying. Mid-run goal changes reshape incomplete forward steps only; completed steps stay complete; Quality Control uses the current goal as the expected level.',
+      'Good, Great, and Professional are both outcome and process. Author three project_quality_levels rows per owning template. Gate extra process with operation_steps.min_quality_goal and phase_operations.min_quality_goal when a whole operation is quality-gated (null = all levels; great = Great+Professional; professional = Professional only). Do not overload if-necessary for quality gating. Adopted phases keep quality-impact content on the source project; runs snapshot contributing rows into project_run_quality_levels at create. Mid-run goal changes reshape incomplete forward steps and ops only; completed steps stay complete; Quality Control uses the current goal as the expected level.',
+  },
+  {
+    id: 'content-axes',
+    title: 'Content axes (instruction, quality, customization)',
+    rule: CONTENT_AXES_STANDARD.interactionRule,
+  },
+  {
+    id: 'professional-naming',
+    title: 'Professional naming (quality vs skill)',
+    rule: CONTENT_AXES_STANDARD.namingRule,
   },
 ];
 
@@ -241,6 +286,7 @@ export function getPlanningStandardSnapshot() {
     productGuidelines: PRODUCT_GUIDELINES,
     instructionLevels: INSTRUCTION_LEVELS,
     qualityGoalLevels: QUALITY_GOAL_LEVEL_STANDARD,
+    contentAxes: CONTENT_AXES_STANDARD,
     publishingChecklist: PUBLISHING_CHECKLIST,
     crossCuttingRules: CROSS_CUTTING_RULES,
     hierarchySummary: HIERARCHY_SUMMARY,
@@ -276,6 +322,18 @@ export function renderPlanningStandardMarkdown(): string {
     `- Levels: ${INSTRUCTION_LEVELS.levels.map((l) => `\`${l}\``).join(', ')}`,
   );
   lines.push(`- ${INSTRUCTION_LEVELS.rule}`);
+  lines.push('');
+
+  lines.push('### Content axes (instruction, quality, customization)');
+  lines.push('');
+  lines.push('| Axis | Values | Effect |');
+  lines.push('| ---- | ------ | ------ |');
+  for (const axis of CONTENT_AXES_STANDARD.axes) {
+    lines.push(`| **${axis.label}** (\`${axis.id}\`) | ${axis.values} | ${axis.effect} |`);
+  }
+  lines.push('');
+  lines.push(`- ${CONTENT_AXES_STANDARD.interactionRule}`);
+  lines.push(`- ${CONTENT_AXES_STANDARD.namingRule}`);
   lines.push('');
 
   lines.push('### Quality goals (Good / Great / Professional)');
