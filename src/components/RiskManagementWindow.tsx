@@ -1009,9 +1009,7 @@ function RiskRadarRegisterPrimarySortMenu({
           }
         >
           <ListOrdered className="h-3.5 w-3.5 shrink-0" />
-          <span className="hidden min-[380px]:inline">
-            {value === 'easiest-mitigation' ? 'Easiest first' : 'Most important first'}
-          </span>
+          <span className="hidden min-[380px]:inline">Sort</span>
           <ChevronDown className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
         </Button>
       </DropdownMenuTrigger>
@@ -1057,9 +1055,14 @@ function RiskRadarEditVisibilityMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline" size="sm" className={cn('gap-1', triggerClassName)}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={cn('gap-1', triggerClassName)}
+          aria-label="Edit visibility"
+        >
           <Eye className="h-3.5 w-3.5 shrink-0" />
-          Edit Visibility
           <ChevronDown className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
         </Button>
       </DropdownMenuTrigger>
