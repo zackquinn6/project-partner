@@ -596,7 +596,7 @@ function GoalRiskLight({
     variant === 'status' ? (
       <span className="inline-flex min-w-0 items-center gap-1.5">
         {light}
-        <span className="min-w-0 truncate text-[11px] font-semibold leading-none text-foreground">
+        <span className="min-w-0 text-left text-[11px] font-semibold leading-snug text-foreground">
           {statusText}
         </span>
       </span>
@@ -763,10 +763,11 @@ function RiskFocusDashboard({
   const sectionShellClass =
     'flex h-full min-w-0 flex-col rounded-md border border-border bg-card px-2.5 py-2';
   const goalTileClass =
-    'flex min-h-0 min-w-0 flex-col rounded-md border border-border bg-card px-1.5 py-1';
-  const goalLabelClass = 'text-[11px] font-medium leading-none text-muted-foreground';
+    'flex min-h-0 min-w-0 flex-col items-center rounded-md border border-border bg-card px-1.5 py-1.5 text-center';
+  const goalLabelClass =
+    'font-display text-xs font-bold leading-tight text-foreground sm:text-sm';
   const goalMetricClass =
-    'mt-0.5 min-w-0 break-words font-display text-sm font-semibold leading-[18px] text-foreground';
+    'mt-0.5 min-w-0 break-words font-display text-sm font-semibold leading-snug text-foreground';
 
   const goalLightProps = (dimension: RiskDimension) => {
     const rollup = rollups[dimension];
@@ -783,9 +784,9 @@ function RiskFocusDashboard({
   };
 
   const goalStatusFooter = (dimension: RiskDimension) => (
-    <div className="mt-auto flex min-h-7 items-center gap-1.5 pt-1">
-      <span className="shrink-0 text-[11px] font-medium leading-none text-muted-foreground">
-        Risk Assessment:
+    <div className="mt-1.5 flex w-full min-w-0 items-start justify-center gap-1">
+      <span className="shrink-0 pt-0.5 text-[11px] font-medium leading-snug text-muted-foreground">
+        Risk:
       </span>
       <GoalRiskLight {...goalLightProps(dimension)} variant="status" />
     </div>
@@ -871,59 +872,45 @@ function RiskFocusDashboard({
 
             {showGoals ? (
               <div className={sectionShellClass}>
-                <div className={sectionHeaderClass}>Project goals</div>
+                <div className={sectionHeaderClass}>Project Goals</div>
                 <TooltipProvider>
-                  <div className="grid min-w-0 flex-1 grid-cols-2 gap-1 sm:grid-cols-4">
+                  <div className="grid min-w-0 grid-cols-2 content-start items-start gap-1 sm:grid-cols-4">
                     <div className={cn(goalTileClass, 'border-l-[3px] border-l-success')}>
-                      <div className="flex min-w-0 items-start gap-1.5">
-                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-success/15 text-success">
-                          <Shield className="h-3.5 w-3.5" aria-hidden />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className={goalLabelClass}>Safety</div>
-                          <div className={goalMetricClass}>0 injuries</div>
-                        </div>
-                      </div>
+                      <span className="flex h-6 w-6 items-center justify-center rounded bg-success/15 text-success">
+                        <Shield className="h-3.5 w-3.5" aria-hidden />
+                      </span>
+                      <div className={cn(goalLabelClass, 'mt-1')}>Safety</div>
+                      <div className={goalMetricClass}>0 injuries</div>
                       {goalStatusFooter('safety')}
                     </div>
                     <div className={cn(goalTileClass, 'border-l-[3px] border-l-info')}>
-                      <div className="flex min-w-0 items-start gap-1.5">
-                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-info/15 text-info">
-                          <CalendarDays className="h-3.5 w-3.5" aria-hidden />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className={goalLabelClass}>Schedule</div>
-                          <div className={goalMetricClass}>
-                            {scheduleLabel ? `By ${scheduleLabel}` : '-'}
-                          </div>
-                        </div>
+                      <span className="flex h-6 w-6 items-center justify-center rounded bg-info/15 text-info">
+                        <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+                      </span>
+                      <div className={cn(goalLabelClass, 'mt-1')}>Schedule</div>
+                      <div className={goalMetricClass}>
+                        {scheduleLabel ? `By ${scheduleLabel}` : '-'}
                       </div>
                       {goalStatusFooter('schedule')}
                     </div>
                     <div className={cn(goalTileClass, 'border-l-[3px] border-l-warning-soft')}>
-                      <div className="flex min-w-0 items-start gap-1.5">
-                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-warning-soft/15 text-warning-soft">
-                          <CircleDollarSign className="h-3.5 w-3.5" aria-hidden />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className={goalLabelClass}>Budget</div>
-                          <div className={cn(goalMetricClass, 'tabular-nums')}>
-                            {budgetLabel ?? '-'}
-                          </div>
-                        </div>
+                      <span className="flex h-6 w-6 items-center justify-center rounded bg-warning-soft/15 text-warning-soft">
+                        <CircleDollarSign className="h-3.5 w-3.5" aria-hidden />
+                      </span>
+                      <div className={cn(goalLabelClass, 'mt-1')}>Budget</div>
+                      <div className={cn(goalMetricClass, 'tabular-nums')}>
+                        {budgetLabel ?? '-'}
                       </div>
                       {goalStatusFooter('budget')}
                     </div>
                     <div className={cn(goalTileClass, 'border-l-[3px] border-l-category-3')}>
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-category-3/15 text-category-3">
-                          <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
-                        </span>
-                        <div className={goalLabelClass}>Quality</div>
-                      </div>
+                      <span className="flex h-6 w-6 items-center justify-center rounded bg-category-3/15 text-category-3">
+                        <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
+                      </span>
+                      <div className={cn(goalLabelClass, 'mt-1')}>Quality</div>
                       {qualityGoal ? (
                         <div
-                          className="mt-1 grid grid-cols-3 overflow-hidden rounded-md border border-border"
+                          className="mt-1 w-full grid grid-cols-3 overflow-hidden rounded-md border border-border"
                           role="list"
                           aria-label={`Quality target ${qualityMetricLabel}. Options: Good, Great, Professional`}
                         >
