@@ -951,7 +951,7 @@ function RiskFocusDashboard({
               <div className={sectionShellClass}>
                 <div className={sectionHeaderClass}>Project Goals</div>
                 <TooltipProvider>
-                  <div className="grid min-w-0 grid-cols-2 items-stretch gap-1 sm:grid-cols-4">
+                  <div className="grid min-w-0 grid-cols-2 items-stretch gap-1 sm:grid-cols-[minmax(0,0.96fr)_minmax(0,0.96fr)_minmax(0,0.96fr)_minmax(0,1.12fr)]">
                     <div className={cn(goalTileClass, 'border-l-[3px] border-l-success')}>
                       {goalTitleRow(
                         <Shield className="h-3 w-3" aria-hidden />,
