@@ -2904,60 +2904,6 @@ export type Database = {
           },
         ]
       }
-      project_run_quality_levels: {
-        Row: {
-          created_at: string
-          example_image_urls: Json
-          id: string
-          outcome_summary: string
-          process_summary: string
-          project_run_id: string
-          quality_level: string
-          source_project_id: string
-          source_project_name: string
-          vs_lower_summary: string | null
-        }
-        Insert: {
-          created_at?: string
-          example_image_urls?: Json
-          id?: string
-          outcome_summary: string
-          process_summary: string
-          project_run_id: string
-          quality_level: string
-          source_project_id: string
-          source_project_name: string
-          vs_lower_summary?: string | null
-        }
-        Update: {
-          created_at?: string
-          example_image_urls?: Json
-          id?: string
-          outcome_summary?: string
-          process_summary?: string
-          project_run_id?: string
-          quality_level?: string
-          source_project_id?: string
-          source_project_name?: string
-          vs_lower_summary?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_run_quality_levels_project_run_id_fkey"
-            columns: ["project_run_id"]
-            isOneToOne: false
-            referencedRelation: "project_runs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_run_quality_levels_source_project_id_fkey"
-            columns: ["source_project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       project_risk_rules: {
         Row: {
           conditions: Json
@@ -5147,10 +5093,6 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
-      }
-      copy_project_quality_levels_to_run: {
-        Args: { p_run_id: string }
-        Returns: number
       }
       create_project_run_snapshot__legacy_v2rename:
         | {
