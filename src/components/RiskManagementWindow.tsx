@@ -2551,6 +2551,7 @@ export function RiskManagementWindow({
     {/* Add/Edit risk dialog — sibling of main Dialog (nested Dialog inside DialogContent breaks Radix a11y). */}
     <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
       <DialogContent
+        overlayClassName="z-[200]"
         className={cn(
           'z-[200] flex max-h-[min(90dvh,880px)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl',
           'border bg-background shadow-xl'
