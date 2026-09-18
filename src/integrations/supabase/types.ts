@@ -2056,6 +2056,7 @@ export type Database = {
           flow_type: string | null
           id: string
           materials: Json | null
+          min_quality_goal: string | null
           number_of_workers: number | null
           operation_id: string
           outputs: Json | null
@@ -2078,6 +2079,7 @@ export type Database = {
           flow_type?: string | null
           id?: string
           materials?: Json | null
+          min_quality_goal?: string | null
           number_of_workers?: number | null
           operation_id: string
           outputs?: Json | null
@@ -2100,6 +2102,7 @@ export type Database = {
           flow_type?: string | null
           id?: string
           materials?: Json | null
+          min_quality_goal?: string | null
           number_of_workers?: number | null
           operation_id?: string
           outputs?: Json | null
@@ -2533,6 +2536,7 @@ export type Database = {
           estimated_time: string | null
           flow_type: string | null
           id: string
+          min_quality_goal: string | null
           operation_description: string | null
           operation_name: string
           phase_id: string
@@ -2544,6 +2548,7 @@ export type Database = {
           estimated_time?: string | null
           flow_type?: string | null
           id?: string
+          min_quality_goal?: string | null
           operation_description?: string | null
           operation_name: string
           phase_id: string
@@ -2555,6 +2560,7 @@ export type Database = {
           estimated_time?: string | null
           flow_type?: string | null
           id?: string
+          min_quality_goal?: string | null
           operation_description?: string | null
           operation_name?: string
           phase_id?: string
@@ -2853,6 +2859,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      project_quality_levels: {
+        Row: {
+          created_at: string
+          example_image_urls: Json
+          id: string
+          outcome_summary: string
+          process_summary: string
+          project_id: string
+          quality_level: string
+          updated_at: string
+          vs_lower_summary: string | null
+        }
+        Insert: {
+          created_at?: string
+          example_image_urls?: Json
+          id?: string
+          outcome_summary: string
+          process_summary: string
+          project_id: string
+          quality_level: string
+          updated_at?: string
+          vs_lower_summary?: string | null
+        }
+        Update: {
+          created_at?: string
+          example_image_urls?: Json
+          id?: string
+          outcome_summary?: string
+          process_summary?: string
+          project_id?: string
+          quality_level?: string
+          updated_at?: string
+          vs_lower_summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_quality_levels_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_risk_rules: {
         Row: {

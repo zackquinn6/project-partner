@@ -130,6 +130,8 @@ import {
   parseQualityGoalColumn,
   type QualityGoal,
 } from '@/utils/qualityGoal';
+import { QualityGoalImpactPanel } from '@/components/QualityGoalImpactPanel';
+import type { Phase } from '@/interfaces/Project';
 import type { ProjectRun } from '@/interfaces/ProjectRun';
 import { format } from 'date-fns';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
@@ -1470,7 +1472,7 @@ function RiskFocusDashboard({
       <Dialog open={qualityGoalOpen} onOpenChange={setQualityGoalOpen}>
         <DialogContent
           overlayClassName="z-[200]"
-          className="z-[200] max-w-md border bg-background shadow-xl"
+          className="z-[200] max-h-[90vh] max-w-lg overflow-y-auto border bg-background shadow-xl"
         >
           <DialogHeader>
             <DialogTitle>Quality goal</DialogTitle>
@@ -1481,11 +1483,7 @@ function RiskFocusDashboard({
                 Quality Control is not in this project&apos;s Planning Studio tools yet. Add it for
                 checklists and photos, or set the quality level below.
               </p>
-            ) : (
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Set the quality level here, or open Quality Control for checklists and photos.
-              </p>
-            )}
+            ) : null}
             <div className="space-y-2">
               <Label>Quality level</Label>
               <RadioGroup
@@ -1518,10 +1516,14 @@ function RiskFocusDashboard({
                   </Label>
                 ))}
               </RadioGroup>
-              <p className="text-xs text-muted-foreground">
-                How polished the finished work should look and feel.
-              </p>
             </div>
+            <QualityGoalImpactPanel
+              draftGoal={draftQualityGoal}
+              hostProjectId={projectRun?.projectId}
+              phases={
+                (Array.isArray(projectRun?.phases) ? projectRun?.phases : []) as Phase[]
+              }
+            />
           </div>
           <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
             <Button

@@ -11,6 +11,7 @@ import {
   PLANNING_STANDARD_VERSION,
   PRODUCT_GUIDELINES,
   PUBLISHING_CHECKLIST,
+  QUALITY_GOAL_LEVEL_STANDARD,
   TOOLIO_PROJECT_STRUCTURE_STANDARD,
 } from '@/utils/projectPlanningStandard';
 
@@ -315,6 +316,21 @@ export function PlanningGuideWindow({ open, onOpenChange, initialTab }: Planning
                 <section>
                   <h2 className="text-base font-semibold flex items-center gap-2 mb-2">Waiting steps (drying, curing)</h2>
                   <p className="mb-2">{crossCuttingRule('waiting-steps')}</p>
+                </section>
+                <section>
+                  <h2 className="text-base font-semibold flex items-center gap-2 mb-2">
+                    <ClipboardCheck className="w-4 h-4" />
+                    Quality goals (Good / Great / Professional)
+                  </h2>
+                  <p className="mb-2">{crossCuttingRule('quality-goals')}</p>
+                  <ul className="list-disc pl-5 space-y-1 mb-2">
+                    {QUALITY_GOAL_LEVEL_STANDARD.levels.map((level) => (
+                      <li key={level.value}>
+                        <strong>{level.label}</strong> - {level.outcome} {level.process}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-muted-foreground">{QUALITY_GOAL_LEVEL_STANDARD.authoringRule}</p>
                 </section>
                 <section>
                   <h2 className="text-base font-semibold flex items-center gap-2 mb-2">

@@ -50,8 +50,10 @@ Read the current state first, then author. Produce a per-step matrix over **all*
 | Process variables | `operation_steps.process_variables` | 7 |
 | Time estimates low / med / high | `operation_steps.time_estimate_*` | 8 |
 | Failure modes where relevant | `pfmea_requirements` → `pfmea_failure_modes` → effects / causes / controls | 9 |
+| Quality goal levels (3 rows) | `project_quality_levels` | 11 |
+| Quality-gated steps | `operation_steps.min_quality_goal` | 11 |
 
-Project-level components audited once: `project_risks` (Step 4, including component and scores on every row), `projects.description` / `project_challenges` (Step 10), `scheduling_prerequisites` (§E), catalog header (§D).
+Project-level components audited once: `project_risks` (Step 4, including component and scores on every row), `projects.description` / `project_challenges` (Step 10), `project_quality_levels` (Step 11, all three levels), `scheduling_prerequisites` (§E), catalog header (§D).
 
 **Check the JSON shape against the component that reads it, not against what is already stored.** Step JSON written by an older authoring surface can be structurally stale (for example tool rows keyed on `coreItemId` render with no name in `CompactToolsTable`). A populated column is not the same as a working one.
 
@@ -65,7 +67,8 @@ Project-level components audited once: `project_risks` (Step 4, including compon
 4. **Tools** (Step 5), then **Materials** (Step 6), including library bootstrap (H.4).
 5. **Process variables** (Step 7), then **time estimates** (Step 8).
 6. **Project risks** (Step 4), then **PFMEA** (Step 9).
-7. **Catalog copy** (Step 10) and schedule prerequisites (§E) last, once scope is settled.
+7. **Quality goals** (Step 11): `project_quality_levels` + `min_quality_goal` on owned steps that differ by level.
+8. **Catalog copy** (Step 10) and schedule prerequisites (§E) last, once scope is settled.
 
 ### H.4 General library bootstrap is expected
 
@@ -89,7 +92,7 @@ Adding rows to the shared `public.tools` and `public.materials` catalogs is **no
 <!-- PLANNING_STANDARD:BEGIN -->
 ## Shared product planning standard (generated)
 
-**Version:** `1.2.0` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
+**Version:** `1.3.0` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
 
 Do not hand-edit this block. Change the TypeScript module, then run `npm run sync:planning-standard`. Authoring/SQL field catalogs remain in §A / §B below.
 
@@ -111,6 +114,16 @@ Do not hand-edit this block. Change the TypeScript module, then run `npm run syn
 
 - Levels: `beginner`, `intermediate`, `advanced`
 - Every target step needs three instruction rows: beginner, intermediate, and advanced. Write level-appropriate detail; users see the level that matches their experience.
+
+### Quality goals (Good / Great / Professional)
+
+| Level | Outcome | Process |
+| ----- | ------- | ------- |
+| **Good** (`good`) | Functional, acceptable finish; visible DIY imperfections within stated tolerances. | Shortest owned path: core steps only. |
+| **Great** (`great`) | Strong DIY finish; tighter tolerances and cleaner detailing. | Core path plus standard best-practice steps. Default for new runs. |
+| **Professional** (`professional`) | Near-trade finish; strictest tolerances and presentation. | Great path plus extra prep and finish steps (sanding, leveling systems, seal always, extra QC, etc.). |
+
+- Every catalog template that ships quality goals authors three project_quality_levels rows (outcome + process). Relative vs_lower_summary is required on great and professional. Process differences are real operation_steps with min_quality_goal, not prose alone. Quality-impact content is authored on the owning project only; adopted or linked phases display their source project rows without copying.
 
 ### Project structure
 
@@ -208,6 +221,7 @@ Phases & operations = project management. Steps = instructions. Actions = micro 
 | `quality-control` | **Quality Control** - Quality control steps and criteria defined where applicable (step types and checks). | 1, 3 |
 | `error-correction` | **Error Correction** - Guidance for common errors and how to correct them (Error-Recovery instruction sections). | 2 |
 | `safety` | **Safety** - Safety guidance upfront and at relevant steps; reasons explained. | 2 |
+| `quality-goals` | **Quality goals** - Good / Great / Professional outcome and process content, plus min_quality_goal on steps that differ by level. | 11 |
 
 ### Cross-cutting product rules
 
@@ -219,6 +233,7 @@ Phases & operations = project management. Steps = instructions. Actions = micro 
 - **Step instruction sections** (`step-instruction-sections`): Background/Need-to-Know is valuable domain context (why it matters, timing, complexity, how the app helps) - not a restatement of what the step is. Instructions are numbered sequential actions only; do not number explanatory status or completion notes as their own steps - put that in Background or fold it into an adjacent action. Error-Recovery uses full-sentence context so the user can diagnose quickly (e.g. "If your list is missing something, finish your plan").
 - **Owned vs standard and adopted phases** (`owned-vs-adopted-phases`): A project only owns the phases authored on it. Standard foundation phases and phases linked or adopted from another template are read-only inside this project: their phases, operations, steps, instructions, and enrichments are edited in the source template instead. Project content work covers owned phases only; gaps found in a standard or adopted phase get reported to the owner of that template, not patched locally.
 - **Content completeness per step** (`content-completeness`): A project is content complete when every step in every owned phase satisfies the step requirements above: three instruction levels, outputs, tools, materials, process variables, time estimates, quality checks, and failure modes where relevant. Partial coverage is a gap list, not a finished project, so audit every owned step rather than the ones most recently touched.
+- **Quality goals (Good / Great / Professional)** (`quality-goals`): Good, Great, and Professional are both outcome and process. Author three project_quality_levels rows per owning template. Gate extra process with operation_steps.min_quality_goal (null = all levels; great = Great+Professional; professional = Professional only). Do not overload if-necessary for quality gating. Adopted phases keep quality-impact content on the source project and display it on the host without copying. Mid-run goal changes reshape incomplete forward steps only; completed steps stay complete; Quality Control uses the current goal as the expected level.
 <!-- PLANNING_STANDARD:END -->
 
 ---
@@ -295,6 +310,8 @@ Reference implementation: `2026_04_04_migration_baseboard_dishwasher_caulking_st
 | `project_risks` | Template timeline/budget risks; see Step 4 |
 | `tools` / `materials` | Shared catalogs; Steps 5–6 |
 | `pfmea_*` | Quality failure modes; Step 9 |
+| `project_quality_levels` | Good / Great / Professional outcome + process copy; Step 11 |
+| `operation_steps.min_quality_goal` | Step inclusion gate by run quality goal; Step 11 |
 
 ---
 
@@ -373,6 +390,7 @@ Author when creating/revising a template or in Step 10 (description/challenges).
 | `display_order` | number | Coherent within phase |
 | `estimated_time` | string \| null | Optional rollup hint |
 | `flow_type` | string \| null | `prime` / `alternate` / `if-necessary` |
+| `min_quality_goal` | string \| null | Optional; `great` / `professional` when the whole operation is quality-gated (Step 11) |
 
 #### `operation_steps` fields (structure + later enrichments)
 
@@ -384,6 +402,7 @@ Author when creating/revising a template or in Step 10 (description/challenges).
 | `description` | string \| null | One-line scope only (not how-to) |
 | `display_order` | number | Within operation |
 | `flow_type` | string \| null | `prime` / `alternate` / `if-necessary` |
+| `min_quality_goal` | string \| null | NULL = all goals; `great` = Great+Professional; `professional` = Professional only (Step 11). Do not overload `if-necessary` for quality gating |
 | `step_type` | string \| null | `prime` / `scaled` / `quality_control_non_scaled` / `quality_control_scaled` |
 | `number_of_workers` | number \| null | Workers needed |
 | `skill_level` | string \| null | Beginner / Intermediate / Advanced / Professional |
@@ -614,6 +633,37 @@ Related tables, all part of a complete PFMEA:
 
 If the user is uncomfortable with the listed challenges, they may choose not to move forward; that is intentional. Write so a quick read surfaces the real hard parts without hype or hedging.
 
+### Step 11 — Quality goals (`project_quality_levels` + `min_quality_goal`)
+
+**Product meaning:** Good / Great / Professional are both **outcome** and **process**. Shared ladder and authoring rules live in the generated planning standard (`quality-goals`). This step is the SQL/field catalog.
+
+**Scope:** owning template only. Do not copy quality-impact rows onto a host that adopts phases; each source template owns its own `project_quality_levels`. Linked/adopted phases display source rows at run time.
+
+#### `project_quality_levels` (required: 3 rows per owning template)
+
+| Column | Rule |
+| ------ | ---- |
+| `project_id` | Root catalog template id |
+| `quality_level` | `good` \| `great` \| `professional` (UNIQUE with `project_id`) |
+| `outcome_summary` | What the finish looks like at this level (tolerances, appearance, serviceability) |
+| `process_summary` | What work this level requires (prep, QC, finish) |
+| `vs_lower_summary` | Required on `great` and `professional`: impact of choosing this instead of the level below. NULL on `good` |
+| `example_image_urls` | jsonb array of URLs; optional placeholders for UI testing. Do not invent production photo pipelines |
+
+#### `operation_steps.min_quality_goal`
+
+| Value | Include when run goal is |
+| ----- | ------------------------ |
+| NULL | Good, Great, or Professional |
+| `great` | Great or Professional |
+| `professional` | Professional only |
+
+- Process differences between levels are **real steps** with `min_quality_goal`, not prose alone. Do **not** overload `flow_type = if-necessary` for quality gating.
+- Optional: same column on `phase_operations` when an entire operation is quality-gated.
+- Snapshot JSON must carry `min_quality_goal` so runs can filter at runtime. Mid-run goal changes reshape **incomplete** forward steps only; completed steps stay complete and visible. Quality Control uses the **current** `project_runs.initial_quality_goal` as the expected level.
+
+**Audit:** three level rows present; every non-null `min_quality_goal` is a valid value; gated steps have titles that still exist on owned phases.
+
 ---
 
 ## E) Schedule data (template authoring)
@@ -660,6 +710,7 @@ Never invent related-project relationships. Resolve catalog names carefully (§A
 | 8 | `time_estimate_*` |
 | 9 | PFMEA tables |
 | 10 | `projects.description`, `projects.project_challenges` |
+| 11 | `project_quality_levels` + `operation_steps.min_quality_goal` |
 
 Also: **§H build out a project end to end**, §D catalog header, §E schedule prereqs, §F related projects / revisions, **§G home maintenance templates**.
 
@@ -749,6 +800,7 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-18 | Step 11 quality goals: `project_quality_levels` + `operation_steps.min_quality_goal`; planning standard v1.3.0 ladder (outcome + process); §H audit/order updated | Quality goal must change run path and show per-project impacts including adopted phase sources |
 | 2026-09-17 | §A: migrations must call `rebuild_phases_json_from_project_phases_internal` (the un-suffixed wrapper is auth-gated and raises `Not authorized`); operations are resolved through their phase, never by `operation_name`; shared temp tables need a `DROP TABLE IF EXISTS` guard; noted that decision copy survives a rebuild through `__decision_tree_config__` | A state audit of the live tile flooring template found both traps in already-authored migrations: the gated rebuild would have failed the run, and the two Prepare subfloor alternates had been renamed by a later copy migration so every name match resolved nothing |
 | 2026-09-17 | Step 4 rewritten for the shared risk model (component + three scores + KC classification fields); Step 9 rewritten for `pfmea_requirements` and `requirement_id`, with cause drivers, `control_strength`, and action items on High lines; Steps 5 and 6 document `parentId` substitute rows, `purpose`, coverage math, and PPE by category; §H.2 adds "check JSON shape against the component that reads it"; §H.5 adds in-migration row-count verification and a closing content audit migration | Tile Flooring build out found step tool JSON in a shape the app cannot render, PFMEA keyed on a column that no longer exists, and a register with no safety component and no scores |
 | 2026-09-16 | Added §H build-out protocol (owned-phase scope by column not name, completeness audit matrix, fixed authoring order, library bootstrap expected, migrations + push as default deliverable); shared rules `owned-vs-adopted-phases` and `content-completeness` in planning standard v1.2.0 | "Ref ai dev guide and build out project X" must be a sufficient instruction with no scoping questions |

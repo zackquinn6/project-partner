@@ -16,7 +16,7 @@ export { TOOLIO_PROJECT_STRUCTURE_STANDARD };
 export type { ToolioProjectStructureStandard };
 
 /** Bump when shared product rules change; both surfaces must show the same value. */
-export const PLANNING_STANDARD_VERSION = '1.2.0';
+export const PLANNING_STANDARD_VERSION = '1.3.0';
 
 export const PLANNING_TOPIC_IDS = [
   'product-guidelines',
@@ -31,7 +31,38 @@ export const PLANNING_TOPIC_IDS = [
   'step-instruction-sections',
   'owned-vs-adopted-phases',
   'content-completeness',
+  'quality-goals',
 ] as const;
+
+/** Run quality goal ladder: outcome + process (kickoff / Risk Radar). */
+export const QUALITY_GOAL_LEVEL_STANDARD = {
+  levels: [
+    {
+      value: 'good',
+      label: 'Good',
+      outcome:
+        'Functional, acceptable finish; visible DIY imperfections within stated tolerances.',
+      process: 'Shortest owned path: core steps only.',
+    },
+    {
+      value: 'great',
+      label: 'Great',
+      outcome:
+        'Strong DIY finish; tighter tolerances and cleaner detailing.',
+      process: 'Core path plus standard best-practice steps. Default for new runs.',
+    },
+    {
+      value: 'professional',
+      label: 'Professional',
+      outcome:
+        'Near-trade finish; strictest tolerances and presentation.',
+      process:
+        'Great path plus extra prep and finish steps (sanding, leveling systems, seal always, extra QC, etc.).',
+    },
+  ],
+  authoringRule:
+    'Every catalog template that ships quality goals authors three project_quality_levels rows (outcome + process). Relative vs_lower_summary is required on great and professional. Process differences are real operation_steps with min_quality_goal, not prose alone. Quality-impact content is authored on the owning project only; adopted or linked phases display their source project rows without copying.',
+} as const;
 
 export type PlanningTopicId = (typeof PLANNING_TOPIC_IDS)[number];
 
@@ -127,6 +158,13 @@ export const PUBLISHING_CHECKLIST: PublishingChecklistItem[] = [
       'Safety guidance upfront and at relevant steps; reasons explained.',
     aiStepRefs: [2],
   },
+  {
+    id: 'quality-goals',
+    label: 'Quality goals',
+    description:
+      'Good / Great / Professional outcome and process content, plus min_quality_goal on steps that differ by level.',
+    aiStepRefs: [11],
+  },
 ];
 
 export interface CrossCuttingRule {
@@ -184,6 +222,12 @@ export const CROSS_CUTTING_RULES: CrossCuttingRule[] = [
     rule:
       'A project is content complete when every step in every owned phase satisfies the step requirements above: three instruction levels, outputs, tools, materials, process variables, time estimates, quality checks, and failure modes where relevant. Partial coverage is a gap list, not a finished project, so audit every owned step rather than the ones most recently touched.',
   },
+  {
+    id: 'quality-goals',
+    title: 'Quality goals (Good / Great / Professional)',
+    rule:
+      'Good, Great, and Professional are both outcome and process. Author three project_quality_levels rows per owning template. Gate extra process with operation_steps.min_quality_goal (null = all levels; great = Great+Professional; professional = Professional only). Do not overload if-necessary for quality gating. Adopted phases keep quality-impact content on the source project and display it on the host without copying. Mid-run goal changes reshape incomplete forward steps only; completed steps stay complete; Quality Control uses the current goal as the expected level.',
+  },
 ];
 
 export const HIERARCHY_SUMMARY =
@@ -196,6 +240,7 @@ export function getPlanningStandardSnapshot() {
     topicIds: [...PLANNING_TOPIC_IDS],
     productGuidelines: PRODUCT_GUIDELINES,
     instructionLevels: INSTRUCTION_LEVELS,
+    qualityGoalLevels: QUALITY_GOAL_LEVEL_STANDARD,
     publishingChecklist: PUBLISHING_CHECKLIST,
     crossCuttingRules: CROSS_CUTTING_RULES,
     hierarchySummary: HIERARCHY_SUMMARY,
@@ -231,6 +276,19 @@ export function renderPlanningStandardMarkdown(): string {
     `- Levels: ${INSTRUCTION_LEVELS.levels.map((l) => `\`${l}\``).join(', ')}`,
   );
   lines.push(`- ${INSTRUCTION_LEVELS.rule}`);
+  lines.push('');
+
+  lines.push('### Quality goals (Good / Great / Professional)');
+  lines.push('');
+  lines.push('| Level | Outcome | Process |');
+  lines.push('| ----- | ------- | ------- |');
+  for (const level of QUALITY_GOAL_LEVEL_STANDARD.levels) {
+    lines.push(
+      `| **${level.label}** (\`${level.value}\`) | ${level.outcome} | ${level.process} |`,
+    );
+  }
+  lines.push('');
+  lines.push(`- ${QUALITY_GOAL_LEVEL_STANDARD.authoringRule}`);
   lines.push('');
 
   lines.push('### Project structure');

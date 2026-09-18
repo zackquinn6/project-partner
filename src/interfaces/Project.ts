@@ -226,6 +226,8 @@ export interface WorkflowStep {
   };
   workersNeeded?: number; // Number of workers needed for this step (0-10)
   skillLevel?: 'Beginner' | 'Intermediate' | 'Advanced' | 'Professional'; // Skill level required for this step
+  /** Minimum run quality goal to include this step (null/undefined = all levels). */
+  minQualityGoal?: 'great' | 'professional' | null;
   // Standard content flag - marks steps from Standard Project Foundation
   isStandard?: boolean;
   // Allow content editing flag - if true, allows editing content even in standard phases
@@ -247,6 +249,8 @@ export interface Operation {
   // Standard content flag - marks operations from Standard Project Foundation
   isStandard?: boolean;
   flowType?: 'prime' | 'alternate' | 'if-necessary';
+  /** Minimum run quality goal to include this operation (null/undefined = all levels). */
+  minQualityGoal?: 'great' | 'professional' | null;
   /** Alternate-group key used by Project Customizer step 3 workflow decisions. */
   alternateGroup?: string;
   /** Decision prompt shown for alternate / if-necessary choices (from decision-tree config). */

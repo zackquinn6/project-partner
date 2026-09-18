@@ -84,6 +84,11 @@ import {
   extractStepIdFromCompletionKey,
   KICKOFF_UI_STEP_IDS
 } from '@/utils/projectUtils';
+import {
+  DEFAULT_QUALITY_GOAL,
+  filterPhasesForQualityGoal,
+  parseQualityGoalColumn,
+} from '@/utils/qualityGoal';
 import { collectPlanningWizardWorkflowCompletion } from '@/utils/planningWizardCompletion';
 import { parseCustomizationDecisions, isScopeReadyForWorkflow } from '@/utils/customizationDecisions';
 import type { PlanningToolId } from '@/components/KickoffSteps/ProjectToolsStep';
@@ -864,8 +869,21 @@ export default function UserView({
       toast.error('Project run is missing phases. Please contact support or try creating a new project run.');
     }
 
-    return enforceStandardPhaseOrdering(raw);
-  }, [currentProjectRun?.id, currentProjectRun?.phases, currentProjectRun?.name, currentProjectRun?.projectId]);
+    const ordered = enforceStandardPhaseOrdering(raw);
+    const qualityGoal =
+      parseQualityGoalColumn(currentProjectRun.initial_quality_goal) ?? DEFAULT_QUALITY_GOAL;
+    const completed = Array.isArray(currentProjectRun.completedSteps)
+      ? currentProjectRun.completedSteps
+      : [];
+    return filterPhasesForQualityGoal(ordered, qualityGoal, completed);
+  }, [
+    currentProjectRun?.id,
+    currentProjectRun?.phases,
+    currentProjectRun?.name,
+    currentProjectRun?.projectId,
+    currentProjectRun?.initial_quality_goal,
+    currentProjectRun?.completedSteps,
+  ]);
 
   const microRuntime = useWorkflowMicroDecisions(
     currentProjectRun?.id,

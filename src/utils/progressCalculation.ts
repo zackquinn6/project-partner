@@ -1,6 +1,11 @@
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { WorkflowStep } from '@/interfaces/Project';
 import { isRiskFocusRun } from '@/utils/projectRunRiskFocus';
+import {
+  DEFAULT_QUALITY_GOAL,
+  filterPhasesForQualityGoal,
+  parseQualityGoalColumn,
+} from '@/utils/qualityGoal';
 
 /**
  * STEP WEIGHT CONSTANTS
@@ -116,7 +121,15 @@ function accumulateProgressMetrics(
   let totalTime = 0;
   let completedTime = 0;
 
-  projectRun.phases?.forEach((phase) => {
+  const qualityGoal =
+    parseQualityGoalColumn(projectRun.initial_quality_goal) ?? DEFAULT_QUALITY_GOAL;
+  const filteredPhases = filterPhasesForQualityGoal(
+    projectRun.phases,
+    qualityGoal,
+    completedStepIds,
+  );
+
+  filteredPhases.forEach((phase) => {
     phase.operations?.forEach((op) => {
       op.steps?.forEach((step) => {
         totalSteps += 1;
@@ -233,8 +246,15 @@ export function getWorkflowStepsCount(projectRun: ProjectRun): {
   let totalWeight = 0;
   let completedWeight = 0;
   const completedStepIds = new Set(projectRun.completedSteps || []);
+  const qualityGoal =
+    parseQualityGoalColumn(projectRun.initial_quality_goal) ?? DEFAULT_QUALITY_GOAL;
+  const filteredPhases = filterPhasesForQualityGoal(
+    projectRun.phases,
+    qualityGoal,
+    completedStepIds,
+  );
 
-  projectRun.phases.forEach((phase) => {
+  filteredPhases.forEach((phase) => {
     phase.operations?.forEach((op) => {
       op.steps?.forEach((step) => {
         totalSteps++;

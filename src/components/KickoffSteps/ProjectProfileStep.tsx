@@ -22,6 +22,8 @@ import {
   parseQualityGoalColumn,
   isQualityGoal,
 } from '@/utils/qualityGoal';
+import { QualityGoalImpactPanel } from '@/components/QualityGoalImpactPanel';
+import type { Phase } from '@/interfaces/Project';
 
 interface ProjectProfileStepProps {
   onComplete: () => void;
@@ -1027,6 +1029,15 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                 </Label>
               ))}
             </RadioGroup>
+            <QualityGoalImpactPanel
+              draftGoal={projectForm.initialQualityGoal}
+              hostProjectId={currentProjectRun?.projectId}
+              phases={
+                (Array.isArray(currentProjectRun?.phases)
+                  ? currentProjectRun?.phases
+                  : []) as Phase[]
+              }
+            />
           </div>
         </CardContent>
       </Card>

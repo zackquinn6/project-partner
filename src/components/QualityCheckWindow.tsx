@@ -37,8 +37,16 @@ import {
   DEFAULT_QUALITY_GOAL,
   isQualityGoal,
   parseQualityGoalColumn,
+  qualityGoalLabel,
   type QualityGoal,
 } from '@/utils/qualityGoal';
+import {
+  contributingQualityProjectIds,
+  levelForGoal,
+  loadProjectQualityLevelBundles,
+  type ProjectQualityLevelsBundle,
+} from '@/utils/projectQualityLevels';
+import type { Phase } from '@/interfaces/Project';
 import { toast } from 'sonner';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
 import { PlanningToolContextBanner } from '@/components/PlanningWizardSteps/PlanningToolContextBanner';
@@ -137,6 +145,9 @@ export function QualityCheckWindow({
     () => parseQualityGoalColumn(projectRun?.initial_quality_goal) ?? DEFAULT_QUALITY_GOAL
   );
   const [savingQualityGoal, setSavingQualityGoal] = useState(false);
+  const [expectedLevelBundles, setExpectedLevelBundles] = useState<
+    ProjectQualityLevelsBundle[]
+  >([]);
 
   useEffect(() => {
     setLocalRequirePhotos(settings.require_photos_per_step);
@@ -148,6 +159,36 @@ export function QualityCheckWindow({
       parseQualityGoalColumn(projectRun?.initial_quality_goal) ?? DEFAULT_QUALITY_GOAL
     );
   }, [projectRun?.id, projectRun?.initial_quality_goal]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const hostId = projectRun?.projectId;
+    const phases = (Array.isArray(projectRun?.phases) ? projectRun.phases : []) as Phase[];
+    const ids = contributingQualityProjectIds(hostId, phases);
+    if (ids.length === 0) {
+      setExpectedLevelBundles([]);
+      return;
+    }
+    void loadProjectQualityLevelBundles(ids)
+      .then((rows) => {
+        if (!cancelled) setExpectedLevelBundles(rows);
+      })
+      .catch((e) => {
+        console.error(e);
+        if (!cancelled) setExpectedLevelBundles([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectRun?.id, projectRun?.projectId, projectRun?.phases]);
+
+  const expectedQualityCopy = useMemo(() => {
+    const host = expectedLevelBundles[0];
+    if (!host) return null;
+    const level = levelForGoal(host, localQualityGoal);
+    if (!level) return null;
+    return level.outcome_summary;
+  }, [expectedLevelBundles, localQualityGoal]);
 
   useEffect(() => {
     if (open) {
@@ -555,9 +596,11 @@ export function QualityCheckWindow({
                     <div className="space-y-3 rounded-md border bg-muted/30 p-3">
                       <div className="space-y-1">
                         <Label className="text-sm font-medium">Quality goal</Label>
-                        <p className="text-xs text-muted-foreground">
-                          How polished the finished work should look and feel.
-                        </p>
+                        {expectedQualityCopy ? (
+                          <p className="text-xs text-muted-foreground">
+                            Expected {qualityGoalLabel(localQualityGoal)} finish: {expectedQualityCopy}
+                          </p>
+                        ) : null}
                       </div>
                       <RadioGroup
                         value={localQualityGoal}
