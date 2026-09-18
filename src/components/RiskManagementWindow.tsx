@@ -361,6 +361,8 @@ function compareRisksByPriority(a: Risk, b: Risk): number {
 }
 
 type PlanningRiskStepKey = 'high' | 'medium' | 'low';
+/** Empty string means every triage accordion is collapsed. */
+type PlanningRiskStepValue = PlanningRiskStepKey | '';
 
 const PLANNING_RISK_STEPS: {
   key: PlanningRiskStepKey;
@@ -1035,12 +1037,17 @@ export function RiskManagementWindow({
     planningWizardToolPresentation && variant === 'risk-focus' && mode === 'run'
   );
 
-  const [planningRiskStep, setPlanningRiskStep] = useState<PlanningRiskStepKey>('high');
+  const [planningRiskStep, setPlanningRiskStep] = useState<PlanningRiskStepValue>('');
   const [rulesEditorOpen, setRulesEditorOpen] = useState(false);
 
   useEffect(() => {
-    if (open && usePlanningToolShell) {
-      setPlanningRiskStep('high');
+    if (!open) {
+      setPlanningRiskStep('');
+      return;
+    }
+    if (usePlanningToolShell) {
+      // Start with every triage step collapsed so the user opens each deliberately.
+      setPlanningRiskStep('');
     }
   }, [open, usePlanningToolShell]);
 
@@ -1269,6 +1276,9 @@ export function RiskManagementWindow({
 
   const listRisks = useMemo(() => {
     if (!usePlanningToolShell) return displayRisks;
+    if (planningRiskStep !== 'high' && planningRiskStep !== 'medium' && planningRiskStep !== 'low') {
+      return [];
+    }
     return displayRisks
       .filter((r) => riskTriageLevel(r) === planningRiskStep)
       .sort(compareRisksByPriority);
@@ -1281,8 +1291,8 @@ export function RiskManagementWindow({
   }, []);
 
   useSteppedAutoAdvance({
-    enabled: open && usePlanningToolShell,
-    activeStep: planningRiskStep,
+    enabled: open && usePlanningToolShell && planningRiskStep !== '',
+    activeStep: planningRiskStep || null,
     setActiveStep: setPlanningRiskStepStable,
     steps: [
       { key: 'high', isComplete: planningRiskCounts.high === 0, next: 'medium' },
@@ -2166,34 +2176,37 @@ export function RiskManagementWindow({
               ) : usePlanningToolShell ? (
                 <Accordion
                   type="single"
+                  collapsible
                   value={planningRiskStep}
                   onValueChange={(value) => {
                     if (value === 'high' || value === 'medium' || value === 'low') {
                       setPlanningRiskStep(value);
+                    } else {
+                      setPlanningRiskStep('');
                     }
                   }}
-                  className="flex min-h-0 w-full flex-1 flex-col gap-3"
+                  className="flex min-h-0 w-full flex-1 flex-col items-stretch gap-3"
                 >
                   {PLANNING_RISK_STEPS.map((step, index) => (
                     <AccordionItem
                       key={step.key}
                       value={step.key}
                       className={cn(
-                        // Closed headers must not shrink when the open pane fills leftover height.
-                        'shrink-0 rounded-lg border bg-card px-4',
+                        // Closed rows stay full width; open pane fills leftover height.
+                        'w-full min-w-0 shrink-0 self-stretch rounded-lg border bg-card px-4',
                         'data-[state=open]:flex data-[state=open]:min-h-0 data-[state=open]:flex-1 data-[state=open]:flex-col data-[state=open]:overflow-hidden',
                         'data-[state=open]:[&>:first-child]:flex-none',
                         'data-[state=open]:[&>[data-state=open]]:flex data-[state=open]:[&>[data-state=open]]:min-h-0 data-[state=open]:[&>[data-state=open]]:flex-1 data-[state=open]:[&>[data-state=open]]:flex-col data-[state=open]:[&>[data-state=open]]:overflow-hidden data-[state=open]:[&>[data-state=open]]:animate-none data-[state=open]:[&>[data-state=open]]:!h-auto',
                         'data-[state=open]:[&>[data-state=open]>div]:flex data-[state=open]:[&>[data-state=open]>div]:h-full data-[state=open]:[&>[data-state=open]>div]:min-h-0 data-[state=open]:[&>[data-state=open]>div]:flex-1 data-[state=open]:[&>[data-state=open]>div]:flex-col data-[state=open]:[&>[data-state=open]>div]:overflow-hidden data-[state=open]:[&>[data-state=open]>div]:pb-3 data-[state=open]:[&>[data-state=open]>div]:pt-0'
                       )}
                     >
-                      <AccordionTrigger className="shrink-0 grow-0 py-3 hover:no-underline">
-                        <div className="flex items-center gap-3 text-left">
+                      <AccordionTrigger className="py-3 hover:no-underline">
+                        <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                             {index + 1}
                           </div>
-                          <div className="min-w-0">
-                            <div className="text-sm font-semibold leading-snug sm:text-base">
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <div className="truncate whitespace-nowrap text-sm font-semibold leading-snug sm:text-base">
                               {step.title}
                             </div>
                             {planningRiskStep === step.key ? (
