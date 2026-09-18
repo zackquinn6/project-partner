@@ -16,8 +16,8 @@ export const useSessionTimeout = ({
   onTimeout
 }: SessionTimeoutOptions = {}) => {
   const { user, signOut } = useAuth();
-  const timeoutRef = useRef<NodeJS.Timeout>();
-  const warningRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const warningRef = useRef<ReturnType<typeof setTimeout>>();
   const lastActivityRef = useRef<number>(Date.now());
 
   const resetTimer = useCallback(() => {

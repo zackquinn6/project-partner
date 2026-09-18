@@ -15,7 +15,7 @@ export const EnhancedSecurityProvider: React.FC<EnhancedSecurityProviderProps> =
     if (!user) return;
 
     let navigationCount = 0;
-    let navigationTimer: NodeJS.Timeout;
+    let navigationTimer: ReturnType<typeof setTimeout>;
     const navigationHistory: string[] = [];
 
     // Monitor navigation patterns
@@ -44,7 +44,7 @@ export const EnhancedSecurityProvider: React.FC<EnhancedSecurityProviderProps> =
     
     // Monitor for rapid form submissions
     let actionCount = 0;
-    let actionTimer: NodeJS.Timeout;
+    let actionTimer: ReturnType<typeof setTimeout>;
 
     const handleUserAction = () => {
       actionCount++;
