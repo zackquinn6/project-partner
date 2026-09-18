@@ -131,6 +131,24 @@ serve(async (req) => {
       auth: { persistSession: false },
     });
 
+    // Server-side entitlement: only paying members, active trials, admins,
+    // or everyone while public beta is switched on may use the paid AI help.
+    const entitled = await hasHelpEntitlement(admin, user.id);
+    if (!entitled) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "AI help is part of a paid plan. Start a trial or upgrade to use project help.",
+        }),
+        {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+
+
     const body = await req.json();
     const input = requestSchema.parse(body);
     const message = sanitizeInput(input.message).slice(0, 4000);
