@@ -379,18 +379,21 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     }
 
     setCompletedSteps((prev) => {
-      const wasAlreadyComplete = prev.has(stepIndex);
       const nextCompleted = new Set(prev);
       nextCompleted.add(stepIndex);
       // Persist after computing the next set (avoid side effects reading stale state).
       queueMicrotask(() => {
         persistCompletedToolIds(nextCompleted);
-        // First-time Save and Close: advance so the next tool can auto-open after 2s.
-        if (wasAlreadyComplete) return;
 
         const steps = wizardStepsRef.current;
-        const nextIndex = stepIndex + 1;
+        let nextIndex = stepIndex + 1;
+        while (nextIndex < steps.length && nextCompleted.has(nextIndex)) {
+          nextIndex += 1;
+        }
+
         if (nextIndex < steps.length) {
+          // Allow the 2s auto-open effect to fire for the next tool page.
+          lastAutoOpenedStepRef.current = null;
           setWizardPhase('steps');
           setCurrentStep(nextIndex);
           return;
@@ -411,7 +414,8 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     wizardSteps.length > 0 &&
     wizardSteps.every((_, i) => completedSteps.has(i));
 
-  // Auto-open the current incomplete tool within 2s of first landing on that step.
+  // Auto-open the current incomplete tool 2s after landing on that step (including
+  // after Save and Close advances from the previous tool).
   useEffect(() => {
     if (!open) return;
     if (wizardPhase !== 'steps') return;
@@ -427,7 +431,9 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     autoOpenTimerRef.current = setTimeout(() => {
       autoOpenTimerRef.current = null;
       lastAutoOpenedStepRef.current = currentStep;
-      openPlanningTool(toolId, () => handleStepComplete(currentStep));
+      const stepAtOpen = currentStep;
+      const toolAtOpen = wizardStepsRef.current[stepAtOpen]?.toolId ?? toolId;
+      openPlanningTool(toolAtOpen, () => handleStepComplete(stepAtOpen));
     }, 2000);
 
     return () => {
@@ -525,7 +531,9 @@ export const ProjectPlanningWizard: React.FC<ProjectPlanningWizardProps> = ({
     }
     if (wizardPhase === 'confirm') return;
 
-    openPlanningTool(wizardSteps[currentStep]?.toolId ?? null, () => handleStepComplete(currentStep));
+    const stepIndex = currentStep;
+    const toolId = wizardSteps[stepIndex]?.toolId ?? null;
+    openPlanningTool(toolId, () => handleStepComplete(stepIndex));
   };
 
   const handleSkipToWorkflow = () => {
