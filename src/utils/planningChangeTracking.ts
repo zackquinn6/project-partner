@@ -1,9 +1,16 @@
 import type { ProjectRun } from '@/interfaces/ProjectRun';
-import type { PlanningToolId } from '@/components/KickoffSteps/ProjectToolsStep';
+import {
+  PLANNING_TOOL_IDS,
+  type PlanningToolId,
+} from '@/components/KickoffSteps/ProjectToolsStep';
 import { differenceInCalendarDays, differenceInCalendarMonths, format, parseISO } from 'date-fns';
 import { mergeQualityControlSettings } from '@/utils/qualityControlSettings';
+import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
 export const PLANNING_SCOPE_BASELINE_VERSION = 1 as const;
+
+const PLANNING_TOOL_ID_SET = new Set<string>(PLANNING_TOOL_IDS);
 
 export type PlanningScopeBaselineV1 = {
   version: typeof PLANNING_SCOPE_BASELINE_VERSION;
@@ -297,5 +304,105 @@ export function collectPlanningToolChangeSummaries(
     });
   }
 
+  const prevQualityGoal = prev.initial_quality_goal ?? null;
+  const nextQualityGoal = next.initial_quality_goal ?? null;
+  if (prevQualityGoal !== nextQualityGoal) {
+    out.push({
+      planning_tool: 'quality_control',
+      change_summary: nextQualityGoal
+        ? `Quality goal updated to ${nextQualityGoal}.`
+        : 'Quality goal cleared.',
+      change_detail: {
+        kind: 'initial_quality_goal',
+        from: prevQualityGoal,
+        to: nextQualityGoal,
+      },
+    });
+  }
+
+  const prevCompleted = new Set(
+    Array.isArray(prev.customization_decisions?.planning_wizard_completed_tools)
+      ? prev.customization_decisions.planning_wizard_completed_tools
+      : [],
+  );
+  const nextCompleted = Array.isArray(next.customization_decisions?.planning_wizard_completed_tools)
+    ? next.customization_decisions.planning_wizard_completed_tools
+    : [];
+  for (const toolId of nextCompleted) {
+    if (prevCompleted.has(toolId)) continue;
+    if (!PLANNING_TOOL_ID_SET.has(toolId)) continue;
+    out.push({
+      planning_tool: toolId as PlanningToolId,
+      change_summary: 'Planning Studio step marked complete.',
+      change_detail: { kind: 'planning_wizard_completed_tool', tool: toolId },
+    });
+  }
+
   return out;
+}
+
+/** Stable fingerprint helpers for update dedup keys. */
+export function scheduleEventsUpdateFingerprint(run: ProjectRun): string {
+  return scheduleEventsFingerprint(run) ?? '';
+}
+
+export function shoppingChecklistUpdateFingerprint(run: ProjectRun): string {
+  return stableStringify(run.shopping_checklist_data ?? null);
+}
+
+export type AppendPlanningChangeEventsParams = {
+  projectRunId: string;
+  userId: string;
+  /** When null/undefined, events are skipped (same gate as updateProjectRun). */
+  planningCompletedAt?: Date | string | null;
+  events: PlanningChangeEventPayload[];
+};
+
+/**
+ * Insert planning change-register rows. Skips guest runs and pre-baseline runs.
+ */
+export async function appendPlanningChangeEvents(
+  params: AppendPlanningChangeEventsParams,
+): Promise<boolean> {
+  const { projectRunId, userId, planningCompletedAt, events } = params;
+  if (!projectRunId || projectRunId.startsWith('guest_')) return false;
+  if (!userId || !planningCompletedAt) return false;
+  if (!events.length) return false;
+
+  const rows = events.map((s) => ({
+    project_run_id: projectRunId,
+    user_id: userId,
+    planning_tool: s.planning_tool,
+    change_summary: s.change_summary,
+    change_detail: (s.change_detail ?? null) as Json | null,
+  }));
+
+  const { error } = await supabase.from('project_run_planning_change_events').insert(rows);
+  if (error) {
+    console.error('planning change log insert failed:', error);
+    return false;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent('planning-change-events-updated', {
+      detail: { projectRunId },
+    }),
+  );
+  return true;
+}
+
+/** Convenience for side-table tools (risk, communication). */
+export async function appendSinglePlanningChangeEvent(params: {
+  projectRunId: string;
+  userId: string | undefined | null;
+  planningCompletedAt?: Date | string | null;
+  event: PlanningChangeEventPayload;
+}): Promise<boolean> {
+  if (!params.userId) return false;
+  return appendPlanningChangeEvents({
+    projectRunId: params.projectRunId,
+    userId: params.userId,
+    planningCompletedAt: params.planningCompletedAt,
+    events: [params.event],
+  });
 }

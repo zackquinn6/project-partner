@@ -392,6 +392,7 @@ export async function autoRegenerateSchedule(
       scheduleEvents,
       source: revisionSource,
       currentFirstScheduleFinishAt: projectRun.firstScheduleFinishAt,
+      planningCompletedAt: projectRun.planningCompletedAt,
     });
     
     // Dispatch refresh event

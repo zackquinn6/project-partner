@@ -5220,6 +5220,14 @@ export type Database = {
         Args: { p_signup_from: string; p_signup_to: string }
         Returns: Json
       }
+      get_planning_change_analytics_payload: {
+        Args: {
+          p_project_ids?: string[] | null
+          p_from?: string | null
+          p_to?: string | null
+        }
+        Returns: Json
+      }
       get_help_usage_status: {
         Args: { p_user_id?: string }
         Returns: {

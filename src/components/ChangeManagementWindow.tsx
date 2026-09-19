@@ -235,8 +235,7 @@ export function ChangeManagementWindow({
                       </p>
                     ) : rows.length === 0 && !loading ? (
                       <p className="text-sm text-muted-foreground">
-                        No changes recorded yet after your baseline. Edits from Schedule, Scope,
-                        budgeting, shopping, and quality settings appear here with a short summary.
+                        No changes recorded yet after your baseline.
                       </p>
                     ) : (
                       <div className="rounded-md border">

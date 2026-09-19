@@ -23,6 +23,7 @@ interface AnalyticsFiltersProps {
     name: string;
     category?: string[];
   }>;
+  showDemoAndExport?: boolean;
 }
 
 export function AnalyticsFilters({
@@ -35,7 +36,8 @@ export function AnalyticsFilters({
   demoMode,
   onDemoModeToggle,
   onExport,
-  projects
+  projects,
+  showDemoAndExport = true,
 }: AnalyticsFiltersProps) {
   const categories = Array.from(
     new Set(
@@ -119,6 +121,7 @@ export function AnalyticsFilters({
         </Popover>
       </div>
 
+      {showDemoAndExport && (
       <div className="flex items-center gap-2 ml-auto">
         <Button
           variant={demoMode ? "default" : "outline"}
@@ -140,6 +143,7 @@ export function AnalyticsFilters({
           Export
         </Button>
       </div>
+      )}
     </div>
   );
 }

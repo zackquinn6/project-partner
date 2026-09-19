@@ -1337,6 +1337,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         scheduleEvents,
         source: 'manual',
         currentFirstScheduleFinishAt: projectRun.firstScheduleFinishAt,
+        planningCompletedAt: projectRun.planningCompletedAt,
       });
       schedulingEngine.commitSchedule(result);
       setLastScheduledDate(new Date().toISOString());

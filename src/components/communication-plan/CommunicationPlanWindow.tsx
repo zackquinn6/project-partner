@@ -49,6 +49,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useProject } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { reportUserFacingError } from '@/utils/errorReporting';
+import { appendSinglePlanningChangeEvent } from '@/utils/planningChangeTracking';
 import { useSteppedAutoAdvance } from '@/hooks/useSteppedAutoAdvance';
 import {
   TEMPLATE_KEYS,
@@ -188,6 +189,23 @@ export function CommunicationPlanWindow({
   const { user } = useAuth();
   const { currentProjectRun } = useProject();
   const runId = currentProjectRun?.id;
+
+  const logCommunicationChange = useCallback(
+    async (change_summary: string, change_detail?: Record<string, unknown>) => {
+      if (!runId || !user?.id) return;
+      await appendSinglePlanningChangeEvent({
+        projectRunId: runId,
+        userId: user.id,
+        planningCompletedAt: currentProjectRun?.planningCompletedAt,
+        event: {
+          planning_tool: 'communication_plan',
+          change_summary,
+          change_detail: { kind: 'communication_plan', ...(change_detail ?? {}) },
+        },
+      });
+    },
+    [runId, user?.id, currentProjectRun?.planningCompletedAt],
+  );
 
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<PlanRow | null>(null);
@@ -363,6 +381,10 @@ export function CommunicationPlanWindow({
         if (error) throw error;
         setPlan({ ...plan, enabled });
               }
+      await logCommunicationChange(
+        enabled ? 'Communication plan enabled.' : 'Communication plan disabled.',
+        { action: 'enable', enabled },
+      );
       await loadAll();
     } catch (e) {
       console.error(e);
@@ -381,6 +403,7 @@ export function CommunicationPlanWindow({
       return;
     }
     setPlan({ ...plan, sms_early_access_opt_in: v });
+    await logCommunicationChange('SMS preference updated.', { action: 'sms_opt_in', value: v });
       };
 
   const openNewStakeholder = () => {
@@ -455,6 +478,10 @@ export function CommunicationPlanWindow({
         });
         if (error) throw error;
               }
+      await logCommunicationChange(
+        editingStakeholder ? 'Stakeholder updated.' : 'Stakeholder added.',
+        { action: editingStakeholder ? 'stakeholder_update' : 'stakeholder_insert' },
+      );
       setStakeFormOpen(false);
       await loadAll();
     } catch (e) {
@@ -469,6 +496,7 @@ export function CommunicationPlanWindow({
       toast.error('Could not remove stakeholder.');
       return;
     }
+    await logCommunicationChange('Stakeholder removed.', { action: 'stakeholder_delete' });
         await loadAll();
   };
 
@@ -482,6 +510,10 @@ export function CommunicationPlanWindow({
       return;
     }
     setTriggers((prev) => prev.map((t) => (t.id === row.id ? { ...t, enabled } : t)));
+    await logCommunicationChange(
+      enabled ? 'Communication trigger enabled.' : 'Communication trigger disabled.',
+      { action: 'trigger', enabled },
+    );
   };
 
   const autoGenerateSchedule = async () => {
@@ -528,6 +560,10 @@ export function CommunicationPlanWindow({
 
       const { error: insErr } = await supabase.from('communication_schedule_items').insert(rows);
       if (insErr) throw insErr;
+      await logCommunicationChange('Communication schedule generated.', {
+        action: 'schedule_generate',
+        count: rows.length,
+      });
       await loadAll();
       setOpenSection('schedule');
     } catch (e) {

@@ -3,12 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
-import { CheckCircle, Clock, AlertTriangle, TrendingUp, Star, Camera, BarChart3 } from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, TrendingUp, Star, Camera, BarChart3, GitBranch } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { AnalyticsFilters } from './AnalyticsFilters';
 import { generateDemoData, calculateRealAnalytics, exportAnalyticsData, AnalyticsData } from '@/utils/analyticsData';
 import { AdminPhotoAggregation } from './AdminPhotoAggregation';
 import { BetaScorecard } from './BetaScorecard';
+import { PlanningChangeAnalyticsPanel } from './PlanningChangeAnalyticsPanel';
 import { DateRange } from 'react-day-picker';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectOwner } from '@/hooks/useProjectOwner';
@@ -96,6 +97,36 @@ const ProjectAnalytics: React.FC = () => {
     }
   }, [projectRunsFiltered, selectedProject, selectedCategory, dateRange, demoMode]);
 
+  const changeAnalyticsProjectIds = useMemo(() => {
+    let ids: string[] | null = null;
+    if (selectedProject && selectedProject !== 'all') {
+      ids = [selectedProject];
+    } else if (!isAdmin && hasProjectOwnerRole && ownedAllProjectIds) {
+      ids = [...ownedAllProjectIds];
+    } else {
+      ids = projectsFiltered.map((p) => p.id);
+    }
+    if (selectedCategory && selectedCategory !== 'all') {
+      const matching = new Set(
+        projectsFiltered
+          .filter((p) => {
+            const cats = Array.isArray(p.category) ? p.category : p.category ? [p.category] : [];
+            return cats.includes(selectedCategory);
+          })
+          .map((p) => p.id),
+      );
+      ids = ids.filter((id) => matching.has(id));
+    }
+    return ids.length > 0 ? ids : [];
+  }, [
+    selectedProject,
+    selectedCategory,
+    isAdmin,
+    hasProjectOwnerRole,
+    ownedAllProjectIds,
+    projectsFiltered,
+  ]);
+
   const handleExport = () => {
     if (analyticsData) {
       exportAnalyticsData(analyticsData, {
@@ -123,10 +154,14 @@ const ProjectAnalytics: React.FC = () => {
     <div className="space-y-6">
       {(isAdmin || hasProjectOwnerRole) && (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <TabsTrigger value="analytics" className="gap-2">
               <BarChart3 className="w-4 h-4" />
               Analytics
+            </TabsTrigger>
+            <TabsTrigger value="changes" className="gap-2">
+              <GitBranch className="w-4 h-4" />
+              Changes
             </TabsTrigger>
             {isAdmin && (
               <TabsTrigger value="beta" className="gap-2">
@@ -148,12 +183,34 @@ const ProjectAnalytics: React.FC = () => {
                   onClick={() => setDemoMode(!demoMode)}
                   className="text-sm text-muted-foreground underline-offset-4 hover:underline"
                 >
-                  {demoMode ? 'Using demo data — switch to live' : 'Preview with demo data'}
+                  {demoMode ? 'Using demo data - switch to live' : 'Preview with demo data'}
                 </button>
               </div>
               <BetaScorecard demoMode={demoMode} />
             </TabsContent>
           )}
+
+          <TabsContent value="changes" className="mt-6 space-y-6">
+            <AnalyticsFilters
+              selectedProject={selectedProject}
+              onProjectChange={setSelectedProject}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+              demoMode={false}
+              onDemoModeToggle={() => undefined}
+              onExport={() => undefined}
+              projects={projectsFiltered}
+              showDemoAndExport={false}
+            />
+            <PlanningChangeAnalyticsPanel
+              projectIds={changeAnalyticsProjectIds}
+              selectedProject={selectedProject}
+              selectedCategory={selectedCategory}
+              dateRange={dateRange}
+            />
+          </TabsContent>
 
           <TabsContent value="analytics" className="mt-6 space-y-6">
             {/* Analytics Filters */}

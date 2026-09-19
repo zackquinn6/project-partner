@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { ProjectRun } from '@/interfaces/ProjectRun';
 import { finishDateFromScheduleEventsBlob } from '@/utils/estimatedFinishDate';
+import { appendSinglePlanningChangeEvent } from '@/utils/planningChangeTracking';
 
 export type ScheduleRevisionSource = 'manual' | 'auto_regen' | 'slip';
 
@@ -21,6 +22,12 @@ function parseExistingFirst(
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+const REVISION_SOURCE_LABEL: Record<ScheduleRevisionSource, string> = {
+  manual: 'manual save',
+  auto_regen: 'auto-regeneration',
+  slip: 'schedule slip',
+};
+
 /**
  * Append a schedule revision row and lock first_schedule_finish_at on first write.
  * Guest / local runs skip DB writes and only compute dates for in-memory state.
@@ -30,6 +37,8 @@ export async function recordProjectScheduleRevision(params: {
   scheduleEvents: ProjectRun['schedule_events'] | Record<string, unknown> | null | undefined;
   source: ScheduleRevisionSource;
   currentFirstScheduleFinishAt?: Date | string | null;
+  planningCompletedAt?: Date | string | null;
+  userId?: string | null;
 }): Promise<RecordScheduleRevisionResult> {
   const finishAt = finishDateFromScheduleEventsBlob(params.scheduleEvents);
   const existingFirst = parseExistingFirst(params.currentFirstScheduleFinishAt);
@@ -68,6 +77,37 @@ export async function recordProjectScheduleRevision(params: {
       console.error('Error setting first_schedule_finish_at:', updateError);
     }
   }
+
+  let userId = params.userId ?? null;
+  if (!userId) {
+    const { data } = await supabase.auth.getUser();
+    userId = data.user?.id ?? null;
+  }
+
+  let planningCompletedAt = params.planningCompletedAt;
+  if (planningCompletedAt === undefined) {
+    const { data: runRow } = await supabase
+      .from('project_runs')
+      .select('planning_completed_at')
+      .eq('id', params.projectRunId)
+      .maybeSingle();
+    planningCompletedAt = runRow?.planning_completed_at ?? null;
+  }
+
+  await appendSinglePlanningChangeEvent({
+    projectRunId: params.projectRunId,
+    userId,
+    planningCompletedAt,
+    event: {
+      planning_tool: 'schedule',
+      change_summary: `Schedule revision recorded (${REVISION_SOURCE_LABEL[params.source]}).`,
+      change_detail: {
+        kind: 'schedule_revision',
+        revision_source: params.source,
+        finish_at: finishAt.toISOString(),
+      },
+    },
+  });
 
   return { finishAt, firstScheduleFinishAt };
 }

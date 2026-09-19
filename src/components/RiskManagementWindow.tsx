@@ -81,6 +81,7 @@ import { useSteppedAutoAdvance } from '@/hooks/useSteppedAutoAdvance';
 import { useRunRiskReevaluation } from '@/hooks/useRunRiskReevaluation';
 import { reportUserFacingError } from '@/utils/errorReporting';
 import { ProjectRiskRulesEditor } from '@/components/ProjectRiskRulesEditor';
+import { appendSinglePlanningChangeEvent } from '@/utils/planningChangeTracking';
 import { useActionPriorityTable } from '@/hooks/useActionPriorityTable';
 import { useOccurrenceDrivers } from '@/hooks/useOccurrenceDrivers';
 import { actionPriorityLabel } from '@/utils/actionPriorityTable';
@@ -1763,6 +1764,32 @@ export function RiskManagementWindow({
   const showAdvancedToggle = workflowTemplateRiskRadar && !readOnly;
   const showAddRiskRow =
     !readOnly && (mode === 'template' || (mode === 'run' && projectRunId));
+
+  const runForChangeLog = useMemo(() => {
+    if (!projectRunId) return null;
+    return (
+      riskFocusRunForProgress ??
+      (currentProjectRun?.id === projectRunId ? currentProjectRun : null)
+    );
+  }, [projectRunId, riskFocusRunForProgress, currentProjectRun]);
+
+  const logRiskRegisterChange = useCallback(
+    async (change_summary: string, change_detail?: Record<string, unknown>) => {
+      if (!projectRunId || !user?.id) return;
+      await appendSinglePlanningChangeEvent({
+        projectRunId,
+        userId: user.id,
+        planningCompletedAt: runForChangeLog?.planningCompletedAt,
+        event: {
+          planning_tool: 'risk',
+          change_summary,
+          change_detail: { kind: 'risk', ...(change_detail ?? {}) },
+        },
+      });
+    },
+    [projectRunId, user?.id, runForChangeLog?.planningCompletedAt],
+  );
+
   const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingRisk, setEditingRisk] = useState<Risk | null>(null);
@@ -2412,6 +2439,10 @@ export function RiskManagementWindow({
 
           if (error) throw error;
                   }
+        await logRiskRegisterChange(
+          editingRisk ? 'Risk updated.' : 'Risk added.',
+          { action: editingRisk ? 'update' : 'insert' },
+        );
       }
 
       setShowAddForm(false);
@@ -2488,6 +2519,7 @@ export function RiskManagementWindow({
           .eq('id', risk.id);
 
         if (error) throw error;
+        await logRiskRegisterChange('Risk deleted.', { action: 'delete' });
               }
 
       fetchRisks();
@@ -2513,6 +2545,10 @@ export function RiskManagementWindow({
         .eq('id', risk.id);
 
       if (error) throw error;
+      await logRiskRegisterChange(`Risk status set to ${newStatus}.`, {
+        action: 'status',
+        status: newStatus,
+      });
             fetchRisks();
       
       // Notify scheduler that risks have been updated
@@ -2533,6 +2569,10 @@ export function RiskManagementWindow({
         .eq('id', risk.id);
 
       if (error) throw error;
+      await logRiskRegisterChange(`Risk level set to ${newLevel}.`, {
+        action: 'severity',
+        severity: newLevel,
+      });
             fetchRisks();
       window.dispatchEvent(new CustomEvent('risks-updated'));
     } catch (error) {

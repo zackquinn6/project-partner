@@ -20,6 +20,9 @@ import {
 import {
   buildPlanningScopeBaseline,
   collectPlanningToolChangeSummaries,
+  appendPlanningChangeEvents,
+  scheduleEventsUpdateFingerprint,
+  shoppingChecklistUpdateFingerprint,
 } from '@/utils/planningChangeTracking';
 import type { Json } from '@/integrations/supabase/types';
 import { getDefaultHomeIdForUser } from '@/utils/ensureDefaultHome';
@@ -1222,6 +1225,8 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
       instructionLevelPreferenceKey,
       customizationDecisionsKey,
       homeIdKey,
+      scheduleEventsUpdateFingerprint(projectRun),
+      shoppingChecklistUpdateFingerprint(projectRun),
       ...(shouldIncludeProgressReportingStyleKey ? [progressReportingStyleKey] : [])
     ];
 
@@ -1539,25 +1544,12 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
         if (shouldLogPlanningChanges) {
           const summaries = collectPlanningToolChangeSummaries(currentProjectRun, projectRun);
           if (summaries.length > 0) {
-            const rows = summaries.map((s) => ({
-              project_run_id: projectRun.id,
-              user_id: user.id,
-              planning_tool: s.planning_tool,
-              change_summary: s.change_summary,
-              change_detail: (s.change_detail ?? null) as Json | null,
-            }));
-            const { error: logError } = await supabase
-              .from('project_run_planning_change_events')
-              .insert(rows);
-            if (logError) {
-              console.error('❌ ProjectActions - planning change log insert failed:', logError);
-            } else {
-              window.dispatchEvent(
-                new CustomEvent('planning-change-events-updated', {
-                  detail: { projectRunId: projectRun.id },
-                })
-              );
-            }
+            await appendPlanningChangeEvents({
+              projectRunId: projectRun.id,
+              userId: user.id,
+              planningCompletedAt: currentProjectRun.planningCompletedAt,
+              events: summaries,
+            });
           }
         }
         
