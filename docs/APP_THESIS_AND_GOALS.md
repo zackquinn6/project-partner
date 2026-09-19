@@ -105,6 +105,26 @@ Use these as alignment checks; this thesis expands them rather than replacing th
 
 ---
 
+## Technical backbone: the risk engine
+
+The risk engine is how the product turns “what could go wrong” into a **personalized critical few** for each run. Full detail lives in [`docs/RISK_ENGINE.md`](RISK_ENGINE.md). Short version:
+
+Risk is authored once per project template in two places: a **PFMEA** for quality, and a **risk register** for safety, schedule, and budget. Both use the same 1-10 severity, occurrence, and detection scales and resolve to an Action Priority (High / Medium / Low) via a shared database lookup - not raw RPN banding.
+
+Every item maps to exactly one of four components: **quality** (result), **safety**, **schedule** (time), and **budget** (cost). They stay separate so a step can look fine on quality and still be high schedule risk.
+
+When a user starts a run, three layers apply in order:
+
+| Layer | Role |
+|-------|------|
+| **Template risk** | Author analysis for everyone (`pfmea_*`, `project_risks`) |
+| **Logic layer** | Rules that adjust occurrence/detection from facts about this user (`project_risk_rules`, `projectRiskLogic.ts`) |
+| **Applied profile** | Scored, plain-language list on the run, plus Key Characteristics derived from it (`project_run_risks`, `project_run_risk_profile`, `project_run_key_characteristics`) |
+
+That applied list is what surfaces in Risk Radar, planning walkthroughs, and inline on the active step. Key Characteristics are the shorter register: the specific items where **this user’s attention** decides the outcome. That is the technical expression of “execute the critical few.”
+
+---
+
 ## How to use this document
 
 Before shipping a feature, content pack, or major UX change, ask:
@@ -118,4 +138,4 @@ If the answer is weak on all four, it is probably not thesis-aligned.
 
 ---
 
-*Created: September 2026. Revise when positioning, tiers, or primary project domains change.*
+*Created: September 2026. Updated with risk-engine summary. Revise when positioning, tiers, or primary project domains change.*
