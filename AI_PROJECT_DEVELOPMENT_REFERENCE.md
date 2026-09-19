@@ -823,6 +823,7 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-18 | Tile Flooring Step 11 summaries rewritten: Good forbids major failures but allows imperfect less-visible edges; Professional targets flawless grout lines/cuts with leveling clips, seal, and final QC | Kickoff quality ladder needed project-specific meaning tied to owned Prep/Install/Grout gating |
 | 2026-09-18 | Step 11: `kickoff_summary` on `project_quality_levels` / run snapshot; kickoff Goals shows short per-level blurbs and drops Instruction detail + long impact panel | Kickoff needs project-specific meaning without the full outcome/process panel |
 | 2026-09-18 | Step 4 risk title rules: concrete cause/failure mode only; ban vague categories (e.g. Low-quality materials) and multi-risk outcomes (e.g. Underestimating project time); examples for foundation, tile, paint; planning standard v1.4.1 | Risk Radar showed unactionable general risks; mitigations are product-specific |
 | 2026-09-18 | §H trigger/H.1/H.5: "Build out content for project X ref ai dev guide" requires commit, push, and naming migration path(s); explicit exception to author Standard Foundation when user asks for standard phases | Build-out requests must leave applyable migrations and push; foundation content was previously blocked by the catalog-only scope rule |
