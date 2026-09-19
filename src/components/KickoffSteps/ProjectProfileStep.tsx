@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -98,28 +98,6 @@ function parseMoneyish(s: string | null | undefined): number | undefined {
   return n;
 }
 
-/** Parse mid-point hours from strings like "40-60 hours" or "48 hrs". */
-function parseHoursFromEstimate(raw: string | null | undefined): number | null {
-  if (raw == null || typeof raw !== 'string') return null;
-  const nums = [...raw.matchAll(/(\d+(?:\.\d+)?)/g)].map((m) => parseFloat(m[1]));
-  if (nums.length === 0) return null;
-  if (nums.length === 1) return nums[0];
-  return (nums[0] + nums[1]) / 2;
-}
-
-/** DIY weekend sessions ≈ 8 hours each. */
-function sizeAwareWeekendNote(
-  size: number,
-  typicalSize: number,
-  estimatedTotalTime: string | null | undefined
-): string | null {
-  const hoursAtTypical = parseHoursFromEstimate(estimatedTotalTime);
-  if (hoursAtTypical == null || !(typicalSize > 0) || !(size > 0)) return null;
-  const scaledHours = hoursAtTypical * (size / typicalSize);
-  const weekends = Math.max(1, Math.round(scaledHours / 8));
-  return `At this size, plan on ~${weekends} weekend${weekends === 1 ? '' : 's'}`;
-}
-
 /** Budget for a typical-sized project from template fields (DB-backed). */
 function deriveTypicalBudgetString(
   budgetPerTypicalSize: string | null | undefined,
@@ -183,7 +161,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   const [templateTypicalProjectSize, setTemplateTypicalProjectSize] = useState<number | null>(null);
   const [templateBudgetPerUnit, setTemplateBudgetPerUnit] = useState<string | null>(null);
   const [templateBudgetPerTypicalSize, setTemplateBudgetPerTypicalSize] = useState<string | null>(null);
-  const [templateEstimatedTotalTime, setTemplateEstimatedTotalTime] = useState<string | null>(null);
   const [templateEconomicsLoaded, setTemplateEconomicsLoaded] = useState(false);
   const [kickoffSummaries, setKickoffSummaries] = useState<
     Partial<Record<QualityGoal, string>>
@@ -244,11 +221,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         setTemplateTypicalProjectSize(typeof tps === 'number' && tps > 0 ? tps : null);
         setTemplateBudgetPerUnit(null);
         setTemplateBudgetPerTypicalSize(null);
-        setTemplateEstimatedTotalTime(
-          typeof templateProject?.estimatedTotalTime === 'string'
-            ? templateProject.estimatedTotalTime
-            : null
-        );
       };
 
       try {
@@ -257,7 +229,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             const { data, error } = await supabase
               .from('projects')
               .select(
-                'scaling_unit, item_type, typical_project_size, budget_per_unit, budget_per_typical_size, estimated_total_time'
+                'scaling_unit, item_type, typical_project_size, budget_per_unit, budget_per_typical_size'
               )
               .eq('id', catalogProjectId)
               .single();
@@ -281,13 +253,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                   ? data.budget_per_typical_size
                   : null
               );
-              setTemplateEstimatedTotalTime(
-                typeof data.estimated_total_time === 'string' && data.estimated_total_time.trim()
-                  ? data.estimated_total_time.trim()
-                  : typeof templateProject?.estimatedTotalTime === 'string'
-                    ? templateProject.estimatedTotalTime
-                    : null
-              );
             } else {
               if (error) console.error('❌ Error fetching scaling_unit and item_type:', error);
               applyTemplateFallback();
@@ -305,7 +270,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           setTemplateTypicalProjectSize(null);
           setTemplateBudgetPerUnit(null);
           setTemplateBudgetPerTypicalSize(null);
-          setTemplateEstimatedTotalTime(null);
         }
       } finally {
         setTemplateEconomicsLoaded(true);
@@ -323,7 +287,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
       setTemplateTypicalProjectSize(null);
       setTemplateBudgetPerUnit(null);
       setTemplateBudgetPerTypicalSize(null);
-      setTemplateEstimatedTotalTime(null);
       setTemplateEconomicsLoaded(true);
     }
   }, [templateProject?.id, currentProjectRun?.projectId, currentProjectRun, projects]);
@@ -792,43 +755,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   const scalingLabel = getScalingUnitShortLabel(scalingUnit, itemType, templateProject as any);
   const selectedHome = homes.find((h) => h.id === selectedHomeId) ?? homes[0] ?? null;
 
-  const timelineRelativeLabel = (() => {
-    if (!projectForm.initialTimeline?.trim()) return null;
-    const target = new Date(projectForm.initialTimeline + 'T12:00:00');
-    if (Number.isNaN(target.getTime())) return null;
-    const today = new Date();
-    const todayNoon = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
-    const diffDays = Math.round((target.getTime() - todayNoon.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Tomorrow';
-    if (diffDays > 1) return `In ~${diffDays} days`;
-    if (diffDays === -1) return 'Yesterday';
-    return `${Math.abs(diffDays)} days ago`;
-  })();
-
-  const sizeWeekendNote = useMemo(() => {
-    const size = parseFloat(projectForm.initialSizing);
-    if (!Number.isFinite(size) || size <= 0) return null;
-    const typical =
-      templateTypicalProjectSize ??
-      (typeof templateProject?.typicalProjectSize === 'number'
-        ? templateProject.typicalProjectSize
-        : null);
-    if (typical == null || !(typical > 0)) return null;
-    const estimate =
-      templateEstimatedTotalTime ??
-      (typeof templateProject?.estimatedTotalTime === 'string'
-        ? templateProject.estimatedTotalTime
-        : null);
-    return sizeAwareWeekendNote(size, typical, estimate);
-  }, [
-    projectForm.initialSizing,
-    templateTypicalProjectSize,
-    templateEstimatedTotalTime,
-    templateProject?.typicalProjectSize,
-    templateProject?.estimatedTotalTime,
-  ]);
-
   return (
     <>
       <Card>
@@ -1024,12 +950,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
-              {timelineRelativeLabel ? (
-                <p className="text-xs text-muted-foreground">{timelineRelativeLabel}</p>
-              ) : null}
-              {sizeWeekendNote ? (
-                <p className="text-xs text-muted-foreground">{sizeWeekendNote}</p>
-              ) : null}
             </div>
 
             <div className="flex flex-col gap-2 rounded-lg border bg-card p-3">
