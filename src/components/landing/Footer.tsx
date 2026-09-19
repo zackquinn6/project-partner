@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Instagram, Facebook, Youtube } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import projectPartnerLogo from '@/assets/project-partner-logo.png';
+import { ProjectPartnerLogo } from '@/components/ProjectPartnerLogo';
 
 interface FooterProps {
   onPricingClick?: () => void;
@@ -138,11 +138,7 @@ export const Footer = ({ onPricingClick }: FooterProps) => {
         {/* Bottom bar */}
         <div className="border-t border-primary-foreground/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-4">
-            <img
-              src={projectPartnerLogo}
-              alt="Project Partner"
-              className="h-8"
-            />
+            <ProjectPartnerLogo className="h-8" variant="dark" />
             <span className="text-sm opacity-60">
               © 2024 Project Partner. All rights reserved.
             </span>

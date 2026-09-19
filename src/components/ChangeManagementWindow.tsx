@@ -134,7 +134,7 @@ export function ChangeManagementWindow({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[90vw] max-w-[90vw] md:max-w-none h-[85vh] p-0 gap-0 [&>button]:hidden">
-        <DialogHeader className="p-4 border-b bg-gradient-subtle flex flex-row items-center justify-between space-y-0">
+        <DialogHeader className="p-4 border-b bg-muted/40 flex flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-3 text-left">
             <div className="p-2 rounded-lg bg-primary/10">
               <GitBranch className="w-4 h-4 text-primary" />

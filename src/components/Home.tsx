@@ -178,7 +178,7 @@ export default function Home({
       element.scrollIntoView({ behavior: 'smooth' });
     }
   };
-  return <div className="min-h-screen">
+  return <div className="min-h-screen bg-background text-foreground">
       {user ?
     // Logged-in user sees the DIY Dashboard
     <div className="container mx-auto px-6 py-8 space-y-6">

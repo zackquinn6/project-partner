@@ -456,6 +456,10 @@
   .gradient-accent {
     background: var(--gradient-accent);
   }
+
+  .gradient-subtle {
+    background: var(--gradient-subtle);
+  }
   
   /* Professional shadow system */
   .shadow-elegant {

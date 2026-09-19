@@ -9,9 +9,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Shield } from 'lucide-react';
 import jsPDF from 'jspdf';
-import projectPartnerLogo from '@/assets/project-partner-logo.png';
+import projectPartnerLogoPrint from '@/assets/project-partner-logo-print.png';
 
-const APP_LOGO_URL = projectPartnerLogo;
+const APP_LOGO_URL = projectPartnerLogoPrint;
 
 const PLACEHOLDER_LIABILITY_POLICY = `
 USAGE AGREEMENT (Placeholder)

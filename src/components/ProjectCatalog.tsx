@@ -887,7 +887,7 @@ const ProjectCatalog: React.FC<ProjectCatalogProps> = ({
   };
   return (
     <>
-  <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-y-auto">
+  <div className="min-h-screen bg-background text-foreground overflow-y-auto">
       <div className="container mx-auto min-h-screen px-4 pt-3 pb-5 md:px-6 md:py-8 md:pb-8">
             <div className="hidden md:flex items-center gap-4 mb-6">
               <Button

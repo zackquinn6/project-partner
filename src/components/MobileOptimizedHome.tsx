@@ -18,7 +18,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProjectOwner } from '@/hooks/useProjectOwner';
-import projectPartnerLogo from '@/assets/project-partner-logo.png';
+import { ProjectPartnerLogo } from '@/components/ProjectPartnerLogo';
+import { AppearanceSettingsDialog } from '@/components/AppearanceSettingsDialog';
 import { Account } from '@/components/Account';
 import { CodePermitsWindow } from '@/components/CodePermitsWindow';
 import { useProject } from '@/contexts/ProjectContext';
@@ -47,7 +48,8 @@ import {
   Clock,
   ListChecks,
   ArrowRight,
-  Crosshair
+  Crosshair,
+  Palette
 } from 'lucide-react';
 
 export function MobileOptimizedHome() {
@@ -69,6 +71,7 @@ export function MobileOptimizedHome() {
   
   const [userNickname, setUserNickname] = useState<string>('');
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [isCodePermitsOpen, setIsCodePermitsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -269,17 +272,13 @@ export function MobileOptimizedHome() {
   if (!user) return null;
 
   return (
-    <div ref={rootRef} className="flex-1 min-h-0 overflow-y-auto bg-gradient-subtle pb-20 mobile-scroll">
+    <div ref={rootRef} className="flex-1 min-h-0 overflow-y-auto bg-background text-foreground pb-20 mobile-scroll">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <img 
-                src={projectPartnerLogo} 
-                alt="Project Partner Logo" 
-                className="h-8 w-auto"
-              />
+              <ProjectPartnerLogo className="h-8" />
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -307,6 +306,10 @@ export function MobileOptimizedHome() {
                 <DropdownMenuItem onClick={() => setIsAccountOpen(true)}>
                   <UserCog className="mr-2 h-4 w-4" />
                   Account
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsAppearanceOpen(true)}>
+                  <Palette className="mr-2 h-4 w-4" />
+                  Appearance
                 </DropdownMenuItem>
                 {showAdminPanel ? (
                   <DropdownMenuItem
@@ -338,7 +341,7 @@ export function MobileOptimizedHome() {
       <div className="p-4 space-y-6 mobile-scroll">
         {/* Current Project (if any) */}
         {currentProjectRun && (
-          <Card className="gradient-card border-primary/20">
+          <Card className="border-primary/20 bg-card">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <Badge className="bg-primary/10 text-primary">Active Project</Badge>
@@ -428,7 +431,7 @@ export function MobileOptimizedHome() {
               return (
                 <Card 
                   key={action.id}
-                  className="gradient-card cursor-pointer hover:shadow-md transition-smooth shadow-sm rounded-xl min-h-[100px]"
+                  className="cursor-pointer rounded-xl border border-border bg-card shadow-sm transition-smooth hover:border-primary/40 hover:shadow-md min-h-[100px]"
                   onClick={action.action}
                 >
                   <CardContent className="p-3 text-center flex flex-col items-center justify-center h-full min-h-[100px]">
@@ -518,6 +521,7 @@ export function MobileOptimizedHome() {
       </div>
 
       <Account open={isAccountOpen} onOpenChange={setIsAccountOpen} />
+      <AppearanceSettingsDialog open={isAppearanceOpen} onOpenChange={setIsAppearanceOpen} />
       <CodePermitsWindow open={isCodePermitsOpen} onOpenChange={setIsCodePermitsOpen} />
     </div>
   );

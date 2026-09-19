@@ -2877,7 +2877,7 @@ export default function UserView({
     }
     
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Achievement tracking component - pass current phase and steps */}
       <ProjectCompletionHandler 
         projectRunId={currentProjectRun?.id} 
@@ -3579,7 +3579,7 @@ export default function UserView({
               ) : (
                 <div className="space-y-6">
               {/* Header */}
-              <Card className="gradient-card border-0 shadow-card">
+              <Card className="border-0 bg-card shadow-card">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -3615,7 +3615,7 @@ export default function UserView({
           {/* Content */}
           <Card 
             key={instructionLevel}
-            className="gradient-card border-0 shadow-card"
+            className="border-0 bg-card shadow-card"
             data-tutorial="step-instructions"
           >
             <CardContent className="p-8">
@@ -3718,7 +3718,7 @@ export default function UserView({
 
           {/* Step Checklist */}
           {currentStep && currentStep.outputs?.length > 0 && (
-            <Card className="gradient-card border-0 shadow-card" data-tutorial="step-checklist">
+            <Card className="border-0 bg-card shadow-card" data-tutorial="step-checklist">
               <CardContent className="p-6">
                 <Accordion type="multiple" defaultValue={["step-checklist"]} className="w-full">
                   {(() => {
@@ -3820,7 +3820,7 @@ export default function UserView({
           )}
 
           {/* Navigation */}
-          <Card className="gradient-card border-0 shadow-card">
+          <Card className="border-0 bg-card shadow-card">
             <CardContent className="p-6">
               <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between" data-tutorial="navigation-buttons">
                 <div className="flex flex-wrap items-center gap-2">
